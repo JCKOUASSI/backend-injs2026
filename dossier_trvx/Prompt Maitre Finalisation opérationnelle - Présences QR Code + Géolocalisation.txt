@@ -1,0 +1,1478 @@
+Voici le prompt maître opérationnel à transmettre directement à Cline dans VSCode. Il demande d’abord un audit du code existant, puis implémente uniquement ce qui manque, sans casser le QR, le heartbeat, l’API existante ni le modèle INJS-LMD.
+
+INJS-LMD — PROMPT MAÎTRE CLINE
+
+Finalisation opérationnelle : Présences QR Code + Géolocalisation
+
+Étudiants + Enseignants + Encadrants
+
+QR automatique + Badgeage manuel + Heartbeat + Audit
+
+Tu travailles directement dans le dépôt INJS-LMD :
+
+/Users/jckouassi/projets/injs/backend-injs
+
+Tu dois auditer puis finaliser la gestion des présences INJS-LMD par QR Code, avec géolocalisation, heartbeat, badgeage automatique et badgeage manuel, pour :
+
+1. Étudiants
+2. Enseignants
+3. Encadrants
+
+Objectif final :
+
+Formation
+→ Parcours
+→ Niveau
+→ Semestre
+→ Groupe
+→ Maquette
+→ UE
+→ ECUE
+→ Affectation pédagogique
+→ Emploi du temps
+→ Séance
+→ Session QR
+→ Badgeage
+→ Géolocalisation
+→ Heartbeat
+→ Sortie
+→ Présence
+→ Historique
+→ Évaluation
+
+==================================================
+
+0 — RÈGLES ABSOLUES
+
+==================================================
+
+NE PAS casser l’existant
+
+Avant toute modification, auditer le code existant.
+
+NE PAS réécrire globalement les systèmes déjà fonctionnels.
+
+NE PAS créer un deuxième système parallèle si une fonctionnalité existe déjà.
+
+Réutiliser les modèles, services, permissions, serializers, endpoints et composants existants lorsqu’ils sont corrects.
+
+NE PAS modifier inutilement :
+
+* API existante
+* OpenAPI
+* QR existant
+* heartbeat existant
+* système de présence existant
+* RBAC existant
+* intégration Flutter
+* intégration Séance
+* intégration AffectationPedagogique
+
+⸻
+
+1 — SÉCURITÉ GIT / BASE DE DONNÉES
+
+INTERDIT :
+
+git reset --hard
+git clean -fd
+git push --force
+git push --mirror
+DROP DATABASE
+docker compose down -v
+
+NE PAS supprimer de données métier.
+
+NE PAS supprimer les données legacy hors périmètre.
+
+NE PAS créer de vraies données EDT/Présence dans la base de développement.
+
+Les tests doivent utiliser :
+
+* TestCase
+* transactions
+* fixtures temporaires
+* factories existantes
+
+NE PAS faire de commit.
+
+NE PAS pousser vers GitHub.
+
+⸻
+
+2 — ENVIRONNEMENT DE RÉFÉRENCE
+
+Vérifier :
+
+cd /Users/jckouassi/projets/injs/backend-injs
+git status --short
+git branch --show-current
+git rev-parse HEAD
+git diff --check
+
+HEAD de référence :
+
+a54f473aef0d78747cc743b9b3e217c8b9f1c251
+
+Ne jamais réinitialiser le dépôt vers ce SHA.
+
+Il sert uniquement de référence.
+
+⸻
+
+3 — STACK
+
+Backend :
+
+Django 5.1.4
+Django REST Framework
+PostgreSQL
+Redis
+
+Frontend :
+
+React 18
+Vite 7
+JavaScript / JSX
+React Router
+React Query si déjà utilisé
+Bootstrap
+Bootstrap Icons
+
+Mobile :
+
+Flutter PWA
+QR
+Géolocalisation
+Heartbeat
+
+Ports locaux :
+
+Django API : 127.0.0.1:8000
+INJS-LMD Web : 127.0.0.1:3000
+
+NE JAMAIS utiliser un autre port pour Vite.
+
+NE PAS ajouter :
+
+TypeScript
+Tailwind
+ShadCN
+Recharts
+Lucide
+
+⸻
+
+4 — PREMIÈRE PHASE : AUDIT OBLIGATOIRE
+
+Avant d’écrire du code, rechercher l’implémentation existante.
+
+Exécuter notamment :
+
+find backend -type f | grep -Ei 'presence|presences|scan|qr|badge|geo|location|heartbeat|session'
+find frontend -type f | grep -Ei 'presence|scan|qr|badge|geo|location'
+find . -type f | grep -Ei 'flutter|qr|heartbeat'
+
+Puis :
+
+grep -R "secure/heartbeat" backend frontend . -n
+grep -R "scan/secure" backend frontend . -n
+grep -R "Presence" backend -n
+grep -R "geofence" backend frontend . -n
+grep -R "geoloc" backend frontend . -n
+grep -R "heartbeat" backend frontend . -n
+grep -R "QRCode\|QR_CODE\|QRSession\|qr_session" backend frontend . -n
+
+Identifier précisément :
+
+* modèles
+* migrations
+* serializers
+* services
+* permissions
+* views
+* URLs
+* endpoints QR
+* endpoints heartbeat
+* endpoints sortie
+* endpoints présence
+* composants frontend
+* code Flutter/PWA
+* tests
+* OpenAPI
+
+⸻
+
+5 — RAPPORT D’AUDIT INTERNE
+
+Avant modification, déterminer :
+
+EXISTANT ET CORRECT
+EXISTANT MAIS INCOMPLET
+EXISTANT MAIS INCORRECT
+ABSENT
+
+Pour chaque élément :
+
+QR
+Badgeage automatique
+Badgeage manuel
+Géolocalisation
+Geofence
+Heartbeat
+Entrée
+Sortie
+Session QR
+Présence étudiant
+Présence enseignant
+Présence encadrant
+Audit
+Historique
+RBAC
+Tests
+Frontend
+Flutter
+
+NE PAS demander de validation intermédiaire.
+
+Après audit, continuer directement vers l’implémentation.
+
+⸻
+
+6 — ARCHITECTURE MÉTIER CANONIQUE
+
+La présence doit toujours être rattachée à une Séance INJS-LMD réelle.
+
+Chaîne :
+
+Année académique
+→ Formation
+→ Parcours
+→ Niveau
+→ Semestre
+→ Groupe
+→ Maquette
+→ UE
+→ ECUE
+→ Affectation pédagogique
+→ Séance
+→ Présence
+
+NE PAS rattacher une présence à :
+
+Module CPFAE
+Sygepcpfae
+point journalier CPFAE
+ancien modèle de cours non LMD
+
+NE PAS créer de modèle Promotion.
+
+⸻
+
+7 — PARTICIPANTS
+
+Le système doit gérer :
+
+ETUDIANT
+ENSEIGNANT
+ENCADRANT
+
+Mais ne pas supposer que leurs relations métier sont identiques.
+
+Étudiant
+
+Contrôler :
+
+utilisateur
+→ étudiant
+→ inscription active
+→ formation
+→ parcours
+→ niveau
+→ groupe
+→ séance
+
+Enseignant
+
+Contrôler :
+
+utilisateur
+→ enseignant
+→ affectation pédagogique
+→ ECUE
+→ groupe
+→ séance
+
+Encadrant
+
+Contrôler :
+
+utilisateur
+→ encadrant
+→ mission/activité
+→ séance/activité
+
+NE PAS inventer une relation encadrant inexistante.
+
+Si le modèle métier actuel ne permet pas de rattacher proprement un encadrant à une activité, identifier précisément le manque et implémenter la solution minimale cohérente avec le modèle existant.
+
+⸻
+
+8 — QR CODE : ARCHITECTURE
+
+Le QR ne doit PAS contenir simplement :
+
+student_id
+
+Le QR doit représenter une session temporaire de badgeage.
+
+Concept :
+
+Séance
+  ↓
+Session QR
+  ↓
+token / nonce
+  ↓
+expiration
+  ↓
+statut
+
+Le QR doit être lié à la séance.
+
+Il doit être :
+
+* temporaire
+* vérifiable serveur
+* non réutilisable après expiration
+* associé à une séance précise
+
+⸻
+
+9 — ANTI-REPLAY
+
+Le serveur doit contrôler :
+
+token
+nonce
+séance
+expiration
+statut
+
+Un QR expiré doit être refusé.
+
+Un QR d’une autre séance doit être refusé.
+
+Une séance fermée doit refuser tout nouveau badgeage.
+
+Une tentative de réutilisation doit être détectable.
+
+⸻
+
+10 — BADGEAGE AUTOMATIQUE
+
+Flux obligatoire :
+
+Utilisateur authentifié
+        ↓
+Scan QR
+        ↓
+API Django
+        ↓
+Validation token
+        ↓
+Validation séance
+        ↓
+Validation participant
+        ↓
+Obtention GPS
+        ↓
+Validation geofence côté serveur
+        ↓
+Badgeage entrée
+        ↓
+Heartbeat
+        ↓
+Badgeage sortie
+        ↓
+Clôture présence
+
+Le serveur est l’autorité finale.
+
+⸻
+
+11 — DONNÉES DE BADGEAGE
+
+Conserver au minimum, selon les modèles existants :
+
+participant
+séance
+timestamp serveur
+timestamp client si disponible
+latitude
+longitude
+accuracy
+mode
+statut
+
+Mode :
+
+QR_AUTOMATIQUE
+MANUEL
+
+Source de position :
+
+BADGE_ENTREE
+HEARTBEAT
+BADGE_SORTIE
+
+NE PAS stocker uniquement :
+
+gps_ok = true
+
+La mesure doit être auditable.
+
+⸻
+
+12 — GÉOLOCALISATION
+
+Le client transmet :
+
+latitude
+longitude
+accuracy
+
+Le client NE doit PAS transmettre :
+
+inside_geofence=true
+
+comme preuve.
+
+Le serveur calcule :
+
+distance
+
+puis :
+
+distance <= rayon autorisé
+
+Le serveur détermine :
+
+DANS_PERIMETRE
+HORS_PERIMETRE
+
+⸻
+
+13 — GEOFENCE
+
+Auditer d’abord les modèles existants pour identifier le mécanisme officiel de configuration du site INJS.
+
+NE PAS inventer des coordonnées géographiques réelles.
+
+Si le geofence existe :
+
+* le réutiliser.
+
+S’il n’existe pas :
+
+* créer le minimum nécessaire ;
+* configuration explicite ;
+* aucune coordonnée réelle inventée ;
+* aucune valeur hardcodée dans le code.
+
+Le geofence doit être configurable.
+
+Configuration cible :
+
+site
+latitude
+longitude
+rayon
+actif
+
+⸻
+
+14 — PRÉCISION GPS
+
+La précision GPS doit être conservée.
+
+Exemple :
+
+accuracy = 8m
+
+Le système doit pouvoir distinguer :
+
+POSITION_ACCEPTABLE
+POSITION_IMPRECISE
+POSITION_INEXPLOITABLE
+
+Ne pas inventer arbitrairement un seuil métier si aucun seuil officiel n’existe.
+
+Si un seuil technique est nécessaire, le rendre configurable et documenter sa valeur par défaut.
+
+⸻
+
+15 — BADGEAGE ENTRÉE
+
+Une entrée validée doit créer une présence ou un événement de présence cohérent avec le modèle existant.
+
+Données :
+
+participant
+séance
+heure
+mode
+position
+statut
+
+Éviter les doublons.
+
+Si une entrée existe déjà :
+
+DOUBLE_ENTREE
+
+doit être détectée.
+
+⸻
+
+16 — HEARTBEAT
+
+Réutiliser l’endpoint existant si présent :
+
+/api/scan/secure/heartbeat/
+
+NE PAS créer un deuxième mécanisme heartbeat.
+
+Après une entrée validée :
+
+HEARTBEAT ACTIVE
+
+Pendant la séance :
+
+position
+timestamp
+accuracy
+
+sont envoyés périodiquement.
+
+⸻
+
+17 — HEARTBEAT ET GEOFENCE
+
+Chaque heartbeat doit pouvoir être évalué.
+
+Exemples :
+
+DANS_PERIMETRE
+HORS_PERIMETRE
+POSITION_IMPRECISE
+POSITION_ABSENTE
+
+Une sortie temporaire du geofence ne doit pas automatiquement supprimer une présence déjà validée.
+
+Elle doit générer une anomalie selon les règles métier.
+
+Exemple :
+
+HEARTBEAT_HORS_GEOFENCE
+
+⸻
+
+18 — FIN DE SÉANCE
+
+À la fin :
+
+QR fermé
+↓
+heartbeat arrêté
+↓
+sortie
+↓
+présence clôturée
+
+Distinguer :
+
+SORTIE_QR
+SORTIE_AUTOMATIQUE_FIN_SEANCE
+
+si le modèle le permet.
+
+NE PAS inventer une sortie humaine si aucun événement de sortie n’a été reçu.
+
+⸻
+
+19 — BADGEAGE MANUEL
+
+Le badgeage manuel est une exception.
+
+Il nécessite :
+
+utilisateur autorisé
++
+participant
++
+séance
++
+motif obligatoire
+
+Motifs configurables/existants, par exemple :
+
+QR_NON_LISIBLE
+GPS_INDISPONIBLE
+PANNE_RESEAU
+PROBLEME_TECHNIQUE
+PARTICIPANT_PRESENT_SANS_BADGE
+AUTRE
+
+Si AUTRE :
+
+commentaire obligatoire
+
+⸻
+
+20 — RBAC BADGEAGE MANUEL
+
+NE PAS créer un nouveau système RBAC.
+
+Réutiliser le système de permissions INJS-LMD existant.
+
+Le serveur doit vérifier :
+
+utilisateur authentifié
+→ permission
+→ séance
+→ participant
+
+Un utilisateur non autorisé doit obtenir :
+
+HTTP 403
+
+Le frontend ne doit jamais être la seule protection.
+
+⸻
+
+21 — AUDIT DU MANUEL
+
+Toute présence manuelle doit enregistrer :
+
+auteur
+date
+heure
+participant
+séance
+motif
+commentaire
+mode = MANUEL
+
+Une présence manuelle doit être clairement identifiable.
+
+⸻
+
+22 — MODIFICATION / CORRECTION
+
+NE PAS écraser silencieusement une présence.
+
+Toute correction doit conserver :
+
+ancienne valeur
+nouvelle valeur
+auteur
+date
+motif
+
+Si un système d’audit existe déjà :
+
+réutiliser ce mécanisme.
+
+Sinon créer le minimum nécessaire.
+
+⸻
+
+23 — ÉTUDIANT
+
+Pour un étudiant :
+
+SCAN
+↓
+QR valide
+↓
+séance valide
+↓
+inscription active
+↓
+groupe correct
+↓
+GPS
+↓
+geofence
+↓
+entrée
+↓
+heartbeat
+↓
+sortie
+
+Refuser si :
+
+ETUDIANT_NON_INSCRIT
+ETUDIANT_HORS_GROUPE
+SEANCE_INACTIVE
+QR_EXPIRE
+HORS_GEOFENCE
+
+⸻
+
+24 — ENSEIGNANT
+
+Pour l’enseignant :
+
+SCAN
+↓
+QR valide
+↓
+séance valide
+↓
+affectation pédagogique vérifiée
+↓
+enseignant autorisé
+↓
+GPS
+↓
+geofence
+↓
+entrée
+↓
+heartbeat
+↓
+sortie
+
+NE PAS utiliser de rapprochement approximatif par nom.
+
+L’affectation pédagogique doit être la référence.
+
+⸻
+
+25 — ENCADRANT
+
+Pour l’encadrant :
+
+SCAN
+↓
+activité/misson valide
+↓
+encadrant autorisé
+↓
+GPS
+↓
+geofence
+↓
+entrée
+↓
+heartbeat
+↓
+sortie
+
+NE PAS assimiler automatiquement :
+
+ENCADRANT = ENSEIGNANT
+
+⸻
+
+26 — CODES D’ERREUR
+
+Créer/réutiliser des codes explicites.
+
+Minimum :
+
+QR_INVALIDE
+QR_EXPIRE
+QR_REUTILISE
+SEANCE_INACTIVE
+SEANCE_TERMINEE
+UTILISATEUR_NON_AUTORISE
+ETUDIANT_NON_INSCRIT
+ETUDIANT_HORS_GROUPE
+ENSEIGNANT_NON_AFFECTE
+ACTIVITE_NON_AUTORISEE
+HORS_GEOFENCE
+GPS_INDISPONIBLE
+PRECISION_GPS_INSUFFISANTE
+DOUBLE_ENTREE
+SORTIE_SANS_ENTREE
+HEARTBEAT_INTERRUPTU
+
+Chaque erreur doit retourner, lorsque l’API le permet :
+
+{
+  "code": "...",
+  "message": "...",
+  "explication": "...",
+  "action_recommandee": "..."
+}
+
+⸻
+
+27 — FRONTEND / FLUTTER
+
+Auditer le client Flutter/PWA existant.
+
+Ne pas reconstruire le scanner QR si le scanner existant fonctionne.
+
+Vérifier :
+
+connexion
+scanner
+permission caméra
+permission GPS
+latitude
+longitude
+accuracy
+timestamp
+API
+heartbeat
+sortie
+erreurs
+offline
+
+⸻
+
+28 — ÉTAT DU BADGEAGE DANS L’APPLICATION
+
+Afficher clairement :
+
+PRÊT À BADGER
+SCAN EN COURS
+VÉRIFICATION
+PRÉSENCE VALIDÉE
+PRÉSENCE REFUSÉE
+HEARTBEAT ACTIF
+SÉANCE TERMINÉE
+
+Après succès :
+
+Présence enregistrée
+Séance : ...
+Heure : ...
+Mode : QR automatique
+Localisation : conforme
+
+⸻
+
+29 — HORS LIGNE
+
+Si le réseau est momentanément indisponible :
+
+EN_ATTENTE_SYNCHRONISATION
+
+peut être utilisé si l’architecture actuelle le permet.
+
+NE PAS afficher :
+
+Présence validée
+
+avant confirmation serveur.
+
+Après synchronisation :
+
+VALIDÉE
+
+ou :
+
+REFUSÉE
+
+⸻
+
+30 — DONNÉES DE GÉOLOCALISATION
+
+Limiter la collecte au contexte nécessaire :
+
+badge entrée
+heartbeat pendant séance
+sortie
+
+NE PAS implémenter un tracking permanent des étudiants, enseignants ou encadrants hors activité.
+
+La géolocalisation doit être liée à une séance/activité autorisée.
+
+⸻
+
+31 — HISTORIQUE
+
+Prévoir des vues :
+
+Étudiant
+Enseignant
+Encadrant
+Séance
+Groupe
+ECUE
+
+Chaque présence doit afficher :
+
+date
+séance
+entrée
+sortie
+mode
+statut
+anomalies
+
+La latitude/longitude ne doit pas être affichée publiquement.
+
+⸻
+
+32 — TABLEAU DE BORD SÉANCE
+
+Pour une séance :
+
+Attendus
+Présents
+Absents
+Retards
+Sorties anticipées
+Présences manuelles
+Anomalies GPS
+Anomalies QR
+
+Exemple :
+
+Séance : ECUE X
+Groupe : L2 EM-A
+Attendus : 42
+Présents : 38
+Absents : 4
+Manuels : 2
+Anomalies : 1
+
+⸻
+
+33 — TABLEAU DE BORD ADMINISTRATIF
+
+GET-INJS doit permettre une vue :
+
+Présences
+├── Étudiants
+├── Enseignants
+├── Encadrants
+├── Séances
+├── Anomalies
+├── Badgeages manuels
+└── Historique
+
+⸻
+
+34 — INTÉGRATION AVEC LES SÉANCES
+
+Une présence doit être rattachée à :
+
+Séance
+↓
+AffectationCreneau
+↓
+AffectationPedagogique
+↓
+ECUE
+↓
+UE
+↓
+Maquette
+↓
+Groupe
+
+NE PAS créer de fallback :
+
+groupe + cycle
+
+NE PAS utiliser :
+
+Module CPFAE
+
+⸻
+
+35 — API
+
+Auditer les endpoints existants avant d’en ajouter.
+
+Si existants et corrects :
+
+LES CONSERVER
+
+Si incomplets :
+
+LES COMPLÉTER
+
+Si absents :
+
+implémenter seulement les endpoints nécessaires.
+
+Cible fonctionnelle possible :
+
+POST /api/scan/secure/
+POST /api/scan/secure/heartbeat/
+POST /api/scan/secure/exit/
+GET  /api/presences/
+GET  /api/presences/{id}/
+GET  /api/presences/session/{id}/
+GET  /api/presences/student/{id}/
+GET  /api/presences/teacher/{id}/
+GET  /api/presences/encadrant/{id}/
+POST /api/presences/manual/
+POST /api/presences/{id}/correct/
+
+IMPORTANT :
+
+Ces URLs sont une cible fonctionnelle à auditer, pas une obligation de créer des doublons si des routes équivalentes existent déjà.
+
+⸻
+
+36 — OPENAPI
+
+Toutes les nouvelles routes doivent être documentées.
+
+Vérifier :
+
+/api/schema/
+/api/docs/
+
+NE PAS casser :
+
+docs/api/contract.snapshot.json
+
+Toute évolution doit rester rétrocompatible lorsque possible.
+
+⸻
+
+37 — TESTS BACKEND
+
+Créer les tests manquants.
+
+QR
+
+Tester :
+
+QR valide
+QR invalide
+QR expiré
+QR autre séance
+QR réutilisé
+séance fermée
+
+Étudiant
+
+Tester :
+
+inscrit
+non inscrit
+bon groupe
+mauvais groupe
+
+Enseignant
+
+Tester :
+
+affecté
+non affecté
+
+Encadrant
+
+Tester :
+
+activité valide
+activité invalide
+
+Géolocalisation
+
+Tester :
+
+dans geofence
+hors geofence
+GPS absent
+GPS imprécis
+
+Heartbeat
+
+Tester :
+
+heartbeat valide
+hors geofence
+session inexistante
+session terminée
+
+Manuel
+
+Tester :
+
+autorisé
+non autorisé
+motif absent
+motif AUTRE sans commentaire
+
+Audit
+
+Tester :
+
+création
+modification
+historique
+
+⸻
+
+38 — TESTS ANTI-RÉGRESSION
+
+Exécuter au minimum :
+
+python manage.py check
+python manage.py makemigrations --check
+
+Puis la suite concernée.
+
+Identifier d’abord la commande de test existante.
+
+Le socle LOT 2 confirmé est :
+
+789 tests
+0 échec
+0 erreur
+2 skips préexistants
+
+Objectif :
+
+789 + nouveaux tests
+0 échec
+0 erreur
+
+Aucun test ne doit être désactivé pour obtenir le vert.
+
+⸻
+
+39 — TEST FRONTEND
+
+Tester :
+
+scanner
+permission GPS
+succès
+QR invalide
+hors geofence
+GPS absent
+présence validée
+présence refusée
+heartbeat
+sortie
+badgeage manuel
+historique
+
+⸻
+
+40 — TEST FLUTTER / PWA
+
+Vérifier le parcours réel :
+
+connexion
+→ autorisation caméra
+→ autorisation GPS
+→ scan QR
+→ transmission
+→ réponse API
+→ affichage résultat
+→ heartbeat
+→ sortie
+
+Ne pas considérer le frontend comme l’autorité métier.
+
+⸻
+
+41 — TEST DE BASE DE DONNÉES
+
+Avant/après les tests :
+
+edts_creneautemplate
+edts_emploidutemps
+edts_affectationcreneau
+edts_disponibilitehoraire
+
+doivent rester inchangés dans la base de développement si les tests sont correctement isolés.
+
+NE PAS injecter de vraies présences.
+
+⸻
+
+42 — MIGRATIONS
+
+Si une migration est réellement nécessaire :
+
+python manage.py makemigrations
+python manage.py migrate --plan
+
+Puis vérifier précisément le SQL/schema généré.
+
+NE PAS supprimer de colonnes ou tables existantes sans nécessité démontrée.
+
+NE PAS faire de migration destructive pour simplifier l’implémentation.
+
+⸻
+
+43 — PERFORMANCE
+
+Éviter :
+
+N+1 queries
+
+sur :
+
+présences
+séances
+étudiants
+groupes
+enseignants
+encadrants
+
+Utiliser les optimisations Django appropriées :
+
+select_related
+prefetch_related
+
+lorsqu’elles sont justifiées.
+
+⸻
+
+44 — CONCURRENCE
+
+Deux scans simultanés du même participant doivent être gérés correctement.
+
+Éviter les doubles entrées.
+
+Utiliser :
+
+transaction.atomic
+select_for_update
+contraintes d'unicité
+
+si compatibles avec le modèle existant.
+
+⸻
+
+45 — AUDIT FINAL FONCTIONNEL
+
+Vérifier intégralement :
+
+ÉTUDIANT
+  ↓
+Inscription
+  ↓
+Groupe
+  ↓
+Séance
+  ↓
+QR
+  ↓
+GPS
+  ↓
+Geofence
+  ↓
+Entrée
+  ↓
+Heartbeat
+  ↓
+Sortie
+  ↓
+Présence
+
+Puis :
+
+ENSEIGNANT
+  ↓
+Affectation pédagogique
+  ↓
+Séance
+  ↓
+QR
+  ↓
+GPS
+  ↓
+Présence
+
+Puis :
+
+ENCADRANT
+  ↓
+Activité
+  ↓
+Séance/activité
+  ↓
+QR
+  ↓
+GPS
+  ↓
+Présence
+
+⸻
+
+46 — CONTRÔLE FINAL GIT
+
+Exécuter :
+
+git status --short
+git diff --check
+git diff --stat
+git diff --name-only
+git log -1 --oneline
+
+NE PAS COMMITTER.
+
+NE PAS PUSHER.
+
+⸻
+
+47 — RAPPORT FINAL OBLIGATOIRE
+
+À la toute fin, retourner exactement une synthèse structurée :
+
+==================================================
+INJS-LMD — PRÉSENCES QR + GÉOLOCALISATION
+==================================================
+HEAD :
+BRANCHE :
+AUDIT INITIAL :
+- QR :
+- Présence :
+- Heartbeat :
+- Géolocalisation :
+- Badgeage manuel :
+- Étudiant :
+- Enseignant :
+- Encadrant :
+API :
+- endpoints conservés :
+- endpoints complétés :
+- endpoints ajoutés :
+- OpenAPI :
+QR :
+- session :
+- expiration :
+- anti-rejeu :
+- validation serveur :
+GÉOLOCALISATION :
+- geofence :
+- calcul serveur :
+- précision :
+- entrée :
+- heartbeat :
+- sortie :
+ÉTUDIANTS :
+- entrée :
+- heartbeat :
+- sortie :
+- historique :
+ENSEIGNANTS :
+- affectation :
+- entrée :
+- heartbeat :
+- sortie :
+- historique :
+ENCADRANTS :
+- activité :
+- entrée :
+- heartbeat :
+- sortie :
+- historique :
+BADGEAGE MANUEL :
+- RBAC :
+- motifs :
+- audit :
+- correction :
+FRONTEND :
+- scanner :
+- GPS :
+- heartbeat :
+- erreurs :
+- historique :
+FLUTTER/PWA :
+- scan :
+- GPS :
+- heartbeat :
+- sortie :
+- synchronisation :
+TESTS :
+- avant :
+- après :
+- succès :
+- échecs :
+- skips :
+CHECKS :
+- manage.py check :
+- makemigrations --check :
+- git diff --check :
+- frontend build :
+BASE DEV :
+- aucune pollution :
+- données EDT inchangées :
+- données présence inchangées :
+SÉCURITÉ :
+- aucun reset :
+- aucun commit :
+- aucun push :
+- aucune suppression destructive :
+- aucun tracking permanent :
+BLOCAGES :
+- NONE / liste précise
+STATUT :
+PRÉSENCES QR + GÉOLOCALISATION TERMINÉES /
+PARTIELLEMENT TERMINÉES
+==================================================
+
+48 — RÈGLE FINALE
+
+Ne t’arrête pas après l’audit.
+
+Ne t’arrête pas après l’API.
+
+Ne t’arrête pas après le backend.
+
+Ne t’arrête pas après le frontend.
+
+Continue jusqu’à :
+
+AUDIT
+→ BACKEND
+→ API
+→ QR
+→ GÉOLOCALISATION
+→ HEARTBEAT
+→ BADGEAGE MANUEL
+→ ÉTUDIANTS
+→ ENSEIGNANTS
+→ ENCADRANTS
+→ FLUTTER/PWA
+→ TESTS
+→ OPENAPI
+→ BUILD
+→ CONTRÔLES FINAUX
+
+Si une fonctionnalité existe déjà et est correcte :
+
+CONSERVER
+
+Si elle existe mais est incomplète :
+
+COMPLÉTER
+
+Si elle est incorrecte :
+
+CORRIGER MINIMALEMENT
+
+Si elle est absente :
+
+IMPLÉMENTER
+
+Ne jamais créer une deuxième architecture concurrente.
+
+Ne jamais inventer de données métier INJS.
+
+Ne jamais inventer de coordonnées géographiques INJS.
+
+Ne jamais utiliser CPFAE/Sygepcpfae comme source métier.
+
+OBJECTIF FINAL : une gestion INJS-LMD complète, traçable et sécurisée des présences par QR automatique et manuel, avec géolocalisation des étudiants, enseignants et encadrants, intégrée aux séances LMD et compatible avec le système existant.
+
+Ce prompt est volontairement orienté “audit → compléter → tester” plutôt que “réécrire”. C’est le point important ici : Cline doit d’abord découvrir ce qui existe déjà dans le QR/heartbeat avant de toucher au code, afin d’éviter de créer deux mécanismes de présence concurrents.

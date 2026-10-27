@@ -1,0 +1,306 @@
+====================================================================================================
+SUITE EXÉCUTABLE DE PROMPTS D'INGÉNIERIE LOGICIELLE
+POUR LA MISE EN OEUVRE DU SYSTÈME LMD DE L'INJS MARCORY (CÔTE D'IVOIRE)
+====================================================================================================
+Application : app-injs-lmd2026
+Institution : Institut National de la Jeunesse et des Sports (INJS) d'Abidjan (Marcory, Zone 4)
+UFR         : Sciences et Technologies des Activités Physiques et Sportives - Jeunesse et Loisirs (STAPS-JL)
+Conformité  : Normes LMD CAMES / REESAO & Architecture Django 5.1/6 + React 18 + Flutter
+Objectif    : Mise en œuvre modulaire, séquentielle et sans régression du modèle fonctionnel cible
+Fichier     : prompts-mise-en-oeuvre-injs-lmd2026.txt
+====================================================================================================
+GUIDE D'UTILISATION DES PROMPTS
+====================================================================================================
+Cette suite contient 12 prompts d'ingénierie logicielle conçus pour être exécutés séquentiellement
+par des agents d'intelligence artificielle ou des développeurs seniors.
+Chaque prompt respecte scrupuleusement les 4 principes directeurs :
+1. "Zéro régression" : Préservation stricte de la base de données, des 20 applications existantes et des 890 tests.
+2. "Ancrage INJS Marcory" : Nomenclatures réelles, filières STAPS/Jeunesse, infrastructures sportives (Gymnases, Pistes, Piscines).
+3. "Double Focus Opérationnel" : Priorité absolue à la gestion des Emplois du Temps (EDT) et au Badgeage QR Code anti-fraude.
+4. "Exhaustivité LMD" : Couverture complète du cycle académique du candidat au diplômé.
+====================================================================================================
+SOMMAIRE DES PROMPTS
+====================================================================================================
+PROMPT 01 : Consolidation des Référentiels & Espaces Sportifs de l'INJS Marcory
+PROMPT 02 : Chaîne Admissions & Concours d'Entrée (Directs, Professionnels & Épreuves Sportives)
+PROMPT 03 : Scolarité LMD, Dossiers Étudiants & Groupes Pédagogiques TD/TP
+PROMPT 04 : Maquettes LMD (UE/ECUE), Volumes Horaires (CM/TD/TP Sport) & Crédits ECTS
+PROMPT 05 : Planification des Emplois du Temps (EDT), Résolution des Conflits & Contrat v1.1
+PROMPT 06 : Présences par QR Code, Anti-Fraude (DeviceBinding, Heartbeat & Geofence Marcory)
+PROMPT 07 : Saisie des Notes, Workflow d'Évaluation & Piste d'Audit des Corrections
+PROMPT 08 : Moteur de Jurys LMD, Calcul de Compensation ECTS & Délibérations Numériques (PV)
+PROMPT 09 : Diplômation, Registre des Diplômes & Édition des Actes Académiques Officiels
+PROMPT 10 : Gestion Financière Duale (Frais de Scolarité Étudiants vs Vacations Formateurs)
+PROMPT 11 : Administration Générale, Gestion RH & Patrimoine des Équipements Sportifs
+PROMPT 12 : Tableaux de Bord de Direction, Statistiques LMD & Alertes Décisionnelles
+====================================================================================================
+PROMPT 01 : CONSOLIDATION DES RÉFÉRENTIELS & ESPACES SPORTIFS DE L'INJS MARCORY
+====================================================================================================
+```text
+Tu es l'architecte logiciel senior de l'application INJS-LMD 2026.
+Mission : Consolider et enrichir le socle des référentiels universitaires et des infrastructures sportives de l'INJS Marcory (Abidjan, Côte d'Ivoire) sans casser l'existant.
+1. Contexte & Données Réelles de l'INJS Marcory :
+   - Sites : Site Principal Marcory (Boulevard de Marseille), Centre des Métiers du Sport.
+   - Espaces sportifs (RefTypeEspaceSportif) : Gymnase Omnisports, Gymnase de Gymnastique, Dojo / Salle d'Arts Martiaux, Piscine Olympique, Piste d'Athlétisme 400m, Terrain de Football Synthétique, Plateau de Hand/Basket, Salle de Musculation.
+   - Salles de cours magistraux & TD : Amphi A, Amphi B, Salles 101 à 110, Salle Multimédia.
+   - Filières LMD : Licence STAPS (Option Entraînement Sportif, Option Éducation & Motricité, Option Management du Sport), Licence Jeunesse & Animation, Master STAPS, Master Sciences du Sport.
+   - Grades & Niveaux : L1, L2, L3, M1, M2, D1, D2, D3.
+2. Tâches Techniques à Réaliser :
+   a) Backend (Django) :
+      - Vérifier que `formations.RefSite`, `RefBatiment`, `RefSalle` intègrent bien `type_espace` pointant vers `referentiels.RefTypeEspaceSportif`.
+      - Ajouter aux instances `RefSite` les coordonnées géographiques réelles de l'INJS Marcory (Latitude : 5.2974, Longitude : -3.9872, Rayon par défaut : 250m).
+      - Créer une commande de seed enrichie `seed_referentiels_injs.py` initialisant les espaces sportifs et les filières spécifiques de l'INJS sans écraser les données existantes (`get_or_create`).
+   b) Frontend (React) :
+      - Vérifier que la page `Referentiels.jsx` permet la consultation et le filtrage des espaces sportifs avec leurs caractéristiques (capacité, type d'infrastructure, site).
+      - Maintenir le cache de 10 minutes avec invalidation sur mutation (`invalidateReferentielsQuery`).
+   c) Tests de Validation :
+      - Exécuter les tests `referentiels/tests/test_models.py` et `test_api.py`.
+      - Vérifier l'intégrité des clés étrangères et l'absence de régression sur les 890 tests existants.
+```
+====================================================================================================
+PROMPT 02 : CHAÎNE ADMISSIONS & CONCOURS D'ENTRÉE (DIRECTS, PROFESSIONNELS & ÉPREUVES SPORTIVES)
+====================================================================================================
+```text
+Tu es l'expert fonctionnel LMD et développeur backend senior.
+Mission : Parachever le module d'Admissions et Concours d'entrée de l'INJS Marcory (`backend/admissions/`), incluant les épreuves sportives et la passerelle d'inscription administrative.
+1. Contexte Spécifique des Concours INJS :
+   - Types de Concours : Concours Direct (bacheliers), Concours Professionnel (fonctionnaires / professeurs adjoints), Entrée sur Titre (sportifs de haut niveau).
+   - Épreuves : Épreuves physiques (Courses 100m/1000m, Natation, Saut en longueur, Lancer de poids), Épreuves écrites (Français, Culture générale, Biologie/Sport), Entretien oral.
+   - Barèmes sportifs différenciés selon le sexe (MASCULIN / FEMININ) et la filière visée.
+2. Tâches Techniques à Réaliser :
+   a) Backend (Django) :
+      - Vérifier le workflow d'état de `Candidature` : BROUILLON -> SOUMISE -> PIECES_VALIDEES -> EN_ETUDE -> CONVOQUEE -> ADMISSIBLE -> ADMIS.
+      - Valider le modèle `admissions.Epreuve`, `NoteConcours`, `NoteConcoursHistorique` et `ClassementConcours`.
+      - Implémenter le calcul automatique de la moyenne de concours avec coefficients par épreuve (Épreuves sportives coeff 3, Épreuves écrites coeff 2).
+      - Vérifier la passerelle `POST /api/scolarite/inscriptions/depuis-admission/` qui convertit en un clic un candidat ADMIS en `InscriptionAdministrative` avec génération automatique du matricule INJS pérenne (`P0001`...).
+   b) Frontend (React) :
+      - Dans `pages/scolarite/Candidatures.jsx` et `Admissions.jsx` : intégrer l'interface de vérification des pièces justificatives et l'affichage des listes de classement par ordre de mérite.
+   c) Tests :
+      - Exécuter `admissions/tests/test_admissions.py`, `test_candidatures.py`, `test_concours.py`.
+```
+====================================================================================================
+PROMPT 03 : SCOLARITÉ LMD, DOSSIERS ÉTUDIANTS & GROUPES PÉDAGOGIQUES TD/TP
+====================================================================================================
+```text
+Tu es l'expert en systèmes universitaires LMD et développeur full-stack.
+Mission : Consolider la gestion administrative de la scolarité LMD, les dossiers étudiants et la répartition en groupes pédagogiques pour l'UFR STAPS-JL de l'INJS.
+1. Exigences Fonctionnelles :
+   - Année académique courante unique (`AnneeAcademique.courante=True`).
+   - Dossier Étudiant complet (`DossierEtudiant` OneToOne `formations.Participant`) : identité civile, matricule officiel, parcours, statut (Régulier, Sportif de Haut Niveau, Redoublant, Boursier).
+   - Double inscription : Inscription Administrative (IA) validée préalable obligatoire avant Inscription Pédagogique (IP).
+   - Groupes pédagogiques STAPS : Groupes de Cours Magistraux (CM - Section entière), Groupes de Travaux Dirigés (TD - max 35 étudiants), Groupes de Pratique Sportive (TP / Ateliers sportifs - max 25 étudiants pour raisons de sécurité).
+2. Tâches Techniques à Réaliser :
+   a) Backend (Django) :
+      - Valider la résolution définitive de la double représentation D1 : `scolarite.Groupe` + `AffectationGroupe` est l'unique source de vérité.
+      - Garantir l'unicité de l'affectation active par type de groupe (`unique_together` ou validation métier).
+      - Exposer les endpoints `/api/scolarite/groupes/effectifs/` et `/api/scolarite/groupes/repartition/`.
+   b) Frontend (React) :
+      - Dans `pages/scolarite/Inscriptions.jsx` et `FicheEtudiant.jsx` : afficher l'historique complet des inscriptions, les pièces du dossier et les affectations de groupes.
+      - Dans `pages/scolarite/Groupes.jsx` : interface intuitive de répartition des étudiants par glisser-déposer ou sélection multiple avec jauge de capacité temps réel.
+   c) Tests :
+      - Exécuter `scolarite/tests/test_inscriptions.py`, `test_groupes.py`, `test_participant_matricule.py`.
+```
+====================================================================================================
+PROMPT 04 : MAQUETTES LMD, VOLUMES HORAIRES (CM/TD/TP SPORT) & CRÉDITS ECTS
+====================================================================================================
+```text
+Tu es l'architecte logiciel LMD et expert en ingénierie de formation CAMES/REESAO.
+Mission : Implémenter et fiabiliser la gestion des maquettes pédagogiques LMD de l'INJS Marcory (`scolarite/models.py`), leurs Unités d'Enseignement (UE) et Éléments Constitutifs (ECUE).
+1. Structure de l'Offre de Formation LMD :
+   - Maquettes versionnées par année académique et parcours (Statuts : BROUILLON -> ACTIVE -> ARCHIVEE).
+   - Règle de sécurité : Une maquette ACTIVE ne peut plus être altérée si des inscriptions pédagogiques y sont rattachées (règle anti-régression pédagogique).
+   - Unités d'Enseignement (UE) :
+     * UE Fondamentales (Sciences biologiques appliquées au sport, Biomécanique, Pédagogie des APS).
+     * UE Transversales / Outils (Anglais sportif, Informatique, Méthodologie de recherche).
+     * UE de Pratique et Spécialité Sportive (Athlétisme, Sports collectifs, Natation, Gymnastique).
+   - Éléments Constitutifs (ECUE) : Répartition CM, TD, TP sportifs, TPE (Travail Personnel Étudiant), coefficients et crédits ECTS. Total = 30 crédits ECTS par semestre.
+2. Tâches Techniques à Réaliser :
+   a) Backend (Django) :
+      - Valider la contrainte d'intégrité : la somme des crédits ECTS des UE d'un semestre doit égaler exactement 30.
+      - Vérifier la génération automatique des `InscriptionPedagogique` à partir de la maquette active lors de l'inscription administrative de l'étudiant.
+      - Implémenter la passerelle d'équivalence entre `ECUE` et `formations.RefModule` pour faire le pont avec les cours opérationnels.
+   b) Frontend (React) :
+      - Dans `pages/scolarite/Maquettes.jsx` et `MaquetteDetail.jsx` : vue arborescente Semestre -> UE -> ECUE avec calcul dynamique de la balance des heures et des crédits ECTS.
+   c) Tests :
+      - Exécuter `scolarite/tests/test_referentiels.py`, `test_import_maquette.py`, `test_maquettes_workflow.py`.
+```
+====================================================================================================
+PROMPT 05 : PLANIFICATION DES EMPLOIS DU TEMPS (EDT), RÉSOLUTION DES CONFLITS & CONTRAT v1.1
+====================================================================================================
+```text
+Tu es le lead developer spécialiste des algorithmes de planification universitaire.
+Mission : Rendre pleinement opérationnelle l'architecture des Emplois du Temps (EDT) pour l'INJS Marcory, à la fois via le contrat d'API v1.1 et le module interne (`edts/`).
+1. Enjeux Spécifiques aux EDT de l'INJS Marcory :
+   - Gestion stricte des installations sportives partagées : La piste d'athlétisme, la piscine et les gymnases ne peuvent accueillir plus d'un groupe en simultané pour une même discipline.
+   - Respect des créneaux climatiques d'Abidjan : Cours pratiques en extérieur privilégiés le matin (07h30-10h30) et en fin d'après-midi (16h00-18h00).
+   - Disponibilité des enseignants et formateurs statutaires / vacataires.
+2. Tâches Techniques à Réaliser :
+   a) Backend (Django) :
+      - Valider le contrat de données en lecture seule v1.1 `/api/scolarite/edt/` (groupes, enseignements, étudiants, indisponibilités, créneaux, affectations, occupation d'espaces sportifs).
+      - Dans l'app `edts` : implémenter le moteur de détection de conflits (`ConflitCreneau`) :
+        * Conflit Enseignant (un formateur sur deux cours à la même heure).
+        * Conflit Espace / Salle (un gymnase ou amphi avec 2 réservations simultanées).
+        * Conflit Groupe (un groupe LMD affecté à 2 enseignements simultanés).
+      - Synchroniser automatiquement toute validation d'emploi du temps avec la création des `SessionModule` dans `formations` pour préparer le badgeage QR.
+   b) Frontend (React) :
+      - Dans `pages/Edts.jsx`, `EdtNew.jsx`, `AffectationNew.jsx` : vue calendrier hebdomadaire interactif avec code couleur par discipline/type d'espace (Gymnase, Amphi, Terrain), alertes visuelles de conflits.
+   c) Tests :
+      - Exécuter `scolarite/tests/test_edt_export.py`, `test_edt_extensions.py`.
+```
+====================================================================================================
+PROMPT 06 : PRÉSENCES PAR QR CODE, ANTI-FRAUDE (DEVICE BINDING, HEARTBEAT & GEOFENCE MARCORY)
+====================================================================================================
+```text
+Tu es l'expert en sécurité des applications mobiles et architectures IoT/QR.
+Mission : Verrouiller et optimiser le dispositif de contrôle des présences par QR Code pour l'INJS Marcory sur le backend Django, le dashboard web et l'application mobile Flutter.
+1. Spécifications du Dispositif Anti-Fraude :
+   - Génération de QR Code dynamique : UUID v4 cryptographique lié à la séance (`SessionModule`), durée de validité stricte (24h), anti-rejeu (`QRToken`).
+   - 1er Scan (Entrée) : Enregistre `timestamp_entree`, statut passe à `EN_COURS`.
+   - 2e Scan (Sortie) : Enregistre `timestamp_sortie`, calcule `duree_presence_minutes`, statut passe à `TERMINE`.
+   - Clôture automatique : Les étudiants n'ayant pas scanné la sortie sont traités par la commande `auto_close_pointages` (`SORTIE_AUTO` ou `ABSENT_NON_BADGE`).
+   - Sécurité Matérielle (`DeviceBinding`) : L'étudiant ne peut badger qu'avec son propre téléphone lié à son compte JWT.
+   - Géofencing INJS Marcory : Validation que les coordonnées GPS se situent dans le polygone du campus INJS Marcory (Lat: 5.2974, Lon: -3.9872, Tolérance: 250m).
+   - Heartbeat d'Assiduité : Tâche de fond sur Flutter émettant un signal périodique de présence.
+2. Tâches Techniques à Réaliser :
+   a) Backend (Django) :
+      - Optimiser l'endpoint de scan sécurisé `POST /api/scan/secure/` (JWT requis).
+      - Maintenir le throttling DRF (60 scans/min).
+      - Journaliser toute anomalie ou régularisation manuelle dans `AuditLog`.
+   b) Frontend & Mobile :
+      - Dashboard Web : Vérifier `components/QRCodeModal.jsx` et la page autonome de badgeage `dashboard/badge/`.
+      - Flutter : Vérifier le flux caméra, le stockage local chiffré des scans en cas de coupure réseau et la synchronisation automatique dès retour de la connexion.
+   c) Tests :
+      - Exécuter `formations/tests/test_qr_isolation.py`, `presences/test_l1_consolidation.py`, `test_participant_scope.py`, `test_rattrapage.py`.
+```
+====================================================================================================
+PROMPT 07 : SAISIE DES NOTES, WORKFLOW D'ÉVALUATION & PISTE D'AUDIT DES CORRECTIONS
+====================================================================================================
+```text
+Tu es le développeur senior spécialiste des flux d'évaluation académique.
+Mission : Rendre étanche et parfaitement traçable le workflow de saisie des notes, de calcul des moyennes et de correction pour les filières STAPS et Jeunesse de l'INJS.
+1. Règles Métier d'Évaluation :
+   - Évaluations théoriques (Contrôle Continu CC, Examen sur table) et Évaluations pratiques (Performances athlétiques, Barèmes sportifs, Conduite de séance pédagogique).
+   - Les colonnes de notes (`NoteModuleColonne`) portent un intitulé, un coefficient et une note maximale (généralement /20).
+   - Piste d'audit des corrections : Toute modification d'une note déjà enregistrée requiert la saisie d'un motif obligatoire et génère un enregistrement immuable dans `CorrectionNoteModule` avec trace de l'ancienne valeur, de la nouvelle valeur et de l'utilisateur.
+2. Tâches Techniques à Réaliser :
+   a) Backend (Django) :
+      - Valider les modèles `NoteModule`, `NoteModuleColonne`, `NoteModuleSynthese`, `CorrectionNoteModule` et `NotificationModificationNote`.
+      - Implémenter le calcul automatique de la moyenne de module/ECUE selon la formule pondérée :
+        `Moyenne = SUM(Note_i * Coeff_i) / SUM(Coeff_i)`.
+      - Verrouillage des notes : Empêcher toute modification dès lors que la session de jury associée a débuté.
+   b) Frontend (React) :
+      - Dans `pages/NotesModule.jsx` : grille de saisie rapide de type tableur, calcul instantané des moyennes, modal de justification lors de la modification d'une note existante.
+   c) Tests :
+      - Exécuter `formations/tests/test_notes_workflow.py`, `test_note_notifications.py`, `test_notes_fiche_export.py`.
+```
+====================================================================================================
+PROMPT 08 : MOTEUR DE JURYS LMD, CALCUL DE COMPENSATION ECTS & DÉLIBÉRATIONS NUMÉRIQUES (PV)
+====================================================================================================
+```text
+Tu es l'architecte expert en algorithmes de jurys universitaires CAMES/REESAO.
+Mission : Finaliser le moteur de calcul ECTS, de délibération des jurys LMD et de génération des Procès-Verbaux (PV) inaltérables (`backend/jurys/`).
+1. Règles de Délibération LMD :
+   - Validation d'ECUE : Note >= 10/20.
+   - Validation d'UE par Compensation : Moyenne pondérée des ECUE de l'UE >= 10/20 (à condition qu'aucun ECUE n'ait une note inférieure à la note éliminatoire fixée à 05/20).
+   - Attribution des Crédits ECTS : Toute UE validée confère l'intégralité de ses crédits ECTS associés (Capitalisation définitive).
+   - Validation du Semestre : Moyenne semestrielle >= 10/20 et obtention des 30 crédits ECTS.
+   - Décisions de Jury : ADMIS (Session normale), AJOURNÉ (Rattrapage requis), ADMIS PAR COMPENSATION, EXCLU.
+2. Tâches Techniques à Réaliser :
+   a) Backend (Django) :
+      - Valider le moteur de calcul dans `jurys/services.py` (`test_moteur_ects.py`).
+      - Implémenter le workflow des sessions de jurys : CONVOQUEE -> EN_DELIBERATION -> VALIDEE -> PV_EMIS.
+      - Générer le Procès-Verbal officiel inaltérable au format PDF via ReportLab avec liste des membres du jury, statistiques de réussite et signatures numérisées.
+   b) Frontend (React) :
+      - Dans `pages/scolarite/Jurys.jsx` : interface de délibération collégiale en temps réel affichant les moyennes calculées, les crédits ECTS obtenus et permettant au président de jury de valider les décisions.
+   c) Tests :
+      - Exécuter `jurys/tests/test_moteur_ects.py`, `test_workflow_api.py`.
+```
+====================================================================================================
+PROMPT 09 : DIPLÔMATION, REGISTRE DES DIPLÔMES & ÉDITION DES ACTES ACADÉMIQUES OFFICIELS
+====================================================================================================
+```text
+Tu es le développeur full-stack senior expert en génération documentaire et sécurisation des diplômes.
+Mission : Implémenter et relier l'application de diplomation (`backend/graduation/`) avec le registre officiel des diplômes de l'INJS Marcory.
+1. Actes Académiques Officiels :
+   - Diplômes d'État : Licence STAPS, Master STAPS, Certificat d'Aptitude au Professorat d'EPS (CAPEPS), Diplôme de Conseiller de Jeunesse.
+   - Attestations provisoires de réussite.
+   - Relevés de notes officiels semestriels et annuels avec détail des crédits ECTS et mentions (Passable, Assez Bien, Bien, Très Bien).
+   - Registre National des Diplômes : Numéro de série unique national infalsifiable, date d'enregistrement, archivage pérenne.
+2. Tâches Techniques à Réaliser :
+   a) Backend (Django) :
+      - Valider les modèles `graduation.Diplome`, `Reedition`, `RegistreDiplomes`, `ModeleDocument`.
+      - Vérifier la règle de cohérence : Un diplôme ne peut être délivré que si la décision du jury final est `ADMIS` et que les 180 crédits (Licence) ou 120 crédits (Master) sont validés.
+      - Générer les documents PDF haute fidélité avec QR Code de vérification publique d'authenticité.
+   b) Frontend (React) :
+      - Dans `pages/scolarite/Graduation.jsx` : interface de consultation du registre, recherche d'un diplômé par matricule ou numéro d'acte, déclenchement de l'impression sécurisée.
+   c) Tests :
+      - Exécuter `graduation/tests/test_diplomes.py`.
+```
+====================================================================================================
+PROMPT 10 : GESTION FINANCIÈRE DUALE (FRAIS DE SCOLARITÉ ÉTUDIANTS VS VACATIONS FORMATEURS)
+====================================================================================================
+```text
+Tu es l'architecte logiciel expert en gestion financière universitaire.
+Mission : Valider et cloisonner les deux volets financiers de l'application (`finances_etudiantes` pour les étudiants et `formations.FinanceSettings` pour les formateurs).
+1. Spécifications du Volet 1 : Finances Étudiantes LMD (`finances_etudiantes`) :
+   - Tarifications selon le régime (Étudiant ivoirien régulier, Candidat non-ivoirien, Formation continue).
+   - Échéanciers de paiement (`Echeancier`, `LigneEcheancier`), enregistrement des paiements (`Paiement`), génération automatique de quittances numérotées (`Quittance`).
+   - Règle de blocage : Possibilité de bloquer l'édition des attestations ou l'accès aux examens en cas de non-solde des frais de scolarité (`StatutEtudiant.bloque_inscription`).
+2. Spécifications du Volet 2 : Vacations & Honoraires des Formateurs (`formations.Finance*`) :
+   - Calcul des honoraires basé sur le volume horaire réel certifié par les scans QR de présence.
+   - Tolérances horaires paramétrables (`FinanceSettings.tolerance`).
+   - Workflow d'ajustements (`FinanceAjustement` : PROPOSE -> VALIDE / REJETE).
+   - Sécurité des données sensibles : Masquage des coordonnées bancaires des formateurs pour les rôles non autorisés.
+3. Tâches Techniques à Réaliser :
+   a) Backend & Frontend :
+      - Valider les routes `/api/scolarite/finances/` et `/api/formations/finance/`.
+      - Vérifier que `FinancesEtudiantes.jsx` et `FinanceDashboard.jsx` sont bien séparés dans les menus de la sidebar.
+   b) Tests :
+      - Exécuter `finances_etudiantes/tests/test_paiements.py` et les tests finance de `formations`.
+```
+====================================================================================================
+PROMPT 11 : ADMINISTRATION GÉNÉRALE, GESTION RH & PATRIMOINE DES ÉQUIPEMENTS SPORTIFS
+====================================================================================================
+```text
+Tu es le développeur backend et frontend senior.
+Mission : Finaliser l'intégration des modules de moyens généraux, de gestion des agents et du patrimoine matériel de l'INJS Marcory (`administrations`, `ressources_humaines`, `patrimoine`).
+1. Enjeux Spécifiques aux Équipements de l'INJS :
+   - Matériel sportif lourd et consommable : Chronomètres électroniques, tapis de gymnastique, plots, ballons, matériel de musculation, perches de saut, équipements nautiques.
+   - Suivi des maintenances préventives et curatives des infrastructures (Piscine, Piste, Gymnases).
+   - Gestion des agents de l'INJS : Corps professoral, encadreurs sportifs, personnel administratif et technique.
+2. Tâches Techniques à Réaliser :
+   a) Backend (Django) :
+      - Valider les modèles `patrimoine.Equipement`, `Inventaire`, `Maintenance`, `ressources_humaines.Agent`, `administrations.Courrier`, `stages.ConventionStage`.
+      - Exposer les API REST associées sous contrôle RBAC strict (réservé ADMIN, DIRECTION, SECRETARIAT).
+   b) Frontend (React) :
+      - Lier les routes dans `App.jsx` et vérifier que les écrans d'administration répondent sans erreur 404 ni régression de style.
+   c) Tests :
+      - Exécuter `administrations/tests/test_administrations.py`, `ressources_humaines/tests/test_rh.py`, `patrimoine/tests/test_patrimoine.py`, `stages/tests/test_workflow.py`.
+```
+====================================================================================================
+PROMPT 12 : TABLEAUX DE BORD DE DIRECTION, STATISTIQUES LMD & ALERTES DÉCISIONNELLES
+====================================================================================================
+```text
+Tu es le lead data engineer et expert UX en tableaux de bord décisionnels universitaires.
+Mission : Parachever le sous-système de statistiques, d'indicateurs de pilotage LMD et d'alertes décisionnelles pour la Direction Générale de l'INJS et la DFRC (`backend/statistiques/`).
+1. Indicateurs Stratégiques LMD de l'INJS Marcory :
+   - Taux d'assiduité global et par filière (STAPS vs Jeunesse).
+   - Taux de réussite semestriel par UE / ECUE et par cohorte.
+   - Taux d'exécution du volume horaire statutaire par département.
+   - Alertes de seuils paramétrables (`ConfigAlerteSeuil`) : Seuil critique d'absence (> 20%), Seuil de saturation des groupes de pratique (> 25 étudiants).
+   - Édition automatique du "Point Journalier de Présence" et du "Bilan Semestriel FAC".
+2. Tâches Techniques à Réaliser :
+   a) Backend (Django) :
+      - Optimiser les requêtes d'agrégation SQL pour garantir des temps de réponse < 200ms sur les endpoints de stats.
+      - Valider le workflow de signature électronique des rapports (`SignatureRapport`).
+      - Générer les exports officiels PDF et Excel des bilans de scolarité.
+   b) Frontend (React) :
+      - Dans `pages/Statistiques.jsx` et `pages/Dashboard.jsx` : graphiques interactifs (Recharts / Chart.js), jauges de présence temps réel, filtres par période (Jour, Semaine, Mois, Année) et par secrétariat.
+   c) Tests :
+      - Exécuter l'ensemble des tests du module `statistiques/tests/`.
+      - Lancer la suite complète des 890 tests Django pour attester de la conformité totale de la plateforme :
+        `python manage.py test`
+```
+====================================================================================================
+FIN DE LA SUITE DE PROMPTS — INJS-LMD 2026
+====================================================================================================

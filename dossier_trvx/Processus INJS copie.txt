@@ -1,0 +1,3122 @@
+################################################################################
+#                                                                              #
+#   RÉFÉRENTIEL FONCTIONNEL INJS-LMD 2026                                      #
+#   Institut National de la Jeunesse et des Sports — Côte d'Ivoire             #
+#   Système de Gestion Académique Licence / Master / Doctorat                  #
+#                                                                              #
+#   Document : Processus INJS.txt                                              #
+#   Niveau   : Documentation de production (référentiel métier + écarts)       #
+#   Périmètre: Tableaux de bord Étudiant / Professeur / Administration         #
+#   Cycle    : Préinscription → Diplomation                                    #
+#                                                                              #
+#   Légende des statuts :                                                      #
+#     [OK]        Fonctionnalité opérationnelle (API + UI connectées)          #
+#     [PARTIEL]   Backend et/ou UI présents mais incomplets / mock             #
+#     [MANQUANT]  Non implémenté ou UI purement décorative                     #
+#     [API_ONLY]  Disponible côté API, non exposé (ou partiellement) au FE     #
+#                                                                              #
+################################################################################
+
+SOMMAIRE
+--------
+0.  Cadre institutionnel, architecture et comptes de test
+1.  Matrice de couverture globale (cycle LMD)
+TOME 1 — Parcours complet de l'Étudiant (chapitres 1 à 30)
+TOME 2 — Parcours complet du Professeur
+TOME 3 — Parcours complet de l'Administration
+4.  Synthèse des insuffisances critiques
+5.  Plan de mise à niveau pour atteindre 100 % d'exploitabilité
+6.  Scénarios de tests de recette (dashboards)
+7.  Glossaire LMD / INJS
+
+
+================================================================================
+0. CADRE INSTITUTIONNEL, ARCHITECTURE ET COMPTES DE TEST
+================================================================================
+
+Institution
+  - INJS Abidjan / UFR STAPS-JL — Université Félix Houphouët-Boigny
+  - Année académique de référence seed : 2025-2026
+  - Référentiels importés : maquette STAPS 2026 (UE/ECUE), nomenclature emplois
+
+Architecture runtime
+  - Backend : Django 5 + DRF — http://127.0.0.1:8001  (Swagger /api/v1/docs/)
+  - Frontend : React + Vite — http://127.0.0.1:5173
+  - Infra : PostgreSQL, Redis, RabbitMQ, MinIO (Docker) ; SQLite possible en local
+  - Auth : JWT (+ MFA TOTP optionnel), RBAC par modules (5 niveaux de groupes)
+
+Rôles frontend (dérivés de group_level backend)
+  - group_level ≤ 2  → rôle UI "admin"
+  - group_level = 3  → rôle UI "professeur"
+  - sinon            → rôle UI "etudiant"
+
+Comptes démo (mot de passe unique : Demo@INJS2026!)
+  - admin@demo.injs.ci          Super Admin
+  - scolarite@demo.injs.ci      Responsable Scolarité
+  - prof.martin@demo.injs.ci    Enseignant
+  - etudiant1@demo.injs.ci      Étudiant L1 STAPS-PL, spécialité APA, matricule INJS20250001
+
+Exemple fil conducteur utilisé dans tout le document
+  Étudiant : KOUASSI Jean (email etudiant1@demo.injs.ci)
+  Matricule : INJS20250001 | Promotion L1-2025 | Filière L-STAPS-PL | Spécialité APA
+  Frais d'inscription : 150 000 XOF (type INSCRIPTION-2025)
+  Enseignant référent seed : Prof. Martin (ENS001)
+
+
+================================================================================
+1. MATRICE DE COUVERTURE GLOBALE DU CYCLE LMD
+================================================================================
+
+Phase                           | Backend API      | FE Étudiant | FE Prof | FE Admin | Verdict
+--------------------------------|------------------|------------|---------|----------|--------
+Création compte / Auth          | OK               | OK         | OK      | OK       | OK
+Préinscription                  | PARTIEL (CRUD)   | MANQUANT   | —       | MANQUANT | CRITIQUE
+Dépôt pièces                    | PARTIEL docs     | PARTIEL    | —       | PARTIEL  | CRITIQUE
+Vérification administrative     | PARTIEL approve  | MANQUANT   | —       | PARTIEL  | ÉLEVÉ
+Paiement frais                  | PARTIEL sandbox  | MANQUANT   | —       | MOCK     | CRITIQUE
+Validation inscription          | PARTIEL          | PARTIEL    | —       | PARTIEL  | ÉLEVÉ
+Matricule                       | MANUEL / seed    | LECTURE    | —       | PARTIEL  | ÉLEVÉ
+Promotion / filière / parcours  | OK modèles       | PARTIEL    | —       | PARTIEL  | MOYEN
+Choix UE pédagogiques           | MANQUANT flux    | MOCK       | —       | MANQUANT | CRITIQUE
+Emploi du temps                 | OK               | PARTIEL    | MOCK    | PARTIEL  | MOYEN
+Carte étudiant / QR             | OK               | PARTIEL    | —       | OK badge | OK/PARTIEL
+Présences                       | OK QR            | OK checkin | OK      | OK       | OK
+Ressources pédagogiques         | PARTIEL library  | MOCK       | MOCK    | MANQUANT | ÉLEVÉ
+Devoirs / Quiz                  | MANQUANT         | MANQUANT   | MOCK    | MANQUANT | CRITIQUE
+Examens / Notes                 | OK + moteur LMD  | OK lecture | MOCK    | MOCK     | ÉLEVÉ
+Compensation / crédits          | OK moteur        | NON UI     | NON UI  | NON UI   | API_ONLY
+Rattrapages                     | PARTIEL session  | MANQUANT   | MANQUANT| MANQUANT | ÉLEVÉ
+Délibération / Jury             | OK API           | MANQUANT   | MANQUANT| MANQUANT | API_ONLY
+Relevé / Attestations / Diplôme | PARTIEL PDF      | MOCK toast | —       | MOCK     | CRITIQUE
+Réclamations                    | MANQUANT         | MANQUANT   | MANQUANT| MANQUANT | CRITIQUE
+Stage / Soutenance              | PARTIEL Defense  | MOCK       | MOCK    | MOCK     | CRITIQUE
+Archivage / Audit               | PARTIEL          | —          | —       | PARTIEL  | MOYEN
+
+Conclusion : le noyau académique (référentiel STAPS, notes, moteur LMD, présences QR,
+auth RBAC) est solide. Le "glue" de cycle de vie (préinscription → paiement →
+inscription pédagogique → progression annuelle → diplomation) et la majorité des
+écrans Professeur / certains Admin restent à brancher pour une exploitation 100 %.
+
+################################################################################
+# TOME 1 — PARCOURS COMPLET DE L'ÉTUDIANT                                      #
+# Route de base UI : /etudiant                                                 #
+# Menu : Dashboard, Parcours, Notes, Cours, EDT, Stages, Documents,            #
+#        Inscriptions, Badgeage                                                #
+################################################################################
+
+================================================================================
+CHAPITRE 1 — Création du compte
+Statut d'implémentation : [PARTIEL]
+================================================================================
+
+1. Objectif
+Permettre à un usager d'obtenir un compte authentifié (email + mot de passe) pour
+accéder au portail selon son rôle. Aujourd'hui la création est principalement
+administrative (seed / admin Django / API users) ; l'auto-inscription publique
+n'est pas exposée sur le frontend.
+
+2. Acteurs concernés
+- Candidat / Étudiant (futur)
+- Scolarité / Super Admin (création)
+- Système (JWT, MFA optionnel)
+
+3. Prérequis
+- Email institutionnel ou personnel unique
+- Politique de mot de passe respectée
+- Groupe RBAC attribué (sinon rôle étudiant par défaut côté mapping UI)
+
+4. Processus détaillé
+Étape A — Création administrative (existant)
+  1. Admin appelle POST /api/v1/auth/users/ ou utilise Django Admin / seed_injs_demo
+  2. User créé avec email, noms, groupe, flags is_active
+  3. Optionnel : must_change_password, enable_mfa
+
+Étape B — Première connexion (existant)
+  1. GET /login → saisie email/password
+  2. POST /api/v1/auth/login/
+  3. Si mfa_required → saisie TOTP → POST /api/v1/auth/mfa/verify/
+  4. Stockage access/refresh tokens + user localStorage
+  5. Redirection vers /{role} (etudiant|professeur|admin)
+
+Étape C — Self-service (MANQUANT)
+  - Formulaire public "Créer mon compte" lié à une campagne d'admission
+
+5. Écrans concernés
+- FE : /login (Login.jsx) — OK
+- FE : aucun écran /register — MANQUANT
+- API : POST /auth/login/, /auth/mfa/verify/, /auth/me/, CRUD /auth/users/
+
+6. Données manipulées
+User (email, password hash, first_name, last_name, groups, mfa_*, institution)
+Tokens JWT access/refresh
+
+7. Contrôles automatiques
+- Email unique
+- is_active=True requis pour login
+- MFA si mfa_enabled
+- Rafraîchissement token sur 401
+
+8. Règles LMD
+N/A (étape préalable au LMD)
+
+9. Cas particuliers / exceptions
+- Compte désactivé → 401
+- MFA activé sans code → mfa_required
+- Mauvais mot de passe → message "Aucun compte actif..." 
+
+10. Notifications
+Aucune notification automatique à la création (à prévoir : email de bienvenue).
+
+11. Droits d'accès
+Création users : niveaux ≤2 (admin/direction/responsables)
+Login : public
+Lecture /me : authentifié
+
+12. Exemple concret INJS
+etudiant1@demo.injs.ci / Demo@INJS2026! → rôle etudiant → /etudiant
+
+13. Critères de validation (UAT / tests)
+UAT-E1-01 : login admin OK
+UAT-E1-02 : login étudiant OK et redirection /etudiant
+UAT-E1-03 : mauvais password → erreur claire
+UAT-E1-04 : MFA (si activé) bloque sans code
+
+14. Insuffisances / à parfaire
+MANQUANT : self-registration, vérification email, reset password UI, CGU.
+À PARFAIRE : brancher hasPermission sur les écrans ; forcer must_change_password.
+
+================================================================================
+CHAPITRE 2 — Préinscription
+Statut d'implémentation : [MANQUANT] UI / [PARTIEL] API
+================================================================================
+
+1. Objectif
+Collecter la candidature d'un futur étudiant dans le cadre d'une campagne
+d'admission (pièces, filière souhaitée, coordonnées) avant tout paiement.
+
+2. Acteurs concernés
+Candidat, Scolarité, Direction des Études
+
+3. Prérequis
+Campagne d'admission ouverte (AdmissionCampaign.active)
+
+4. Processus détaillé
+Cible métier :
+  1. Candidat ouvre campagne → crée PreRegistration
+  2. Remplit identité, filière, documents
+  3. Soumet → statut "soumis"
+  4. Scolarité instruit
+
+Existant API :
+  CRUD /api/v1/admissions/campaigns/
+  CRUD /api/v1/admissions/pre-registrations/
+  Aucune action accept/reject/convert-to-student
+
+5. Écrans concernés
+Aucun écran FE dédié (ni étudiant ni admin).
+
+6. Données manipulées
+AdmissionCampaign, PreRegistration (+ champs statut, programme souhaité)
+
+7. Contrôles automatiques
+À implémenter : dates campagne, capacité, unicité email/candidature
+
+8. Règles LMD
+N/A avant inscription
+
+9. Cas particuliers / exceptions
+Candidature hors délai, doublon, capacité atteinte
+
+10. Notifications
+Email "dossier reçu" / "dossier incomplet" — MANQUANT
+
+11. Droits d'accès
+create admissions : scolarité ; view : candidat (propre dossier)
+
+12. Exemple concret INJS
+Campagne "Rentrée L1 STAPS 2026" — KOUASSI Jean dépose préinscription L-STAPS-PL APA
+
+13. Critères de validation (UAT / tests)
+UAT-E2-01 créer campagne
+UAT-E2-02 déposer préinscription
+UAT-E2-03 refuser hors période
+
+14. Insuffisances / à parfaire
+CRITIQUE : pas de workflow acceptation → User/Student/Enrollment.
+MANQUANT : UI publique + back-office d'instruction.
+
+================================================================================
+CHAPITRE 3 — Dépôt des pièces
+Statut d'implémentation : [PARTIEL]
+================================================================================
+
+1. Objectif
+Permettre le dépôt et le suivi des pièces administratives (CNI, diplôme,
+photos, certificat médical, etc.) nécessaires à l'inscription.
+
+2. Acteurs concernés
+Étudiant/Candidat, Scolarité
+
+3. Prérequis
+Compte actif ou préinscription ouverte ; catégories documentaires définies
+
+4. Processus détaillé
+API Documents : CRUD /api/v1/documents/categories/ et /api/v1/documents/
+FE Étudiant /etudiant/documents : liste dynamique par semestre mais téléchargement
+en toast démo uniquement (pas d'upload réel branché au parcours d'admission).
+
+5. Écrans concernés
+/etudiant/documents — PARTIEL
+Admin : pas d'écran "pièces à valider" dédié
+
+6. Données manipulées
+DocumentCategory, Document (fichier, is_signed, signature_hash non utilisés)
+
+7. Contrôles automatiques
+Type MIME, taille max, checklist obligatoire — à formaliser
+
+8. Règles LMD
+N/A
+
+9. Cas particuliers / exceptions
+Pièce illisible, format refusé, fausse pièce
+
+10. Notifications
+"Pièce reçue / rejetée" — MANQUANT
+
+11. Droits d'accès
+Étudiant : upload propres docs ; Scolarité : validate
+
+12. Exemple concret INJS
+Jean dépose CNI + bac + photo pour L1 2025-2026
+
+13. Critères de validation (UAT / tests)
+UAT-E3-01 upload PDF OK
+UAT-E3-02 rejet format
+UAT-E3-03 checklist incomplète bloque validation
+
+14. Insuffisances / à parfaire
+MANQUANT : checklist liée à PreRegistration/Enrollment.
+Signature électronique (champs présents, endpoints absents).
+
+================================================================================
+CHAPITRE 4 — Vérification administrative
+Statut d'implémentation : [PARTIEL]
+================================================================================
+
+1. Objectif
+Contrôler la conformité du dossier (identité, pièces, éligibilité) et
+approuver l'inscription administrative.
+
+2. Acteurs concernés
+Scolarité, Responsable Licence, Direction
+
+3. Prérequis
+Préinscription/dossier soumis + pièces
+
+4. Processus détaillé
+API : POST /api/v1/students/enrollments/{id}/approve/
+Modèle Enrollment (type administrative | pedagogical)
+FE Admin : inscription via Students.jsx (enrollStudent) — OK partiel
+Pas d'écran de file d'attente "dossiers à vérifier".
+
+5. Écrans concernés
+/admin/etudiants (+ modal inscription)
+Manquant : /admin/admissions ou /admin/dossiers
+
+6. Données manipulées
+Enrollment.status, Student, User, documents liés
+
+7. Contrôles automatiques
+Statut transitionnel, audit log sur mutations API
+
+8. Règles LMD
+N/A
+
+9. Cas particuliers / exceptions
+Dossier incomplet → refus ; doublon matricule
+
+10. Notifications
+Notifier étudiant accepté/refusé — MANQUANT
+
+11. Droits d'accès
+approve : responsables (level ≤2) + permissions module students
+
+12. Exemple concret INJS
+Scolarité approuve enrollment de Jean → statut actif
+
+13. Critères de validation (UAT / tests)
+UAT-E4-01 approve enrollment
+UAT-E4-02 refuse si pièce manquante (à coder)
+UAT-E4-03 audit trail visible
+
+14. Insuffisances / à parfaire
+À PARFAIRE : workflow multi-niveaux, motifs de refus, checklist bloquante.
+
+================================================================================
+CHAPITRE 5 — Paiement des frais
+Statut d'implémentation : [MANQUANT] FE / [PARTIEL] API
+================================================================================
+
+1. Objectif
+Encaisser les frais d'inscription/scolarité (mobile money, carte, espèces)
+avant validation définitive de l'inscription.
+
+2. Acteurs concernés
+Étudiant, Comptable, Système PSP
+
+3. Prérequis
+StudentFee généré (seed : INSCRIPTION-2025 = 150 000 XOF)
+
+4. Processus détaillé
+API :
+  GET /finance/fee-types/, /finance/student-fees/
+  POST /finance/payments/initiate/, /payments/{id}/verify/
+  Webhooks orange/mtn/wave
+Providers : orange (réel si clé), autres souvent sandbox ; cash/bank non mappés
+FE Admin /admin/finances : tableau MOCK
+FE Étudiant : aucun écran paiement
+
+5. Écrans concernés
+/admin/finances — MOCK
+Manquant : /etudiant/paiements
+
+6. Données manipulées
+FeeType, StudentFee, PaymentTransaction, PaymentProviderConfig
+
+7. Contrôles automatiques
+Montant, devise XOF, idempotence initiate, verify
+
+8. Règles LMD
+Paiement des frais peut être prérequis métier d'inscription (non branché)
+
+9. Cas particuliers / exceptions
+Timeout PSP, double paiement, remboursement
+
+10. Notifications
+SMS/email reçu de paiement — MANQUANT
+
+11. Droits d'accès
+Étudiant : initiate/verify ses fees ; finance : view/export
+
+12. Exemple concret INJS
+Jean paie 150 000 XOF via Orange Money sandbox → fee paid
+
+13. Critères de validation (UAT / tests)
+UAT-E5-01 initiate Orange
+UAT-E5-02 verify success
+UAT-E5-03 webhook
+UAT-E5-04 bloquer inscription si unpaid (cible)
+
+14. Insuffisances / à parfaire
+CRITIQUE : brancher UI paiement étudiant + gating inscription.
+À PARFAIRE : cash/bank, reconcilation comptable, reçus PDF.
+
+================================================================================
+CHAPITRE 6 — Validation de l'inscription
+Statut d'implémentation : [PARTIEL]
+================================================================================
+
+1. Objectif
+Confirmer officiellement l'inscription administrative (et ultérieurement
+pédagogique) pour l'année en cours.
+
+2. Acteurs concernés
+Scolarité, Étudiant
+
+3. Prérequis
+Dossier OK + (cible) paiement OK
+
+4. Processus détaillé
+Enrollment.type=administrative approuvé
+Enrollment.type=pedagogical existe en modèle sans flux UI dédié
+FE /etudiant/inscriptions : liste API des enrollments + cartes semestres ;
+bouton réinscription désactivé
+
+5. Écrans concernés
+/etudiant/inscriptions — PARTIEL
+/admin/etudiants — PARTIEL
+
+6. Données manipulées
+Enrollment, AcademicYear, Program, Promotion
+
+7. Contrôles automatiques
+Une inscription admin active / année
+
+8. Règles LMD
+Inscription pédagogique ne doit pas dépasser charge crédit max (non codé)
+
+9. Cas particuliers / exceptions
+Réinscription, mutation, redoublement
+
+10. Notifications
+"Inscription validée" — MANQUANT
+
+11. Droits d'accès
+students.approve / students.create
+
+12. Exemple concret INJS
+Jean voit son enrollment 2025-2026 validé sur /etudiant/inscriptions
+
+13. Critères de validation (UAT / tests)
+UAT-E6-01 voir enrollment
+UAT-E6-02 empêcher double inscription admin
+UAT-E6-03 réinscription année suivante
+
+14. Insuffisances / à parfaire
+MANQUANT : réinscription, gating paiement, inscription pédagogique UE.
+
+================================================================================
+CHAPITRE 7 — Attribution du matricule
+Statut d'implémentation : [PARTIEL]
+================================================================================
+
+1. Objectif
+Attribuer un identifiant unique permanent à l'étudiant (ex. INJS20250001).
+
+2. Acteurs concernés
+Scolarité / Système
+
+3. Prérequis
+Inscription administrative validée
+
+4. Processus détaillé
+Champ Student.matricule (unique). Seed génère INJS2025{NNNN}.
+Aucun service d'auto-génération documenté/exposé.
+QR étudiant généré à la sauvegarde : INJS:{matricule}:{id}
+
+5. Écrans concernés
+Visible dans panels étudiants / card API ; pas d'écran "attribuer matricule".
+
+6. Données manipulées
+Student.matricule, qr_code
+
+7. Contrôles automatiques
+Unicité DB
+
+8. Règles LMD
+N/A
+
+9. Cas particuliers / exceptions
+Réattribution interdite ; conflit unicité
+
+10. Notifications
+Notifier matricule attribué — MANQUANT
+
+11. Droits d'accès
+Admin students.update
+
+12. Exemple concret INJS
+Jean → INJS20250001
+
+13. Critères de validation (UAT / tests)
+UAT-E7-01 unicité
+UAT-E7-02 format officiel (règle à figer)
+UAT-E7-03 QR cohérent
+
+14. Insuffisances / à parfaire
+À PARFAIRE : algorithme officiel (année+filière+compteur), impression carte.
+
+================================================================================
+CHAPITRE 8 — Attribution de la promotion
+Statut d'implémentation : [OK] modèles / [PARTIEL] UI
+================================================================================
+
+1. Objectif
+Rattacher l'étudiant à une promotion (ex. L1-2025).
+
+2. Acteurs concernés
+Scolarité
+
+3. Prérequis
+Program + AcademicYear existants
+
+4. Processus détaillé
+Modèle Promotion ; seed L1-2025 / L3-2023
+Affectation via Student / Enrollment lors de l'enroll admin
+
+5. Écrans concernés
+Admin Students (détail) ; Formations UI mock ne gère pas les promotions
+
+6. Données manipulées
+Promotion, Student.promotion
+
+7. Contrôles automatiques
+Cohérence programme/année
+
+8. Règles LMD
+Promotion = cohorte de progression LMD
+
+9. Cas particuliers / exceptions
+Changement de promotion (réorientation)
+
+10. Notifications
+—
+
+11. Droits d'accès
+students.update, academics.promotions
+
+12. Exemple concret INJS
+Jean → promotion L1-2025
+
+13. Critères de validation (UAT / tests)
+UAT-E8-01 affecter promotion
+UAT-E8-02 lister étudiants par promotion
+
+14. Insuffisances / à parfaire
+UI admin promotions CRUD à exposer (API existe).
+
+================================================================================
+CHAPITRE 9 — Choix de la filière
+Statut d'implémentation : [OK] référentiel / [PARTIEL] parcours UI
+================================================================================
+
+1. Objectif
+Sélectionner la filière (Program) : L-STAPS-PL, L-STAPS-PC, M-STAPS...
+
+2. Acteurs concernés
+Étudiant (souhait), Scolarité (validation)
+
+3. Prérequis
+Programmes importés maquette
+
+4. Processus détaillé
+API /academics/programs/
+Affectation actuelle surtout administrative
+FE Formations = cartes statiques ; Parcours étudiant = catalogues mock enrichis
+
+5. Écrans concernés
+/admin/formations — MOCK
+/etudiant/parcours — PARTIEL mock
+
+6. Données manipulées
+Program (degree L/M/D, track PL/PC)
+
+7. Contrôles automatiques
+Code programme unique
+
+8. Règles LMD
+Filière détermine UE via ProgramCourse
+
+9. Cas particuliers / exceptions
+Changement PL↔PC
+
+10. Notifications
+—
+
+11. Droits d'accès
+academics.view/update ; students.update
+
+12. Exemple concret INJS
+Jean : L-STAPS-PL (Professeur de Lycée et Collège)
+
+13. Critères de validation (UAT / tests)
+UAT-E9-01 lister programmes
+UAT-E9-02 rattacher étudiant
+
+14. Insuffisances / à parfaire
+Brancher Formations.jsx sur fetchPrograms ; workflow de choix étudiant.
+
+================================================================================
+CHAPITRE 10 — Choix du parcours / spécialité
+Statut d'implémentation : [OK] API / [PARTIEL] UI
+================================================================================
+
+1. Objectif
+Choisir la spécialité STAPS : TC, EM, ES, MS, APA.
+
+2. Acteurs concernés
+Étudiant, Scolarité, Responsable Licence
+
+3. Prérequis
+Program L-STAPS-* + Specialization
+
+4. Processus détaillé
+API /academics/specializations/
+Career path : GET /students/{id}/career_path/ → nomenclature emplois
+Seed : Jean = APA
+
+5. Écrans concernés
+Parcours étudiant affiche spécialités mock ; career_path API peu exposée FE
+
+6. Données manipulées
+Specialization, StapsJobNomenclature, Student.specialization
+
+7. Contrôles automatiques
+Spécialité compatible programme
+
+8. Règles LMD
+Spécialité filtre ProgramCourse optionnels
+
+9. Cas particuliers / exceptions
+Réorientation semestre impair
+
+10. Notifications
+—
+
+11. Droits d'accès
+students + academics
+
+12. Exemple concret INJS
+Jean APA → emplois nomenclature grade A3/A4 liés CAPS/CAPEPS selon règles
+
+13. Critères de validation (UAT / tests)
+UAT-E10-01 choisir APA
+UAT-E10-02 career_path cohérent
+
+14. Insuffisances / à parfaire
+Exposer career_path et choix spécialité guidé dans /etudiant/parcours.
+
+================================================================================
+CHAPITRE 11 — Choix des UE
+Statut d'implémentation : [MANQUANT] flux pédagogique
+================================================================================
+
+1. Objectif
+Inscrire l'étudiant aux UE/ECUE du semestre (obligatoires + options).
+
+2. Acteurs concernés
+Étudiant, Scolarité
+
+3. Prérequis
+Inscription admin validée + semestre ouvert
+
+4. Processus détaillé
+Référentiel UE/ECUE OK (TeachingUnit, Course, ProgramCourse)
+API academics CRUD teaching-units/courses
+Aucun endpoint "inscription pédagogique aux UE" ni prérequis/crédits max
+FE /etudiant/cours liste UE semestre via API mais sans filtrage programme étudiant
+ni inscription
+
+5. Écrans concernés
+/etudiant/cours — lecture seule PARTIEL
+/admin/ue — CRUD OK
+
+6. Données manipulées
+TeachingUnit, Course, ProgramCourse
+
+7. Contrôles automatiques
+À implémenter : crédits min/max, prérequis, conflits EDT
+
+8. Règles LMD
+UE validée antérieurement, capitalisation crédits
+
+9. Cas particuliers / exceptions
+UE non offerte à la spécialité
+
+10. Notifications
+Confirmation inscription UE — MANQUANT
+
+11. Droits d'accès
+Étudiant view ; scolarité approve pédagogique
+
+12. Exemple concret INJS
+Jean S1 : UE de la maquette L1 PL APA
+
+13. Critères de validation (UAT / tests)
+UAT-E11-01 inscrire UE obligatoires auto
+UAT-E11-02 refuser dépassement crédits
+UAT-E11-03 prérequis
+
+14. Insuffisances / à parfaire
+CRITIQUE pour cycle LMD complet : créer Enrollment pédagogique / StudentCourse.
+
+================================================================================
+CHAPITRE 12 — Emploi du temps
+Statut d'implémentation : [PARTIEL]
+================================================================================
+
+1. Objectif
+Consulter l'emploi du temps hebdomadaire (cours, salles, enseignants).
+
+2. Acteurs concernés
+Étudiant, Enseignant, Scolarité
+
+3. Prérequis
+Schedules + Assignments créés
+
+4. Processus détaillé
+API /faculty/schedules/, /assignments/, /rooms/
+FE /etudiant/emploi-du-temps : préfère API, fallback mock EMPLOI_DU_TEMPS
+Attention : mapping weekday Django vs UI à vérifier
+FE Professeur : mock
+
+5. Écrans concernés
+/etudiant/emploi-du-temps
+Manquant admin EDT graphique
+
+6. Données manipulées
+Schedule, Room, CourseAssignment
+
+7. Contrôles automatiques
+Chevauchement salle/enseignant — non détecté
+
+8. Règles LMD
+N/A
+
+9. Cas particuliers / exceptions
+Cours annulé / rattrapage horaire
+
+10. Notifications
+Rappel cours J-1 — MANQUANT
+
+11. Droits d'accès
+view schedules authentifié contextual
+
+12. Exemple concret INJS
+Jean : lundi/mercredi cours Prof. Martin (seed)
+
+13. Critères de validation (UAT / tests)
+UAT-E12-01 affichage semaine
+UAT-E12-02 fallback si vide
+UAT-E12-03 conflit salle (cible)
+
+14. Insuffisances / à parfaire
+Corriger mapping jours ; éditeur admin ; filtres étudiant/promo.
+
+================================================================================
+CHAPITRE 13 — Carte d'étudiant
+Statut d'implémentation : [OK] API / [PARTIEL] UI
+================================================================================
+
+1. Objectif
+Disposer d'une carte numérique (identité, matricule, filière, QR).
+
+2. Acteurs concernés
+Étudiant, Scolarité
+
+3. Prérequis
+Student avec matricule + photo optionnelle
+
+4. Processus détaillé
+GET /students/{id}/card/
+QR auto généré
+FE badgeage utilise check-in ; pas d'écran "ma carte" dédié imprimable
+
+5. Écrans concernés
+API card ; Admin détail étudiant ; FE Badge partiel
+
+6. Données manipulées
+matricule, names, program, promotion, photo, qr
+
+7. Contrôles automatiques
+QR unique
+
+8. Règles LMD
+N/A
+
+9. Cas particuliers / exceptions
+Perte carte → régénération QR
+
+10. Notifications
+—
+
+11. Droits d'accès
+students.view own/card
+
+12. Exemple concret INJS
+Carte Jean INJS20250001 L1 STAPS-PL APA
+
+13. Critères de validation (UAT / tests)
+UAT-E13-01 card JSON
+UAT-E13-02 QR scannable
+UAT-E13-03 PDF carte (cible)
+
+14. Insuffisances / à parfaire
+Ajouter /etudiant/carte + export PDF/PVC.
+
+================================================================================
+CHAPITRE 14 — Présences
+Statut d'implémentation : [OK]
+================================================================================
+
+1. Objectif
+Enregistrer la présence aux séances via QR / check-in.
+
+2. Acteurs concernés
+Étudiant, Enseignant, Admin
+
+3. Prérequis
+AttendanceSession ouverte
+
+4. Processus détaillé
+API :
+  sessions + /qr/ + /close/
+  POST /attendances/check-in/
+  /session-summary/
+FE :
+  /etudiant/badgeage — check-in token (pas de caméra)
+  /professeur/presence — OK
+  /admin/badgeage — OK
+
+5. Écrans concernés
+/etudiant/badgeage, /professeur/presence, /admin/badgeage
+
+6. Données manipulées
+AttendanceSession, Attendance
+
+7. Contrôles automatiques
+Session ouverte, token valide, anti-doublon
+
+8. Règles LMD
+LMD_MAX_ABSENCE_RATE=0.25 existe mais check_absence_impact NON branché aux vues
+
+9. Cas particuliers / exceptions
+Retard, absence justifiée, session cloturée
+
+10. Notifications
+Alerte seuil absences — MANQUANT
+
+11. Droits d'accès
+Étudiant check-in soi ; prof/admin sessions
+
+12. Exemple concret INJS
+Jean scanne QR cours Martin → présent
+
+13. Critères de validation (UAT / tests)
+UAT-E14-01 open session + QR
+UAT-E14-02 check-in étudiant
+UAT-E14-03 close + summary
+UAT-E14-04 refus session fermée
+
+14. Insuffisances / à parfaire
+À PARFAIRE : scanner caméra ; barring examens si absences > 25 %.
+
+================================================================================
+CHAPITRE 15 — Ressources pédagogiques
+Statut d'implémentation : [PARTIEL]
+================================================================================
+
+1. Objectif
+Accéder aux supports de cours (PDF, vidéos, articles, thèses).
+
+2. Acteurs concernés
+Enseignant (dépôt), Étudiant (lecture), Bibliothèque
+
+3. Prérequis
+LibraryResource ou Documents catégorisés
+
+4. Processus détaillé
+API /library/ CRUD ; /documents/
+FE étudiant/prof documents : listes mock + toast téléchargement
+Pas de lien UE↔ressource
+
+5. Écrans concernés
+/etudiant/documents, /professeur/documents — MOCK/PARTIEL
+
+6. Données manipulées
+LibraryResource, Document
+
+7. Contrôles automatiques
+Droits d'accès ressource
+
+8. Règles LMD
+N/A
+
+9. Cas particuliers / exceptions
+Ressource expirée / hors promo
+
+10. Notifications
+Nouveau support déposé — MANQUANT
+
+11. Droits d'accès
+library.create enseignant ; view étudiant
+
+12. Exemple concret INJS
+Support "Anatomie S1" pour UE Jean
+
+13. Critères de validation (UAT / tests)
+UAT-E15-01 dépôt
+UAT-E15-02 téléchargement compté
+UAT-E15-03 restriction promo
+
+14. Insuffisances / à parfaire
+Brancher FE ; incrément download_count ; rattacher aux UE.
+
+================================================================================
+CHAPITRE 16 — Devoirs
+Statut d'implémentation : [MANQUANT]
+================================================================================
+
+1. Objectif
+Publier, rendre et noter des devoirs (hors CC formalisé Evaluation).
+
+2. Acteurs concernés
+Enseignant, Étudiant
+
+3. Prérequis
+UE/ECUE + groupe étudiants
+
+4. Processus détaillé
+Aucun modèle Devoir dédié.
+Evaluation/Grade couvrent CC/CT examens.
+FE Prof Evaluations = mockSubmit.
+
+5. Écrans concernés
+Aucun
+
+6. Données manipulées
+À créer : AssignmentWork, Submission, due_date, file
+
+7. Contrôles automatiques
+Deadline, plagiat (hors scope), format
+
+8. Règles LMD
+Peut alimenter note CC si paramétré
+
+9. Cas particuliers / exceptions
+Retard, prolongation
+
+10. Notifications
+Rappel deadline
+
+11. Droits d'accès
+—
+
+12. Exemple concret INJS
+Martin publie devoir APA — Jean dépose PDF
+
+13. Critères de validation (UAT / tests)
+UAT-E16-01 create devoir
+UAT-E16-02 submit avant deadline
+UAT-E16-03 refus après deadline
+
+14. Insuffisances / à parfaire
+CRITIQUE pédagogique : module devoirs + intégration notes CC.
+
+================================================================================
+CHAPITRE 17 — Examens
+Statut d'implémentation : [OK] API / [PARTIEL] UI
+================================================================================
+
+1. Objectif
+Organiser les sessions d'examen (normale/rattrapage) et évaluations CC/CT.
+
+2. Acteurs concernés
+Scolarité, Enseignants, Jury
+
+3. Prérequis
+ExamSession, Evaluation liées UE/ECUE
+
+4. Processus détaillé
+API /exams/sessions/, /evaluations/, /grades/
+Seed : session S1 2026 + CC/CT + notes L1
+FE Admin Notes : règles LMD affichées, ouverture session = mock
+FE Prof Evaluations : mock
+FE Étudiant : voit résultats via notes
+
+5. Écrans concernés
+/admin/notes (shell), /professeur/evaluations (mock), /etudiant/notes (OK lecture)
+
+6. Données manipulées
+ExamSession, Evaluation, Grade
+
+7. Contrôles automatiques
+Plage notes 0-20 ; types CC/CT
+
+8. Règles LMD
+CT = evaluation_type exam ; CC = autres ; pondération 40/60
+
+9. Cas particuliers / exceptions
+Absence examen, anonymat (MANQUANT)
+
+10. Notifications
+Convocation — MANQUANT
+
+11. Droits d'accès
+exams.* selon RBAC ; étudiant view own
+
+12. Exemple concret INJS
+Jean : CC Anatomie 12, CT 14
+
+13. Critères de validation (UAT / tests)
+UAT-E17-01 créer session
+UAT-E17-02 créer évaluations
+UAT-E17-03 saisir notes
+
+14. Insuffisances / à parfaire
+UI saisie notes professeur + anonymisation + PV.
+
+================================================================================
+CHAPITRE 18 — Notes
+Statut d'implémentation : [OK] lecture étudiant / [PARTIEL] saisie
+================================================================================
+
+1. Objectif
+Consulter et saisir les notes CC/CT par ECUE.
+
+2. Acteurs concernés
+Enseignant (saisie), Étudiant (consultation), Jury
+
+3. Prérequis
+Évaluations publiées / session
+
+4. Processus détaillé
+API GET/POST grades
+FE /etudiant/notes : table API OK (CC/CT split mapper incomplet)
+Saisie UI prof non branchée
+
+5. Écrans concernés
+/etudiant/notes — OK
+/professeur/evaluations — MOCK
+
+6. Données manipulées
+Grade (score, student, evaluation)
+
+7. Contrôles automatiques
+0≤note≤20 ; permissions contextual teacher
+
+8. Règles LMD
+Moyenne ECUE = 0.4*CC + 0.6*CT
+
+9. Cas particuliers / exceptions
+Note manquante, ABI/ABJ
+
+10. Notifications
+Publication notes → notif — MANQUANT
+
+11. Droits d'accès
+exams.create/update enseignant ; view étudiant
+
+12. Exemple concret INJS
+Jean voit ses notes S1
+
+13. Critères de validation (UAT / tests)
+UAT-E18-01 liste notes étudiant
+UAT-E18-02 saisie prof
+UAT-E18-03 export
+
+14. Insuffisances / à parfaire
+Compléter mapper CC/CT ; UI grille de saisie réelle.
+
+================================================================================
+CHAPITRE 19 — Compensation
+Statut d'implémentation : [OK] moteur / [API_ONLY] UI
+================================================================================
+
+1. Objectif
+Appliquer les règles de compensation ECUE→UE et UE→semestre.
+
+2. Acteurs concernés
+Moteur LMD, Jury, Scolarité
+
+3. Prérequis
+Notes complètes session
+
+4. Processus détaillé
+apps/exams/services/lmd_engine.py
+- ECUE validé si ≥10
+- UE : tous ECUE ≥10 OU moyenne UE ≥10 et aucun ECUE < 8
+- Semestre : toutes UE OK OU moyenne semestre ≥10 (compensation inter-UE)
+Déclenché via délibération run
+
+5. Écrans concernés
+Aucun écran dédié "simulation compensation" 
+
+6. Données manipulées
+Résultats calculés dans Deliberation
+
+7. Contrôles automatiques
+LMD_COMPENSATION_FLOOR=8 ; PASSING=10 ; poids 40/60
+
+8. Règles LMD
+Règles officielles INJS ci-dessus
+
+9. Cas particuliers / exceptions
+ECUE < 8 bloque compensation UE
+
+10. Notifications
+—
+
+11. Droits d'accès
+Jury/exams.run
+
+12. Exemple concret INJS
+Jean : ECUE 9 et 11 → moyenne 10.2 → UE validée par compensation si aucun <8
+
+13. Critères de validation (UAT / tests)
+UAT-E19-01 cas validation directe
+UAT-E19-02 compensation UE
+UAT-E19-03 blocage si note <8
+UAT-E19-04 compensation semestre
+
+14. Insuffisances / à parfaire
+Exposer simulateur UI admin/jury avant publication.
+
+================================================================================
+CHAPITRE 20 — Validation des crédits
+Statut d'implémentation : [OK] moteur / [API_ONLY] UI
+================================================================================
+
+1. Objectif
+Capitaliser les crédits ECTS des UE/semestres validés.
+
+2. Acteurs concernés
+Moteur LMD, Scolarité
+
+3. Prérequis
+Délibération exécutée
+
+4. Processus détaillé
+Si semestre validé → crédits semestre accordés
+calculate_year_result (60 crédits / ratio 0.8) NON branché aux vues
+AcademicRecord écrit à validation délibération
+
+5. Écrans concernés
+Pas d'écran "mes crédits" dédié (parcours affiche mock)
+
+6. Données manipulées
+credits_ects sur UE ; AcademicRecord
+
+7. Contrôles automatiques
+LMD_MIN_CREDITS_RATIO=0.8
+
+8. Règles LMD
+Capitalisation permanente des UE validées
+
+9. Cas particuliers / exceptions
+AJAC, redoublement partiel
+
+10. Notifications
+—
+
+11. Droits d'accès
+reports/exams view
+
+12. Exemple concret INJS
+Jean valide S1 → +30 ECTS (selon maquette)
+
+13. Critères de validation (UAT / tests)
+UAT-E20-01 crédits après délibération
+UAT-E20-02 année 80% crédits
+
+14. Insuffisances / à parfaire
+Brancher calculate_year_result + UI ECTS cumulés.
+
+================================================================================
+CHAPITRE 21 — Rattrapages
+Statut d'implémentation : [PARTIEL]
+================================================================================
+
+1. Objectif
+Organiser la 2e session pour UE/ECUE non validés.
+
+2. Acteurs concernés
+Scolarité, Enseignants, Étudiants
+
+3. Prérequis
+Résultats session normale publiés
+
+4. Processus détaillé
+ExamSession.session_type peut être retake
+Pas de logique best-of / report de notes
+Pas d'UI
+
+5. Écrans concernés
+Aucun écran dédié
+
+6. Données manipulées
+ExamSession(retake), Grade
+
+7. Contrôles automatiques
+Éligibilité aux rattrapages
+
+8. Règles LMD
+Règles report à définir institutionnellement
+
+9. Cas particuliers / exceptions
+Absence rattrapage = défaillance
+
+10. Notifications
+Convocation rattrapage
+
+11. Droits d'accès
+exams.*
+
+12. Exemple concret INJS
+Jean ajourné Anatomie → inscrit session retake
+
+13. Critères de validation (UAT / tests)
+UAT-E21-01 créer session retake
+UAT-E21-02 éligibles auto
+UAT-E21-03 best note
+
+14. Insuffisances / à parfaire
+Implémenter éligibilité + conservation meilleure note.
+
+================================================================================
+CHAPITRE 22 — Délibération
+Statut d'implémentation : [OK] API / [MANQUANT] UI
+================================================================================
+
+1. Objectif
+Exécuter, valider et publier les résultats de jury.
+
+2. Acteurs concernés
+Jury, Président de jury, Direction, Scolarité
+
+3. Prérequis
+Notes saisies + session
+
+4. Processus détaillé
+API :
+  POST /exams/deliberations/{id}/run/
+  /validate/ /publish/
+Modèles Deliberation, Jury
+Écrit AcademicRecord à la validation
+FE : aucun écran
+
+5. Écrans concernés
+Manquant : /admin/deliberations
+
+6. Données manipulées
+Deliberation, Jury, AcademicRecord
+
+7. Contrôles automatiques
+Statuts run→validate→publish ; droits élevés
+
+8. Règles LMD
+Mentions : ≥16 TB, ≥14 B, ≥12 AB, ≥10 Passable
+
+9. Cas particuliers / exceptions
+Recalcul après correction note
+
+10. Notifications
+Publication → notif étudiants — MANQUANT
+
+11. Droits d'accès
+exams.approve / niveaux direction
+
+12. Exemple concret INJS
+Jury S1 2026 : run sur cohorte L1-2025 incl. Jean
+
+13. Critères de validation (UAT / tests)
+UAT-E22-01 run
+UAT-E22-02 validate
+UAT-E22-03 publish
+UAT-E22-04 idempotence
+
+14. Insuffisances / à parfaire
+CRITIQUE UI : console de délibération + PV PDF.
+
+================================================================================
+CHAPITRE 23 — Relevés de notes
+Statut d'implémentation : [OK] API PDF / [PARTIEL] FE
+================================================================================
+
+1. Objectif
+Émettre le relevé officiel de semestre.
+
+2. Acteurs concernés
+Scolarité, Étudiant
+
+3. Prérequis
+Délibération publiée (cible)
+
+4. Processus détaillé
+GET /reports/transcript/{student_id}/pdf/
+GET /reports/transcript/{student_id}/summary/
+FE Documents mentionne l'URL mais ne fetch pas
+
+5. Écrans concernés
+API reports ; FE toast only
+
+6. Données manipulées
+PDF ReportLab, notes, moyennes, crédits, mentions
+
+7. Contrôles automatiques
+Accès own transcript pour étudiant
+
+8. Règles LMD
+Document conforme charte INJS
+
+9. Cas particuliers / exceptions
+Semestre non publié
+
+10. Notifications
+—
+
+11. Droits d'accès
+reports.view / export_pdf
+
+12. Exemple concret INJS
+Relevé S1 Jean 2025-2026
+
+13. Critères de validation (UAT / tests)
+UAT-E23-01 PDF généré
+UAT-E23-02 droits accès
+UAT-E23-03 cohérence notes
+
+14. Insuffisances / à parfaire
+Bouton téléchargement réel sur /etudiant/documents.
+
+================================================================================
+CHAPITRE 24 — Attestations
+Statut d'implémentation : [MANQUANT]
+================================================================================
+
+1. Objectif
+Délivrer attestations de scolarité, de réussite, de stage, etc.
+
+2. Acteurs concernés
+Scolarité, Étudiant
+
+3. Prérequis
+Statut étudiant actif / semestre validé selon type
+
+4. Processus détaillé
+Pas de générateur d'attestations (hors transcript)
+Documents génériques possibles mais non templates
+
+5. Écrans concernés
+Aucun
+
+6. Données manipulées
+À créer : AttestationTemplate, issuance log
+
+7. Contrôles automatiques
+Numérotation officielle, QR anti-fraude
+
+8. Règles LMD
+N/A
+
+9. Cas particuliers / exceptions
+Demande hors statut
+
+10. Notifications
+Attestation prête
+
+11. Droits d'accès
+documents + reports
+
+12. Exemple concret INJS
+Attestation de scolarité Jean 2025-2026
+
+13. Critères de validation (UAT / tests)
+UAT-E24-01 demander
+UAT-E24-02 générer PDF signé
+UAT-E24-03 vérifier QR
+
+14. Insuffisances / à parfaire
+Module attestations + signature.
+
+================================================================================
+CHAPITRE 25 — Réclamations
+Statut d'implémentation : [MANQUANT]
+================================================================================
+
+1. Objectif
+Permettre à l'étudiant de contester une note ou une décision dans un délai.
+
+2. Acteurs concernés
+Étudiant, Enseignant, Jury, Scolarité
+
+3. Prérequis
+Notes publiées ; délai ouvert
+
+4. Processus détaillé
+Aucun modèle Ticket/Réclamation
+Messagerie existe mais non spécialisée
+
+5. Écrans concernés
+Aucun
+
+6. Données manipulées
+Claim, ClaimMessage, deadlines
+
+7. Contrôles automatiques
+Délai légal institutionnel
+
+8. Règles LMD
+Suspension publication le temps du traitement (cible)
+
+9. Cas particuliers / exceptions
+Hors délai, irrecevable
+
+10. Notifications
+Accusé réception
+
+11. Droits d'accès
+—
+
+12. Exemple concret INJS
+Jean conteste note CT Anatomie sous 5 jours
+
+13. Critères de validation (UAT / tests)
+UAT-E25-01 ouvrir réclamation
+UAT-E25-02 traitement
+UAT-E25-03 clôture + impact note
+
+14. Insuffisances / à parfaire
+CRITIQUE gouvernance examens.
+
+================================================================================
+CHAPITRE 26 — Stage
+Statut d'implémentation : [PARTIEL] modèles absents métier / UI MOCK
+================================================================================
+
+1. Objectif
+Gérer recherche, convention, suivi et évaluation de stage.
+
+2. Acteurs concernés
+Étudiant, Encadrant, Entreprise, Scolarité
+
+3. Prérequis
+Niveau autorisant stage (L3/M...)
+
+4. Processus détaillé
+FE /etudiant/stages, /admin/stages, /professeur/stages : mock + mockSubmit
+Pas de modèles Internship dédiés dans backend inventorié
+
+5. Écrans concernés
+Écrans mock trois rôles
+
+6. Données manipulées
+À créer : Internship, Convention, EvaluationStage
+
+7. Contrôles automatiques
+Durée min, validation encadrant
+
+8. Règles LMD
+Crédits stage si UE stage dans maquette
+
+9. Cas particuliers / exceptions
+Rupture stage
+
+10. Notifications
+—
+
+11. Droits d'accès
+—
+
+12. Exemple concret INJS
+Jean dépose convention stage APA
+
+13. Critères de validation (UAT / tests)
+UAT-E26-01 dépôt
+UAT-E26-02 validation encadrant
+UAT-E26-03 note stage
+
+14. Insuffisances / à parfaire
+CRITIQUE : modèle + workflow + lien crédits.
+
+================================================================================
+CHAPITRE 27 — Soutenance
+Statut d'implémentation : [API_ONLY] Defense CRUD
+================================================================================
+
+1. Objectif
+Organiser soutenance de mémoire / rapport.
+
+2. Acteurs concernés
+Étudiant, Encadrant, Jury
+
+3. Prérequis
+Mémoire déposé + jury constitué
+
+4. Processus détaillé
+Modèle Defense + CRUD API /exams/defenses/
+Non intégré au moteur LMD ni UI
+
+5. Écrans concernés
+Aucun FE
+
+6. Données manipulées
+Defense
+
+7. Contrôles automatiques
+Date, jury, note
+
+8. Règles LMD
+Intégration Master/Doctorat à faire
+
+9. Cas particuliers / exceptions
+Report soutenance
+
+10. Notifications
+—
+
+11. Droits d'accès
+exams.*
+
+12. Exemple concret INJS
+Soutenance Master (programme M-STAPS stub)
+
+13. Critères de validation (UAT / tests)
+UAT-E27-01 planifier
+UAT-E27-02 saisir note
+UAT-E27-03 impact diplomation
+
+14. Insuffisances / à parfaire
+Lier Defense → crédits/diplôme ; UI.
+
+================================================================================
+CHAPITRE 28 — Diplôme
+Statut d'implémentation : [MANQUANT]
+================================================================================
+
+1. Objectif
+Constater l'obtention du diplôme et produire le document officiel.
+
+2. Acteurs concernés
+Direction, Scolarité, Étudiant
+
+3. Prérequis
+Crédits année/cycle atteints + délibérations
+
+4. Processus détaillé
+Student.status inclut graduated mais sans automation
+Pas de PDF diplôme / parchemin
+Nomenclature emplois disponible pour débouchés
+
+5. Écrans concernés
+Aucun
+
+6. Données manipulées
+Diploma, issuance number, status→graduated
+
+7. Contrôles automatiques
+Audit crédits complets Licence 180 ECTS
+
+8. Règles LMD
+Conditions INJS + UFHB
+
+9. Cas particuliers / exceptions
+Mentions au diplôme
+
+10. Notifications
+Félicitations / cérémonie
+
+11. Droits d'accès
+Direction approve
+
+12. Exemple concret INJS
+Jean Licence STAPS-PL APA → diplôme + career_path
+
+13. Critères de validation (UAT / tests)
+UAT-E28-01 éligibilité
+UAT-E28-02 passage graduated
+UAT-E28-03 PDF diplôme
+
+14. Insuffisances / à parfaire
+CRITIQUE fin de cycle.
+
+================================================================================
+CHAPITRE 29 — Archivage
+Statut d'implémentation : [PARTIEL]
+================================================================================
+
+1. Objectif
+Conserver dossiers, notes, documents et journaux pour audit.
+
+2. Acteurs concernés
+Admin système, Scolarité
+
+3. Prérequis
+Données produites
+
+4. Processus détaillé
+SoftDelete models ; AuditLog middleware sur mutations API
+Documents is_signed inutilisé
+Pas de politique de rétention UI
+
+5. Écrans concernés
+/admin partiel ; audit API /auth/audit-logs/
+
+6. Données manipulées
+AuditLog, Document, AcademicRecord
+
+7. Contrôles automatiques
+Immutabilité AcademicRecord après publish
+
+8. Règles LMD
+Conservation légale
+
+9. Cas particuliers / exceptions
+Restauration soft-delete
+
+10. Notifications
+—
+
+11. Droits d'accès
+accounts audit view level ≤2
+
+12. Exemple concret INJS
+Dossier Jean archivé fin de cycle
+
+13. Critères de validation (UAT / tests)
+UAT-E29-01 audit visible
+UAT-E29-02 soft delete
+UAT-E29-03 export légal
+
+14. Insuffisances / à parfaire
+Politique rétention + coffre-fort documents signés.
+
+================================================================================
+CHAPITRE 30 — Tableau de bord final étudiant
+Statut d'implémentation : [PARTIEL]
+================================================================================
+
+1. Objectif
+Offrir une vue synthétique du parcours : crédits, moyenne, prochaines
+échéances, documents, badgeage, inscriptions.
+
+2. Acteurs concernés
+Étudiant
+
+3. Prérequis
+Compte étudiant lié Student profile
+
+4. Processus détaillé
+/etudiant Dashboard :
+  - Enrichissement profil API
+  - Compteur UE API
+  - Moyenne/examen souvent "—"
+  - EDT encore mock
+Parcours/Notes/Inscriptions/Badgeage partiellement réels
+
+5. Écrans concernés
+/etudiant
+
+6. Données manipulées
+Agrégats student, grades, enrollments, schedules
+
+7. Contrôles automatiques
+Données scoped à l'étudiant connecté
+
+8. Règles LMD
+Indicateurs LMD (crédits, compensation) à afficher
+
+9. Cas particuliers / exceptions
+Étudiant sans notes
+
+10. Notifications
+Widgets alertes (paiement, absence) — MANQUANT
+
+11. Droits d'accès
+role=etudiant
+
+12. Exemple concret INJS
+Dashboard Jean : promo L1, APA, UE S1, notes disponibles après seed
+
+13. Critères de validation (UAT / tests)
+UAT-E30-01 chargement dashboard
+UAT-E30-02 cohérence KPIs vs notes
+UAT-E30-03 navigation menus
+
+14. Insuffisances / à parfaire
+Finaliser KPIs réels (moyenne, crédits, paiement, absences).
+
+
+################################################################################
+# TOME 2 — PARCOURS COMPLET DU PROFESSEUR                                      #
+# Route de base UI : /professeur                                               #
+# Menu : Dashboard, Cours, Étudiants, Évaluations, Présence, Stages,           #
+#        Recherche, Documents                                                  #
+#                                                                              #
+# Constat global : hors module Présences/QR (branché API), la majorité des     #
+# écrans professeur repose sur mockData / mockSubmit. L'API faculty/exams      #
+# existe pourtant pour plusieurs besoins.                                      #
+################################################################################
+
+Profil de référence
+  Email : prof.martin@demo.injs.ci
+  Code enseignant : ENS001
+  Affectations seed : cours + schedules lundi/mercredi
+  Rôle backend : enseignant (group_level 3) → UI professeur
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Authentification professeur
+Statut : [OK]
+--------------------------------------------------------------------------------
+Scénario métier :
+Le professeur se connecte via /login avec son email institutionnel. Le backend
+retourne group_level=3 → redirection /professeur. MFA possible si activé.
+
+Règles :
+JWT ; is_active ; RBAC module faculty/exams (view/create/update/export_pdf).
+
+Validations :
+Identifiants valides ; compte enseignant lié Teacher (/faculty/teachers/me/).
+
+Exceptions :
+Compte sans fiche Teacher ; MFA requis.
+
+Exemple concret :
+prof.martin@demo.injs.ci / Demo@INJS2026! → /professeur
+
+Tests (UAT) :
+UAT-P01-01 login
+UAT-P01-02 refus étudiant sur routes /professeur
+UAT-P01-03 /teachers/me/ cohérent
+
+Insuffisances / à parfaire :
+Afficher alerte si fiche Teacher manquante.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Tableau de bord professeur
+Statut : [PARTIEL] UI mock
+--------------------------------------------------------------------------------
+Scénario métier :
+Vue d'accueil : cours du jour, effectifs, évaluations à saisir, alertes.
+
+Règles :
+Données scoped aux CourseAssignment de l'enseignant.
+
+Validations :
+KPIs calculés depuis API assignments/schedules/grades pending.
+
+Exceptions :
+Aucune affectation → dashboard vide guidé.
+
+Exemple concret :
+Martin voit 2 créneaux seed ; stats actuelles encore hardcodées.
+
+Tests (UAT) :
+UAT-P02-01 chargement
+UAT-P02-02 KPIs = données réelles
+
+Insuffisances / à parfaire :
+Remplacer stats hardcodées et EMPLOI_DU_TEMPS mock par API.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Charges horaires
+Statut : [MANQUANT]
+--------------------------------------------------------------------------------
+Scénario métier :
+Suivre le service dû / réalisé (CM/TD/TP) par année.
+
+Règles :
+Somme heures Course vs Assignments vs Attendance réalisées.
+
+Validations :
+Seuils de service statutaires.
+
+Exceptions :
+Dépassement, vacations.
+
+Exemple concret :
+Martin : heures CM Anatomie vs réalisé semestre.
+
+Tests (UAT) :
+UAT-P03-01 calcul service
+UAT-P03-02 export RH
+
+Insuffisances / à parfaire :
+CRITIQUE RH pédagogique : aucun agrégateur workload côté API.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Emploi du temps enseignant
+Statut : [PARTIEL] API OK / UI mock
+--------------------------------------------------------------------------------
+Scénario métier :
+Consulter et éventuellement demander modification de créneaux.
+
+Règles :
+Schedule liés aux assignments de l'enseignant.
+
+Validations :
+Pas de chevauchement (cible).
+
+Exceptions :
+Salle indisponible.
+
+Exemple concret :
+Lundi/Mercredi Martin (seed).
+
+Tests (UAT) :
+UAT-P04-01 liste schedules me
+UAT-P04-02 cohérence salles
+
+Insuffisances / à parfaire :
+Brancher /professeur dashboard & cours sur /faculty/schedules/.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Gestion des groupes / promotions
+Statut : [PARTIEL]
+--------------------------------------------------------------------------------
+Scénario métier :
+Voir les groupes (promotions/spécialités) des cours affectés.
+
+Règles :
+Filtrage students par promotion des assignments.
+
+Validations :
+Un enseignant ne voit que ses cohortes.
+
+Exceptions :
+Cours mutualisé multi-promos.
+
+Exemple concret :
+Groupe L1-2025 APA du cours de Martin.
+
+Tests (UAT) :
+UAT-P05-01 liste groupes
+
+Insuffisances / à parfaire :
+UI actuelle filtre mock EM ; brancher API students filtrée.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Liste des étudiants
+Statut : [PARTIEL] mock FE
+--------------------------------------------------------------------------------
+Scénario métier :
+Consulter la liste des étudiants des cours enseignés.
+
+Règles :
+Scope assignments → promotions → students.
+
+Validations :
+Recherche nom/matricule.
+
+Exceptions :
+Étudiant hors cohorte invisible.
+
+Exemple concret :
+FE /professeur/etudiants utilise ETUDIANTS_MOCK.
+
+Tests (UAT) :
+UAT-P06-01 liste réelle
+UAT-P06-02 recherche
+
+Insuffisances / à parfaire :
+Remplacer mock par API students + filtre affectations.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Feuilles de présence
+Statut : [OK]
+--------------------------------------------------------------------------------
+Scénario métier :
+Ouvrir une session, afficher QR, suivre check-ins, clôturer, résumé.
+
+Règles :
+Session liée cours/horaire ; token QR ; anti-doublon.
+
+Validations :
+Seule session ouverte par créneau ; close définitive.
+
+Exceptions :
+Check-in hors session ; token expiré.
+
+Exemple concret :
+/professeur/presence opérationnel avec API faculty.
+
+Tests (UAT) :
+UAT-P07-01 QR
+UAT-P07-02 summary
+UAT-P07-03 close
+
+Insuffisances / à parfaire :
+Ajouter export feuille PDF et absences justifiées.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Dépôt des supports
+Statut : [PARTIEL] mock
+--------------------------------------------------------------------------------
+Scénario métier :
+Déposer syllabus/supports rattachés à une UE/ECUE.
+
+Règles :
+Visibilité limitée aux étudiants inscrits (cible).
+
+Validations :
+Formats autorisés, virus scan (cible).
+
+Exceptions :
+Quota stockage.
+
+Exemple concret :
+/professeur/documents = liste statique + toast.
+
+Tests (UAT) :
+UAT-P08-01 upload
+UAT-P08-02 visible côté étudiant
+
+Insuffisances / à parfaire :
+Brancher documents/library API + lien UE.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Devoirs
+Statut : [MANQUANT]
+--------------------------------------------------------------------------------
+Scénario métier :
+Créer devoir, collecter rendus, noter.
+
+Règles :
+Deadline, barème, lien optionnel note CC.
+
+Validations :
+Fichier obligatoire / taille.
+
+Exceptions :
+Retard.
+
+Exemple concret :
+Non implémenté.
+
+Tests (UAT) :
+UAT-P09-01 cycle complet devoir
+
+Insuffisances / à parfaire :
+Nouveau module métier requis.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Quiz
+Statut : [MANQUANT]
+--------------------------------------------------------------------------------
+Scénario métier :
+Évaluations formatives en ligne.
+
+Règles :
+Banque de questions, timer, tentatives.
+
+Validations :
+Score auto.
+
+Exceptions :
+Perte connexion.
+
+Exemple concret :
+Non implémenté.
+
+Tests (UAT) :
+UAT-P10-01
+
+Insuffisances / à parfaire :
+Hors périmètre actuel ; à planifier phase 2.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Examens (côté enseignant)
+Statut : [API_ONLY] / UI mock
+--------------------------------------------------------------------------------
+Scénario métier :
+Participer aux évaluations CC/CT de ses ECUE.
+
+Règles :
+Evaluation liée Course + ExamSession.
+
+Validations :
+Enseignant ne saisit que ses ECUE.
+
+Exceptions :
+Session fermée.
+
+Exemple concret :
+API evaluations/grades existent ; UI mockSubmit.
+
+Tests (UAT) :
+UAT-P11-01 créer évaluation
+UAT-P11-02 lier session
+
+Insuffisances / à parfaire :
+Écran réel de gestion d'évaluations.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Saisie des notes
+Statut : [API_ONLY] / UI mock
+--------------------------------------------------------------------------------
+Scénario métier :
+Saisir notes CC/CT pour la liste d'étudiants.
+
+Règles :
+0-20 ; types CC/CT ; pondération moteur 40/60.
+
+Validations :
+Champs numériques ; verrouillage après publish.
+
+Exceptions :
+Note hors borne.
+
+Exemple concret :
+Grille FE actuelle = 3 étudiants démo locaux.
+
+Tests (UAT) :
+UAT-P12-01 saisie batch
+UAT-P12-02 verrou post-publication
+
+Insuffisances / à parfaire :
+CRITIQUE : grille connectée à POST /exams/grades/.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Validation des notes
+Statut : [PARTIEL] API délibération
+--------------------------------------------------------------------------------
+Scénario métier :
+Soumettre les notes au jury / figer une évaluation.
+
+Règles :
+Statuts brouillon → soumis → validé.
+
+Validations :
+Contrôle exhaustivité notes.
+
+Exceptions :
+Notes manquantes bloquantes.
+
+Exemple concret :
+Flux délibération global existe ; pas de validation unitaire UI enseignant.
+
+Tests (UAT) :
+UAT-P13-01 soumettre
+UAT-P13-02 refus incomplet
+
+Insuffisances / à parfaire :
+Ajouter workflow validation enseignant avant jury.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Délibération / Jury (enseignant membre)
+Statut : [API_ONLY]
+--------------------------------------------------------------------------------
+Scénario métier :
+Participer comme membre de Jury à la délibération.
+
+Règles :
+Jury ↔ Deliberation ; run/validate/publish réservés rôles élevés.
+
+Validations :
+Quorum, signatures (cible).
+
+Exceptions :
+Conflit d'intérêt.
+
+Exemple concret :
+Modèles Jury/Defense présents ; pas d'UI professeur.
+
+Tests (UAT) :
+UAT-P14-01 voir résultats run
+UAT-P14-02 droits validate
+
+Insuffisances / à parfaire :
+Console jury multi-rôles.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Statistiques enseignant
+Statut : [MANQUANT]
+--------------------------------------------------------------------------------
+Scénario métier :
+Taux de réussite, distribution notes, absences par ECUE.
+
+Règles :
+Agrégats sur grades + attendances.
+
+Validations :
+Comparaison sessions.
+
+Exceptions :
+Faible effectif.
+
+Exemple concret :
+Non exposé.
+
+Tests (UAT) :
+UAT-P15-01
+
+Insuffisances / à parfaire :
+Endpoint analytics enseignant + graphiques FE.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Rapports enseignant
+Statut : [MANQUANT] UI
+--------------------------------------------------------------------------------
+Scénario métier :
+Exporter listes, PV de notes, feuilles d'émargement.
+
+Règles :
+export_pdf/excel sur modules autorisés.
+
+Validations :
+Filtres période/UE.
+
+Exceptions :
+Timeout export.
+
+Exemple concret :
+Boutons admin rapports mock ; rien côté prof.
+
+Tests (UAT) :
+UAT-P16-01 export PDF notes
+
+Insuffisances / à parfaire :
+Réutiliser mixins export backend.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Encadrement de stage
+Statut : [MANQUANT] métier / UI mock
+--------------------------------------------------------------------------------
+Scénario métier :
+Valider conventions, suivre et noter stagiaires.
+
+Règles :
+Rôle encadrant pédagogique.
+
+Validations :
+Grille d'évaluation stage.
+
+Exceptions :
+Stage non démarré.
+
+Exemple concret :
+/professeur/stages mock.
+
+Tests (UAT) :
+UAT-P17-01
+
+Insuffisances / à parfaire :
+Dépend du module Internship à créer.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Encadrement de mémoire / soutenance
+Statut : [API_ONLY] Defense
+--------------------------------------------------------------------------------
+Scénario métier :
+Suivre mémoire et soutenir en jury.
+
+Règles :
+Defense liée étudiant/jury.
+
+Validations :
+Note soutenance.
+
+Exceptions :
+Report.
+
+Exemple concret :
+CRUD API sans UI.
+
+Tests (UAT) :
+UAT-P18-01
+
+Insuffisances / à parfaire :
+UI encadrement Master.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Messagerie
+Statut : [API_ONLY] / UI absente
+--------------------------------------------------------------------------------
+Scénario métier :
+Échanger avec étudiants / scolarité.
+
+Règles :
+Conversations participant-scoped.
+
+Validations :
+Pas de temps réel (Channels notifié ailleurs).
+
+Exceptions :
+Spam.
+
+Exemple concret :
+API /messaging/conversations|messages ; pas d'écran FE.
+
+Tests (UAT) :
+UAT-P19-01 envoyer message
+
+Insuffisances / à parfaire :
+UI messagerie + notif temps réel.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Notifications
+Statut : [API_ONLY]
+--------------------------------------------------------------------------------
+Scénario métier :
+Recevoir alertes (session, notes, messages).
+
+Règles :
+Notification recipient-scoped ; WS ws/notifications/.
+
+Validations :
+mark_read.
+
+Exceptions :
+Auth WS JWT placeholder.
+
+Exemple concret :
+Pas de centre de notifications FE complet.
+
+Tests (UAT) :
+UAT-P20-01
+
+Insuffisances / à parfaire :
+Cloche notifications dans Header + fix WS auth.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Signature électronique
+Statut : [MANQUANT] champs seuls
+--------------------------------------------------------------------------------
+Scénario métier :
+Signer PV, notes, documents.
+
+Règles :
+signature_hash / is_signed sur Document non calculés.
+
+Validations :
+Certificat / OTP.
+
+Exceptions :
+Revocation.
+
+Exemple concret :
+Aucun endpoint sign.
+
+Tests (UAT) :
+UAT-P21-01
+
+Insuffisances / à parfaire :
+Implémenter service de signature et UI.
+
+--------------------------------------------------------------------------------
+FONCTIONNALITÉ : Archivage enseignant
+Statut : [PARTIEL]
+--------------------------------------------------------------------------------
+Scénario métier :
+Conserver supports et notes des années antérieures.
+
+Règles :
+Soft delete ; academic year filter.
+
+Validations :
+Lecture seule années closes.
+
+Exceptions :
+—
+
+Exemple concret :
+Non exposé UI.
+
+Tests (UAT) :
+UAT-P22-01
+
+Insuffisances / à parfaire :
+Espace "Archives" professeur.
+
+
+################################################################################
+# TOME 3 — PARCOURS COMPLET DE L'ADMINISTRATION                                #
+# Route de base UI : /admin                                                    #
+# Menu : Dashboard, Étudiants, Professeurs, Départements, Formations, UE,      #
+#        Notes, Stages, Badgeage, Événements, Finances, Rapports, Paramètres   #
+################################################################################
+
+Profils de référence
+  admin@demo.injs.ci (super_admin)
+  scolarite@demo.injs.ci (responsable scolarité)
+  Niveaux 0-2 → UI admin
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Paramétrage académique global
+Statut : [PARTIEL]
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Super Admin, Direction des Études, Scolarité
+
+Contrôles automatiques :
+Contraintes d'unicité codes ; année courante unique (cible)
+
+Validations :
+Formulaires institution / année / semestres
+
+Interactions entre services :
+academics ↔ students ↔ exams ↔ finance
+
+Scénario nominal :
+1) Paramétrer Institution INJS
+2) Créer AcademicYear 2025-2026 (current)
+3) Créer Semesters S1/S2
+Seed réalise une partie.
+
+Scénarios d'erreur :
+Deux années "current" ; dates incohérentes
+
+Indicateurs de performance (KPI) :
+% paramétrage complété ; délais ouverture année
+
+Critères de recette :
+UAT-A01 institution/années/semestres CRUD UI branchée
+
+Insuffisances / à parfaire :
+Settings Institution encore mockSubmit ; exposer CRUD academic-years/semesters.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Années universitaires & Semestres
+Statut : [OK] API / [PARTIEL] UI
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Scolarité, Admin
+
+Contrôles automatiques :
+Chevauchement dates ; un current
+
+Validations :
+Ouverture/fermeture semestre
+
+Interactions entre services :
+Bloque inscriptions, EDT, examens
+
+Scénario nominal :
+API /academic-years/, /semesters/ ; seed 2023-2026
+
+Scénarios d'erreur :
+Clôture semestre avec délibération non publiée
+
+Indicateurs de performance (KPI) :
+Respect calendrier
+
+Critères de recette :
+UAT-A02
+
+Insuffisances / à parfaire :
+Écrans admin calendrier manquants.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Filières, Parcours, UE, ECUE, Crédits
+Statut : [OK] référentiel + UI UE
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Responsable Licence, Admin pédagogique
+
+Contrôles automatiques :
+Crédits ECTS >0 ; coef ; liens ProgramCourse
+
+Validations :
+Import maquette STAPS 2026
+
+Interactions entre services :
+academics → exams (évaluations) → students (parcours)
+
+Scénario nominal :
+/admin/ue CRUD API OK
+/admin/formations MOCK (programs API non branchée)
+Import management commands OK
+
+Scénarios d'erreur :
+UE orpheline ; crédits incohérents
+
+Indicateurs de performance (KPI) :
+Nb UE/ECUE importés ; couverture maquette
+
+Critères de recette :
+UAT-A03 import maquette + CRUD UE + lister programs UI
+
+Insuffisances / à parfaire :
+Brancher Formations ; gérer ProgramCourse/specializations UI ; fix imports apiPost dans academics.js si besoin.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Gestion des enseignants
+Statut : [PARTIEL]
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+DRH, Direction, Admin
+
+Contrôles automatiques :
+Email unique ; grade enseignant
+
+Validations :
+Création Teacher + User + groupe enseignant
+
+Interactions entre services :
+accounts.users ↔ faculty.teachers ↔ assignments
+
+Scénario nominal :
+/admin/professeurs liste API + détail OK ; création renvoie vers backend admin
+
+Scénarios d'erreur :
+Prof sans User
+
+Indicateurs de performance (KPI) :
+Ratio enseignants/étudiants ; heures vacantes
+
+Critères de recette :
+UAT-A04 create teacher end-to-end UI
+
+Insuffisances / à parfaire :
+POST teacher depuis FE ; charges horaires.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Gestion des étudiants
+Statut : [OK] cœur / gaps cycle
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Scolarité
+
+Contrôles automatiques :
+Matricule unique ; enrollment approve
+
+Validations :
+Enroll modal admin OK
+
+Interactions entre services :
+students ↔ admissions ↔ finance ↔ exams
+
+Scénario nominal :
+Liste, recherche, enrollStudent orchestration API
+
+Scénarios d'erreur :
+Doublon ; approve sans pièces/paiement
+
+Indicateurs de performance (KPI) :
+Délai traitement dossiers ; taux complétude
+
+Critères de recette :
+UAT-A05 enroll + card + career_path
+
+Insuffisances / à parfaire :
+Intégrer admissions + paiement + checklist.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Paiements & Comptabilité
+Statut : [PARTIEL] API / MOCK UI
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Comptable, DF, Étudiant
+
+Contrôles automatiques :
+Initiate/verify ; webhooks
+
+Validations :
+Montants XOF ; providers
+
+Interactions entre services :
+finance ↔ students (gating) ↔ notifications
+
+Scénario nominal :
+Seed fees 150000 ; /admin/finances mock
+
+Scénarios d'erreur :
+Paiement sandbox "toujours OK" ; cash non API
+
+Indicateurs de performance (KPI) :
+Taux recouvrement ; impayés
+
+Critères de recette :
+UAT-A06 initiate/verify + UI réelle + reçu
+
+Insuffisances / à parfaire :
+CRITIQUE : UI finance + rapprochement + gating inscription.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Scolarité (vie de l'étudiant)
+Statut : [PARTIEL]
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Scolarité, SG
+
+Contrôles automatiques :
+Statuts active/suspended/withdrawn/graduated
+
+Validations :
+Transitions statut documentées
+
+Interactions entre services :
+students + documents + messaging
+
+Scénario nominal :
+Gestion via Students + Settings users
+
+Scénarios d'erreur :
+Suspension sans motif
+
+Indicateurs de performance (KPI) :
+Nb dossiers ouverts
+
+Critères de recette :
+UAT-A07 suspend/reactivate
+
+Insuffisances / à parfaire :
+Workflows disciplinaires + réinscription.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Examens, Jurys, Délibérations
+Statut : [OK] API / [MANQUANT] UI admin notes réelle
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Scolarité examens, Jury, Direction
+
+Contrôles automatiques :
+Moteur LMD ; run/validate/publish
+
+Validations :
+Exhaustivité notes ; quorum jury
+
+Interactions entre services :
+exams ↔ academics ↔ students ↔ reports
+
+Scénario nominal :
+Seed session+notes ; endpoints délibération OK ; FE Notes = shell mock
+
+Scénarios d'erreur :
+Publish sans validate ; notes incomplètes
+
+Indicateurs de performance (KPI) :
+Délai publication ; taux réussite
+
+Critères de recette :
+UAT-A08 run/validate/publish + PV + UI
+
+Insuffisances / à parfaire :
+CRITIQUE UI délibération + saisie notes + PV PDF.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Diplômes
+Statut : [MANQUANT]
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Direction, Scolarité
+
+Contrôles automatiques :
+Audit crédits cycle
+
+Validations :
+Décision multi-niveaux
+
+Interactions entre services :
+exams + academics + documents + students.status
+
+Scénario nominal :
+status graduated non automatisé
+
+Scénarios d'erreur :
+Diplôme sans 180 ECTS
+
+Indicateurs de performance (KPI) :
+Nb diplômés / cohorte
+
+Critères de recette :
+UAT-A09
+
+Insuffisances / à parfaire :
+Module diplomation complet.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Bibliothèque
+Statut : [API_ONLY]
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Bibliothécaire, Enseignants, Étudiants
+
+Contrôles automatiques :
+CRUD resources
+
+Validations :
+Métadonnées obligatoires
+
+Interactions entre services :
+library ↔ academics (lien UE cible)
+
+Scénario nominal :
+API /library/ ; pas d'UI admin
+
+Scénarios d'erreur :
+Doublon ISBN
+
+Indicateurs de performance (KPI) :
+Téléchargements
+
+Critères de recette :
+UAT-A10
+
+Insuffisances / à parfaire :
+UI + prêts + compteur downloads.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Ressources humaines
+Statut : [MANQUANT] hors comptes users
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+DRH
+
+Contrôles automatiques :
+Fiches agents, congés, paie (hors scope actuel)
+
+Validations :
+Lien Teacher/User
+
+Interactions entre services :
+accounts + faculty
+
+Scénario nominal :
+Users settings liste API ; permissions mock
+
+Scénarios d'erreur :
+Compte sans rôle
+
+Indicateurs de performance (KPI) :
+Effectifs par grade
+
+Critères de recette :
+UAT-A11
+
+Insuffisances / à parfaire :
+Module RH réel non présent (seulement users/teachers).
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Patrimoine (salles, équipements)
+Statut : [PARTIEL] Rooms
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Patrimoine, Maintenance
+
+Contrôles automatiques :
+Rooms API
+
+Validations :
+Capacité salle
+
+Interactions entre services :
+rooms ↔ schedules
+
+Scénario nominal :
+API /faculty/rooms/ ; comptes patrimoine@ seed ; pas UI
+
+Scénarios d'erreur :
+Double booking salle
+
+Indicateurs de performance (KPI) :
+Taux occupation salles
+
+Critères de recette :
+UAT-A12
+
+Insuffisances / à parfaire :
+UI salles + détection conflits EDT.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Statistiques & Tableaux de bord admin
+Statut : [PARTIEL]
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Direction, Admin
+
+Contrôles automatiques :
+GET /reports/analytics/
+
+Validations :
+Cohérence KPIs
+
+Interactions entre services :
+reports agrège students/faculty/finance/exams
+
+Scénario nominal :
+/admin dashboard KPIs API OK ; charts doughnut/bar encore hardcodés
+
+Scénarios d'erreur :
+KPI à zéro si seed absent
+
+Indicateurs de performance (KPI) :
+Taux réussite, effectifs, recettes
+
+Critères de recette :
+UAT-A13 analytics = UI charts
+
+Insuffisances / à parfaire :
+Brancher tous les graphiques ; cohort reports.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Décisions, Alertes, Audit, Sécurité
+Statut : [PARTIEL]
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Super Admin, Direction, SSI
+
+Contrôles automatiques :
+AuditMiddleware sur mutations /api/
+RBAC HasModulePermission
+MFA optionnel
+
+Validations :
+Revue audit logs
+
+Interactions entre services :
+accounts.audit-logs ↔ tous modules
+
+Scénario nominal :
+API audit-logs ; Settings permissions = mock matrix non branchée
+hasPermission FE inutilisé pour guards
+
+Scénarios d'erreur :
+Elevation de privilèges ; token volé
+
+Indicateurs de performance (KPI) :
+Nb événements audit ; comptes MFA
+
+Critères de recette :
+UAT-A14 audit + MFA + permissions réelles UI
+
+Insuffisances / à parfaire :
+Brancher SettingsPermissions sur API groups/permissions ; WS JWT ; politiques MDP.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Sauvegardes & Journalisation
+Statut : [PARTIEL]
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Admin infra
+
+Contrôles automatiques :
+Logs applicatifs Django ; AuditLog métier
+
+Validations :
+Backup DB/media planifié (ops)
+
+Interactions entre services :
+Docker volumes postgres/minio
+
+Scénario nominal :
+Pas d'écran "backups" dans l'app
+
+Scénarios d'erreur :
+Perte DB sans backup
+
+Indicateurs de performance (KPI) :
+RPO/RTO
+
+Critères de recette :
+UAT-A15 procédure restore documentée + testée
+
+Insuffisances / à parfaire :
+Runbooks ops + jobs backup hors code app.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : RBAC & Validation multi-niveaux
+Statut : [OK] modèle / [PARTIEL] UI
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Super Admin
+
+Contrôles automatiques :
+5 levels ; permissions module.action ; contextual teacher/student
+
+Validations :
+GroupProfile + ModulePermissionRegistry
+
+Interactions entre services :
+Toutes les vues DRF
+
+Scénario nominal :
+Seed 23 rôles / 96 permissions
+UI permissions mock (y compris rôle secretaire non routé)
+
+Scénarios d'erreur :
+Permission manquante → 403
+
+Indicateurs de performance (KPI) :
+Couverture permission tests
+
+Critères de recette :
+UAT-A16 matrice réelle sync API
+UAT-A17 workflow multi-niveaux admissions/diplômes
+
+Insuffisances / à parfaire :
+Connecter FE ; workflows d'approbation génériques.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Événements institutionnels
+Statut : [PARTIEL] local state
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Communication, Admin
+
+Contrôles automatiques :
+—
+
+Validations :
+Titre/date
+
+Interactions entre services :
+Isolé (pas d'API events)
+
+Scénario nominal :
+/admin/evenements liste locale + create local
+
+Scénarios d'erreur :
+Perte au refresh
+
+Indicateurs de performance (KPI) :
+Participation
+
+Critères de recette :
+UAT-A18
+
+Insuffisances / à parfaire :
+Modèle Event + API ou brancher notifications annonces.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Badgeage / Présences (admin)
+Statut : [OK]
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Scolarité, Admin pédagogique
+
+Contrôles automatiques :
+Sessions QR + summary + close
+
+Validations :
+Filtre date
+
+Interactions entre services :
+faculty attendances
+
+Scénario nominal :
+/admin/badgeage opérationnel
+
+Scénarios d'erreur :
+Session orpheline
+
+Indicateurs de performance (KPI) :
+Taux présence moyen
+
+Critères de recette :
+UAT-A19
+
+Insuffisances / à parfaire :
+Export réglementaire ; lien barring examens.
+
+--------------------------------------------------------------------------------
+PROCESSUS ADMIN : Rapports institutionnels
+Statut : [PARTIEL]
+--------------------------------------------------------------------------------
+Rôles / acteurs :
+Direction, Scolarité
+
+Contrôles automatiques :
+Exports mixin pdf/excel/word sur plusieurs viewsets
+Transcript PDF OK
+
+Validations :
+Filtres année/semestre
+
+Interactions entre services :
+reports + domaines
+
+Scénario nominal :
+/admin/rapports boutons mockSubmit
+
+Scénarios d'erreur :
+Timeout
+
+Indicateurs de performance (KPI) :
+Délai génération
+
+Critères de recette :
+UAT-A20 brancher 5 rapports sur vrais endpoints
+
+Insuffisances / à parfaire :
+Connecter UI aux exports existants.
+
+
+################################################################################
+# 4. SYNTHÈSE DES INSUFFISANCES CRITIQUES                                      #
+################################################################################
+
+P0 — Bloquants pour un cycle LMD "préinscription → diplomation" exploitable
+---------------------------------------------------------------------------
+1. Préinscription : API CRUD sans acceptation → création Student/User/matricule
+2. Paiement : pas d'UI étudiant ; pas de gating inscription ; providers sandbox
+3. Inscription pédagogique UE : absente (prérequis, crédits max, options)
+4. Saisie des notes professeur : UI mock alors que API grades existe
+5. Console de délibération / jury : API OK, UI absente
+6. Attestations & Diplômes : absents (graduated non automatisé)
+7. Stages : écrans mock sans modèle métier
+8. Réclamations de notes : absentes
+9. Devoirs / Quiz : absents
+10. Majorité écran Professeur hors présences : mockSubmit
+
+P1 — Élevés (qualité production / conformité)
+---------------------------------------------
+- Absences : LMD_MAX_ABSENCE_RATE non appliqué aux examens
+- calculate_year_result / progression annuelle / AJAC / redoublement non exposés
+- Rattrapages sans best-of
+- Signature électronique non implémentée (champs morts)
+- Messagerie / notifications FE incomplets ; WS JWT placeholder
+- Permissions UI admin non branchées ; hasPermission unused
+- Formations / Finances / Événements / Rapports admin : mock
+- Carte étudiant PDF / scanner caméra badgeage
+- Conflits d'emploi du temps (salle/enseignant)
+
+P2 — Améliorations
+------------------
+- Master/Doctorat : maquette surtout Licence STAPS ; Defense orpheline
+- Bibliothèque UI + prêts
+- Workload enseignant
+- RH / patrimoine avancés
+- Elasticsearch déclaré non utilisé
+- Self-registration / reset password / vérif email
+
+
+################################################################################
+# 5. PLAN DE MISE À NIVEAU POUR 100 % D'EXPLOITABILITÉ                         #
+################################################################################
+
+Phase A — Fondations cycle de vie (4-6 semaines)
+  A1. Workflow Admissions : submit → instruct → accept → provisionner compte
+  A2. Checklist pièces + blocages
+  A3. Paiement FE étudiant + gating Enrollment
+  A4. Générateur matricule officiel + carte PDF
+
+Phase B — Pédagogie & évaluation (4-6 semaines)
+  B1. Inscription pédagogique UE + règles crédits/prérequis
+  B2. Grille saisie notes professeur branchée API
+  B3. Console délibération + PV
+  B4. Simulation compensation + crédits cumulés UI
+  B5. Rattrapage best-of + barring absences
+
+Phase C — Parcours professeur & services (3-5 semaines)
+  C1. Remplacer mocks cours/étudiants/évaluations/EDT par API faculty
+  C2. Supports liés UE (documents/library)
+  C3. Messagerie + centre notifications
+  C4. Module devoirs (MVP)
+
+Phase D — Sortie & gouvernance (3-4 semaines)
+  D1. Attestations + diplôme + status graduated
+  D2. Stages MVP + lien Defense
+  D3. Réclamations
+  D4. Settings permissions réelles + MFA promu
+  D5. Rapports admin branchés + backups/runbooks
+
+Definition of Done "100 %"
+  - Les 30 étapes étudiant ont un flux UI+API non mock pour le chemin heureux
+  - Professeur saisit notes et gère présences/supports sans mockSubmit
+  - Admin pilote année, maquette, scolarité, finance, délibération, diplôme
+  - UAT des 3 dashboards verts (section 6)
+  - seed_injs_demo + tests automatisés étendus
+
+
+################################################################################
+# 6. SCÉNARIOS DE TESTS DE RECETTE — 3 TABLEAUX DE BORD                        #
+################################################################################
+
+6.1 Dashboard Administration (/admin)
+-------------------------------------
+ADM-T01 Login admin@demo.injs.ci → /admin KPIs non nuls après seed
+ADM-T02 Créer/lister étudiants ; enrollStudent OK
+ADM-T03 Lister professeurs + détail
+ADM-T04 CRUD UE/ECUE /admin/ue
+ADM-T05 Badgeage : ouvrir session, QR, summary, close
+ADM-T06 Analytics /reports/analytics cohérent
+ADM-T07 (CIBLE) Délibération run/validate/publish via UI
+ADM-T08 (CIBLE) Finances : fee payée reflétée
+ADM-T09 Paramètres users liste API
+ADM-T10 Refus d'accès si compte professeur sur /admin/*
+
+Écarts actuels bloquant la recette 100 % :
+  Formations, Notes (session), Stages, Événements, Finances, Rapports,
+  Permissions = mock ou shell.
+
+6.2 Dashboard Professeur (/professeur)
+--------------------------------------
+PRF-T01 Login prof.martin → /professeur
+PRF-T02 Présence QR bout-en-bout avec étudiant
+PRF-T03 (CIBLE) Liste étudiants réels de ses cours
+PRF-T04 (CIBLE) Saisie notes CC/CT persistées
+PRF-T05 (CIBLE) Dépôt support visible étudiant
+PRF-T06 Refus accès /admin
+
+Écarts actuels : seul PRF-T01/T02/T06 fiables ; reste mock.
+
+6.3 Dashboard Étudiant (/etudiant)
+----------------------------------
+ETU-T01 Login etudiant1 → /etudiant profil L1 APA
+ETU-T02 /notes affiche grades seed
+ETU-T03 /cours liste UE (à filtrer programme)
+ETU-T04 /inscriptions montre enrollment
+ETU-T05 /badgeage check-in session ouverte
+ETU-T06 (CIBLE) Paiement frais
+ETU-T07 (CIBLE) Téléchargement relevé PDF réel
+ETU-T08 (CIBLE) Crédits/compensation visibles
+ETU-T09 Parcours/Stages/Documents encore partiels
+
+Écarts actuels : chemin consultation OK ; chemin "faire" (payer, s'inscrire UE,
+obtenir diplôme) incomplet.
+
+
+################################################################################
+# 7. GLOSSAIRE LMD / INJS                                                      #
+################################################################################
+
+LMD          Licence — Master — Doctorat
+UE           Unité d'Enseignement (TeachingUnit)
+ECUE         Élément Constitutif d'UE (Course)
+ECTS         Crédits européens
+CC           Contrôle Continu (poids 40 %)
+CT           Contrôle Terminal (poids 60 %)
+Compensation Validation malgré note(s) <10 si moyenne OK et aucun ECUE <8
+AJAC         Ajourné Autorisé à Composer (non implémenté)
+PL / PC      Track Professeur Lycée-Collège / autre track STAPS seed
+APA/EM/ES/MS/TC  Spécialités STAPS
+RBAC         Contrôle d'accès basé rôles (5 niveaux)
+MFA          Authentification à deux facteurs TOTP
+Matricule    Identifiant unique étudiant (ex. INJS20250001)
+Délibération Acte de jury calculant résultats (run/validate/publish)
+Nomenclature Table des emplois STAPS (débouchés)
+
+
+################################################################################
+# ANNEXE A — CARTOGRAPHIE RAPIDE DES ÉCRANS FE                                 #
+################################################################################
+
+Étudiant
+  /etudiant                  Dashboard PARTIEL
+  /etudiant/parcours         PARTIEL mock
+  /etudiant/notes            OK API
+  /etudiant/cours            PARTIEL API
+  /etudiant/emploi-du-temps  PARTIEL API+fallback
+  /etudiant/stages           MOCK
+  /etudiant/documents        PARTIEL
+  /etudiant/inscriptions     PARTIEL API
+  /etudiant/badgeage         OK API
+
+Professeur
+  /professeur                MOCK stats
+  /professeur/cours          MOCK
+  /professeur/etudiants      MOCK
+  /professeur/evaluations    MOCK
+  /professeur/presence       OK API
+  /professeur/stages         MOCK
+  /professeur/recherche      STATIQUE
+  /professeur/documents      MOCK
+
+Administration
+  /admin                     PARTIEL (KPIs API, charts mock)
+  /admin/etudiants           OK API
+  /admin/professeurs         PARTIEL API
+  /admin/departements        PARTIEL API
+  /admin/formations          MOCK
+  /admin/ue                  OK API
+  /admin/notes               SHELL MOCK
+  /admin/stages              MOCK
+  /admin/badgeage            OK API
+  /admin/evenements          LOCAL
+  /admin/finances            MOCK
+  /admin/rapports            MOCK
+  /admin/parametres          PARTIEL (users API, perms mock)
+
+
+################################################################################
+# ANNEXE B — EXEMPLE DE BOUT EN BOUT CIBLE (Jean KOUASSI)                      #
+################################################################################
+
+1. Préinscription campagne L1 2026 STAPS-PL APA
+2. Dépôt CNI, bac, photo, certificat médical
+3. Vérification scolarité OK
+4. Paiement 150 000 XOF Orange Money → reçu
+5. Validation inscription administrative
+6. Matricule INJS20250001 + promotion L1-2025 + carte PDF
+7. Choix/confirmation filière PL + spécialité APA
+8. Inscription pédagogique UE S1 (obligatoires auto)
+9. Consultation EDT + présence QR cours Martin
+10. Accès supports Anatomie
+11. CC 12/20 + CT 14/20 → moyenne ECUE 13.2
+12. Compensation éventuelle autres ECUE
+13. Délibération S1 → crédits capitalisés
+14. Relevé PDF téléchargé
+15. Poursuite S2 → L2/L3 → stage → (Master) soutenance
+16. Diplôme Licence + statut graduated + archivage
+
+Aujourd'hui, les étapes 6 (partiel), 9 (présences), 11 (notes en base) et 13
+(API) existent en germes ; 1-5, 8, 10, 12 UI, 14-16 restent à finaliser pour
+la recette "100 % cycle".
+
+
+################################################################################
+# FIN DU RÉFÉRENTIEL FONCTIONNEL — Processus INJS.txt                          #
+# Document généré pour pilotage produit, recette UAT et plan de comblement.    #
+################################################################################

@@ -1,0 +1,260 @@
+====================================================================================================
+RAPPORT DE MISE EN OEUVRE DU MODÈLE FONCTIONNEL DE RÉFÉRENCE
+POUR L'APPLICATION UNIVERSITAIRE : APP-INJS-LMD 2026 (UFR STAPS-JL)
+====================================================================================================
+Application     : app-injs-lmd2026 (INJS-LMD 2026)
+Institution     : Institut National de la Jeunesse et des Sports (INJS) — Abidjan
+Unité           : UFR Sciences et Technologies des Activités Physiques et Sportives - Jeunesse et Loisirs (STAPS-JL)
+Documents bases : - RAPPORT D'AUDIT COMPLET D'ARCHITECTURE LOGICIELLE & SYSTÈME LMD (10/09/2026)
+                  - Modèle Fonctionnel de Référence Cible INJS-LMD 2026 (Cartographie Cible)
+Date            : 10 Septembre 2026
+Auteurs         : Collège d'Experts INJS-LMD :
+                  * Architecte Logiciel Senior Systèmes LMD (30+ ans d'expérience)
+                  * Expert UX/UI & Ergonomie des Systèmes Universitaires
+                  * Développeur Frontend Senior React / Vite / SPA
+                  * Expert Fonctionnel Scolarité & Ingénierie Pédagogique LMD
+Fichier         : Rapport de mise en oeuvre appinjslmd2026.txt
+Statut          : Document Opérationnel de Cadrage et de Mise en Œuvre
+====================================================================================================
+SOMMAIRE EXÉCUTIF DU PLAN DE MISE EN OEUVRE
+====================================================================================================
+1. CADRE MÉTHODOLOGIQUE & PRINCIPES DIRECTEURS (ZÉRO RÉGRESSION)
+2. GAP ANALYSIS EXHAUSTIF : MODÈLE DE RÉFÉRENCE VS CODE EXISTANT
+3. ARCHITECTURE CIBLE DU MODULE EMPLOIS DU TEMPS (EDT) & INTERFACES
+4. ARCHITECTURE CIBLE DU DISPOSITIF DE PRÉSENCE PAR QR CODE & ANTI-FRAUDE
+5. FEUILLE DE ROUTE OPÉRATIONNELLE D'INTÉGRATION PAR DOMAINE LMD (PHASES 1 À 10)
+6. TRAITEMENT DES DOUBLES REPRÉSENTATIONS & MIGRATION DES DONNÉES (D1 À D5)
+7. PLAN D'ASSURANCE QUALITÉ, COUVERTURE DE TESTS & PROCÉDURES DE SÉCURITÉ
+8. PLANNING DE DÉPLOIEMENT & MATRICE DE RESPONSABILITÉS (RACI)
+9. CONCLUSION & ENGAGEMENT DE L'ÉQUIPE PROJET
+====================================================================================================
+1. CADRE MÉTHODOLOGIQUE & PRINCIPES DIRECTEURS (ZÉRO RÉGRESSION)
+====================================================================================================
+L'objectif de ce plan de mise en œuvre est d'intégrer 100% des exigences et des fonctionnalités
+du "Modèle Fonctionnel de Référence INJS-LMD 2026" dans l'application existante sans casser
+aucun composant en production, en préservant l'intégrité de la base de données, des comptes de
+démonstration, des 890 tests automatisés existants et des flux opérationnels.
+RÈGLES D'OR DE L'ARCHITECTURE :
+1. Règle de Conservation de l'Existant :
+   - Aucun modèle, endpoint ou composant existant ne doit être supprimé sans pont de rétrocompatibilité.
+   - Les données historiques (formations continues CPFAE, anciens matricules) restent exploitables.
+2. Architecture en Couches Indépendantes :
+   - Découpage strict : Backend REST (Django 5.1/6 + DRF) -> Frontend SPA (React 18 + Vite)
+     -> Application Mobile (Flutter) -> Moteur d'Édition (ReportLab/OpenPyXL).
+3. Focus Majeur "EDT & Présences QR" :
+   - L'Emploi du Temps et le pointage QR constituent la colonne vertébrale opérationnelle de l'INJS :
+     ils alimentent en amont la scolarité et en aval les évaluations, les jurys et la finance.
+4. Traçabilité et Immuabilité :
+   - Toute modification critique (notes, inscriptions, jurys, paramètres, pointages) est enregistrée
+     dans les journaux d'audit (`AuditLog`, `JournalScolarite`, `ParametreHistorique`).
+====================================================================================================
+2. GAP ANALYSIS EXHAUSTIF : MODÈLE DE RÉFÉRENCE VS CODE EXISTANT
+====================================================================================================
+L'analyse croisée du code source actuel (20 applications, 138 modèles) et du Modèle Fonctionnel de Référence
+définit l'état d'adhérence de chaque domaine :
++----+----------------------------------+---------------------+-------------------+---------------------+
+| #  | Domaine Fonctionnel              | État Backend Django | État Frontend     | Action de Cadrage   |
++----+----------------------------------+---------------------+-------------------+---------------------+
+| 0  | Socle & Authentification         | ✅ 100% Opérationnel | ✅ 100% Intégré    | Fiabilisation JWT ok|
+| 1  | Référentiels Universitaires      | ✅ 100% Opérationnel | ✅ 100% Intégré    | Migration FK active |
+| 2  | Admissions & Concours            | ✅ 100% Opérationnel | ✅ 100% Intégré    | Concours & Pièces   |
+| 3  | Scolarité LMD & Inscriptions     | ✅ 100% Opérationnel | ✅ 100% Intégré    | IA / IP complètes   |
+| 4  | Pédagogie, Maquettes & UE/ECUE   | ✅ 100% Opérationnel | ✅ 100% Intégré    | ECTS & Passerelles  |
+| 5  | Enseignants & Charges            | ✅ 100% Opérationnel | ✅ 100% Intégré    | Volumes horaires    |
+| 6  | Emploi du Temps (EDT)            | ✅ Contrat v1.1 + L8| ⚠️ À parfaire UI  | Focus Prioritaire   |
+| 7  | Présences & Badgeage QR Code     | ✅ 100% Opérationnel | ✅ Mobile/Web     | Focus Prioritaire   |
+| 8  | Évaluations, Notes & Moyennes    | ✅ 100% Opérationnel | ✅ 100% Intégré    | Workflow de notes   |
+| 9  | Jurys LMD & Délibérations        | ✅ 100% Opérationnel | ✅ 100% Intégré    | Moteur ECTS & PV    |
+| 10 | Diplômation & Actes Académiques  | ✅ 100% Opérationnel | ✅ 100% Intégré    | Registre & Édition  |
+| 11 | Stages & Conventions             | ✅ 100% Opérationnel | ⚠️ À brancher UI  | Vue React à lier    |
+| 12 | Finances Étudiantes (LMD)        | ✅ 100% Opérationnel | ✅ 100% Intégré    | Échéanciers/Reçus   |
+| 13 | Finances Vacations Formateurs    | ✅ 100% Opérationnel | ✅ 100% Intégré    | Dashboard formateurs|
+| 14 | Administration, RH & Patrimoine  | ✅ 100% Opérationnel | ⚠️ À brancher UI  | Vues gestion locale |
+| 15 | Statistiques LMD & Alertes       | ✅ 100% Opérationnel | ✅ 100% Intégré    | KPI & Rapports      |
++----+----------------------------------+---------------------+-------------------+---------------------+
+====================================================================================================
+3. ARCHITECTURE CIBLE DU MODULE EMPLOIS DU TEMPS (EDT) & INTERFACES
+====================================================================================================
+La gestion des Emplois du Temps (EDT) à l'INJS s'articule autour d'une double stratégie harmonieuse :
+1) Un contrat d'API normalisé en lecture seule vers le planificateur externe (`app-ept-injs-lmd 2026`).
+2) Une gestion opérationnelle native intégrée (`edts/`, `Edts.jsx`, `EdtNew.jsx`, `AffectationNew.jsx`).
+3.1. Architecture du Contrat de Données EDT v1.1 (`/api/scolarite/edt/`) :
+- `GET /api/scolarite/edt/contrat` : Description globale, versionnement, volumétrie.
+- `GET /api/scolarite/edt/groupes/` : Groupes LMD avec effectif réel, capacité maximale et filtres.
+- `GET /api/scolarite/edt/enseignements/` : Matrice ECUE × Semestre × Groupe avec volumes CM/TD/TP.
+- `GET /api/scolarite/edt/etudiants/` : Liste nominative des inscrits validés par groupe.
+- `GET /api/scolarite/edt/indisponibilites/` : Indisponibilités déclarées des enseignants.
+- `GET /api/scolarite/edt/creneaux/` : Séances planifiées existantes (`SessionModule`).
+- `GET /api/scolarite/edt/affectations/` : Affectations pédagogiques LMD validées.
+- `GET /api/scolarite/edt/espaces/<salle_id>/occupation/` : Occupations des salles et infrastructures sportives.
+3.2. Synchronisation et Ingestion Locale des Séances :
+- Planification importée -> Création automatique des instances `SessionModule` et `AffectationCreneau`.
+- Contrôles d'intégrité automatiques :
+  * Détection de collision de salle (`RefSalle` occupée au même créneau).
+  * Détection de collision enseignant (`Formateur` affecté simultanément sur 2 cours).
+  * Détection de chevauchement groupe (`Groupe` ayant 2 créneaux en parallèle).
+- Disponibilité immédiate de la séance pour la génération de QR Code de présence.
+====================================================================================================
+4. ARCHITECTURE CIBLE DU DISPOSITIF DE PRÉSENCE PAR QR CODE & ANTI-FRAUDE
+====================================================================================================
+Le dispositif de badgeage et de présence de l'INJS-LMD repose sur une chaîne technologique de haute sécurité :
+4.1. Cycle de Vie d'un Pointage de Présence :
+  [ Séances EDT / SessionModule ]
+                 │
+                 ▼
+  [ Génération QR Code Dynamique ] -> UUID unique cryptographique valide 24h (`QRToken`)
+                 │
+                 ▼
+  [ Scan Entrée (1er Scan) ] ------> Vérification Token + Inscription + Geofence + DeviceBinding
+                 │                   Marquage statut : `EN_COURS` / Horodatage `timestamp_entree`
+                 ▼
+  [ Heartbeat Mobile Périodique ] -> Audit de présence en arrière-plan pendant le cours
+                 │
+                 ▼
+  [ Scan Sortie (2e Scan) ] -------> Horodatage `timestamp_sortie`
+                 │                   Calcul automatique de `duree_presence_minutes`
+                 │                   Marquage statut : `TERMINE`
+                 ▼
+  [ Clôture Automatique ] ---------> Les étudiants sans scan de sortie après le délai imparti
+                                     sont traités selon la règle : `SORTIE_AUTO` ou `ABSENT_NON_BADGE`
+4.2. Piliers Anti-Fraude Multi-Niveaux :
+1. Verrouillage Matériel (`DeviceBinding`) :
+   - Un compte étudiant (`AUDITEUR`) ou formateur (`FORMATEUR`) est associé au `device_id` de son téléphone.
+   - Empêche un étudiant de se connecter sur l'appareil d'un camarade pour badger à sa place.
+2. Délimitation Géographique (Geofencing) :
+   - Les sites (`RefSite`) intègrent `geofence_latitude`, `geofence_longitude` et `geofence_radius_m`.
+   - L'application Flutter vérifie que les coordonnées GPS se trouvent dans le périmètre du complexe INJS.
+3. Détection de Sortie Anticipée (Heartbeat) :
+   - Signal silencieux émis toutes les X minutes (`MOBILE_HEARTBEAT_INTERVAL_SECONDS`).
+   - Déclenche une alerte "suspect" si l'appareil quitte prématurément le rayon du cours.
+4. Journal d'Audit Immuable (`AuditLog`) :
+   - Tout forçage manuel par un encadrant ou régularisation (`Rattrapage`) est consigné avec motif et auteur.
+====================================================================================================
+5. FEUILLE DE ROUTE OPÉRATIONNELLE D'INTÉGRATION PAR DOMAINE LMD
+====================================================================================================
+PHASE 1 : SOCLE & RÉFÉRENTIELS UNIVERSITAIRES (Semaines 1-2)
+----------------------------------------------------------------------------------------------------
+- Validation des nomenclatures : Formations de référence (`RefFormation`), Modules (`RefModule`),
+  Grades (`RefGrade`), Vagues (`RefVague`), Types Secrétariats (`RefTypeSecretariat`).
+- Cartographie des infrastructures sportives et académiques : Salles (`RefSalle`), Bâtiments (`RefBatiment`),
+  Espaces sportifs (`RefTypeEspaceSportif` : gymnases, pistes d'athlétisme, piscines, dojos).
+- Clôture de la migration FK de la table `Participant` vers les référentiels `Ref*`.
+PHASE 2 : ADMISSIONS, CONCOURS & INSCRIPTIONS (Semaines 3-4)
+----------------------------------------------------------------------------------------------------
+- Configuration des campagnes d'admission (`CampagneAdmission`) et des voies d'accès (Concours direct,
+  Concours professionnel, Titres).
+- Workflow de traitement des candidatures : Dépôt de pièces -> Vérification -> Décision d'admission.
+- Conversion automatisée de l'Admission en Inscription Administrative (`InscriptionAdministrative`).
+- Création du Dossier Étudiant (`DossierEtudiant`) lié au matricule unique pérenne (`P0001`...).
+PHASE 3 : PÉDAGOGIE, MAQUETTES LMD & CRÉDITS ECTS (Semaines 5-6)
+----------------------------------------------------------------------------------------------------
+- Définition des maquettes de formation versionnées par parcours (Licence STAPS, Master Entraînement...).
+- Structuration des Unités d'Enseignement (UE Fondamentales, Transversales) et Éléments Constitutifs (ECUE).
+- Affectation des crédits ECTS (30 par semestre / 60 par an) et des volumes horaires statutaires (CM/TD/TP).
+- Inscription Pédagogique (IP) automatique des étudiants inscrits selon la maquette active du semestre.
+- Répartition dans les groupes pédagogiques (`scolarite.Groupe` / `AffectationGroupe`).
+PHASE 4 : PLANIFICATION EDT & AFFECTATIONS PÉDAGOGIQUES (Semaines 7-8)
+----------------------------------------------------------------------------------------------------
+- Activation du contrat de synchronisation EDT v1.1 (`/api/scolarite/edt/`).
+- Ingestion des plannings de cours dans `edts.EmploiDuTemps` et `formations.SessionModule`.
+- Détection et résolution des conflits d'enseignants, de salles et de groupes.
+- Affichage de l'emploi du temps hebdomadaire dans l'interface Web et sur l'application mobile Flutter.
+PHASE 5 : DÉPLOIEMENT DU BADGEAGE QR & CONTRÔLE D'ASSIDUITÉ (Semaines 9-10)
+----------------------------------------------------------------------------------------------------
+- Mise à disposition des écrans de génération de QR Code pour les superviseurs et encadrants.
+- Déploiement de l'application Flutter mise à jour sur les terminaux étudiants et formateurs.
+- Activation des contrôles géographiques (Geofencing) et du verrouillage des appareils (`DeviceBinding`).
+- Mise en service de la commande automatique de clôture des présences (`auto_close_pointages`).
+- Interface de traitement des demandes de rattrapage et de justification des absences (`Rattrapages.jsx`).
+PHASE 6 : GESTION DES ÉVALUATIONS, SAISIE DES NOTES & MOYENNES (Semaines 11-12)
+----------------------------------------------------------------------------------------------------
+- Paramétrage des colonnes d'évaluation par module (`NoteModuleColonne` : CC, TP, Examen).
+- Saisie sécurisée des notes avec double vérification et historique des modifications (`CorrectionNoteModule`).
+- Calcul automatisé des moyennes pondérées d'ECUE et d'UE conformément aux règles de validation LMD.
+- Questionnaires de satisfaction et d'évaluation des enseignements par les auditeurs (`suiviEvaluation`).
+PHASE 7 : JURYS LMD, DÉLIBÉRATIONS & DIPLÔMATION (Semaines 13-14)
+----------------------------------------------------------------------------------------------------
+- Sessions de délibération des jurys LMD (`jurys.SessionJury`).
+- Application du moteur de compensation ECTS semestrielle et annuelle.
+- Génération des Procès-Verbaux de jurys inaltérables (`PVJury`) au format PDF.
+- Émission des relevés de notes officiels, attestations de réussite et diplômes (`graduation.Diplome`).
+- Enregistrement au Registre National des Diplômes de l'INJS (`RegistreDiplomes`).
+PHASE 8 : GESTION FINANCIÈRE DUALE & MOYENS GÉNÉRAUX (Semaines 15-16)
+----------------------------------------------------------------------------------------------------
+- Volet Étudiants : Suivi des paiements de frais de scolarité (`finances_etudiantes`), échéanciers et reçus.
+- Volet Formateurs : Suivi des vacations réelles basées sur les pointages certifiés (`FinanceSettings`).
+- Rapprochement des heures prévues vs heures effectivement dispensées.
+- Intégration des modules Stages (`stages`), Patrimoine (`patrimoine`), RH (`ressources_humaines`)
+  et Administration générale (`administrations`) dans les menus dédiés.
+PHASE 9 : PILOTAGE, STATISTIQUES LMD & TABLEAUX DE BORD (Semaines 17-18)
+----------------------------------------------------------------------------------------------------
+- Configuration des seuils d'alertes statistiques (taux de présence critique, saturation de groupe).
+- Édition automatique des bilans périodiques (Point journalier, Bilan de fin de semestre, Bilan FAC).
+- Tableaux de bord de direction avec indicateurs de pilotage stratégique de l'UFR.
+====================================================================================================
+6. TRAITEMENT DES DOUBLES REPRÉSENTATIONS & MIGRATION DES DONNÉES (D1 À D5)
+====================================================================================================
+L'intégration du modèle de référence s'effectue en résolvant définitivement les 5 doubles représentations
+sans aucune rupture de service :
+D1 — Groupes Pédagogiques :
+  - Cible : `scolarite.Groupe` + `AffectationGroupe` est la source de vérité LMD exclusive.
+  - Action : Les colonnes legacy `Participant.groupe` et `Module.groupe` sont maintenues synchronisées
+    en lecture seule pour les anciens modules de formation continue.
+D2 — Nomenclatures Étudiants :
+  - Cible : Clés étrangères directes `RefCategorie`, `RefGrade`, `RefVague`, `RefSite`, `RefSalle`.
+  - Action : Migration automatique des champs textes legacy vers les FK (script Prompt 21 validé).
+D3 — Niveaux de Formation :
+  - Cible : Lien clair entre `RefFormation` (Offre LMD) et `Formation` (Session opérationnelle).
+  - Action : Utilisation de la clé étrangère nullable `Formation.ref_formation`.
+D4 — Rattachement des Notes aux Maquettes :
+  - Cible : Liaison directe de `NoteModule` à l'ECUE de la maquette académique.
+  - Action : Le calcul ECTS s'appuie directement sur les crédits de l'ECUE pour la validation semestrielle.
+D5 — Séparation des Finances :
+  - Cible : Cloisonnement strict entre `finances_etudiantes` (Frais d'inscription LMD) et
+    `formations.Finance*` (Rémunération horaire des formateurs).
+  - Action : Deux sous-systèmes autonomes avec leurs propres écrans et droits d'accès.
+====================================================================================================
+7. PLAN D'ASSURANCE QUALITÉ, COUVERTURE DE TESTS & PROCÉDURES DE SÉCURITÉ
+====================================================================================================
+7.1. Stratégie de Tests Automatisés :
+- Maintien du taux de succès de 100% sur la suite des 890 tests Django existants.
+- Tests de non-régression systématiques sur les endpoints de badgeage QR (`test_qr_isolation.py`).
+- Tests de validation ECTS et calcul de moyennes de jury (`test_moteur_ects.py`).
+- Tests des contrats d'API EDT (`test_edt_export.py`, `test_edt_extensions.py`).
+7.2. Procédure de Sauvegarde et Restauration (Disaster Recovery) :
+- Script officiel : `scripts/backup_injs_lmd.sh`.
+- Sauvegarde quotidienne chiffrée avec calcul d'empreinte SHA-256 de la base PostgreSQL `injs_lmd_current`.
+- Protocole de restauration testé sans perte de données.
+7.3. Sécurité des Accès :
+- Maintien des politiques strictes de mot de passe (`must_change_password`).
+- Throttling des accès pour contrer les attaques par déni de service et force brute.
+- Cloisonnement étanche des données sensibles (pièces justificatives et comptes bancaires).
+====================================================================================================
+8. PLANNING DE DÉPLOIEMENT & MATRICE DE RESPONSABILITÉS (RACI)
+====================================================================================================
+MATRICE RACI DU DÉPLOIEMENT :
+(R = Réalisateur, A = Approbateur, C = Consulté, I = Informé)
++-------------------------------------+--------+-----------+--------------+-------------+-----------+
+| Tâche / Module                      | DFRC   | Direction | Secrétariats | Développeur | Auditeurs |
++-------------------------------------+--------+-----------+--------------+-------------+-----------+
+| Paramétrage Référentiels & Salles   | A      | I         | R            | C           | I         |
+| Maquettes LMD & Crédits ECTS        | A      | C         | R            | C           | I         |
+| Campagnes, Admissions, Inscriptions | A      | I         | R            | C           | I         |
+| Planification EDT & Salles          | C      | I         | R            | R           | I         |
+| Badgeage QR & Contrôle Présences    | C      | I         | R            | A           | R         |
+| Saisie Notes & Sessions Jurys LMD   | A      | A         | R            | C           | I         |
+| Édition Diplômes & PV Jurys         | A      | A         | R            | C           | I         |
+| Suivi Finances & Rapprochements     | A      | C         | R            | C           | I         |
+| Tableaux de Bord & Statistiques     | I      | A         | C            | R           | I         |
++-------------------------------------+--------+-----------+--------------+-------------+-----------+
+====================================================================================================
+9. CONCLUSION & ENGAGEMENT DE L'ÉQUIPE PROJET
+====================================================================================================
+Ce plan de mise en œuvre fournit la feuille de route exhaustive, rigoureuse et sécurisée pour
+faire de l'application **app-injs-lmd2026** la référence absolue des systèmes de gestion universitaire LMD.
+Grâce à la préservation intégrale de l'existant, à l'attention particulière portée aux **Emplois du Temps**
+et au **Badgeage QR anti-fraude**, ainsi qu'au respect scrupuleux des normes REESAO/CAMES, l'INJS UFR STAPS-JL
+dispose d'un environnement numérique d'excellence, fiable, évolutif et parfaitement maîtrisé.
+====================================================================================================
+FIN DU RAPPORT DE MISE EN OEUVRE — APP-INJS-LMD 2026
+====================================================================================================

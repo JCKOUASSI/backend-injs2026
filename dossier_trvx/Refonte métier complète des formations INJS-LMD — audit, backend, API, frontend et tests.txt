@@ -1,0 +1,1124 @@
+Je pars sur un L6 centré exclusivement sur les formations INJS-LMD, avec audit avant modification, protection du legacy et validation des 8 filières / 8 RefFormation.
+
+PROMPT MAÎTRE CLINE — L6 FORMATIONS INJS-LMD
+
+Refonte métier complète des formations INJS-LMD — audit, backend, API, frontend et tests
+
+Tu travailles dans le dépôt :
+
+/Users/jckouassi/projets/injs/backend-injs
+
+Projet : INJS-LMD 2026 — Application de gestion LMD de l’INJS, Marcory
+
+⸻
+
+0. OBJECTIF IMPÉRATIF
+
+Réaliser L6 — Refonte des formations INJS-LMD.
+
+L’objectif est de faire en sorte que le périmètre INJS-LMD utilise exclusivement les formations INJS validées, et ne présente plus les formations héritées de Sygepcpfae / CPFAE.
+
+Les formations legacy CPFAE/Sygepcpfae :
+
+* ne doivent pas être affichées comme formations INJS ;
+* ne doivent pas être utilisées comme formations INJS-LMD ;
+* ne doivent pas être renommées artificiellement pour devenir des formations INJS ;
+* ne doivent pas servir de base au nouveau modèle LMD ;
+* ne doivent pas être supprimées destructivement si elles appartiennent à un périmètre legacy extérieur à INJS-LMD.
+
+Le travail doit donc distinguer strictement :
+
+INJS-LMD
+    ↓
+formations INJS validées
+    ↓
+parcours / spécialités
+    ↓
+niveaux
+    ↓
+semestres
+    ↓
+maquettes
+    ↓
+UE
+    ↓
+ECUE
+
+et :
+
+LEGACY CPFAE / SYGEPCPFAE
+    ↓
+hors périmètre INJS-LMD
+
+⸻
+
+1. RÈGLES MÉTIER VALIDÉES — NE PAS LES MODIFIER
+
+Les éléments A-4.5 suivants sont considérés comme validés.
+
+1.1 Filières
+
+Le périmètre INJS-LMD comporte :
+
+8 filières
+
+Ne pas inventer une 9e filière.
+
+Ne pas supprimer une filière validée.
+
+Ne pas réutiliser une ancienne formation CPFAE comme l’une des 8 filières.
+
+⸻
+
+2. STRUCTURE LMD VALIDÉE
+
+La structure globale est :
+
+LICENCE
+S1
+S2
+S3
+S4
+S5
+S6
+MASTER
+S7
+S8
+S9
+S10
+
+Soit :
+
+5 années cumulées
+10 semestres
+
+Règles ECTS :
+
+30 ECTS / semestre
+60 ECTS / niveau
+
+Ne pas introduire une structure différente.
+
+Ne pas créer de niveaux artificiels supplémentaires.
+
+Ne pas créer une table Promotion.
+
+Le projet utilise :
+
+Année académique
+Formation
+Parcours / Spécialité
+Niveau
+Semestre
+Groupe
+Maquette
+UE
+ECUE
+
+⸻
+
+3. RÈGLE ABSOLUE : PAS DE PROMOTION
+
+Ne créer :
+
+Promotion
+
+ni comme modèle Django, ni comme table SQL, ni comme FK.
+
+Le besoin correspondant est couvert par :
+
+Groupe
+
+et ses relations avec :
+
+année académique
+formation
+parcours
+niveau
+vague
+
+Si le frontend affiche le mot « Promotion », cela peut rester un libellé métier si nécessaire, mais il ne doit pas conduire à la création d’une nouvelle entité Promotion.
+
+⸻
+
+4. AVANT TOUT CODE : AUDIT
+
+NE MODIFIE RIEN immédiatement.
+
+Commence par établir un état des lieux.
+
+Exécuter :
+
+cd /Users/jckouassi/projets/injs/backend-injs
+git status --short
+git branch --show-current
+git rev-parse HEAD
+git log --oneline -10
+git diff --check
+
+Le HEAD attendu au début de ce chantier est celui actuellement présent localement.
+
+Ne jamais faire :
+
+git reset --hard
+git clean -fd
+git checkout .
+git push --force
+git push --force-with-lease
+
+Ne jamais supprimer les modifications de travail existantes.
+
+Ne jamais écraser le travail non committé d’un autre chantier.
+
+⸻
+
+5. PROTECTION DES MODIFICATIONS EXISTANTES
+
+Avant toute modification, identifier les fichiers déjà modifiés :
+
+git status --short
+
+Puis classer :
+
+MODIFICATIONS EXISTANTES
+NOUVEAUX FICHIERS
+FICHIERS DU CHANTIER L6
+FICHIERS HORS PÉRIMÈTRE
+
+Ne modifier que ce qui est nécessaire à L6.
+
+Ne pas toucher inutilement :
+
+edts/
+presences/
+qr_badge_mobile/
+
+ni aux travaux visuels déjà poussés.
+
+⸻
+
+6. AUDIT DES FORMATIONS EXISTANTES
+
+Rechercher toute la chaîne :
+
+grep -RniE "Formation|RefFormation|formation.*ref|CPFAE|Sygepcpfae|sygepcpfae|formation_id" \
+    backend formations scolarite 2>/dev/null
+
+Puis rechercher les modèles :
+
+grep -RniE "class .*Formation|class .*RefFormation|ForeignKey.*Formation|OneToOneField.*Formation" \
+    backend 2>/dev/null
+
+Identifier précisément :
+
+* modèle des formations ;
+* modèle RefFormation ;
+* migrations ;
+* serializers ;
+* ViewSets ;
+* services ;
+* routes API ;
+* permissions ;
+* filtres ;
+* endpoints frontend ;
+* composants React ;
+* données seed/fixtures ;
+* tests ;
+* éventuelles données CPFAE encore exposées.
+
+⸻
+
+7. AUDIT DE LA BASE DE DONNÉES
+
+NE PAS modifier la base de développement.
+
+NE PAS insérer de vraies données INJS.
+
+NE PAS supprimer les données legacy.
+
+Faire uniquement un audit en lecture.
+
+Identifier notamment :
+
+formations
+RefFormation
+Parcours
+Niveau
+Semestre
+Groupe
+Maquette
+UE
+ECUE
+
+et les relations.
+
+Produire les comptages :
+
+nombre de formations
+nombre de RefFormation
+nombre de parcours
+nombre de niveaux
+nombre de semestres
+nombre de groupes
+nombre de maquettes
+nombre de UE
+nombre de ECUE
+
+Identifier également les formations dont les noms/codes indiquent un héritage CPFAE/Sygepcpfae.
+
+ATTENTION :
+
+Un nom ressemblant à une formation INJS ne suffit pas à conclure qu’il s’agit d’une formation INJS.
+
+Il faut identifier la source et les relations.
+
+⸻
+
+8. RÈGLE DE SÉPARATION LEGACY / INJS
+
+Le système doit avoir une séparation explicite entre :
+
+INJS-LMD
+
+et :
+
+LEGACY / CPFAE / SYGEPCPFAE
+
+Si le modèle actuel ne permet pas de distinguer correctement ces deux périmètres, concevoir la correction minimale et sûre.
+
+Priorité :
+
+source
+code
+référence
+statut
+relation
+
+Ne pas utiliser une simple convention visuelle fragile dans React.
+
+⸻
+
+9. NE PAS RENOMMER LE LEGACY
+
+INTERDICTION de faire :
+
+ancienne formation CPFAE
+        ↓
+renommage
+        ↓
+nouvelle formation INJS
+
+C’est interdit.
+
+Si une nouvelle formation INJS est nécessaire :
+
+créer/charger une véritable entité INJS-LMD
+
+avec son propre identifiant et sa propre référence.
+
+Le legacy reste identifiable comme legacy.
+
+⸻
+
+10. LES 8 REFFORMATION
+
+Le système doit respecter :
+
+8 RefFormation INJS-LMD
+
+Identifier leur représentation exacte dans le projet.
+
+Pour chacune :
+
+code
+libellé
+filière
+niveau
+parcours éventuel
+statut
+source
+relations
+
+Ne jamais inventer les codes officiels.
+
+Si une donnée officielle validée n’existe pas dans le dépôt courant, le signaler comme :
+
+DONNÉE MANQUANTE À FOURNIR
+
+et ne pas inventer une valeur.
+
+⸻
+
+11. DONNÉES MANQUANTES
+
+Si les informations officielles d’une formation ne sont pas disponibles dans les fichiers du projet :
+
+NE PAS écrire :
+
+Formation test
+Formation 1
+Formation 2
+EM test
+STAPS test
+
+et ne pas fabriquer une nomenclature officielle.
+
+Utiliser plutôt un état explicite :
+
+CONFIGURATION INJS-LMD INCOMPLÈTE
+
+avec :
+
+donnée attendue
+source attendue
+action de configuration
+
+⸻
+
+12. API À AUDITER
+
+Identifier les endpoints existants :
+
+/api/formations/
+/api/scolarite/formations/
+/api/scolarite/pedagogie/formations/
+/api/ref-formations/
+/api/...
+
+Ne pas supposer leur existence.
+
+Chercher réellement les routes.
+
+Pour chaque endpoint :
+
+URL
+méthode
+serializer
+queryset
+permissions
+filtrage
+relations
+OpenAPI
+tests
+
+Vérifier surtout :
+
+Le endpoint retourne-t-il uniquement les formations INJS-LMD ?
+
+⸻
+
+13. RÈGLE API CRITIQUE
+
+Aucune API destinée à INJS-LMD ne doit renvoyer par défaut :
+
+formations CPFAE
+formations Sygepcpfae
+formations legacy hors périmètre
+
+Il ne faut pas simplement masquer ces formations dans React.
+
+La séparation doit être faite au niveau backend/API.
+
+Le frontend ne doit jamais recevoir une liste contenant :
+
+INJS + CPFAE
+
+puis devoir deviner ce qu’il faut afficher.
+
+⸻
+
+14. FRONTEND — FORMATIONS LMD
+
+Auditer notamment :
+
+FormationsLmd.jsx
+App.jsx
+routes
+services API
+hooks
+stores éventuels
+CSS associés
+
+Rechercher :
+
+grep -RniE "FormationsLmd|formations|RefFormation|CPFAE|Sygepcpfae" \
+    frontend src 2>/dev/null
+
+Adapter le frontend à l’API canonique.
+
+⸻
+
+15. ÉCRAN FORMATIONS
+
+L’écran doit permettre de comprendre immédiatement :
+
+FORMATIONS INJS-LMD
+
+et non :
+
+formations historiques
+formations CPFAE
+formations système
+
+Afficher au minimum selon les données disponibles :
+
+Filière
+Référence formation
+Formation
+Parcours / spécialité
+Niveaux
+Semestres
+Statut
+
+Ne pas afficher une information qui n’est pas réellement disponible.
+
+⸻
+
+16. FILTRE INJS-LMD
+
+Le filtrage INJS doit être déterministe.
+
+Exemple conceptuel :
+
+scope = INJS_LMD
+
+ou équivalent selon le modèle existant.
+
+Ne pas créer arbitrairement ce champ si un mécanisme métier équivalent existe déjà.
+
+Avant d’ajouter un nouveau champ :
+
+chercher si la distinction existe déjà
+
+⸻
+
+17. PARCOURS / SPÉCIALITÉS
+
+Auditer la relation :
+
+Formation
+    ↓
+Parcours / Spécialité
+
+Une formation peut avoir :
+
+un ou plusieurs parcours/spécialités
+
+selon la nomenclature INJS validée.
+
+Ne pas créer des parcours artificiels pour remplir l’interface.
+
+⸻
+
+18. NIVEAUX
+
+Respecter :
+
+L1
+L2
+L3
+M1
+M2
+
+et les semestres :
+
+L1 → S1 S2
+L2 → S3 S4
+L3 → S5 S6
+M1 → S7 S8
+M2 → S9 S10
+
+Vérifier que les relations de données suivent cette logique.
+
+⸻
+
+19. ECTS
+
+Vérifier les contraintes :
+
+S1 = 30 ECTS
+S2 = 30 ECTS
+S3 = 30 ECTS
+S4 = 30 ECTS
+S5 = 30 ECTS
+S6 = 30 ECTS
+S7 = 30 ECTS
+S8 = 30 ECTS
+S9 = 30 ECTS
+S10 = 30 ECTS
+
+et :
+
+L1 = 60 ECTS
+L2 = 60 ECTS
+L3 = 60 ECTS
+M1 = 60 ECTS
+M2 = 60 ECTS
+
+Si les maquettes détaillées ne sont pas encore disponibles, ne pas inventer les UE/ECUE.
+
+⸻
+
+20. MAQUETTES
+
+Auditer :
+
+Maquette
+UE
+ECUE
+
+et leurs relations avec :
+
+Formation
+Parcours
+Niveau
+Semestre
+
+Une maquette INJS-LMD ne doit pas dépendre d’une formation CPFAE.
+
+Une UE/ECUE INJS ne doit pas être rattachée à un ancien Module CPFAE.
+
+⸻
+
+21. COMPATIBILITÉ AVEC LES CHANTIERS EXISTANTS
+
+NE PAS casser :
+
+chaîne LMD
+affectations pédagogiques
+EDT
+séances
+présences
+RBAC INJS
+OpenAPI
+
+La chaîne cible reste :
+
+Année académique
+    ↓
+Formation
+    ↓
+Parcours / Spécialité
+    ↓
+Niveau
+    ↓
+Semestre
+    ↓
+Groupe
+    ↓
+Maquette
+    ↓
+UE
+    ↓
+ECUE
+    ↓
+Affectation pédagogique
+    ↓
+Séance
+    ↓
+Présence
+
+⸻
+
+22. CPFAE / SYGEPCPFAE
+
+Rechercher toutes les références :
+
+grep -RniE "CPFAE|Sygepcpfae|sygepcpfae" \
+    backend frontend docs 2>/dev/null
+
+Classer chaque occurrence :
+
+1. legacy volontairement conservé
+2. compatibilité technique temporaire
+3. référence métier INJS incorrecte
+4. documentation historique
+5. code mort
+6. test legacy
+
+Ne pas supprimer aveuglément toutes les occurrences.
+
+Mais aucune référence legacy ne doit rester dans le chemin métier canonique INJS-LMD sans justification.
+
+⸻
+
+23. RBAC
+
+Respecter le RBAC INJS existant.
+
+Le rôle canonique est :
+
+INJS_ADMIN
+
+et :
+
+CHEF_INJS_ADMIN
+
+Ne pas réintroduire :
+
+CPFAE_ADMIN
+CHEF_CPFAE_ADMIN
+
+comme rôles métier du nouveau périmètre INJS-LMD.
+
+⸻
+
+24. TESTS BACKEND
+
+Créer ou compléter des tests couvrant au minimum :
+
+Formation INJS
+
+les formations INJS sont retournées
+
+Legacy
+
+les formations CPFAE ne sont pas retournées dans l'API INJS-LMD
+
+RefFormation
+
+le périmètre attendu est respecté
+
+Relations
+
+formation → parcours
+formation → niveaux
+niveau → semestres
+
+ECTS
+
+30 ECTS / semestre
+60 ECTS / niveau
+
+Sécurité
+
+un utilisateur non autorisé ne peut pas administrer les formations
+
+Non-régression
+
+EDT
+AffectationPedagogique
+Séances
+Présences
+
+⸻
+
+25. TESTS FRONTEND
+
+Vérifier :
+
+chargement des formations
+absence des formations legacy
+affichage des 8 filières lorsqu'elles sont configurées
+navigation Formation → Parcours → Niveau → Semestre
+états vide
+état configuration incomplète
+erreur API
+
+Ne pas écrire de test dépendant d’un ordre arbitraire si celui-ci n’est pas contractuel.
+
+⸻
+
+26. OPENAPI
+
+Toute modification d’API doit être reflétée dans :
+
+OpenAPI
+schema
+tests
+
+Vérifier :
+
+python manage.py check
+python manage.py makemigrations --check
+
+et la génération/validation du schéma utilisée par le projet.
+
+Ne pas modifier arbitrairement :
+
+docs/api/contract.snapshot.json
+
+sans vérifier son rôle exact.
+
+⸻
+
+27. BASE DE DÉVELOPPEMENT
+
+RÈGLE ABSOLUE :
+
+NE PAS POLLUER LA BASE DE DÉVELOPPEMENT
+
+Ne pas créer les 8 formations directement dans :
+
+injs_lmd_current
+
+pour faire passer les tests.
+
+Les tests doivent utiliser :
+
+TestCase
+TransactionTestCase
+fixtures temporaires
+factories de test
+
+selon les mécanismes existants.
+
+Après les tests, vérifier que les données métier de développement n’ont pas été modifiées.
+
+⸻
+
+28. MIGRATIONS
+
+Si une migration est réellement nécessaire :
+
+python manage.py makemigrations --check
+
+avant modification.
+
+Puis seulement si nécessaire :
+
+python manage.py makemigrations
+
+Examiner précisément le diff.
+
+Ne jamais supprimer une migration existante.
+
+Ne jamais réécrire l’historique des migrations.
+
+⸻
+
+29. DONNÉES LEGACY
+
+Si une séparation logique nécessite :
+
+scope
+source
+statut
+code
+référence
+
+privilégier une évolution non destructive.
+
+Objectif :
+
+INJS-LMD propre
++
+legacy conservé
+
+et non :
+
+DELETE FROM ...
+
+⸻
+
+30. PERFORMANCE
+
+Vérifier les queryset.
+
+Éviter les N+1 :
+
+select_related()
+prefetch_related()
+
+lorsque nécessaire.
+
+Vérifier notamment :
+
+formation → parcours
+formation → niveaux
+niveau → semestres
+formation → maquettes
+maquette → UE
+UE → ECUE
+
+⸻
+
+31. DONNÉES OFFICIELLES
+
+Si le dépôt contient des documents A-4.5 ou des sources validées, les utiliser.
+
+Si une information n’est pas présente :
+
+NE PAS INVENTER
+
+Le rapport final doit distinguer :
+
+VALIDÉ
+CONFIRMÉ PAR LE CODE
+CONFIRMÉ PAR LES DONNÉES
+MANQUANT
+À CONFIGURER
+
+⸻
+
+32. CE QUI EST INTERDIT
+
+Ne pas :
+
+créer Promotion
+
+Ne pas :
+
+réutiliser une formation CPFAE
+
+Ne pas :
+
+renommer une formation CPFAE en formation INJS
+
+Ne pas :
+
+supprimer massivement le legacy
+
+Ne pas :
+
+inventer des formations officielles
+
+Ne pas :
+
+inventer des codes RefFormation
+
+Ne pas :
+
+injecter les vraies données dans la DB dev
+
+Ne pas :
+
+modifier l'EDT existant sans nécessité
+
+Ne pas :
+
+réintroduire CPFAE_ADMIN
+
+Ne pas :
+
+changer les ports locaux
+
+Le web reste :
+
+127.0.0.1:3000
+
+L’API reste :
+
+127.0.0.1:8000
+
+Ne jamais lancer Vite avec :
+
+--port 3001
+--port 5173
+
+ou autre contournement.
+
+⸻
+
+33. ORDRE D’EXÉCUTION
+
+Suivre strictement cet ordre :
+
+1. état Git
+2. audit modèles
+3. audit données
+4. audit API
+5. audit frontend
+6. audit legacy
+7. diagnostic des écarts
+8. proposition technique minimale
+9. implémentation backend
+10. implémentation API
+11. tests backend
+12. implémentation frontend
+13. tests frontend
+14. OpenAPI
+15. tests de non-régression
+16. contrôle DB
+17. git diff --check
+18. rapport final
+
+Ne pas sauter directement au frontend.
+
+⸻
+
+34. CRITÈRES D’ACCEPTATION
+
+L6 n’est considéré terminé que si :
+
+[ ] Les 8 filières INJS sont correctement représentées
+[ ] Les 8 RefFormation sont correctement représentées
+[ ] Aucun legacy CPFAE n'est exposé comme formation INJS-LMD
+[ ] Aucun legacy n'a été renommé en INJS
+[ ] Aucun legacy hors périmètre n'a été supprimé destructivement
+[ ] La structure S1-S10 est cohérente
+[ ] Licence = S1-S6
+[ ] Master = S7-S10
+[ ] 30 ECTS / semestre respecté
+[ ] 60 ECTS / niveau respecté
+[ ] Pas de Promotion model
+[ ] Parcours correctement rattachés
+[ ] Maquettes correctement rattachées
+[ ] UE/ECUE correctement rattachées
+[ ] API filtrée au niveau backend
+[ ] Frontend cohérent avec l'API
+[ ] RBAC INJS respecté
+[ ] OpenAPI cohérent
+[ ] Tests backend OK
+[ ] Tests frontend OK
+[ ] Pas de pollution de la DB dev
+[ ] git diff --check OK
+[ ] aucun commit créé automatiquement
+[ ] aucun push effectué
+
+⸻
+
+35. CONTRÔLES FINAUX OBLIGATOIRES
+
+Backend :
+
+cd /Users/jckouassi/projets/injs/backend-injs/backend
+python manage.py check
+python manage.py makemigrations --check
+
+Tests :
+
+python manage.py test --noinput
+
+Frontend :
+
+cd /Users/jckouassi/projets/injs/backend-injs
+npm run build
+
+Adapter uniquement si le projet utilise un autre répertoire frontend déjà identifié par l’audit.
+
+Git :
+
+git status --short
+git diff --check
+git diff --stat
+git diff --name-only
+
+Puis vérifier :
+
+git rev-parse HEAD
+git log --oneline -10
+
+Aucun commit.
+
+Aucun push.
+
+⸻
+
+36. RAPPORT FINAL OBLIGATOIRE
+
+À la fin, retourner exactement une synthèse structurée :
+
+==================================================
+L6 — FORMATIONS INJS-LMD
+==================================================
+HEAD :
+BRANCHE :
+1. AUDIT INITIAL
+- formations :
+- RefFormation :
+- parcours :
+- niveaux :
+- semestres :
+- maquettes :
+- UE :
+- ECUE :
+2. LEGACY CPFAE / SYGEPCPFAE
+- occurrences trouvées :
+- occurrences conservées :
+- occurrences corrigées :
+- formations legacy exposées avant :
+- formations legacy exposées après :
+3. INJS-LMD
+- filières :
+- RefFormation :
+- structure LMD :
+- ECTS :
+4. BACKEND
+- modèles :
+- services :
+- migrations :
+- permissions :
+5. API
+- endpoints :
+- filtrage :
+- OpenAPI :
+6. FRONTEND
+- écrans :
+- composants :
+- navigation :
+- états vides :
+- erreurs :
+7. TESTS
+- backend :
+- frontend :
+- API :
+- non-régression :
+8. BASE DE DONNÉES
+- DB dev modifiée ? OUI/NON
+- données métier injectées ? OUI/NON
+- données legacy supprimées ? OUI/NON
+9. GIT
+- commit créé ? OUI/NON
+- push effectué ? OUI/NON
+- git diff --check :
+- fichiers modifiés :
+10. BLOQUANTS
+- ...
+11. STATUT
+READY / PARTIEL / BLOQUÉ
+==================================================
+
+⸻
+
+37. RÈGLE FINALE
+
+Ne suppose rien.
+
+Avant toute modification :
+
+AUDITER
+
+Puis :
+
+DIAGNOSTIQUER
+
+Puis :
+
+CORRIGER AU MINIMUM
+
+Puis :
+
+TESTER
+
+Puis :
+
+PROUVER
+
+Le résultat attendu est un INJS-LMD réellement séparé du legacy CPFAE/Sygepcpfae, sans destruction de données hors périmètre, avec une chaîne cohérente :
+
+Filière
+ ↓
+RefFormation
+ ↓
+Formation
+ ↓
+Parcours / Spécialité
+ ↓
+Niveau
+ ↓
+Semestre
+ ↓
+Maquette
+ ↓
+UE
+ ↓
+ECUE
+ ↓
+Affectation pédagogique
+ ↓
+Séance
+ ↓
+Présence
+
+Commence maintenant par l’audit uniquement. Ne modifie aucun fichier avant d’avoir produit le diagnostic des écarts.

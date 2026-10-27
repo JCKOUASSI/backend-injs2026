@@ -1,0 +1,1132 @@
+Voici le prompt groupé final pour terminer la GET-INJS, en intégrant l’arbitrage validé sur le LOT 3 et en enchaînant API → Frontend → intégration/tests → audit final, sans interrompre le travail.
+
+GET-INJS — PROMPT MAÎTRE FINAL
+
+LOT 3 API + LOT 4 FRONTEND + LOT 5 INTÉGRATION / TESTS
+
+Finalisation complète de la chaîne EDT INJS-LMD
+
+Tu travailles dans le dépôt :
+
+/Users/jckouassi/projets/injs/backend-injs
+
+Objectif : terminer GET-INJS de bout en bout en utilisant le moteur EDT/LMD déjà validé au LOT 2.
+
+⸻
+
+0. RÈGLES ABSOLUES
+
+Sécurité / intégrité
+
+* NE JAMAIS faire :
+    * git reset --hard
+    * git clean -fd
+    * git push --force
+    * git push --mirror
+    * suppression destructive de données
+    * DROP DATABASE sur la base de développement
+    * docker compose down -v
+* NE PAS supprimer ou écraser du code existant sans nécessité démontrée.
+* NE PAS créer de données métier réelles dans la base de développement.
+* Les tests doivent utiliser leurs propres fixtures / transactions.
+* NE PAS faire de commit.
+* NE PAS modifier l’historique Git.
+* Conserver toutes les modifications déjà présentes dans le workspace.
+* Avant toute modification, vérifier l’état réel du dépôt.
+
+Frontend
+
+Le site INJS-LMD doit rester sur :
+
+127.0.0.1:3000
+
+INTERDICTION de lancer Vite sur un autre port.
+
+NE PAS utiliser :
+
+* TypeScript
+* Tailwind
+* ShadCN
+* Recharts
+* Lucide
+
+Utiliser uniquement la stack frontend déjà présente :
+
+* React
+* JSX
+* Vite
+* React Router
+* React Query si déjà utilisé
+* Bootstrap / Bootstrap Icons si déjà présents
+
+Métier INJS-LMD
+
+Respecter strictement :
+
+Année académique
+→ Formation
+→ Parcours
+→ Niveau
+→ Semestre
+→ Groupe
+→ Maquette
+→ UE
+→ ECUE
+→ Affectation pédagogique
+→ Séance
+→ Présence
+
+NE PAS créer de modèle Promotion.
+
+Le Groupe couvre le besoin fonctionnel de promotion.
+
+NE PAS utiliser :
+
+* CPFAE
+* Sygepcpfae
+* Module CPFAE
+* point journalier CPFAE
+* anciennes formations CPFAE comme formations INJS
+
+Les formations affichées dans GET-INJS doivent être celles du périmètre INJS-LMD validé.
+
+⸻
+
+1. ÉTAT DE RÉFÉRENCE OBLIGATOIRE
+
+Avant toute modification :
+
+cd /Users/jckouassi/projets/injs/backend-injs
+git status --short
+git branch --show-current
+git rev-parse HEAD
+git diff --check
+
+HEAD de référence :
+
+a54f473aef0d78747cc743b9b3e217c8b9f1c251
+
+Le LOT 2 est VALIDÉ.
+
+État confirmé :
+
+789 tests
+789 exécutés
+0 échec
+0 erreur
+2 skips préexistants
+edts_creneautemplate = 0
+edts_emploidutemps = 0
+edts_affectationcreneau = 0
+edts_disponibilitehoraire = 0
+formations_refsalle = 58
+
+Ne pas injecter de vraies données EDT dans cette base.
+
+⸻
+
+2. LOT 2 — NE PAS CASSER
+
+Les modules suivants sont désormais la référence :
+
+backend/edts/moteur/__init__.py
+backend/edts/moteur/besoins.py
+backend/edts/moteur/contraintes.py
+backend/edts/moteur/generation.py
+backend/edts/moteur/validation.py
+backend/edts/moteur/publication.py
+
+Conserver leur architecture.
+
+Le nouveau moteur doit rester la source de vérité pour la nouvelle génération LMD.
+
+Garanties à préserver :
+
+* TeachingNeed immuable
+* traçabilité TeachingNeed → AffectationPedagogique
+* génération déterministe
+* contraintes C1–C10
+* raisons bloquantes explicites
+* explication
+* action_recommandee
+* budget d’exploration
+* validation
+* publication idempotente
+* versionnement
+* contrôle de concurrence
+* aucune capacité NULL interprétée comme capacité suffisante
+
+⸻
+
+3. ARBITRAGE LOT 3 — IMPÉRATIF
+
+NE PAS casser l’API existante
+
+Plusieurs routes existent déjà :
+
+emplois/
+valider/
+publier/
+grille/
+conflits/
+deplacer/
+creneaux-types/
+generer/
+
+Elles sont contractualisées et utilisées.
+
+NE PAS les supprimer.
+
+NE PAS les renommer.
+
+NE PAS modifier inutilement leur contrat.
+
+NE PAS remplacer brutalement leur implémentation.
+
+⸻
+
+4. generer_brouillon() EXISTANT
+
+Dans :
+
+backend/edts/services.py
+
+il existe un ancien :
+
+generer_brouillon()
+
+Il comporte des défauts historiques identifiés par l’audit.
+
+IMPORTANT :
+
+NE PAS le supprimer.
+
+NE PAS le réécrire globalement.
+
+NE PAS casser :
+
+POST /api/edts/emplois/{id}/generer/
+
+et son contrat OpenAPI :
+
+docs/api/contract.snapshot.json
+
+Le nouveau moteur LOT 2 doit être exposé par une route dédiée.
+
+L’ancien chemin reste compatible.
+
+⸻
+
+5. LOT 3 — API NOUVELLE COUCHE LMD
+
+Implémenter une nouvelle couche API utilisant explicitement le moteur LOT 2.
+
+Avant de coder :
+
+grep -R "generate_schedule" backend/edts backend -n
+grep -R "generer_brouillon" backend/edts backend -n
+grep -R "emplois.*generer" backend -n
+
+Identifier les serializers, viewsets, permissions et routes existantes.
+
+Réutiliser les composants existants.
+
+NE PAS créer un deuxième système RBAC.
+
+⸻
+
+6. ROUTE DÉDIÉE AU NOUVEAU MOTEUR
+
+Créer une route explicite pour la nouvelle génération LMD.
+
+Convention recommandée :
+
+POST /api/edts/lmd/generate/
+
+ou la convention REST déjà utilisée par le projet si une convention plus cohérente existe.
+
+Cette route doit appeler :
+
+generate_schedule
+
+du moteur LOT 2.
+
+Elle doit retourner au minimum :
+
+* statut
+* EDT/version concernée
+* nombre de besoins
+* nombre de créneaux générés
+* violations
+* warnings
+* raisons bloquantes
+* explications
+* actions recommandées
+* identifiants des affectations concernées
+* traçabilité vers AffectationPedagogique
+
+⸻
+
+7. AUDIT EDT
+
+Ajouter si absent :
+
+GET /api/edts/{id}/audit/
+
+L’audit doit permettre de savoir avant génération :
+
+* année
+* formation
+* parcours
+* niveau
+* semestre
+* groupe
+* affectations pédagogiques
+* besoins d’enseignement
+* volume horaire
+* enseignants
+* salles
+* disponibilités
+* créneaux
+* contraintes
+* capacité des salles
+* conflits
+* éléments manquants
+
+Le résultat doit distinguer clairement :
+
+OK
+WARNING
+BLOCKING
+
+Ne jamais présenter une donnée absente comme valide.
+
+⸻
+
+8. DISPONIBILITÉS
+
+Ajouter / compléter si nécessaire :
+
+GET /api/edts/availability/teachers/
+GET /api/edts/availability/rooms/
+
+Ces endpoints doivent utiliser le modèle LOT 1 :
+
+DisponibiliteHoraire
+
+Ne pas inventer de disponibilités.
+
+Si aucune disponibilité n’est configurée :
+
+statut = WARNING ou BLOCKING
+
+selon ce que les contraintes du moteur exigent.
+
+Retourner :
+
+code
+message
+explication
+action_recommandee
+
+⸻
+
+9. CRÉNEAUX
+
+Ajouter / compléter :
+
+GET /api/edts/slots/
+
+Utiliser :
+
+CreneauTemplate
+
+Ne pas créer un deuxième modèle de créneaux.
+
+Si le canevas est vide :
+
+CANEVAS_HORAIRE_VIDE
+
+doit être remonté explicitement.
+
+⸻
+
+10. GÉNÉRATION
+
+Le flux nouveau doit être :
+
+Audit
+ ↓
+Validation des prérequis
+ ↓
+Construction TeachingNeed
+ ↓
+Contraintes C1–C10
+ ↓
+generate_schedule
+ ↓
+Validation
+ ↓
+Persistance
+ ↓
+Audit résultat
+
+NE PAS faire :
+
+heuristique groupe/cycle
+
+NE PAS rattacher une séance à un ancien Module CPFAE.
+
+La FK de référence reste :
+
+AffectationPedagogique
+
+⸻
+
+11. VALIDATION / PUBLICATION
+
+Réutiliser :
+
+validation.py
+publication.py
+
+du LOT 2.
+
+Garantir :
+
+* validation avant publication
+* refus si violation bloquante
+* contrôle de version
+* idempotence
+* select_for_update
+* impossibilité de republier une version déjà publiée
+* traçabilité utilisateur/date
+* motif de modification
+
+Ne pas créer une seconde logique de publication.
+
+⸻
+
+12. DÉPLACEMENT MANUEL
+
+Conserver la route existante :
+
+deplacer/
+
+mais la nouvelle interface doit faire passer tout déplacement par une revalidation.
+
+Après déplacement :
+
+C1–C10
+
+doivent être réévaluées.
+
+Un déplacement provoquant une violation bloquante doit être refusé.
+
+Retourner :
+
+accepted
+violations
+warnings
+explication
+action_recommandee
+
+⸻
+
+13. ANNULATION DE CRÉNEAU
+
+Si absente, ajouter une opération explicite :
+
+POST /api/edts/items/{id}/cancel/
+
+ou respecter la convention existante si une route équivalente existe déjà.
+
+L’annulation doit être :
+
+* traçable
+* réversible lorsque le modèle le permet
+* sans suppression physique destructive si l’historique doit être conservé
+
+⸻
+
+14. API — COMPATIBILITÉ
+
+Après les modifications :
+
+python manage.py check
+python manage.py makemigrations --check
+
+Puis vérifier :
+
+/api/docs/
+/api/schema/
+
+Le contrat existant doit rester compatible.
+
+NE PAS modifier :
+
+docs/api/contract.snapshot.json
+
+simplement pour faire disparaître une incompatibilité.
+
+Si une modification contractuelle est réellement nécessaire :
+
+1. l’identifier ;
+2. la documenter ;
+3. conserver la compatibilité descendante lorsque possible ;
+4. ne jamais supprimer silencieusement une route.
+
+⸻
+
+15. LOT 4 — FRONTEND GET-INJS
+
+Identifier l’écran EDT existant.
+
+Rechercher notamment :
+
+find frontend -type f | grep -Ei 'edt|emploi|planning|cours'
+grep -R "EdtNew" frontend -n
+
+Adapter l’existant plutôt que créer une architecture parallèle.
+
+⸻
+
+16. ASSISTANT GET-INJS — 14 ÉTAPES
+
+Créer / finaliser EdtNew.jsx ou son équivalent existant.
+
+L’assistant doit suivre :
+
+1. Année académique
+2. Formation
+3. Parcours
+4. Niveau
+5. Semestre
+6. Groupe
+7. Vérification des affectations
+8. Vérification des ressources
+9. Créneaux
+10. Contraintes
+11. Génération
+12. Résultat
+13. Audit
+14. Validation / Publication
+
+Chaque étape doit être bloquante lorsque les prérequis sont insuffisants.
+
+⸻
+
+17. ÉTAPE FORMATION
+
+Les formations affichées doivent provenir du référentiel INJS-LMD.
+
+Ne jamais afficher comme formations INJS :
+
+* anciennes formations CPFAE
+* formations Sygepcpfae
+* données legacy hors périmètre
+
+NE PAS renommer artificiellement une ancienne formation pour la transformer en formation INJS.
+
+⸻
+
+18. ÉTAPE PARCOURS
+
+Filtrer :
+
+Formation
+→ Parcours
+
+Puis :
+
+Parcours
+→ Niveau
+→ Semestre
+→ Groupe
+
+Aucun dropdown ne doit proposer des valeurs incohérentes.
+
+⸻
+
+19. ÉTAPE AFFECTATIONS
+
+Afficher clairement :
+
+Affectation pédagogique
+ECUE
+Enseignant
+Volume horaire
+Groupe
+Semestre
+Statut
+
+Si aucune affectation :
+
+AFFECTATIONS_PEDAGOGIQUES_VIDES
+
+Afficher l’explication et l’action recommandée.
+
+⸻
+
+20. ÉTAPE RESSOURCES
+
+Afficher :
+
+Enseignants
+
+* disponibles
+* indisponibles
+* préférences
+
+Salles
+
+* type
+* capacité
+* disponibilité
+
+Pour une salle :
+
+capacity = NULL
+
+afficher :
+
+CAPACITÉ INCONNUE
+
+et surtout pas :
+
+CAPACITÉ SUFFISANTE
+
+⸻
+
+21. ÉTAPE CRÉNEAUX
+
+Afficher les créneaux issus de :
+
+CreneauTemplate
+
+Si aucun créneau :
+
+CANEVAS_HORAIRE_VIDE
+
+avec :
+
+Action recommandée :
+Configurer les créneaux horaires avant de lancer la génération.
+
+⸻
+
+22. ÉTAPE CONTRAINTES
+
+Afficher les contraintes :
+
+C1
+C2
+C3
+C4
+C5
+C6
+C7
+C8
+C9
+C10
+
+Afficher séparément :
+
+Bloquantes
+Avertissements
+Préférences
+
+Ne pas transformer une préférence en contrainte dure.
+
+⸻
+
+23. GÉNÉRATION
+
+Bouton :
+
+Générer le brouillon LMD
+
+Utiliser exclusivement la nouvelle route du moteur LOT 2.
+
+Pendant la génération :
+
+Génération en cours…
+
+Puis afficher :
+
+Créneaux générés
+Besoins traités
+Conflits
+Warnings
+Violations
+
+⸻
+
+24. RÉSULTAT
+
+Créer une vue lisible du résultat.
+
+Filtres :
+
+Groupe
+Enseignant
+Salle
+Formation
+Semaine
+Jour
+
+Afficher au minimum :
+
+Jour
+Heure
+Formation
+Parcours
+Niveau
+Semestre
+Groupe
+UE
+ECUE
+Enseignant
+Salle
+Nature
+Statut
+
+⸻
+
+25. GRILLE EDT
+
+Préserver / compléter :
+
+Vue Groupe
+Vue Enseignant
+Vue Salle
+Vue Formation
+Vue Semaine
+
+Chaque créneau doit être traçable jusqu’à :
+
+AffectationPedagogique
+
+⸻
+
+26. AUDIT FRONTEND
+
+Créer une vue dédiée :
+
+Audit EDT
+
+Sections :
+
+✓ Pré-requis
+✓ Affectations
+✓ Ressources
+✓ Créneaux
+✓ Contraintes
+⚠ Avertissements
+✕ Blocages
+
+Pour chaque blocage :
+
+Code
+Explication
+Action recommandée
+
+⸻
+
+27. DÉPLACEMENT MANUEL
+
+Depuis la grille :
+
+Déplacer
+
+Afficher les créneaux compatibles.
+
+Avant confirmation :
+
+Revalidation C1–C10
+
+Si violation bloquante :
+
+Déplacement refusé
+
+Sinon :
+
+Déplacement accepté
+
+⸻
+
+28. VERSIONNEMENT
+
+Afficher :
+
+V1
+V2
+V3
+...
+
+Avec :
+
+Version
+Statut
+Créée le
+Créée par
+Motif
+Validée le
+Validée par
+Publiée le
+Publiée par
+
+Ne jamais écraser silencieusement une version publiée.
+
+⸻
+
+29. EXPORT
+
+Préserver / compléter l’export CSV existant.
+
+L’export doit refléter exactement la version sélectionnée.
+
+Ne pas générer un export à partir d’une ancienne logique parallèle.
+
+⸻
+
+30. INTÉGRATION PRÉSENCES / QR
+
+Vérifier que les séances générées conservent la chaîne :
+
+AffectationPedagogique
+→ AffectationCreneau
+→ Séance
+→ Présence
+
+Ne pas casser l’intégration QR.
+
+NE PAS réintroduire de relation CPFAE.
+
+⸻
+
+31. TESTS BACKEND
+
+Ajouter des tests couvrant au minimum :
+
+API
+
+* audit
+* availability enseignants
+* availability salles
+* slots
+* génération LMD
+* validation
+* publication
+* déplacement
+* annulation
+* conflits
+
+Sécurité
+
+* lecture
+* planification
+* validation
+* publication
+* refus hors RBAC
+
+Métier
+
+* formation → parcours → niveau → semestre → groupe
+* affectation pédagogique
+* TeachingNeed
+* traçabilité
+* C1–C10
+* capacité NULL
+* canevas vide
+* affectations vides
+* hors périmètre INJS
+* volume horaire inconnu
+
+Régression
+
+Vérifier que :
+
+POST /api/edts/emplois/{id}/generer/
+
+fonctionne toujours selon son contrat existant.
+
+⸻
+
+32. TESTS FRONTEND
+
+Ajouter / compléter les tests pour :
+
+* assistant 14 étapes
+* blocage si prérequis absent
+* génération
+* affichage des erreurs
+* audit
+* grille
+* déplacement
+* validation
+* publication
+* versionnement
+* export
+
+Aucun test ne doit être désactivé pour obtenir le vert.
+
+⸻
+
+33. TEST API / OPENAPI
+
+Vérifier :
+
+python manage.py check
+python manage.py makemigrations --check
+
+Puis vérifier que toutes les nouvelles routes apparaissent correctement dans :
+
+/api/schema/
+/api/docs/
+
+Les permissions doivent être documentées.
+
+⸻
+
+34. TEST COMPLET
+
+Exécuter au minimum :
+
+python manage.py test edts formations scolarite config
+
+Le socle actuel est :
+
+789 tests
+
+Objectif :
+
+789 + nouveaux tests
+0 échec
+0 erreur
+
+Les 2 skips préexistants peuvent rester.
+
+Aucun nouveau skip sans justification.
+
+⸻
+
+35. FRONTEND BUILD
+
+Identifier le package frontend réel avant d’exécuter les commandes.
+
+Puis lancer le build correspondant au projet.
+
+Exemple seulement si confirmé par package.json :
+
+npm run build
+
+Le build doit être :
+
+exit 0
+
+NE PAS changer le port Vite pour contourner un problème.
+
+⸻
+
+36. VÉRIFICATION BASE DE DONNÉES
+
+Après tous les tests, vérifier que la base de développement n’a pas été polluée.
+
+Les données EDT de développement doivent rester :
+
+edts_creneautemplate = 0
+edts_emploidutemps = 0
+edts_affectationcreneau = 0
+edts_disponibilitehoraire = 0
+
+Les 58 salles existantes doivent rester intactes.
+
+Ne pas supprimer les données legacy hors périmètre.
+
+⸻
+
+37. CONTRÔLE FINAL GIT
+
+Exécuter :
+
+git status --short
+git diff --check
+git diff --stat
+git diff --name-only
+git log -1 --oneline
+
+Vérifier :
+
+* aucun commit
+* aucun reset
+* aucune suppression destructive
+* aucune modification involontaire
+* aucune base de développement modifiée par les tests
+
+⸻
+
+38. CONTRÔLE FINAL MÉTIER
+
+Avant de déclarer GET-INJS terminé, vérifier la chaîne complète :
+
+Formation INJS
+ ↓
+Parcours
+ ↓
+Niveau
+ ↓
+Semestre
+ ↓
+Groupe
+ ↓
+Maquette
+ ↓
+UE
+ ↓
+ECUE
+ ↓
+Affectation pédagogique
+ ↓
+TeachingNeed
+ ↓
+Génération EDT
+ ↓
+AffectationCreneau
+ ↓
+Séance
+ ↓
+Présence QR
+
+Puis :
+
+Audit
+ ↓
+Validation
+ ↓
+Publication
+ ↓
+Version
+ ↓
+Export
+
+Aucune étape ne doit dépendre d’un ancien modèle CPFAE.
+
+⸻
+
+39. CRITÈRE DE FIN
+
+GET-INJS est terminé uniquement si :
+
+✓ LOT 2 conservé
+✓ LOT 3 API terminé
+✓ nouveau moteur exposé
+✓ anciennes routes compatibles
+✓ generer_brouillon ancien conservé
+✓ OpenAPI compatible
+✓ LOT 4 frontend terminé
+✓ assistant 14 étapes opérationnel
+✓ audit opérationnel
+✓ génération opérationnelle
+✓ grille opérationnelle
+✓ déplacement revalidé
+✓ validation opérationnelle
+✓ publication opérationnelle
+✓ versionnement opérationnel
+✓ export opérationnel
+✓ intégration Séance/Présence préservée
+✓ tests backend verts
+✓ tests frontend verts
+✓ build frontend vert
+✓ manage.py check vert
+✓ makemigrations --check vert
+✓ git diff --check vert
+✓ base de développement non polluée
+✓ aucun commit
+
+⸻
+
+40. IMPORTANT — NE PAS S’ARRÊTER À MI-CHEMIN
+
+Travaille en continu :
+
+LOT 3
+→ LOT 4
+→ LOT 5
+→ vérifications finales
+
+Ne demande pas de validation intermédiaire.
+
+Si une petite incompatibilité technique apparaît :
+
+1. inspecter le code existant ;
+2. choisir la solution rétrocompatible ;
+3. appliquer la correction minimale ;
+4. ajouter le test ;
+5. continuer.
+
+Si une vraie décision métier non résolue apparaît, ne pas inventer la donnée : documenter précisément le blocage dans le rapport final.
+
+⸻
+
+41. RAPPORT FINAL OBLIGATOIRE
+
+À la fin seulement, produire :
+
+==================================================
+GET-INJS — RAPPORT FINAL
+==================================================
+HEAD :
+BRANCHE :
+LOT 3 API :
+- routes ajoutées :
+- routes conservées :
+- moteur LOT 2 utilisé :
+- compatibilité OpenAPI :
+LOT 4 FRONTEND :
+- assistant :
+- audit :
+- grille :
+- déplacement :
+- validation :
+- publication :
+- versionnement :
+- export :
+LOT 5 TESTS :
+- tests avant :
+- tests après :
+- succès :
+- échecs :
+- skips :
+CHECK :
+- manage.py check :
+- makemigrations --check :
+- git diff --check :
+- frontend build :
+BASE DEV :
+- creneautemplate :
+- emploisdutemps :
+- affectationcreneau :
+- disponibilitehoraire :
+- salles :
+INTÉGRITÉ :
+- aucun commit :
+- aucun reset :
+- aucune suppression destructive :
+- aucune donnée métier inventée :
+- aucun port Vite alternatif :
+BLOCAGES RESTANTS :
+- NONE / liste précise
+STATUT FINAL :
+GET-INJS TERMINÉ / NON TERMINÉ
+==================================================
+
+Ne pas faire de commit.
+
+Ne pas pousser vers GitHub.
+
+Ne pas modifier l’historique.
+
+Objectif final : livrer GET-INJS complet, rétrocompatible et testé, avec le nouveau moteur LMD LOT 2 comme moteur de génération de référence, tout en conservant intact l’ancien contrat API.
+
+Tu peux donner ce prompt tel quel à Cline/Arena. Il verrouille notamment le point sensible : le nouveau moteur LOT 2 est utilisé par la nouvelle API LMD, tandis que generer_brouillon() et le contrat API historique restent préservés.
