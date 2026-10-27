@@ -1,0 +1,161 @@
+/* ==========================================================================
+   STYLE DEDIE : EQUIVALENCES ET DISPENSES (SCOLARITE) INJS-LMD 2026
+   Rendu premium aligne sur campagnes.css : bandeau blanc, tuiles KPI,
+   panneaux epures, tableau aere, boutons pilules.
+   Tout est prefixe `.equivalences-lmd-container` / `.eq-*` : aucun effet de
+   bord sur les autres ecrans et aucune modification de logique metier.
+   ========================================================================== */
+
+/* La colonne et l'espacement viennent de `.camp-page` (importe avec
+   campagnes.css) : cette classe sert surtout de racine de portee pour les
+   ajustements `.eq-*` ci-dessous. */
+.equivalences-lmd-container {
+  min-width: 0;
+}
+
+/* Les panneaux sont espaces par la colonne flex : pas de marge parasite. */
+.equivalences-lmd-container .camp-panel {
+  margin-bottom: 0 !important;
+}
+
+/* -- 1. EN-TETE DE PAGE -- */
+.equivalences-lmd-container .camp-hero-sub {
+  max-width: 62ch;
+}
+
+.eq-hero-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  align-self: flex-start;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  background: #eef2f7;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* -- 2. TUILES KPI -- */
+.eq-kpi {
+  border-radius: 16px;
+}
+
+.eq-kpi .camp-kpi-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- 3. PANNEAU DE CREATION -- */
+.eq-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 0.9rem;
+}
+
+.eq-hint {
+  font-size: 0.78rem;
+  color: #64748b;
+  max-width: 72ch;
+}
+
+.eq-add-btn {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50% !important;
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+  background: linear-gradient(135deg, #2563eb 0%, #2a7fff 100%) !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.eq-add-btn:hover,
+.eq-add-btn:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+}
+
+.eq-add-btn:disabled {
+  opacity: 0.6;
+  box-shadow: none;
+  transform: none;
+}
+
+/* -- 4. CONTROLES DE FORMULAIRE -- */
+.eq-select,
+.eq-input {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  font-size: 0.88rem;
+}
+
+.eq-select:focus,
+.eq-input:focus {
+  border-color: #2a7fff;
+  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+}
+
+/* -- 5. TABLEAU DES DEMANDES -- */
+.eq-chip {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.32rem 0.6rem;
+  border-radius: 999px;
+}
+
+.eq-table tbody td {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.eq-table .camp-candidatures {
+  min-width: 2.2rem;
+}
+
+.eq-action-btn {
+  border-radius: 9999px !important;
+  font-weight: 700;
+  font-size: 0.76rem;
+  padding: 0.35rem 0.9rem;
+  white-space: nowrap;
+}
+
+/* -- 6. PANNEAU DE DECISION (mis en avant) -- */
+.eq-decision-panel {
+  border: 1px solid #bfdbfe !important;
+  box-shadow: 0 12px 30px -6px rgba(37, 99, 235, 0.18);
+}
+
+.eq-decision-panel .camp-panel-head {
+  background: rgba(235, 243, 255, 0.7);
+}
+
+.eq-decision-panel .camp-panel-title i {
+  color: #2563eb;
+}
+
+.eq-decision-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.85rem;
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 0.75rem;
+}

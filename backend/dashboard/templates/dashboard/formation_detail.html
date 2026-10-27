@@ -1,0 +1,811 @@
+{% extends "dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block title %}{{ formation.titre }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'web-dashboard' %}">Accueil</a></li>
+<li class="breadcrumb-item"><a href="{% url 'web-formations' %}">Formations</a></li>
+<li class="breadcrumb-item active">{{ formation.titre }}</li>
+{% endblock %}
+
+{% block content %}
+<style>
+.card-header-en-cours { background: linear-gradient(135deg, #1A68AC, #2277C1); color: #fff; }
+.card-header-suspendue { background: linear-gradient(135deg, #F5B100, #E69700); color: #fff; }
+@media (max-width: 768px) {
+    .formation-actions { flex-wrap: wrap !important; gap: 0.5rem !important; }
+    .formation-actions .btn-group { flex-wrap: wrap; }
+    .formation-actions .btn { margin-bottom: 0.25rem; }
+}
+</style>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+    <div>
+        <h4 class="mb-1">{{ formation.titre }}</h4>
+        {% if formation.statut == 'PLANIFIEE' %}
+            <span class="badge badge-statut badge-planifiee"><i class="bi bi-calendar-event me-1"></i>Planifiée</span>
+        {% elif formation.statut == 'EN_COURS' %}
+            <span class="badge badge-statut badge-en-cours"><i class="bi bi-broadcast me-1"></i>En cours</span>
+        {% elif formation.statut == 'SUSPENDUE' %}
+            <span class="badge" style="background:#F5B100;color:#fff;"><i class="bi bi-pause-circle me-1"></i>Suspendue</span>
+        {% else %}
+            <span class="badge badge-statut badge-terminee"><i class="bi bi-check-circle me-1"></i>Terminée</span>
+        {% endif %}
+    </div>
+    <div class="formation-actions d-flex flex-wrap gap-1">
+        {% if user|can_edit_formation %}
+        <a href="{% url 'web-formation-edit' formation.id %}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil me-1"></i> Modifier
+        </a>
+        <form method="post" action="{% url 'web-formation-delete' formation.id %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger"
+                    onclick="return confirm('Supprimer cette formation et toutes ses données ?')">
+                <i class="bi bi-trash me-1"></i> Supprimer
+            </button>
+        </form>
+        {% endif %}
+        {% if formation.statut == 'EN_COURS' %}
+        <a href="{% url 'web-formation-live' formation.id %}" class="btn btn-dfrc">
+            <i class="bi bi-broadcast me-1"></i> Suivi en direct
+        </a>
+        {% endif %}
+        <a href="{% url 'export-pdf' formation.id %}" class="btn btn-outline-danger" target="_blank">
+            <i class="bi bi-file-pdf me-1"></i> PDF
+        </a>
+        <a href="{% url 'export-excel' formation.id %}" class="btn btn-outline-success" target="_blank">
+            <i class="bi bi-file-earmark-excel me-1"></i> Excel
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- Infos formation -->
+    <div class="col-lg-8">
+        <div class="card card-modern">
+            <div class="card-header">
+                <i class="bi bi-info-circle me-2"></i>Informations
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small">Objectif</label>
+                        <p>{{ formation.objectif|default:"Non renseigné" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small">Lieu</label>
+                        <p><i class="bi bi-geo-alt me-1"></i>{{ formation.lieu|default:"Non renseigné" }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small">Date début</label>
+                        <p><i class="bi bi-calendar me-1"></i>{{ formation.date_debut|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small">Date fin</label>
+                        <p><i class="bi bi-calendar-check me-1"></i>{{ formation.date_fin|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small">Durée prévue</label>
+                        <p><i class="bi bi-clock me-1"></i>{{ formation.duree_prevue_heures }}h</p>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small">Superviseur</label>
+                        <p>
+                            {% if formation.superviseur %}
+                                <i class="bi bi-person-check text-success me-1"></i>{{ formation.superviseur.get_full_name }}
+                            {% else %}
+                                <span class="text-muted">Non assigné</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% if formation.programme %}
+                <hr>
+                <label class="form-label text-muted small">Programme</label>
+                <div style="white-space:pre-line;">{{ formation.programme }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Agenda / Contrôle de session -->
+    <div class="col-lg-4">
+        <div class="card card-modern h-100">
+            <div class="card-header d-flex justify-content-between align-items-center {% if formation.statut == 'EN_COURS' %}card-header-en-cours{% elif formation.statut == 'SUSPENDUE' %}card-header-suspendue{% endif %}">
+                <span><i class="bi bi-calendar2-week me-2"></i>Agenda du module</span>
+                {% if session_en_cours %}
+                <span class="badge bg-light text-success"><i class="bi bi-broadcast me-1"></i>En direct</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+
+                <!-- ═══ Séances du jour ═══ -->
+                {% if sessions_today %}
+                <h6 class="fw-semibold small text-muted mb-2"><i class="bi bi-clock me-1"></i>Aujourd'hui</h6>
+                {% for s in sessions_today %}
+                <div class="d-flex align-items-start gap-2 mb-2 p-2 rounded {% if s.est_en_cours %}border border-success bg-light{% elif s.est_planifiee %}border border-info bg-light{% else %}border{% endif %}">
+                    <div class="pt-1">
+                        {% if s.est_en_cours %}
+                        <span class="badge bg-success rounded-pill">{{ s.numero }}</span>
+                        {% elif s.est_planifiee %}
+                        <span class="badge bg-info rounded-pill">{{ s.numero }}</span>
+                        {% else %}
+                        <span class="badge bg-secondary rounded-pill">{{ s.numero }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <strong class="small">{{ s.intitule|default:"Séance" }} {{ s.numero }}</strong>
+                        <br>
+                        <small class="text-muted">
+                            {% if s.est_planifiee %}
+                                {% if s.heure_debut_prevue %}{{ s.heure_debut_prevue|time:"H:i" }}{% endif %}
+                                {% if s.heure_fin_prevue %} → {{ s.heure_fin_prevue|time:"H:i" }}{% endif %}
+                                {% if not s.heure_debut_prevue %}<em>Pas d'heure prévue</em>{% endif %}
+                            {% elif s.est_en_cours %}
+                                {{ s.demarree_le|date:"H:i" }} → <span class="text-success fw-bold">en cours…</span>
+                            {% else %}
+                                {{ s.demarree_le|date:"H:i" }} → {{ s.terminee_le|date:"H:i" }}
+                                <span class="text-success">({{ s.duree_minutes }} min)</span>
+                            {% endif %}
+                        </small>
+                    </div>
+                    {% if user|can_manage_sessions %}
+                    <div class="d-flex gap-1">
+                        {% if s.est_planifiee %}
+                        <form method="post" action="{% url 'web-session-start' formation.id s.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-success" title="Démarrer">
+                                <i class="bi bi-play-fill"></i>
+                            </button>
+                        </form>
+                        <form method="post" action="{% url 'web-session-delete' formation.id s.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer"
+                                    onclick="return confirm('Supprimer cette séance ?')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                        {% elif s.est_en_cours %}
+                        <form method="post" action="{% url 'web-session-stop' formation.id s.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-warning text-white" title="Terminer la séance">
+                                <i class="bi bi-stop-fill"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <!-- ═══ Séances planifiées à venir ═══ -->
+                {% if sessions_planifiees %}
+                {% if sessions_today %}<hr class="my-2">{% endif %}
+                <h6 class="fw-semibold small text-muted mb-2"><i class="bi bi-calendar-range me-1"></i>Séances à venir</h6>
+                {% for s in sessions_planifiees %}
+                {% if s.date_journee != today %}
+                <div class="d-flex align-items-start gap-2 mb-2 p-2 rounded border border-info" style="background: #f0f8ff;">
+                    <div class="pt-1">
+                        <span class="badge bg-info rounded-pill">{{ s.numero }}</span>
+                    </div>
+                    <div class="flex-grow-1">
+                        <strong class="small">{{ s.intitule|default:"Séance" }} {{ s.numero }}</strong>
+                        <br>
+                        <small class="text-muted">
+                            {{ s.date_journee|date:"d/m/Y" }}
+                            {% if s.heure_debut_prevue %} · {{ s.heure_debut_prevue|time:"H:i" }}{% endif %}
+                            {% if s.heure_fin_prevue %} → {{ s.heure_fin_prevue|time:"H:i" }}{% endif %}
+                        </small>
+                    </div>
+                    {% if user|can_manage_sessions %}
+                    <form method="post" action="{% url 'web-session-delete' formation.id s.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer"
+                                onclick="return confirm('Supprimer cette séance planifiée ?')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% endfor %}
+                {% endif %}
+
+                <!-- ═══ Formulaire planifier une séance ═══ -->
+                {% if user|can_manage_sessions %}
+                {% if not sessions_today and not sessions_planifiees %}
+                <div class="text-center py-2 mb-3">
+                    <i class="bi bi-calendar-plus text-muted" style="font-size: 2rem;"></i>
+                    <p class="text-muted small mt-2 mb-0">Aucune séance planifiée.</p>
+                </div>
+                {% endif %}
+                <hr class="my-2">
+                <h6 class="fw-semibold small text-muted mb-2"><i class="bi bi-plus-circle me-1"></i>Planifier une séance</h6>
+                <form method="post" action="{% url 'web-session-add' formation.id %}">
+                    {% csrf_token %}
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <input type="date" name="date_journee" class="form-control form-control-sm"
+                                   value="{{ today|date:'Y-m-d' }}" required>
+                        </div>
+                        <div class="col-6">
+                            <input type="text" name="intitule" class="form-control form-control-sm"
+                                   placeholder="Intitulé (ex: Matin)">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                                <input type="time" name="heure_debut_prevue" class="form-control form-control-sm"
+                                       placeholder="Début">
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-clock-fill"></i></span>
+                                <input type="time" name="heure_fin_prevue" class="form-control form-control-sm"
+                                       placeholder="Fin">
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-dfrc w-100">
+                        <i class="bi bi-calendar-plus me-1"></i>Ajouter la séance
+                    </button>
+                </form>
+
+                <!-- ═══ Import emploi du temps Excel ═══ -->
+                <hr class="my-2">
+                <h6 class="fw-semibold small text-muted mb-2"><i class="bi bi-file-earmark-excel me-1"></i>Importer un emploi du temps</h6>
+                <form method="post" action="{% url 'web-import-sessions-excel' formation.id %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="file" name="file" class="form-control" accept=".xlsx,.xls" required>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-upload me-1"></i>Importer
+                        </button>
+                    </div>
+                </form>
+
+                <!-- ═══ Actions globales formation ═══ -->
+                {% if formation.statut == 'EN_COURS' or formation.statut == 'SUSPENDUE' %}
+                <hr class="my-2">
+                <form method="post" action="{% url 'web-formation-change-statut' formation.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="statut" value="TERMINEE">
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100"
+                            onclick="return confirm('Terminer définitivement la formation ?')">
+                        <i class="bi bi-stop-circle me-1"></i>Terminer la formation
+                    </button>
+                </form>
+                {% elif formation.statut == 'TERMINEE' %}
+                <hr class="my-2">
+                <form method="post" action="{% url 'web-formation-change-statut' formation.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="statut" value="EN_COURS">
+                    <button type="submit" class="btn btn-sm btn-outline-success w-100"
+                            onclick="return confirm('Rouvrir la formation ?')">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Rouvrir la formation
+                    </button>
+                </form>
+                {% endif %}
+                {% else %}
+                <!-- Direction : lecture seule -->
+                {% if not sessions_today and not sessions_planifiees %}
+                <div class="text-center py-3">
+                    {% if formation.statut == 'EN_COURS' %}
+                    <span class="badge bg-success" style="font-size: 1rem;"><i class="bi bi-broadcast me-1"></i>Modules débutés</span>
+                    {% elif formation.statut == 'SUSPENDUE' %}
+                    <span class="badge badge-statut badge-suspendue" style="font-size: 1rem;"><i class="bi bi-pause-circle me-1"></i>Suspendu</span>
+                    {% elif formation.statut == 'TERMINEE' %}
+                    <span class="badge bg-secondary" style="font-size: 1rem;"><i class="bi bi-check-circle me-1"></i>Terminée</span>
+                    {% else %}
+                    <span class="badge bg-info" style="font-size: 1rem;"><i class="bi bi-calendar-event me-1"></i>Planifiée</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lien vers l'historique des séances -->
+<div class="text-center mb-4">
+    <a href="{% url 'web-sessions-history' formation.id %}" class="btn btn-outline-primary btn-lg">
+        <i class="bi bi-clock-history me-2"></i>Historique des séances
+        <span class="badge bg-primary ms-2">{{ all_sessions|length }}</span>
+    </a>
+</div>
+
+{% if user.role != 'ENCADRANT' %}
+<!-- Assigner superviseur -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card card-modern">
+            <div class="card-header">
+                <i class="bi bi-person-gear me-2"></i>Superviseur
+            </div>
+            <div class="card-body">
+                {% if formation.superviseur %}
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+                        {{ formation.superviseur.first_name.0 }}{{ formation.superviseur.last_name.0 }}
+                    </div>
+                    <div>
+                        <strong>{{ formation.superviseur.get_full_name }}</strong>
+                        <br><small class="text-muted">{{ formation.superviseur.email }}</small>
+                    </div>
+                </div>
+                {% endif %}
+                {% if user|can_assign_superviseur %}
+                <form method="post" action="{% url 'web-formation-assign' formation.id %}">
+                    {% csrf_token %}
+                    <div class="input-group input-group-sm">
+                        <select name="superviseur_id" class="form-select form-select-sm">
+                            <option value="">Choisir un superviseur</option>
+                            {% for s in superviseurs %}
+                            <option value="{{ s.id }}" {% if formation.superviseur_id == s.id %}selected{% endif %}>
+                                {{ s.get_full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-dfrc">Assigner</button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- QR Codes par Séance -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card card-modern h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-qr-code me-2"></i>QR Codes par Séance</span>
+            </div>
+            <div class="card-body p-0">
+                {% if sessions_for_qr %}
+                <div class="row g-3 p-3">
+                    {% for s in sessions_for_qr %}
+                    <div class="col-md-6 col-xl-4">
+                        <div class="card h-100 {% if s.est_en_cours %}border-success{% elif s.est_terminee %}border-secondary{% else %}border-info{% endif %}">
+                            <div class="card-header py-2 {% if s.est_en_cours %}bg-success bg-opacity-10{% elif s.est_terminee %}bg-secondary bg-opacity-10{% else %}bg-info bg-opacity-10{% endif %}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <strong class="small">
+                                        <i class="bi bi-calendar-event me-1"></i>
+                                        {{ s.intitule|default:"Séance" }} {{ s.numero }}
+                                    </strong>
+                                    <span class="badge {% if s.est_en_cours %}bg-success{% elif s.est_planifiee %}bg-info{% else %}bg-secondary{% endif %}">
+                                        {% if s.est_en_cours %}En cours{% elif s.est_planifiee %}Planifiée{% else %}Terminée{% endif %}
+                                    </span>
+                                </div>
+                                <small class="text-muted">{{ s.date_journee|date:"d/m/Y" }}{% if s.heure_debut_prevue %} · {{ s.heure_debut_prevue|time:"H:i" }}{% endif %}{% if s.heure_fin_prevue %} → {{ s.heure_fin_prevue|time:"H:i" }}{% endif %}</small>
+                            </div>
+                            <div class="card-body text-center py-3">
+                                {% with qr_tokens_by_session|get_item:s.id as session_qr %}
+                                {% if session_qr and session_qr.is_valid %}
+                                    <img src="/api/formations/{{ formation.id }}/sessions/{{ s.id }}/qr-image/"
+                                         alt="QR Code - {{ s.intitule|default:s.numero }}"
+                                         class="img-fluid mb-2 rounded" style="max-width:160px; border: 2px solid #e0e0e0;">
+                                    <small class="text-muted d-block mb-2">
+                                        <i class="bi bi-clock me-1"></i>Expire: {{ session_qr.expire_at|date:"d/m/Y H:i" }}
+                                    </small>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="/api/formations/{{ formation.id }}/sessions/{{ s.id }}/qr-image/"
+                                           target="_blank" class="btn btn-outline-primary">
+                                            <i class="bi bi-printer me-1"></i>Imprimer
+                                        </a>
+                                        {% if not s.est_terminee %}
+                                        <form method="post" action="{% url 'web-formation-generate-qr' formation.id %}" class="d-inline"
+                                              onsubmit="return confirm('Régénérer le QR code ? L\u2019ancien QR ne sera plus valide pour le badgeage.');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="session_id" value="{{ s.id }}">
+                                            <input type="hidden" name="duree_expiration" value="24">
+                                            <input type="hidden" name="unite_expiration" value="heures">
+                                            <button type="submit" class="btn btn-outline-warning">
+                                                <i class="bi bi-arrow-repeat me-1"></i>Régénérer
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                {% elif not s.est_terminee %}
+                                    <i class="bi bi-qr-code text-muted" style="font-size:2.5rem;opacity:0.25;"></i>
+                                    <p class="mb-2 small text-muted">Aucun QR code</p>
+                                    {% if user|can_generate_qr %}
+                                    <form method="post" action="{% url 'web-formation-generate-qr' formation.id %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="session_id" value="{{ s.id }}">
+                                        <div class="input-group input-group-sm mb-2 mx-auto" style="max-width:180px;">
+                                            <input type="number" name="duree_expiration" class="form-control" value="24" min="1" max="720" step="1" required>
+                                            <select name="unite_expiration" class="form-select" style="max-width:80px;">
+                                                <option value="heures" selected>h</option>
+                                                <option value="minutes">min</option>
+                                                <option value="jours">j</option>
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="btn btn-sm btn-dfrc">
+                                            <i class="bi bi-qr-code me-1"></i>Générer
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="py-2">
+                                        <i class="bi bi-check-circle text-secondary" style="font-size:1.5rem;opacity:0.4;"></i>
+                                        <p class="mb-0 small text-muted"><em>Séance terminée</em></p>
+                                    </div>
+                                {% endif %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-calendar-x" style="font-size:2.5rem;opacity:0.3;"></i>
+                    <p class="mt-2 mb-0">Aucune séance disponible</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Enseignants assignés -->
+<div class="card card-modern mt-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-person-video3 me-2"></i>Enseignants assignés ({{ enseignants|length }})</span>
+        {% if user|can_assign_enseignant %}
+        <button class="btn btn-sm btn-dfrc" data-bs-toggle="modal" data-bs-target="#addEnseignantModal">
+            <i class="bi bi-person-plus me-1"></i> Assigner
+        </button>
+        {% endif %}
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th>N°</th>
+                    <th>Nom</th>
+                    <th>Prénom</th>
+                    <th>Spécialité</th>
+                    <th>Pointage <small class="text-muted fw-normal">(aujourd'hui)</small></th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in formateurs %}
+                <tr>
+                    <td><code>{{ f.formateur.numerobadge }}</code></td>
+                    <td>{{ f.formateur.nom }}</td>
+                    <td>{{ f.formateur.prenom }}</td>
+                    <td>{{ f.formateur.specialite|default:"-" }}</td>
+                    <td>
+                        {% if f.has_pointage %}
+                            {% if f.session_ouverte %}
+                                <span class="badge badge-statut badge-en-salle">
+                                    <i class="bi bi-door-open me-1"></i>En salle depuis {{ f.session_ouverte.timestamp_entree|date:"H:i" }}
+                                </span>
+                                <br><small class="text-muted">{{ f.total_minutes }} min cumulées{% if f.nb_sessions > 1 %} · {{ f.nb_sessions }} sessions{% endif %}</small>
+                            {% else %}
+                                <span class="badge badge-statut badge-present">
+                                    <i class="bi bi-check-circle me-1"></i>{{ f.total_minutes }} min
+                                </span>
+                                {% if f.nb_sessions > 1 %}
+                                <br><small class="text-muted">{{ f.nb_sessions }} sessions</small>
+                                {% endif %}
+                            {% endif %}
+                        {% else %}
+                            <span class="badge badge-statut badge-absent">
+                                <i class="bi bi-x-circle me-1"></i>Absent
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.role != 'DIRECTION' %}
+                        <div class="btn-group btn-group-sm">
+                            {% if not f.has_pointage %}
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-success js-force-pointage"
+                                title="Forcer entrée"
+                                data-bs-toggle="modal"
+                                data-bs-target="#forcePointageModal"
+                                data-personne-id="{{ f.enseignant.id }}"
+                                data-type-personne="formateur"
+                                data-action="ENTREE"
+                            >
+                                <i class="bi bi-box-arrow-in-right"></i>
+                            </button>
+                            {% elif f.session_ouverte %}
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-warning js-force-pointage"
+                                title="Forcer sortie"
+                                data-bs-toggle="modal"
+                                data-bs-target="#forcePointageModal"
+                                data-personne-id="{{ f.enseignant.id }}"
+                                data-type-personne="formateur"
+                                data-action="SORTIE"
+                            >
+                                <i class="bi bi-box-arrow-right"></i>
+                            </button>
+                            {% else %}
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-info js-force-pointage"
+                                title="Forcer retour"
+                                data-bs-toggle="modal"
+                                data-bs-target="#forcePointageModal"
+                                data-personne-id="{{ f.enseignant.id }}"
+                                data-type-personne="formateur"
+                                data-action="ENTREE"
+                            >
+                                <i class="bi bi-arrow-return-left"></i>
+                            </button>
+                            {% endif %}
+                            {% if user|can_remove_formateur %}
+                            <form method="post" action="{% url 'web-formation-remove-enseignant' formation.id f.enseignant.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer"
+                                        onclick="return confirm('Retirer cet enseignant ?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">
+                        Aucun formateur assigné
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PARTICIPANTS -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="card card-modern mt-5">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-people me-2"></i>Participants attendus ({{ participants|length }})</span>
+        <!-- Ajouter participant -->
+        {% if user|can_inscrire_participant %}
+        <button class="btn btn-sm btn-dfrc" data-bs-toggle="modal" data-bs-target="#addParticipantModal">
+            <i class="bi bi-person-plus me-1"></i> Inscrire
+        </button>
+        {% endif %}
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th>N°</th>
+                    <th>Nom</th>
+                    <th>Prénom</th>
+                    <th>Organisation</th>
+                    <th>Pointage <small class="text-muted fw-normal">(aujourd'hui)</small></th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in participants %}
+                <tr>
+                    <td><code>{{ p.participant.numero }}</code></td>
+                    <td>{{ p.participant.nom }}</td>
+                    <td>{{ p.participant.prenom }}</td>
+                    <td>{{ p.participant.organisation|default:"-" }}</td>
+                    <td>
+                        {% if p.has_pointage %}
+                            {% if p.session_ouverte %}
+                                <span class="badge badge-statut badge-en-salle">
+                                    <i class="bi bi-door-open me-1"></i>En salle depuis {{ p.session_ouverte.timestamp_entree|date:"H:i" }}
+                                </span>
+                                <br><small class="text-muted">{{ p.total_minutes }} min cumulées{% if p.nb_sessions > 1 %} · {{ p.nb_sessions }} sessions{% endif %}</small>
+                            {% else %}
+                                <span class="badge badge-statut badge-present">
+                                    <i class="bi bi-check-circle me-1"></i>{{ p.total_minutes }} min
+                                </span>
+                                {% if p.nb_sessions > 1 %}
+                                <br><small class="text-muted">{{ p.nb_sessions }} sessions</small>
+                                {% endif %}
+                            {% endif %}
+                        {% else %}
+                            <span class="badge badge-statut badge-absent">
+                                <i class="bi bi-x-circle me-1"></i>Absent
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user|can_force_pointage %}
+                        <div class="btn-group btn-group-sm">
+                            {% if not p.has_pointage %}
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-success js-force-pointage"
+                                title="Forcer entrée"
+                                data-bs-toggle="modal"
+                                data-bs-target="#forcePointageModal"
+                                data-personne-id="{{ p.participant.id }}"
+                                data-type-personne="participant"
+                                data-action="ENTREE"
+                            >
+                                <i class="bi bi-box-arrow-in-right"></i>
+                            </button>
+                            {% elif p.session_ouverte %}
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-warning js-force-pointage"
+                                title="Forcer sortie"
+                                data-bs-toggle="modal"
+                                data-bs-target="#forcePointageModal"
+                                data-personne-id="{{ p.participant.id }}"
+                                data-type-personne="participant"
+                                data-action="SORTIE"
+                            >
+                                <i class="bi bi-box-arrow-right"></i>
+                            </button>
+                            {% else %}
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-info js-force-pointage"
+                                title="Forcer retour"
+                                data-bs-toggle="modal"
+                                data-bs-target="#forcePointageModal"
+                                data-personne-id="{{ p.participant.id }}"
+                                data-type-personne="participant"
+                                data-action="ENTREE"
+                            >
+                                <i class="bi bi-arrow-return-left"></i>
+                            </button>
+                            {% endif %}
+                            {% if user|can_remove_participant %}
+                            <form method="post" action="{% url 'web-formation-remove-participant' formation.id p.participant.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer"
+                                        onclick="return confirm('Retirer ce participant ?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">
+                        Aucun participant inscrit
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+
+<!-- Modal : Assigner enseignant -->
+<div class="modal fade" id="addEnseignantModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'web-formation-add-formateur' formation.id %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Assigner un enseignant</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <select name="enseignant_id" class="form-select" required>
+                        <option value="">Sélectionner un enseignant</option>
+                        {% for f in all_enseignants %}
+                        <option value="{{ f.id }}">{{ f.numerobadge }} — {{ f.nom }} {{ f.prenom }} ({{ f.specialite }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-dfrc">Assigner</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal : Ajouter participant -->
+<div class="modal fade" id="addParticipantModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'web-formation-add-participant' formation.id %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Inscrire un participant</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <select name="participant_id" class="form-select" required>
+                        <option value="">Sélectionner un participant</option>
+                        {% for p in all_participants %}
+                        <option value="{{ p.id }}">{{ p.numero }} — {{ p.nom }} {{ p.prenom }} ({{ p.organisation }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-dfrc">Inscrire</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal : Forcer un pointage (motif obligatoire) -->
+<div class="modal fade" id="forcePointageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'web-force-pointage' formation.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="personne_id" id="forcePersonneId">
+                <input type="hidden" name="type_personne" id="forceTypePersonne">
+                <input type="hidden" name="action" id="forceAction">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Forcer un badgeage</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label" for="forceMotif">Motif <span class="text-danger">*</span></label>
+                    <textarea
+                        class="form-control"
+                        name="motif"
+                        id="forceMotif"
+                        rows="3"
+                        maxlength="500"
+                        required
+                        placeholder="Ex: Badge perdu, panne lecteur, correction..."
+                    ></textarea>
+                    <small class="text-muted">Ce motif sera tracé dans le journal d’audit.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-dfrc">Confirmer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+  (function () {
+    const buttons = document.querySelectorAll('.js-force-pointage');
+    const personneId = document.getElementById('forcePersonneId');
+    const typePersonne = document.getElementById('forceTypePersonne');
+    const action = document.getElementById('forceAction');
+    const motif = document.getElementById('forceMotif');
+
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        personneId.value = btn.getAttribute('data-personne-id') || '';
+        typePersonne.value = btn.getAttribute('data-type-personne') || 'participant';
+        action.value = btn.getAttribute('data-action') || 'ENTREE';
+        motif.value = '';
+        setTimeout(() => motif.focus(), 150);
+      });
+    });
+  })();
+</script>
+{% endblock %}

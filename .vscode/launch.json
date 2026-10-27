@@ -1,0 +1,49 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "API Django :8000 (sandbox SQLite)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/manage.py",
+      "args": ["runserver", "0.0.0.0:8000", "--settings=arena.settings_sandbox", "--noreload"],
+      "env": { "PYTHONPATH": "${workspaceFolder}" },
+      "python": "${command:python.interpreterPath}",
+      "django": true,
+      "justMyCode": false,
+      "console": "integratedTerminal",
+      "presentation": { "group": "injs" }
+    },
+    {
+      "name": "API Django :8000 (config réelle)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/manage.py",
+      "args": ["runserver", "0.0.0.0:8000", "--noreload"],
+      "cwd": "${workspaceFolder}/backend",
+      "python": "${command:python.interpreterPath}",
+      "django": true,
+      "justMyCode": false,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Front :3000 (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/frontend/src",
+      "sourceMapPathOverrides": {
+        "webpack:///./src/*": "${webRoot}/*",
+        "vite:///./src/*": "${webRoot}/*"
+      },
+      "preLaunchTask": "INJS · Site web :3000 (Vite)"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Stack INJS complète (API + Front)",
+      "configurations": ["API Django :8000 (sandbox SQLite)", "Front :3000 (Chrome)"],
+      "stopAll": true
+    }
+  ]
+}

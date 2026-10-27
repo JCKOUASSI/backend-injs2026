@@ -1,0 +1,436 @@
+/* ==========================================================================
+   STYLE DEDIE : ECRAN GROUPES PEDAGOGIQUES (SCOLARITE) INJS-LMD 2026
+   Inspire du design de reference « Tableau de bord LMD 2026 »
+   (frontend/src/styles/dashboardEngine.css) : bandeau blanc verre depoli,
+   tuiles KPI, boutons pilules, pastilles d'etat, tableau aere.
+   Tout est prefixe `.grp-*` : aucun effet de bord sur les autres ecrans.
+   Aucune modification de logique : uniquement le rendu visuel.
+   ========================================================================== */
+
+/* -- 1. BANDEAU D'ACCUEIL (rappel de .dashboard-greeting-row) -- */
+.grp-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  color: var(--text-primary, #0F172A);
+}
+
+.grp-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding: 1.15rem 1.5rem;
+  background: #FFFFFF;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #E9ECF2;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+}
+
+.grp-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+/* Pastille « fil d'Ariane metier » (valeurs de .plaquette de la reference,
+   redeclarees ici car dashboardEngine.css n'est charge que par sa page). */
+.grp-hero-badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  background: #DBEAFE;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+}
+
+.grp-hero-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0B1F3A;
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.grp-hero-title i {
+  color: #2A7FFF;
+  font-size: 1.3rem;
+}
+
+.grp-hero-sub {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-secondary, #475569);
+  margin: 0;
+  max-width: 78ch;
+}
+
+/* -- 2. BOUTON D'ACTION (rappel de .btn-premium-primary) -- */
+.grp-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 9999px;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.grp-action:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1D4ED8 0%, #256FD0 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+}
+
+.grp-action:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* -- 3. LIGNE DES TUILES KPI (rappel de .top-kpis-row) -- */
+.grp-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.grp-kpi {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1.1rem 1.25rem;
+  background: #FFFFFF;
+  border: 1px solid #E9ECF2;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.grp-kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -5px rgba(11, 31, 58, 0.08);
+}
+
+.grp-kpi-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+  margin-bottom: 0.25rem;
+}
+
+.grp-kpi-value {
+  display: block;
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #0B1F3A;
+  letter-spacing: -0.02em;
+}
+
+.grp-kpi-value.is-green {
+  color: #059669;
+}
+
+/* -- 4. PANNEAU LISTE (rappel de .cand-panel / .gen-panel) -- */
+.grp-panel {
+  background: #FFFFFF;
+  border: 1px solid #E9ECF2;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  margin-bottom: 0 !important;
+}
+
+.grp-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.4rem;
+  border-bottom: 1px solid #EDF1F6;
+  background: rgba(240, 246, 252, 0.55);
+}
+
+.grp-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0B1F3A;
+  margin: 0;
+}
+
+.grp-panel-title i {
+  color: #2A7FFF;
+  font-size: 1.05rem;
+}
+
+.grp-count-pill {
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  background: #EFF6FF;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.grp-panel-body {
+  padding: 1.15rem 1.4rem 1.4rem;
+}
+
+/* -- 5. FILTRES (pastilles comme la reference) -- */
+.grp-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.15rem;
+}
+
+.grp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1 1 240px;
+  min-width: 200px;
+  max-width: 380px;
+}
+
+.grp-field-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+}
+
+.grp-field .form-select {
+  border-radius: 9999px;
+  border-color: #E2E8F0;
+  background-color: #F8FAFC;
+  font-weight: 600;
+  color: #475569;
+}
+
+.grp-field .form-select:focus {
+  background-color: #FFFFFF;
+  border-color: #2A7FFF;
+  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+}
+
+/* -- 6. ALERTE ECHECS DE REPARTITION -- */
+.grp-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.85rem 1.05rem;
+  margin-bottom: 1.15rem;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 14px;
+  color: #92400E;
+  font-size: 0.85rem;
+}
+
+.grp-alert i {
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.grp-alert strong {
+  display: block;
+  font-weight: 700;
+}
+
+.grp-alert-detail {
+  margin-top: 0.15rem;
+  color: #B45309;
+}
+
+/* -- 7. CHARGEMENT -- */
+.grp-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 2.5rem 1rem;
+  color: #64748B;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.grp-loading .spinner-border {
+  width: 1.3rem;
+  height: 1.3rem;
+  border-width: 2px;
+  color: #2A7FFF;
+}
+
+/* -- 8. TABLEAU -- */
+.grp-table-wrap {
+  border: 1px solid #EDF1F6;
+  border-radius: 14px;
+  overflow: auto;
+}
+
+.grp-table {
+  margin: 0;
+  min-width: 780px;
+}
+
+.grp-table thead th {
+  background: #F4F8FC;
+  border-bottom: 1px solid #E6EDF5;
+  color: #64748B;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.7rem 0.9rem;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.grp-table tbody td {
+  padding: 0.8rem 0.9rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #F1F5F9;
+  color: #1E293B;
+  font-size: 0.86rem;
+}
+
+.grp-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.grp-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.grp-table tbody tr:hover {
+  background: #F7FAFF;
+}
+
+.grp-nom {
+  font-weight: 700;
+  color: #0B1F3A;
+}
+
+.grp-formation {
+  color: #475569;
+}
+
+.grp-table .badge {
+  border-radius: 9999px;
+  padding: 0.28rem 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.grp-effectif {
+  font-weight: 700;
+  color: #0B1F3A;
+}
+
+.grp-effectif-cap {
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+.grp-progress {
+  min-width: 150px;
+}
+
+.grp-progress .progress {
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: #EEF2F7;
+}
+
+.grp-progress .progress-bar {
+  border-radius: 9999px;
+}
+
+.grp-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748B;
+  margin-bottom: 0.3rem;
+}
+
+.grp-progress-meta .is-over {
+  color: #DC2626;
+}
+
+.grp-sans-limite {
+  color: #94A3B8;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.grp-empty {
+  text-align: center;
+  color: #94A3B8;
+  padding: 2.25rem 1rem;
+  font-weight: 500;
+}
+
+.grp-empty i {
+  display: block;
+  font-size: 1.6rem;
+  margin-bottom: 0.45rem;
+  color: #CBD5E1;
+}
+
+/* -- 9. RESPONSIVE -- */
+@media (max-width: 1100px) {
+  .grp-kpi-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .grp-kpi-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .grp-hero {
+    align-items: flex-start;
+  }
+  .grp-field {
+    max-width: none;
+  }
+}

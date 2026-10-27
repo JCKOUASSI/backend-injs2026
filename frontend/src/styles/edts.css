@@ -1,0 +1,441 @@
+/* ==========================================================================
+   STYLE DÉDIÉ : ÉCRAN EMPLOIS DU TEMPS (GET-INJS) INJS-LMD 2026
+   Inspiré du design de référence « Tableau de bord LMD 2026 »
+   (frontend/src/styles/dashboardEngine.css) : bandeau blanc verre dépoli,
+   plaquette GET-INJS, barre de filtres aérée (labels capitales, champs en
+   pilule), panneaux à en-tête teinté, pastilles de compteur, liste avec
+   état actif en dégradé bleu, tableaux aérés.
+   Tout est préfixé `.edt-*` et scopé sous `.edt-page` : aucun effet de bord
+   sur les autres écrans. Aucune modification de logique métier : uniquement
+   le rendu visuel.
+   ========================================================================== */
+
+/* ── 1. BANDEAU D'ACCUEIL (rappel de .dashboard-greeting-row) ── */
+.edt-page .edt-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding: 1.15rem 1.5rem;
+  margin-bottom: 1.25rem;
+  background: #FFFFFF;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #E9ECF2;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+}
+
+.edt-page .edt-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+/* Plaquette « fil d'Ariane métier » (valeurs de .gen-plaquette / .par-hero-badge). */
+.edt-page .edt-hero-badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  background: #DBEAFE;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+}
+
+.edt-page .edt-hero-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0B1F3A;
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.edt-page .edt-hero-title i {
+  color: #2A7FFF;
+  font-size: 1.3rem;
+}
+
+.edt-page .edt-hero-title-sub {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #94A3B8;
+  letter-spacing: 0;
+}
+
+.edt-page .edt-hero-intro {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #475569;
+  margin: 0;
+  max-width: 78ch;
+}
+
+.edt-page .edt-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+/* ── 2. BARRE DE FILTRES (rappel de .gen-toolbar) ── */
+.edt-page .edt-toolbar {
+  margin-bottom: 1.25rem;
+}
+
+.edt-page .edt-toolbar .card-body {
+  padding: 1.1rem 1.4rem;
+}
+
+.edt-page .edt-toolbar .form-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+  margin-bottom: 0.4rem;
+}
+
+.edt-page .edt-toolbar .form-select,
+.edt-page .edt-toolbar .form-control {
+  border-radius: 9999px;
+  border: 1px solid #E2E8F0;
+  background-color: #F8FAFC;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #0F172A;
+  padding: 0.5rem 1.1rem;
+}
+
+.edt-page .edt-toolbar .form-select:focus,
+.edt-page .edt-toolbar .form-control:focus {
+  background-color: #FFFFFF;
+  border-color: #2A7FFF;
+  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+}
+
+/* ── 3. PANNEAUX (rappel de .gen-panel) ── */
+.edt-page .edt-panel {
+  overflow: hidden;
+}
+
+.edt-page .card-header.edt-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.4rem;
+  border-bottom: 1px solid #EDF1F6;
+  background: rgba(240, 246, 252, 0.55);
+  box-shadow: none;
+}
+
+.edt-page .edt-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0B1F3A;
+  margin: 0;
+}
+
+.edt-page .edt-panel-title i {
+  color: #2A7FFF;
+}
+
+.edt-page .edt-panel-title.is-danger {
+  color: #B91C1C;
+}
+
+.edt-page .edt-panel-title.is-danger i {
+  color: #EF4444;
+}
+
+.edt-page .edt-count-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  background: #EFF6FF;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.edt-page .edt-count-pill.is-danger {
+  background: #FEF2F2;
+  color: #DC2626;
+  border-color: #FECACA;
+}
+
+/* ── 4. LISTE DES EMPLOIS DU TEMPS ── */
+.edt-page .edt-list .edt-item {
+  border: 0;
+  border-bottom: 1px solid #F1F5F9;
+  border-radius: 0;
+  padding: 0.85rem 1.25rem;
+  background: #FFFFFF;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.edt-page .edt-list .edt-item:hover {
+  background: #F7FAFF;
+}
+
+.edt-page .edt-list .edt-item:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(42, 127, 255, 0.35);
+  outline: none;
+}
+
+.edt-page .edt-list .edt-item.active {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.edt-page .edt-list .edt-item.active .fw-semibold {
+  color: #FFFFFF;
+}
+
+.edt-page .edt-list .edt-item.active .badge {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+/* ── 5. ÉTATS VIDES ── */
+.edt-page .edt-empty {
+  padding: 1.75rem 1rem;
+}
+
+.edt-page .edt-empty i {
+  color: #94A3B8;
+}
+
+.edt-page .edt-empty-panel .card-body {
+  border: 1.5px dashed #D8E2EE;
+  border-radius: 14px;
+  margin: 1rem;
+  background: rgba(240, 246, 252, 0.45);
+}
+
+.edt-page .edt-empty-panel i {
+  color: #2A7FFF;
+}
+
+/* ── 6. EN-TÊTE DE DÉTAIL DE L'EDT SÉLECTIONNÉ ── */
+.edt-page .edt-detail .card-body {
+  padding: 1.15rem 1.4rem;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAFCFF 100%);
+  border-bottom: 1px solid #EDF1F6;
+}
+
+.edt-page .edt-detail-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0B1F3A;
+  letter-spacing: -0.01em;
+}
+
+.edt-page .edt-detail-meta {
+  font-size: 0.82rem;
+  color: #64748B;
+}
+
+.edt-page .edt-detail .card-footer {
+  background: rgba(240, 246, 252, 0.55);
+  border-top: 1px solid #EDF1F6;
+}
+
+/* ── 7. TABLEAUX AÉRÉS (rappel de .gen-table) ── */
+.edt-page .edt-table {
+  margin: 0;
+}
+
+.edt-page .edt-panel .edt-table thead th {
+  background: #F4F8FC;
+  border-bottom: 1px solid #E6EDF5;
+  color: #64748B;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.7rem 0.9rem;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.edt-page .edt-panel .edt-table tbody td {
+  padding: 0.75rem 0.9rem;
+  vertical-align: middle;
+  font-size: 0.88rem;
+  color: #1E293B;
+}
+
+.edt-page .edt-panel .edt-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.edt-page .edt-panel .edt-table tbody tr:hover {
+  background: #F7FAFF;
+}
+
+.edt-page .edt-panel .edt-table .badge {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* Cellules de la grille hebdomadaire. */
+.edt-page .edt-cell {
+  background: #F8FAFC;
+  border: 1px solid #E6EDF5 !important;
+  border-radius: 10px !important;
+}
+
+.edt-page .edt-panel .edt-table tbody td.table-danger {
+  background: #FEF2F2;
+}
+
+/* ── 8. FORMULAIRE DE CRÉATION (Écran « Nouvel EDT ») ── */
+.edt-page .edt-intro-note {
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1.1rem;
+  background: #F0F6FC;
+  border: 1px solid #DBEAFE;
+  border-left: 3px solid #2A7FFF;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.edt-page .edt-form > .card-body {
+  padding: 1.15rem 1.4rem 1.4rem;
+}
+
+.edt-page .edt-form .form-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+  margin-bottom: 0.35rem;
+}
+
+.edt-page .edt-form .form-control,
+.edt-page .edt-form .form-select {
+  border-radius: 10px;
+  border-color: #E2E8F0;
+  background-color: #F8FAFC;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #0F172A;
+}
+
+.edt-page .edt-form .form-control:focus,
+.edt-page .edt-form .form-select:focus {
+  background-color: #FFFFFF;
+  border-color: #2A7FFF;
+  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+}
+
+.edt-page .edt-form .form-text {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748B;
+}
+
+.edt-page .edt-form .card-footer {
+  background: rgba(240, 246, 252, 0.55);
+  border-top: 1px solid #EDF1F6;
+  padding: 1rem 1.4rem;
+}
+
+.edt-page .edt-form .btn {
+  border-radius: 9999px;
+  font-weight: 700;
+  padding: 0.5rem 1.25rem;
+}
+
+.edt-page .edt-form .btn-primary {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+}
+
+/* ── 9. ÉCRAN PRÉSENCES DE SÉANCE (/edt/presences) ── */
+.edt-page .edt-date-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+}
+
+/* La classe utilitaire `.input` de cet écran n’avait aucune définition CSS :
+   on lui donne ici le même habillage que les champs des autres écrans INJS. */
+.edt-page .input {
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+  background-color: #F8FAFC;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #0F172A;
+  padding: 0.5rem 0.9rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.edt-page .input:focus {
+  outline: none;
+  background-color: #FFFFFF;
+  border-color: #2A7FFF;
+  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+}
+
+.edt-page .label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+  margin-bottom: 0.35rem;
+}
+
+/* ── 10. RESPONSIVE ── */
+@media (max-width: 768px) {
+  .edt-page .edt-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .edt-page .edt-hero-actions {
+    width: 100%;
+  }
+
+  .edt-page .edt-hero-actions .btn {
+    flex: 1 1 auto;
+  }
+}

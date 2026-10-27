@@ -1,0 +1,390 @@
+/* ===========================================================================
+   Barre latérale RBAC — Thème Premium INJS Marcory
+   Dégradé bleu nuit profond, pilules luminescentes et arborescence fluide
+   =========================================================================== */
+
+/* Fond de la barre latérale */
+.sidebar {
+  width: var(--sidebar-width);
+  background: linear-gradient(180deg, #0A1E3F 0%, #06152D 100%) !important;
+  color: #FFFFFF;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  height: 100vh;
+  overflow-y: auto;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 24px rgba(6, 21, 45, 0.25);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* En-tête de marque de la barre latérale */
+.sidebar-brand {
+  padding: 1.25rem 1.2rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.sidebar-brand-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+/* Bouton pour masquer la barre depuis le bandeau de marque */
+.sidebar-hide-toggle {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+.sidebar-hide-toggle:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: #FFFFFF !important;
+  transform: scale(1.06);
+}
+
+.sidebar-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  background: transparent;
+  filter: brightness(0) invert(1);
+}
+
+.sidebar-brand-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #FFFFFF;
+  line-height: 1;
+}
+
+.sidebar-brand-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #38BDF8;
+  letter-spacing: 0.03em;
+}
+
+.sidebar-brand-subtitle {
+  font-size: 0.68rem;
+  color: #8FA3BF;
+  line-height: 1.3;
+}
+
+/* Carte utilisateur connecté dans la barre latérale */
+.sidebar-user {
+  background: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  margin: 0.75rem 0.9rem;
+  font-size: 0.82rem;
+}
+
+.sidebar-user small {
+  color: #8FA3BF;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.sidebar-user .user-name {
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 0.88rem;
+  display: block;
+}
+
+.sidebar-user .user-role {
+  display: inline-block;
+  margin-top: 0.25rem;
+  background: rgba(56, 189, 248, 0.18);
+  color: #7DD3FC;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.55em;
+  border-radius: 6px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+/* Badge CURP / Legacy */
+.sidebar .user-droits-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.64rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  color: #CBD5E1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.sidebar .user-droits-source.curp {
+  background: rgba(16, 185, 129, 0.18);
+  color: #A7F3D0;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+/* Zone de navigation */
+.sidebar-nav {
+  padding: 0.5rem 0.65rem;
+  flex: 1;
+}
+
+/* Entrée de navigation générale (Item) */
+.nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.9rem;
+  color: #C5D2E4;
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 500;
+  border-radius: 10px;
+  margin-bottom: 0.2rem;
+  transition: all 0.18s ease;
+}
+
+.nav-item:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Entrée active : Pilule lumineuse bleue dégradée conforme à la maquette */
+.nav-item.active {
+  background: linear-gradient(90deg, #2563EB 0%, #2A7FFF 100%) !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(30, 112, 235, 0.45);
+  border-left: none !important;
+  border-radius: 12px !important;
+}
+
+.nav-item i {
+  font-size: 1rem;
+  width: 22px;
+  text-align: center;
+  margin-right: 0.55rem;
+  opacity: 0.9;
+}
+
+.nav-item.active i {
+  opacity: 1;
+}
+
+/* Titre de Section / Tête de Groupe */
+.sidebar .nav-item.nav-groupe-tete {
+  width: 100%;
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  color: #C5D2E4;
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  margin-top: 0.35rem;
+  margin-bottom: 0.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar .nav-item.nav-groupe-tete:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar .nav-item.nav-groupe-tete.active {
+  color: #38BDF8;
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.sidebar .nav-chevron {
+  width: auto !important;
+  margin-right: 0 !important;
+  font-size: 0.72rem;
+  color: #8FA3BF;
+  transition: transform 0.2s ease;
+}
+
+.sidebar .nav-sous-titre {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: #8FA3BF;
+  margin-top: 0.1rem;
+}
+
+/* Sous-menu arborescent */
+.sidebar .nav-sous-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0.2rem 0 0.4rem 0.4rem;
+  background: transparent;
+}
+
+.sidebar .nav-sous-ligne {
+  display: flex;
+  align-items: stretch;
+}
+
+.sidebar .nav-connecteur {
+  flex: 0 0 auto;
+  width: 1.8rem;
+  padding-left: 0.8rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  line-height: 1.95rem;
+  color: rgba(255, 255, 255, 0.18);
+  user-select: none;
+}
+
+.sidebar .nav-sous-item {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.42rem 0.75rem;
+  color: #94A3B8;
+  text-decoration: none;
+  font-size: 0.82rem;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.sidebar .nav-sous-item:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar .nav-sous-item.active {
+  color: #FFFFFF;
+  font-weight: 700;
+  background: rgba(37, 99, 235, 0.25);
+  border: 1px solid rgba(37, 99, 235, 0.4);
+}
+
+/* Pied de barre latérale */
+.sidebar-footer {
+  padding: 0.75rem 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(6, 17, 39, 0.5);
+}
+
+.sidebar .nav-item.nav-deconnexion {
+  width: 100%;
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-size: 0.84rem;
+  text-align: left;
+  cursor: pointer;
+  color: #F87171;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+.sidebar .nav-item.nav-deconnexion:hover {
+  color: #FFFFFF;
+  background: rgba(239, 68, 68, 0.18);
+}
+
+.sidebar .nav-mention {
+  text-align: center;
+  padding: 0.65rem 0 0.2rem;
+  font-size: 0.65rem;
+  color: #64748B;
+  line-height: 1.35;
+}
+
+.sidebar .nav-mention span {
+  font-weight: 700;
+  color: #8FA3BF;
+}
+
+/* Message si menu vide */
+.sidebar .nav-vide {
+  margin: 1rem 0.9rem;
+  padding: 0.9rem;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: #94A3B8;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.sidebar .nav-vide i {
+  font-size: 1.25rem;
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #F59E0B;
+}
+
+/* Barre repliée et Responsive */
+@media (min-width: 993px) {
+  .sidebar {
+    transform: translateX(0);
+  }
+
+  .app-container.sidebar-collapsed .sidebar {
+    transform: translateX(-100%) !important;
+  }
+
+  .main-content {
+    margin-left: var(--sidebar-width);
+    transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .app-container.sidebar-collapsed .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 992px) {
+  .sidebar {
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+
+  .sidebar.show {
+    transform: translateX(0) !important;
+    box-shadow: 6px 0 32px rgba(6, 21, 45, 0.45) !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}

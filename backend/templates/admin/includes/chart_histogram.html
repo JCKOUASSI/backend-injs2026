@@ -1,0 +1,46 @@
+{% load i18n %}
+{% if chart %}
+<div class="dfrc-chart-svg-scroll dfrc-chart-svg-scroll--histogram">
+    <svg
+        class="dfrc-chart-svg dfrc-chart-svg--histogram"
+        viewBox="0 0 {{ chart.width }} {{ chart.height }}"
+        width="100%"
+        preserveAspectRatio="xMidYMax meet"
+        role="img"
+        aria-label="{{ title }}"
+    >
+        {% for bar in chart.bars %}
+        <g>
+            <rect
+                x="{{ bar.x }}"
+                y="{{ bar.y }}"
+                width="{{ bar.bar_w }}"
+                height="{{ bar.bar_h }}"
+                rx="4"
+                fill="{{ bar.fill }}"
+                opacity="{% if bar.show_value %}0.88{% else %}0.35{% endif %}"
+            />
+            {% if bar.show_value %}
+            <text
+                x="{{ bar.text_x }}"
+                y="{{ bar.value_y }}"
+                text-anchor="middle"
+                font-size="10"
+                fill="#1e293b"
+                font-weight="600"
+            >{{ bar.value }}</text>
+            {% endif %}
+            <text
+                x="{{ bar.text_x }}"
+                y="{{ bar.label_y }}"
+                text-anchor="middle"
+                font-size="9"
+                fill="#64748b"
+            >{{ bar.label_short }}</text>
+        </g>
+        {% endfor %}
+    </svg>
+</div>
+{% else %}
+<p class="dfrc-chart-empty">{% trans "Aucune donnée sur la période." %}</p>
+{% endif %}

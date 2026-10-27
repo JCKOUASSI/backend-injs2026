@@ -1,0 +1,227 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block nav-breadcrumbs %}{% endblock %}
+{% block bodyclass %}dashboard{% endblock %}
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="dfrc-admin-home">
+    <header class="dfrc-hero">
+        <h1 class="dfrc-hero-title">
+            {{ admin_greeting }}, {{ admin_user_name }}
+        </h1>
+        <p class="dfrc-hero-subtitle">
+            {% trans "Tableau de bord INJS LMD — formations, scolarité, présences et administration." %}
+        </p>
+    </header>
+
+  {% if admin_stats %}
+    <div class="dfrc-stats-row">
+        {% for stat in admin_stats %}
+        <a
+            class="dfrc-stat-card{% if stat.highlight %} dfrc-stat-card--highlight{% endif %}"
+            href="{% url stat.link %}"
+        >
+            <div class="dfrc-stat-header">
+                <span class="dfrc-stat-label">{{ stat.label }}</span>
+                <span class="dfrc-stat-icon">
+                    <span class="material-symbols-outlined">{{ stat.icon }}</span>
+                </span>
+            </div>
+            <span class="dfrc-stat-value">{{ stat.value }}</span>
+            {% if stat.detail %}
+            <span class="dfrc-stat-detail">{{ stat.detail }}</span>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if admin_charts %}
+    <section class="dfrc-charts-grid">
+        <article class="dfrc-chart-card">
+            <header class="dfrc-chart-header">
+                <span class="material-symbols-outlined dfrc-chart-icon dfrc-chart-icon--action">bar_chart</span>
+                <div>
+                    <h2 class="dfrc-chart-title">{% trans "Pointages par mois" %}</h2>
+                    <p class="dfrc-chart-subtitle">{% trans "Histogramme — 6 derniers mois" %}</p>
+                </div>
+            </header>
+            <div class="dfrc-chart-body dfrc-chart-body--histogram">
+                {% include "admin/includes/chart_histogram.html" with chart=admin_charts.pointages_mensuels title=_("Pointages par mois") %}
+            </div>
+        </article>
+
+        <article class="dfrc-chart-card">
+            <header class="dfrc-chart-header">
+                <span class="material-symbols-outlined dfrc-chart-icon dfrc-chart-icon--nav">stacked_bar_chart</span>
+                <div>
+                    <h2 class="dfrc-chart-title">{% trans "Taux de présence" %}</h2>
+                    <p class="dfrc-chart-subtitle">{% trans "Bandes empilées — présents / absents" %}</p>
+                </div>
+            </header>
+            <div class="dfrc-chart-body">
+                {% include "admin/includes/chart_stacked_bars.html" with rows=admin_charts.taux_presence %}
+            </div>
+        </article>
+
+        <article class="dfrc-chart-card">
+            <header class="dfrc-chart-header">
+                <span class="material-symbols-outlined dfrc-chart-icon dfrc-chart-icon--nav">event</span>
+                <div>
+                    <h2 class="dfrc-chart-title">{% trans "Séances par mois" %}</h2>
+                    <p class="dfrc-chart-subtitle">{% trans "Histogramme — séances comptabilisables" %}</p>
+                </div>
+            </header>
+            <div class="dfrc-chart-body dfrc-chart-body--histogram">
+                {% include "admin/includes/chart_histogram.html" with chart=admin_charts.sessions_mensuelles title=_("Séances par mois") %}
+            </div>
+        </article>
+    </section>
+
+    <section class="dfrc-charts-grid dfrc-charts-grid--donuts">
+        <article class="dfrc-chart-card dfrc-chart-card--donut">
+            <header class="dfrc-chart-header">
+                <span class="material-symbols-outlined dfrc-chart-icon dfrc-chart-icon--action">pie_chart</span>
+                <div>
+                    <h2 class="dfrc-chart-title">{% trans "Pointages par statut" %}</h2>
+                    <p class="dfrc-chart-subtitle">{% trans "Camembert — répartition globale" %}</p>
+                </div>
+            </header>
+            <div class="dfrc-chart-body dfrc-chart-body--donut">
+                {% include "admin/includes/chart_donut.html" with chart=admin_charts.pointages_par_statut title=_("Pointages par statut") empty_message=_("Aucun pointage enregistré.") %}
+            </div>
+        </article>
+
+        <article class="dfrc-chart-card dfrc-chart-card--donut">
+            <header class="dfrc-chart-header">
+                <span class="material-symbols-outlined dfrc-chart-icon dfrc-chart-icon--nav">smartphone</span>
+                <div>
+                    <h2 class="dfrc-chart-title">{% trans "Adoption mobile étudiants" %}</h2>
+                    <p class="dfrc-chart-subtitle">{% trans "Camembert — badgeage vs appareil lié" %}</p>
+                </div>
+            </header>
+            <div class="dfrc-chart-body dfrc-chart-body--donut">
+                {% include "admin/includes/chart_donut.html" with chart=admin_charts.auditeurs_mobile title=_("Adoption mobile étudiants") empty_message=_("Aucun étudiant connecté sur mobile.") %}
+            </div>
+        </article>
+    </section>
+  {% endif %}
+
+    <div class="dfrc-quick-actions">
+        <a class="dfrc-quick-action-btn dfrc-quick-action-btn--primary" href="{% url 'admin:formations_module_changelist' %}">
+            <span class="material-symbols-outlined" style="font-size:18px">add</span>
+            {% trans "Nouveau module" %}
+        </a>
+        <a class="dfrc-quick-action-btn dfrc-quick-action-btn--secondary" href="{% url 'admin:presences_pointage_changelist' %}">
+            <span class="material-symbols-outlined" style="font-size:18px">fingerprint</span>
+            {% trans "Pointages" %}
+        </a>
+        <a class="dfrc-quick-action-btn dfrc-quick-action-btn--secondary" href="{{ PUBLIC_APP_URL }}">
+            <span class="material-symbols-outlined" style="font-size:18px">open_in_new</span>
+            {% trans "Dashboard web" %}
+        </a>
+        <a class="dfrc-quick-action-btn dfrc-quick-action-btn--secondary" href="{% url 'admin:admin_guide_actions' %}">
+            <span class="material-symbols-outlined" style="font-size:18px">menu_book</span>
+            {% trans "Guide des actions" %}
+        </a>
+    </div>
+
+    <section class="dfrc-section">
+        <div class="dfrc-section-header">
+            <h2>{% trans "Pédagogie" %}</h2>
+        </div>
+        <div class="dfrc-bento-grid">
+            <a class="dfrc-bento-card" href="{% url 'admin:formations_formation_changelist' %}">
+                <span class="dfrc-bento-card-title">{% trans "Formations" %}</span>
+                <span class="dfrc-bento-card-subtitle">{% trans "Catalogue des formations en cours" %}</span>
+            </a>
+            <a class="dfrc-bento-card" href="{% url 'admin:formations_module_changelist' %}">
+                <span class="dfrc-bento-card-title">{% trans "Modules" %}</span>
+                <span class="dfrc-bento-card-subtitle">{% trans "Planification, inscriptions et séances" %}</span>
+            </a>
+            <a class="dfrc-bento-card" href="{% url 'admin:formations_sessionmodule_changelist' %}">
+                <span class="dfrc-bento-card-title">{% trans "Séances" %}</span>
+                <span class="dfrc-bento-card-subtitle">{% trans "Calendrier et exécution des séances" %}</span>
+            </a>
+            <a class="dfrc-bento-card" href="{% url 'admin:formations_secretariat_changelist' %}">
+                <span class="dfrc-bento-card-title">{% trans "Secrétariats" %}</span>
+                <span class="dfrc-bento-card-subtitle">{% trans "Organisation par secrétariat" %}</span>
+            </a>
+        </div>
+    </section>
+
+    <section class="dfrc-section">
+        <div class="dfrc-section-header">
+            <h2>{% trans "Personnes" %}</h2>
+        </div>
+        <div class="dfrc-bento-grid">
+            <a class="dfrc-bento-card" href="{% url 'admin:formations_participant_changelist' %}">
+                <span class="dfrc-bento-card-title">{% trans "Étudiants" %}</span>
+                <span class="dfrc-bento-card-subtitle">{% trans "Profils et affectations pédagogiques" %}</span>
+            </a>
+            <a class="dfrc-bento-card" href="{% url 'admin:formations_formateur_changelist' %}">
+                <span class="dfrc-bento-card-title">{% trans "Enseignants" %}</span>
+                <span class="dfrc-bento-card-subtitle">{% trans "Intervenants et coordonnées" %}</span>
+            </a>
+        </div>
+    </section>
+
+    <section class="dfrc-section">
+        <div class="dfrc-section-header">
+            <h2>{% trans "Présences et suivi" %}</h2>
+        </div>
+        <div class="dfrc-bento-grid">
+            <a class="dfrc-bento-card" href="{% url 'admin:presences_pointage_changelist' %}">
+                <span class="dfrc-bento-card-title">{% trans "Pointages" %}</span>
+                <span class="dfrc-bento-card-subtitle">{% trans "Entrées, sorties et corrections" %}</span>
+            </a>
+            <a class="dfrc-bento-card" href="{% url 'admin:formations_qrtoken_changelist' %}">
+                <span class="dfrc-bento-card-title">{% trans "Codes QR" %}</span>
+                <span class="dfrc-bento-card-subtitle">{% trans "Tokens actifs par séance" %}</span>
+            </a>
+            <a class="dfrc-bento-card" href="{% url 'admin:presences_auditlog_changelist' %}">
+                <span class="dfrc-bento-card-title">{% trans "Journal d'audit" %}</span>
+                <span class="dfrc-bento-card-subtitle">{% trans "Historique des actions sensibles" %}</span>
+            </a>
+            <a class="dfrc-bento-card" href="{% url 'admin:formations_volume_horaire_diagnostic' %}">
+                <span class="dfrc-bento-card-title">{% trans "Diagnostic volume horaire" %}</span>
+                <span class="dfrc-bento-card-subtitle">{% trans "Modules et séances au-delà du volume prévu" %}</span>
+            </a>
+        </div>
+    </section>
+
+    <section class="dfrc-section">
+        <div class="dfrc-section-header">
+            <h2>{% trans "Administration" %}</h2>
+        </div>
+        <div class="dfrc-bento-grid">
+            <a class="dfrc-bento-card" href="{% url 'admin:admin_guide_actions' %}">
+                <span class="dfrc-bento-card-title">{% trans "Guide des actions" %}</span>
+                <span class="dfrc-bento-card-subtitle">{% trans "Comment faire chaque opération depuis l’admin" %}</span>
+            </a>
+            <a class="dfrc-bento-card" href="{% url 'admin:authentication_user_changelist' %}">
+                <span class="dfrc-bento-card-title">{% trans "Utilisateurs" %}</span>
+                <span class="dfrc-bento-card-subtitle">{% trans "Comptes, rôles et accès" %}</span>
+            </a>
+            <a class="dfrc-bento-card" href="{% url 'admin:authentication_provision_badge_accounts' %}">
+                <span class="dfrc-bento-card-title">{% trans "Comptes badge manquants" %}</span>
+                <span class="dfrc-bento-card-subtitle">{% trans "Créer les comptes étudiants et enseignants sans User" %}</span>
+            </a>
+            <a class="dfrc-bento-card" href="{% url 'admin:presences_devicebinding_changelist' %}">
+                <span class="dfrc-bento-card-title">{% trans "Liaisons appareils" %}</span>
+                <span class="dfrc-bento-card-subtitle">{% trans "Appareils mobiles autorisés" %}</span>
+            </a>
+            <a class="dfrc-bento-card" href="{% url 'admin:formations_financesettings_changelist' %}">
+                <span class="dfrc-bento-card-title">{% trans "Paramètres finance" %}</span>
+                <span class="dfrc-bento-card-subtitle">{% trans "Tarifs et en-têtes des exports" %}</span>
+            </a>
+            <a class="dfrc-bento-card" href="{{ PUBLIC_APP_URL }}">
+                <span class="dfrc-bento-card-title">{% trans "Dashboard web" %}</span>
+                <span class="dfrc-bento-card-subtitle">{% trans "Interface opérationnelle INJS-LMD" %}</span>
+            </a>
+        </div>
+    </section>
+</div>
+{% endblock %}

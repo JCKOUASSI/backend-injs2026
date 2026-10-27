@@ -1,0 +1,158 @@
+body.login.sygep-admin,
+body.sygep-admin:not(.sygep-layout-active) {
+    background: #ffffff !important;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+body.login.sygep-admin #container {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    width: 100%;
+    margin: 0;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+body.login.sygep-admin #header,
+body.login.sygep-admin .breadcrumbs,
+body.login.sygep-admin #footer,
+body.login.sygep-admin .sygep-breadcrumbs {
+    display: none !important;
+}
+
+body.login.sygep-admin main.content,
+body.login.sygep-admin #content-start {
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+body.login.sygep-admin #content {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    float: none;
+}
+
+.sygep-login-shell {
+    width: 100%;
+}
+
+.sygep-login-card {
+    background: #fff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    padding: 36px 32px;
+}
+
+.sygep-login-brand {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.sygep-login-icon-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 16px;
+    background: #001a33;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+}
+
+.sygep-login-icon {
+    display: block;
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+}
+
+.sygep-login-brand h1 {
+    margin: 0;
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #0b478a;
+    letter-spacing: -0.01em;
+}
+
+.sygep-login-brand p {
+    margin: 6px 0 0;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.sygep-login-card .form-row {
+    margin-bottom: 16px;
+}
+
+.sygep-login-card label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #334155;
+}
+
+.sygep-login-card input[type="text"],
+.sygep-login-card input[type="password"] {
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 12px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.15s ease;
+}
+
+.sygep-login-card input[type="text"] {
+    border: 1.5px solid #ea9d0c;
+    box-shadow: 0 0 0 3px rgba(234, 157, 12, 0.18);
+    background: #ffffff;
+}
+
+.sygep-login-card input[type="password"] {
+    background-color: #ebf3fb;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.sygep-login-card input[type="text"]:focus,
+.sygep-login-card input[type="password"]:focus {
+    border-color: #ea9d0c;
+    box-shadow: 0 0 0 3px rgba(234, 157, 12, 0.25);
+}
+
+.sygep-login-card .submit-row {
+    margin-top: 24px;
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
+.sygep-login-card .submit-row input {
+    width: 100%;
+    background: #ea9d0c;
+    border: none;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(234, 157, 12, 0.3);
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.sygep-login-card .submit-row input:hover {
+    background: #d48b0a;
+}

@@ -1,0 +1,39 @@
+# Scaling horizontal — à utiliser avec le compose principal :
+#   docker compose -f compose.yml -f compose.scale.yml up -d --scale app=3
+#
+# Prérequis : REDIS_URL dans .env (cache partagé entre réplicas).
+# Le port 8001 est exposé par nginx (pas par app). Le cron reste en 1 seule instance.
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: qr-badge-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  app:
+    ports: !reset []
+    environment:
+      REDIS_URL: redis://redis:6379/1
+    volumes:
+      - media_data:/app/media
+      - cache_data:/app/cache
+    depends_on:
+      - redis
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: qr-badge-lb
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./nginx/upstream.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  media_data:
+  cache_data:

@@ -1,0 +1,299 @@
+/* ==========================================================================
+   STYLE DEDIE : REFERENTIEL FORMATIONS LMD (INJS-LMD 2026)
+   Rendu premium aligne sur campagnes.css / equivalences.css : bandeau blanc,
+   tuiles de synthese, panneaux epures, chips, blocs de cycle.
+   Tout est prefixe `.formations-lmd-container` / `.flmd-*` : aucun effet de
+   bord sur les autres ecrans et aucune modification de logique metier.
+   ========================================================================== */
+
+/* La colonne et l'espacement viennent de `.camp-page` (campagnes.css). */
+.formations-lmd-container {
+  min-width: 0;
+}
+
+.formations-lmd-container .camp-panel {
+  margin-bottom: 0 !important;
+}
+
+/* -- 1. BANDEAU -- */
+.formations-lmd-container .camp-hero-sub {
+  max-width: 78ch;
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- 2. TUILES DE SYNTHESE -- */
+.flmd-kpi .camp-kpi-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.flmd-kpi-sub {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #64748B;
+}
+
+/* -- 3. FILTRE DU REFERENTIEL -- */
+.flmd-search .input-group-text {
+  background: #fff;
+  border-color: #e2e8f0;
+  border-right: 0;
+  border-radius: 10px 0 0 10px;
+  color: #94a3b8;
+}
+
+.flmd-search .form-control {
+  border-radius: 0 10px 10px 0;
+  border-left: 0;
+}
+
+.flmd-search .form-control:focus {
+  border-color: #2a7fff;
+  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+}
+
+.flmd-search .btn {
+  border-radius: 0 10px 10px 0;
+}
+
+/* -- 4. EN-TETE DE FILIERE -- */
+.flmd-filiere-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.flmd-filiere-sub {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #64748B;
+}
+
+.flmd-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.flmd-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* -- 5. CHIPS -- */
+.flmd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.22rem 0.6rem;
+  border-radius: 9999px;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.flmd-chip--ghost {
+  background: #FFFFFF;
+}
+
+.flmd-chip--blue {
+  background: #EBF3FF;
+  border-color: #BFDBFE;
+  color: #2563EB;
+}
+
+/* -- 6. BLOC CYCLE -- */
+.flmd-cycle {
+  padding: 0.95rem 1.1rem 1.05rem;
+  background: #FCFDFF;
+  border: 1px solid #EDF1F6;
+  border-radius: 14px;
+}
+
+.flmd-cycle-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.7rem;
+}
+
+.flmd-cycle-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #0B1F3A;
+  letter-spacing: -0.01em;
+}
+
+.flmd-cycle-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.flmd-blocs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 0.9rem;
+}
+
+.flmd-bloc {
+  min-width: 0;
+  padding: 0.75rem 0.9rem 0.85rem;
+  border: 1px dashed #E2E8F0;
+  border-radius: 12px;
+}
+
+.flmd-bloc--large {
+  grid-column: 1 / -1;
+}
+
+.flmd-bloc-title {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #2A7FFF;
+}
+
+.flmd-vide {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #94A3B8;
+}
+
+/* -- 7. PARCOURS & NIVEAUX -- */
+.flmd-parcours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.flmd-niveaux {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.6rem;
+}
+
+.flmd-niveau {
+  padding: 0.6rem 0.75rem;
+  background: #FFFFFF;
+  border: 1px solid #E9ECF2;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.flmd-niveau-head {
+  font-size: 0.88rem;
+  color: #0F172A;
+}
+
+.flmd-niveau-head strong {
+  color: #0B1F3A;
+}
+
+.flmd-niveau-meta {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748B;
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- 8. MAQUETTES / UE / ECUE -- */
+.flmd-maquettes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.flmd-maquette {
+  padding-left: 0.85rem;
+  border-left: 3px solid #BFDBFE;
+}
+
+.flmd-maquette-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.flmd-maquette-lib {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0B1F3A;
+}
+
+.flmd-ues {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  list-style: none;
+}
+
+.flmd-ue {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: #334155;
+}
+
+.flmd-ue-code {
+  font-weight: 700;
+  color: #0B1F3A;
+}
+
+.flmd-ecues {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.flmd-ecues-label {
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94A3B8;
+}
+
+/* -- 9. ALERTE D'INTEGRITE -- */
+.formations-lmd-container .alert {
+  border-radius: 14px;
+}
+
+@media (max-width: 992px) {
+  .flmd-blocs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

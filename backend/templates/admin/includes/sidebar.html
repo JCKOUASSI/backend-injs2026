@@ -1,0 +1,41 @@
+{% load i18n admin_ui_tags %}
+
+<nav class="sygep-sidebar-nav" aria-label="{% trans 'Navigation principale' %}">
+  {% for group in admin_sidebar_navigation %}
+    {% if group.items %}
+      {% nav_group_has_active group as has_active %}
+
+      <details class="sygep-sidebar-group"{% if has_active %} open{% endif %}>
+        {% if group.title %}
+          <summary class="sygep-sidebar-group-toggle" style="list-style: none;">
+            <span class="sygep-sidebar-group-label">{{ group.title }}</span>
+            <span class="material-symbols-outlined sygep-sidebar-chevron">chevron_right</span>
+          </summary>
+        {% endif %}
+
+        <ul class="sygep-sidebar-list" style="list-style: none; margin: 0; padding: 0 4px;">
+          {% for item in group.items %}
+            {% nav_item_is_current item as is_current %}
+            <li style="list-style: none; margin: 0; padding: 0;">
+              <a
+                href="{% if item.link_callback %}{{ item.link_callback }}{% else %}{{ item.link }}{% endif %}"
+                class="sygep-sidebar-link{% if is_current %} is-active{% endif %}"
+              >
+                {% if item.icon %}
+                  <span class="material-symbols-outlined sygep-sidebar-icon">{{ item.icon }}</span>
+                {% endif %}
+                <span>{{ item.title }}</span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+  {% endfor %}
+</nav>
+
+<div class="sygep-sidebar-promo">
+  <p class="sygep-sidebar-promo-title">{% trans "Interface opérationnelle" %}</p>
+  <p class="sygep-sidebar-promo-text">{% trans "Accédez au tableau de bord web INJS-LMD." %}</p>
+  <a class="sygep-sidebar-promo-btn" href="{{ PUBLIC_APP_URL }}">{% trans "Ouvrir" %}</a>
+</div>

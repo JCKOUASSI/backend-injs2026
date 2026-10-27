@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Badgeage indisponible — QR Badge MEMFPMA</title>
+    <link rel="icon" type="image/png" href="{% static 'img/logo-injs.png' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1A68AC 0%, #2277C1 40%, #F5B100 100%);
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            font-family: 'Segoe UI', system-ui, sans-serif; padding: 1rem;
+        }
+        .badge-card {
+            background: #fff; border-radius: 20px; padding: 2.5rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); width: 100%; max-width: 480px;
+            text-align: center;
+        }
+        .brand img { max-height: 60px; margin-bottom: 0.5rem; }
+        .brand h3 { color: #1A68AC; font-weight: 700; margin-top: 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="badge-card">
+        <div class="brand">
+            <img src="{% static 'img/logo-injs.png' %}" alt="INJS Abidjan">
+            <h3>QR Badge</h3>
+        </div>
+        <div class="text-warning mb-3" style="font-size: 3rem;">
+            <i class="bi bi-slash-circle"></i>
+        </div>
+        <h4 class="mb-3">Badgeage web indisponible</h4>
+        <p class="text-muted mb-4">
+            Le badgeage public par navigateur est désactivé sur cette instance.
+            Utilisez l'application mobile <strong>QR Badge</strong> pour enregistrer vos présences.
+        </p>
+        <a href="{% url 'web-login' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-box-arrow-in-right me-1"></i>Connexion personnel
+        </a>
+    </div>
+</body>
+</html>

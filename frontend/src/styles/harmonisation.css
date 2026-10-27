@@ -1,0 +1,431 @@
+/* ==========================================================================
+   HARMONISATION INJS-LMD 2026 — Rappel du design de référence
+   (Dashboard Engine) sur TOUS les tableaux de bord et fenêtres.
+   Ce fichier ne modifie AUCUNE logique : uniquement le rendu visuel.
+   ========================================================================== */
+
+/* Gouttière de référence : identique à celle du Dashboard Engine
+   (1.5rem vertical / 1.75rem horizontal). */
+.page-content {
+  padding: 1.5rem 1.75rem 2.5rem;
+}
+
+/* Ces écrans construisent déjà leur propre conteneur, gouttière incluse :
+   on annule celle de .page-content pour éviter un double espacement. */
+.page-content > .dashboard-engine-wrapper,
+.page-content > .dash-engine-container,
+.page-content > .scolarite-dashboard-page,
+.page-content > .finance-page {
+  margin: -1.5rem -1.75rem -2.5rem;
+}
+
+/* Le fond de la référence (réf. LMD2026) est désormais commun à toute
+   l'application via le token --bg-app-lmd2026 : body, .main-content et
+   tous les conteneurs de pages partagent exactement le même dégradé. */
+.injs-mesh-bg,
+.dashboard-engine-wrapper,
+.dash-engine-container,
+.scolarite-dashboard-page,
+.finance-page,
+.page-content {
+  background: var(--bg-app-lmd2026) !important;
+  background-attachment: fixed;
+  color: var(--text-primary);
+  font-family: var(--font-lmd2026);
+}
+
+/* ── Cartes : hauteur & rythme identiques à la référence ──
+   NB : `background` et `border` sont volontairement SANS `!important`
+   afin de laisser passer les fonds et bordures métier posés en style
+   inline (ex. encart d'alerte, sous-carte `var(--bg-secondary)`).
+   Seules les propriétés de forme (rayon, flou, ombre) sont imposées. */
+.card,
+.scolarite-card,
+.finance-kpi-card,
+.stat-card,
+.kpi-card,
+.finance-filter-panel {
+  border-radius: var(--radius-lg) !important;
+  backdrop-filter: blur(14px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(170%) !important;
+  box-shadow: var(--shadow-card) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Fond blanc opaque : appliqué seulement quand aucun fond n'est
+   déjà défini par la feuille de style locale de la page (préservation
+   des fonds métier posés en style inline). */
+.card:not([style*="background"]),
+.scolarite-card:not([style*="background"]),
+.stat-card:not([style*="background"]) {
+  background: #FFFFFF;
+}
+
+.finance-kpi-card,
+.finance-filter-panel {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+}
+
+/* Le survol ne déplace que les cartes qui ne gèrent pas leur propre
+   animation (évite de casser les cartes interactives au scroll). */
+.card:hover,
+.scolarite-card:hover,
+.stat-card:hover,
+.kpi-card:hover {
+  box-shadow: 0 12px 35px -5px rgba(11, 31, 58, 0.08), 0 0 1px 1px rgba(255, 255, 255, 1) !important;
+}
+
+/* ── En-têtes de page : même gabarit que « Bonjour, <utilisateur> » ── */
+.scolarite-main-title,
+.finance-hero-title,
+.page-title,
+h2.page-title {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--navy);
+  letter-spacing: -0.02em;
+  margin: 0 0 0.3rem;
+}
+
+.scolarite-sub-title,
+.page-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin: 0;
+}
+
+/* ── Cartes KPI : alignement valeur / libellé ── */
+.kpi-label,
+.finance-kpi-card-label,
+.stat-card .stat-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.kpi-value,
+.finance-kpi-card-value,
+.stat-card .stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--navy);
+}
+
+/* ── Boîtes d'icônes KPI : 32px, fond #EFF6FF (réf. LMD2026) ── */
+.kpi-icon-box,
+.stat-icon,
+.finance-kpi-card-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+/* ── En-têtes de cartes ── */
+.card-header-bar,
+.scolarite-card-header {
+  background: rgba(255, 255, 255, 0.5);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  padding: 1.05rem 1.4rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.scolarite-card-title,
+.card-header-bar strong {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+/* ── Champs de formulaire : verre dépoli ── */
+/* Champs : référence LMD2026 — hauteur 36px (h-9), coins 8px,
+   fond blanc, bordure #E5E7EB, focus bleu 2px. */
+.form-control,
+.form-select {
+  background: #FFFFFF !important;
+  min-height: 36px;
+  border: 1px solid #E5E7EB !important;
+  border-radius: 8px !important;
+  color: var(--text-primary);
+  padding: 0.4rem 0.75rem;
+  font-size: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+  outline: none;
+}
+
+.form-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  margin-bottom: 0.35rem;
+}
+
+/* ── Boutons « outline » : mêmes pastilles que les boutons premium ── */
+.btn-outline-primary,
+.btn-outline-secondary,
+.btn-outline-danger {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-radius: var(--radius-pill) !important;
+  font-weight: 600;
+  border-width: 1.5px !important;
+  box-shadow: 0 2px 6px rgba(11, 31, 58, 0.04);
+  transition: all 0.2s ease;
+}
+.btn-outline-primary { color: var(--primary) !important; border-color: #BFDBFE !important; }
+.btn-outline-primary:hover { background: #EFF6FF !important; border-color: var(--primary) !important; transform: translateY(-1px); }
+.btn-outline-secondary { color: var(--secondary) !important; border-color: var(--border) !important; }
+.btn-outline-secondary:hover { background: #F8FAFC !important; border-color: #CBD5E1 !important; transform: translateY(-1px); }
+.btn-outline-danger { color: #DC2626 !important; border-color: #FECACA !important; }
+.btn-outline-danger:hover { background: #FEF2F2 !important; border-color: #EF4444 !important; transform: translateY(-1px); }
+
+/* ── États vides et messages d'erreur : carte verre dépolie ── */
+.empty-state,
+.finance-empty,
+.error-message {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px dashed rgba(203, 213, 225, 0.9);
+  border-radius: 14px;
+  color: var(--text-muted);
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.error-message {
+  border-style: solid;
+  border-color: #FECACA;
+  background: rgba(254, 226, 226, 0.85);
+  color: #991B1B;
+  text-align: left;
+  font-weight: 600;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   FENÊTRES (modales) — Dépoli premium uniforme
+   ══════════════════════════════════════════════════════════════════════ */
+.modal-overlay,
+.modal-backdrop-injs {
+  background: rgba(6, 21, 45, 0.55) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Fenêtre : blanc opaque, coins 12px (rounded-xl), bordure visible et
+   ombre portée marquée (shadow-xl), conformément à la référence. */
+.modal-content,
+.modal-card,
+.modal-injs {
+  background: #FFFFFF !important;
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid #E9ECF2 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 20px 25px -5px rgba(16, 24, 40, 0.1), 0 8px 10px -6px rgba(16, 24, 40, 0.1) !important;
+  overflow: hidden;
+}
+
+.modal-header {
+  background: #FFFFFF;
+  border-bottom: 1px solid #E9ECF2;
+  padding: 1.25rem;
+}
+
+.modal-header h5,
+.modal-header h4,
+.modal-header h6,
+.modal-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.modal-body { padding: 1.25rem; }
+
+.modal-footer {
+  background: #FFFFFF;
+  border-top: 1px solid #E9ECF2;
+  padding: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.btn-close {
+  color: var(--text-muted) !important;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+.btn-close:hover { color: var(--navy) !important; transform: scale(1.1); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   TABLEAUX — Référence LMD2026 : en-tête #F8FAFC 10px majuscule,
+   cellules 12px, séparateurs #F3F4F6, survol gris très léger.
+   ══════════════════════════════════════════════════════════════════════ */
+.table thead th,
+.table th {
+  background: #F8FAFC;
+  color: #6B7280;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.table td,
+.table tbody td {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.table tbody tr:nth-child(even) { background: rgba(248, 250, 252, 0.55); }
+.table tbody tr:hover { background: rgba(249, 250, 251, 0.8); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   PALETTE FINANCIÈRE — Raccordée à l'identité visuelle INJS
+   Le module Finance utilisait un bleu nuit (#001a33) et un orange (#e69700)
+   absents du design system INJS. On le raccorde aux tokens officiels.
+   La sémantique métier (encours / prévision / plan / délai / taux)
+   et toutes les valeurs affichées restent inchangées : seule la
+   teinte de fond change.
+   ══════════════════════════════════════════════════════════════════════ */
+.finance-page {
+  --fin-accent: #0B1F3A;
+  --fin-accent-soft: #EFF6FF;
+  --fin-orange: #F59E0B;
+  --fin-orange-soft: #FFFBEB;
+  --fin-blue: #2563EB;
+  --fin-blue-soft: #EFF6FF;
+  --fin-purple: #7B1FA2;
+  --fin-purple-soft: #F3E8FF;
+  --fin-radius: 12px;
+  --fin-shadow: var(--shadow-glass);
+}
+
+.finance-hero {
+  background: linear-gradient(135deg, #0B1F3A 0%, #123E6A 55%, #2563EB 100%);
+  box-shadow: 0 8px 24px rgba(11, 31, 58, 0.24);
+}
+
+/* ==========================================================================
+   ÉCRANS MODULAIRES — alignement sur la gouttière de la référence
+   Trois écrans (AffectationNew, EdtNew, Edts) construisent leur propre
+   conteneur Bootstrap `.container-fluid` au lieu de `.page-content`.
+   On leur applique la MÊME gouttière et le MÊME fond que la référence, sans
+   toucher à leur structure ni à leur comportement.
+   ========================================================================== */
+.page-content > .container-fluid {
+  padding: var(--injs-space-5) var(--injs-space-6) var(--injs-space-6);
+  background: var(--bg-app-lmd2026);
+  color: var(--text-primary);
+  font-family: var(--font-lmd2026);
+}
+
+/* Cartes créées via la grille Bootstrap dans ces écrans : on leur applique
+   la forme de la référence (rayon, bordure, ombre) — sans toucher au fond,
+   qui peut être posé en style inline par la page. */
+.page-content > .container-fluid .card {
+  border-radius: var(--radius);
+  border: var(--injs-border-width) solid var(--border-color);
+  box-shadow: var(--shadow-card);
+  background: var(--card-bg);
+}
+
+/* ==========================================================================
+   BOUTONS — alignement sur la référence
+   Les boutons de la référence (Dashboard Engine) sont des « pilules » au
+   rayon --radius-pill, avec un dégradé bleu sur l'action primaire.
+   Ces règles n'imposent QUE la forme et les transitions : les couleurs
+   propres à chaque variante Bootstrap restent respectées, de sorte qu'aucun
+   état métier (désactivé, danger, succès) ne change d'apparence.
+   ========================================================================== */
+.page-content .btn {
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+/* Action primaire : dégradé exact de la référence (cf. .finance-preset-pill
+   actif et .pagination-num--active), afin que boutons, pastilles et
+   pagination partagent le même bleu INJS. */
+.page-content .btn-primary {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  border-color: transparent;
+  color: #FFFFFF;
+}
+.page-content .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.32);
+}
+
+/* Variante secondaire : pastille claire, cohérente avec .pagination-btn. */
+.page-content .btn-secondary,
+.page-content .btn-outline-secondary {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+.page-content .btn-secondary:hover:not(:disabled),
+.page-content .btn-outline-secondary:hover:not(:disabled) {
+  background: #FFFFFF;
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Cartes KPI finance : dégradés alignés sur la palette INJS */
+.finance-hero-kpi--money    { background: linear-gradient(135deg, #0B1F3A, #123E6A); }
+.finance-hero-kpi--forecast { background: linear-gradient(135deg, #123E6A, #2563EB); }
+.finance-hero-kpi--plan     { background: linear-gradient(135deg, #123E6A, #2A7FFF); }
+.finance-hero-kpi--time     { background: linear-gradient(135deg, #2563EB, #2A7FFF); }
+.finance-hero-kpi--rate     { background: linear-gradient(135deg, #D97706, #F59E0B); }
+
+/* Filtre période finance : pastilles cohérentes avec les boutons premium */
+.finance-filter-panel {
+  --fin-accent: #0B1F3A;
+  --fin-accent-soft: #EFF6FF;
+  --fin-blue-soft: #EFF6FF;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px) saturate(170%);
+  -webkit-backdrop-filter: blur(14px) saturate(170%);
+}
+
+.finance-preset-pill {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.finance-preset-pill:hover {
+  background: #EFF6FF;
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.finance-preset-pill.active {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.32);
+}
+

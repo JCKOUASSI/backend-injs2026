@@ -1,0 +1,170 @@
+{% extends "dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block title %}Import Excel{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'web-dashboard' %}">Accueil</a></li>
+<li class="breadcrumb-item active">Import Excel</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-file-earmark-excel me-2"></i>Import de fichiers Excel</h4>
+</div>
+
+{% if results %}
+<div class="card card-modern mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clipboard-check me-2"></i>Résultat de l'import</span>
+        {% if not errors %}
+        <span class="badge bg-success">Sans erreur</span>
+        {% else %}
+        <span class="badge bg-warning text-dark">{{ errors|length }} erreur(s)</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <div class="row g-3 mb-3">
+            {% for label, count in results.items %}
+            <div class="col-auto">
+                <div class="d-flex align-items-center gap-2">
+                    {% if count > 0 %}
+                    <span class="badge bg-success rounded-pill">{{ count }}</span>
+                    {% else %}
+                    <span class="badge bg-secondary rounded-pill">0</span>
+                    {% endif %}
+                    <span class="fw-semibold">{{ label }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if errors %}
+        <div class="alert alert-warning mb-0">
+            <h6 class="alert-heading mb-2"><i class="bi bi-exclamation-triangle me-1"></i>Erreurs</h6>
+            <ul class="mb-0 small">
+                {% for err in errors %}
+                <li>{{ err }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Import cards -->
+<div class="row g-4">
+    <!-- Formations -->
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card card-modern h-100">
+            <div class="card-header" style="background: linear-gradient(135deg, #1A68AC, #2277C1); color: #fff;">
+                <i class="bi bi-mortarboard me-2"></i>Formations
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Importer les modules de formation depuis un fichier Excel.</p>
+                <ul class="small text-muted mb-3">
+                    <li>N°, Formation, Module (titre), Site, Bâtiment, Salle</li>
+                    <li>Date début, Date fin, Volume horaire (h)</li>
+                    <li>Catégorie, Grade, Groupe, Vague</li>
+                </ul>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="type" value="formations">
+                    <div class="mb-3">
+                        <input type="file" name="file" class="form-control form-control-sm"
+                               accept=".xlsx,.xls" required>
+                    </div>
+                    <button type="submit" class="btn btn-sm w-100" style="background: #1A68AC; color: #fff;">
+                        <i class="bi bi-upload me-1"></i>Importer les formations
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enseignants -->
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card card-modern h-100">
+            <div class="card-header" style="background: linear-gradient(135deg, #1565C0, #1976D2); color: #fff;">
+                <i class="bi bi-person-video3 me-2"></i>Enseignants
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Importer les enseignants depuis un fichier Excel.</p>
+                <ul class="small text-muted mb-3">
+                    <li>Numéro, Nom, Prénoms</li>
+                    <li>Email, Téléphone</li>
+                    <li>Spécialité, Organisation</li>
+                </ul>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="type" value="enseignants">
+                    <div class="mb-3">
+                        <input type="file" name="file" class="form-control form-control-sm"
+                               accept=".xlsx,.xls" required>
+                    </div>
+                    <button type="submit" class="btn btn-sm w-100" style="background: #1565C0; color: #fff;">
+                        <i class="bi bi-upload me-1"></i>Importer les enseignants
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Participants -->
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card card-modern h-100">
+            <div class="card-header" style="background: linear-gradient(135deg, #F5B100, #E69700); color: #fff;">
+                <i class="bi bi-people me-2"></i>Participants
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Importer les participants et leurs inscriptions aux formations.</p>
+                <ul class="small text-muted mb-3">
+                    <li>FNCP, Nom, Prénoms, Sexe, Date naissance</li>
+                    <li>Matricule, Concours, Corps, Grade</li>
+                    <li>Formation(s) : titres séparés par <code>|</code></li>
+                </ul>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="type" value="participants">
+                    <div class="mb-3">
+                        <input type="file" name="file" class="form-control form-control-sm"
+                               accept=".xlsx,.xls" required>
+                    </div>
+                    <button type="submit" class="btn btn-sm w-100" style="background: #F5B100; color: #fff;">
+                        <i class="bi bi-upload me-1"></i>Importer les participants
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Instructions -->
+<div class="card card-modern mt-4">
+    <div class="card-header">
+        <i class="bi bi-info-circle me-2"></i>Instructions
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="fw-semibold">Ordre d'import recommandé</h6>
+                <ol class="small text-muted">
+                    <li><strong>Formations</strong> d'abord (les modules doivent exister)</li>
+                    <li><strong>Enseignants</strong> ensuite</li>
+                    <li><strong>Participants</strong> en dernier (pour que les inscriptions aux formations fonctionnent)</li>
+                </ol>
+            </div>
+            <div class="col-md-6">
+                <h6 class="fw-semibold">Format attendu</h6>
+                <ul class="small text-muted">
+                    <li>Fichier <code>.xlsx</code> (Excel)</li>
+                    <li>La première ligne doit contenir les en-têtes</li>
+                    <li>Les données d'exemple dans les modèles seront ignorées si elles sont déjà en base</li>
+                    <li>Les doublons sont détectés automatiquement</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

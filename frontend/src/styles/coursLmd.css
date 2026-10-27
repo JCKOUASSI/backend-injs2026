@@ -1,0 +1,835 @@
+/* ==========================================================================
+   COURS (LMD) — VARIANTE A « CLAIR RAFFINÉ »
+   Habillage premium de la page /cours : hero à vignette, pipeline du
+   modèle 04 en chips, barre de filtres dédiée, panneau à filet d'ancrage,
+   pastilles d'état. Tout est préfixé `.cours-*` : aucun effet de bord sur
+   les autres écrans. Même langage visuel que les écrans génériques
+   (frontend/src/styles/ecransGeneriques.css).
+   ========================================================================== */
+
+/* ── 1. BANDEAU : vignette icône, eyebrow, titre, plaquettes ── */
+.cours-hero {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem 1.6rem;
+  margin-bottom: 1.25rem;
+  background: #FFFFFF;
+  border: 1px solid #E7ECF3;
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05),
+              0 16px 40px -18px rgba(11, 31, 58, 0.18);
+  overflow: hidden;
+}
+
+/* Halo « aurore » en haut à droite (pur décor). */
+.cours-hero::after {
+  content: '';
+  position: absolute;
+  top: -90px;
+  right: -60px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(42, 127, 255, 0.14), rgba(42, 127, 255, 0));
+  pointer-events: none;
+}
+
+.cours-hero-icon {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0B1F3A 0%, #1E62D0 100%);
+  color: #FFFFFF;
+  font-size: 1.35rem;
+  box-shadow: 0 8px 20px -8px rgba(11, 31, 58, 0.45);
+}
+
+.cours-hero-text {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.cours-hero-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #2563EB;
+}
+
+.cours-hero-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0B1F3A;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.cours-hero-intro {
+  margin: 0;
+  max-width: 92ch;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #475569;
+}
+
+.cours-hero-side {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-self: center;
+  margin-left: auto;
+}
+
+.cours-plaquette {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  background: #DBEAFE;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+  white-space: nowrap;
+}
+
+.cours-plaquette--soft {
+  background: #F1F5F9;
+  color: #475569;
+  border-color: #E2E8F0;
+}
+
+/* ── 2. PIPELINE DU MODÈLE 04 (chaîne en pastilles-étapes) ── */
+.cours-pipeline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0.55rem 0 0.1rem;
+  padding: 0;
+}
+
+.cours-pipeline-step {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.7rem;
+  border-radius: 9999px;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  color: #334155;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.cours-pipeline-sep {
+  color: #94A3B8;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* ── 3. BARRE D'OUTILS — calquée sur .gen-toolbar des écrans revisités ──
+   (frontend/src/styles/ecransGeneriques.css : en-tête dégradé + pilule de
+   compteur à droite, corps en ligne aligné sur le bas, champs pilules.) */
+.cours-toolbar {
+  display: block;
+  padding: 0;
+  background: #FFFFFF;
+  border: 1px solid #E9ECF2;
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05),
+              0 16px 40px -18px rgba(11, 31, 58, 0.18);
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+
+.cours-toolbar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1.4rem;
+  background: linear-gradient(135deg, #F5FAFF 0%, #EEF5FE 100%);
+  border-bottom: 1px solid #E9ECF2;
+}
+
+.cours-toolbar-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0B1F3A;
+  letter-spacing: -0.01em;
+}
+
+.cours-toolbar-title i {
+  color: #2A7FFF;
+  font-size: 0.95rem;
+}
+
+.cours-toolbar-body {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  padding: 1.05rem 1.4rem 1.15rem;
+}
+
+.cours-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 0 1 auto;
+  min-width: 170px;
+}
+
+/* La recherche occupe la largeur utile (rappel .gen-field--recherche). */
+.cours-field--recherche {
+  flex: 1 1 320px;
+  max-width: none;
+}
+
+/* Les filtres gardent une largeur lisible et se replient proprement. */
+.cours-field--filtre {
+  flex: 1 1 190px;
+  max-width: 250px;
+}
+
+.cours-field-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+}
+
+.cours-search {
+  position: relative;
+}
+
+.cours-search > i {
+  position: absolute;
+  left: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94A3B8;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.cours-input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0.5rem 1rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  background: #F8FAFC;
+  color: #1E293B;
+  font-size: 0.87rem;
+  font-family: inherit;
+  font-weight: 500;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.cours-search .cours-input {
+  padding-left: 2.35rem;
+}
+
+.cours-input::placeholder {
+  color: #94A3B8;
+}
+
+.cours-input:focus {
+  outline: none;
+  background: #FFFFFF;
+  border-color: #2A7FFF;
+  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.14);
+}
+
+/* Select pilule avec chevron personnalisé (pas d'appearance native brut). */
+.cours-select {
+  padding-right: 2.1rem;
+  font-weight: 600;
+  color: #475569;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' fill='none' stroke='%2364748B' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.95rem center;
+  background-size: 11px 7px;
+}
+
+/* Actions de la barre (Réinitialiser) calées à droite, comme les écrans revisités. */
+.cours-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: auto;
+  padding-bottom: 0.1rem;
+}
+
+.cours-toolbar-actions .btn {
+  border-radius: 9999px;
+  font-weight: 700;
+}
+
+/* Bouton de rechargement de l'en-tête du panneau (parité .gen-refresh). */
+.cours-refresh {
+  width: 2.35rem;
+  height: 2.35rem;
+  min-height: 2.35rem;
+  padding: 0;
+  border-radius: 9999px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #475569;
+}
+
+.cours-refresh:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 6px 16px -6px rgba(37, 99, 235, 0.5);
+}
+
+.cours-refresh:disabled {
+  opacity: 0.6;
+}
+
+.cours-refresh .spin {
+  display: inline-block;
+  animation: cours-rotate 0.9s linear infinite;
+}
+
+@keyframes cours-rotate {
+  to { transform: rotate(360deg); }
+}
+
+/* ── 4. PILULES DE COMPTEUR ── */
+.cours-count-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  background: #EFF6FF;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.cours-count-pill--muted {
+  background: #F1F5F9;
+  color: #475569;
+  border-color: #E2E8F0;
+}
+
+.cours-count-pill--warn {
+  background: #FFFBEB;
+  color: #B45309;
+  border-color: #FDE68A;
+}
+
+.cours-count-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ── 5. PANNEAU RÉSULTATS : filet d'ancrage + en-tête dégradé ── */
+.cours-panel {
+  position: relative;
+  border: 1px solid #E7ECF3;
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05),
+              0 16px 40px -18px rgba(11, 31, 58, 0.18);
+}
+
+.cours-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0B1F3A 0%, #2563EB 55%, #2A7FFF 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cours-panel .card-header-bar {
+  background: linear-gradient(135deg, #F5FAFF 0%, #EEF5FE 100%);
+  border-bottom: 1px solid #EDF1F6;
+  padding: 0.9rem 1.4rem;
+}
+
+.cours-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0B1F3A;
+}
+
+.cours-panel-title i {
+  color: #2A7FFF;
+}
+
+/* ── 6. TABLEAU : en-tête clair, colonnes calibrées ── */
+.cours-table {
+  min-width: 1080px;
+}
+
+.cours-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #F4F8FC;
+  border-bottom: 1px solid #E6EDF5;
+  color: #64748B;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.7rem 1.1rem;
+  white-space: nowrap;
+}
+
+.cours-table thead th:nth-child(1) { width: 30%; }
+.cours-table thead th:nth-child(2) { width: 92px; }
+.cours-table thead th:nth-child(3) { width: 112px; }
+.cours-table thead th:nth-child(4) { width: 175px; }
+.cours-table thead th:nth-child(6) { width: 96px; }
+.cours-table thead th:nth-child(7) { width: 175px; }
+.cours-table thead th:nth-child(8) { width: 118px; }
+
+table.cours-table tbody td {
+  padding: 0.8rem 1.1rem;
+  border-bottom: 1px solid #F1F5F9;
+  color: #1E293B;
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
+
+table.cours-table tbody tr {
+  background: #FFFFFF;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+table.cours-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+table.cours-table tbody tr:nth-child(even) td {
+  background: #FAFCFF;
+}
+
+table.cours-table tbody tr:hover td {
+  background: #F3F8FF;
+}
+
+table.cours-table tbody tr:hover td:first-child {
+  box-shadow: inset 3px 0 0 rgba(42, 127, 255, 0.55);
+}
+
+table.cours-table tbody tr.cours-row--active td {
+  background: #EAF2FF;
+}
+
+table.cours-table tbody tr.cours-row--active td:first-child {
+  box-shadow: inset 3px 0 0 #2563EB;
+}
+
+/* ── 7. CELLULES : code, intitulé, chips, avatar, effectif, statut ── */
+.cours-code {
+  display: inline-block;
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #0F274A;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 0.22rem 0.55rem;
+  margin-right: 0.45rem;
+}
+
+.cours-intitule {
+  font-weight: 600;
+  color: #0B1F3A;
+  font-size: 0.88rem;
+}
+
+.cours-cursus {
+  display: block;
+  margin-top: 0.18rem;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: #94A3B8;
+}
+
+.cours-type {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 0.24rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  background: #F1F5F9;
+  color: #475569;
+  border: 1px solid #E2E8F0;
+}
+
+.cours-type--cm { background: #DBEAFE; color: #2563EB; border-color: #BFDBFE; }
+.cours-type--td { background: #F3E8FF; color: #7E22CE; border-color: #E9D5FF; }
+.cours-type--tp { background: #CCFBF1; color: #0F766E; border-color: #99F6E4; }
+
+.cours-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.24rem 0.6rem;
+  border-radius: 8px;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  color: #334155;
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cours-planif {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  align-items: flex-start;
+}
+
+.cours-teacher {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 600;
+  color: #1E293B;
+  font-size: 0.86rem;
+}
+
+.cours-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0B1F3A 0%, #1E62D0 100%);
+  color: #FFFFFF;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.cours-effectif {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cours-effectif-val {
+  font-weight: 700;
+  color: #0B1F3A;
+  font-size: 0.95rem;
+}
+
+.cours-effectif-max {
+  color: #94A3B8;
+  font-weight: 600;
+  font-size: 0.78rem;
+  margin-left: 0.1rem;
+}
+
+.cours-effectif--full .cours-effectif-val {
+  color: #B45309;
+}
+
+.cours-statut {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.26rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  background: #F1F5F9;
+  color: #475569;
+  border: 1px solid #E2E8F0;
+  white-space: nowrap;
+}
+
+.cours-statut--proposee { background: #FFFBEB; color: #B45309; border-color: #FDE68A; }
+.cours-statut--validee { background: #ECFDF5; color: #047857; border-color: #A7F3D0; }
+.cours-statut--planifiee { background: #EFF6FF; color: #2563EB; border-color: #BFDBFE; }
+.cours-statut--realisee { background: #0B1F3A; color: #FFFFFF; border-color: #0B1F3A; }
+
+/* ── 8. SÉANCES : barre de progression + pastille d'alerte ── */
+.cours-prog {
+  min-width: 120px;
+}
+
+.cours-prog-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.28rem;
+}
+
+.cours-prog-count {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0B1F3A;
+  font-variant-numeric: tabular-nums;
+}
+
+.cours-prog-pct {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #94A3B8;
+  font-variant-numeric: tabular-nums;
+}
+
+.cours-prog-track {
+  background: #E2E8F0;
+  border-radius: 9999px;
+  height: 6px;
+  overflow: hidden;
+}
+
+.cours-prog-fill {
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #2563EB 0%, #2A7FFF 100%);
+  transition: width 0.3s ease;
+}
+
+.cours-prog-fill--done {
+  background: linear-gradient(90deg, #059669 0%, #10B981 100%);
+}
+
+.cours-alert-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.26rem 0.7rem;
+  border-radius: 9999px;
+  background: #FFFBEB;
+  color: #B45309;
+  border: 1px solid #FDE68A;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── 9. ÉTATS : chargement, vide, erreur ── */
+.cours-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 1rem 1rem 2.2rem;
+  text-align: center;
+}
+
+.cours-state--loading {
+  padding: 0.4rem 0 1rem;
+}
+
+.cours-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #EFF6FF 0%, #E0EDFF 100%);
+  border: 1px solid #DBEAFE;
+  box-shadow: 0 8px 18px -10px rgba(37, 99, 235, 0.55);
+  color: #2A7FFF;
+  font-size: 1.4rem;
+}
+
+.cours-state-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #0B1F3A;
+}
+
+.cours-state-text {
+  max-width: 62ch;
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: #64748B;
+}
+
+.cours-error {
+  margin: 0 0 1.25rem;
+}
+
+/* ── 10. PANNEAU DÉTAIL : filet, clé/valeur, timeline ── */
+.cours-detail {
+  position: relative;
+}
+
+.cours-detail::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0B1F3A 0%, #2563EB 55%, #2A7FFF 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cours-detail .card-header-bar {
+  background: linear-gradient(135deg, #F5FAFF 0%, #EEF5FE 100%);
+  border-bottom: 1px solid #EDF1F6;
+  padding: 0.9rem 1.4rem;
+}
+
+.cours-detail-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: #0B1F3A;
+}
+
+.cours-detail-title i {
+  color: #2A7FFF;
+}
+
+.cours-deflist {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.cours-deflist-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.55rem 0.8rem;
+  background: #F8FAFC;
+  border: 1px solid #EDF1F6;
+  border-radius: 12px;
+}
+
+.cours-deflist-item dt {
+  min-width: 88px;
+  margin: 0;
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+}
+
+.cours-deflist-item dd {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.cours-detail-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.6rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+}
+
+.cours-detail-subtitle i {
+  color: #2A7FFF;
+}
+
+.cours-timeline {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0 0 0.9rem;
+  padding: 0;
+}
+
+.cours-timeline li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.55rem 0.75rem;
+  background: #F8FAFC;
+  border: 1px solid #EDF1F6;
+  border-left: 3px solid #2563EB;
+  border-radius: 12px;
+}
+
+/* ── 11. FOCUS VISIBLE + prefers-reduced-motion ── */
+.cours-toolbar .btn:focus-visible,
+.cours-panel .btn:focus-visible,
+.cours-detail .btn:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cours-hero,
+  .cours-toolbar,
+  .cours-panel,
+  .cours-table tbody tr,
+  .cours-prog-fill,
+  .cours-input {
+    transition: none !important;
+  }
+}

@@ -1,0 +1,293 @@
+{% load static dashboard_tags %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}INJS{% endblock %} — INJS LMD</title>
+    <link rel="icon" type="image/png" href="{% static 'img/logo-injs.png' %}" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --ci-warning: #F5B100;
+            --ci-warning-dark: #E69700;
+            --ci-success: #2277C1;
+            --ci-success-dark: #1A68AC;
+            --ci-white: #FFFFFF;
+            --ci-light: #FFFBF0;
+            --ci-success: #2277C1;
+            --ci-warning: #F5B100;
+            --ci-danger: #C62828;
+        }
+        body { background: var(--ci-light); font-family: 'Segoe UI', system-ui, sans-serif; }
+        .sidebar {
+            background: linear-gradient(180deg, var(--ci-success-dark) 0%, var(--ci-success) 100%);
+            min-height: 100vh; width: 260px; position: fixed; top: 0; left: 0; z-index: 100;
+            transition: transform 0.3s;
+        }
+        .sidebar .brand { padding: 1.5rem 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar .brand h5 { color: #fff; margin: 0; font-weight: 700; font-size: 1.1rem; }
+        .sidebar .brand small { color: rgba(255,255,255,0.6); font-size: 0.75rem; }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.75); padding: 0.7rem 1.2rem; font-size: 0.9rem;
+            border-left: 3px solid transparent; transition: all 0.2s;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: #fff; background: rgba(255,255,255,0.08);
+            border-left-color: var(--ci-warning);
+        }
+        .sidebar .nav-link i { width: 24px; text-align: center; margin-right: 0.5rem; }
+        .main-content { margin-left: 260px; padding: 0; min-height: 100vh; }
+        .top-bar {
+            background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0.8rem 1.5rem;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 50;
+            flex-wrap: wrap; gap: 0.5rem; min-height: 56px;
+        }
+        .top-bar .breadcrumb { margin: 0; font-size: 0.85rem; }
+        .page-content { padding: 1.5rem; }
+        .stat-card {
+            border: none; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .stat-card .stat-icon {
+            width: 48px; height: 48px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem;
+        }
+        .stat-card .stat-value { font-size: 1.8rem; font-weight: 700; line-height: 1.2; }
+        .stat-card .stat-label { font-size: 0.8rem; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-card {
+            border: 1px solid #f0f2f5;
+            border-radius: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .kpi-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            flex-shrink: 0;
+        }
+        .kpi-value {
+            font-size: 2.3rem;
+            font-weight: 700;
+            color: #00b4f0;
+            line-height: 1;
+        }
+        .kpi-label {
+            font-size: 1.2rem;
+            color: #5f6b7a;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .kpi-substats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.1rem;
+            margin-top: 0.6rem;
+            color: #4b5563;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .kpi-substats i {
+            margin-right: 0.25rem;
+        }
+        .badge-statut { font-size: 0.75rem; padding: 0.3em 0.7em; border-radius: 6px; font-weight: 600; }
+        .badge-planifiee { background: #ebf4ff; color: #2b6cb0; }
+        .badge-en-cours { background: #f0f7ff; color: #11407d; }
+        .badge-suspendue { background: #FFF8E0; color: #E69700; }
+        .badge-terminee { background: #f7fafc; color: #718096; }
+        .badge-en-salle { background: #fefcbf; color: #977516; }
+        .badge-absent { background: #fff5f5; color: #c53030; }
+        .badge-present { background: #f0f7ff; color: #11407d; }
+        .table-modern { border-collapse: separate; border-spacing: 0; }
+        .table-modern thead th {
+            background: var(--ci-success-dark); color: #fff; font-size: 0.8rem;
+            text-transform: uppercase; letter-spacing: 0.5px; padding: 0.8rem 1rem;
+            border: none;
+        }
+        .table-modern thead th:first-child { border-radius: 8px 0 0 0; }
+        .table-modern thead th:last-child { border-radius: 0 8px 0 0; }
+        .table-modern tbody td { padding: 0.75rem 1rem; vertical-align: middle; border-bottom: 1px solid #edf2f7; }
+        .table-modern tbody tr:hover { background: #edf2f7; }
+        .card-modern { border: none; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .card-modern .card-header {
+            background: #fff; border-bottom: 1px solid #edf2f7;
+            padding: 1rem 1.25rem; font-weight: 600;
+        }
+        .btn-dfrc { background: var(--ci-warning); color: #fff; border: none; border-radius: 8px; padding: 0.5rem 1.2rem; }
+        .btn-dfrc:hover { background: var(--ci-warning-dark); color: #fff; }
+        .progress-ring { width: 120px; height: 120px; }
+        .user-badge { background: rgba(255,255,255,0.1); border-radius: 8px; padding: 0.6rem 1rem; margin: 0.5rem 1rem; }
+        .user-badge small { color: rgba(255,255,255,0.6); }
+        .user-badge span { color: #fff; font-weight: 600; font-size: 0.85rem; }
+        .bg-role-direction { background: #7B1FA2; }
+        .bg-role-dfrc { background: var(--ci-success-dark); }
+        .bg-role-superviseur { background: var(--ci-warning); }
+        .bg-role-participant { background: var(--ci-success); }
+        .sidebar .brand-logo { max-height: 55px; margin-bottom: 0.5rem; }
+        .sidebar-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.4); z-index: 99;
+        }
+        .sidebar-overlay.show { display: block; }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); z-index: 100; }
+            .sidebar.show { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+            .top-bar { padding: 0.6rem 1rem; }
+            .page-content { padding: 1rem; }
+            .top-bar .d-flex.align-items-center.gap-2 > .text-muted { display: none; }
+        }
+        @media (max-width: 480px) {
+            .page-content { padding: 0.75rem; }
+            .stat-card .stat-value { font-size: 1.4rem; }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Sidebar overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="document.getElementById('sidebar').classList.remove('show'); this.classList.remove('show');"></div>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="brand text-center">
+            <img src="{% static 'img/logo-injs.png' %}" alt="INJS Abidjan" class="brand-logo">
+            <h5 class="mt-1">SYGEP-CPFAE</h5>
+            <small>Institut National de la Jeunesse et des Sports</small>
+        </div>
+
+        {% if user.is_authenticated %}
+        <div class="user-badge">
+            <small>Connecté en tant que</small><br>
+            <span>{{ user.get_full_name }}</span><br>
+            <small class="badge bg-light text-dark mt-1">{{ user.role }}</small>
+        </div>
+        {% endif %}
+
+        <ul class="nav flex-column mt-2">
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'web-dashboard' %}active{% endif %}"
+                   href="{% url 'web-dashboard' %}">
+                    <i class="bi bi-speedometer2"></i> Tableau de bord
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link d-flex justify-content-between align-items-center {% if 'formation' in request.resolver_match.url_name and 'dashboard' not in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'web-formations' %}">
+                    <span><i class="bi bi-mortarboard"></i> Formations</span>
+                    {% if sidebar_formations_count %}<span class="badge bg-primary bg-opacity-75 rounded-pill">{{ sidebar_formations_count }}</span>{% endif %}
+                </a>
+            </li>
+            {% if user|can_view_nav_participants %}
+            <li class="nav-item">
+                <a class="nav-link d-flex justify-content-between align-items-center {% if 'participant' in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'web-participants' %}">
+                    <span><i class="bi bi-people"></i> Participants</span>
+                    {% if sidebar_participants_count %}<span class="badge bg-info bg-opacity-75 rounded-pill">{{ sidebar_participants_count }}</span>{% endif %}
+                </a>
+            </li>
+            {% endif %}
+            {% if user|can_view_nav_formateurs %}
+            <li class="nav-item">
+                <a class="nav-link d-flex justify-content-between align-items-center {% if 'formateur' in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'web-formateurs' %}">
+                    <span><i class="bi bi-person-video3"></i> Enseignants</span>
+                    {% if sidebar_formateurs_count %}<span class="badge bg-secondary bg-opacity-75 rounded-pill">{{ sidebar_formateurs_count }}</span>{% endif %}
+                </a>
+            </li>
+            {% endif %}
+            {% if user|can_view_nav_users %}
+            <li class="nav-item">
+                <a class="nav-link d-flex justify-content-between align-items-center {% if 'user' in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'web-users' %}">
+                    <span><i class="bi bi-person-gear"></i> Utilisateurs</span>
+                    {% if sidebar_users_count %}<span class="badge bg-secondary bg-opacity-75 rounded-pill">{{ sidebar_users_count }}</span>{% endif %}
+                </a>
+            </li>
+            {% endif %}
+            {% if user|can_view_nav_import %}
+            <li class="nav-item">
+                <a class="nav-link {% if 'import' in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'web-import-excel' %}">
+                    <i class="bi bi-file-earmark-excel"></i> Import Excel
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+
+        <ul class="nav flex-column mt-auto" style="position: absolute; bottom: 1rem; width: 100%;">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'web-logout' %}">
+                    <i class="bi bi-box-arrow-left"></i> Déconnexion
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main content -->
+    <div class="main-content">
+        <div class="top-bar">
+            <div>
+                <button class="btn btn-sm btn-outline-secondary d-md-none me-2" onclick="document.getElementById('sidebar').classList.toggle('show')">
+                    <i class="bi bi-list"></i>
+                </button>
+                <nav aria-label="breadcrumb" class="d-inline-block">
+                    <ol class="breadcrumb mb-0">
+                        {% block breadcrumb %}
+                        <li class="breadcrumb-item active">Accueil</li>
+                        {% endblock %}
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-muted small">{{ user.get_full_name }}</span>
+                <div class="rounded-circle text-white d-flex align-items-center justify-content-center" style="width:32px;height:32px;font-size:0.8rem;background:var(--ci-success);">
+                    {{ user.first_name.0 }}{{ user.last_name.0 }}
+                </div>
+            </div>
+        </div>
+
+        <div class="page-content">
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    var sidebarEl = document.getElementById('sidebar');
+    var overlayEl = document.getElementById('sidebar-overlay');
+
+    // Toggle sidebar + overlay
+    document.querySelector('.d-md-none').addEventListener('click', function() {
+        sidebarEl.classList.toggle('show');
+        overlayEl.classList.toggle('show');
+    });
+
+    // Close on nav link click (mobile)
+    document.querySelectorAll('.sidebar .nav-link').forEach(function(link) {
+        link.addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                sidebarEl.classList.remove('show');
+                overlayEl.classList.remove('show');
+            }
+        });
+    });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

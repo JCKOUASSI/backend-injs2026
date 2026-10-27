@@ -1,0 +1,28 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin/guide.css' %}">
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="sygep-guide-page">
+  <header class="sygep-guide-header">
+    <h1 class="sygep-page-title">{{ title }}</h1>
+    <p class="sygep-guide-intro">
+      {% trans "Procédures pas à pas pour chaque action depuis l’administration INJS-LMD." %}
+    </p>
+    <a class="dfrc-quick-action-btn dfrc-quick-action-btn--secondary" href="{% url 'admin:index' %}">
+      <span class="material-symbols-outlined" style="font-size:18px">arrow_back</span>
+      {% trans "Retour à l’accueil" %}
+    </a>
+  </header>
+
+  <article class="sygep-guide-content module">
+    {{ guide_html|safe }}
+  </article>
+</div>
+{% endblock %}

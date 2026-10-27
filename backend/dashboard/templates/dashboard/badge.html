@@ -1,0 +1,797 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Badge MEMFPMA</title>
+    <link rel="icon" type="image/png" href="{% static 'img/logo-injs.png' %}">
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#1A68AC">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1A68AC 0%, #2277C1 40%, #F5B100 100%);
+            min-height: 100vh; display: flex; align-items: flex-start; justify-content: center;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 1rem;
+        }
+        .badge-card {
+            background: #fff; border-radius: 20px; padding: 2.5rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); width: 100%; max-width: 480px;
+            margin: auto 0;
+        }
+        @media (max-width: 520px) {
+            body { padding: 0; align-items: flex-start; }
+            .badge-card {
+                border-radius: 0 0 20px 20px;
+                padding: 1.5rem 1.25rem;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+                min-height: 100vh;
+                margin: 0;
+            }
+        }
+        @media (max-width: 380px) {
+            .badge-card { padding: 1.25rem 1rem; }
+            .btn-scan { font-size: 1rem; padding: 0.65rem; }
+            .brand h3 { font-size: 1.3rem; }
+        }
+        .brand { text-align: center; margin-bottom: 1.5rem; }
+        .brand img { max-height: 60px; margin-bottom: 0.5rem; }
+        .brand h3 { color: #1A68AC; font-weight: 700; margin-top: 0.5rem; }
+        .brand p { color: #718096; font-size: 0.9rem; }
+        .btn-scan {
+            background: linear-gradient(135deg, #F5B100, #E69700); color: #fff; border: none; padding: 0.75rem;
+            font-weight: 600; border-radius: 10px; width: 100%; font-size: 1.1rem;
+        }
+        .btn-scan:hover { background: linear-gradient(135deg, #E69700, #BF360C); color: #fff; }
+        .result-card {
+            border-radius: 12px; padding: 1.5rem; text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+        .result-entree { background: #f0f7ff; border: 2px solid #2277C1; }
+        .result-sortie { background: #FFF8E0; border: 2px solid #F5B100; }
+        .result-error { background: #fff5f5; border: 2px solid #e53e3e; }
+        .result-card .icon { font-size: 3rem; }
+        .result-card h4 { margin-top: 0.5rem; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .scanner-section { background: #f7fafc; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
+        #qr-reader { width: 100%; border-radius: 8px; overflow: hidden; }
+        .offline-banner {
+            background: #FFF8E0; border: 2px solid #F5B100; border-radius: 10px;
+            padding: 0.75rem; margin-bottom: 1rem; text-align: center; display: none;
+        }
+        .offline-banner.show { display: block; }
+        .online-indicator {
+            display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+            margin-right: 6px; vertical-align: middle;
+        }
+        .online-indicator.online { background: #2277C1; }
+        .online-indicator.offline { background: #F5B100; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .queue-badge {
+            background: #F5B100; color: #fff; border-radius: 20px; padding: 2px 8px;
+            font-size: 0.75rem; font-weight: 600;
+        }
+        /* Modal de confirmation */
+        .confirm-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999; padding: 1rem;
+            animation: fadeIn 0.2s ease;
+        }
+        .confirm-box {
+            background: #fff; border-radius: 16px; padding: 1.75rem 1.5rem;
+            max-width: 380px; width: 100%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+            animation: slideUp 0.2s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+        .confirm-box .confirm-icon { font-size: 2.5rem; text-align: center; margin-bottom: 0.75rem; }
+        .confirm-box h5 { text-align: center; font-weight: 700; margin-bottom: 0.25rem; }
+        .confirm-box .confirm-detail { text-align: center; color: #718096; font-size: 0.9rem; margin-bottom: 0.75rem; }
+        .confirm-status-badge {
+            display: flex; align-items: center; gap: 0.6rem;
+            border-radius: 10px; padding: 0.65rem 1rem;
+            margin-bottom: 1.1rem; font-size: 0.88rem; font-weight: 600;
+        }
+        .confirm-status-badge.status-absent { background:#f0f7ff; border:1.5px solid #2277C1; color:#11407d; }
+        .confirm-status-badge.status-en-salle { background:#FFF8E0; border:1.5px solid #F5B100; color:#7B5500; }
+        .confirm-status-badge.status-termine { background:#fff5f5; border:1.5px solid #e53e3e; color:#9b1c1c; }
+        .confirm-status-badge.status-loading { background:#f7fafc; border:1.5px solid #cbd5e0; color:#718096; }
+        .confirm-status-badge .status-icon { font-size:1.2rem; }
+        .confirm-actions { display: flex; gap: 0.75rem; }
+        .confirm-actions button { flex: 1; padding: 0.6rem; border-radius: 10px; font-weight: 600; border: none; font-size: 0.95rem; cursor: pointer; }
+        .btn-confirm-ok { background: linear-gradient(135deg, #1A68AC, #2277C1); color: #fff; }
+        .btn-confirm-ok.sortie { background: linear-gradient(135deg, #F5B100, #E69700); }
+        .btn-confirm-ok:hover { opacity: 0.9; }
+        .btn-confirm-ok:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-confirm-cancel { background: #f1f5f9; color: #4a5568; }
+        .btn-confirm-cancel:hover { background: #e2e8f0; }
+    </style>
+</head>
+<body>
+    <!-- Modal de confirmation badgeage -->
+    <div class="confirm-overlay" id="confirm-overlay" style="display:none;">
+        <div class="confirm-box">
+            <div class="confirm-icon" id="confirm-icon">&#x1F4CB;</div>
+            <h5 id="confirm-title">Confirmer le badgeage</h5>
+            <p class="confirm-detail" id="confirm-detail">Voulez-vous confirmer votre badgeage ?</p>
+            <!-- Bandeau statut actuel -->
+            <div class="confirm-status-badge status-loading" id="confirm-status-badge">
+                <span class="status-icon">&#x23F3;</span>
+                <span id="confirm-status-text">Vérification en cours…</span>
+            </div>
+            <div class="confirm-actions">
+                <button class="btn-confirm-cancel" id="confirm-cancel">
+                    <i class="bi bi-x-circle me-1"></i>Annuler
+                </button>
+                <button class="btn-confirm-ok" id="confirm-ok" disabled>
+                    <i class="bi bi-check2-circle me-1"></i><span id="confirm-ok-label">Confirmer</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="badge-card">
+        <div class="brand">
+            <img src="{% static 'img/logo-injs.png' %}" alt="INJS Abidjan">
+            <h3>Badgeage</h3>
+            <p>Scannez le QR code ou entrez les informations pour pointer votre présence</p>
+        </div>
+
+        <!-- Statut connexion -->
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <small id="connection-status">
+                <span class="online-indicator online" id="status-dot"></span>
+                <span id="status-text">En ligne</span>
+            </small>
+            <small id="queue-status" style="display:none;">
+                <span class="queue-badge" id="queue-count">0</span> en attente
+            </small>
+        </div>
+
+        <!-- Bannière hors ligne -->
+        <div class="offline-banner" id="offline-banner">
+            <i class="bi bi-wifi-off me-1"></i>
+            <strong>Mode hors ligne</strong>
+            <br><small>Les badgeages sont sauvegardés localement et seront synchronisés automatiquement.</small>
+        </div>
+
+        <!-- Résultat -->
+        <div id="result" class="mb-3" style="display:none;"></div>
+
+        <!-- Scanner caméra -->
+        <div class="scanner-section" id="scanner-section">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-semibold small"><i class="bi bi-camera me-1"></i> Scanner avec la caméra</span>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="toggle-scanner">
+                    <i class="bi bi-camera-video" id="scanner-icon"></i>
+                </button>
+            </div>
+            <div id="qr-reader" style="display:none;"></div>
+            <div id="scanner-placeholder" class="text-center text-muted py-2">
+                <small>Cliquez sur le bouton caméra pour activer le scanner</small>
+            </div>
+        </div>
+
+        <!-- Formulaire manuel -->
+        <form id="badge-form" method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label fw-semibold">
+                    Matricule (étudiant) ou N° Badge (formateur) <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+                    <input type="text" name="numero_participant" id="numero_participant"
+                           class="form-control form-control-lg"
+                           placeholder="Étudiant : 703 027 573 — Enseignant : F0042"
+                           required autofocus>
+                </div>
+                <small class="text-muted mt-1 d-block">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Étudiants : entrez votre matricule &nbsp;|&nbsp; Enseignants : entrez votre N° Badge (affiché sur votre fiche)
+                </small>
+            </div>
+            <div class="mb-3" id="token-group">
+                <label class="form-label fw-semibold">Token QR <span class="text-danger">*</span></label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-qr-code"></i></span>
+                    <input type="text" name="token_qr" id="token_qr"
+                           class="form-control" placeholder="UUID du QR code" required>
+                </div>
+                <small class="text-muted">Scanné automatiquement ou copié depuis le QR affiché</small>
+            </div>
+            <div id="token-ready" class="alert alert-success py-2 mb-3" style="display:none;">
+                <i class="bi bi-check-circle me-1"></i> QR code détecté — entrez votre numéro et badgez.
+            </div>
+            <p class="text-muted small mb-3">
+                <i class="bi bi-info-circle me-1"></i>
+                Entrée puis sortie : un badgeage par action sur la séance en cours.
+            </p>
+            <button type="submit" class="btn btn-scan" id="btn-submit">
+                <i class="bi bi-check2-circle me-2"></i>Badger
+            </button>
+        </form>
+
+
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script>
+    // ════════════════════════════════════════════
+    // IndexedDB — file d'attente hors ligne
+    // ════════════════════════════════════════════
+    const DB_NAME = 'QRBadgeOffline';
+    const DB_VERSION = 1;
+    const STORE_SCANS = 'offline_scans';
+    const STORE_DATA = 'offline_data';
+
+    function openDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, DB_VERSION);
+            req.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(STORE_SCANS))
+                    db.createObjectStore(STORE_SCANS, { keyPath: 'id', autoIncrement: true });
+                if (!db.objectStoreNames.contains(STORE_DATA))
+                    db.createObjectStore(STORE_DATA, { keyPath: 'token' });
+            };
+            req.onsuccess = (e) => resolve(e.target.result);
+            req.onerror = (e) => reject(e.target.error);
+        });
+    }
+
+    async function addOfflineScan(scan) {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_SCANS, 'readwrite');
+            tx.objectStore(STORE_SCANS).add(scan);
+            tx.oncomplete = () => resolve();
+            tx.onerror = (e) => reject(e.target.error);
+        });
+    }
+
+    async function getOfflineScans() {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_SCANS, 'readonly');
+            const req = tx.objectStore(STORE_SCANS).getAll();
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async function deleteOfflineScan(id) {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_SCANS, 'readwrite');
+            tx.objectStore(STORE_SCANS).delete(id);
+            tx.oncomplete = () => resolve();
+            tx.onerror = (e) => reject(e.target.error);
+        });
+    }
+
+    async function saveOfflineData(data) {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_DATA, 'readwrite');
+            tx.objectStore(STORE_DATA).put(data);
+            tx.oncomplete = () => resolve();
+            tx.onerror = (e) => reject(e.target.error);
+        });
+    }
+
+    async function getOfflineData(token) {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_DATA, 'readonly');
+            const req = tx.objectStore(STORE_DATA).get(token);
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    // ════════════════════════════════════════════
+    // Statut connexion
+    // ════════════════════════════════════════════
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const offlineBanner = document.getElementById('offline-banner');
+    const queueStatus = document.getElementById('queue-status');
+    const queueCountEl = document.getElementById('queue-count');
+
+    function updateOnlineStatus() {
+        if (navigator.onLine) {
+            statusDot.className = 'online-indicator online';
+            statusText.textContent = 'En ligne';
+            offlineBanner.classList.remove('show');
+            syncOfflineScans();
+        } else {
+            statusDot.className = 'online-indicator offline';
+            statusText.textContent = 'Hors ligne';
+            offlineBanner.classList.add('show');
+        }
+    }
+
+    async function updateQueueCount() {
+        try {
+            const scans = await getOfflineScans();
+            if (scans.length > 0) {
+                queueCountEl.textContent = scans.length;
+                queueStatus.style.display = '';
+            } else {
+                queueStatus.style.display = 'none';
+            }
+        } catch(e) {
+            queueStatus.style.display = 'none';
+        }
+    }
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+    updateQueueCount();
+
+    // ════════════════════════════════════════════
+    // Pré-charger les données pour le mode hors ligne
+    // ════════════════════════════════════════════
+    let offlineFormationData = null;
+
+    const QR_TOKEN_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    function isQrToken(value) {
+        return QR_TOKEN_RE.test(String(value || '').trim());
+    }
+
+    async function prefetchOfflineData(token) {
+        if (!isQrToken(token)) return;
+        try {
+            const resp = await fetch(`/api/scan/offline-data/?token=${encodeURIComponent(token)}`);
+            if (resp.ok) {
+                const data = await resp.json();
+                await saveOfflineData(data);
+                offlineFormationData = data;
+                console.log('[Offline] Données formation mises en cache:', data.formation.titre);
+            }
+        } catch(e) {
+            // Fallback: try cached data
+            const cached = await getOfflineData(token);
+            if (cached) offlineFormationData = cached;
+        }
+    }
+
+    function findPersonneOffline(numero) {
+        if (!offlineFormationData) return null;
+        const upper = numero.toUpperCase();
+        const all = [
+            ...offlineFormationData.participants.map(p => ({ ...p, type: 'participant' })),
+            ...offlineFormationData.formateurs.map(f => ({ ...f, type: 'formateur' })),
+        ];
+        return all.find(p => p.numero === upper) || null;
+    }
+
+    // ════════════════════════════════════════════
+    // Synchronisation des scans hors ligne
+    // ════════════════════════════════════════════
+    let syncing = false;
+
+    async function syncOfflineScans() {
+        if (syncing || !navigator.onLine) return;
+        syncing = true;
+        try {
+            const scans = await getOfflineScans();
+            for (const scan of scans) {
+                try {
+                    const payload = {
+                        token_qr: scan.token_qr,
+                        numero_participant: scan.numero_participant,
+                        device_id: scan.device_id,
+                    };
+                    const resp = await fetch('/api/scan/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+                    if (resp.ok || resp.status === 400 || resp.status === 404 || resp.status === 403) {
+                        await deleteOfflineScan(scan.id);
+                    } else {
+                        break;
+                    }
+                } catch(e) {
+                    break;
+                }
+            }
+            await updateQueueCount();
+            const remaining = (await getOfflineScans()).length;
+            if (remaining === 0 && scans.length > 0) {
+                showToast(`${scans.length} scan(s) synchronisé(s) !`, 'success');
+            }
+        } finally {
+            syncing = false;
+        }
+    }
+
+    // ════════════════════════════════════════════
+    // Pré-remplir le token depuis l'URL
+    // ════════════════════════════════════════════
+    (function() {
+        const params = new URLSearchParams(window.location.search);
+        const tokenFromUrl = params.get('token');
+        if (tokenFromUrl && isQrToken(tokenFromUrl)) {
+            document.getElementById('token_qr').value = tokenFromUrl;
+            document.getElementById('token-group').style.display = 'none';
+            document.getElementById('scanner-section').style.display = 'none';
+            document.getElementById('token-ready').style.display = 'block';
+            document.getElementById('numero_participant').focus();
+            prefetchOfflineData(tokenFromUrl);
+        }
+    })();
+
+    // ════════════════════════════════════════════
+    // Extraire le token d'une URL scannée
+    // ════════════════════════════════════════════
+    function extractToken(scannedText) {
+        const raw = String(scannedText || '').trim();
+        if (!raw) return '';
+        try {
+            const url = new URL(raw, window.location.origin);
+            const t = url.searchParams.get('token');
+            if (t && isQrToken(t)) return t;
+        } catch(e) {}
+        return isQrToken(raw) ? raw : '';
+    }
+
+    // ════════════════════════════════════════════
+    // Scanner caméra
+    // ════════════════════════════════════════════
+    let scanner = null;
+    let scanning = false;
+    const toggleBtn = document.getElementById('toggle-scanner');
+    const readerDiv = document.getElementById('qr-reader');
+    const placeholder = document.getElementById('scanner-placeholder');
+    const scannerIcon = document.getElementById('scanner-icon');
+
+    toggleBtn.addEventListener('click', function() {
+        if (scanning) { stopScanner(); } else { startScanner(); }
+    });
+
+    function startScanner() {
+        readerDiv.style.display = 'block';
+        placeholder.style.display = 'none';
+        scannerIcon.className = 'bi bi-camera-video-off';
+        scanning = true;
+
+        scanner = new Html5Qrcode("qr-reader");
+        scanner.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText) => {
+                const token = extractToken(decodedText);
+                if (!token) {
+                    showToast('QR code invalide — scannez le QR de badgeage (token UUID).', 'danger');
+                    return;
+                }
+                document.getElementById('token_qr').value = token;
+                document.getElementById('token-group').style.display = 'none';
+                document.getElementById('scanner-section').style.display = 'none';
+                document.getElementById('token-ready').style.display = 'block';
+                stopScanner();
+                showToast('QR code scanné !', 'success');
+                document.getElementById('numero_participant').focus();
+                prefetchOfflineData(token);
+            },
+            () => {}
+        ).catch(() => {
+            placeholder.innerHTML = '<small class="text-danger">Impossible d\'accéder à la caméra</small>';
+            placeholder.style.display = 'block';
+            readerDiv.style.display = 'none';
+            scanning = false;
+        });
+    }
+
+    function stopScanner() {
+        if (scanner) {
+            scanner.stop().then(() => {
+                readerDiv.style.display = 'none';
+                placeholder.style.display = 'block';
+                placeholder.innerHTML = '<small class="text-success"><i class="bi bi-check-circle"></i> Scanner arrêté</small>';
+                scannerIcon.className = 'bi bi-camera-video';
+                scanning = false;
+            }).catch(() => {});
+        }
+    }
+
+    // ════════════════════════════════════════════
+    // Formulaire — en ligne ou hors ligne
+    // ════════════════════════════════════════════
+    const form = document.getElementById('badge-form');
+    const resultDiv = document.getElementById('result');
+    const btnSubmit = document.getElementById('btn-submit');
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const numero = document.getElementById('numero_participant').value.trim();
+        if (!numero) return;
+
+        const confirmOverlay = document.getElementById('confirm-overlay');
+        const confirmDetail = document.getElementById('confirm-detail');
+        const confirmOk = document.getElementById('confirm-ok');
+        const confirmOkLabel = document.getElementById('confirm-ok-label');
+        const confirmIcon = document.getElementById('confirm-icon');
+        const confirmTitle = document.getElementById('confirm-title');
+        const statusBadge = document.getElementById('confirm-status-badge');
+        const statusText = document.getElementById('confirm-status-text');
+
+        // Réinitialiser la modale en état de chargement
+        confirmDetail.textContent = `Numéro : ${numero}`;
+        confirmIcon.innerHTML = '&#x1F4CB;';
+        confirmTitle.textContent = 'Confirmer le badgeage';
+        confirmOk.disabled = true;
+        confirmOk.className = 'btn-confirm-ok';
+        confirmOkLabel.textContent = 'Confirmer';
+        statusBadge.className = 'confirm-status-badge status-loading';
+        statusBadge.innerHTML = '<span class="status-icon">&#x23F3;</span><span>Vérification en cours…</span>';
+        confirmOverlay.style.display = 'flex';
+
+        // Appeler l'endpoint de vérification
+        const token = document.getElementById('token_qr').value.trim();
+        try {
+            const resp = await fetch(`/api/scan/check-status/?token_qr=${encodeURIComponent(token)}&numero=${encodeURIComponent(numero)}`);
+            if (resp.ok) {
+                const info = await resp.json();
+                const prenom = info.prenom || '';
+                const nom = info.nom || '';
+                const nomComplet = (prenom || nom) ? `${prenom} ${nom}`.trim() : numero;
+
+                const roleTag = info.type_personne === 'formateur'
+                    ? '<span style="background:#e0f2fe;color:#0369a1;border-radius:4px;padding:1px 7px;font-size:0.78rem;font-weight:700;margin-left:6px;">Enseignant</span>'
+                    : '';
+                if (info.statut === 'NON_AUTORISE') {
+                    confirmTitle.textContent = 'Badgeage refusé';
+                    confirmIcon.innerHTML = '&#x26A0;&#xFE0F;';
+                    confirmOk.disabled = true;
+                    confirmOkLabel.textContent = 'Fermer';
+                    statusBadge.className = 'confirm-status-badge status-termine';
+                    statusBadge.innerHTML = `<span class="status-icon">&#x274C;</span><span>${info.detail || 'Étudiant non autorisé pour ce module.'}</span>`;
+                } else if (info.statut === 'EN_SALLE') {
+                    // Déjà en salle → prochaine action = SORTIE
+                    confirmTitle.textContent = 'Enregistrer la sortie';
+                    confirmIcon.innerHTML = '&#x1F44B;';
+                    confirmOk.className = 'btn-confirm-ok sortie';
+                    confirmOkLabel.textContent = 'Confirmer la sortie';
+                    statusBadge.className = 'confirm-status-badge status-en-salle';
+                    statusBadge.innerHTML = `<span class="status-icon">&#x1F7E1;</span><span><strong>${nomComplet}</strong>${roleTag} est déjà en salle depuis <strong>${info.heure_entree || '—'}</strong> — cliquez pour enregistrer la sortie.</span>`;
+                    confirmOk.disabled = false;
+                } else if (info.statut === 'TERMINE') {
+                    // Déjà complet → bloquer
+                    confirmTitle.textContent = 'Badgeage déjà effectué';
+                    confirmIcon.innerHTML = '&#x26A0;&#xFE0F;';
+                    confirmOkLabel.textContent = 'Confirmer quand même';
+                    statusBadge.className = 'confirm-status-badge status-termine';
+                    statusBadge.innerHTML = `<span class="status-icon">&#x274C;</span><span><strong>${nomComplet}</strong>${roleTag} a déjà effectué son entrée ET sa sortie pour cette séance.</span>`;
+                    confirmOk.disabled = false;
+                } else {
+                    // ABSENT ou INCONNU → entrée normale
+                    confirmTitle.textContent = 'Enregistrer l\'entrée';
+                    confirmIcon.innerHTML = '&#x2705;';
+                    confirmOkLabel.textContent = 'Confirmer l\'entrée';
+                    statusBadge.className = 'confirm-status-badge status-absent';
+                    statusBadge.innerHTML = `<span class="status-icon">&#x1F7E2;</span><span><strong>${nomComplet}</strong>${roleTag} n'a pas encore badgé — cliquez pour enregistrer l'entrée.</span>`;
+                    confirmOk.disabled = false;
+                }
+            } else {
+                // Erreur réseau ou token invalide : laisser passer sans bloquer
+                statusBadge.className = 'confirm-status-badge status-loading';
+                statusBadge.innerHTML = '<span class="status-icon">&#x2139;&#xFE0F;</span><span>Impossible de vérifier le statut. Vous pouvez continuer.</span>';
+                confirmOkLabel.textContent = 'Confirmer';
+                confirmOk.disabled = false;
+            }
+        } catch(e) {
+            statusBadge.className = 'confirm-status-badge status-loading';
+            statusBadge.innerHTML = '<span class="status-icon">&#x2139;&#xFE0F;</span><span>Vérification impossible (hors ligne ?). Vous pouvez continuer.</span>';
+            confirmOkLabel.textContent = 'Confirmer';
+            confirmOk.disabled = false;
+        }
+
+        document.getElementById('confirm-cancel').onclick = function() {
+            confirmOverlay.style.display = 'none';
+        };
+
+        confirmOk.onclick = function() {
+            confirmOverlay.style.display = 'none';
+            if (!confirmOk.disabled) {
+                doBadge();
+            }
+        };
+    });
+
+    async function doBadge() {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Envoi...';
+
+        const formData = {
+            token_qr: document.getElementById('token_qr').value.trim(),
+            numero_participant: document.getElementById('numero_participant').value.trim(),
+            device_id: 'WEB_BADGE',
+        };
+
+        if (!navigator.onLine) {
+            handleOfflineScan(formData);
+            return;
+        }
+
+
+        const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+        const headers = { 'Content-Type': 'application/json' };
+        if (csrfEl) headers['X-CSRFToken'] = csrfEl.value;
+
+        fetch('/api/scan/', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(formData),
+        })
+        .then(r => r.json().then(data => ({ ok: r.ok, status: r.status, data })))
+        .then(({ ok, status, data }) => {
+            if (ok) {
+                showOnlineResult(data);
+            } else {
+                const msg = data.detail || data.code || 'Erreur inconnue';
+                showError(msg);
+            }
+        })
+        .catch(() => {
+            // Network failed — save offline
+            handleOfflineScan(formData);
+        })
+        .finally(() => {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = '<i class="bi bi-check2-circle me-2"></i>Badger';
+            setTimeout(() => { resultDiv.style.display = 'none'; }, 15000);
+        });
+    }
+
+    function showOnlineResult(data) {
+        const isSortie = data.action === 'SORTIE';
+        const isRetour = data.action === 'RETOUR';
+        const heure = data.timestamp
+            ? new Date(data.timestamp).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})
+            : new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+        const nbSessions = data.nb_sessions || 1;
+
+        let titre = 'Entrée enregistrée', icon = '&#x2705;', cssClass = 'result-entree';
+        if (isRetour) { titre = 'Retour enregistré'; icon = '&#x1F504;'; }
+        if (isSortie) { titre = 'Sortie enregistrée'; icon = '&#x1F44B;'; cssClass = 'result-sortie'; }
+
+        let details = `<p class="text-muted mb-1">Heure : ${heure}</p>`;
+        if (isSortie) {
+            const sessionMin = data.duree_session_minutes || data.duree_presence_minutes || '-';
+            const totalMin = data.duree_total_jour_minutes || sessionMin;
+            details = `
+                <p class="mb-1"><span class="badge bg-light text-dark">Session : ${sessionMin} min</span></p>
+                <p class="mb-1 fw-semibold" style="color:#F5B100;">Total jour : ${Math.round(totalMin)} min</p>
+                <p class="text-muted mb-0 small">${nbSessions} session(s) aujourd'hui</p>`;
+        } else if (nbSessions > 1) {
+            details += `<p class="text-muted mb-0 small">Session ${nbSessions}</p>`;
+        }
+
+        const personne = data.participant || data.formateur;
+        const roleLabel = data.type_personne === 'formateur' ? '<span class="badge bg-info text-white mb-1">Enseignant</span>' : '';
+
+        let personneHtml = '';
+        if (personne) {
+            personneHtml = `
+                <p class="mb-1 fw-semibold">${personne.prenom || ''} ${personne.nom || ''}</p>
+                <p class="mb-1"><code>${personne.numero || ''}</code></p>`;
+        }
+
+        resultDiv.innerHTML = `
+            <div class="result-card ${cssClass}">
+                <div class="icon">${icon}</div>
+                <h4>${titre}</h4>
+                ${roleLabel}
+                ${personneHtml}
+                ${details}
+            </div>`;
+        resultDiv.style.display = 'block';
+        document.getElementById('numero_participant').value = '';
+        document.getElementById('numero_participant').focus();
+    }
+
+    async function handleOfflineScan(formData) {
+        const personne = findPersonneOffline(formData.numero_participant);
+        const heure = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+
+        await addOfflineScan({
+            token_qr: formData.token_qr,
+            numero_participant: formData.numero_participant,
+            device_id: 'OFFLINE_WEB',
+            timestamp_local: new Date().toISOString(),
+        });
+        await updateQueueCount();
+
+        if (personne) {
+            const roleLabel = personne.type === 'formateur'
+                ? '<span class="badge bg-info text-white mb-1">Enseignant</span>' : '';
+            resultDiv.innerHTML = `
+                <div class="result-card result-entree" style="border-color:#F5B100;">
+                    <div class="icon">&#x1F4E6;</div>
+                    <h4>Badgeage sauvegardé hors ligne</h4>
+                    ${roleLabel}
+                    <p class="mb-1 fw-semibold">${personne.prenom} ${personne.nom}</p>
+                    <p class="mb-1"><code>${personne.numero}</code></p>
+                    <p class="text-muted mb-0 small">
+                        <i class="bi bi-clock me-1"></i>${heure} — sera synchronisé automatiquement
+                    </p>
+                </div>`;
+        } else {
+            resultDiv.innerHTML = `
+                <div class="result-card result-entree" style="border-color:#F5B100;">
+                    <div class="icon">&#x1F4E6;</div>
+                    <h4>Badgeage sauvegardé hors ligne</h4>
+                    <p class="mb-1"><code>${formData.numero_participant}</code></p>
+                    <p class="text-muted mb-0 small">
+                        <i class="bi bi-clock me-1"></i>${heure} — sera synchronisé automatiquement
+                    </p>
+                </div>`;
+        }
+        resultDiv.style.display = 'block';
+        document.getElementById('numero_participant').value = '';
+        document.getElementById('numero_participant').focus();
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="bi bi-check2-circle me-2"></i>Badger';
+
+        // Try background sync if available
+        if ('serviceWorker' in navigator && 'SyncManager' in window) {
+            const reg = await navigator.serviceWorker.ready;
+            await reg.sync.register('sync-scans').catch(() => {});
+        }
+    }
+
+    function showError(msg) {
+        resultDiv.innerHTML = `
+            <div class="result-card result-error">
+                <div class="icon">&#x274C;</div>
+                <h4>Erreur</h4>
+                <p class="mb-0">${msg}</p>
+            </div>`;
+        resultDiv.style.display = 'block';
+    }
+
+    function showToast(msg, type) {
+        const el = document.createElement('div');
+        el.className = `alert alert-${type} position-fixed top-0 start-50 translate-middle-x mt-3`;
+        el.style.zIndex = 9999;
+        el.textContent = msg;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 2000);
+    }
+
+    // ════════════════════════════════════════════
+    // Service Worker registration
+    // ════════════════════════════════════════════
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then((reg) => {
+                console.log('[SW] Enregistré, scope:', reg.scope);
+            })
+            .catch((err) => {
+                console.log('[SW] Erreur enregistrement:', err);
+            });
+
+        // Listen for sync completion messages from SW
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'SYNC_COMPLETE') {
+                updateQueueCount();
+                if (event.data.remaining === 0) {
+                    showToast('Tous les scans hors ligne synchronisés !', 'success');
+                }
+            }
+        });
+    }
+    </script>
+</body>
+</html>

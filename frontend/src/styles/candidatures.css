@@ -1,0 +1,516 @@
+/* ==========================================================================
+   STYLE DÉDIÉ : ÉCRAN CANDIDATURES (SCOLARITÉ) INJS-LMD 2026
+   Inspiré du design de référence « Tableau de bord LMD 2026 »
+   (frontend/src/styles/dashboardEngine.css) : verre dépoli, tuiles KPI,
+   boutons pilules, pastilles d'état. Aucune modification de logique.
+   ========================================================================== */
+
+.cand-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  color: var(--injs-text-primary, #0F172A);
+}
+
+/* ── 1. BANDEAU D'ACCUEIL (rappel de .dashboard-greeting-row) ── */
+.cand-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding: 1.15rem 1.5rem;
+  background: #FFFFFF;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #E9ECF2;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+}
+
+.cand-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cand-hero-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0B1F3A;
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.cand-hero-sub {
+  font-size: 0.88rem;
+  color: var(--injs-text-secondary, #475569);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ── 2. LIGNE DES TUILES KPI (rappel de .top-kpis-row) ── */
+.cand-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.cand-kpi {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.15rem;
+  background: #FFFFFF;
+  border: 1px solid #E9ECF2;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cand-kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -5px rgba(11, 31, 58, 0.08);
+}
+
+.cand-kpi-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--injs-text-secondary, #475569);
+  margin-bottom: 0.2rem;
+}
+
+.cand-kpi-value {
+  display: block;
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #0B1F3A;
+  letter-spacing: -0.02em;
+}
+
+.cand-kpi-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 1.15rem;
+}
+
+/* ── Éléments repris de la référence : déclarés ICI aussi, car
+   dashboardEngine.css n'est chargé que par sa propre page (lazy) et
+   l'écran Candidatures doit rester autonome. Valeurs identiques. ── */
+.cand-page .plaquette {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.cand-page .plaquette-primary {
+  background: #DBEAFE;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+}
+
+.cand-page .btn-premium-primary {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 9999px;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.cand-page .btn-premium-primary:hover {
+  background: linear-gradient(135deg, #1D4ED8 0%, #256FD0 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+}
+
+/* ── 4. BARRE DE FILTRES ── */
+.cand-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.cand-search {
+  position: relative;
+  flex: 1 1 280px;
+  max-width: 380px;
+}
+
+.cand-search i {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94A3B8;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.cand-search .form-control {
+  padding-left: 2.1rem;
+  border-radius: 9999px;
+  border-color: #E2E8F0;
+  background: #F8FAFC;
+}
+
+.cand-search .form-control:focus {
+  background: #FFFFFF;
+  border-color: #2A7FFF;
+  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+}
+
+.cand-filter-select {
+  flex: 0 1 240px;
+  border-radius: 9999px;
+  border-color: #E2E8F0;
+  background-color: #F8FAFC;
+  font-weight: 600;
+  color: var(--injs-text-secondary, #475569);
+}
+
+.cand-filter-select:focus {
+  border-color: #2A7FFF;
+  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+}
+
+.cand-count-pill {
+  margin-left: auto;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  background: #EFF6FF;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── 5. TABLEAU ── */
+.cand-table-wrap {
+  border: 1px solid #EDF1F6;
+  border-radius: 14px;
+  overflow: auto;
+}
+
+.cand-table {
+  margin: 0;
+  min-width: 860px;
+}
+
+.cand-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #F4F8FC;
+  border-bottom: 1px solid #E6EDF5;
+  color: #64748B;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.7rem 0.9rem;
+  white-space: nowrap;
+}
+
+.cand-table tbody td {
+  padding: 0.75rem 0.9rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #F1F5F9;
+  color: #1E293B;
+}
+
+.cand-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.cand-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.cand-table tbody tr:hover {
+  background: #F7FAFF;
+}
+
+.cand-numero {
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #1D4ED8;
+  background: #EFF6FF;
+  border: 1px solid #DBEAFE;
+  border-radius: 6px;
+  padding: 0.15rem 0.45rem;
+  white-space: nowrap;
+}
+
+.cand-candidat {
+  font-weight: 700;
+  color: #0B1F3A;
+}
+
+.cand-formation {
+  color: #475569;
+}
+
+.cand-table .badge {
+  border-radius: 9999px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.cand-progress {
+  min-width: 150px;
+}
+
+.cand-progress .progress {
+  height: 0.45rem;
+  border-radius: 9999px;
+  background: #EEF2F7;
+
+/* ── 6. PANNEAU DOSSIER ── */
+.cand-dossier {
+  border: 1px solid #BFDBFE !important;
+  box-shadow: 0 12px 30px -8px rgba(37, 99, 235, 0.18) !important;
+}
+
+.cand-dossier > .card-header {
+  background: linear-gradient(135deg, #EFF6FF 0%, #E8F1FF 100%);
+  border-bottom: 1px solid #DBEAFE;
+  padding: 0.9rem 1.25rem;
+}
+
+.cand-dossier .cand-section-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748B;
+  margin: 1.25rem 0 0.6rem;
+}
+
+.cand-dossier .table thead th {
+  background: #F4F8FC;
+  color: #64748B;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom-color: #E6EDF5;
+}
+
+.cand-dossier .table td {
+  vertical-align: middle;
+  font-size: 0.86rem;
+}
+
+.cand-dossier .badge {
+  border-radius: 9999px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.cand-info-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94A3B8;
+  margin-bottom: 0.15rem;
+}
+
+.cand-info-value {
+  font-weight: 700;
+  color: #0B1F3A;
+}
+
+/* ── 7. FORMULAIRE DE CRÉATION ── */
+.cand-form > .card-header {
+  background: rgba(240, 246, 252, 0.6);
+  border-bottom: 1px solid #EDF1F6;
+  padding: 0.9rem 1.25rem;
+  font-size: 1rem;
+  color: #0B1F3A;
+}
+
+.cand-form > .card-body {
+  padding: 1.15rem 1.4rem 1.4rem;
+}
+
+.cand-form .form-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+  margin-bottom: 0.3rem;
+}
+
+.cand-form .form-control,
+.cand-form .form-select {
+  border-radius: 10px;
+  border-color: #E2E8F0;
+}
+
+.cand-form .form-control:focus,
+.cand-form .form-select:focus {
+  border-color: #2A7FFF;
+  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+}
+
+.cand-form .btn {
+  border-radius: 9999px;
+  font-weight: 700;
+  padding: 0.5rem 1.25rem;
+}
+
+.cand-form .btn-primary {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+}
+
+.cand-form .btn-outline-secondary {
+  background: #FFFFFF;
+  border-color: #E2E8F0;
+  color: #475569;
+}
+
+.cand-form .btn-outline-secondary:hover {
+  border-color: #2A7FFF;
+  color: #2563EB;
+}
+
+/* ── 8. RESPONSIVE ── */
+@media (max-width: 1100px) {
+  .cand-kpi-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .cand-kpi-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cand-hero {
+    align-items: flex-start;
+  }
+  .cand-count-pill {
+    margin-left: 0;
+  }
+}
+
+}
+
+.cand-progress small {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748B;
+}
+
+.cand-open-btn {
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.76rem;
+  padding: 0.35rem 0.9rem;
+  border-color: #BFDBFE;
+  color: #2563EB;
+  background: #FFFFFF;
+}
+
+.cand-open-btn:hover {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+}
+
+.cand-empty {
+  text-align: center;
+  color: #94A3B8;
+  padding: 2rem 1rem;
+  font-weight: 500;
+}
+
+.cand-empty i {
+  display: block;
+  font-size: 1.6rem;
+  margin-bottom: 0.4rem;
+  color: #CBD5E1;
+}
+
+.cand-kpi-icon.is-blue  { background: #EBF3FF; color: #2A7FFF; }
+.cand-kpi-icon.is-green { background: #ECFDF5; color: #10B981; }
+.cand-kpi-icon.is-amber { background: #FFFBEB; color: #F59E0B; }
+.cand-kpi-icon.is-slate { background: #EEF2F7; color: #475569; }
+
+/* ── 3. PANNEAU VERRE PARTAGÉ (tableau, formulaire, dossier) ── */
+.cand-panel {
+  background: #FFFFFF;
+  border: 1px solid #E9ECF2;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  margin-bottom: 0 !important;
+}
+
+.cand-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.4rem;
+  border-bottom: 1px solid #EDF1F6;
+  background: rgba(240, 246, 252, 0.55);
+}
+
+.cand-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0B1F3A;
+  margin: 0;
+}
+
+.cand-panel-title i {
+  color: #2A7FFF;
+  font-size: 1.05rem;
+}
+
+.cand-panel-body {
+  padding: 1.15rem 1.4rem 1.4rem;
+}

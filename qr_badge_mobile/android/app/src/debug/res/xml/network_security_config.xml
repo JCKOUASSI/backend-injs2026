@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Configuration reseau DEBUG uniquement.
+  Gradle utilise src/debug/ en priorite sur src/main/ pour les ressources,
+  donc ce fichier remplace res/xml/network_security_config.xml en build debug.
+
+  • HTTP en clair autorise (serveur LAN configure dans assets/app.env)
+  • Certificats utilisateur acceptes (proxies de debug, Charles, mitmproxy…)
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

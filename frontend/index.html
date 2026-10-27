@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>INJS-LMD — INJS Marcory</title>
+    <style>
+      /* Écran de démarrage : affiché UNIQUEMENT tant que React n'a pas monté
+         l'application (React remplace alors le contenu de #root). Évite la
+         page blanche pendant le téléchargement du bundle. */
+      #app-boot {
+        position: fixed; inset: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 18px;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        background: #f4f6fb; color: #1f2a44;
+      }
+      #app-boot .boot-spinner {
+        width: 42px; height: 42px; border-radius: 50%;
+        border: 4px solid #d7deea; border-top-color: #1f5fbf;
+        animation: app-boot-spin 0.9s linear infinite;
+      }
+      #app-boot .boot-title { font-weight: 600; font-size: 1.05rem; letter-spacing: .3px; }
+      #app-boot .boot-sub { font-size: .85rem; color: #6b7691; }
+      #app-boot-error {
+        display: none; max-width: 480px; margin: 0 16px; padding: 16px 18px;
+        background: #fdecec; border: 1px solid #f3b4b4; border-radius: 10px;
+        color: #8a1f1f; font-size: .85rem; line-height: 1.45; text-align: left;
+      }
+      @keyframes app-boot-spin { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div id="app-boot">
+        <div class="boot-spinner" role="status" aria-label="Chargement"></div>
+        <div class="boot-title">INJS-LMD — INJS Marcory</div>
+        <div class="boot-sub">Chargement de l'application…</div>
+        <div id="app-boot-error"></div>
+        <noscript>
+          <div style="max-width:480px;margin:16px;padding:16px;background:#fff7e6;border:1px solid #f0d28a;border-radius:10px;color:#7a5b12;font-size:.9rem;">
+            JavaScript est désactivé dans votre navigateur. L'application INJS nécessite
+            JavaScript : activez-le puis rechargez la page.
+          </div>
+        </noscript>
+      </div>
+    </div>
+    <script>
+      // Garde-fou : si le bundle JS ne se charge pas (coupure réseau / proxy),
+      // on remplace l'écran de chargement par un message explicite au lieu
+      // d'une page blanche sans information.
+      (function () {
+        function showError(msg) {
+          var box = document.getElementById('app-boot-error');
+          var spin = document.querySelector('#app-boot .boot-spinner');
+          var sub = document.querySelector('#app-boot .boot-sub');
+          if (spin) spin.style.display = 'none';
+          if (sub) sub.textContent = '';
+          if (box) { box.style.display = 'block'; box.textContent = msg; }
+        }
+        window.addEventListener('error', function (e) {
+          var t = e && e.target;
+          if (t && t.tagName === 'SCRIPT') {
+            showError("Impossible de charger l'application (fichier JavaScript manquant). Vérifiez votre connexion puis rechargez la page (Ctrl+Maj+R).");
+          }
+        }, true);
+        // Délai de sécurité : si React n'a pas monté l'application après 20 s.
+        setTimeout(function () {
+          var root = document.getElementById('root');
+          if (root && root.querySelector('#app-boot')) {
+            showError("Le chargement est anormalement long. Le serveur est peut-être en cours de démarrage ; réessayez dans quelques secondes (Ctrl+Maj+R).");
+          }
+        }, 20000);
+      })();
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

@@ -1,0 +1,202 @@
+/* ==========================================================================
+   PROFILS — Module « Utilisateurs & Accès » — DESIGN SYSTEM INJS 2026
+   Refonte visuelle inspirée de la console CURP : bandeau de traçabilité,
+   navigation latérale glassmorphism et cartes dépolies.
+   ========================================================================== */
+
+.prof-bandeau {
+  background: linear-gradient(135deg, #2563EB 0%, #0B1F3A 100%);
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 0.55rem 1.25rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 14px rgba(11, 31, 58, 0.12);
+}
+
+.prof-entete {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #0B1F3A;
+  font-weight: 800;
+  margin: 0.25rem 0 0.15rem;
+}
+
+.prof-sous-titre {
+  color: #64748B;
+  font-size: 0.84rem;
+  margin: 0 0 1.1rem;
+}
+
+.prof-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .prof-layout { grid-template-columns: 1fr; }
+}
+
+.prof-nav {
+  position: sticky;
+  top: 1rem;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 18px;
+  padding: 0.75rem;
+  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05);
+}
+
+.prof-nav button {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  border-radius: 10px;
+  color: #475569;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  margin-bottom: 0.25rem;
+}
+
+.prof-nav button:hover {
+  background: rgba(241, 245, 249, 0.9);
+  color: #0B1F3A;
+}
+
+.prof-nav button.active {
+  background: linear-gradient(90deg, #2563EB 0%, #2A7FFF 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(30, 112, 235, 0.35);
+}
+
+.prof-contenu { min-width: 0; }
+
+.prof-carte {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05);
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+
+.prof-filtres {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 1.1rem 1.4rem;
+}
+
+.prof-filtres .prof-recherche { flex: 1 1 250px; }
+
+.prof-carte-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.prof-carte-titre {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0B1F3A;
+}
+
+.prof-carte-sous-titre {
+  margin: 0.15rem 0 0;
+  color: #64748B;
+  font-size: 0.8rem;
+}
+
+.prof-compteur {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.prof-carte-corps { padding: 0; }
+
+.prof-table-wrap { overflow-x: auto; }
+
+.prof-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.86rem;
+}
+
+.prof-table th, .prof-table td {
+  padding: 0.7rem 0.9rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  vertical-align: middle;
+}
+
+.prof-table thead th {
+  background: #0B1F3A;
+  color: #FFFFFF;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  border: none;
+}
+
+.prof-table thead th:first-child { border-radius: 14px 0 0 0; }
+.prof-table thead th:last-child { border-radius: 0 14px 0 0; }
+
+.prof-table tbody tr {
+  background: rgba(255, 255, 255, 0.65);
+  transition: background 0.15s ease;
+}
+
+.prof-table tbody tr:hover {
+  background: rgba(241, 245, 249, 0.95);
+}
+
+.prof-cellule-identite {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.prof-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563EB 0%, #0B1F3A 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}

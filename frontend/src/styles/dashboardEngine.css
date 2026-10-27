@@ -1,0 +1,1098 @@
+/* ==========================================================================
+   DESIGN SYSTEM INJS-LMD 2026 — PREMIUM GLASSMORPHISM DASHBOARD ENGINE
+   Inspiré de la maquette institutionnelle INJS Marcory
+   Couleurs : #0B1F3A (Bleu foncé), #2563EB (Bleu action), #38BDF8 (Cyan clair),
+              #F0F6FC (Fond lumineux), Verre dépoli & bordures luminescentes
+   ========================================================================== */
+
+:root {
+  --injs-blue-dark: #0B1F3A;
+  --injs-blue-navy: #0F274A;
+  --injs-blue-institution: #123E6A;
+  --injs-blue-accent: #2A7FFF;
+  --injs-blue-vibrant: #2563EB;
+  --injs-cyan: #38BDF8;
+  --injs-teal: #06B6D4;
+  --injs-blue-light: #EBF4FC;
+  --injs-blue-tint: #F0F6FC;
+  --injs-bg: #F0F5FA;
+  --injs-surface: #FFFFFF;
+  --injs-text-primary: #0F172A;
+  --injs-text-secondary: #475569;
+  --injs-text-muted: #94A3B8;
+  --injs-border: #E2E8F0;
+  --injs-border-glass: rgba(255, 255, 255, 0.85);
+  --injs-success: #10B981;
+  --injs-success-bg: #ECFDF5;
+  --injs-warning: #F59E0B;
+  --injs-warning-bg: #FFFBEB;
+  --injs-danger: #EF4444;
+  --injs-danger-bg: #FEF2F2;
+  --injs-info: #0284C7;
+  --injs-radius-sm: 8px;
+  --injs-radius-md: 12px;
+  --injs-radius-lg: 12px;
+  --injs-radius-xl: 22px;
+  --injs-radius-pill: 9999px;
+  --injs-shadow-glass: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+  --injs-shadow-card: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.dashboard-engine-wrapper,
+.dash-engine-container {
+  background: var(--bg-app-lmd2026);
+  background-attachment: fixed;
+  min-height: calc(100vh - 70px);
+  padding: 1.5rem 1.75rem 2.5rem;
+  color: var(--injs-text-primary);
+  font-family: var(--font-lmd2026);
+  position: relative;
+}
+
+/* ── Panneaux & cartes (réf. LMD2026 : blanc opaque, bordure #E9ECF2) ── */
+.glass-panel {
+  background: #FFFFFF;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #E9ECF2;
+  border-radius: var(--injs-radius-lg);
+  box-shadow: var(--injs-shadow-glass);
+  padding: 1.25rem 1.5rem;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glass-panel-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 35px -5px rgba(11, 31, 58, 0.09), 0 0 1px 1px rgba(255, 255, 255, 1);
+}
+
+/* ── En-tête de Salutation (Greeting Banner) ── */
+.dashboard-greeting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.greeting-text-block {
+  flex: 1 1 500px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.greeting-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--injs-blue-dark);
+  margin: 0 0 0.35rem 0;
+  letter-spacing: -0.02em;
+}
+
+.greeting-subtitle {
+  font-size: 0.95rem;
+  color: var(--injs-text-secondary);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Campus Hero Card */
+.campus-hero-card {
+  flex: 0 0 380px;
+  border-radius: var(--injs-radius-lg);
+  position: relative;
+  overflow: hidden;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 10px 25px -5px rgba(15, 39, 74, 0.25);
+}
+
+.campus-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(11, 31, 58, 0.92) 0%, rgba(26, 75, 140, 0.8) 100%);
+  z-index: 1;
+}
+
+.campus-hero-content {
+  position: relative;
+  z-index: 2;
+  color: #FFFFFF;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 1rem;
+}
+
+.campus-hero-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--injs-cyan);
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+}
+
+.campus-hero-slogan {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* ── Boutons Prémiums ── */
+.btn-premium-primary {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  color: #FFFFFF !important;
+  border: none;
+  border-radius: var(--injs-radius-pill);
+  padding: 0.55rem 1.15rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-premium-primary:hover {
+  background: linear-gradient(135deg, #1D4ED8 0%, #256FD0 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+}
+
+.btn-premium-glass {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--injs-blue-dark);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: var(--injs-radius-pill);
+  padding: 0.5rem 1rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(11, 31, 58, 0.04);
+}
+
+.btn-premium-glass:hover {
+  background: #FFFFFF;
+  color: var(--injs-blue-vibrant);
+  border-color: #CBD5E1;
+  transform: translateY(-1px);
+}
+
+/* ── Plaquettes Prémiums (Badges d'état & d'alerte) ── */
+.plaquette {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--injs-radius-pill);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.plaquette-urgent,
+.plaquette-danger {
+  background: #FEE2E2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+}
+
+.plaquette-scolarite,
+.plaquette-warning {
+  background: #FEF3C7;
+  color: #D97706;
+  border: 1px solid #FDE68A;
+}
+
+.plaquette-pedagogie,
+.plaquette-primary {
+  background: #DBEAFE;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+}
+
+.plaquette-organisation,
+.plaquette-secondary {
+  background: #F1F5F9;
+  color: #475569;
+  border: 1px solid #E2E8F0;
+}
+
+.plaquette-excellent,
+.plaquette-success {
+  background: #D1FAE5;
+  color: #059669;
+  border: 1px solid #A7F3D0;
+}
+
+/* Trend badges */
+.trend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.trend-pill.positive {
+  color: #10B981;
+}
+
+.trend-pill.neutral {
+  color: #2563EB;
+}
+
+.trend-comparison {
+  font-size: 0.72rem;
+  color: var(--injs-text-muted);
+  font-weight: 500;
+  margin-left: 0.25rem;
+}
+
+/* ── Ligne des 4 Top KPIs ── */
+.top-kpis-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.top-kpi-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.4rem;
+  background: #FFFFFF;
+  backdrop-filter: blur(14px);
+  border: 1px solid #E9ECF2;
+  border-radius: var(--injs-radius-lg);
+  box-shadow: var(--injs-shadow-card);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.top-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -5px rgba(11, 31, 58, 0.08);
+}
+
+.top-kpi-label {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--injs-text-secondary);
+  margin-bottom: 0.35rem;
+}
+
+.top-kpi-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--injs-blue-dark);
+  line-height: 1.1;
+  margin-bottom: 0.35rem;
+  letter-spacing: -0.02em;
+}
+
+.top-kpi-icon-wrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #EFF6FF;
+  color: var(--injs-blue-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+/* ── Stepper Pipeline LMD (8 Étapes connectées) ── */
+.pipeline-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.pipeline-stepper-track {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: relative;
+  padding: 0.5rem 0.25rem;
+  gap: 0.5rem;
+  overflow-x: auto;
+}
+
+.pipeline-node-wrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+
+.pipeline-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  min-width: 80px;
+}
+
+.pipeline-node-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  margin-bottom: 0.45rem;
+  transition: transform 0.2s ease;
+}
+
+.pipeline-node:hover .pipeline-node-badge {
+  transform: scale(1.08);
+}
+
+.pipeline-node-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--injs-text-secondary);
+  margin-bottom: 0.15rem;
+}
+
+.pipeline-node-count {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--injs-blue-dark);
+}
+
+.pipeline-connector-arrow {
+  color: #94A3B8;
+  font-size: 1rem;
+  margin: 0 0.15rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Ligne 2 : Grille Pipeline + Chart Évolution ── */
+.row-pipeline-growth {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Ligne 3 : Formations, 3 Gauges & Alertes ── */
+.row-indicators-alerts {
+  display: grid;
+  grid-template-columns: 1.1fr repeat(3, 0.65fr) 1.2fr;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Radial Gauge Card */
+.radial-gauge-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.25rem 1rem;
+}
+
+.gauge-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--injs-text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.gauge-svg-container {
+  width: 90px;
+  height: 90px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.45rem;
+}
+
+.gauge-pct-text {
+  position: absolute;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--injs-blue-dark);
+}
+
+/* Alertes Institutionnelles */
+.institutional-alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.institutional-alert-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.75rem;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--injs-border);
+  border-radius: var(--injs-radius-sm);
+  font-size: 0.82rem;
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+
+.institutional-alert-item:hover {
+  background: #FFFFFF;
+}
+
+/* ── Ligne 4 : Activité, Sexe, Charge, Finances ── */
+.row-activity-finance {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr 1.2fr 1.1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Timeline Activité Récente */
+.recent-activity-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.activity-timeline-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 0.81rem;
+  line-height: 1.35;
+}
+
+.activity-time-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--injs-blue-accent);
+  background: #EFF6FF;
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* Situation Financière Card */
+.finance-stats-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.finance-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  background: rgba(241, 245, 249, 0.6);
+}
+
+.finance-stat-label {
+  color: var(--injs-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.finance-stat-value {
+  font-weight: 700;
+  color: var(--injs-blue-dark);
+}
+
+/* ── Barre de Pied Institutionnelle ── */
+.institutional-footer-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--injs-border-glass);
+  border-radius: var(--injs-radius-md);
+  margin-top: 1.5rem;
+  font-size: 0.82rem;
+  color: var(--injs-text-secondary);
+}
+
+/* ── Onglets de Sélection de Vue ── */
+.dash-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.35rem;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--injs-border);
+  border-radius: var(--injs-radius-pill);
+  margin-bottom: 1.5rem;
+}
+
+.dash-tab-btn {
+  border: none;
+  background: transparent;
+  padding: 0.45rem 1rem;
+  border-radius: var(--injs-radius-pill);
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--injs-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.dash-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--injs-blue-dark);
+}
+
+.dash-tab-btn.active {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* ════ Actions Rapides Dépolies & Boutons Pilules Prémiums ════ */
+.quick-actions-card {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(14px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  border-radius: 18px !important;
+  padding: 1.15rem 1.4rem !important;
+  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.06), 0 0 1px 1px rgba(255, 255, 255, 0.9) !important;
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.quick-actions-header {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.quick-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.quick-action-link,
+.btn-quick-action {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.65rem !important;
+  padding: 0.62rem 1.25rem !important;
+  border-radius: 12px !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  line-height: 1.3 !important;
+}
+
+/* Bouton Secondaire / Dépoli Verre */
+.btn-quick-action-secondary,
+.quick-action-link {
+  background: #FFFFFF !important;
+  color: #0B1F3A !important;
+  border: 1.5px solid #CBD5E1 !important;
+  box-shadow: 0 2px 6px rgba(11, 31, 58, 0.04) !important;
+}
+
+.btn-quick-action-secondary:hover,
+.quick-action-link:hover {
+  background: #F8FAFC !important;
+  border-color: #2A7FFF !important;
+  color: #2563EB !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.16) !important;
+}
+
+/* Bouton Primaire (première action mise en exergue) */
+.btn-quick-action-primary {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%) !important;
+  color: #FFFFFF !important;
+  border: 1.5px solid transparent !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.32) !important;
+}
+
+.btn-quick-action-primary:hover {
+  background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%) !important;
+  color: #FFFFFF !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.42) !important;
+}
+
+/* Pastille Icône dans le bouton */
+.quick-action-icon-wrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.btn-quick-action-secondary .quick-action-icon-wrap,
+.quick-action-link .quick-action-icon-wrap {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2A7FFF;
+}
+
+.btn-quick-action-secondary:hover .quick-action-icon-wrap,
+.quick-action-link:hover .quick-action-icon-wrap {
+  background: #2A7FFF;
+  color: #FFFFFF;
+}
+
+.btn-quick-action-primary .quick-action-icon-wrap {
+  background: rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+}
+
+.quick-action-label {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Fallbacks icônes métier */
+.bi-balance-scale::before,
+.bi-scales::before {
+  content: "\f6fd" !important;
+}
+
+.bi-clock-alert::before {
+  content: "\f292" !important;
+}
+
+/* Grilles Responsive */
+@media (max-width: 1280px) {
+  .top-kpis-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .row-pipeline-growth {
+    grid-template-columns: 1fr;
+  }
+  .row-indicators-alerts {
+    grid-template-columns: 1fr 1fr;
+  }
+  .row-activity-finance {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-kpis-row {
+    grid-template-columns: 1fr;
+  }
+  .row-indicators-alerts {
+    grid-template-columns: 1fr;
+  }
+  .row-activity-finance {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-greeting-row {
+    flex-direction: column;
+  }
+  .campus-hero-card {
+    flex: 1 1 100%;
+  }
+}
+
+/* ==========================================================================
+   BLOC « SEANCES EN DIRECT » — supervision LMD (etend le design system)
+   Reutilise les tokens ci-dessus : aucune nouvelle palette n'est introduite.
+   ========================================================================== */
+
+.seances-en-direct {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.seances-en-direct__entete {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.seances-en-direct__titre {
+  margin: 0.3rem 0 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--injs-blue-dark);
+}
+
+.seances-en-direct__precision {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--injs-text-secondary);
+}
+
+/* --- Filtres ------------------------------------------------------------ */
+.seance-filtres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+}
+
+.seance-filtre {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 150px;
+  flex: 1 1 150px;
+}
+
+.seance-filtre > span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--injs-text-muted);
+}
+
+.seance-filtre select,
+.seance-filtre input {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+  color: var(--injs-text-primary);
+  background: var(--injs-surface);
+  border: 1px solid var(--injs-border);
+  border-radius: var(--injs-radius-sm);
+}
+
+/* --- Resume ------------------------------------------------------------- */
+.seance-resume {
+  padding: 1rem 1.15rem;
+}
+
+.seance-resume__entete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+
+.seance-resume__titre {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--injs-blue-dark);
+}
+
+.seance-resume__precision {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: var(--injs-text-muted);
+}
+
+.seance-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.seance-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--injs-blue-tint);
+  border: 1px solid var(--injs-border);
+  border-left: 3px solid var(--injs-blue-accent);
+  border-radius: var(--injs-radius-sm);
+}
+
+.seance-kpi__icone {
+  font-size: 0.95rem;
+  color: var(--injs-blue-accent);
+}
+
+.seance-kpi__valeur {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--injs-blue-dark);
+  line-height: 1.1;
+}
+
+.seance-kpi__label {
+  font-size: 0.74rem;
+  color: var(--injs-text-secondary);
+}
+
+.seance-kpi--encours { border-left-color: var(--injs-success); }
+.seance-kpi--enseignant { border-left-color: var(--injs-info); }
+.seance-kpi--salle { border-left-color: var(--injs-blue-vibrant); }
+.seance-kpi--present { border-left-color: var(--injs-success); }
+.seance-kpi--anomalie { border-left-color: var(--injs-warning); }
+
+/* --- Grille de seances -------------------------------------------------- */
+.seances-en-direct__grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1rem;
+}
+
+.seance-carte {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+}
+
+.seance-carte__entete {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.seance-statut {
+  align-self: flex-start;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: var(--injs-radius-pill);
+  background: var(--injs-blue-light);
+  color: var(--injs-blue-institution);
+}
+
+.seance-statut--encours {
+  background: var(--injs-success-bg);
+  color: #047857;
+}
+
+.seance-statut--terminee {
+  background: var(--injs-border);
+  color: var(--injs-text-secondary);
+}
+
+.seance-statut--annulee {
+  background: var(--injs-danger-bg);
+  color: #B91C1C;
+}
+
+.seance-carte__titre {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--injs-blue-dark);
+}
+
+.seance-carte__ue,
+.seance-carte__alerte {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--injs-text-secondary);
+}
+
+.seance-carte__alerte {
+  padding: 0.35rem 0.5rem;
+  background: var(--injs-warning-bg);
+  border-radius: var(--injs-radius-sm);
+  color: #92400E;
+}
+
+.seance-carte__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+}
+
+.seance-carte__meta > div {
+  min-width: 0;
+}
+
+.seance-carte__meta dt {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--injs-text-muted);
+}
+
+.seance-carte__meta dd {
+  margin: 0.1rem 0 0;
+  font-size: 0.85rem;
+  color: var(--injs-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.seance-carte__presences {
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--injs-border);
+}
+
+.seance-presence-titre {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--injs-text-secondary);
+}
+
+.seance-source {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--injs-info);
+}
+
+.seance-compteurs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.seance-compteur {
+  padding: 0.45rem 0.55rem;
+  background: var(--injs-blue-tint);
+  border-radius: var(--injs-radius-sm);
+  text-align: center;
+}
+
+.seance-compteur__valeur {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--injs-blue-dark);
+}
+
+.seance-compteur__label {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--injs-text-secondary);
+}
+
+.seance-compteur--present {
+  background: var(--injs-success-bg);
+}
+
+.seance-compteur--present .seance-compteur__valeur {
+  color: #047857;
+}
+
+.seance-taux {
+  margin: 0.6rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--injs-text-primary);
+}
+
+.seance-retard {
+  font-weight: 500;
+  color: var(--injs-warning);
+}
+
+/* Valeur absente : jamais un 0 presente. */
+.seance-vide {
+  font-style: italic;
+  color: var(--injs-text-muted);
+}
+
+.seance-carte__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.25rem;
+}
+
+/* --- Etats -------------------------------------------------------------- */
+.seance-etat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1.75rem 1rem;
+  text-align: center;
+  color: var(--injs-text-secondary);
+}
+
+.seance-etat p {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.seance-etat--erreur {
+  border-left: 3px solid var(--injs-danger);
+  color: #B91C1C;
+}
+
+@media (max-width: 768px) {
+  .seances-en-direct__grille {
+    grid-template-columns: 1fr;
+  }
+  .seance-compteurs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .seance-carte__meta {
+    grid-template-columns: 1fr;
+  }
+}

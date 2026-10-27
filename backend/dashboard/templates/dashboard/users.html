@@ -1,0 +1,175 @@
+{% extends "dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block title %}Utilisateurs{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'web-dashboard' %}">Accueil</a></li>
+<li class="breadcrumb-item active">Utilisateurs</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-person-gear me-2"></i>Utilisateurs</h4>
+    {% if user|can_manage_users %}
+    <button class="btn btn-dfrc" data-bs-toggle="modal" data-bs-target="#addUserModal">
+        <i class="bi bi-person-plus me-1"></i> Nouvel utilisateur
+    </button>
+    {% endif %}
+</div>
+
+<!-- Filtres -->
+<div class="card card-modern mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-md-3">
+                <input type="text" name="q" class="form-control form-control-sm"
+                       placeholder="Rechercher par nom ou username..."
+                       value="{{ request.GET.q|default:'' }}">
+            </div>
+            <div class="col-auto">
+                <select name="role" class="form-select form-select-sm">
+                    <option value="">Tous les rôles</option>
+                    {% for role in role_options %}
+                    <option value="{{ role }}" {% if request.GET.role == role %}selected{% endif %}>
+                        {{ role_labels|get_item:role|default:role }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-outline-primary">Filtrer</button>
+                <a href="{% url 'web-users' %}" class="btn btn-sm btn-outline-secondary">Réinitialiser</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card card-modern">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th>Utilisateur</th>
+                    <th>Email</th>
+                    <th>Rôle</th>
+                    <th>Téléphone</th>
+                    <th>Actif</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold {% if u.role == 'DIRECTION' %}bg-role-direction{% elif u.role == 'CHEF_INJS_ADMIN' or u.role == 'INJS_ADMIN' %}bg-role-dfrc{% elif u.role == 'CHEF_SECRETARIAT' or u.role == 'SECRETARIAT' %}bg-role-dfrc{% elif u.role == 'ENCADRANT' %}bg-role-superviseur{% else %}bg-role-participant{% endif %}"
+                                 style="width:32px;height:32px;font-size:0.75rem;">
+                                {{ u.first_name.0 }}{{ u.last_name.0 }}
+                            </div>
+                            <div>
+                                <strong>{{ u.get_full_name }}</strong>
+                                <br><small class="text-muted">{{ u.username }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ u.email|default:"-" }}</td>
+                    <td>
+                        <span class="badge"
+                              style="{% if u.role == 'DIRECTION' %}background:#fa5f5f;{% elif u.role == 'CHEF_INJS_ADMIN' or u.role == 'INJS_ADMIN' %}background:#ef5ce3;{% elif u.role == 'CHEF_SECRETARIAT' or u.role == 'SECRETARIAT' %}background:#1A68AC;{% elif u.role == 'ENCADRANT' %}background:#F5B100;{% else %}background:#2277C1;{% endif %}">
+                            {{ role_labels|get_item:u.role|default:u.role }}
+                        </span>
+                    </td>
+                    <td>{{ u.telephone|default:"-" }}</td>
+                    <td>
+                        {% if u.is_active %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                        {% else %}
+                            <i class="bi bi-x-circle-fill text-danger"></i>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user|can_manage_users %}
+                        <form method="post" action="{% url 'web-user-delete' u.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                    onclick="return confirm('Supprimer cet utilisateur ?')"
+                                    {% if u.id == request.user.id %}disabled{% endif %}>
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% include "dashboard/_pagination.html" %}
+
+<!-- Modal: Nouvel utilisateur -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'web-user-create' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Nouvel utilisateur</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nom d'utilisateur <span class="text-danger">*</span></label>
+                            <input type="text" name="username" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Mot de passe <span class="text-danger">*</span></label>
+                            <input type="password" name="password" class="form-control" required minlength="4">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Prénom <span class="text-danger">*</span></label>
+                            <input type="text" name="first_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nom <span class="text-danger">*</span></label>
+                            <input type="text" name="last_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Rôle <span class="text-danger">*</span></label>
+                            <select name="role" class="form-select" required>
+                                {% for role in creatable_roles %}
+                                <option value="{{ role }}" {% if role == 'AUDITEUR' %}selected{% endif %}>
+                                    {{ role_labels|get_item:role|default:role }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <label class="form-label">Grade</label>
+                            <input type="text" name="grade" class="form-control" placeholder="Ex: A4, A3…">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Téléphone</label>
+                            <input type="text" name="telephone" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Organisation</label>
+                            <input type="text" name="organisation" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-dfrc">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,417 @@
+/* ==========================================================================
+   CONSOLE CURP D'ADMINISTRATION DES HABILITATIONS — DESIGN SYSTEM INJS 2026
+   Thème Glassmorphism institutionnel, cartes dépolies et navigation latérale
+   ========================================================================== */
+
+.hab-bandeau {
+  background: linear-gradient(135deg, #2563EB 0%, #0B1F3A 100%);
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 0.55rem 1.25rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 14px rgba(11, 31, 58, 0.12);
+}
+
+.hab-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .hab-layout { grid-template-columns: 1fr; }
+}
+
+.hab-nav {
+  position: sticky;
+  top: 1rem;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 18px;
+  padding: 0.75rem;
+  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05);
+}
+
+.hab-nav a {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 10px;
+  color: #475569;
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  margin-bottom: 0.25rem;
+}
+
+.hab-nav a:hover {
+  background: rgba(241, 245, 249, 0.9);
+  color: #0B1F3A;
+}
+
+.hab-nav a.active {
+  background: linear-gradient(90deg, #2563EB 0%, #2A7FFF 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(30, 112, 235, 0.35);
+}
+
+.hab-nav-compact {
+  position: static;
+}
+
+.hab-nav a span {
+  min-width: 0;
+}
+
+.hab-layout > * {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .hab-layout > .d-flex {
+    position: static;
+  }
+  .hab-nav {
+    max-height: min(42vh, 24rem);
+    overflow-y: auto;
+  }
+}
+
+.hab-carte {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 18px;
+  padding: 1.4rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05);
+}
+
+.hab-carte h2, .hab-carte h3 {
+  margin-top: 0;
+  color: #0B1F3A;
+  font-weight: 800;
+}
+
+.hab-badge-sensible {
+  background: #FEE2E2;
+  color: #DC2626;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  padding: 0.2em 0.6em;
+  border: 1px solid #FECACA;
+}
+
+.hab-badge-statut {
+  display: inline-block;
+  padding: 0.2em 0.55em;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.hab-badge-statut.ACTIF { background: #D1FAE5; color: #059669; border: 1px solid #A7F3D0; }
+.hab-badge-statut.SUSPENDU { background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A; }
+.hab-badge-statut.REVOQUE { background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; }
+
+.hab-etapes {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.hab-etape {
+  flex: 1;
+  min-width: 130px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
+  color: #64748B;
+  transition: all 0.2s;
+}
+
+.hab-etape.active {
+  border-color: #2A7FFF;
+  background: #EBF3FF;
+  color: #2563EB;
+  font-weight: 700;
+}
+
+.hab-etape.terminee {
+  background: #ECFDF5;
+  border-color: #A7F3D0;
+  color: #059669;
+}
+
+.hab-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.86rem;
+}
+
+.hab-table th, .hab-table td {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.hab-table thead th {
+  background: #0B1F3A;
+  color: #FFFFFF;
+  position: sticky;
+  top: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+.hab-table thead th:first-child { border-radius: 10px 0 0 0; }
+.hab-table thead th:last-child { border-radius: 0 10px 0 0; }
+
+.hab-matrice {
+  font-size: 0.74rem;
+  border-collapse: collapse;
+}
+
+.hab-matrice th, .hab-matrice td {
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  padding: 0.25rem 0.45rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.hab-matrice th {
+  background: rgba(241, 245, 249, 0.9);
+  font-weight: 700;
+  color: #334155;
+}
+
+.hab-niveau-N4 { background: #FEE2E2; color: #DC2626; font-weight: 700; }
+.hab-niveau-N3 { background: #FEF3C7; color: #D97706; font-weight: 600; }
+.hab-niveau-N2 { background: #DBEAFE; color: #2563EB; font-weight: 600; }
+.hab-niveau-N1 { background: #E0F2FE; color: #0284C7; }
+.hab-niveau-N0 { background: #F8FAFC; color: #94A3B8; }
+.hab-provisoire { position: relative; outline: 1px dashed #7b1fa2; }
+
+.hab-filtres {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.hab-filtres input, .hab-filtres select {
+  max-width: 240px;
+}
+
+.hab-recap { line-height: 1.8; }
+.hab-recap .libelle {
+  color: #64748B;
+  display: inline-block;
+  min-width: 11rem;
+  font-weight: 600;
+}
+
+.hab-403 {
+  border: 1px solid #FECACA;
+  background: rgba(254, 242, 242, 0.85);
+  color: #991B1B;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  backdrop-filter: blur(8px);
+}
+
+.hab-muted {
+  color: #64748B;
+  font-size: 0.84rem;
+}
+
+/* ── Couche IMPACT (additive) : arbre, grille de tuiles, barres ─────── */
+.hab-arbre {
+  list-style: none;
+  padding-left: 1.1rem;
+  border-left: 1px dashed #CBD5E1;
+  margin: 0.25rem 0 0.25rem 0.35rem;
+}
+
+.hab-arbre-noeud {
+  margin: 0.2rem 0;
+}
+
+.hab-arbre-bascule {
+  background: none;
+  border: none;
+  padding: 0.1rem 0.2rem;
+  color: inherit;
+  text-align: left;
+  width: 100%;
+}
+
+.hab-arbre-role {
+  font-weight: 600;
+}
+
+.hab-badge-critique {
+  background: #7F1D1D;
+}
+
+.hab-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.hab-lien-tuile {
+  text-decoration: none;
+  color: inherit;
+}
+
+.hab-lien-tuile:hover {
+  text-decoration: none;
+}
+
+.hab-tuile-valeur {
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.hab-barre-ligne {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.3rem 0;
+}
+
+.hab-barre-libelle {
+  min-width: 9rem;
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+.hab-barre-piste {
+  flex: 1;
+  background: #E2E8F0;
+  border-radius: 999px;
+  height: 0.6rem;
+  overflow: hidden;
+}
+
+.hab-barre {
+  display: block;
+  height: 100%;
+  background: #2563EB;
+  border-radius: 999px;
+}
+
+.hab-barre-total {
+  min-width: 2.4rem;
+  text-align: right;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+/* Lien contextuel discret vers une vue d'impact (crosshair). */
+.hab-lien-impact {
+  color: #2563EB;
+  opacity: 0.75;
+}
+
+.hab-lien-impact:hover {
+  opacity: 1;
+  text-decoration: none;
+}
+
+/* ── Lot A : alertes et actions prioritaires du dashboard ────────────── */
+.hab-alerte-liste {
+  list-style: none;
+  padding-left: 0;
+}
+
+.hab-alerte-item {
+  border-radius: 10px;
+  padding: 0.55rem 0.85rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.hab-alerte-critique {
+  background: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #FECACA;
+}
+
+.hab-alerte-attention {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FDE68A;
+}
+
+.hab-alerte-info {
+  background: #DBEAFE;
+  color: #1E40AF;
+  border: 1px solid #BFDBFE;
+}
+
+/* ── Lot B : comparaison de rôles ────────────────────────────────────── */
+.hab-diff-table td:nth-child(2) {
+  color: #991B1B;
+}
+
+.hab-diff-table td:nth-child(3) {
+  color: #166534;
+}
+
+.hab-diff-listes {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+  font-size: 0.84rem;
+}
+
+.hab-diff-ajouts {
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  color: #065F46;
+  border-radius: 10px;
+  padding: 0.45rem 0.75rem;
+}
+
+.hab-diff-retraits {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #991B1B;
+  border-radius: 10px;
+  padding: 0.45rem 0.75rem;
+}
+
+/* Matrice : actions réelles affichées en vue détaillée. */
+.hab-matrice-actions {
+  font-size: 0.68rem;
+  font-weight: 600;
+  margin-top: 0.2rem;
+  text-align: left;
+  line-height: 1.25;
+}

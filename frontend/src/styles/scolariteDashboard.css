@@ -1,0 +1,557 @@
+/* ==========================================================================
+   STYLE DÉDIÉ : TABLEAU DE BORD ADMINISTRATION / SCOLARITÉ INJS
+   Conforme au Design System Premium INJS Marcory (Glassmorphism & cartes épurées)
+   ========================================================================== */
+
+.scolarite-dashboard-page {
+  padding: 1.5rem 1.75rem 2.5rem;
+  background: linear-gradient(180deg, #F0F5FB 0%, #E8F0F8 100%);
+  min-height: calc(100vh - 70px);
+  color: #1e293b;
+  font-family: var(--font-lmd2026);
+}
+
+/* ── 1. EN-TÊTE ── */
+.scolarite-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.scolarite-main-title {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #0B1F3A;
+  margin: 0 0 0.25rem 0;
+  letter-spacing: -0.02em;
+}
+
+.scolarite-sub-title {
+  font-size: 0.92rem;
+  color: #64748b;
+  margin: 0;
+  font-weight: 500;
+}
+
+.scolarite-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Boutons d'export PDF, Excel, Word */
+.scolarite-export-btn-group {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 9999px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(11, 31, 58, 0.04);
+}
+
+.export-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+  border-right: 1px solid rgba(226, 232, 240, 0.8);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.export-pill-btn:last-child {
+  border-right: none;
+}
+
+.export-pill-btn:hover {
+  background: #ffffff;
+  color: #2563EB;
+}
+
+/* Bouton bleu + Nouvelle inscription */
+.btn-nouvelle-inscription {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  color: #ffffff !important;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.5rem 1.15rem;
+  border-radius: 9999px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  transition: all 0.15s ease;
+}
+
+.btn-nouvelle-inscription:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+}
+
+/* ── 2. GRILLE DE RACCOURCIS (PILLS) ── */
+.scolarite-quick-pills-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+.quick-pill-btn {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 9999px;
+  padding: 0.65rem 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #334155;
+  text-decoration: none !important;
+  box-shadow: 0 2px 8px rgba(11, 31, 58, 0.04);
+  transition: all 0.15s ease;
+}
+
+.quick-pill-btn:hover {
+  background: #ffffff;
+  border-color: #2A7FFF;
+  color: #2563EB;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+.quick-pill-btn i {
+  font-size: 1.05rem;
+  color: #2A7FFF;
+}
+
+.quick-pill-admissions {
+  grid-column: span 1;
+}
+
+/* ── 3. LES 4 GRANDES CARTES KPI ── */
+.scolarite-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.kpi-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 18px;
+  padding: 1.25rem 1.4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px -5px rgba(11, 31, 58, 0.08);
+}
+
+.kpi-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+}
+
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #0B1F3A;
+  line-height: 1;
+}
+
+.kpi-icon-box {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.45rem;
+}
+
+.kpi-icon-box.kpi-blue {
+  background: #EBF3FF;
+  color: #2A7FFF;
+}
+
+.kpi-icon-box.kpi-teal {
+  background: #E0F2FE;
+  color: #0284C7;
+}
+
+.kpi-icon-box.kpi-green {
+  background: #ECFDF5;
+  color: #10B981;
+}
+
+.kpi-icon-box.kpi-amber {
+  background: #FFFBEB;
+  color: #F59E0B;
+}
+
+/* ── 4. CARTES CONTENEURS AVEC EFFET DE VERRE ── */
+.scolarite-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+.scolarite-card-header {
+  padding: 1rem 1.4rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.scolarite-card-title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #0B1F3A;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.scolarite-card-body {
+  padding: 1.25rem 1.4rem;
+}
+
+/* ==========================================================================
+   5. SECTIONS DU DASHBOARD — cartes de contenu
+   Ces classes sont utilisées par ScolariteDashboard.jsx mais n'étaient
+   déclarées nulle part : le contenu s'affichait donc en texte brut, sans
+   carte ni en-tête. Les valeurs ci-dessous sont STRICTEMENT reprises des
+   cartes KPI et des cartes `.scolarite-card` déclarées plus haut dans ce
+   fichier (verre dépoli, rayon 18px, ombre douce) : même matière, même
+   profondeur, même densité que le reste du tableau de bord.
+   ========================================================================== */
+
+/* Pastilles d'état des icônes KPI.
+   Le composant s'appuie sur `.kpi-icon-box` (déclaré ci-dessus) et n'ajoute
+   qu'un modificateur de teinte. */
+.kpi-icon-box.icon-box-blue  { background: #EBF3FF; color: #2A7FFF; }
+.kpi-icon-box.icon-box-slate { background: #EEF2F7; color: #475569; }
+.kpi-icon-box.icon-box-peach { background: #FFF1E6; color: #EA580C; }
+.kpi-icon-box.icon-box-amber { background: #FFFBEB; color: #F59E0B; }
+
+/* Carte de section : même verre dépoli que les cartes KPI. */
+.dashboard-section-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+  padding: 1.15rem 1.4rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Rangée de deux graphiques côte à côte (niveaux + spécialités). */
+.dashboard-charts-row {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.dashboard-charts-row > .dashboard-section-card { margin-bottom: 0; }
+
+/* En-tête de section : titre à gauche, actions à droite. */
+.section-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0B1F3A;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+/* ── PRESENCES DU JOUR ── */
+/* Le bouton reprend la forme « pilule » des raccourcis et le dégradé bleu de
+   « Nouvelle inscription » : c'est la même action primaire dans l'application. */
+.btn-ouvrir-presences,
+.btn-ouvrir-finances {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.5rem 1.05rem;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  transition: all 0.15s ease;
+}
+.btn-ouvrir-presences:hover,
+.btn-ouvrir-finances:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+}
+
+/* Les quatre compteurs deviennent de petites cartes alignées sur la
+   grille KPI, au lieu de quatre nombres collés au fil du texte. */
+.presences-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.85rem;
+  margin-bottom: 0.9rem;
+}
+
+.pres-stat-item {
+  background: rgba(248, 250, 252, 0.75);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 600;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+.pres-stat-item strong {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #0B1F3A;
+  line-height: 1;
+}
+
+/* Note d'état : encart bleuté discret, cohérent avec les fonds pastel
+   déjà utilisés pour les icônes KPI. */
+.presences-empty-note {
+  background: #EBF3FF;
+  border: 1px solid rgba(42, 127, 255, 0.18);
+  border-radius: 12px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1D4ED8;
+}
+
+/* ── GRAPHIQUE EN BARRES ── */
+.barchart-container {
+  width: 100%;
+  padding-top: 0.25rem;
+}
+.barchart-svg {
+  width: 100%;
+  height: 260px;
+  display: block;
+}
+/* La teinte est posée ici plutôt que dans l'attribut `fill` du <rect> :
+   une présentation SVG a une spécificité inférieure à toute règle CSS, donc
+   cette règle s'applique bien et la barre adopte le bleu INJS. */
+.barchart-svg .barchart-rect {
+  fill: #2A7FFF;
+  transition: fill 0.2s ease;
+}
+.barchart-svg .barchart-rect:hover { fill: #1D4ED8; }
+
+/* ── SPÉCIALITÉS STAPS ── */
+.specialites-legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.legend-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 9999px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #334155;
+}
+.legend-color-box {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+}
+/* Teintes issues de la palette INJS (bleu / sarcelle / ardoise / ambre). */
+.color-apas { background: #2A7FFF; }
+.color-em   { background: #10B981; }
+.color-es   { background: #475569; }
+.color-ms   { background: #0284C7; }
+.color-tc   { background: #F59E0B; }
+
+.specialites-body { margin-top: 0.25rem; }
+
+/* Emplacement réservé : trame diagonale qui rend le vide comme un composant
+   en attente, plutôt que comme une zone cassée. */
+.specialites-placeholder {
+  min-height: 130px;
+  border-radius: 12px;
+  border: 1px dashed var(--border-color);
+  background: repeating-linear-gradient(135deg,
+    rgba(226, 232, 240, 0.22) 0 10px, transparent 10px 20px);
+}
+
+.specialites-footer-note {
+  margin-top: 0.85rem;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+/* ── SÉANCES / DÉLIBÉRATIONS ── */
+.session-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+}
+.session-item-row:last-child { border-bottom: none; }
+.session-item-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0B1F3A;
+}
+.session-meta {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+}
+
+.deliberations-body { margin-top: 0.25rem; }
+.deliberations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.deliberations-empty-text {
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* ── FINANCES : lignes clé / valeur à points de conduite ── */
+.finance-key-values-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.finance-kv-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.finance-kv-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+/* Points de conduite : la piste flex (`flex: 1`) aligne les valeurs à droite
+   sans coder de largeur en dur, donc sans calcul à maintenir. */
+.finance-kv-dots {
+  flex: 1;
+  border-bottom: 1px dotted rgba(148, 163, 184, 0.7);
+  transform: translateY(-3px);
+}
+.finance-kv-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0B1F3A;
+  white-space: nowrap;
+}
+.finance-card-action {
+  margin-top: 0.9rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── ÉTAT DE CHARGEMENT ── */
+.scolarite-loading {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  color: #64748b;
+  font-weight: 600;
+}
+.scolarite-loading .spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid rgba(226, 232, 240, 0.9);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: scolarite-spin 0.8s linear infinite;
+}
+@keyframes scolarite-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Bloc de titre : aligne le fil d'Ariane sous le titre de la page. */
+.scolarite-title-block { display: flex; flex-direction: column; }
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .scolarite-kpi-grid,
+  .scolarite-quick-pills-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dashboard-charts-row { grid-template-columns: 1fr; }
+  .presences-stats-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .scolarite-kpi-grid,
+  .scolarite-quick-pills-grid {
+    grid-template-columns: 1fr;
+  }
+  .presences-stats-row { grid-template-columns: 1fr; }
+  .section-card-header { align-items: flex-start; }
+}

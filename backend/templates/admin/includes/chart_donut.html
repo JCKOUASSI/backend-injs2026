@@ -1,0 +1,35 @@
+{% load i18n %}
+{% if chart %}
+<div class="dfrc-chart-donut">
+    <svg
+        class="dfrc-chart-svg dfrc-chart-svg--donut"
+        width="{{ chart.size }}"
+        height="{{ chart.size }}"
+        role="img"
+        aria-label="{{ title }}"
+    >
+        {% for slice in chart.slices %}
+        <path
+            d="{{ slice.path }}"
+            fill="{{ slice.color }}"
+            opacity="0.9"
+            stroke="#fff"
+            stroke-width="2"
+        />
+        {% endfor %}
+        <circle cx="{{ chart.cx }}" cy="{{ chart.cy }}" r="{{ chart.inner_r }}" fill="#fff" />
+    </svg>
+    <ul class="dfrc-chart-legend">
+        {% for slice in chart.slices %}
+        <li class="dfrc-chart-legend-item">
+            <span class="dfrc-chart-legend-dot" style="background: {{ slice.color }}"></span>
+            <span class="dfrc-chart-legend-label">{{ slice.label }}</span>
+            <span class="dfrc-chart-legend-value">{{ slice.value }}</span>
+            <span class="dfrc-chart-legend-pct">({{ slice.pct }}%)</span>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% else %}
+<p class="dfrc-chart-empty">{{ empty_message|default:_("Aucun pointage enregistré.") }}</p>
+{% endif %}

@@ -1,0 +1,58 @@
+/* STYLE DEDIE : CAMPAGNES D'ADMISSION INJS-LMD 2026 — premium, verre depoli. */
+
+.camp-page { display: flex; flex-direction: column; gap: 1.25rem; color: #0f172a; }
+.camp-hero { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; flex-wrap: wrap; padding: 1.15rem 1.5rem; background: #fff; border: 1px solid #e9ecf2; border-radius: 18px; box-shadow: 0 10px 30px -5px rgba(11,31,58,.05); }
+.camp-hero-text { display: flex; flex-direction: column; gap: 0.35rem; }
+.camp-hero-title { font-size: 1.45rem; font-weight: 800; color: #0b1f3a; margin: 0; letter-spacing: -0.02em; line-height: 1.15; display: flex; align-items: center; gap: 0.55rem; }
+.camp-hero-title i { color: #2a7fff; font-size: 1.35rem; }
+.camp-hero-sub { font-size: 0.88rem; color: #475569; margin: 0; font-weight: 500; }
+.camp-hero-side { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.camp-page .plaquette { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.72rem; font-weight: 700; line-height: 1.2; }
+.camp-page .plaquette-primary { background: #dbeafe; color: #2563eb; border: 1px solid #bfdbfe; }
+.camp-page .plaquette-soft { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+.camp-kpi-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+.camp-kpi { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 1rem 1.15rem; background: #fff; border: 1px solid #e9ecf2; border-radius: 16px; box-shadow: 0 1px 3px rgba(16,24,40,.06); transition: transform .2s ease, box-shadow .2s ease; }
+.camp-kpi:hover { transform: translateY(-2px); box-shadow: 0 12px 30px -5px rgba(11,31,58,.08); }
+.camp-kpi-label { display: block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; margin-bottom: 0.2rem; }
+.camp-kpi-value { display: block; font-size: 1.6rem; font-weight: 800; line-height: 1; color: #0b1f3a; letter-spacing: -0.02em; }
+.camp-kpi-icon { width: 42px; height: 42px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; border-radius: 12px; }
+.camp-kpi-icon.is-blue { background: #ebf3ff; color: #2a7fff; }
+.camp-kpi-icon.is-amber { background: #fffbeb; color: #f59e0b; }
+.camp-kpi-icon.is-green { background: #ecfdf5; color: #10b981; }
+.camp-kpi-icon.is-slate { background: #eef2f7; color: #475569; }
+.camp-panel { background: #fff; border: 1px solid #e9ecf2; border-radius: 18px; box-shadow: 0 10px 30px -5px rgba(11,31,58,.05); overflow: hidden; margin-bottom: 0 !important; }
+.camp-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; padding: 0.9rem 1.4rem; border-bottom: 1px solid #edf1f6; background: rgba(240,246,252,.55); }
+.camp-panel-title { display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; font-weight: 700; color: #0b1f3a; margin: 0; }
+.camp-panel-title i { color: #2a7fff; font-size: 1.05rem; }
+.camp-panel-body { padding: 1.15rem 1.4rem 1.4rem; }
+.camp-form .form-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 0.3rem; }
+.camp-form .form-control, .camp-form .form-select { border-radius: 10px; border-color: #e2e8f0; }
+.camp-form .form-control:focus, .camp-form .form-select:focus { border-color: #2a7fff; box-shadow: 0 0 0 3px rgba(42,127,255,.12); }
+.camp-form .form-text { font-size: 0.75rem; color: #64748b; }
+.camp-fieldset { border: 1px dashed #e2e8f0; border-radius: 12px; padding: 0.85rem 1rem 1rem; height: 100%; }
+.camp-fieldset legend { float: none; width: auto; padding: 0 0.5rem; margin: 0; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #2a7fff; }
+.camp-submit-btn { border-radius: 9999px; font-weight: 700; padding: 0.55rem 1.4rem; background: linear-gradient(135deg,#2563eb 0%,#2a7fff 100%); border-color: transparent; box-shadow: 0 4px 14px rgba(37,99,235,.3); white-space: nowrap; }
+.camp-filters { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+.camp-search { position: relative; min-width: 220px; flex: 1 1 220px; max-width: 320px; }
+.camp-search i { position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.85rem; pointer-events: none; }
+.camp-search .form-control { padding-left: 2rem; border-radius: 9999px; border-color: #e2e8f0; }
+.camp-filter-select { border-radius: 9999px !important; border-color: #e2e8f0 !important; font-size: 0.82rem; font-weight: 600; color: #334155; width: auto !important; min-width: 150px; }
+.camp-count-pill { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; background: #ebf3ff; color: #2563eb; font-size: 0.76rem; font-weight: 700; border: 1px solid #bfdbfe; white-space: nowrap; }
+.camp-table { margin-bottom: 0; }
+.camp-table thead th { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 1px solid #edf1f6; white-space: nowrap; }
+.camp-table tbody td { vertical-align: middle; font-size: 0.87rem; }
+.camp-link { font-weight: 700; color: #0b1f3a; text-decoration: none; }
+.camp-link:hover { color: #2563eb; text-decoration: underline; text-underline-offset: 3px; }
+.camp-sub { display: block; font-size: 0.76rem; color: #64748b; font-weight: 500; }
+.camp-sub.warn { color: #b45309; font-weight: 700; }
+.camp-candidatures { display: inline-flex; align-items: center; justify-content: center; min-width: 2rem; padding: 0.2rem 0.6rem; border-radius: 9999px; background: #f1f5f9; border: 1px solid #e2e8f0; font-weight: 800; font-size: 0.8rem; color: #0b1f3a; }
+.camp-action-btn { border-radius: 9999px !important; font-weight: 700; font-size: 0.76rem; padding: 0.35rem 0.9rem; }
+.camp-empty { text-align: center; color: #94a3b8; padding: 2.2rem 1rem; font-weight: 500; }
+.camp-empty i { display: block; font-size: 1.8rem; margin-bottom: 0.4rem; color: #cbd5e1; }
+/* PARTICIPANTS (Etudiants) — grille de filtres */
+.parti-filters { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+.parti-search { flex: 1 1 260px; max-width: 340px; }
+.parti-filter { flex: 0 1 170px; min-width: 150px; }
+.parti-filter .camp-filter-select { font-size: 0.78rem; padding: 0.35rem 2rem 0.35rem 0.8rem; }
+@media (max-width: 1100px) { .camp-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .camp-kpi-row { grid-template-columns: minmax(0, 1fr); } .camp-hero { align-items: flex-start; } .camp-search { max-width: none; } }

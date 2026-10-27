@@ -1,0 +1,13 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+  {{ block.super }}
+  {% if show_provision_badge_accounts_link %}
+  <li>
+    <a href="{% url 'admin:authentication_provision_badge_accounts' %}">
+      {% trans "Comptes badge manquants" %}
+    </a>
+  </li>
+  {% endif %}
+{% endblock %}

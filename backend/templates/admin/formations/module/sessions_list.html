@@ -1,0 +1,53 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div id="content-main">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap;">
+    <h1 style="margin:0;">{{ title }}</h1>
+    <a class="button" href="{{ back_url }}">Retour aux modules</a>
+  </div>
+
+  <div class="module" style="margin-bottom:12px;">
+    <p style="margin:6px 0;"><strong>Formation :</strong> {{ module_obj.formation }}</p>
+    <p style="margin:6px 0;"><strong>Module :</strong> {{ module_obj.intitule }}</p>
+  </div>
+
+  {% if sessions_rows %}
+  <div class="results">
+    <table id="result_list">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Numéro</th>
+          <th>Intitulé</th>
+          <th>État</th>
+          <th>Démarrée le</th>
+          <th>Terminée le</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sessions_rows %}
+        <tr>
+          <td>{{ s.date_journee }}</td>
+          <td>{{ s.numero }}</td>
+          <td>{{ s.intitule }}</td>
+          <td>{{ s.etat }}</td>
+          <td>{{ s.demarree_le|default:"-" }}</td>
+          <td>{{ s.terminee_le|default:"-" }}</td>
+          <td>
+            <a class="button" href="{{ s.change_url }}">Ouvrir</a>
+            {% if s.reactiver_url %}
+              <a class="button" href="{{ s.reactiver_url }}">Réactiver</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p>Aucune séance trouvée pour ce module.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,1082 @@
+/* ==========================================================================
+   STYLE DÉDIÉ : ÉCRANS GÉNÉRIQUES INJS-LMD 2026
+   Inspiré du design de référence « Tableau de bord LMD 2026 »
+   (frontend/src/styles/dashboardEngine.css) : verre dépoli, tuiles KPI,
+   boutons pilules, pastilles d'état, tableaux aérés.
+   Tout est préfixé `.gen-*` : aucun effet de bord sur les autres écrans.
+   ========================================================================== */
+
+/* ── 1. BANDEAU D'ACCUEIL (rappel de .dashboard-greeting-row) ── */
+.gen-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding: 1.15rem 1.5rem;
+  margin-bottom: 1.25rem;
+  background: #FFFFFF;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #E9ECF2;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+}
+
+.gen-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.gen-hero-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0B1F3A;
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.gen-hero-title i {
+  color: #2A7FFF;
+  font-size: 1.3rem;
+}
+
+.gen-hero-intro {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #475569;
+  margin: 0;
+  max-width: 78ch;
+}
+
+/* Plaquette « fil d'Ariane métier » (valeurs de .plaquette de la référence,
+   redéclarées ici car dashboardEngine.css n'est chargé que par sa page). */
+.gen-plaquette {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  align-self: flex-start;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  background: #DBEAFE;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+}
+
+.gen-fil-pill {
+  padding: 0.4rem 0.9rem;
+  border-radius: 9999px;
+  background: #F1F5F9;
+  color: #475569;
+  border: 1px solid #E2E8F0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── 2. BARRE D'OUTILS (recherche, filtres, actions) ── */
+.gen-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.4rem;
+  margin-bottom: 1.25rem;
+  background: #FFFFFF;
+  border: 1px solid #E9ECF2;
+  border-radius: 18px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.gen-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1 1 240px;
+  min-width: 200px;
+  max-width: 380px;
+}
+
+.gen-field-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+}
+
+.gen-search {
+  position: relative;
+}
+
+.gen-search i {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94A3B8;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.gen-toolbar .form-control,
+.gen-toolbar .form-select {
+  border-radius: 9999px;
+  border-color: #E2E8F0;
+  background-color: #F8FAFC;
+  color: #1E293B;
+  font-weight: 500;
+  padding-left: 2.2rem;
+}
+
+.gen-toolbar .form-select {
+  padding-left: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.gen-toolbar .form-control:focus,
+.gen-toolbar .form-select:focus {
+  background-color: #FFFFFF;
+  border-color: #2A7FFF;
+  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+}
+
+.gen-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.gen-toolbar-actions .btn {
+  border-radius: 9999px;
+  font-weight: 700;
+  padding: 0.45rem 1rem;
+}
+
+.gen-refresh {
+  width: 2.1rem;
+  height: 2.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  border-radius: 9999px !important;
+  background: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+  color: #475569 !important;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.gen-refresh:hover:not(:disabled) {
+  border-color: #2A7FFF !important;
+  color: #2563EB !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.18);
+}
+
+.gen-refresh:disabled {
+  opacity: 0.6;
+}
+
+/* Rotation de l'icône de rechargement pendant le chargement (la classe
+   `spin` est posée par le composant ; l'animation reste purement visuelle). */
+.gen-refresh .spin {
+  display: inline-block;
+  animation: gen-rotate 0.9s linear infinite;
+}
+
+@keyframes gen-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── 3. PANNEAU LISTE ── */
+.gen-panel {
+  background: #FFFFFF;
+  border: 1px solid #E9ECF2;
+  border-radius: 18px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+  overflow: hidden;
+  margin-bottom: 0;
+}
+
+.gen-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.4rem;
+  border-bottom: 1px solid #EDF1F6;
+  background: rgba(240, 246, 252, 0.55);
+}
+
+.gen-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0B1F3A;
+  margin: 0;
+}
+
+.gen-panel-title i {
+  color: #2A7FFF;
+}
+
+.gen-count-pill {
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  background: #EFF6FF;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.gen-table-wrap {
+  border: 0;
+}
+
+.gen-table {
+  margin: 0;
+  min-width: 720px;
+}
+
+.gen-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #F4F8FC;
+  border-bottom: 1px solid #E6EDF5;
+  color: #64748B;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.7rem 0.9rem;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.gen-table tbody td {
+  padding: 0.75rem 0.9rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #F1F5F9;
+  color: #1E293B;
+  font-size: 0.88rem;
+}
+
+.gen-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.gen-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.gen-table tbody tr:hover {
+  background: #F7FAFF;
+}
+
+.gen-table tbody tr.table-active {
+  background: #EAF2FF;
+  box-shadow: inset 3px 0 0 #2A7FFF;
+}
+
+.gen-table .badge {
+  border-radius: 9999px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.gen-table td.text-end .btn {
+  border-radius: 9999px;
+  font-weight: 700;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.78rem;
+}
+
+.gen-empty {
+  text-align: center;
+  color: #94A3B8;
+  padding: 2.25rem 1rem;
+  font-weight: 500;
+}
+
+.gen-empty i {
+  display: block;
+  font-size: 1.6rem;
+  margin-bottom: 0.45rem;
+  color: #CBD5E1;
+}
+
+/* Pied du panneau : compteur, source et pagination */
+.gen-panel-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 1.4rem;
+  border-top: 1px solid #EDF1F6;
+  background: rgba(248, 250, 252, 0.7);
+  color: #64748B;
+  font-size: 0.8rem;
+}
+
+.gen-panel-foot-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.gen-panel-foot-info i {
+  color: #94A3B8;
+}
+
+.gen-panel-foot-note {
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+/* ── 3bis. CARTES DE DOCUMENTS (type « documents » : génération PDF/Excel) ── */
+.gen-docs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.gen-docs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.gen-doc-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.2rem 1.35rem 1.15rem;
+  background: #FFFFFF;
+  border: 1px solid #E9ECF2;
+  border-radius: 18px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gen-doc-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -5px rgba(11, 31, 58, 0.10);
+}
+
+.gen-doc-head {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+}
+
+.gen-doc-icon {
+  flex-shrink: 0;
+  width: 2.6rem;
+  height: 2.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: #EBF3FF;
+  color: #2A7FFF;
+  border: 1px solid #DBEAFE;
+  font-size: 1.2rem;
+}
+
+.gen-doc-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.gen-doc-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0B1F3A;
+  letter-spacing: -0.01em;
+}
+
+.gen-doc-desc {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: #475569;
+}
+
+.gen-doc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.95rem 1rem;
+  background: #F8FAFC;
+  border: 1px solid #EDF1F6;
+  border-radius: 14px;
+}
+
+.gen-doc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.gen-doc-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+  margin: 0;
+}
+
+.gen-doc-required {
+  color: #DC2626;
+  font-weight: 800;
+}
+
+.gen-doc-body .form-control,
+.gen-doc-body .form-select {
+  border-radius: 10px;
+  border-color: #E2E8F0;
+  background-color: #FFFFFF;
+  font-size: 0.86rem;
+}
+
+.gen-doc-body .form-control:focus,
+.gen-doc-body .form-select:focus {
+  border-color: #2A7FFF;
+  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+}
+
+.gen-doc-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #B45309;
+}
+
+.gen-doc-foot {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 0.9rem;
+  border-top: 1px solid #EDF1F6;
+}
+
+.gen-doc-btn {
+  border-radius: 9999px !important;
+  font-weight: 700 !important;
+  padding: 0.4rem 1.05rem !important;
+}
+
+.gen-docs-note {
+  margin: 0;
+  font-size: 0.78rem;
+}
+/* ── 4. TUILES D'INDICATEURS ── */
+.gen-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.gen-kpi {
+  height: 100%;
+  border: 1px solid #E9ECF2;
+  border-radius: 16px;
+  background: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gen-kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -5px rgba(11, 31, 58, 0.08);
+}
+
+.gen-kpi > .card-body {
+  padding: 1.1rem 1.25rem;
+}
+
+.gen-kpi-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+  margin-bottom: 0.35rem;
+}
+
+.gen-kpi-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #0B1F3A;
+  letter-spacing: -0.02em;
+  /* Chaînes sans espace (JSON…) : wrap sinon coupées par overflow:hidden de .card */
+  overflow-wrap: anywhere;
+}
+
+/* Valeur « texte » (booléen, objet JSON, chaîne longue) : même corps que la
+   liste des cartes voisines (0,8 rem) au lieu du gros chiffre KPI. */
+.gen-kpi-value--texte {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+
+.gen-kpi-value .badge {
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.35rem 0.7rem;
+}
+
+.gen-kpi-list {
+  margin: 0.7rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  color: #64748B;
+  overflow-wrap: anywhere;
+}
+
+.gen-note {
+  font-size: 0.8rem;
+  color: #64748B;
+  margin: 0;
+}
+
+/* ── 5. MODALE DE DÉTAIL ── */
+.gen-detail .modal-content {
+  border: 1px solid #E9ECF2;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px -15px rgba(11, 31, 58, 0.28);
+}
+
+.gen-detail .modal-header {
+  background: linear-gradient(135deg, #EFF6FF 0%, #E8F1FF 100%);
+  border-bottom: 1px solid #DBEAFE;
+  padding: 1rem 1.25rem;
+}
+
+.gen-detail .modal-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0B1F3A;
+}
+
+.gen-detail .modal-body {
+  padding: 1.15rem 1.4rem;
+}
+
+.gen-detail .modal-footer {
+  border-top: 1px solid #EDF1F6;
+  padding: 0.75rem 1.4rem;
+}
+
+.gen-detail .modal-footer .btn {
+  border-radius: 9999px;
+  font-weight: 700;
+  padding: 0.4rem 1.1rem;
+}
+
+.gen-detail-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748B;
+  margin: 1.1rem 0 0.6rem;
+}
+
+.gen-detail-title:first-child {
+  margin-top: 0;
+}
+
+.gen-detail-table thead th {
+  background: #F4F8FC;
+  color: #64748B;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom-color: #E6EDF5;
+}
+
+.gen-detail-table td,
+.gen-detail-table th {
+  vertical-align: middle;
+  font-size: 0.86rem;
+}
+
+.gen-detail-table .badge {
+  border-radius: 9999px;
+  padding: 0.28rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* ── 6. ONGLETS (descripteurs multi-ressources) ── */
+.gen-onglets-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.35rem;
+  margin-bottom: 1.25rem;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  list-style: none;
+  padding-left: 0.35rem;
+}
+
+/* Neutralise les styles de la sidebar (`.nav-item`) hérités des `li`. */
+.gen-onglets-bar .nav-item {
+  display: inline-flex;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: inherit;
+}
+
+.gen-onglets-bar .nav-item:hover {
+  background: transparent;
+  color: inherit;
+}
+
+.gen-onglets-bar .nav-link {
+  border: none;
+  background: transparent;
+  border-radius: 9999px;
+  padding: 0.45rem 1rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.gen-onglets-bar .nav-link:hover {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0B1F3A;
+}
+
+.gen-onglets-bar .nav-link.active {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.gen-pagination {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gen-pagination .page-link {
+  border-radius: 9999px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #2563EB;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.3rem 0.85rem;
+}
+
+.gen-pagination .page-item.disabled .page-link {
+  color: #94A3B8;
+  background: #F8FAFC;
+  border-color: #EDF1F6;
+}
+
+.gen-pagination .page-item.active .page-link {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  border-color: transparent;
+  color: #FFFFFF;
+}
+
+/* ==========================================================================
+   FINITIONS PRÉMIUM
+   Le bandeau d'accueil reçoit ses plaquettes de synthèse, la barre d'outils
+   devient un panneau titré (recherche large, filtres calibrés, actions à
+   droite) et l'état vide un médaillon centré. Aucun sélecteur existant n'est
+   retiré : ces règles raffinent `.gen-*` sans changer le moteur.
+   ========================================================================== */
+
+/* -- Bandeau d'accueil : plaquettes à droite du titre -- */
+.gen-hero-side {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.gen-plaquette--soft {
+  background: #F1F5F9;
+  color: #475569;
+  border-color: #E2E8F0;
+}
+
+.gen-plaquette--accent {
+  background: #ECFDF5;
+  color: #047857;
+  border-color: #A7F3D0;
+}
+
+/* -- Barre d'outils : de la boîte flottante au panneau titré -- */
+.gen-toolbar {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05);
+}
+
+.gen-toolbar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1.4rem;
+  border-bottom: 1px solid #EDF1F6;
+  background: rgba(240, 246, 252, 0.55);
+}
+
+.gen-toolbar-body {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  padding: 1.05rem 1.4rem 1.15rem;
+}
+
+/* La recherche occupe la largeur utile (plus d'espace mort à droite). */
+.gen-field--recherche {
+  flex: 1 1 320px;
+  max-width: none;
+}
+
+/* Les filtres gardent une largeur lisible et se replient proprement. */
+.gen-field--filtre {
+  flex: 1 1 190px;
+  max-width: 250px;
+}
+
+.gen-toolbar-body .gen-toolbar-actions {
+  margin-left: auto;
+  padding-bottom: 0.1rem;
+}
+
+/* -- État vide : médaillon, message lisible, hauteur maîtrisée -- */
+.gen-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 1.8rem 1rem 2rem;
+  color: #64748B;
+}
+
+.gen-empty i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 0;
+  border-radius: 50%;
+  background: #EFF6FF;
+  border: 1px dashed #BFDBFE;
+  color: #2A7FFF;
+  font-size: 1.4rem;
+}
+
+/* ==========================================================================
+   FINITIONS PRÉMIUM — NIVEAU 2
+   Halo décoratif du bandeau, en-têtes de panneaux en dégradé doux, hiérarchie
+   de l'état vide (médaillon + titre + explication) et survol accentué du
+   tableau. Toujours aucun sélecteur existant retiré.
+   ========================================================================== */
+
+/* -- Bandeau : halo « aurore » en haut à droite (pur décor) -- */
+.gen-hero {
+  position: relative;
+  overflow: hidden;
+}
+
+.gen-hero::after {
+  content: '';
+  position: absolute;
+  top: -90px;
+  right: -60px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(42, 127, 255, 0.14), rgba(42, 127, 255, 0));
+  pointer-events: none;
+}
+
+.gen-hero-text,
+.gen-hero-side {
+  position: relative;
+  z-index: 1;
+}
+
+/* -- En-têtes de panneaux : dégradé doux (verre dépoli) -- */
+.gen-toolbar-head,
+.gen-panel-head {
+  background: linear-gradient(135deg, #F5FAFF 0%, #EEF5FE 100%);
+}
+
+.gen-count-pill {
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- Tableau : survol accentué d'un filet bleu, en-tête souligné -- */
+.gen-table tbody tr:hover td:first-child {
+  box-shadow: inset 3px 0 0 rgba(42, 127, 255, 0.55);
+}
+
+.gen-table thead th {
+  box-shadow: inset 0 -1px 0 #E6EDF5;
+}
+
+/* -- Bouton de rechargement : remplissage bleu au survol -- */
+.gen-refresh {
+  width: 2.35rem;
+  height: 2.35rem;
+}
+
+.gen-refresh:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%) !important;
+  border-color: transparent !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 6px 16px -6px rgba(37, 99, 235, 0.5);
+}
+
+/* -- État vide : médaillon, titre, explication -- */
+.gen-empty {
+  gap: 0.55rem;
+  padding: 2rem 1rem 2.2rem;
+}
+
+.gen-empty i {
+  width: 58px;
+  height: 58px;
+  background: linear-gradient(135deg, #EFF6FF 0%, #E0EDFF 100%);
+  border: 1px solid #DBEAFE;
+  box-shadow: 0 8px 18px -10px rgba(37, 99, 235, 0.55);
+}
+
+.gen-empty-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #0B1F3A;
+  letter-spacing: -0.01em;
+}
+
+.gen-empty-text {
+  max-width: 62ch;
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: #64748B;
+}
+
+/* ==========================================================================
+   VARIANTE A — CLAIR RAFFINÉ (2026-09-30)
+   Hero compact à vignette d'icône + eyebrow, barre d'outils affichée
+   uniquement quand elle a un contenu (sinon carte quasi vide), panneau de
+   résultats à filet d'ancrage dégradé, codes en chip monospace, états
+   booléens en pastilles lisibles, note technique en chip. Uniquement des
+   ajouts `.gen-*` : aucun sélecteur existant retiré.
+   ========================================================================== */
+
+/* ── HERO COMPACT : vignette icône, eyebrow fil, plaquettes à droite ── */
+.gen-hero {
+  justify-content: flex-start;
+  gap: 1rem;
+  padding: 1.2rem 1.6rem;
+  border-color: #E7ECF3;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05),
+              0 16px 40px -18px rgba(11, 31, 58, 0.18);
+}
+
+.gen-hero-icon {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0B1F3A 0%, #1E62D0 100%);
+  color: #FFFFFF;
+  font-size: 1.35rem;
+  box-shadow: 0 8px 20px -8px rgba(11, 31, 58, 0.45);
+}
+
+.gen-hero-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #2563EB;
+}
+
+.gen-hero-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.gen-hero-side {
+  margin-left: auto;
+}
+
+.gen-hero-title {
+  font-size: 1.5rem;
+}
+
+/* ── PANNEAUX : filet d'ancrage + ombre à deux couches ── */
+.gen-toolbar,
+.gen-panel {
+  border-color: #E7ECF3;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05),
+              0 16px 40px -18px rgba(11, 31, 58, 0.18);
+}
+
+.gen-panel {
+  position: relative;
+}
+
+.gen-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0B1F3A 0%, #2563EB 55%, #2A7FFF 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ── CELLULES : code en chip monospace, état en pastille ── */
+.gen-code-chip {
+  display: inline-block;
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #0F274A;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 0.26rem 0.6rem;
+  white-space: nowrap;
+}
+
+.gen-bool-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.26rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.gen-bool-pill i {
+  font-size: 0.85rem;
+}
+
+.gen-bool-pill--on {
+  background: #ECFDF5;
+  color: #047857;
+  border: 1px solid #A7F3D0;
+}
+
+.gen-bool-pill--off {
+  background: #F8FAFC;
+  color: #64748B;
+  border: 1px solid #E2E8F0;
+}
+
+/* ── TABLEAU : rayures alternées très légères + survol unifié ── */
+.gen-table tbody tr:nth-child(even) td {
+  background: #FAFCFF;
+}
+
+.gen-table tbody tr:hover td {
+  background: #F3F8FF;
+}
+
+.gen-table tbody tr.table-active td {
+  background: #EAF2FF;
+}
+
+/* ── NOTE TECHNIQUE (source de l'endpoint) en chip monospace ── */
+.gen-endpoint-chip {
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #475569;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  border-radius: 7px;
+  padding: 0.18rem 0.5rem;
+}
+
+/* ── FOCUS VISIBLE + RESPECT DE prefers-reduced-motion ── */
+.gen-refresh:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gen-hero,
+  .gen-toolbar,
+  .gen-panel,
+  .gen-kpi,
+  .gen-doc-card,
+  .gen-table tbody tr {
+    transition: none !important;
+  }
+}

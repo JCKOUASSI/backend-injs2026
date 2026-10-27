@@ -1,0 +1,162 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main" class="dfrc-diag-page">
+  <h1>{{ title }}</h1>
+  <p class="help">
+    <strong>Prévu</strong> = somme des créneaux planifiés de chaque séance du module
+    (heure fin − heure début).
+    <strong>Réalisé</strong> = somme des durées réelles des séances terminées
+    (clôture − démarrage). Aligné sur le dashboard web.
+  </p>
+
+  <form method="get" class="module dfrc-diag-filters">
+    <div class="dfrc-diag-filters-row">
+      {% if result.secretariats %}
+      <label>
+        Secrétariat
+        <select name="secretariat" onchange="this.form.submit()">
+          <option value="">Tous</option>
+          {% for s in result.secretariats %}
+          <option value="{{ s.id }}" {% if result.selected_secretariat == s.id|stringformat:"s" %}selected{% endif %}>
+            {{ s.type__libelle|default:"" }}{% if s.type__libelle and s.nom %} — {% endif %}{{ s.nom }}
+          </option>
+          {% endfor %}
+        </select>
+      </label>
+      {% endif %}
+      <label class="dfrc-diag-checkbox">
+        <input type="checkbox" name="depassements_only" value="1"
+          {% if depassements_only %}checked{% endif %}
+          onchange="this.form.submit()">
+        Dépassements uniquement
+      </label>
+    </div>
+  </form>
+
+  <section class="module dfrc-diag-summary">
+    <h2>Synthèse dashboard</h2>
+    <p class="dfrc-diag-totaux">
+      <strong>{{ result.dashboard.effectue_h }} h</strong> réalisé /
+      <strong>{{ result.dashboard.prevu_h }} h</strong> prévu
+      ({{ result.dashboard.taux_pct }} %)
+    </p>
+    <p>
+      {{ result.nb_modules }} module(s) ·
+      {{ result.nb_sessions_depassement }} séance(s) en dépassement horaire
+    </p>
+    {% if result.totaux.ecart_h > 0 %}
+    <p class="warning">
+      Réalisé brut total : <strong>{{ result.totaux.realise_h }} h</strong>
+      (+{{ result.totaux.ecart_h }} h vs prévu {{ result.totaux.prevu_h }} h).
+    </p>
+    {% endif %}
+  </section>
+
+  <section class="module">
+    <h2>Par module — prévu / réalisé</h2>
+    <div class="results">
+      <table id="result_list" class="dfrc-diag-modules-table">
+        <thead>
+          <tr>
+            <th>Secrétariat</th>
+            <th>Formation</th>
+            <th>Module</th>
+            <th>Statut</th>
+            <th>Prévu (séances)</th>
+            <th>Réalisé</th>
+            <th>%</th>
+            <th>Écart</th>
+            <th>Fiche module</th>
+            <th>Séances</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in result.modules %}
+          <tr class="{% if m.depasse %}dfrc-row-warning{% endif %}">
+            <td>{{ m.secretariat|default:"—" }}</td>
+            <td>{{ m.formation|default:"—" }}</td>
+            <td>
+              {% if m.module_url %}<a href="{{ m.module_url }}">{{ m.module_label }}</a>
+              {% else %}{{ m.module_label }}{% endif %}
+            </td>
+            <td>{{ m.statut }}</td>
+            <td>{{ m.prevu_h }} h</td>
+            <td><strong>{{ m.realise_h }} h</strong></td>
+            <td>{% if m.taux_realise_pct is not None %}{{ m.taux_realise_pct }} %{% else %}—{% endif %}</td>
+            <td>{% if m.ecart_h > 0 %}+{% endif %}{{ m.ecart_h }} h</td>
+            <td>
+              {% if m.duree_fiche_h > 0 %}{{ m.duree_fiche_h }} h{% else %}—{% endif %}
+            </td>
+            <td>
+              {{ m.nb_sessions_planifiees }}/{{ m.nb_sessions }} plan.
+              · {{ m.nb_sessions_terminees }} term.
+              {% if m.sessions_sans_horaires %}
+              <span class="dfrc-diag-muted">({{ m.sessions_sans_horaires }} sans horaire)</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="10">Aucun module{% if depassements_only %} en dépassement{% endif %}.</td></tr>
+          {% endfor %}
+        </tbody>
+        {% if result.modules %}
+        <tfoot>
+          <tr class="dfrc-diag-tfoot">
+            <th colspan="4">Total</th>
+            <th>{{ result.totaux.prevu_h }} h</th>
+            <th>{{ result.totaux.realise_h }} h</th>
+            <th>{% if result.totaux.taux_realise_pct %}{{ result.totaux.taux_realise_pct }} %{% else %}—{% endif %}</th>
+            <th>{% if result.totaux.ecart_h > 0 %}+{% endif %}{{ result.totaux.ecart_h }} h</th>
+            <th>{{ result.totaux.duree_fiche_h }} h</th>
+            <th></th>
+          </tr>
+        </tfoot>
+        {% endif %}
+      </table>
+    </div>
+    <p class="help">
+      <strong>Fiche module</strong> = <code>duree_prevue_heures</code> saisi sur le module (référence, non utilisé pour le calcul).
+    </p>
+  </section>
+
+  {% if result.sessions %}
+  <section class="module">
+    <h2>Séances en dépassement (durée réelle &gt; horaire planifié)</h2>
+    <div class="results">
+      <table id="result_list">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Séance</th>
+            <th>Module</th>
+            <th>Prévu séance</th>
+            <th>Réalisé</th>
+            <th>Dépassement</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in result.sessions %}
+          <tr class="dfrc-row-warning">
+            <td>{{ s.date }}</td>
+            <td>
+              {% if s.session_url %}<a href="{{ s.session_url }}">#{{ s.numero }} {{ s.intitule }}</a>
+              {% else %}#{{ s.numero }} {{ s.intitule }}{% endif %}
+            </td>
+            <td>
+              {% if s.module_url %}<a href="{{ s.module_url }}">{{ s.module_label }}</a>
+              {% else %}{{ s.module_label }}{% endif %}
+            </td>
+            <td>{{ s.prevu_seance_h }} h{% if s.sans_horaires_planifies %} <span class="dfrc-diag-muted">(repli 8 h)</span>{% endif %}</td>
+            <td>{{ s.realise_h }} h</td>
+            <td>+{{ s.depasse_h }} h</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

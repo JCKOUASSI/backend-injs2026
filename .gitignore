@@ -1,0 +1,99 @@
+# Artefacts frontend locaux (mono-repo)
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+credentials_mobile.txt
+backend/credentials_mobile.txt
+backend/.local/
+backend/staticfiles/
+backend/media/
+backend/cache/
+
+# Doublons locaux (sources canoniques dans docs/)
+**/.DS_Store
+
+# Doublons locaux (sources canoniques dans docs/)
+/Manuel utilisateur App Statistiques.md
+/Manuel utilisateur App Statistiques.docx
+/Sauvegardes tâches réalisées.txt
+
+# Sauvegardes de bases de données - NE PAS VERSIONNER
+*.dump
+*.dump.sql
+backups/
+
+# Environnements locaux / générés - NE PAS VERSIONNER
+backend/.venv-python39-backup/
+backend/logs/
+# VS Code : la configuration partagée du projet est versionnée, le reste est local.
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/tasks.json
+project_structure.txt
+/Save taches app-injs-lmd 2026.txt
+
+# Marqueurs locaux du script scripts/start_dev.sh (démo hors Docker/SQLite)
+backend/.seed_ok
+backend/.venv/.deps_ok
+backend/db.sqlite3
+# P00-02 — données nominatives et classeurs d'import : hors dépôt
+*.numbers
+*.xlsx
+*.xls
+*.csv
+**/importverif/
+# Exception 1 : modèles vides d'import (en-têtes + 1 ligne fictive)
+!docs/modeles/
+!docs/modeles/**
+# Exception 2 : fixture synthétique de tests (générée, non nominative)
+!backend/test_import_formations_seances.xlsx
+# Secrets et bases locales
+.env
+*.sqlite3
+*.sqlite3*
+**/assets/app.env
+# Arena — outillage de pilotage (journaux et caches uniquement ; les scripts sont suivis)
+arena/*.log
+arena/__pycache__/
+backend/db_sandbox.sqlite3
+backend/.requirements-sans-pg.txt
+backend/.venv/
+qr_badge_mobile/build/
+qr_badge_mobile/.dart_tool/
+
+# Arena
+/.gitignore-arena
+
+# Artefacts de merge / caches locaux
+frontend/.vite/
+workspace/.pycache/
+**/.pycache/
+**/__pycache__/
+*.pyc
+
+# Compléments sécurité 2026-09-18 (n'affecte pas les fichiers déjà suivis)
+*.log
+
+# Fichiers locaux de déploiement et journaux — à préserver en local, jamais publiés
+.refonte-segment/
+frontend/nohup.out
+backend/nohup.out
+/.next/
+/vendor/
+/var/
+/storage/
+/.kilo/
+/.cursor/
+
+# Artefacts de chantier (cloture INJS-LMD)
+/.venv-ci/
+/workspace/
+/arena/previews/
+*.prompt.md

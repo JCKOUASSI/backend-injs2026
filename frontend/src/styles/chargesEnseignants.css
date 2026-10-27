@@ -1,0 +1,135 @@
+/* ==========================================================================
+   CHARGES PÉDAGOGIQUES (scolarite/ChargesEnseignants.jsx) — spécificités
+   Variante A. Se combine au kit `premiumCommun.css` (`.px-*`).
+   Préfixe `.chg-*`.
+   ========================================================================== */
+
+/* Conteneur de la page : empilement hero → alerte → panneaux. */
+.chg-page {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── 1. OCCUPATION : tableau chiffré calibré ── */
+.chg-occ-table {
+  min-width: 640px;
+}
+
+.chg-occ-table thead th:not(:first-child) {
+  text-align: right;
+}
+
+.chg-occ-table thead th:last-child {
+  text-align: center;
+}
+
+.chg-occ-table tbody td:first-child {
+  font-weight: 600;
+  color: #0B1F3A;
+}
+
+.chg-occ-table tbody td.px-num {
+  text-align: right;
+}
+
+.chg-occ-table tbody td:last-child {
+  text-align: center;
+}
+
+/* ── 2. DÉTAIL : bandeau de récapitulatif + tableau des affectations ── */
+.chg-recap li {
+  display: block;
+  padding: 0.55rem 0.85rem;
+  background: linear-gradient(135deg, #F5FAFF 0%, #EEF5FE 100%);
+  border: 1px solid #E3EDFB;
+  border-radius: 12px;
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.chg-aff-table {
+  min-width: 520px;
+}
+
+.chg-aff-table thead th:nth-child(3),
+.chg-aff-table tbody td:nth-child(3) {
+  text-align: right;
+}
+
+.chg-aff-table tbody td:nth-child(3) {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: #0B1F3A;
+}
+
+/* Chip neutre pour le type d'enseignement (CM / TD / TP). */
+.chg-type {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+/* Statut en petites capitales discret (texte métier inchangé). */
+.chg-statut {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #64748B;
+  white-space: nowrap;
+}
+
+/* ── 3. FORMULAIRE DE CRÉATION : grille premium ── */
+.chg-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.85rem 0.9rem;
+  align-items: end;
+  margin: 0;
+}
+
+.chg-form-grid .px-field {
+  min-width: 0;
+}
+
+.chg-form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-top: 0.2rem;
+}
+
+.chg-form-actions .btn {
+  border-radius: 9999px;
+  padding: 0.5rem 1.15rem;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+/* ── 4. FINESSE D'EN-TÊTES DE PANNEAU ── */
+.chg-occ .px-panel-head,
+.chg-detail .px-panel-head {
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
+}
+
+/* Carte de création : accent bleu sur l'icône, corps aéré. */
+.chg-create .px-panel-title i {
+  color: #2563EB;
+}
+
+.chg-create .card-body {
+  padding-top: 1.15rem;
+  padding-bottom: 1.25rem;
+}

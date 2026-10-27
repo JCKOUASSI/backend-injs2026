@@ -1,0 +1,128 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main" class="dfrc-diag-page">
+  <h1>{{ title }}</h1>
+  <p class="help">
+    {% trans "Crée les comptes utilisateurs mobile pour les étudiants inscrits à un module et les enseignants assignés à un module, lorsqu'aucun compte User n'est encore lié à leur fiche." %}
+  </p>
+  <p class="help">
+    {% blocktrans with pwd=preview.default_password %}
+      Mot de passe initial : <strong>{{ pwd }}</strong> (changement obligatoire à la première connexion).
+      Un email de bienvenue est envoyé si l'adresse est renseignée.
+    {% endblocktrans %}
+  </p>
+
+  <section class="module dfrc-diag-summary">
+    <h2>{% trans "Sans compte User" %}</h2>
+    <p>
+      <strong>{{ preview.auditeurs_count }}</strong> {% trans "étudiant(s)" %} ·
+      <strong>{{ preview.formateurs_count }}</strong> {% trans "enseignant(s)" %}
+    </p>
+  </section>
+
+  {% if preview.auditeurs_count or preview.formateurs_count %}
+  <section class="module">
+    <h2>{% trans "Aperçu" %} {% if preview.preview_limit %}({% blocktrans with n=preview.preview_limit %}max. {{ n }} par type{% endblocktrans %}){% endif %}</h2>
+    <div class="results">
+      {% if preview.auditeurs %}
+      <h3>{% trans "Étudiants" %}</h3>
+      <table id="result_list">
+        <thead>
+          <tr>
+            <th>{% trans "Matricule" %}</th>
+            <th>{% trans "Nom" %}</th>
+            <th>{% trans "Prénom" %}</th>
+            <th>{% trans "Email" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in preview.auditeurs %}
+          <tr>
+            <td>{{ p.matricule }}</td>
+            <td>{{ p.nom }}</td>
+            <td>{{ p.prenom }}</td>
+            <td>{{ p.email|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+
+      {% if preview.formateurs %}
+      <h3>{% trans "Enseignants" %}</h3>
+      <table id="result_list">
+        <thead>
+          <tr>
+            <th>{% trans "N° badge" %}</th>
+            <th>{% trans "Nom" %}</th>
+            <th>{% trans "Prénom" %}</th>
+            <th>{% trans "Email" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in preview.formateurs %}
+          <tr>
+            <td>{{ f.numerobadge }}</td>
+            <td>{{ f.nom }}</td>
+            <td>{{ f.prenom }}</td>
+            <td>{{ f.email|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+    </div>
+  </section>
+
+  <form method="post" class="module">
+    {% csrf_token %}
+    {% if formation_id %}<input type="hidden" name="formation_id" value="{{ formation_id }}">{% endif %}
+    <fieldset class="module aligned">
+      <label>
+        <input type="checkbox" name="include_étudiants" value="1" checked>
+        {% blocktrans count counter=preview.auditeurs_count %}
+          Créer {{ counter }} compte étudiant
+        {% plural %}
+          Créer {{ counter }} comptes étudiants
+        {% endblocktrans %}
+      </label>
+      <label>
+        <input type="checkbox" name="include_enseignants" value="1" checked>
+        {% blocktrans count counter=preview.formateurs_count %}
+          Créer {{ counter }} compte enseignant
+        {% plural %}
+          Créer {{ counter }} comptes enseignants
+        {% endblocktrans %}
+      </label>
+    </fieldset>
+    <div class="submit-row">
+      <input type="submit" value="{% trans 'Créer les comptes manquants' %}" class="default">
+      <a href="{% url 'admin:authentication_user_changelist' %}" class="button cancel-link">{% trans "Retour aux utilisateurs" %}</a>
+    </div>
+  </form>
+  {% else %}
+  <p class="success">{% trans "Tous les étudiants et enseignants éligibles ont déjà un compte User lié." %}</p>
+  <p><a href="{% url 'admin:authentication_user_changelist' %}" class="button">{% trans "Retour aux utilisateurs" %}</a></p>
+  {% endif %}
+
+  {% if result %}
+  <section class="module dfrc-diag-summary">
+    <h2>{% trans "Résultat" %}</h2>
+    <p>
+      {% trans "Étudiants" %} — {% trans "créés" %} : {{ result.auditeurs.created }},
+      {% trans "ignorés" %} : {{ result.auditeurs.skipped }},
+      {% trans "emails" %} : {{ result.auditeurs.emails_sent }},
+      {% trans "erreurs" %} : {{ result.auditeurs.errors }}
+    </p>
+    <p>
+      {% trans "Enseignants" %} — {% trans "créés" %} : {{ result.formateurs.created }},
+      {% trans "ignorés" %} : {{ result.formateurs.skipped }},
+      {% trans "emails" %} : {{ result.formateurs.emails_sent }},
+      {% trans "erreurs" %} : {{ result.formateurs.errors }}
+    </p>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

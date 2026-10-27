@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300" role="img" aria-label="INJS Abidjan">
+  <path d="M0,0 L19,0 L25,4 L33,20 L34,26 L36,26 L41,38 L46,49 L46,53 L48,53 L53,65 L56,71 L59,71 L60,4 L63,0 L82,0 L85,2 L85,131 L81,135 L78,136 L68,136 L61,134 L54,126 L37,90 L29,74 L26,67 L22,67 L21,78 L20,131 L16,134 L0,134 L-4,129 L-4,101 L-2,3 Z " fill="#283A87" transform="translate(82,23)"/>
+  <path d="M0,0 L30,0 L33,2 L33,40 L28,43 L21,45 L15,48 L13,51 L13,63 L15,69 L18,85 L25,123 L26,135 L26,152 L24,167 L19,185 L13,197 L4,210 L-5,220 L-17,232 L-38,246 L-53,254 L-60,256 L-59,252 L-49,244 L-38,236 L-32,229 L-30,229 L-28,225 L-17,208 L-11,190 L-8,177 L-8,136 L-11,117 L-13,108 L-15,101 L-21,79 L-21,74 L-23,74 L-25,63 L-27,57 L-27,27 L-23,16 L-16,7 L-8,2 Z " fill="#283A87" transform="translate(247,25)"/>
+  <path d="M0,0 L33,0 L36,2 L36,12 L35,17 L35,46 L38,75 L44,107 L53,136 L60,151 L70,170 L78,181 L85,189 L85,191 L88,192 L88,194 L91,195 L91,197 L94,198 L99,203 L100,205 L94,205 L80,196 L66,186 L55,176 L50,171 L40,160 L33,150 L25,138 L17,121 L12,110 L4,84 L0,63 L-2,49 L-3,32 L-4,26 L-4,3 Z " fill="#283A87" transform="translate(28,74)"/>
+  <path d="M0,0 L21,0 L24,2 L24,4 L26,4 L26,91 L23,107 L18,116 L10,123 L1,126 L-25,126 L-77,125 L-79,123 L-79,103 L-76,96 L-75,95 L-13,94 L-8,92 L-4,86 L-3,4 Z " fill="#293A88" transform="translate(183,75)"/>
+  <path d="M0,0 L30,0 L34,2 L35,4 L35,33 L32,38 L29,39 L0,39 L-4,35 L-4,8 L-2,2 Z " fill="#283A88" transform="translate(29,23)"/>
+  <path d="M0,0 L18,0 L22,4 L23,14 L23,34 L20,40 L19,41 L2,41 L-3,40 L-4,38 L-4,9 L-2,2 Z " fill="#2A3C89" transform="translate(186,24)"/>
+  <text
+    x="158"
+    y="241"
+    text-anchor="middle"
+    fill="#283A87"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="17"
+    font-weight="700"
+    letter-spacing="2.6"
+    textLength="108"
+    lengthAdjust="spacing"
+  >ABIDJAN</text>
+</svg>

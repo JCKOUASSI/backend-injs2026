@@ -1,0 +1,426 @@
+/* ===========================================================================
+   Page de Connexion INJS-LMD 2026 — Rendu conforme à la capture de référence
+   Effet de verre givré (Glassmorphism), orbes radiaux lumineux,
+   carte bicolore Bleu Nuit / Gris bleuté clair (Ice Slate)
+   =========================================================================== */
+
+.login-container {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 70% 55% at 15% 15%, rgba(30, 95, 205, 0.42) 0%, transparent 60%),
+    radial-gradient(ellipse 65% 50% at 88% 85%, rgba(20, 75, 175, 0.38) 0%, transparent 60%),
+    linear-gradient(155deg, #0A2244 0%, #081D3B 55%, #05142B 100%);
+}
+
+/* Orbes lumineux radiaux d'ambiance avec flou optique */
+.login-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.login-orb-a {
+  width: 520px;
+  height: 520px;
+  top: -80px;
+  left: -90px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.45) 0%, rgba(37, 99, 235, 0.08) 60%, transparent 70%);
+  filter: blur(75px);
+}
+
+.login-orb-b {
+  width: 540px;
+  height: 540px;
+  bottom: -100px;
+  right: -90px;
+  background: radial-gradient(circle, rgba(29, 78, 216, 0.42) 0%, rgba(29, 78, 216, 0.06) 60%, transparent 70%);
+  filter: blur(85px);
+}
+
+.login-orb-c {
+  width: 380px;
+  height: 380px;
+  top: 35%;
+  left: 38%;
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.18) 0%, transparent 70%);
+  filter: blur(90px);
+}
+
+/* Coque centrale bicolore flottante avec effet de verre */
+.login-shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1.08fr 1fr;
+  width: 100%;
+  max-width: 890px;
+  min-height: 520px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 24px 70px rgba(0, 12, 32, 0.55),
+    0 0 1px 1px rgba(255, 255, 255, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Panneau Gauche : Marque Institutionnelle INJS UFR STAPS-JL (Bleu Nuit)
+   ══════════════════════════════════════════════════════════════════════════ */
+.login-panel-brand {
+  background: linear-gradient(175deg, rgba(16, 48, 96, 0.9) 0%, rgba(8, 24, 52, 0.95) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 3rem 2.4rem 2rem;
+  color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  justify-content: space-between;
+  border-right: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* Cadre du logo blanc officiel INJS */
+.login-logo-frame {
+  width: 135px;
+  height: 135px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.login-logo-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: brightness(0) invert(1) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
+}
+
+.login-panel-brand h1 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #FFFFFF;
+  margin: 0 0 0.45rem;
+  line-height: 1.25;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.login-brand-org {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.86);
+  margin: 0 0 0.35rem;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+.login-brand-place {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0;
+}
+
+/* Pied du panneau gauche : séparateur horizontal et mentions LMD */
+.login-brand-footer {
+  width: 100%;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 1.15rem;
+  margin-top: auto;
+}
+
+.login-brand-footer p:first-child {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0 0 0.25rem;
+}
+
+.login-brand-footer p:last-child {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Panneau Droit : Formulaire de Connexion (Gris bleuté clair / Ice Slate)
+   ══════════════════════════════════════════════════════════════════════════ */
+.login-panel-form {
+  background: linear-gradient(180deg, #E2EAF5 0%, #D8E3F0 100%);
+  padding: 2.5rem 2.25rem 1.65rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-panel-form h2 {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #0C2346;
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.login-form-lead {
+  font-size: 0.85rem;
+  color: #556B85;
+  margin: 0 0 1.35rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.login-field {
+  margin-bottom: 1rem;
+}
+
+.login-field label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1E334D;
+  margin-bottom: 0.35rem;
+}
+
+/* Champs de saisie blancs avec icône et bordure douce */
+.login-input {
+  background: #FFFFFF;
+  border: 1px solid #CBD7E6;
+  border-radius: 10px;
+  height: 44px;
+  padding: 0 0.85rem;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(12, 35, 70, 0.03);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.login-input:focus-within {
+  border-color: #2A7FFF;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+.login-input i {
+  color: #8CA0B8;
+  font-size: 1rem;
+  margin-right: 0.65rem;
+  flex-shrink: 0;
+}
+
+.login-input input {
+  border: none;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  font-size: 0.92rem;
+  color: #0C2346;
+  font-family: inherit;
+}
+
+.login-input input::placeholder {
+  color: #94A3B8;
+  font-weight: 400;
+}
+
+.login-password-toggle {
+  border: none;
+  background: transparent;
+  color: #8CA0B8;
+  cursor: pointer;
+  padding: 0.25rem;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.login-password-toggle:hover {
+  color: #0C2346;
+}
+
+/* Bouton principal de soumission : Bleu Nuit Profond conforme */
+.btn-login {
+  background: #081E3D;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  height: 44px;
+  width: 100%;
+  font-size: 0.92rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(8, 30, 61, 0.32);
+  transition: background 0.15s ease, transform 0.15s ease;
+  margin-top: 1.15rem;
+}
+
+.btn-login:hover:not(:disabled) {
+  background: #051429;
+  transform: translateY(-1px);
+}
+
+.btn-login:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Message d'erreur éventuel */
+.login-error {
+  background: #FEE2E2;
+  border: 1px solid #FCA5A5;
+  border-radius: 10px;
+  color: #991B1B;
+  padding: 0.6rem 0.85rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Bouton administration intermédiaire centré sous le bouton de connexion */
+.login-admin-btn-wrap {
+  text-align: center;
+  margin-top: 0.85rem;
+  margin-bottom: 0.25rem;
+}
+
+.btn-login-admin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.48rem 1.35rem;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1.5px solid #CBD7E6;
+  border-radius: 10px;
+  color: #1E334D;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 1px 3px rgba(12, 35, 70, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.btn-login-admin:hover {
+  background: #FFFFFF;
+  border-color: #2A7FFF;
+  color: #2563EB;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.16);
+}
+
+.btn-login-admin i {
+  color: #64748B;
+  font-size: 0.88rem;
+  transition: color 0.15s ease;
+}
+
+.btn-login-admin:hover i {
+  color: #2A7FFF;
+}
+
+/* Plaquette des comptes démo avec effet de carte douce */
+.login-demo {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 0.7rem 0.95rem;
+  margin-top: 0.85rem;
+  box-shadow: 0 2px 8px rgba(12, 35, 70, 0.04);
+}
+
+.login-demo strong {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0C2346;
+  margin-bottom: 0.2rem;
+}
+
+.login-demo p {
+  margin: 0;
+  font-size: 0.74rem;
+  color: #4B627D;
+  line-height: 1.45;
+}
+
+.login-demo code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+/* Pied de carte avec mention Ophir Technologies centrée */
+.login-form-footer {
+  margin-top: auto;
+  padding-top: 1.25rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-size: 0.74rem;
+  color: #68829F;
+}
+
+.login-form-footer span {
+  text-align: center;
+}
+
+.login-admin-link {
+  color: #68829F;
+  text-decoration: none;
+  font-size: 0.72rem;
+  transition: color 0.15s ease;
+}
+
+.login-admin-link:hover {
+  color: #0C2346;
+  text-decoration: underline;
+}
+
+/* Adaptation réactive (tablettes et mobiles) */
+@media (max-width: 820px) {
+  .login-container {
+    padding: 1rem;
+  }
+  .login-shell {
+    grid-template-columns: 1fr;
+    border-radius: 18px;
+    min-height: auto;
+    max-width: 440px;
+  }
+  .login-panel-brand {
+    padding: 2rem 1.5rem 1.5rem;
+  }
+  .login-logo-frame {
+    width: 100px;
+    height: 100px;
+  }
+  .login-brand-footer {
+    display: none;
+  }
+  .login-panel-form {
+    padding: 2rem 1.5rem 1.5rem;
+  }
+}

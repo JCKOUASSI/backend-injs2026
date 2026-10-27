@@ -1,0 +1,76 @@
+/* ==========================================================================
+   ENSEIGNANTS (Formateurs.jsx — vue standard) — spécificités Variante A.
+   Se combine au kit shared `premiumCommun.css` (`.px-*`). Préfixe `.ens-*`.
+   ========================================================================== */
+
+/* ── Recherche : le champ occupe la largeur utile, le bouton reste à droite. */
+.ens-toolbar .px-toolbar-body {
+  align-items: flex-end;
+}
+
+/* Conteneur de la branche standard : empilement hero → recherche → table. */
+.ens-page {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Panneau de résultats : découpe nette du tableau sous le filet. */
+.ens-panel {
+  overflow: hidden;
+}
+
+/* ── Tableau : largeur minimale + calibrage des colonnes ── */
+.ens-table {
+  min-width: 860px;
+}
+
+.ens-table thead th:nth-child(1) { width: 96px; }    /* Numéro   */
+.ens-table thead th:nth-child(2) { width: 150px; }   /* Nom      */
+.ens-table thead th:nth-child(3) { width: 130px; }   /* Prénom   */
+.ens-table thead th:nth-child(4) { min-width: 165px; } /* Spécialité */
+.ens-table thead th:last-child { width: 205px; }
+
+/* ── Cellules ── */
+/* Nom en navy 700 (le <strong> du rendu). */
+.table.ens-table tbody td strong {
+  color: #0B1F3A;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* N° de badge : chip monospace (le `badge-bg-info` du rendu, compound pour
+   priment sur le badge global). */
+.badge-bg-info.ens-num {
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* Nombre de modules : pastille neutre à zéro, pastille bleue sinon. */
+.ens-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  padding: 0.18rem 0.55rem;
+  border-radius: 9999px;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  color: #64748B;
+  font-size: 0.76rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.ens-count.ens-count--on {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+  color: #2563EB;
+}
+
+/* Colonnes optionnelles (pièce d'identité, RIB) en petit texte. */
+.table.ens-table tbody td.small {
+  font-size: 0.78rem;
+  color: #64748B;
+}

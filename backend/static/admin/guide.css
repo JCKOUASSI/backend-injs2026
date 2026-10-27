@@ -1,0 +1,182 @@
+.sygep-guide-page {
+    max-width: 900px;
+}
+
+.sygep-guide-header {
+    margin-bottom: 24px;
+}
+
+.sygep-guide-intro {
+    color: var(--sygep-muted, #64748b);
+    margin: 0 0 16px;
+    font-size: 15px;
+}
+
+.sygep-guide-content {
+    padding: 28px 32px !important;
+    line-height: 1.7;
+    font-size: 15px;
+    color: #1e293b;
+}
+
+.sygep-guide-content > h1:first-child {
+    display: none;
+}
+
+.sygep-guide-content h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0 0 12px;
+    color: #0b478a;
+}
+
+.sygep-guide-content h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 2.5rem 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e8eff7;
+    color: #0b478a;
+}
+
+.sygep-guide-content h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 1.75rem 0 10px;
+    color: #1e293b;
+}
+
+.sygep-guide-content h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 1.25rem 0 8px;
+    color: #334155;
+}
+
+.sygep-guide-content p {
+    margin: 0 0 12px;
+    color: #334155;
+}
+
+.sygep-guide-content ul,
+.sygep-guide-content ol {
+    margin: 0 0 16px;
+    padding-left: 1.5rem;
+}
+
+.sygep-guide-content li {
+    margin-bottom: 6px;
+    color: #334155;
+}
+
+.sygep-guide-content li > ul,
+.sygep-guide-content li > ol {
+    margin-top: 6px;
+    margin-bottom: 0;
+}
+
+.sygep-guide-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 20px;
+    font-size: 14px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.sygep-guide-content thead th {
+    background: #e8eff7;
+    color: #0b478a;
+    font-weight: 700;
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.sygep-guide-content tbody td {
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    vertical-align: top;
+}
+
+.sygep-guide-content tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.sygep-guide-content tbody tr:nth-child(even) td {
+    background: #f8fafc;
+}
+
+.sygep-guide-content code {
+    background: #f1f5f9;
+    color: #0f172a;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 0.88em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.sygep-guide-content pre {
+    background: #f8fafc;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 12px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 12px 0 16px;
+}
+
+.sygep-guide-content pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.sygep-guide-content blockquote {
+    margin: 16px 0;
+    padding: 14px 18px;
+    border-left: 4px solid #0e58ab;
+    background: #e8eff7;
+    border-radius: 0 12px 12px 0;
+    color: #0b478a;
+}
+
+.sygep-guide-content blockquote p {
+    margin: 0;
+    color: #0b478a;
+}
+
+.sygep-guide-content hr {
+    border: none;
+    border-top: 1px solid rgba(15, 23, 42, 0.1);
+    margin: 28px 0;
+}
+
+.sygep-guide-content a {
+    color: #0b478a;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.sygep-guide-content a:hover {
+    text-decoration: underline;
+}
+
+.sygep-guide-content strong {
+    color: #1e293b;
+    font-weight: 700;
+}
+
+@media (max-width: 640px) {
+    .sygep-guide-content {
+        padding: 20px 18px !important;
+    }
+
+    .sygep-guide-content table {
+        font-size: 13px;
+    }
+
+    .sygep-guide-content thead th,
+    .sygep-guide-content tbody td {
+        padding: 9px 10px;
+    }
+}

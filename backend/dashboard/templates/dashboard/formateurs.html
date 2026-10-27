@@ -1,0 +1,202 @@
+{% extends "dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block title %}Enseignants{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'web-dashboard' %}">Accueil</a></li>
+<li class="breadcrumb-item active">Enseignants</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-person-video3 me-2"></i>Enseignants</h4>
+    {% if user|can_manage_formateurs %}
+    <button class="btn btn-dfrc" data-bs-toggle="modal" data-bs-target="#addEnseignantModal">
+        <i class="bi bi-person-plus me-1"></i> Nouveau formateur
+    </button>
+    {% endif %}
+</div>
+
+<!-- Search -->
+<div class="card card-modern mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <input type="text" name="q" class="form-control form-control-sm"
+                       placeholder="Rechercher par nom, prénom ou numéro..."
+                       value="{{ request.GET.q|default:'' }}">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-outline-primary">Rechercher</button>
+                <a href="{% url 'web-formateurs' %}" class="btn btn-sm btn-outline-secondary">Réinitialiser</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card card-modern">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th>Numéro</th>
+                    <th>Nom</th>
+                    <th>Prénom</th>
+                    <th>Spécialité</th>
+                    <th>Email</th>
+                    <th>Téléphone</th>
+                    <th>Organisation</th>
+                    <th>Formations</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in formateurs %}
+                <tr>
+                    <td><code>{{ f.numerobadge }}</code></td>
+                    <td>{{ f.nom }}</td>
+                    <td>{{ f.prenom }}</td>
+                    <td>{{ f.specialite|default:"-" }}</td>
+                    <td>{{ f.email|default:"-" }}</td>
+                    <td>{{ f.telephone|default:"-" }}</td>
+                    <td>{{ f.organisation|default:"-" }}</td>
+                    <td><span class="badge bg-secondary">{{ f.nb_formations }}</span></td>
+                    <td>
+                        {% if user|can_manage_formateurs %}
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" data-bs-toggle="modal"
+                                    data-bs-target="#editModal{{ f.id }}" title="Modifier">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <form method="post" action="{% url 'web-enseignant-delete' f.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer"
+                                        onclick="return confirm('Supprimer cet enseignant ?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+
+                <!-- Edit modal -->
+                <div class="modal fade" id="editModal{{ f.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <form method="post" action="{% url 'web-enseignant-edit' f.id %}">
+                                {% csrf_token %}
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Modifier {{ f.nom }} {{ f.prenom }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Numéro</label>
+                                            <input type="text" class="form-control" value="{{ f.numerobadge }}" readonly disabled>
+                                            <small class="text-muted">Auto-généré</small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Nom</label>
+                                            <input type="text" name="nom" class="form-control" value="{{ f.nom }}" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Prénom</label>
+                                            <input type="text" name="prenom" class="form-control" value="{{ f.prenom }}" required>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Spécialité</label>
+                                            <input type="text" name="specialite" class="form-control" value="{{ f.specialite }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Email</label>
+                                            <input type="email" name="email" class="form-control" value="{{ f.email }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Téléphone</label>
+                                            <input type="text" name="telephone" class="form-control" value="{{ f.telephone }}">
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Organisation</label>
+                                            <input type="text" name="organisation" class="form-control" value="{{ f.organisation }}">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                    <button type="submit" class="btn btn-dfrc">Enregistrer</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox" style="font-size:2rem;"></i>
+                        <p class="mt-2">Aucun formateur trouvé</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% include "dashboard/_pagination.html" %}
+
+<!-- Modal: Nouveau formateur -->
+<div class="modal fade" id="addEnseignantModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'web-enseignant-create' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Nouveau formateur</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Numéro</label>
+                            <input type="text" class="form-control" value="Auto-généré" readonly disabled>
+                            <small class="text-muted">Attribué automatiquement (ex: F0001)</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Nom <span class="text-danger">*</span></label>
+                            <input type="text" name="nom" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Prénom <span class="text-danger">*</span></label>
+                            <input type="text" name="prenom" class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Spécialité</label>
+                            <input type="text" name="specialite" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Téléphone</label>
+                            <input type="text" name="telephone" class="form-control">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Organisation</label>
+                            <input type="text" name="organisation" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-dfrc">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

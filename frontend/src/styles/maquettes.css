@@ -1,0 +1,279 @@
+/* ==========================================================================
+   STYLE MAQUETTES PÉDAGOGIQUES LMD — INJS MARCORY
+   Conforme au Système de Design Unifié (Glassmorphism, Plaquettes & Cartes Épurées)
+   ========================================================================== */
+
+.maquettes-lmd-container {
+  padding: 1.5rem 1.75rem 2.5rem;
+  background: linear-gradient(180deg, #F0F5FB 0%, #E8F0F8 100%);
+  min-height: calc(100vh - 70px);
+  color: #1e293b;
+}
+
+/* ── En-tête de page ── */
+.maquettes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.maquettes-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #0B1F3A;
+  margin: 0;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.maquettes-subtitle {
+  font-size: 0.92rem;
+  color: #64748b;
+  margin: 0.35rem 0 0 0;
+  font-weight: 500;
+}
+
+/* ── Cartes KPIs Résumé ── */
+.maquettes-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.maquette-kpi-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  padding: 1.15rem 1.25rem;
+  box-shadow: 0 4px 20px rgba(11, 31, 58, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.maquette-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(11, 31, 58, 0.08);
+}
+
+.maquette-kpi-card--primary {
+  background: linear-gradient(135deg, #0e58ab 0%, #0b478a 100%);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.maquette-kpi-card--primary .maquette-kpi-title,
+.maquette-kpi-card--primary .maquette-kpi-value {
+  color: #ffffff !important;
+}
+
+.maquette-kpi-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  background: rgba(14, 88, 171, 0.1);
+  color: #0e58ab;
+  flex-shrink: 0;
+}
+
+.maquette-kpi-card--primary .maquette-kpi-icon {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.maquette-kpi-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.maquette-kpi-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  margin-bottom: 0.2rem;
+}
+
+.maquette-kpi-value {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #0B1F3A;
+  line-height: 1.1;
+}
+
+/* ── Carte Formulaire & Filtres ── */
+.maquettes-glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 18px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 24px rgba(11, 31, 58, 0.05);
+  margin-bottom: 1.5rem;
+}
+
+.maquettes-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ── Tableau Élégant ── */
+.maquettes-table-container {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 4px 24px rgba(11, 31, 58, 0.05);
+  overflow: hidden;
+}
+
+.maquettes-table-container thead th {
+  background: #0B1F3A !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.9rem 1rem;
+  border: none;
+}
+
+.maquettes-table-container tbody td {
+  padding: 0.85rem 1rem;
+  font-size: 0.9rem;
+  color: #334155;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.maquettes-table-container tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* ── Badges de Statut ── */
+.maquette-badge {
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ── Boutons d'Action ── */
+.maquette-action-btn {
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 0.35rem 0.75rem;
+  transition: all 0.15s ease-in-out;
+}
+
+/* ==========================================================================
+   FINITIONS PRÉMIUM (alignées sur campagnes.css / candidatures.css)
+   ========================================================================== */
+
+/* Le fond de page est déjà dégradé : la grille KPI ne double pas les marges. */
+.maquettes-lmd-container .maquettes-stats-grid {
+  margin-bottom: 0;
+}
+
+/* KPI : icône colorée par variante, chiffre à droite (lecture pilotage). */
+.maquettes-lmd-container .maquette-kpi-card {
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.15rem;
+}
+
+.maquette-kpi-icon.is-green { background: #ecfdf5; color: #10b981; }
+.maquette-kpi-icon.is-blue { background: #ebf3ff; color: #2a7fff; }
+.maquette-kpi-icon.is-amber { background: #fffbeb; color: #d97706; }
+.maquette-kpi-icon.is-slate { background: #eef2f7; color: #475569; }
+
+.maquettes-lmd-container .maquette-kpi-title {
+  margin-bottom: 0.2rem;
+}
+
+/* Panneaux : le titre de panneau remplace l'ancien <h2> de carte. */
+.maquettes-lmd-container .camp-panel-title {
+  font-size: 1rem;
+}
+
+/* Filtres : libellés en capitales discrètes + contrôles arrondis. */
+.maquettes-lmd-container .camp-form .form-label {
+  margin-bottom: 0.3rem;
+}
+
+.maq-select,
+.maq-input {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  font-size: 0.88rem;
+}
+
+.maq-select:focus,
+.maq-input:focus {
+  border-color: #2a7fff;
+  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+}
+
+.maq-search .input-group-text {
+  background: #fff;
+  border-color: #e2e8f0;
+  border-right: 0;
+  border-radius: 10px 0 0 10px;
+  color: #94a3b8;
+}
+
+.maq-search .form-control {
+  border-radius: 0 10px 10px 0;
+  border-left: 0;
+}
+
+.maq-search .form-control:focus {
+  border-color: #2a7fff;
+  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+}
+
+.maq-search .btn-outline-secondary {
+  border-radius: 0 10px 10px 0;
+}
+
+/* Tableau : pastilles d'identifiants et alignement vertical propre. */
+.maq-chip {
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+}
+
+.maquettes-lmd-container .maq-table tbody td {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.maquettes-lmd-container .maq-table .camp-candidatures {
+  min-width: 2.2rem;
+}
+
+/* Actions en pilules, jamais collées au bord droit de la cellule. */
+.maquettes-lmd-container .camp-action-btn {
+  white-space: nowrap;
+}

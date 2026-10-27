@@ -1,0 +1,19 @@
+Notes à coller dans App Store Connect → App Review Information → Notes
+
+Contexte
+- L’application mobile INJS — Présences est une application de badgeage (présences) connectée à une instance INJS-LMD.
+- Le scan d’un QR code déclenche un pointage (ou l’ouverture d’une session sécurisée selon le serveur).
+
+Démo / QR code
+- L’application attend un QR code contenant un identifiant de token (UUID) fourni par le serveur INJS-LMD.
+- Pour la revue, utilisez le QR code de démonstration fourni en pièce jointe dans la soumission (image PNG) : `demo_qr_uuid.png`.
+- Le contenu (texte) encodé dans ce QR de démo est : `11111111-2222-3333-4444-555555555555`.
+
+Localisation
+- La localisation est utilisée pour vérifier la cohérence du badgeage avec le site (géofence) quand le parcours le demande.
+- La demande d’autorisation iOS apparaît via le prompt système après un court écran d’explication (sans bouton de sortie).
+
+Support
+- URL de support (publique) : https://tobi-nw.github.io/legalsygepcpfae/legal/support-qr-badge-mobile.html
+- Politique de confidentialité : https://tobi-nw.github.io/legalsygepcpfae/legal/confidentialite-qr-badge-mobile.html
+

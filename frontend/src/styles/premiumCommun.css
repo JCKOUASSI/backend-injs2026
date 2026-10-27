@@ -1,0 +1,619 @@
+/* ==========================================================================
+   KIT VISUEL PREMIUM PARTAGÉ — VARIANTE A « CLAIR RAFFINÉ »
+   Hero à vignette, panneaux à filet d'ancrage, en-têtes dégradés, pilules
+   de compteur, tableaux clairs, pastilles d'état. Préfixe `.px-*` : ce CSS
+   est importé uniquement par les pages qui l'activent (Formateurs et
+   ChargesEnseignants) — aucun effet de bord sur les autres écrans. Même
+   langage visuel que styles/coursLmd.css et styles/ecransGeneriques.css.
+   ========================================================================== */
+
+/* ── 1. HERO : vignette icône, eyebrow, titre, plaquettes ── */
+.px-hero {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem 1.6rem;
+  margin-bottom: 1.25rem;
+  background: #FFFFFF;
+  border: 1px solid #E7ECF3;
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05),
+              0 16px 40px -18px rgba(11, 31, 58, 0.18);
+  overflow: hidden;
+}
+
+/* Halo « aurore » en haut à droite (pur décor). */
+.px-hero::after {
+  content: '';
+  position: absolute;
+  top: -90px;
+  right: -60px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(42, 127, 255, 0.14), rgba(42, 127, 255, 0));
+  pointer-events: none;
+}
+
+.px-hero-icon {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0B1F3A 0%, #1E62D0 100%);
+  color: #FFFFFF;
+  font-size: 1.35rem;
+  box-shadow: 0 8px 20px -8px rgba(11, 31, 58, 0.45);
+}
+
+.px-hero-text {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.px-hero-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #2563EB;
+}
+
+.px-hero-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0B1F3A;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.px-hero-intro {
+  margin: 0;
+  max-width: 92ch;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #475569;
+}
+
+.px-hero-side {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-self: center;
+  margin-left: auto;
+}
+
+.px-plaquette {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  background: #DBEAFE;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.px-plaquette--soft {
+  background: #F1F5F9;
+  color: #475569;
+  border-color: #E2E8F0;
+}
+/* ── 2. PANNEAUX : filet d'ancrage + en-tête dégradé ──
+   Se pose sur une carte existante : `<div className="card px-panel">`.
+   Les sélecteurs composés (`.px-panel.card`) priment sur `.card` quel que
+   soit l'ordre de chargement des feuilles de style. */
+.px-panel.card {
+  position: relative;
+  border: 1px solid #E7ECF3;
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05),
+              0 16px 40px -18px rgba(11, 31, 58, 0.18);
+  margin-bottom: 1.25rem;
+  transition: box-shadow 0.2s ease;
+}
+
+.px-panel.card:hover {
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05),
+              0 20px 44px -18px rgba(11, 31, 58, 0.22);
+}
+
+.px-panel.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0B1F3A 0%, #2563EB 55%, #2A7FFF 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* En-tête de panneau (remplace .card-header-bar dans nos écrans). */
+.px-panel > .px-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1.4rem;
+  background: linear-gradient(135deg, #F5FAFF 0%, #EEF5FE 100%);
+  border-bottom: 1px solid #E9ECF2;
+}
+
+.px-panel-headtext {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.px-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0B1F3A;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.px-panel-title i {
+  color: #2A7FFF;
+  font-size: 0.95rem;
+}
+
+.px-panel-sub {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: #64748B;
+}
+
+.px-panel-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Corps de panneau sans marge intérieure (tableaux à bords pleins). */
+.px-panel > .card-body-flush {
+  padding: 0;
+}
+
+/* ── 3. PILULES DE COMPTEUR ── */
+.px-count-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  background: #EFF6FF;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.px-count-pill--muted {
+  background: #F1F5F9;
+  color: #475569;
+  border-color: #E2E8F0;
+}
+
+.px-count-pill--warn {
+  background: #FFFBEB;
+  color: #B45309;
+  border-color: #FDE68A;
+}
+
+.px-count-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+/* ── 4. BARRE D'OUTILS ET CHAMPS PIULES ── */
+.px-toolbar-body {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  padding: 1.05rem 1.4rem 1.15rem;
+}
+
+.px-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 0 1 auto;
+  min-width: 170px;
+  margin: 0;
+}
+
+/* La recherche occupe la largeur utile. */
+.px-field--recherche {
+  flex: 1 1 320px;
+  max-width: none;
+}
+
+.px-field-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+}
+
+.px-search {
+  position: relative;
+  display: block;
+}
+
+.px-search > i {
+  position: absolute;
+  left: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94A3B8;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.px-input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0.5rem 1rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  background: #F8FAFC;
+  color: #1E293B;
+  font-size: 0.87rem;
+  font-family: inherit;
+  font-weight: 500;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.px-input::placeholder {
+  color: #94A3B8;
+}
+
+.px-input:focus {
+  outline: none;
+  background: #FFFFFF;
+  border-color: #2A7FFF;
+  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.14);
+}
+
+.px-search .px-input {
+  padding-left: 2.35rem;
+}
+
+/* Select pilule avec chevron personnalisé (pas d'appearance native brut). */
+.px-select {
+  padding-right: 2.1rem;
+  font-weight: 600;
+  color: #475569;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' fill='none' stroke='%2364748B' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.95rem center;
+  background-size: 11px 7px;
+}
+
+/* Actions de la barre (bouton principal) calées à droite. */
+.px-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: auto;
+  padding-bottom: 0.1rem;
+}
+
+.px-toolbar-actions .btn {
+  border-radius: 9999px;
+  font-weight: 700;
+  padding: 0.5rem 1.1rem;
+}
+/* ── 5. TABLEAUX PREMIUM ──
+   Sélecteurs composés avec `.table` pour priment sur les styles globaux
+   (`.table th` navy de index.css) quel que soit l'ordre des feuilles. */
+.table.px-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table.px-table thead th {
+  background: #F5F8FC;
+  color: #475569;
+  border: none;
+  border-bottom: 1px solid #E7ECF3;
+  padding: 0.7rem 1rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.table.px-table thead th:first-child {
+  border-radius: 16px 0 0 0;
+}
+
+.table.px-table thead th:last-child {
+  border-radius: 0 16px 0 0;
+}
+
+.table.px-table tbody td {
+  padding: 0.72rem 1rem;
+  font-size: 0.86rem;
+  color: #334155;
+  background: #FFFFFF;
+  border-bottom: 1px solid #EEF2F7;
+}
+
+.table.px-table tbody tr:nth-child(even) td {
+  background: #FAFCFF;
+}
+
+.table.px-table tbody tr:hover td {
+  background: #F1F7FF;
+}
+
+.table.px-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Ligne sélectionnée (classe métier `table-active` conservée). */
+.table.px-table tbody tr.table-active td {
+  background: #EAF3FF;
+  color: #0B1F3A;
+  box-shadow: inset 3px 0 0 #2563EB;
+}
+
+.table.px-table td.text-muted,
+.table.px-table td[colspan] {
+  text-align: center;
+  color: #94A3B8;
+}
+
+/* Cellules de chiffres : alignées à droite et chiffres tabulaires. */
+.px-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #0B1F3A;
+}
+
+/* Tiret « valeur absente » en muted. */
+.px-dash {
+  color: #CBD5E1;
+  font-weight: 600;
+}
+
+/* ── 6. PASTILLES D'ÉTAT ET CHIPS ── */
+.px-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.24rem 0.68rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  background: #F1F5F9;
+  color: #475569;
+  border: 1px solid #E2E8F0;
+}
+
+.px-state--ok {
+  background: #ECFDF5;
+  color: #047857;
+  border-color: #A7F3D0;
+}
+
+.px-state--warn {
+  background: #FFFBEB;
+  color: #B45309;
+  border-color: #FDE68A;
+}
+
+.px-state--danger {
+  background: #FEF2F2;
+  color: #B91C1C;
+  border-color: #FECACA;
+}
+/* ── 7. PANNEAU D'ALERTE (anomalies) ──
+   Se pose sur `alert alert-warning` : les classes Bootstrap sont conservées
+   (tests métier), le habillage premium prime par spécificité. */
+.px-alert.alert-warning {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.9rem 1.15rem;
+  margin-bottom: 1.25rem;
+  background: linear-gradient(135deg, #FFFBEB 0%, #FEF6E7 100%);
+  border: 1px solid #FDE68A;
+  border-left: 4px solid #F59E0B;
+  border-radius: 14px;
+  color: #92400E;
+  font-size: 0.85rem;
+  box-shadow: 0 1px 2px rgba(146, 64, 14, 0.06),
+              0 12px 26px -20px rgba(146, 64, 14, 0.45);
+}
+
+.px-alert.alert-warning strong {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #B45309;
+  font-size: 0.87rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.px-alert.alert-warning ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.px-alert.alert-warning li {
+  color: #A16207;
+  font-weight: 500;
+}
+
+.px-alert.alert-warning li::marker {
+  color: #F59E0B;
+}
+
+/* ── 8. ÉTATS : chargement, vide, erreur ── */
+.px-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.75rem 1rem;
+}
+
+.px-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 1.75rem 1rem;
+  color: #94A3B8;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.px-empty-badge {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #EFF6FF 0%, #F8FAFF 100%);
+  border: 1px dashed #BFDBFE;
+  color: #60A5FA;
+  font-size: 1.35rem;
+}
+
+.px-error {
+  border-radius: 14px;
+  border-left: 4px solid #DC2626;
+  margin-bottom: 1.25rem;
+}
+
+/* ── 9. BOUTONS D'ACTION EN PILULES (dans nos tableaux) ── */
+.table.px-table .btn-group .btn {
+  border-radius: 9999px;
+  font-weight: 700;
+  border-color: #E2E8F0;
+  background: #FFFFFF;
+  color: #475569;
+}
+
+.table.px-table .btn-group .btn-outline-primary {
+  color: #2563EB;
+  border-color: #BFDBFE;
+}
+
+.table.px-table .btn-group .btn-outline-secondary {
+  color: #64748B;
+  border-color: #E2E8F0;
+}
+
+.table.px-table .btn-group .btn-outline-danger {
+  color: #DC2626;
+  border-color: #FECACA;
+}
+
+.table.px-table .btn-group .btn:hover {
+  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px -4px rgba(37, 99, 235, 0.5);
+  transform: translateY(-1px);
+}
+
+/* ── 10. RESPONSIVE & MOTION RÉDUITE ── */
+@media (max-width: 768px) {
+  .px-hero {
+    flex-wrap: wrap;
+    padding: 1.1rem 1.15rem;
+  }
+
+  .px-hero-side {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+
+  .px-hero-title {
+    font-size: 1.25rem;
+  }
+
+  .px-toolbar-body {
+    padding: 0.95rem 1.05rem 1.05rem;
+  }
+
+  .px-toolbar-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .px-toolbar-actions .btn {
+    width: 100%;
+  }
+
+  .px-panel > .px-panel-head {
+    padding: 0.8rem 1.05rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .px-hero,
+  .px-panel.card,
+  .px-input,
+  .table.px-table tbody tr,
+  .table.px-table .btn-group .btn {
+    transition: none !important;
+  }
+
+  .table.px-table .btn-group .btn:hover {
+    transform: none;
+  }
+}

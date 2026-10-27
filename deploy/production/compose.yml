@@ -1,0 +1,92 @@
+# ----------------------------------------------------------------------------
+# INJS-LMD — stack de production autonome (nouvelle chaîne de publication)
+#
+# Déploiement :
+#   cp deploy/production/.env.example deploy/production/.env
+#   # adapter .env : tags d'images immuables, secrets, hôtes, ports,
+#   # POSTGRES_HOST (IP/nom du conteneur PostgreSQL existant sur le réseau Docker)
+#   docker compose -f deploy/production/compose.yml --env-file deploy/production/.env up -d
+#
+# Ce compose référence des images PRÉ-BUILT (jckouassi/injs-be et
+# jckouassi/injs-fe) publiées par .github/workflows/publish-injs-lmd.yml.
+# Il ne crée PAS PostgreSQL, Redis ni RabbitMQ : la base PostgreSQL et les
+# services persistants existants sont consommés via les variables d'environnement.
+# Aucun container_name n'est utilisé (évite toute collision avec la production
+# actuelle). Aucun volume n'est jamais supprimé par ce fichier.
+#
+# Réseau : par défaut un réseau dédié est créé. Pour rejoindre un réseau Docker
+# externe déjà existant sur le VPS (ex. injs-net où PostgreSQL est accessible),
+# définir INJS_NETWORK_EXTERNAL=true et INJS_NETWORK_NAME=injs-net dans .env.
+# ----------------------------------------------------------------------------
+name: injs-lmd-production
+
+services:
+  backend:
+    image: "${INJS_BACKEND_IMAGE:-jckouassi/injs-be}:${INJS_BACKEND_TAG}"
+    entrypoint: ["/app/entrypoint.sh"]
+    command: "gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers auto --timeout 120"
+    environment:
+      DJANGO_SETTINGS_MODULE: "config.settings"
+      DEBUG: "0"
+      SECRET_KEY: "${DJANGO_SECRET_KEY}"
+      POSTGRES_DB: "${POSTGRES_DB}"
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_HOST: "${POSTGRES_HOST}"
+      POSTGRES_PORT: "${POSTGRES_PORT}"
+      DJANGO_ALLOWED_HOSTS: "${DJANGO_ALLOWED_HOSTS}"
+      CSRF_TRUSTED_ORIGINS: "${CSRF_TRUSTED_ORIGINS}"
+      CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS}"
+      PORT: "8000"
+      GUNICORN_WORKERS: "${GUNICORN_WORKERS:-auto}"
+      GUNICORN_TIMEOUT: "${GUNICORN_TIMEOUT:-120}"
+    volumes:
+      - ${INJS_HOST_MEDIA_DIR:-injs_media}:/app/media
+      - ${INJS_HOST_STATIC_DIR:-injs_staticfiles}:/app/staticfiles
+    expose:
+      - "8000"
+    networks:
+      - injs-prod
+    restart: "unless-stopped"
+    healthcheck:
+      test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health/', timeout=5)\" || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  frontend:
+    image: "${INJS_FRONTEND_IMAGE:-jckouassi/injs-fe}:${INJS_FRONTEND_TAG}"
+    expose:
+      - "80"
+    networks:
+      - injs-prod
+    restart: "unless-stopped"
+
+  gateway:
+    image: "nginx:1.27-alpine"
+    volumes:
+      - ../../docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${INJS_HOST_STATIC_DIR:-injs_staticfiles}:/app/staticfiles:ro
+      - ${INJS_HOST_MEDIA_DIR:-injs_media}:/app/media:ro
+    ports:
+      - "${INJS_PUBLIC_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    networks:
+      - injs-prod
+    restart: "unless-stopped"
+
+volumes:
+  injs_media:
+    name: ${INJS_VOLUME_MEDIA:-injs-lmd-media}
+  injs_staticfiles:
+    name: ${INJS_VOLUME_STATIC:-injs-lmd-staticfiles}
+
+networks:
+  injs-prod:
+    name: ${INJS_NETWORK_NAME:-injs-lmd-production}
+    external: ${INJS_NETWORK_EXTERNAL:-false}

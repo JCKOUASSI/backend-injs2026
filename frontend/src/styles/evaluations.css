@@ -1,0 +1,569 @@
+/* ==========================================================================
+   MODULE ÉVALUATIONS — habillage « INJS-LMD PREMIUM » (E1.3)
+   --------------------------------------------------------------------------
+   Ce fichier n'AJOUTE que le vocabulaire propre au module Évaluations. Tout le
+   langage visuel (hero, panneaux, tableaux, pastilles, états, boutons) vient
+   de styles/premiumCommun.css — aucun second design system n'est créé ici.
+   Préfixe `.ev-` pour isoler strictement ce lot du reste de l'application.
+   ========================================================================== */
+
+/* ── 1. Jetons locaux : les couleurs institutionnelles INJS-LMD ── */
+.ev-scope {
+  --ev-navy: #0B1F3A;
+  --ev-blue: #1E62D0;
+  --ev-blue-light: #2F80ED;
+  --ev-bg: #F5F8FC;
+  --ev-surface: #FFFFFF;
+  --ev-border: #E4EAF2;
+  --ev-text: #172033;
+  --ev-muted: #667085;
+
+  /* Statuts : sobres, jamais criards. */
+  --ev-ok: #047857;
+  --ev-ok-bg: #ECFDF5;
+  --ev-ok-bd: #A7F3D0;
+  --ev-warn: #B45309;
+  --ev-warn-bg: #FFFBEB;
+  --ev-warn-bd: #FDE68A;
+  --ev-danger: #B91C1C;
+  --ev-danger-bg: #FEF2F2;
+  --ev-danger-bd: #FECACA;
+  --ev-info: #1D4ED8;
+  --ev-info-bg: #EFF6FF;
+  --ev-info-bd: #BFDBFE;
+
+  background: var(--ev-bg);
+  color: var(--ev-text);
+  min-height: 100%;
+}
+
+/* ── 2. Titre de page (une seule autorité par écran) ──
+   Le `<h1>` de chaque page est dans le hero : évite le doublon visuel avec
+   un éventuel titre générique hérité. */
+.ev-scope h1.ev-titre {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--ev-navy);
+}
+
+/* ── 3. Tuile de statistique du tableau de bord ── */
+.ev-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.ev-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.05rem 1.15rem;
+  background: var(--ev-surface);
+  border: 1px solid var(--ev-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(11, 31, 58, 0.06);
+}
+
+.ev-stat-icone {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px;
+  background: var(--ev-info-bg);
+  border: 1px solid var(--ev-info-bd);
+  color: var(--ev-info);
+  font-size: 1.15rem;
+}
+
+.ev-stat-corps {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ev-stat-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ev-muted);
+}
+
+.ev-stat-valeur {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--ev-navy);
+  font-variant-numeric: tabular-nums;
+}
+
+.ev-stat--ok .ev-stat-icone { background: var(--ev-ok-bg); border-color: var(--ev-ok-bd); color: var(--ev-ok); }
+.ev-stat--warn .ev-stat-icone { background: var(--ev-warn-bg); border-color: var(--ev-warn-bd); color: var(--ev-warn); }
+
+/* Valeur absente : affichée comme telle, jamais comme 0. */
+.ev-stat-indisponible {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ev-muted);
+}
+
+/* ── 4. Répartition des états (barres descriptives) ── */
+.ev-repartition { display: flex; flex-direction: column; gap: 0.7rem; }
+
+.ev-repartition-ligne {
+  display: grid;
+  grid-template-columns: minmax(140px, 200px) 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ev-repartition-nom {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--ev-text);
+}
+
+/* Pastille d'état : toujours doublée couleur + texte (jamais la couleur seule). */
+.ev-dot {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--ev-muted);
+}
+
+.ev-dot--ok { background: var(--ev-ok); }
+.ev-dot--warn { background: var(--ev-warn); }
+.ev-dot--info { background: var(--ev-blue); }
+.ev-dot--danger { background: var(--ev-danger); }
+
+.ev-jauge {
+  height: 8px;
+  border-radius: 9999px;
+  background: #EEF2F7;
+  overflow: hidden;
+}
+
+.ev-jauge-valeur {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--ev-blue) 0%, var(--ev-blue-light) 100%);
+}
+
+.ev-repartition-compte {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ev-navy);
+  font-variant-numeric: tabular-nums;
+  min-width: 2.2rem;
+  text-align: right;
+}
+
+/* ── 5. Cartes du contrôle (une carte par évaluation) ── */
+.ev-cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.ev-carte {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1.1rem 1.2rem;
+  background: var(--ev-surface);
+  border: 1px solid var(--ev-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(11, 31, 58, 0.06);
+}
+
+.ev-carte-ecue {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--ev-navy);
+  letter-spacing: -0.01em;
+}
+
+.ev-carte-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.79rem;
+  color: var(--ev-muted);
+}
+
+.ev-carte-pied {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 0.35rem;
+}
+
+/* ── 6. Champ de note avec indication de barème ── */
+.ev-note-cellule { display: flex; align-items: center; gap: 0.4rem; }
+
+.ev-note-input {
+  width: 92px;
+  min-height: 34px;
+  padding: 0.35rem 0.6rem;
+  text-align: right;
+  font-size: 0.86rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ev-navy);
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  background: #F8FAFC;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.ev-note-input:focus {
+  outline: none;
+  background: #FFFFFF;
+  border-color: var(--ev-blue-light);
+  box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.16);
+}
+
+.ev-note-input:disabled {
+  background: #F1F5F9;
+  color: var(--ev-muted);
+  cursor: not-allowed;
+}
+
+/* Le zéro est une valeur réelle : jamais assimilé à « vide ». */
+.ev-note-input.ev-note-zero {
+  color: var(--ev-warn);
+  border-color: var(--ev-warn-bd);
+  background: var(--ev-warn-bg);
+}
+
+.ev-note-bareme {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ev-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── 7. Bandeau de contexte (en-tête de saisie) ── */
+.ev-contexte {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.25rem;
+  margin-bottom: 1.1rem;
+  background: var(--ev-surface);
+  border: 1px solid var(--ev-border);
+  border-radius: 14px;
+}
+
+.ev-contexte-item { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+
+.ev-contexte-label {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ev-muted);
+}
+
+.ev-contexte-valeur {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ev-navy);
+  overflow-wrap: anywhere;
+}
+
+/* ── 8. Panneau d'erreur typé (401 / 403 / 404 / autre) ── */
+.ev-erreur {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.15rem 1.3rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--ev-danger-bd);
+  border-left: 4px solid #DC2626;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #FEF2F2 0%, #FFF7F7 100%);
+  color: #7F1D1D;
+}
+
+.ev-erreur-titre {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #B91C1C;
+}
+
+.ev-erreur-detail { font-size: 0.84rem; font-weight: 500; color: #991B1B; }
+.ev-erreur-actions { margin-top: 0.35rem; }
+
+.ev-erreur--401,
+.ev-erreur--403,
+.ev-erreur--404 {
+  border-color: var(--ev-info-bd);
+  border-left-color: var(--ev-blue);
+  background: linear-gradient(135deg, #EFF6FF 0%, #F7FBFF 100%);
+  color: #1E3A8A;
+}
+
+.ev-erreur--401 .ev-erreur-titre,
+.ev-erreur--403 .ev-erreur-titre,
+.ev-erreur--404 .ev-erreur-titre { color: #1D4ED8; }
+
+.ev-erreur--401 .ev-erreur-detail,
+.ev-erreur--403 .ev-erreur-detail,
+.ev-erreur--404 .ev-erreur-detail { color: #1E40AF; }
+
+/* ── 9. Écran de fonctionnalité indisponible (délibérations, relevés) ── */
+.ev-indisponible {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 640px;
+  margin: 2.5rem auto;
+  padding: 2.5rem 1.75rem;
+  text-align: center;
+  background: var(--ev-surface);
+  border: 1px solid var(--ev-border);
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(11, 31, 58, 0.06);
+}
+
+.ev-indisponible-icone {
+  width: 66px;
+  height: 66px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--ev-info-bg) 0%, #F8FAFF 100%);
+  border: 1px solid var(--ev-info-bd);
+  color: var(--ev-blue);
+  font-size: 1.85rem;
+}
+
+.ev-indisponible-titre {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--ev-navy);
+  letter-spacing: -0.02em;
+}
+
+.ev-indisponible-texte {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--ev-muted);
+  max-width: 52ch;
+}
+
+.ev-indisponible-note { font-size: 0.78rem; color: var(--ev-muted); opacity: 0.85; }
+
+/* ── 10. Squelettes de chargement ── */
+.ev-skeleton {
+  background: linear-gradient(90deg, #EEF2F7 25%, #F8FAFC 50%, #EEF2F7 75%);
+  background-size: 200% 100%;
+  animation: ev-shimmer 1.4s ease-in-out infinite;
+  border-radius: 10px;
+}
+
+.ev-skeleton-ligne { height: 14px; margin-bottom: 0.55rem; }
+.ev-skeleton-tuile { height: 84px; }
+.ev-skeleton-titre { height: 26px; width: 45%; margin-bottom: 0.8rem; }
+
+@keyframes ev-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ev-skeleton { animation: none; }
+  .ev-note-input { transition: none; }
+}
+
+/* ── 11. Segments de navigation (ECUE / UE / Semestre, Tous / À contrôler) ── */
+.ev-segments {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: #F1F5F9;
+  border: 1px solid var(--ev-border);
+  border-radius: 9999px;
+  flex-wrap: wrap;
+}
+
+.ev-segment {
+  padding: 0.4rem 1rem;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.ev-segment:hover { color: var(--ev-navy); }
+
+.ev-segment[aria-pressed='true'] {
+  background: var(--ev-surface);
+  color: var(--ev-blue);
+  box-shadow: 0 2px 6px rgba(11, 31, 58, 0.08);
+}
+
+.ev-segment:focus-visible,
+.ev-note-input:focus-visible,
+.ev-btn:focus-visible,
+.ev-retour:focus-visible {
+  outline: 2px solid var(--ev-blue-light);
+  outline-offset: 2px;
+}
+
+/* ── 12. Boutons ── */
+.ev-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  font-size: 0.84rem;
+  font-weight: 700;
+  font-family: inherit;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.ev-btn--primary {
+  background: linear-gradient(135deg, var(--ev-blue) 0%, var(--ev-blue-light) 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px -4px rgba(30, 98, 208, 0.5);
+}
+
+.ev-btn--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1A55B8 0%, var(--ev-blue) 100%);
+}
+
+.ev-btn--ghost {
+  background: var(--ev-surface);
+  border-color: var(--ev-border);
+  color: #475569;
+}
+
+.ev-btn--ghost:hover:not(:disabled) {
+  border-color: #BFDBFE;
+  color: var(--ev-blue);
+  background: var(--ev-info-bg);
+}
+
+.ev-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.ev-retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ev-blue);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.ev-retour:hover { text-decoration: underline; }
+
+/* ── 13. Bandeau de verrouillage ── */
+.ev-verrou {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ev-verrou--bloque {
+  background: var(--ev-warn-bg);
+  border: 1px solid var(--ev-warn-bd);
+  color: var(--ev-warn);
+}
+
+.ev-verrou--ouvert {
+  background: var(--ev-ok-bg);
+  border: 1px solid var(--ev-ok-bd);
+  color: var(--ev-ok);
+}
+
+/* ── 14. Badges d'état (texte + couleur, jamais la couleur seule) ── */
+.ev-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.24rem 0.68rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  background: #F1F5F9;
+  color: #475569;
+  border: 1px solid var(--ev-border);
+}
+
+.ev-badge--info { background: var(--ev-info-bg); color: var(--ev-info); border-color: var(--ev-info-bd); }
+.ev-badge--ok { background: var(--ev-ok-bg); color: var(--ev-ok); border-color: var(--ev-ok-bd); }
+.ev-badge--warn { background: var(--ev-warn-bg); color: var(--ev-warn); border-color: var(--ev-warn-bd); }
+.ev-badge--danger { background: var(--ev-danger-bg); color: var(--ev-danger); border-color: var(--ev-danger-bd); }
+
+/* ── 15. Tableau : conteneur scrollable sur mobile ── */
+.ev-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ev-table-scroll .table { min-width: 720px; }
+
+@media (max-width: 768px) {
+  .ev-cartes { grid-template-columns: 1fr; }
+  .ev-stats { grid-template-columns: 1fr; }
+  .ev-contexte { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+  .ev-segments { width: 100%; }
+  .ev-segment { flex: 1 1 auto; }
+  .ev-indisponible { margin: 1.25rem auto; padding: 1.75rem 1.1rem; }
+  .ev-scope h1.ev-titre { font-size: 1.3rem; }
+  .ev-repartition-ligne { grid-template-columns: 1fr; gap: 0.3rem; }
+  .ev-repartition-compte { text-align: left; }
+}

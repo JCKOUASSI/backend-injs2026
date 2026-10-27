@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Configuration de sécurité réseau (production).
+  • HTTPS obligatoire pour tout le trafic.
+  • Les builds debug utilisent leur propre AndroidManifest (src/debug/) qui
+    ajoute usesCleartextTraffic="true" pour autoriser le HTTP en LAN.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

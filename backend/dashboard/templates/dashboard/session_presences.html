@@ -1,0 +1,251 @@
+{% extends "dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block title %}Présences — {{ session.intitule|default:"Séance" }} {{ session.numero }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'web-dashboard' %}">Accueil</a></li>
+<li class="breadcrumb-item"><a href="{% url 'web-formations' %}">Formations</a></li>
+<li class="breadcrumb-item"><a href="{% url 'web-formation-detail' formation.id %}">{{ formation.titre }}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'web-sessions-history' formation.id %}">Historique</a></li>
+<li class="breadcrumb-item active">{{ session.intitule|default:"Séance" }} {{ session.numero }}</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+    <div>
+        <h4 class="mb-1">
+            <i class="bi bi-people me-2"></i>Présences — {{ session.intitule|default:"Séance" }} {{ session.numero }}
+        </h4>
+        <p class="text-muted mb-0">
+            {{ formation.titre }} · {{ session.date_journee|date:"d/m/Y" }}
+            {% if session.heure_debut_prevue %} · {{ session.heure_debut_prevue|time:"H:i" }}{% endif %}
+            {% if session.heure_fin_prevue %} → {{ session.heure_fin_prevue|time:"H:i" }}{% endif %}
+            —
+            {% if session.est_en_cours %}
+                <span class="badge bg-success">En cours</span>
+            {% elif session.est_terminee %}
+                <span class="badge bg-secondary">Terminée</span>
+            {% else %}
+                <span class="badge bg-info">Planifiée</span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="btn-group">
+        <a href="{% url 'export-pdf-session' session.id %}" class="btn btn-outline-danger" target="_blank">
+            <i class="bi bi-file-pdf me-1"></i>PDF
+        </a>
+        <a href="{% url 'export-excel-session' session.id %}" class="btn btn-outline-success" target="_blank">
+            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+        </a>
+        <a href="{% url 'web-sessions-history' formation.id %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Retour
+        </a>
+    </div>
+</div>
+
+<!-- Statistiques -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card card-modern text-center">
+            <div class="card-body py-3">
+                <div class="fs-3 fw-bold">{{ nb_inscrits }}</div>
+                <small class="text-muted">Inscrits</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card card-modern text-center border-success">
+            <div class="card-body py-3">
+                <div class="fs-3 fw-bold text-success">{{ nb_presents }}</div>
+                <small class="text-muted">Présents</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card card-modern text-center border-danger">
+            <div class="card-body py-3">
+                <div class="fs-3 fw-bold text-danger">{{ nb_absents }}</div>
+                <small class="text-muted">Absents</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card card-modern text-center border-primary">
+            <div class="card-body py-3">
+                <div class="fs-3 fw-bold text-primary">{{ taux }}%</div>
+                <small class="text-muted">Taux de présence</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Barre de progression -->
+{% if nb_inscrits %}
+<div class="progress mb-4" style="height: 24px;">
+    <div class="progress-bar bg-success" role="progressbar"
+     style="--w: {{ taux }}%; width: var(--w);"
+     aria-valuenow="{{ taux }}" aria-valuemin="0" aria-valuemax="100">
+        {{ taux }}% présents
+    </div>
+</div>
+{% endif %}
+
+<!-- Formateurs présents -->
+{% if pointages_formateurs %}
+<div class="card card-modern mb-4">
+    <div class="card-header">
+        <i class="bi bi-person-video3 me-2"></i>Enseignants présents ({{ pointages_formateurs|length }})
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table table-modern table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Spécialité</th>
+                    <th>Entrée</th>
+                    <th>Sortie</th>
+                    <th>Durée</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in pointages_formateurs %}
+                <tr>
+                    <td>
+                        <strong>{{ p.formateur.nom }} {{ p.formateur.prenom }}</strong>
+                    </td>
+                    <td><small class="text-muted">{{ p.formateur.specialite|default:"—" }}</small></td>
+                    <td><small>{{ p.timestamp_entree|date:"H:i" }}</small></td>
+                    <td>
+                        {% if p.timestamp_sortie %}
+                            <small>{{ p.timestamp_sortie|date:"H:i" }}</small>
+                        {% else %}
+                            <span class="text-success"><i class="bi bi-broadcast me-1"></i>En salle</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.duree_presence_minutes %}
+                            {{ p.duree_presence_minutes }} min
+                        {% elif not p.timestamp_sortie %}
+                            <small class="text-muted">—</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.statut == 'EN_COURS' %}
+                            <span class="badge bg-success">En salle</span>
+                        {% elif p.statut == 'TERMINE' %}
+                            <span class="badge bg-secondary">Terminé</span>
+                        {% else %}
+                            <span class="badge bg-warning">{{ p.get_statut_display }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Participants présents -->
+<div class="card card-modern mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-people-fill me-2"></i>Participants présents ({{ pointages_participants|length }})</span>
+    </div>
+    <div class="card-body p-0">
+        {% if pointages_participants %}
+        <div class="table-responsive">
+            <table class="table table-modern table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>N°</th>
+                        <th>Nom</th>
+                        <th>Prénom</th>
+                        <th>Entrée</th>
+                        <th>Sortie</th>
+                        <th>Durée</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in pointages_participants %}
+                    <tr>
+                        <td><code>{{ p.participant.numero }}</code></td>
+                        <td><strong>{{ p.participant.nom }}</strong></td>
+                        <td>{{ p.participant.prenom }}</td>
+                        <td><small>{{ p.timestamp_entree|date:"H:i" }}</small></td>
+                        <td>
+                            {% if p.timestamp_sortie %}
+                                <small>{{ p.timestamp_sortie|date:"H:i" }}</small>
+                            {% else %}
+                                <span class="text-success"><i class="bi bi-broadcast me-1"></i>En salle</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.duree_presence_minutes %}
+                                {{ p.duree_presence_minutes }} min
+                            {% elif not p.timestamp_sortie %}
+                                <small class="text-muted">—</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.statut == 'EN_COURS' %}
+                                <span class="badge bg-success">En salle</span>
+                            {% elif p.statut == 'TERMINE' %}
+                                <span class="badge bg-secondary">Terminé</span>
+                            {% else %}
+                                <span class="badge bg-warning">{{ p.get_statut_display }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4">
+            <i class="bi bi-person-x" style="font-size:2.5rem;opacity:0.3;"></i>
+            <p class="mt-2 mb-0">Aucun participant pointé pour cette séance.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Participants absents -->
+{% if absents %}
+<div class="card card-modern mb-4 border-danger">
+    <div class="card-header bg-danger bg-opacity-10">
+        <i class="bi bi-person-x me-2 text-danger"></i>Absents ({{ nb_absents }})
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-modern table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>N°</th>
+                        <th>Nom</th>
+                        <th>Prénom</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in absents %}
+                    <tr class="table-danger bg-opacity-10">
+                        <td><code>{{ a.numero }}</code></td>
+                        <td><strong>{{ a.nom }}</strong></td>
+                        <td>{{ a.prenom }}</td>
+                        <td><small class="text-muted">{{ a.email|default:"—" }}</small></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

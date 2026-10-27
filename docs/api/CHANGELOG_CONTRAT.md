@@ -1,0 +1,708 @@
+# Changelog du contrat d’API (P00-08)
+
+Ce fichier est alimenté **exclusivement** par la commande :
+
+```
+python manage.py update_api_contract --justification "…"
+```
+
+Les **ajouts** de routes/clés sont des extensions non cassantes ; les **retraits ou renommages** sont des ruptures de contrat qui doivent être explicitement justifiés (et coordonnés avec les clients de l’API).
+
+
+## 2026-09-13 12:10 UTC
+
+**Génération initiale du contrat.**
+
+- Justification : P00-08 : génération initiale du contrat de référence (schéma actuel, aucun comportement modifié).
+- Routes figées : 529
+
+## 2026-09-13 18:00 UTC
+
+- **Justification :** P01-01 [LOT 1] : ajout du noyau core et du journal d'audit unifie (GET /api/core/audit/ et detail par code, lecture seule, derriere flag.lot01 et roles d'audit). Aucune route existante modifiee.
+- Routes dans le contrat : 531
+- **Ruptures (retraits/renommages) : 0**
+  - _aucune_
+- Ajouts (extensions non cassantes) : 2
+  - Route supprimée ou renommée : GET /api/core/audit/
+  - Route supprimée ou renommée : GET /api/core/audit/{code}/
+
+## 2026-09-14 03:01 UTC
+
+- **Justification :** U2 CURP : ajout des routes /api/habilitations/ (mes-acces, evaluer, observations, référentiels en lecture) ; aucune route existante modifiée.
+- Routes dans le contrat : 537
+- **Ruptures (retraits/renommages) : 0**
+  - _aucune_
+- Ajouts (extensions non cassantes) : 6
+  - Route supprimée ou renommée : GET /api/habilitations/mes-acces/
+  - Route supprimée ou renommée : GET /api/habilitations/observations/synthese/
+  - Route supprimée ou renommée : GET /api/habilitations/permissions/
+  - Route supprimée ou renommée : GET /api/habilitations/roles/
+  - Route supprimée ou renommée : POST /api/habilitations/evaluer/
+  - Route supprimée ou renommée : POST /api/habilitations/observations/remettre-a-zero/
+
+## 2026-09-14 04:56 UTC
+
+- **Justification :** U3 CURP : peuplement du referentiel roles/permissions (annexes A1-A6) ; ajout de deux cles en lecture dans GET /api/habilitations/roles/ (incompatible_avec, permissions_count) ; aucune route ajoutee, modifiee ou supprimee.
+- Routes dans le contrat : 537
+- **Ruptures (retraits/renommages) : 0**
+  - _aucune_
+- Ajouts (extensions non cassantes) : 2
+  - GET /api/habilitations/roles/ — clé de réponse 200 supprimée : GET /api/habilitations/roles/ → réponse 200.results.[].incompatible_avec
+  - GET /api/habilitations/roles/ — clé de réponse 200 supprimée : GET /api/habilitations/roles/ → réponse 200.results.[].permissions_count
+
+## 2026-09-14 05:51 UTC
+
+- **Justification :** U4 CURP : console web d administration des comptes derriere flag.curp_ui_admin (off par defaut) et trio administrateur ; nouvelles routes /api/habilitations/ : comptes (creation, fiche, differentiel obligatoire, modification, statuts), personnes, roles detail, matrice, journal + integrite, derogations, delegations, import-simuler (apercu), revue consultative. Aucune route existante modifiee ni rompue, aucun refus applique (moteur en observation).
+- Routes dans le contrat : 556
+- **Ruptures (retraits/renommages) : 0**
+  - _aucune_
+- Ajouts (extensions non cassantes) : 19
+  - Route supprimée ou renommée : GET /api/habilitations/comptes/
+  - Route supprimée ou renommée : GET /api/habilitations/comptes/revue/
+  - Route supprimée ou renommée : GET /api/habilitations/comptes/{id}/
+  - Route supprimée ou renommée : GET /api/habilitations/delegations/
+  - Route supprimée ou renommée : GET /api/habilitations/derogations/
+  - Route supprimée ou renommée : GET /api/habilitations/journal/
+  - Route supprimée ou renommée : GET /api/habilitations/journal/integrite/
+  - Route supprimée ou renommée : GET /api/habilitations/matrice/
+  - Route supprimée ou renommée : GET /api/habilitations/personnes/
+  - Route supprimée ou renommée : GET /api/habilitations/roles/{code}/
+  - Route supprimée ou renommée : PATCH /api/habilitations/comptes/{id}/modifier/
+  - Route supprimée ou renommée : POST /api/habilitations/comptes/
+  - Route supprimée ou renommée : POST /api/habilitations/comptes/import-simuler/
+  - Route supprimée ou renommée : POST /api/habilitations/comptes/{id}/simuler-modification/
+  - Route supprimée ou renommée : POST /api/habilitations/comptes/{id}/statut/
+  - Route supprimée ou renommée : POST /api/habilitations/delegations/
+  - Route supprimée ou renommée : POST /api/habilitations/delegations/{id}/terminer/
+  - Route supprimée ou renommée : POST /api/habilitations/derogations/
+  - Route supprimée ou renommée : POST /api/habilitations/derogations/{id}/revoquer/
+
+## 2026-09-15 03:04 UTC
+
+- **Justification :** GET-INJS (lot L8, 4e453e7) : le détail creneaux-types/{id} passe de POST à PUT/PATCH (contrat EDT v1.1, addendum docs/EDT_CONTRAT_DONNEES.md) ; LOT 5 (U8) : ajout non cassant du champ perimetres aux lignes d'attribution de la console CURP. Routes et clés retirées hors EDT : aucune.
+- Routes dans le contrat : 634
+- **Ruptures (retraits/renommages) : 1**
+  - Route supprimée ou renommée : POST /api/edts/creneaux-types/{id}/
+- Ajouts (extensions non cassantes) : 79
+  - Route supprimée ou renommée : DELETE /api/edts/creneaux-types/{id}/
+  - Route supprimée ou renommée : DELETE /api/habilitations/organisation/departements/{id}/comptes/
+  - Route supprimée ou renommée : DELETE /api/habilitations/organisation/services/{id}/comptes/
+  - Route supprimée ou renommée : DELETE /api/timetable/affectations/{id}/
+  - Route supprimée ou renommée : DELETE /api/timetable/creneaux-types/{id}/
+  - Route supprimée ou renommée : DELETE /api/timetable/emplois/{id}/
+  - Route supprimée ou renommée : GET /api/edts/emplois/{id}/export.csv/
+  - Route supprimée ou renommée : GET /api/edts/emplois/{id}/grille/
+  - Route supprimée ou renommée : GET /api/edts/referentiel-enseignants/
+  - Route supprimée ou renommée : GET /api/habilitations/comptes/imports/{reference}/
+  - Route supprimée ou renommée : GET /api/habilitations/comptes/{id}/effective-permissions/
+  - Route supprimée ou renommée : GET /api/habilitations/notifications/
+  - Route supprimée ou renommée : GET /api/habilitations/organisation/departements/
+  - Route supprimée ou renommée : GET /api/habilitations/organisation/departements/{id}/
+  - Route supprimée ou renommée : GET /api/habilitations/organisation/directions/
+  - Route supprimée ou renommée : GET /api/habilitations/organisation/directions/{id}/
+  - Route supprimée ou renommée : GET /api/habilitations/organisation/services/
+  - Route supprimée ou renommée : GET /api/habilitations/organisation/services/{id}/
+  - Route supprimée ou renommée : GET /api/habilitations/propositions/
+  - Route supprimée ou renommée : GET /api/timetable/affectations/
+  - Route supprimée ou renommée : GET /api/timetable/affectations/{id}/
+  - Route supprimée ou renommée : GET /api/timetable/conflits/
+  - Route supprimée ou renommée : GET /api/timetable/creneaux-types/
+  - Route supprimée ou renommée : GET /api/timetable/creneaux-types/{id}/
+  - Route supprimée ou renommée : GET /api/timetable/emplois/
+  - Route supprimée ou renommée : GET /api/timetable/emplois/{id}/
+  - Route supprimée ou renommée : GET /api/timetable/emplois/{id}/export.csv/
+  - Route supprimée ou renommée : GET /api/timetable/emplois/{id}/grille/
+  - Route supprimée ou renommée : GET /api/timetable/publics/
+  - Route supprimée ou renommée : GET /api/timetable/referentiel-enseignants/
+  - Route supprimée ou renommée : PATCH /api/edts/creneaux-types/{id}/
+  - Route supprimée ou renommée : PATCH /api/habilitations/organisation/departements/{id}/
+  - Route supprimée ou renommée : PATCH /api/habilitations/organisation/directions/{id}/
+  - Route supprimée ou renommée : PATCH /api/habilitations/organisation/services/{id}/
+  - Route supprimée ou renommée : PATCH /api/timetable/affectations/{id}/
+  - Route supprimée ou renommée : PATCH /api/timetable/creneaux-types/{id}/
+  - Route supprimée ou renommée : PATCH /api/timetable/emplois/{id}/
+  - Route supprimée ou renommée : POST /api/auth/mfa/confirm/
+  - Route supprimée ou renommée : POST /api/auth/mfa/disable/
+  - Route supprimée ou renommée : POST /api/auth/mfa/setup/
+  - Route supprimée ou renommée : POST /api/auth/mfa/verify/
+  - Route supprimée ou renommée : POST /api/edts/affectations/{id}/deplacer/
+  - Route supprimée ou renommée : POST /api/edts/creneaux-types/
+  - Route supprimée ou renommée : POST /api/edts/emplois/{id}/archiver/
+  - Route supprimée ou renommée : POST /api/edts/emplois/{id}/depublier/
+  - Route supprimée ou renommée : POST /api/edts/emplois/{id}/generer/
+  - Route supprimée ou renommée : POST /api/edts/emplois/{id}/publier/
+  - Route supprimée ou renommée : POST /api/edts/emplois/{id}/soumettre/
+  - Route supprimée ou renommée : POST /api/habilitations/comptes/imports/
+  - Route supprimée ou renommée : POST /api/habilitations/comptes/imports/{reference}/annuler/
+  - Route supprimée ou renommée : POST /api/habilitations/delegations/{id}/action/
+  - Route supprimée ou renommée : POST /api/habilitations/delegations/{id}/activer/
+  - Route supprimée ou renommée : POST /api/habilitations/notifications/tout-lire/
+  - Route supprimée ou renommée : POST /api/habilitations/notifications/{id}/lire/
+  - Route supprimée ou renommée : POST /api/habilitations/organisation/departements/
+  - Route supprimée ou renommée : POST /api/habilitations/organisation/departements/{id}/comptes/
+  - Route supprimée ou renommée : POST /api/habilitations/organisation/directions/
+  - Route supprimée ou renommée : POST /api/habilitations/organisation/services/
+  - Route supprimée ou renommée : POST /api/habilitations/organisation/services/{id}/comptes/
+  - Route supprimée ou renommée : POST /api/habilitations/propositions/{id}/approuver/
+  - Route supprimée ou renommée : POST /api/habilitations/propositions/{id}/rejeter/
+  - Route supprimée ou renommée : POST /api/habilitations/provisions/scanner/
+  - Route supprimée ou renommée : POST /api/timetable/affectations/
+  - Route supprimée ou renommée : POST /api/timetable/affectations/{id}/deplacer/
+  - Route supprimée ou renommée : POST /api/timetable/conflits/
+  - Route supprimée ou renommée : POST /api/timetable/conflits/{id}/resoudre/
+  - Route supprimée ou renommée : POST /api/timetable/creneaux-types/
+  - Route supprimée ou renommée : POST /api/timetable/emplois/
+  - Route supprimée ou renommée : POST /api/timetable/emplois/{id}/archiver/
+  - Route supprimée ou renommée : POST /api/timetable/emplois/{id}/conflits/
+  - Route supprimée ou renommée : POST /api/timetable/emplois/{id}/depublier/
+  - Route supprimée ou renommée : POST /api/timetable/emplois/{id}/generer/
+  - Route supprimée ou renommée : POST /api/timetable/emplois/{id}/publier/
+  - Route supprimée ou renommée : POST /api/timetable/emplois/{id}/soumettre/
+  - Route supprimée ou renommée : POST /api/timetable/emplois/{id}/valider/
+  - Route supprimée ou renommée : PUT /api/edts/creneaux-types/{id}/
+  - Route supprimée ou renommée : PUT /api/timetable/affectations/{id}/
+  - Route supprimée ou renommée : PUT /api/timetable/creneaux-types/{id}/
+  - Route supprimée ou renommée : PUT /api/timetable/emplois/{id}/
+
+## 2026-09-15 03:41 UTC
+
+- **Justification :** Lot A refonte (modèle 13) : ajout de l'API organigramme unifié /api/administrations/organigramme/* (10 routes lecture/écriture, secrétariats rattachés) — aucune route retirée ; /secretariats reste monté (redirect frontend).
+- Routes dans le contrat : 657
+- **Ruptures (retraits/renommages) : 0**
+  - _aucune_
+- Ajouts (extensions non cassantes) : 23
+  - Route supprimée ou renommée : DELETE /api/administrations/organigramme/departements/{id}/
+  - Route supprimée ou renommée : DELETE /api/administrations/organigramme/directions/{id}/
+  - Route supprimée ou renommée : DELETE /api/administrations/organigramme/secretariats/{id}/
+  - Route supprimée ou renommée : DELETE /api/administrations/organigramme/services/{id}/
+  - Route supprimée ou renommée : GET /api/administrations/organigramme/arbre/
+  - Route supprimée ou renommée : GET /api/administrations/organigramme/departements/
+  - Route supprimée ou renommée : GET /api/administrations/organigramme/departements/{id}/
+  - Route supprimée ou renommée : GET /api/administrations/organigramme/directions/
+  - Route supprimée ou renommée : GET /api/administrations/organigramme/directions/{id}/
+  - Route supprimée ou renommée : GET /api/administrations/organigramme/responsables/
+  - Route supprimée ou renommée : GET /api/administrations/organigramme/secretariats/
+  - Route supprimée ou renommée : GET /api/administrations/organigramme/secretariats/{id}/
+  - Route supprimée ou renommée : GET /api/administrations/organigramme/services/
+  - Route supprimée ou renommée : GET /api/administrations/organigramme/services/{id}/
+  - Route supprimée ou renommée : GET /api/administrations/organigramme/types-secretariat/
+  - Route supprimée ou renommée : PATCH /api/administrations/organigramme/departements/{id}/
+  - Route supprimée ou renommée : PATCH /api/administrations/organigramme/directions/{id}/
+  - Route supprimée ou renommée : PATCH /api/administrations/organigramme/secretariats/{id}/
+  - Route supprimée ou renommée : PATCH /api/administrations/organigramme/services/{id}/
+  - Route supprimée ou renommée : POST /api/administrations/organigramme/departements/
+  - Route supprimée ou renommée : POST /api/administrations/organigramme/directions/
+  - Route supprimée ou renommée : POST /api/administrations/organigramme/secretariats/
+  - Route supprimée ou renommée : POST /api/administrations/organigramme/services/
+
+## 2026-09-15 04:10 UTC
+
+- **Justification :** Lot C refonte (modèle 08 appliqué à l'EDT) : ajout de 6 routes /api/presences/seances-edt/* (QR de séance LMD, scan, liste nominative, émargement manuel à motif, clôture auto) + 10 routes organigramme déjà inscrites au lot A — aucune rupture ; Pointage.session assoupli en nullable (migration additive).
+- Routes dans le contrat : 664
+- **Ruptures (retraits/renommages) : 0**
+  - _aucune_
+- Ajouts (extensions non cassantes) : 7
+  - Route supprimée ou renommée : GET /api/presences/seances-edt/du-jour/
+  - Route supprimée ou renommée : GET /api/presences/seances-edt/{id}/presences/
+  - Route supprimée ou renommée : GET /api/presences/seances-edt/{id}/qr/
+  - Route supprimée ou renommée : POST /api/presences/seances-edt/scan/
+  - Route supprimée ou renommée : POST /api/presences/seances-edt/{id}/autoclore/
+  - Route supprimée ou renommée : POST /api/presences/seances-edt/{id}/emargement/
+  - Route supprimée ou renommée : POST /api/presences/seances-edt/{id}/qr/
+
+## 2026-09-15 04:28 UTC
+
+- **Justification :** Lot B refonte (modèle 04) : ajout de GET /api/scolarite/pedagogie/cours/ (vue Enseignements LMD) et expos des descripteurs de cycle sur /api/formations/ref/formations/ ; Formation.ref_formation (lien D3) ajouté en écriture — aucune route retirée.
+- Routes dans le contrat : 665
+- **Ruptures (retraits/renommages) : 0**
+  - _aucune_
+- Ajouts (extensions non cassantes) : 17
+  - GET /api/formations/ — clé de réponse 200 supprimée : GET /api/formations/ → réponse 200.results.[].ref_formation
+  - GET /api/formations/ — clé de réponse 200 supprimée : GET /api/formations/ → réponse 200.results.[].ref_formation_intitule
+  - GET /api/formations/{id}/ — clé de réponse 200 supprimée : GET /api/formations/{id}/ → réponse 200.ref_formation
+  - GET /api/formations/{id}/ — clé de réponse 200 supprimée : GET /api/formations/{id}/ → réponse 200.ref_formation_intitule
+  - Route supprimée ou renommée : GET /api/scolarite/pedagogie/cours/
+  - PATCH /api/formations/{id}/ — clé de requête supprimée : PATCH /api/formations/{id}/ → requête.ref_formation
+  - PATCH /api/formations/{id}/ — clé de requête supprimée : PATCH /api/formations/{id}/ → requête.ref_formation_intitule
+  - PATCH /api/formations/{id}/ — clé de réponse 200 supprimée : PATCH /api/formations/{id}/ → réponse 200.ref_formation
+  - PATCH /api/formations/{id}/ — clé de réponse 200 supprimée : PATCH /api/formations/{id}/ → réponse 200.ref_formation_intitule
+  - POST /api/formations/ — clé de requête supprimée : POST /api/formations/ → requête.ref_formation
+  - POST /api/formations/ — clé de requête supprimée : POST /api/formations/ → requête.ref_formation_intitule
+  - POST /api/formations/ — clé de réponse 201 supprimée : POST /api/formations/ → réponse 201.ref_formation
+  - POST /api/formations/ — clé de réponse 201 supprimée : POST /api/formations/ → réponse 201.ref_formation_intitule
+  - PUT /api/formations/{id}/ — clé de requête supprimée : PUT /api/formations/{id}/ → requête.ref_formation
+  - PUT /api/formations/{id}/ — clé de requête supprimée : PUT /api/formations/{id}/ → requête.ref_formation_intitule
+  - PUT /api/formations/{id}/ — clé de réponse 200 supprimée : PUT /api/formations/{id}/ → réponse 200.ref_formation
+  - PUT /api/formations/{id}/ — clé de réponse 200 supprimée : PUT /api/formations/{id}/ → réponse 200.ref_formation_intitule
+
+## 2026-09-15 09:31 UTC
+
+- **Justification :** Refonte — écart n°2 résolu : GET/PATCH /api/stats/notifications/recues/ (cloche d'alertes d'absence, incluant les alertes nées d'une clôture de séance LMD) ; aucune route retirée.
+- Routes dans le contrat : 667
+- **Ruptures (retraits/renommages) : 0**
+  - _aucune_
+- Ajouts (extensions non cassantes) : 2
+  - Route supprimée ou renommée : GET /api/stats/notifications/recues/
+  - Route supprimée ou renommée : PATCH /api/stats/notifications/recues/
+
+## 2026-10-20 10:18 UTC
+
+- **Justification :** LOT 3 : ajout de POST /api/edts/lmd/generate-coordinated/ (generation coordonnee multi-filieres INJS, RBAC IsEdtPlanification) ; aucune route existante ajoutee, modifiee ni supprimee. Renouvellement du snapshot egalement rattrape les routes /api/v1/*, /api/evaluations-academiques/*, /api/edts/lmd/* et /api/timetable/lmd/* livrees par les lots anterieurs et jamais figees (extensions non cassantes, aucune rupture).
+- Routes dans le contrat : 1097
+- **Ruptures (retraits/renommages) : 0**
+  - _aucune_
+- Ajouts (extensions non cassantes) : 453
+  - Route supprimée ou renommée : DELETE /api/v1/auth/users/{id}/
+  - Route supprimée ou renommée : DELETE /api/v1/evaluations/questionnaires/{id}/
+  - Route supprimée ou renommée : DELETE /api/v1/evaluations/questionnaires/{questionnaire_pk}/questions/{id}/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/formateurs/{id}/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/participants/{id}/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/ref/batiments/{id}/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/ref/categories/{id}/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/ref/formations/{id}/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/ref/grades/{id}/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/ref/modules/{id}/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/ref/salles/{id}/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/ref/sites/{id}/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/ref/types-secretariat/{id}/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/ref/vagues/{id}/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/secretariats/{id}/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/{formation_pk}/modules/{module_pk}/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/{formation_pk}/modules/{module_pk}/formateurs/{formateur_id}/remove/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/{formation_pk}/modules/{module_pk}/notes/colonnes/{colonne_pk}/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/{formation_pk}/modules/{module_pk}/participants/{participant_id}/remove/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/{formation_pk}/sessions/{session_pk}/delete/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/{id}/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/{id}/formateurs/{formateur_id}/remove/
+  - Route supprimée ou renommée : DELETE /api/v1/formations/{id}/participants/{participant_id}/remove/
+  - Route supprimée ou renommée : DELETE /api/v1/presences/devices/{device_id}/unbind/
+  - Route supprimée ou renommée : DELETE /api/v1/statistiques/rapports/{rapport_id}/
+  - Route supprimée ou renommée : GET /api/dashboard/admissions/
+  - Route supprimée ou renommée : GET /api/dashboard/enseignant/
+  - Route supprimée ou renommée : GET /api/dashboard/etudiant/
+  - Route supprimée ou renommée : GET /api/dashboard/examens/
+  - Route supprimée ou renommée : GET /api/dashboard/finances/
+  - Route supprimée ou renommée : GET /api/dashboard/jurys/
+  - Route supprimée ou renommée : GET /api/dashboard/logistique/
+  - Route supprimée ou renommée : GET /api/dashboard/overview/
+  - Route supprimée ou renommée : GET /api/dashboard/pedagogie/
+  - Route supprimée ou renommée : GET /api/dashboard/presences/
+  - Route supprimée ou renommée : GET /api/dashboard/scolarite/
+  - Route supprimée ou renommée : GET /api/edts/lmd/audit/
+  - Route supprimée ou renommée : GET /api/edts/lmd/availability/rooms/
+  - Route supprimée ou renommée : GET /api/edts/lmd/availability/teachers/
+  - Route supprimée ou renommée : GET /api/edts/lmd/constraints/
+  - Route supprimée ou renommée : GET /api/edts/lmd/items/{id}/move/
+  - Route supprimée ou renommée : GET /api/edts/lmd/slots/
+  - Route supprimée ou renommée : GET /api/edts/lmd/versions/
+  - Route supprimée ou renommée : GET /api/edts/lmd/{id}/audit/
+  - Route supprimée ou renommée : GET /api/edts/lmd/{id}/grille/
+  - Route supprimée ou renommée : GET /api/edts/lmd/{id}/result/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/epreuves/{id}/presences/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/evaluations/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/evaluations/{id}/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/evaluations/{id}/composants/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/evaluations/{id}/epreuves/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/evaluations/{id}/participants/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/evaluations/{id}/participants/{participant_pk}/preparation/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/notes/historique/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/regles/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/regles/versions/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/releves/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/releves/{id}/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/resultats/ecue/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/resultats/passage/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/resultats/semestre/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/resultats/ue/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/sessions/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/sessions/{id}/
+  - Route supprimée ou renommée : GET /api/evaluations-academiques/types-evaluation/
+  - Route supprimée ou renommée : GET /api/formateurs/list/
+  - Route supprimée ou renommée : GET /api/formations/lmd/formations/
+  - Route supprimée ou renommée : GET /api/habilitations/dashboard/
+  - Route supprimée ou renommée : GET /api/habilitations/demandes/
+  - Route supprimée ou renommée : GET /api/habilitations/demandes/{id}/
+  - Route supprimée ou renommée : GET /api/habilitations/impact/module/{code}/
+  - Route supprimée ou renommée : GET /api/habilitations/impact/permission/{code}/
+  - Route supprimée ou renommée : GET /api/habilitations/impact/role/{code}/
+  - Route supprimée ou renommée : GET /api/habilitations/impact/utilisateur/{user_id}/
+  - GET /api/habilitations/permissions/ — clé de réponse 200 supprimée : GET /api/habilitations/permissions/ → réponse 200.results.[].total_roles
+  - Route supprimée ou renommée : GET /api/habilitations/roles/{code}/comparer/
+  - Route supprimée ou renommée : GET /api/habilitations/roles/{code}/versions/
+  - GET /api/juries/sessions/ — paramètre supprimé : annee_academique
+  - GET /api/juries/sessions/ — paramètre supprimé : formation
+  - GET /api/juries/sessions/ — paramètre supprimé : maquette
+  - GET /api/juries/sessions/ — paramètre supprimé : niveau
+  - GET /api/juries/sessions/ — paramètre supprimé : ordering
+  - GET /api/juries/sessions/ — paramètre supprimé : page
+  - GET /api/juries/sessions/ — paramètre supprimé : parcours
+  - GET /api/juries/sessions/ — paramètre supprimé : q
+  - GET /api/juries/sessions/ — paramètre supprimé : semestre
+  - GET /api/juries/sessions/ — paramètre supprimé : statut
+  - GET /api/juries/sessions/ — paramètre supprimé : type_session
+  - Route supprimée ou renommée : GET /api/juries/sessions/{id}/anomalies/
+  - Route supprimée ou renommée : GET /api/juries/sessions/{id}/membres/
+  - Route supprimée ou renommée : GET /api/juries/sessions/{id}/statistiques/
+  - Route supprimée ou renommée : GET /api/jurys/notifications/
+  - Route supprimée ou renommée : GET /api/jurys/sessions/
+  - Route supprimée ou renommée : GET /api/jurys/sessions/{id}/
+  - Route supprimée ou renommée : GET /api/jurys/sessions/{id}/anomalies/
+  - Route supprimée ou renommée : GET /api/jurys/sessions/{id}/membres/
+  - Route supprimée ou renommée : GET /api/jurys/sessions/{id}/pv/
+  - Route supprimée ou renommée : GET /api/jurys/sessions/{id}/statistiques/
+  - Route supprimée ou renommée : GET /api/presences/seances-edt/supervision/
+  - Route supprimée ou renommée : GET /api/scolarite/reinscriptions/
+  - Route supprimée ou renommée : GET /api/timetable/lmd/audit/
+  - Route supprimée ou renommée : GET /api/timetable/lmd/availability/rooms/
+  - Route supprimée ou renommée : GET /api/timetable/lmd/availability/teachers/
+  - Route supprimée ou renommée : GET /api/timetable/lmd/constraints/
+  - Route supprimée ou renommée : GET /api/timetable/lmd/items/{id}/move/
+  - Route supprimée ou renommée : GET /api/timetable/lmd/slots/
+  - Route supprimée ou renommée : GET /api/timetable/lmd/versions/
+  - Route supprimée ou renommée : GET /api/timetable/lmd/{id}/audit/
+  - Route supprimée ou renommée : GET /api/timetable/lmd/{id}/grille/
+  - Route supprimée ou renommée : GET /api/timetable/lmd/{id}/result/
+  - Route supprimée ou renommée : GET /api/v1/auth/capabilities/
+  - Route supprimée ou renommée : GET /api/v1/auth/me/
+  - Route supprimée ou renommée : GET /api/v1/auth/roles/
+  - Route supprimée ou renommée : GET /api/v1/auth/users/
+  - Route supprimée ou renommée : GET /api/v1/auth/users/{id}/
+  - Route supprimée ou renommée : GET /api/v1/core/audit/
+  - Route supprimée ou renommée : GET /api/v1/core/audit/{code}/
+  - Route supprimée ou renommée : GET /api/v1/dashboard/admissions/
+  - Route supprimée ou renommée : GET /api/v1/dashboard/enseignant/
+  - Route supprimée ou renommée : GET /api/v1/dashboard/etudiant/
+  - Route supprimée ou renommée : GET /api/v1/dashboard/examens/
+  - Route supprimée ou renommée : GET /api/v1/dashboard/finances/
+  - Route supprimée ou renommée : GET /api/v1/dashboard/jurys/
+  - Route supprimée ou renommée : GET /api/v1/dashboard/logistique/
+  - Route supprimée ou renommée : GET /api/v1/dashboard/overview/
+  - Route supprimée ou renommée : GET /api/v1/dashboard/pedagogie/
+  - Route supprimée ou renommée : GET /api/v1/dashboard/presences/
+  - Route supprimée ou renommée : GET /api/v1/dashboard/scolarite/
+  - Route supprimée ou renommée : GET /api/v1/evaluations/formations/{formation_pk}/decisions/
+  - Route supprimée ou renommée : GET /api/v1/evaluations/mes-questionnaires/
+  - Route supprimée ou renommée : GET /api/v1/evaluations/modules/{module_pk}/moyennes/
+  - Route supprimée ou renommée : GET /api/v1/evaluations/modules/{module_pk}/resultats/
+  - Route supprimée ou renommée : GET /api/v1/evaluations/questionnaires/
+  - Route supprimée ou renommée : GET /api/v1/evaluations/questionnaires/{id}/
+  - Route supprimée ou renommée : GET /api/v1/evaluations/questionnaires/{id}/analyse/
+  - Route supprimée ou renommée : GET /api/v1/evaluations/questionnaires/{id}/export/{fmt}/
+  - Route supprimée ou renommée : GET /api/v1/evaluations/questionnaires/{id}/resultats/
+  - Route supprimée ou renommée : GET /api/v1/exports/finance/encadrants/excel/
+  - Route supprimée ou renommée : GET /api/v1/exports/finance/encadrants/pdf/
+  - Route supprimée ou renommée : GET /api/v1/exports/finance/synthese/excel/
+  - Route supprimée ou renommée : GET /api/v1/exports/finance/synthese/pdf/
+  - Route supprimée ou renommée : GET /api/v1/exports/formateur/{formateur_pk}/excel/
+  - Route supprimée ou renommée : GET /api/v1/exports/formateur/{formateur_pk}/pdf/
+  - Route supprimée ou renommée : GET /api/v1/exports/formation/{id}/excel/
+  - Route supprimée ou renommée : GET /api/v1/exports/formation/{id}/pdf/
+  - Route supprimée ou renommée : GET /api/v1/exports/module/{module_pk}/excel/
+  - Route supprimée ou renommée : GET /api/v1/exports/module/{module_pk}/pdf/
+  - Route supprimée ou renommée : GET /api/v1/exports/participants/liste-classe/excel/
+  - Route supprimée ou renommée : GET /api/v1/exports/participants/liste-classe/pdf/
+  - Route supprimée ou renommée : GET /api/v1/exports/session/{session_pk}/excel/
+  - Route supprimée ou renommée : GET /api/v1/exports/session/{session_pk}/pdf/
+  - Route supprimée ou renommée : GET /api/v1/formations/
+  - Route supprimée ou renommée : GET /api/v1/formations/archives/modules/
+  - Route supprimée ou renommée : GET /api/v1/formations/archives/stats/
+  - Route supprimée ou renommée : GET /api/v1/formations/finance/ajustements/
+  - Route supprimée ou renommée : GET /api/v1/formations/finance/dashboard/
+  - Route supprimée ou renommée : GET /api/v1/formations/finance/encadrants/
+  - Route supprimée ou renommée : GET /api/v1/formations/finance/notifications/
+  - Route supprimée ou renommée : GET /api/v1/formations/finance/settings/
+  - Route supprimée ou renommée : GET /api/v1/formations/formateurs/
+  - Route supprimée ou renommée : GET /api/v1/formations/formateurs/finance-report/
+  - Route supprimée ou renommée : GET /api/v1/formations/formateurs/list/
+  - Route supprimée ou renommée : GET /api/v1/formations/formateurs/{id}/
+  - Route supprimée ou renommée : GET /api/v1/formations/formateurs/{id}/donnees-sensibles/
+  - Route supprimée ou renommée : GET /api/v1/formations/list/
+  - Route supprimée ou renommée : GET /api/v1/formations/lmd/formations/
+  - Route supprimée ou renommée : GET /api/v1/formations/notes/notifications/
+  - Route supprimée ou renommée : GET /api/v1/formations/participants/
+  - Route supprimée ou renommée : GET /api/v1/formations/participants/list/
+  - Route supprimée ou renommée : GET /api/v1/formations/participants/{id}/
+  - Route supprimée ou renommée : GET /api/v1/formations/participants/{id}/formations/
+  - Route supprimée ou renommée : GET /api/v1/formations/ref/batiments/
+  - Route supprimée ou renommée : GET /api/v1/formations/ref/categories/
+  - Route supprimée ou renommée : GET /api/v1/formations/ref/excel/{kind}/
+  - Route supprimée ou renommée : GET /api/v1/formations/ref/formations/
+  - Route supprimée ou renommée : GET /api/v1/formations/ref/grades/
+  - Route supprimée ou renommée : GET /api/v1/formations/ref/modules/
+  - Route supprimée ou renommée : GET /api/v1/formations/ref/salles/
+  - Route supprimée ou renommée : GET /api/v1/formations/ref/sites/
+  - Route supprimée ou renommée : GET /api/v1/formations/ref/types-secretariat/
+  - Route supprimée ou renommée : GET /api/v1/formations/ref/vagues/
+  - Route supprimée ou renommée : GET /api/v1/formations/referentiels/
+  - Route supprimée ou renommée : GET /api/v1/formations/referentiels/gestion/
+  - Route supprimée ou renommée : GET /api/v1/formations/secretariats/
+  - Route supprimée ou renommée : GET /api/v1/formations/secretariats/{id}/
+  - Route supprimée ou renommée : GET /api/v1/formations/secretariats/{id}/participants/
+  - Route supprimée ou renommée : GET /api/v1/formations/stats/
+  - Route supprimée ou renommée : GET /api/v1/formations/superviseur/
+  - Route supprimée ou renommée : GET /api/v1/formations/superviseur/{id}/
+  - Route supprimée ou renommée : GET /api/v1/formations/superviseur/{id}/qr/
+  - Route supprimée ou renommée : GET /api/v1/formations/{formation_pk}/modules/
+  - Route supprimée ou renommée : GET /api/v1/formations/{formation_pk}/modules/{module_pk}/
+  - Route supprimée ou renommée : GET /api/v1/formations/{formation_pk}/modules/{module_pk}/archives/cahier/
+  - Route supprimée ou renommée : GET /api/v1/formations/{formation_pk}/modules/{module_pk}/full/
+  - Route supprimée ou renommée : GET /api/v1/formations/{formation_pk}/modules/{module_pk}/notes/
+  - Route supprimée ou renommée : GET /api/v1/formations/{formation_pk}/modules/{module_pk}/notes/colonnes/
+  - Route supprimée ou renommée : GET /api/v1/formations/{formation_pk}/modules/{module_pk}/notes/fiche/pdf/
+  - Route supprimée ou renommée : GET /api/v1/formations/{formation_pk}/modules/{module_pk}/notes/fiche/{participant_pk}/pdf/
+  - Route supprimée ou renommée : GET /api/v1/formations/{formation_pk}/modules/{module_pk}/notes/historique/
+  - Route supprimée ou renommée : GET /api/v1/formations/{formation_pk}/modules/{module_pk}/presences/
+  - Route supprimée ou renommée : GET /api/v1/formations/{formation_pk}/sessions/
+  - Route supprimée ou renommée : GET /api/v1/formations/{id}/
+  - Route supprimée ou renommée : GET /api/v1/formations/{id}/detail/
+  - Route supprimée ou renommée : GET /api/v1/formations/{id}/formateurs/
+  - Route supprimée ou renommée : GET /api/v1/formations/{id}/qr-image/
+  - Route supprimée ou renommée : GET /api/v1/formations/{id}/sessions/{session_pk}/qr-image/
+  - Route supprimée ou renommée : GET /api/v1/parametres/
+  - Route supprimée ou renommée : GET /api/v1/parametres/categories/
+  - Route supprimée ou renommée : GET /api/v1/parametres/flags/
+  - Route supprimée ou renommée : GET /api/v1/parametres/types/
+  - Route supprimée ou renommée : GET /api/v1/parametres/{id}/
+  - Route supprimée ou renommée : GET /api/v1/parametres/{id}/historique/
+  - Route supprimée ou renommée : GET /api/v1/presences/audit-logs/
+  - Route supprimée ou renommée : GET /api/v1/presences/devices/
+  - Route supprimée ou renommée : GET /api/v1/presences/formations/{id}/dashboard/
+  - Route supprimée ou renommée : GET /api/v1/presences/formations/{id}/presences/
+  - Route supprimée ou renommée : GET /api/v1/presences/formations/{token}/offline-data/
+  - Route supprimée ou renommée : GET /api/v1/presences/me/fiche/
+  - Route supprimée ou renommée : GET /api/v1/presences/me/historique/
+  - Route supprimée ou renommée : GET /api/v1/presences/mobile/config/
+  - Route supprimée ou renommée : GET /api/v1/presences/participant/lookup/
+  - Route supprimée ou renommée : GET /api/v1/presences/participant/{id}/fiche-admin/
+  - Route supprimée ou renommée : GET /api/v1/presences/participant/{id}/historique/
+  - Route supprimée ou renommée : GET /api/v1/presences/participant/{id}/notes-fiche/
+  - Route supprimée ou renommée : GET /api/v1/presences/participant/{id}/notes-fiche/export/{fmt}/
+  - Route supprimée ou renommée : GET /api/v1/presences/presences/seances-edt/du-jour/
+  - Route supprimée ou renommée : GET /api/v1/presences/presences/seances-edt/supervision/
+  - Route supprimée ou renommée : GET /api/v1/presences/presences/seances-edt/{id}/presences/
+  - Route supprimée ou renommée : GET /api/v1/presences/presences/seances-edt/{id}/qr/
+  - Route supprimée ou renommée : GET /api/v1/presences/rattrapages/
+  - Route supprimée ou renommée : GET /api/v1/presences/rattrapages/modules/
+  - Route supprimée ou renommée : GET /api/v1/presences/rattrapages/participants/
+  - Route supprimée ou renommée : GET /api/v1/presences/rattrapages/seances/
+  - Route supprimée ou renommée : GET /api/v1/presences/scan/check-status/
+  - Route supprimée ou renommée : GET /api/v1/presences/scan/offline-data/
+  - Route supprimée ou renommée : GET /api/v1/presences/scan/secure/check-status/
+  - Route supprimée ou renommée : GET /api/v1/presences/stats/alertes/
+  - Route supprimée ou renommée : GET /api/v1/presences/stats/notifications/recues/
+  - Route supprimée ou renommée : GET /api/v1/presences/stats/taux/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/grades-enseignant/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/grades-enseignant/{id}/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/journal/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/journal/{id}/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/modes-paiement/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/modes-paiement/{id}/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/types-decision/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/types-decision/{id}/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/types-document/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/types-document/{id}/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/types-espace-sportif/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/types-espace-sportif/{id}/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/types-evaluation/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/types-evaluation/{id}/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/types-frais/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/types-frais/{id}/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/types-notification/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/types-notification/{id}/
+  - Route supprimée ou renommée : GET /api/v1/statistiques/
+  - Route supprimée ou renommée : GET /api/v1/statistiques/alertes/seuils/
+  - Route supprimée ou renommée : GET /api/v1/statistiques/bilan-fac-export/
+  - Route supprimée ou renommée : GET /api/v1/statistiques/bilan-fac/
+  - Route supprimée ou renommée : GET /api/v1/statistiques/bilan-fac/perimetre/
+  - Route supprimée ou renommée : GET /api/v1/statistiques/bilans-export/
+  - Route supprimée ou renommée : GET /api/v1/statistiques/bilans/
+  - Route supprimée ou renommée : GET /api/v1/statistiques/point-journalier-export/
+  - Route supprimée ou renommée : GET /api/v1/statistiques/point-journalier/
+  - Route supprimée ou renommée : GET /api/v1/statistiques/rapports/
+  - Route supprimée ou renommée : GET /api/v1/statistiques/rapports/notifications/
+  - Route supprimée ou renommée : GET /api/v1/statistiques/rapports/{rapport_id}/
+  - Route supprimée ou renommée : GET /api/v1/statistiques/rapports/{rapport_id}/observations/
+  - Route supprimée ou renommée : GET /api/v1/statistiques/secretariats/
+  - Route supprimée ou renommée : PATCH /api/evaluations-academiques/evaluations/{id}/
+  - Route supprimée ou renommée : PATCH /api/evaluations-academiques/sessions/{id}/
+  - Route supprimée ou renommée : PATCH /api/jurys/notifications/
+  - Route supprimée ou renommée : PATCH /api/v1/auth/me/
+  - Route supprimée ou renommée : PATCH /api/v1/auth/users/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/evaluations/decisions/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/evaluations/questionnaires/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/evaluations/questionnaires/{questionnaire_pk}/questions/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/formations/finance/notifications/
+  - Route supprimée ou renommée : PATCH /api/v1/formations/finance/settings/
+  - Route supprimée ou renommée : PATCH /api/v1/formations/formateurs/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/formations/formateurs/{id}/donnees-sensibles/
+  - Route supprimée ou renommée : PATCH /api/v1/formations/notes/notifications/
+  - Route supprimée ou renommée : PATCH /api/v1/formations/participants/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/formations/secretariats/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/formations/{formation_pk}/modules/{module_pk}/
+  - Route supprimée ou renommée : PATCH /api/v1/formations/{formation_pk}/sessions/{session_pk}/update/
+  - Route supprimée ou renommée : PATCH /api/v1/formations/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/parametres/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/presences/me/fiche/
+  - Route supprimée ou renommée : PATCH /api/v1/presences/stats/notifications/recues/
+  - Route supprimée ou renommée : PATCH /api/v1/referentiels/grades-enseignant/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/referentiels/modes-paiement/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/referentiels/types-decision/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/referentiels/types-document/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/referentiels/types-espace-sportif/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/referentiels/types-evaluation/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/referentiels/types-frais/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/referentiels/types-notification/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/statistiques/rapports/notifications/
+  - Route supprimée ou renommée : PATCH /api/v1/statistiques/rapports/{rapport_id}/
+  - Route supprimée ou renommée : POST /api/edts/lmd/generate-coordinated/
+  - Route supprimée ou renommée : POST /api/edts/lmd/generate/
+  - Route supprimée ou renommée : POST /api/edts/lmd/items/{id}/cancel/
+  - Route supprimée ou renommée : POST /api/edts/lmd/items/{id}/move/
+  - Route supprimée ou renommée : POST /api/edts/lmd/{id}/publish/
+  - Route supprimée ou renommée : POST /api/edts/lmd/{id}/validate/
+  - Route supprimée ou renommée : POST /api/evaluations-academiques/epreuves/{id}/presences/
+  - Route supprimée ou renommée : POST /api/evaluations-academiques/evaluations/create/
+  - Route supprimée ou renommée : POST /api/evaluations-academiques/evaluations/{id}/composants/
+  - Route supprimée ou renommée : POST /api/evaluations-academiques/evaluations/{id}/epreuves/
+  - Route supprimée ou renommée : POST /api/evaluations-academiques/evaluations/{id}/participants/
+  - Route supprimée ou renommée : POST /api/evaluations-academiques/regles/
+  - Route supprimée ou renommée : POST /api/evaluations-academiques/regles/versions/
+  - Route supprimée ou renommée : POST /api/evaluations-academiques/releves/generer/
+  - Route supprimée ou renommée : POST /api/evaluations-academiques/sessions/create/
+  - Route supprimée ou renommée : POST /api/evaluations-academiques/types-evaluation/
+  - Route supprimée ou renommée : POST /api/habilitations/demandes/
+  - Route supprimée ou renommée : POST /api/habilitations/demandes/{id}/action/
+  - Route supprimée ou renommée : POST /api/habilitations/roles/{code}/versions/
+  - Route supprimée ou renommée : POST /api/habilitations/roles/{code}/versions/{numero}/restaurer/
+  - POST /api/juries/sessions/ — paramètre supprimé : annee_academique
+  - POST /api/juries/sessions/ — paramètre supprimé : formation
+  - POST /api/juries/sessions/ — paramètre supprimé : maquette
+  - POST /api/juries/sessions/ — paramètre supprimé : niveau
+  - POST /api/juries/sessions/ — paramètre supprimé : ordering
+  - POST /api/juries/sessions/ — paramètre supprimé : page
+  - POST /api/juries/sessions/ — paramètre supprimé : parcours
+  - POST /api/juries/sessions/ — paramètre supprimé : q
+  - POST /api/juries/sessions/ — paramètre supprimé : semestre
+  - POST /api/juries/sessions/ — paramètre supprimé : statut
+  - POST /api/juries/sessions/ — paramètre supprimé : type_session
+  - Route supprimée ou renommée : POST /api/jurys/sessions/
+  - Route supprimée ou renommée : POST /api/jurys/sessions/{id}/action/
+  - Route supprimée ou renommée : POST /api/jurys/sessions/{id}/decisions/
+  - Route supprimée ou renommée : POST /api/jurys/sessions/{id}/membres/
+  - Route supprimée ou renommée : POST /api/timetable/lmd/generate-coordinated/
+  - Route supprimée ou renommée : POST /api/timetable/lmd/generate/
+  - Route supprimée ou renommée : POST /api/timetable/lmd/items/{id}/cancel/
+  - Route supprimée ou renommée : POST /api/timetable/lmd/items/{id}/move/
+  - Route supprimée ou renommée : POST /api/timetable/lmd/{id}/publish/
+  - Route supprimée ou renommée : POST /api/timetable/lmd/{id}/validate/
+  - Route supprimée ou renommée : POST /api/v1/auth/login/
+  - Route supprimée ou renommée : POST /api/v1/auth/logout/
+  - Route supprimée ou renommée : POST /api/v1/auth/me/change-password/
+  - Route supprimée ou renommée : POST /api/v1/auth/mfa/confirm/
+  - Route supprimée ou renommée : POST /api/v1/auth/mfa/disable/
+  - Route supprimée ou renommée : POST /api/v1/auth/mfa/setup/
+  - Route supprimée ou renommée : POST /api/v1/auth/mfa/verify/
+  - Route supprimée ou renommée : POST /api/v1/auth/token/refresh/
+  - Route supprimée ou renommée : POST /api/v1/auth/users/
+  - Route supprimée ou renommée : POST /api/v1/evaluations/formations/{formation_pk}/decisions/recalculer/
+  - Route supprimée ou renommée : POST /api/v1/evaluations/modules/{module_pk}/moyennes/recalculer/
+  - Route supprimée ou renommée : POST /api/v1/evaluations/questionnaires/
+  - Route supprimée ou renommée : POST /api/v1/evaluations/questionnaires/{id}/statut/
+  - Route supprimée ou renommée : POST /api/v1/evaluations/questionnaires/{questionnaire_pk}/questions/
+  - Route supprimée ou renommée : POST /api/v1/evaluations/soumettre/
+  - Route supprimée ou renommée : POST /api/v1/formations/
+  - Route supprimée ou renommée : POST /api/v1/formations/finance/ajustements/
+  - Route supprimée ou renommée : POST /api/v1/formations/finance/ajustements/{id}/rejeter/
+  - Route supprimée ou renommée : POST /api/v1/formations/finance/ajustements/{id}/valider/
+  - Route supprimée ou renommée : POST /api/v1/formations/formateurs/
+  - Route supprimée ou renommée : POST /api/v1/formations/import-excel/
+  - Route supprimée ou renommée : POST /api/v1/formations/participants/
+  - Route supprimée ou renommée : POST /api/v1/formations/ref/batiments/
+  - Route supprimée ou renommée : POST /api/v1/formations/ref/categories/
+  - Route supprimée ou renommée : POST /api/v1/formations/ref/excel/{kind}/
+  - Route supprimée ou renommée : POST /api/v1/formations/ref/formations/
+  - Route supprimée ou renommée : POST /api/v1/formations/ref/grades/
+  - Route supprimée ou renommée : POST /api/v1/formations/ref/modules/
+  - Route supprimée ou renommée : POST /api/v1/formations/ref/salles/
+  - Route supprimée ou renommée : POST /api/v1/formations/ref/sites/
+  - Route supprimée ou renommée : POST /api/v1/formations/ref/types-secretariat/
+  - Route supprimée ou renommée : POST /api/v1/formations/ref/vagues/
+  - Route supprimée ou renommée : POST /api/v1/formations/secretariats/
+  - Route supprimée ou renommée : POST /api/v1/formations/superviseur/{id}/generate-qr/
+  - Route supprimée ou renommée : POST /api/v1/formations/{formation_pk}/generate-qr/
+  - Route supprimée ou renommée : POST /api/v1/formations/{formation_pk}/modules/
+  - Route supprimée ou renommée : POST /api/v1/formations/{formation_pk}/modules/{module_pk}/archive/
+  - Route supprimée ou renommée : POST /api/v1/formations/{formation_pk}/modules/{module_pk}/assign-superviseur/
+  - Route supprimée ou renommée : POST /api/v1/formations/{formation_pk}/modules/{module_pk}/formateurs/add/
+  - Route supprimée ou renommée : POST /api/v1/formations/{formation_pk}/modules/{module_pk}/notes/bulk/
+  - Route supprimée ou renommée : POST /api/v1/formations/{formation_pk}/modules/{module_pk}/notes/colonnes/
+  - Route supprimée ou renommée : POST /api/v1/formations/{formation_pk}/modules/{module_pk}/notes/workflow/
+  - Route supprimée ou renommée : POST /api/v1/formations/{formation_pk}/modules/{module_pk}/participants/add/
+  - Route supprimée ou renommée : POST /api/v1/formations/{formation_pk}/modules/{module_pk}/sessions/new/
+  - Route supprimée ou renommée : POST /api/v1/formations/{formation_pk}/modules/{module_pk}/unarchive/
+  - Route supprimée ou renommée : POST /api/v1/formations/{formation_pk}/sessions/{session_pk}/generate-qr/
+  - Route supprimée ou renommée : POST /api/v1/formations/{formation_pk}/sessions/{session_pk}/start/
+  - Route supprimée ou renommée : POST /api/v1/formations/{formation_pk}/sessions/{session_pk}/stop/
+  - Route supprimée ou renommée : POST /api/v1/formations/{id}/assign-superviseur/
+  - Route supprimée ou renommée : POST /api/v1/formations/{id}/formateurs/add/
+  - Route supprimée ou renommée : POST /api/v1/formations/{id}/participants/add/
+  - Route supprimée ou renommée : POST /api/v1/presences/formations/{id}/close-session/
+  - Route supprimée ou renommée : POST /api/v1/presences/formations/{id}/force-badgeage-auditeurs-bulk/
+  - Route supprimée ou renommée : POST /api/v1/presences/formations/{id}/force-pointage/
+  - Route supprimée ou renommée : POST /api/v1/presences/presences/seances-edt/scan/
+  - Route supprimée ou renommée : POST /api/v1/presences/presences/seances-edt/{id}/autoclore/
+  - Route supprimée ou renommée : POST /api/v1/presences/presences/seances-edt/{id}/emargement/
+  - Route supprimée ou renommée : POST /api/v1/presences/presences/seances-edt/{id}/qr/
+  - Route supprimée ou renommée : POST /api/v1/presences/rattrapages/
+  - Route supprimée ou renommée : POST /api/v1/presences/rattrapages/{id}/annuler/
+  - Route supprimée ou renommée : POST /api/v1/presences/rattrapages/{id}/generer-presence/
+  - Route supprimée ou renommée : POST /api/v1/presences/scan/
+  - Route supprimée ou renommée : POST /api/v1/presences/scan/secure/
+  - Route supprimée ou renommée : POST /api/v1/presences/scan/secure/heartbeat/
+  - Route supprimée ou renommée : POST /api/v1/presences/stats/notifications/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/grades-enseignant/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/grades-enseignant/{id}/archiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/grades-enseignant/{id}/reactiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/modes-paiement/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/modes-paiement/{id}/archiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/modes-paiement/{id}/reactiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-decision/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-decision/{id}/archiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-decision/{id}/reactiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-document/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-document/{id}/archiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-document/{id}/reactiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-espace-sportif/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-espace-sportif/{id}/archiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-espace-sportif/{id}/reactiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-evaluation/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-evaluation/{id}/archiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-evaluation/{id}/reactiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-frais/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-frais/{id}/archiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-frais/{id}/reactiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-notification/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-notification/{id}/archiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/types-notification/{id}/reactiver/
+  - Route supprimée ou renommée : POST /api/v1/statistiques/alertes/seuils/
+  - Route supprimée ou renommée : POST /api/v1/statistiques/rapports/
+  - Route supprimée ou renommée : POST /api/v1/statistiques/rapports/{rapport_id}/observations/
+  - Route supprimée ou renommée : POST /api/v1/statistiques/rapports/{rapport_id}/workflow/
+  - Route supprimée ou renommée : PUT /api/evaluations-academiques/composants/{id}/notes/
+  - Route supprimée ou renommée : PUT /api/v1/auth/users/{id}/
+  - Route supprimée ou renommée : PUT /api/v1/formations/formateurs/{id}/
+  - Route supprimée ou renommée : PUT /api/v1/formations/participants/{id}/
+  - Route supprimée ou renommée : PUT /api/v1/formations/ref/batiments/{id}/
+  - Route supprimée ou renommée : PUT /api/v1/formations/ref/categories/{id}/
+  - Route supprimée ou renommée : PUT /api/v1/formations/ref/formations/{id}/
+  - Route supprimée ou renommée : PUT /api/v1/formations/ref/grades/{id}/
+  - Route supprimée ou renommée : PUT /api/v1/formations/ref/modules/{id}/
+  - Route supprimée ou renommée : PUT /api/v1/formations/ref/salles/{id}/
+  - Route supprimée ou renommée : PUT /api/v1/formations/ref/sites/{id}/
+  - Route supprimée ou renommée : PUT /api/v1/formations/ref/types-secretariat/{id}/
+  - Route supprimée ou renommée : PUT /api/v1/formations/ref/vagues/{id}/
+  - Route supprimée ou renommée : PUT /api/v1/formations/secretariats/{id}/
+  - Route supprimée ou renommée : PUT /api/v1/formations/{formation_pk}/modules/{module_pk}/
+  - Route supprimée ou renommée : PUT /api/v1/formations/{id}/
+  - Route supprimée ou renommée : PUT /api/v1/statistiques/alertes/seuils/
+
