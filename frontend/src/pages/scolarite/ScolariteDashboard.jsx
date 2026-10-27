@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import api from '../../services/api'
 import { getAnneeCourante, messageErreur } from '../../services/scolarite'
 import '../../styles/scolariteDashboard.css'
+import { anneeAcademiqueCourante } from '../../utils/anneeAcademique'
 
 export default function ScolariteDashboard() {
   const navigate = useNavigate()
@@ -151,7 +152,7 @@ export default function ScolariteDashboard() {
         <head><title>${titre}</title></head>
         <body style="font-family: Arial, sans-serif;">
           <h2>INJS UFR STAPS-JL — ${titre}</h2>
-          <p>Année académique : ${annee?.libelle || '2026-2027'}</p>
+          <p>Année académique : ${annee?.libelle || anneeAcademiqueCourante()}</p>
           <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse;">
             <tr style="background:#f0f4f8;"><th>Indicateur</th><th>Valeur</th></tr>
             <tr><td>Étudiants inscrits</td><td>${stats.etudiantsInscrits}</td></tr>
@@ -193,7 +194,7 @@ export default function ScolariteDashboard() {
         <div className="scolarite-title-block">
           <h1 className="scolarite-main-title">Tableau de bord — Administration</h1>
           <p className="scolarite-sub-title">
-            UFR STAPS-JL | Année académique {annee?.libelle || '2025-2026'}
+            UFR STAPS-JL | Année académique {annee?.libelle || anneeAcademiqueCourante()}
           </p>
         </div>
         <div className="scolarite-header-actions">

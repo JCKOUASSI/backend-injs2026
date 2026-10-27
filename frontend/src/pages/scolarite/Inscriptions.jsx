@@ -9,6 +9,15 @@ import {
   messageErreur, transitionInscription, updateInscription,
 } from '../../services/scolarite'
 
+const TYPES_INSCRIPTION = [
+  ['PREMIERE', 'Première inscription'],
+  ['REINSCRIPTION', 'Réinscription'],
+  ['REDOUBLEMENT', 'Redoublement'],
+  ['REPRISE', 'Reprise après suspension'],
+  ['REORIENTATION', 'Réorientation'],
+  ['TRANSFERT', 'Transfert'],
+]
+
 const STATUTS = [
   ['BROUILLON', 'Brouillon'], ['EN_ATTENTE', 'En attente'], ['A_VALIDER', 'À valider'],
   ['VALIDEE', 'Validée'], ['REJETEE', 'Rejetée'], ['ANNULEE', 'Annulée'],
@@ -356,12 +365,9 @@ function NouvelleInscription({ onClose, onSuccess }) {
             <div className="col-md-6">
               <label className="cand-form-label">Type d'inscription</label>
               <select className="cand-form-select" value={form.type_inscription} onChange={(e) => changer('type_inscription', e.target.value)}>
-                <option value="PREMIERE">Première inscription</option>
-                <option value="REINSCRIPTION">Réinscription</option>
-                <option value="REDOUBLEMENT">Redoublement</option>
-                <option value="REPRISE">Reprise après suspension</option>
-                <option value="REORIENTATION">Réorientation</option>
-                <option value="TRANSFERT">Transfert</option>
+                {TYPES_INSCRIPTION.map(([valeur, libelle]) => (
+                  <option key={valeur} value={valeur}>{libelle}</option>
+                ))}
               </select>
             </div>
             <div className="col-md-6">
@@ -475,12 +481,9 @@ function ModifierInscription({ id, onClose, onSuccess }) {
             <div className="col-md-6">
               <label className="cand-form-label">Type d'inscription</label>
               <select className="cand-form-select" value={form.type_inscription} onChange={(e) => changer('type_inscription', e.target.value)}>
-                <option value="PREMIERE">Première inscription</option>
-                <option value="REINSCRIPTION">Réinscription</option>
-                <option value="REDOUBLEMENT">Redoublement</option>
-                <option value="REPRISE">Reprise après suspension</option>
-                <option value="REORIENTATION">Réorientation</option>
-                <option value="TRANSFERT">Transfert</option>
+                {TYPES_INSCRIPTION.map(([valeur, libelle]) => (
+                  <option key={valeur} value={valeur}>{libelle}</option>
+                ))}
               </select>
             </div>
             <div className="col-12">
@@ -500,12 +503,3 @@ function ModifierInscription({ id, onClose, onSuccess }) {
     </div>
   )
 }
-
-const TYPES_INSCRIPTION = [
-  ['PREMIERE', 'Première inscription'],
-  ['REINSCRIPTION', 'Réinscription'],
-  ['REDOUBLEMENT', 'Redoublement'],
-  ['REPRISE', 'Reprise après suspension'],
-  ['REORIENTATION', 'Réorientation'],
-  ['TRANSFERT', 'Transfert'],
-]

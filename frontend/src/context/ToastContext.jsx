@@ -16,8 +16,12 @@ export function ToastProvider({ children }) {
   // Nettoie toutes les temporisations encore actives lorsque le provider est démonté
   // pour éviter toute mise à d'état sur un composant démonté
   useEffect(() => {
+    // Copie de la référence au montage : au démontage, `activeTimers.current`
+    // peut avoir été remplacé, c'est la liste capturée qui doit être nettoyée.
+    const timers = activeTimers
     return () => {
-      activeTimers.current.forEach(timer => clearTimeout(timer))
+      timers.current.forEach(timer => clearTimeout(timer))
+      timers.current = []
     }
   }, [])
 

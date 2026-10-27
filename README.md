@@ -121,6 +121,15 @@ fichier/mémoire).
 FRONTEND_MODE=dev ./scripts/start_dev.sh frontend   # Vite + HMR sur :3000
 ```
 
+Profil d'aperçu (iframe de la plateforme, hôte `*.e2b.app`) — cookies CHIPS +
+auto-connexion de l'admin de démonstration, jamais actif en production :
+
+```bash
+bash arena/bootstrap.sh          # (re)génère arena/settings_sandbox.py + mot de passe démo
+./arena/lancer-api.sh            # API Django, port figé 8000
+./arena/lancer-front.sh          # site Vite, port figé 3000 (proxy /api → 8000)
+```
+
 ### 4.1 Backend (Django)
 
 ```bash

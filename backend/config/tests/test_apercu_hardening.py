@@ -11,8 +11,9 @@ exigences à deux endroits :
 Il fige aussi les ports canoniques (front 3000 avec ``strictPort``, API 8000)
 pour empêcher tout retour accidentel vers un autre port (ex. 5173).
 """
+import os
 from pathlib import Path
-from unittest import skipUnless
+from unittest import mock, skipUnless
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -123,6 +124,161 @@ class PreviewAutoLoginTests(TestCase):
 
         deconnexion = client.post('/admin/logout/', {}, HTTP_HOST='localhost')
         self.assertNotEqual(deconnexion.status_code, 403)
+
+
+class MiddlewaresCompagnonsFonctionnelsTests(SimpleTestCase):
+    """Les middlewares d'aperçu doivent être *appelables* et faire leur travail.
+
+    Régression vécue : `AutoLoginApercuMiddleware` définissait `process_view`
+    sans `__call__` → TypeError « object is not callable » et 500 sur toutes
+    les pages du profil d'aperçu. Les tests ne vérifiaient que des chaînes.
+    """
+
+    CHEMINS = (
+        'arena.partitioned_cookies.PartitionedCookieMiddleware',
+        'arena.preview_autologin.AutoLoginApercuMiddleware',
+    )
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        import sys
+        cls._ajout_path = str(REPO) not in sys.path
+        if cls._ajout_path:
+            sys.path.insert(0, str(REPO))
+
+    @classmethod
+    def tearDownClass(cls):
+        if getattr(cls, '_ajout_path', False):
+            import sys
+            sys.path.remove(str(REPO))
+        super().tearDownClass()
+
+    def test_middlewares_appelables(self):
+        from importlib import import_module
+
+        for chemin in self.CHEMINS:
+            with self.subTest(middleware=chemin):
+                module, classe = chemin.rsplit('.', 1)
+                cls = getattr(import_module(module), classe)
+                instance = cls(lambda request: None)
+                self.assertTrue(callable(instance))
+
+    def test_cookie_partitionne_pose_partitioned(self):
+        from importlib import import_module
+
+        from django.http import HttpResponse
+
+        cls = getattr(
+            import_module('arena.partitioned_cookies'),
+            'PartitionedCookieMiddleware',
+        )
+
+        def vue(request):
+            response = HttpResponse('ok')
+            response.set_cookie(
+                'injs_csrftoken', 'x', secure=True, samesite='None',
+            )
+            return response
+
+        response = cls(vue)(type('R', (), {})())
+        entete = response.cookies['injs_csrftoken'].OutputString()
+        self.assertIn('Partitioned', entete)
+
+    def test_cookie_non_eligible_n_est_pas_partitionne(self):
+        from importlib import import_module
+
+        from django.http import HttpResponse
+
+        cls = getattr(
+            import_module('arena.partitioned_cookies'),
+            'PartitionedCookieMiddleware',
+        )
+
+        def vue(request):
+            response = HttpResponse('ok')
+            # SameSite=Lax : « Partitioned » serait rejeté par le navigateur.
+            response.set_cookie('injs_sessionid', 'x', samesite='Lax')
+            return response
+
+        response = cls(vue)(type('R', (), {})())
+        self.assertNotIn('Partitioned', response.cookies['injs_sessionid'].OutputString())
+
+
+class MiddlewaresApercuBranchesTests(SimpleTestCase):
+    """Les middlewares d'aperçu doivent être BRANCHÉS, pas seulement présents.
+
+    Les deux modules existaient dans ``config/`` sans figurer dans
+    ``MIDDLEWARE`` : /admin/ répondait alors ``X-Frame-Options: DENY`` (iframe
+    blanche) et la connexion échouait en 403 « vérification CSRF échouée »
+    dès que le navigateur bloque les cookies tiers.
+    """
+
+    SETTINGS = REPO / 'backend' / 'config' / 'settings.py'
+
+    def test_les_deux_middlewares_sont_references_sous_debug(self):
+        contenu = _lire(self.SETTINGS)
+        self.assertIn('config.dev_middleware.DevPreviewFrameMiddleware', contenu)
+        self.assertIn('config.demo_admin_middleware.DemoAdminAutoLoginMiddleware', contenu)
+        self.assertIn('if DEBUG:', contenu)
+
+    def test_ordre_impose_par_le_cycle_de_vie_django(self):
+        # Le middleware de cadre doit être plus EXTERNE que XFrameOptions
+        # (traitement des réponses de l'intérieur vers l'extérieur) et celui
+        # d'auto-connexion plus externe que CsrfViewMiddleware (process_view).
+        contenu = _lire(self.SETTINGS)
+        self.assertIn(
+            "MIDDLEWARE.index('django.middleware.clickjacking.XFrameOptionsMiddleware')",
+            contenu,
+        )
+        self.assertIn(
+            "MIDDLEWARE.index('django.middleware.csrf.CsrfViewMiddleware')",
+            contenu,
+        )
+
+    @skipUnless(getattr(settings, 'DEBUG', False), 'Ordre vérifié en mode DEBUG.')
+    def test_ordre_effectif_dans_la_configuration_chargee(self):
+        from django.conf import settings as conf
+        cadre = conf.MIDDLEWARE.index('config.dev_middleware.DevPreviewFrameMiddleware')
+        xframe = conf.MIDDLEWARE.index(
+            'django.middleware.clickjacking.XFrameOptionsMiddleware',
+        )
+        demo = conf.MIDDLEWARE.index(
+            'config.demo_admin_middleware.DemoAdminAutoLoginMiddleware',
+        )
+        csrf = conf.MIDDLEWARE.index('django.middleware.csrf.CsrfViewMiddleware')
+        self.assertLess(cadre, xframe)
+        self.assertLess(demo, csrf)
+
+
+class AdminSansCookieEnApercuTests(TestCase):
+    """L'admin reste utilisable quand le navigateur bloque les cookies tiers.
+
+    Reproduit l'iframe d'aperçu : aucun cookie CSRF, aucun cookie de session.
+    Sans le branchement des middlewares d'aperçu, la connexion renvoie 403.
+    """
+
+    MIDDLEWARE_DEMO = 'config.demo_admin_middleware.DemoAdminAutoLoginMiddleware'
+
+    @override_settings(DEBUG=True)
+    def test_admin_s_ouvre_sans_cookie_et_sans_jeton_csrf(self):
+        if self.MIDDLEWARE_DEMO not in settings.MIDDLEWARE:
+            self.skipTest(
+                "Profil d'aperçu inactif : middlewares non branchés "
+                "(DEBUG valait False au chargement de settings.py).",
+            )
+        get_user_model().objects.create_superuser('admin', 'admin@example.com', 'Temp#Pass123')
+        with mock.patch.dict(os.environ, {'DEMO_ADMIN_AUTOLOGIN': '1'}):
+            client = Client(enforce_csrf_checks=True)
+            page = client.get('/admin/', HTTP_HOST='localhost')
+            self.assertEqual(
+                page.status_code, 200,
+                f"Redirection inattendue vers {page.headers.get('Location')!r}.",
+            )
+            self.assertTrue(page.wsgi_request.user.is_authenticated)
+            self.assertEqual(page.wsgi_request.user.username, 'admin')
+            self.assertNotIn('X-Frame-Options', page.headers)
+            self.assertIn('frame-ancestors', page.headers.get('Content-Security-Policy', ''))
 
 
 class PortsCanoniquesTests(SimpleTestCase):

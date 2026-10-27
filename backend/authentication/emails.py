@@ -72,7 +72,7 @@ def _html_logo_block() -> str:
         return ''
     return (
         f"<div style='margin-bottom:14px;'>"
-        f"<img src='{data_uri}' alt='INJS' "
+        f"<img src='{data_uri}' alt='INJS Abidjan' "  # alt = nom de l'institution, comme les gabarits web
         f"style='width:88px; height:auto; display:inline-block;'>"
         f"</div>"
     )

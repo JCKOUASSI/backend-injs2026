@@ -1,4 +1,5 @@
 import React from 'react'
+import { anneeAcademiquePrecedente } from '../../utils/anneeAcademique'
 
 export default function KpiCard({
   title,
@@ -6,7 +7,7 @@ export default function KpiCard({
   subText,
   icon = 'bi-activity',
   trend,
-  trendLabel = 'vs 2025 – 2026',
+  trendLabel = `vs ${anneeAcademiquePrecedente(new Date(), true)}`,
   trendPositive = true,
   onClick,
 }) {

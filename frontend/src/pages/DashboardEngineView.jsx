@@ -5,6 +5,7 @@ import api from '@/services/api'
 import '@/styles/dashboardEngine.css'
 
 import KpiCard from '@/components/dashboard/KpiCard'
+import { anneeAcademiquePrecedente } from '@/utils/anneeAcademique'
 import LmdPipeline from '@/components/dashboard/LmdPipeline'
 import AlertPanel from '@/components/dashboard/AlertPanel'
 import QuickActions from '@/components/dashboard/QuickActions'
@@ -246,28 +247,28 @@ export default function DashboardEngineView() {
                   title="Étudiants Inscrits"
                   value={inscritsVal}
                   trend="+12%"
-                  trendLabel="vs 2025 – 2026"
+                  trendLabel={`vs ${anneeAcademiquePrecedente(new Date(), true)}`}
                   icon="bi-people-fill"
                 />
                 <KpiCard
                   title="Candidats"
                   value={candidatsVal}
                   trend="+18%"
-                  trendLabel="vs 2025 – 2026"
+                  trendLabel={`vs ${anneeAcademiquePrecedente(new Date(), true)}`}
                   icon="bi-person-badge-fill"
                 />
                 <KpiCard
                   title="Enseignants"
                   value={enseignantsVal}
                   trend="+5%"
-                  trendLabel="vs 2025 – 2026"
+                  trendLabel={`vs ${anneeAcademiquePrecedente(new Date(), true)}`}
                   icon="bi-person-video3"
                 />
                 <KpiCard
                   title="Taux de présence"
                   value={presenceVal}
                   trend="+3%"
-                  trendLabel="vs 2025 – 2026"
+                  trendLabel={`vs ${anneeAcademiquePrecedente(new Date(), true)}`}
                   icon="bi-clock-history"
                 />
               </div>
