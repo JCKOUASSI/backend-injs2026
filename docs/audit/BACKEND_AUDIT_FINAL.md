@@ -74,9 +74,8 @@ des clients existants) : les deux familles pointent vers les mêmes vues.
   `0001_initial` mais **n'est pas dans `INSTALLED_APPS`** : application morte,
   doublon de `referentiels`. Aucune donnée n'y est stockée. Suppression à
   décider par l'équipe (hors périmètre d'un correctif de sécurité).
-* Les schémas OpenAPI générés par `drf-spectacular` émettent des collisions
-  d'`operationId` (ex. `api_v1_formations_modules_retrieve`). Elles dégradent
-  la génération de clients mais pas le fonctionnement de l'API.
+* Les collisions d'`operationId` OpenAPI (1 032 avertissements) ont été
+  **corrigées** en cours d'audit — voir §7.6.
 
 ---
 
@@ -372,6 +371,46 @@ contrôle s'applique bien au chemin réel (service) et pas seulement au modèle.
 
 Voir §4.1.
 
+### 7.6 Schéma OpenAPI : 1 032 collisions d'`operationId` — corrigé
+
+**Constat.** `manage.py spectacular` émettait 1 032 avertissements
+`operationId … has collisions`. Cause : `AutoSchema._tokenize_path()` supprime
+les paramètres de chemin, si bien que `/formations/{id}/formateurs/` et
+`/formations/formateurs/{id}/` recevaient le même identifiant. Quatre routes de
+`jurys` fixaient en outre un `operation_id` manuel, alors que l'URLconf est
+monté deux fois (`api/juries/` et `api/jurys/`). Un client généré (SDK,
+collection) ne conservait donc qu'une opération sur deux.
+
+**Correctif.** `backend/config/schema.py` : classe `INJSAutoSchema` qui
+conserve les paramètres sous la forme `by_<nom>` ; les quatre `operation_id`
+manuels de `jurys/api.py` sont retirés. Test de non-régression :
+`core/tests/test_schema_openapi.py`.
+
+**Preuve.**
+
+```
+avant : 1 032 avertissements « collisions »
+après :       0 avertissement, 1 099 opérations, 0 operationId dupliqué
+```
+
+### 7.7 Absence totale d'intégration continue — corrigée
+
+Le dépôt n'avait **aucun** workflow `.github/workflows/`. C'est la cause racine
+de la dérive du §7.2 : rien ne vérifiait `makemigrations --check`. Ajout de
+`.github/workflows/ci.yml` :
+
+| Job | Étapes |
+|---|---|
+| Backend (service PostgreSQL 16) | `check`, `makemigrations --check --dry-run`, `check_repo_hygiene`, `collectstatic`, `manage.py test` |
+| Frontend | `npm ci`, `npm run lint`, `npx vitest run` |
+
+Le job backend tourne sur **PostgreSQL**, pas sur SQLite : c'est le moteur de
+production et le seul moyen de vérifier les comportements qui en dépendent.
+Les cinq commandes backend ont été rejouées localement avec l'environnement du
+workflow (`DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY`, `POSTGRES_*`) : elles passent.
+Le job lui-même n'a pas pu être exécuté ici (pas de runner GitHub) → **NON
+EXÉCUTÉ** en tant que workflow.
+
 ---
 
 ## 8. Points ouverts
@@ -402,10 +441,11 @@ Voir §4.1.
 
 ### 8.3 Recommandations non bloquantes
 
-* Ajouter une étape `makemigrations --check` en CI (la dérive du §7.2
-  n'aurait jamais dû passer).
-* Résorber les collisions d'`operationId` OpenAPI (documentation client).
-* Supprimer `backend/referentiel_injs/` ou l'enregistrer réellement.
+* ~~Ajouter une étape `makemigrations --check` en CI~~ → fait (§7.7).
+* ~~Résorber les collisions d'`operationId` OpenAPI~~ → fait (§7.6).
+* Supprimer `backend/referentiel_injs/` ou l'enregistrer réellement (décision
+  d'équipe, non prise ici).
+* Exécuter réellement le workflow CI après fusion de la PR (premier passage).
 
 ---
 
@@ -413,23 +453,24 @@ Voir §4.1.
 
 | Suite | Commande | Résultat |
 |---|---|---|
-| Backend | `USE_SQLITE=1 .venv/bin/python manage.py test` | **2 449 tests — 0 échec, 9 ignorés** (voir §9.1) |
+| Backend | `USE_SQLITE=1 .venv/bin/python manage.py test` | **2 451 tests — 0 échec, 9 ignorés** (voir §9.1) |
 | Frontend | `npx vitest run` | **101 fichiers / 1 915 tests — OK** |
 | ESLint | `npm run lint` | 0 erreur, 0 avertissement |
 | Hygiène dépôt | `check_repo_hygiene` | CONFORME |
 
-Tests ajoutés par cet audit (20) :
+Tests ajoutés par cet audit (22) :
 
 * `scolarite/tests/test_frontieres_metier.py` — 10 tests (frontières métier,
   idempotence y compris via l'API, radiation) ;
 * `core/tests/test_validators_fichiers.py` — 9 tests (extensions, taille,
   application par les services) ;
-* `authentication/test_performance_comptes.py` — 1 test (N+1).
+* `authentication/test_performance_comptes.py` — 1 test (N+1) ;
+* `core/tests/test_schema_openapi.py` — 2 tests (unicité des `operationId`).
 
 ### 9.1 Résultat exact de la suite backend
 
 ```
-Ran 2449 tests in 698.101s
+Ran 2451 tests in 671.706s
 
 OK (skipped=9)
 ```

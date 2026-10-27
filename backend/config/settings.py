@@ -340,7 +340,8 @@ AUTH_USER_MODEL = 'authentication.User'
 
 # Django REST Framework
 REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    # Schéma OpenAPI : identifiants d'opération uniques (voir config/schema.py).
+    'DEFAULT_SCHEMA_CLASS': 'config.schema.INJSAutoSchema',
     # Format d'erreur harmonisé (payload DRF préservé + code machine en en-tête).
     'EXCEPTION_HANDLER': 'config.exceptions.unified_exception_handler',
     # Authentification JWT : la classe flexible accepte l'en-tête standard
