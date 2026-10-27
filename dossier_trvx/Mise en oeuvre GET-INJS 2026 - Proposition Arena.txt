@@ -1,0 +1,2977 @@
+Partie 3 : Analyse de Arena :
+
+# Gestion des emplois du temps de l'INJS d'Abidjan — analyse métier et conception Django
+
+> ⚠️ **Avertissement de méthode** : je n'ai pas accès aux procédures internes réelles ni aux documents de la Direction des Études de l'INJS d'Abidjan. Ce qui suit combine (1) ce qui est public/notoire sur ce type d'établissement (institut national de formation aux métiers de la jeunesse et des sports, sous tutelle du ministère en charge des Sports/de la Jeunesse en Côte d'Ivoire) et (2) une modélisation experte des écoles de formation « STAPS/sport » en Afrique de l'Ouest. **Chaque règle métier doit être validée en atelier avec la Scolarité avant codage.**
+
+---
+
+## 1. Le contexte métier : pourquoi l'INJS n'est pas une fac classique
+
+L'INJS forme des cadres de la jeunesse et des sports : professeurs et maîtres d'EPS, inspecteurs, conseillers d'éducation populaire / d'animation, entraîneurs, encadrants de structures sportives, plus de la formation continue et des recyclages. Deux grandes familles de filières cohabitent (**Sports/EPS** et **Jeunesse/Animation**), déclinées en cycles (moniteur, maîtrise, professorat / licence–master dans le schéma LMD), avec parfois des promotions en alternance et des stages pratiques en établissements scolaires ou en structures de jeunesse.
+
+Conséquence directe sur l'emploi du temps : **on ne planifie pas seulement des salles, on planifie des installations sportives, des équipements, des tenues, de la météo et des corps qui fatiguent.**
+
+### Les 7 spécificités structurantes
+
+| # | Spécificité | Impact planning |
+|---|---|---|
+| 1 | **Séances théoriques ET pratiques** (CM/TD en salle vs natation, athlétisme, sports collectifs, gym, judo/lutte, danse) | Deux typologies de ressources radicalement différentes |
+| 2 | **Installations rares et partagées** : piscine, gymnase/plateau couvert, piste d'athlétisme, terrains de football/handball/basket/volley, dojo, salle de musculation | Ressource = goulot d'étranglement n°1 |
+| 3 | **Climat d'Abidjan** (chaleur, humidité, saison des pluies avril–juillet / octobre–novembre) | Pratique extérieure plutôt 7h–10h30 et 15h30–18h ; besoin de **créneaux de repli** en cas de pluie |
+| 4 | **Partage des installations avec l'extérieur** (fédérations, clubs, sélections nationales, événements) | Il faut un module de **réservation/indisponibilité exceptionnelle** |
+| 5 | **Enseignants vacataires** (cadres du ministère, fédérations, praticiens) disponibles sur créneaux étroits | Le planning doit partir des disponibilités, pas l'inverse |
+| 6 | **Stages et sorties pédagogiques** (stage en responsabilité dans les lycées/collèges, camps, colonies) | Périodes « hors EDT » qui gèlent des promotions entières |
+| 7 | **Internat / régime d'externat, vie collective, séances matinales d'entraînement** | Contraintes horaires d'ouverture et de restauration |
+
+---
+
+## 2. Les acteurs et leurs besoins
+
+| Acteur | Besoin fonctionnel | Rôle applicatif Django |
+|---|---|---|
+| Direction des Études | Vision globale, arbitrage, validation/publication | `DIRECTION` (superviseur) |
+| Service Scolarité / Planning | Saisir, générer, corriger, diffuser | `PLANIFICATEUR` |
+| Chefs de département / filière | Déclarer la maquette, affecter les enseignants | `CHEF_DEPT` |
+| Enseignants (permanents & vacataires) | Déclarer disponibilités, consulter, demander report, émarger | `ENSEIGNANT` |
+| Élèves/étudiants & délégués | Consulter EDT du jour/semaine, être alertés des changements | `ETUDIANT` |
+| Gestionnaire des installations | Réserver, bloquer pour maintenance/événement | `GEST_INSTALLATION` |
+| Comptabilité / RH | Heures réellement faites (vacations à payer) | Lecture des `Seance` réalisées |
+
+---
+
+## 3. Le processus « tel qu'il est » (hypothèse réaliste) et ses douleurs
+
+**Chaîne typique :** maquette pédagogique (Word) → tableau Excel par promotion construit à la main → arbitrages téléphoniques avec les vacataires → impression → affichage au tableau de la Scolarité + photo partagée dans les groupes WhatsApp des promotions → modifications annoncées oralement ou par WhatsApp.
+
+**Points de douleur mesurables :**
+
+1. **Conflits non détectés** : même enseignant ou même installation sur deux promotions au même créneau.
+2. **Volatilité** : absence d'un vacataire → séance déplacée → les étudiants l'apprennent trop tard → taux d'absentéisme artificiel.
+3. **Sous-utilisation / sur-sollicitation** des installations (piscine vide le matin, gymnase saturé l'après-midi).
+4. **Suivi du volume horaire** : impossible de dire en temps réel « l'ECUE X a consommé 18h sur 30h prévues » → risque de non-couverture de la maquette avant les examens.
+5. **Paiement des vacations** sur déclaratif papier, non recoupé avec les séances réellement tenues.
+6. **Aucune traçabilité** des décisions (qui a déplacé quoi, quand, pourquoi).
+7. **Pas d'historique exploitable** pour planifier l'année suivante.
+
+---
+
+## 4. Règles métier à formaliser
+
+### Contraintes dures (violables = planning invalide)
+- `H1` Un **enseignant** ne peut avoir qu'une séance à un instant t.
+- `H2` Un **groupe** (promotion ou sous-groupe) ne peut avoir qu'une séance à un instant t.
+- `H3` Une **ressource** (salle/installation) ne peut accueillir qu'une séance à un instant t (sauf ressource marquée « multi-occupation », ex. piste d'athlétisme découpée en couloirs).
+- `H4` Effectif du groupe ≤ capacité de la ressource ; type de séance compatible avec le type de ressource (natation ⇒ piscine).
+- `H5` Séance incluse dans les **disponibilités déclarées** de l'enseignant et dans les **plages d'ouverture** de la ressource.
+- `H6` Aucune séance pendant les périodes de **stage, examens, congés, jours fériés** de la promotion.
+- `H7` Respect de la pause déjeuner et, selon l'usage de l'établissement, de la plage du **vendredi midi**.
+
+### Contraintes souples (pénalisées, optimisées)
+- `S1` Pratique extérieure évitée sur la plage 11h–15h (chaleur).
+- `S2` Minimiser les « trous » dans la journée des étudiants.
+- `S3` Regrouper les séances d'un vacataire sur une même journée (coût de déplacement).
+- `S4` Max 2 séances pratiques intensives/jour et pas deux « charges lourdes » consécutives (ex. athlétisme + natation).
+- `S5` Équilibrer la charge hebdomadaire entre les semaines du semestre.
+- `S6` Éviter les changements de site entre deux séances consécutives.
+- `S7` Matières à forte charge cognitive plutôt le matin.
+
+---
+
+## 5. Modélisation Django
+
+### 5.1 Découpage en applications
+
+```
+injs_edt/
+├── core/            # utilisateurs, rôles, audit, paramètres établissement
+├── structure/       # départements, filières, cycles, promotions, groupes
+├── pedagogie/       # années, semestres, UE/ECUE, maquettes, affectations
+├── ressources/      # salles, installations sportives, équipements, indisponibilités
+├── planning/        # créneaux, séances, conflits, versions d'EDT, publication
+├── solver/          # moteur d'optimisation (OR-Tools CP-SAT)
+├── presence/        # émargement, absences, heures réalisées
+├── notifications/   # email / SMS / push / WhatsApp Business API
+└── api/             # DRF + schéma OpenAPI
+```
+
+### 5.2 Modèles essentiels
+
+```python
+# core/models.py
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+
+class Utilisateur(AbstractUser):
+    class Role(models.TextChoices):
+        DIRECTION   = "DIR",  "Direction des Études"
+        PLANIF      = "PLA",  "Planificateur"
+        CHEF_DEPT   = "CHD",  "Chef de département"
+        ENSEIGNANT  = "ENS",  "Enseignant"
+        ETUDIANT    = "ETU",  "Étudiant"
+        GEST_INSTAL = "GIN",  "Gestionnaire d'installations"
+
+    role      = models.CharField(max_length=3, choices=Role.choices)
+    telephone = models.CharField(max_length=20, blank=True)   # +225 ... pour le SMS
+    matricule = models.CharField(max_length=30, unique=True, null=True, blank=True)
+```
+
+```python
+# structure/models.py
+class Departement(models.Model):            # Sports/EPS, Jeunesse/Animation, Tronc commun...
+    code = models.CharField(max_length=10, unique=True)
+    libelle = models.CharField(max_length=120)
+
+class Filiere(models.Model):
+    departement = models.ForeignKey(Departement, on_delete=models.PROTECT, related_name="filieres")
+    code, libelle = models.CharField(max_length=15, unique=True), models.CharField(max_length=150)
+
+class Cycle(models.Model):                  # Moniteur / Maîtrise / Professorat / Licence / Master
+    libelle = models.CharField(max_length=60)
+    duree_annees = models.PositiveSmallIntegerField(default=3)
+
+class Promotion(models.Model):              # ex. "Professorat EPS 2 — 2025/2026"
+    filiere  = models.ForeignKey(Filiere, on_delete=models.PROTECT)
+    cycle    = models.ForeignKey(Cycle, on_delete=models.PROTECT)
+    niveau   = models.PositiveSmallIntegerField()
+    annee    = models.ForeignKey("pedagogie.AnneeAcademique", on_delete=models.CASCADE)
+    effectif = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(
+            fields=["filiere", "cycle", "niveau", "annee"], name="uniq_promotion")]
+
+class Groupe(models.Model):
+    """Promotion entière (CM) ou sous-groupe TD/TP/pratique (A, B, Garçons, Filles, Natation 1...)."""
+    class Type(models.TextChoices):
+        PROMOTION = "PROM", "Promotion entière"
+        TD = "TD", "Groupe de TD"
+        TP = "TP", "Groupe de TP/pratique"
+    promotion = models.ForeignKey(Promotion, on_delete=models.CASCADE, related_name="groupes")
+    libelle   = models.CharField(max_length=50)
+    type      = models.CharField(max_length=4, choices=Type.choices, default=Type.PROMOTION)
+    effectif  = models.PositiveIntegerField()
+    parent    = models.ForeignKey("self", null=True, blank=True, on_delete=models.CASCADE,
+                                  related_name="sous_groupes")
+```
+
+> 🔑 **Le concept de `Groupe` auto-référent est la clé** : si un sous-groupe est occupé, son parent l'est aussi (et réciproquement, l'occupation du parent bloque tous les enfants). C'est ce qui évite le bug classique « le CM de la promo chevauche le TP de natation du groupe A ».
+
+```python
+# pedagogie/models.py
+class AnneeAcademique(models.Model):
+    libelle = models.CharField(max_length=9, unique=True)   # "2025-2026"
+    debut, fin = models.DateField(), models.DateField()
+    active = models.BooleanField(default=False)
+
+class Semestre(models.Model):
+    annee = models.ForeignKey(AnneeAcademique, on_delete=models.CASCADE, related_name="semestres")
+    numero = models.PositiveSmallIntegerField()
+    debut, fin = models.DateField(), models.DateField()
+
+class UE(models.Model):
+    code, intitule = models.CharField(max_length=20), models.CharField(max_length=200)
+    credits = models.PositiveSmallIntegerField(default=0)
+
+class ECUE(models.Model):                     # "matière"
+    class Nature(models.TextChoices):
+        THEORIQUE = "TH", "Théorique"
+        PRATIQUE  = "PR", "Pratique sportive"
+        MIXTE     = "MX", "Mixte"
+    ue = models.ForeignKey(UE, on_delete=models.CASCADE, related_name="ecues")
+    code, intitule = models.CharField(max_length=20, unique=True), models.CharField(max_length=200)
+    nature = models.CharField(max_length=2, choices=Nature.choices)
+    volume_cm = models.PositiveSmallIntegerField(default=0)
+    volume_td = models.PositiveSmallIntegerField(default=0)
+    volume_tp = models.PositiveSmallIntegerField(default=0)
+    type_ressource_requis = models.ForeignKey("ressources.TypeRessource",
+                                              null=True, blank=True, on_delete=models.SET_NULL)
+
+class Maquette(models.Model):                 # ECUE × promotion × semestre
+    promotion = models.ForeignKey("structure.Promotion", on_delete=models.CASCADE)
+    semestre  = models.ForeignKey(Semestre, on_delete=models.CASCADE)
+    ecue      = models.ForeignKey(ECUE, on_delete=models.PROTECT)
+
+class Affectation(models.Model):              # qui enseigne quoi, à qui
+    maquette   = models.ForeignKey(Maquette, on_delete=models.CASCADE, related_name="affectations")
+    enseignant = models.ForeignKey("pedagogie.Enseignant", on_delete=models.PROTECT)
+    groupe     = models.ForeignKey("structure.Groupe", on_delete=models.CASCADE)
+    heures_a_planifier = models.PositiveSmallIntegerField()
+
+class Enseignant(models.Model):
+    class Statut(models.TextChoices):
+        PERMANENT = "PERM", "Permanent"
+        VACATAIRE = "VACA", "Vacataire"
+        DETACHE   = "DETA", "Détaché / mis à disposition"
+    user   = models.OneToOneField("core.Utilisateur", on_delete=models.CASCADE)
+    statut = models.CharField(max_length=4, choices=Statut.choices)
+    specialites = models.ManyToManyField(ECUE, blank=True, related_name="enseignants")
+    charge_hebdo_max = models.PositiveSmallIntegerField(default=18)
+    taux_horaire = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+
+class Disponibilite(models.Model):
+    enseignant = models.ForeignKey(Enseignant, on_delete=models.CASCADE, related_name="disponibilites")
+    jour  = models.PositiveSmallIntegerField(choices=[(i, j) for i, j in enumerate(
+        ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"])])
+    debut, fin = models.TimeField(), models.TimeField()
+    preference = models.SmallIntegerField(default=0)   # +2 souhaité, 0 neutre, -2 à éviter
+    semestre = models.ForeignKey(Semestre, on_delete=models.CASCADE)
+```
+
+```python
+# ressources/models.py
+class TypeRessource(models.Model):            # SALLE, AMPHI, PISCINE, GYMNASE, PISTE, TERRAIN, DOJO, MUSCU, LABO_INFO
+    code, libelle = models.CharField(max_length=20, unique=True), models.CharField(max_length=80)
+    exterieur = models.BooleanField(default=False)     # => sensible à la pluie et à la chaleur
+
+class Ressource(models.Model):
+    code      = models.CharField(max_length=20, unique=True)
+    libelle   = models.CharField(max_length=120)
+    type      = models.ForeignKey(TypeRessource, on_delete=models.PROTECT)
+    capacite  = models.PositiveIntegerField()
+    site      = models.CharField(max_length=80, default="Campus INJS")
+    multi_occupation = models.PositiveSmallIntegerField(default=1)  # ex. piste = 3 groupes simultanés
+    ouverture, fermeture = models.TimeField(), models.TimeField()
+    actif = models.BooleanField(default=True)
+
+class Indisponibilite(models.Model):          # maintenance, événement fédéral, compétition, travaux
+    ressource = models.ForeignKey(Ressource, on_delete=models.CASCADE, related_name="indisponibilites")
+    debut, fin = models.DateTimeField(), models.DateTimeField()
+    motif = models.CharField(max_length=200)
+    exclusif = models.BooleanField(default=True)
+```
+
+```python
+# planning/models.py
+from django.contrib.postgres.fields import DateTimeRangeField
+from django.contrib.postgres.constraints import ExclusionConstraint
+from django.contrib.postgres.operations import BtreeGistExtension
+
+class Creneau(models.Model):                  # grille horaire standard de l'établissement
+    libelle = models.CharField(max_length=30) # "S1 07h00-09h00"
+    debut, fin = models.TimeField(), models.TimeField()
+    ordre = models.PositiveSmallIntegerField()
+
+class VersionEDT(models.Model):               # brouillon → validé → publié (traçabilité & rollback)
+    class Statut(models.TextChoices):
+        BROUILLON = "BRO", "Brouillon"
+        VALIDE    = "VAL", "Validé"
+        PUBLIE    = "PUB", "Publié"
+        ARCHIVE   = "ARC", "Archivé"
+    semestre = models.ForeignKey("pedagogie.Semestre", on_delete=models.CASCADE)
+    numero   = models.PositiveSmallIntegerField()
+    statut   = models.CharField(max_length=3, choices=Statut.choices, default=Statut.BROUILLON)
+    cree_par = models.ForeignKey("core.Utilisateur", on_delete=models.PROTECT)
+    publie_le = models.DateTimeField(null=True, blank=True)
+
+class Seance(models.Model):
+    class TypeSeance(models.TextChoices):
+        CM = "CM", "Cours magistral"
+        TD = "TD", "Travaux dirigés"
+        TP = "TP", "Travaux pratiques / pratique sportive"
+        EX = "EX", "Évaluation"
+        CF = "CF", "Conférence"
+    class Statut(models.TextChoices):
+        PLANIFIEE = "PLA", "Planifiée"
+        CONFIRMEE = "CNF", "Confirmée"
+        REPORTEE  = "REP", "Reportée"
+        ANNULEE   = "ANN", "Annulée"
+        REALISEE  = "REA", "Réalisée"
+
+    version     = models.ForeignKey(VersionEDT, on_delete=models.CASCADE, related_name="seances")
+    affectation = models.ForeignKey("pedagogie.Affectation", on_delete=models.CASCADE)
+    groupe      = models.ForeignKey("structure.Groupe", on_delete=models.PROTECT)
+    enseignant  = models.ForeignKey("pedagogie.Enseignant", on_delete=models.PROTECT)
+    ressource   = models.ForeignKey("ressources.Ressource", null=True, blank=True,
+                                    on_delete=models.SET_NULL)
+    type_seance = models.CharField(max_length=2, choices=TypeSeance.choices)
+    periode     = DateTimeRangeField()         # [début, fin) — PostgreSQL tstzrange
+    statut      = models.CharField(max_length=3, choices=Statut.choices, default=Statut.PLANIFIEE)
+    plan_b      = models.ForeignKey("ressources.Ressource", null=True, blank=True,
+                                    on_delete=models.SET_NULL, related_name="seances_repli")
+    observation = models.TextField(blank=True)
+
+    class Meta:
+        constraints = [
+            ExclusionConstraint(                       # H1 : pas deux séances pour un enseignant
+                name="excl_enseignant",
+                expressions=[("periode", "&&"), ("enseignant", "="), ("version", "=")],
+                condition=models.Q(statut__in=["PLA", "CNF", "REA"]),
+            ),
+            ExclusionConstraint(                       # H2 : pas deux séances pour un groupe
+                name="excl_groupe",
+                expressions=[("periode", "&&"), ("groupe", "="), ("version", "=")],
+                condition=models.Q(statut__in=["PLA", "CNF", "REA"]),
+            ),
+            ExclusionConstraint(                       # H3 : ressource exclusive
+                name="excl_ressource",
+                expressions=[("periode", "&&"), ("ressource", "="), ("version", "=")],
+                condition=models.Q(statut__in=["PLA", "CNF", "REA"], ressource__isnull=False),
+            ),
+        ]
+        indexes = [models.Index(fields=["version", "groupe"]),
+                   GistIndex(fields=["periode"])]
+```
+
+> 💡 **Choix d'architecture déterminant** : utiliser PostgreSQL + `DateTimeRangeField` + `ExclusionConstraint` (extension `btree_gist`). La non-collision est garantie **par la base**, pas seulement par le code Python. Aucune race condition possible entre deux planificateurs qui saisissent en même temps. C'est une garantie qu'aucun Excel ne donnera jamais.
+
+Le conflit « parent/enfant » (H2 étendu) n'étant pas exprimable par une seule contrainte d'exclusion, on l'ajoute en `clean()` + trigger :
+
+```python
+def clean(self):
+    familles = [self.groupe_id] + list(self.groupe.sous_groupes.values_list("id", flat=True))
+    if self.groupe.parent_id:
+        familles.append(self.groupe.parent_id)
+    conflit = Seance.objects.filter(
+        version=self.version, groupe_id__in=familles, periode__overlap=self.periode
+    ).exclude(pk=self.pk).exclude(statut__in=["ANN", "REP"]).first()
+    if conflit:
+        raise ValidationError(f"Conflit de groupe avec : {conflit}")
+```
+
+---
+
+## 6. Le moteur de génération automatique (OR-Tools CP-SAT)
+
+Django seul ne « fabrique » pas un emploi du temps : il faut un solveur de satisfaction de contraintes, exécuté en tâche asynchrone **Celery** pour ne pas bloquer la requête HTTP.
+
+```python
+# solver/engine.py (extrait de principe)
+from ortools.sat.python import cp_model
+
+def generer(semestre, slots, affectations, ressources):
+    m = cp_model.CpModel()
+    # x[a, s, r] = 1 si l'affectation a est placée sur le slot s dans la ressource r
+    x = {(a.id, s.id, r.id): m.NewBoolVar(f"x_{a.id}_{s.id}_{r.id}")
+         for a in affectations for s in slots for r in ressources
+         if r.type_id == a.maquette.ecue.type_ressource_requis_id
+         and r.capacite >= a.groupe.effectif
+         and enseignant_dispo(a.enseignant, s)}
+
+    # Volume horaire exact de chaque affectation
+    for a in affectations:
+        m.Add(sum(x[k] for k in x if k[0] == a.id) == a.nb_seances)
+
+    # H1 / H2 / H3
+    for s in slots:
+        for ens in enseignants:
+            m.AddAtMostOne(x[k] for k in x if k[1] == s.id and aff(k[0]).enseignant_id == ens.id)
+        for g in groupes_et_ascendants:
+            m.AddAtMostOne(x[k] for k in x if k[1] == s.id and conflit_groupe(aff(k[0]).groupe, g))
+        for r in ressources:
+            m.Add(sum(x[k] for k in x if k[1] == s.id and k[2] == r.id) <= r.multi_occupation)
+
+    # S1 : pénaliser la pratique extérieure entre 11h et 15h
+    penalites = [x[k] for k in x
+                 if ressource(k[2]).type.exterieur and slot(k[1]).debut.hour in range(11, 15)]
+    # S2 : trous étudiants, S3 : groupement vacataires, etc.
+    m.Minimize(10 * sum(penalites) + 5 * sum(trous) + 3 * sum(jours_vacataires))
+
+    solver = cp_model.CpSolver()
+    solver.parameters.max_time_in_seconds = 120
+    solver.parameters.num_search_workers = 8
+    return extraire_seances(solver, x) if solver.Solve(m) in (cp_model.OPTIMAL, cp_model.FEASIBLE) else None
+```
+
+**Règle d'or ergonomique :** le solveur produit une **`VersionEDT` en brouillon**, jamais une publication directe. Le planificateur ajuste ensuite au drag & drop, le système revalidant les contraintes en temps réel (`POST /api/seances/{id}/verifier/`).
+
+---
+
+## 7. Les écrans et parcours
+
+| Écran | Technologie recommandée | Contenu |
+|---|---|---|
+| Tableau de bord Scolarité | Django templates + **HTMX** + Alpine.js | KPI : % maquette couverte, conflits ouverts, taux d'occupation des installations |
+| Grille hebdomadaire éditable | **FullCalendar** (`resourceTimeGrid`) en drag & drop | Filtres : promotion / enseignant / installation |
+| Vue « Installations » | FullCalendar `resourceTimeline` | Une ligne par piscine/gymnase/terrain → saturation visible d'un coup d'œil |
+| Mon EDT (étudiant/enseignant) | **PWA** légère, offline-first (service worker + IndexedDB) | Vue « aujourd'hui / semaine », badge des changements |
+| Déclaration de disponibilité | Formulaire enseignant | Grille à cocher par semestre |
+| Demande de report | Workflow | Enseignant demande → Scolarité propose créneaux libres → notification automatique |
+| Émargement | QR code ou code séance à 6 chiffres | Alimente les heures réalisées et les vacations |
+
+**Pourquoi HTMX plutôt qu'un SPA React ici** : équipe réduite, pas de double modélisation, rendu serveur = pages légères, atout décisif avec une connectivité ivoirienne parfois irrégulière et beaucoup d'accès mobile.
+
+---
+
+## 8. Notifications — le vrai facteur d'adoption
+
+```python
+# notifications/services.py
+@receiver(post_save, sender=Seance)
+def notifier_changement(sender, instance, created, **kwargs):
+    if instance.version.statut != VersionEDT.Statut.PUBLIE:
+        return                                    # on ne spamme pas sur les brouillons
+    if instance.statut in ("REP", "ANN") or not created:
+        envoyer_notification.delay(
+            destinataires=list(instance.groupe.etudiants.values_list("id", flat=True))
+                          + [instance.enseignant.user_id],
+            canal=["PUSH", "SMS"],
+            template="seance_modifiee",
+            contexte={"seance": instance.id},
+        )
+```
+
+Canaux à prévoir, par ordre d'efficacité réelle sur le terrain abidjanais :
+1. **Push PWA** (gratuit),
+2. **SMS** via agrégateur local (Orange CI / MTN CI / Moov) — court, fiable, lu,
+3. **WhatsApp Business API** (le canal naturel des promotions),
+4. **E-mail** + **flux iCalendar** (`/ical/promotion/<uuid>.ics`) pour synchroniser Google Calendar,
+5. **Affichage écran** à la Scolarité (vue kiosque auto-rafraîchie).
+
+Et toujours le **PDF officiel** (WeasyPrint) en-tête INJS, signé par la Direction des Études — en Afrique de l'Ouest, le document imprimé reste la preuve administrative.
+
+---
+
+## 9. Sécurité, gouvernance, qualité
+
+- **RBAC** par rôle + permissions objet (`django-guardian` ou règles maison : un chef de département ne touche qu'à son périmètre).
+- **Audit trail** complet (`django-simple-history` sur `Seance`, `Affectation`, `Indisponibilite`) : *qui a déplacé la séance de natation du mardi, quand, pourquoi*.
+- **Workflow de publication** : brouillon → validation Direction → publication horodatée + archivage de la version précédente (rollback possible).
+- **Tests** : `pytest-django` + `factory_boy` + **tests de propriété** (`hypothesis`) sur l'invariant « aucun chevauchement » ; tests de charge sur la génération (1 200 étudiants, 15 promotions, 60 enseignants, 25 ressources).
+- **RGPD / loi ivoirienne n°2013-450** sur la protection des données à caractère personnel (ARTCI) : minimisation, durée de conservation, information des personnes.
+
+---
+
+## 10. Déploiement adapté au contexte
+
+| Couche | Choix | Justification |
+|---|---|---|
+| BDD | PostgreSQL 15+ (`btree_gist`) | Contraintes d'exclusion temporelles |
+| Async | Celery + Redis | Solveur, notifications, exports |
+| Serveur | Gunicorn/Uvicorn + Nginx, Docker Compose | Reproductible, léger |
+| Hébergement | VPS local/régional (Abidjan/Dakar) ou on-premise à l'INJS | Latence, souveraineté, coût en FCFA |
+| Résilience | Mode dégradé : PDF et cache PWA consultables hors ligne, onduleur pour le serveur | Coupures électriques/réseau |
+| Monitoring | Sentry + healthchecks + sauvegardes `pg_dump` chiffrées quotidiennes hors site | Continuité de service |
+
+---
+
+## 11. Feuille de route pragmatique
+
+| Phase | Durée | Livrable |
+|---|---|---|
+| **0 — Cadrage** | 2–3 sem. | Ateliers Scolarité/départements, récupération des Excel existants, catalogue réel des installations, validation des règles H/S |
+| **1 — MVP** | 6–8 sem. | Référentiels + saisie manuelle de l'EDT + détection automatique des conflits + consultation web/PDF. *Objectif : supprimer les collisions dès le premier semestre* |
+| **2 — Diffusion** | 4 sem. | PWA étudiant/enseignant, notifications SMS/push, flux iCal |
+| **3 — Automatisation** | 6–8 sem. | Solveur CP-SAT, disponibilités enseignants, gestion des indisponibilités d'installations, plan B pluie |
+| **4 — Valorisation** | 4 sem. | Émargement, heures réalisées, états de vacation, tableaux de bord d'occupation, rapprochement maquette/réalisé |
+
+**Indicateurs de succès :** nombre de conflits détectés avant publication ; délai moyen de notification d'un changement (< 15 min) ; taux d'occupation de la piscine et du gymnase (+ X pts) ; % de maquette couverte en fin de semestre (> 95 %) ; délai de production des états de vacation (de ~3 semaines à < 1 jour).
+
+---
+
+## 12. Les 5 pièges à éviter
+
+1. **Vouloir automatiser à 100 % dès le début** : un EDT 70 % auto + 30 % ajusté à la main est accepté ; un EDT 100 % auto incompréhensible est rejeté.
+2. **Négliger la modélisation des sous-groupes** : c'est la source n°1 des bugs de chevauchement dans ce type d'école.
+3. **Oublier les vacataires** : si leurs disponibilités ne sont pas dans le système, le planning sera faux dès la semaine 2.
+4. **Publier sans workflow de validation** : la Direction des Études doit garder la main et la signature.
+5. **Ignorer le canal WhatsApp/SMS** : l'outil le plus élégant échoue si l'information ne parvient pas là où les étudiants la lisent déjà.
+
+---
+
+### En résumé
+
+La gestion des emplois du temps à l'INJS d'Abidjan est un **problème d'ordonnancement sous contraintes multi-ressources** où l'installation sportive, la météo et le vacataire pèsent plus lourd que la salle de cours. Une application Django bien conçue repose sur trois piliers : **un modèle de données hiérarchique (promotion → sous-groupes) adossé à des contraintes d'exclusion PostgreSQL**, **un solveur CP-SAT asynchrone produisant des brouillons éditables**, et **une diffusion multicanale (PWA + SMS/WhatsApp + PDF officiel)** adaptée aux usages réels.
+
+Partie 4 :
+
+# planning/models.py
+from django.conf import settings
+from django.contrib.postgres.constraints import ExclusionConstraint
+from django.contrib.postgres.fields import IntegerRangeField, RangeOperators
+from django.core.exceptions import ValidationError
+from django.db import models
+from django.db.models import F, Q
+
+
+class Weekday(models.IntegerChoices):
+    MONDAY = 0, "Lundi"
+    TUESDAY = 1, "Mardi"
+    WEDNESDAY = 2, "Mercredi"
+    THURSDAY = 3, "Jeudi"
+    FRIDAY = 4, "Vendredi"
+    SATURDAY = 5, "Samedi"
+    SUNDAY = 6, "Dimanche"
+
+
+class AcademicYear(models.Model):
+    code = models.CharField(max_length=9, unique=True)  # ex. 2025-2026
+    starts_on = models.DateField()
+    ends_on = models.DateField()
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(starts_on__lt=F("ends_on")),
+                name="ck_academic_year_dates",
+            )
+        ]
+
+
+class Term(models.Model):
+    academic_year = models.ForeignKey(
+        AcademicYear, on_delete=models.PROTECT, related_name="terms"
+    )
+    number = models.PositiveSmallIntegerField()
+    starts_on = models.DateField()
+    ends_on = models.DateField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["academic_year", "number"],
+                name="uq_term_year_number",
+            ),
+            models.CheckConstraint(
+                condition=Q(starts_on__lt=F("ends_on")),
+                name="ck_term_dates",
+            ),
+        ]
+
+
+class Department(models.Model):
+    code = models.CharField(max_length=15, unique=True)
+    name = models.CharField(max_length=120)
+
+
+class Program(models.Model):
+    department = models.ForeignKey(
+        Department, on_delete=models.PROTECT, related_name="programs"
+    )
+    code = models.CharField(max_length=15, unique=True)
+    name = models.CharField(max_length=150)
+
+
+class Cohort(models.Model):
+    program = models.ForeignKey(
+        Program, on_delete=models.PROTECT, related_name="cohorts"
+    )
+    academic_year = models.ForeignKey(AcademicYear, on_delete=models.PROTECT)
+    level = models.PositiveSmallIntegerField()
+    name = models.CharField(max_length=100)
+    headcount = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["program", "academic_year", "level"],
+                name="uq_cohort_program_year_level",
+            )
+        ]
+
+
+class StudyGroup(models.Model):
+    """Une promotion ou un sous-groupe de TD/TP/pratique."""
+    cohort = models.ForeignKey(
+        Cohort, on_delete=models.CASCADE, related_name="groups"
+    )
+    parent = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="children",
+    )
+    code = models.CharField(max_length=30)
+    name = models.CharField(max_length=100)
+    headcount = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["cohort", "code"],
+                name="uq_group_cohort_code",
+            )
+        ]
+
+
+class ResourceType(models.Model):
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=80)
+
+
+class CourseUnit(models.Model):
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=200)
+    required_resource_type = models.ForeignKey(
+        ResourceType,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+    )
+
+
+class Teacher(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+    )
+    max_weekly_minutes = models.PositiveIntegerField(default=0)
+
+
+class Resource(models.Model):
+    """
+    Une ressource physique : salle, dojo, piscine, terrain, etc.
+    Sa capacité correspond à l'effectif maximal accueilli.
+    """
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=120)
+    type = models.ForeignKey(ResourceType, on_delete=models.PROTECT)
+    student_capacity = models.PositiveIntegerField()
+    is_outdoor = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+
+
+class TeachingAssignment(models.Model):
+    """Qui enseigne quoi, à quel groupe, et à quelle fréquence hebdomadaire."""
+    term = models.ForeignKey(Term, on_delete=models.CASCADE)
+    unit = models.ForeignKey(CourseUnit, on_delete=models.PROTECT)
+    teacher = models.ForeignKey(Teacher, on_delete=models.PROTECT)
+    group = models.ForeignKey(StudyGroup, on_delete=models.PROTECT)
+    sessions_per_week = models.PositiveSmallIntegerField()
+    duration_minutes = models.PositiveSmallIntegerField()
+
+    @property
+    def weekly_minutes(self):
+        return self.sessions_per_week * self.duration_minutes
+
+
+class ScheduleVersion(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = "DRAFT", "Brouillon"
+        VALIDATED = "VALIDATED", "Validé"
+        PUBLISHED = "PUBLISHED", "Publié"
+        ARCHIVED = "ARCHIVED", "Archivé"
+
+    term = models.ForeignKey(Term, on_delete=models.CASCADE)
+    number = models.PositiveSmallIntegerField()
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.DRAFT,
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="schedule_versions",
+    )
+    published_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["term", "number"],
+                name="uq_schedule_version_number",
+            ),
+            models.UniqueConstraint(
+                fields=["term"],
+                condition=Q(status="PUBLISHED"),
+                name="uq_one_published_schedule_per_term",
+            ),
+        ]
+
+
+class WeeklySession(models.Model):
+    """
+    Séance récurrente chaque semaine du semestre.
+    period est un intervalle IntegerRangeField, en minutes depuis minuit.
+    Exemple : (420, 540) représente [07:00, 09:00).
+    """
+    version = models.ForeignKey(
+        ScheduleVersion, on_delete=models.CASCADE, related_name="sessions"
+    )
+    assignment = models.ForeignKey(
+        TeachingAssignment, on_delete=models.PROTECT
+    )
+    group = models.ForeignKey(StudyGroup, on_delete=models.PROTECT)
+    teacher = models.ForeignKey(Teacher, on_delete=models.PROTECT)
+    resource = models.ForeignKey(Resource, on_delete=models.PROTECT)
+    weekday = models.PositiveSmallIntegerField(choices=Weekday.choices)
+    period = IntegerRangeField()
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            ExclusionConstraint(
+                name="ex_teacher_no_weekly_overlap",
+                expressions=[
+                    ("version", RangeOperators.EQUAL),
+                    ("weekday", RangeOperators.EQUAL),
+                    ("teacher", RangeOperators.EQUAL),
+                    ("period", RangeOperators.OVERLAPS),
+                ],
+                condition=Q(is_active=True),
+            ),
+            ExclusionConstraint(
+                name="ex_resource_no_weekly_overlap",
+                expressions=[
+                    ("version", RangeOperators.EQUAL),
+                    ("weekday", RangeOperators.EQUAL),
+                    ("resource", RangeOperators.EQUAL),
+                    ("period", RangeOperators.OVERLAPS),
+                ],
+                condition=Q(is_active=True),
+            ),
+        ]
+
+    def clean(self):
+        if self.assignment_id and self.group_id:
+            if self.assignment.group_id != self.group_id:
+                raise ValidationError(
+                    "Le groupe de la séance doit correspondre à l'affectation."
+                )
+
+        if self.assignment_id and self.version_id:
+            if self.assignment.term_id != self.version.term_id:
+                raise ValidationError(
+                    "L'affectation et la version doivent concerner le même semestre."
+                )
+
+        if self.period:
+            start = getattr(self.period, "lower", None)
+            end = getattr(self.period, "upper", None)
+
+            # Utile si period est encore fourni sous forme de tuple.
+            if start is None and isinstance(self.period, (tuple, list)):
+                start, end = self.period
+
+            if start is None or end is None or not 0 <= start < end <= 1440:
+                raise ValidationError(
+                    "La période doit être un intervalle valide dans la journée."
+                )
+Partie 5 :
+
+
+
+# A — Suite : Vues DRF + Intégration FullCalendar
+
+## 1. Architecture API complète
+
+### 1.1 Configuration du projet
+
+```python
+# config/settings.py (extraits pertinents)
+
+INSTALLED_APPS = [
+    # Django
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django.contrib.postgres",
+
+    # Tiers
+    "rest_framework",
+    "rest_framework.authtoken",
+    "django_filters",
+    "corsheaders",
+    "drf_spectacular",
+    "simple_history",
+    "django_celery_beat",
+
+    # Applications internes
+    "core",
+    "structure",
+    "pedagogie",
+    "ressources",
+    "planning",
+    "solver",
+    "presence",
+    "notifications",
+    "api",
+]
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.TokenAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 50,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "30/minute",
+        "user": "120/minute",
+    },
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "INJS Abidjan — API Emplois du temps",
+    "DESCRIPTION": "Gestion des emplois du temps, installations et présences",
+    "VERSION": "1.0.0",
+}
+
+# Celery
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/1"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "Africa/Abidjan"
+```
+
+### 1.2 Permissions personnalisées
+
+```python
+# core/permissions.py
+from rest_framework.permissions import BasePermission
+
+
+class IsDirection(BasePermission):
+    """Accès réservé à la Direction des Études."""
+
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated
+            and getattr(request.user, "role", None) == "DIR"
+        )
+
+
+class IsPlanificateur(BasePermission):
+    """Accès réservé aux planificateurs."""
+
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated
+            and getattr(request.user, "role", None) in ("PLA", "DIR")
+        )
+
+
+class IsChefDepartement(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated
+            and getattr(request.user, "role", None) in ("CHD", "DIR")
+        )
+
+
+class IsEnseignant(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated
+            and getattr(request.user, "role", None) in ("ENS", "DIR", "PLA")
+        )
+
+
+class IsEtudiant(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated
+            and getattr(request.user, "role", None) == "ETU"
+        )
+
+
+class IsGestionnaireInstallation(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated
+            and getattr(request.user, "role", None) in ("GIN", "DIR", "PLA")
+        )
+
+
+class ReadOnly(BasePermission):
+    def has_permission(self, request, view):
+        return request.method in ("GET", "HEAD", "OPTIONS")
+```
+
+### 1.3 Serializers
+
+```python
+# api/serializers.py
+from django.utils import timezone
+from psycopg2.extras import NumericRange
+from rest_framework import serializers
+
+from core.models import Utilisateur
+from pedagogie.models import (
+    AcademicYear,
+    CourseUnit,
+    TeachingAssignment,
+    Teacher,
+    TeacherAvailability,
+    Term,
+)
+from planning.models import (
+    GroupOccupancy,
+    ScheduleVersion,
+    WeeklySession,
+)
+from ressources.models import Resource, ResourceType
+from structure.models import Cohort, Department, Program, StudyGroup
+
+
+# ──────────────────────────────────────────────
+#  Référentiels
+# ──────────────────────────────────────────────
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Department
+        fields = "__all__"
+
+
+class ProgramSerializer(serializers.ModelSerializer):
+    department_name = serializers.CharField(
+        source="department.name", read_only=True
+    )
+
+    class Meta:
+        model = Program
+        fields = ["id", "department", "department_name", "code", "name"]
+
+
+class CohortSerializer(serializers.ModelSerializer):
+    program_name = serializers.CharField(
+        source="program.name", read_only=True
+    )
+
+    class Meta:
+        model = Cohort
+        fields = [
+            "id", "program", "program_name",
+            "academic_year", "level", "name", "headcount",
+        ]
+
+
+class StudyGroupSerializer(serializers.ModelSerializer):
+    cohort_name = serializers.CharField(
+        source="cohort.name", read_only=True
+    )
+    parent_name = serializers.CharField(
+        source="parent.name", read_only=True, default=None
+    )
+    children = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StudyGroup
+        fields = [
+            "id", "cohort", "cohort_name",
+            "parent", "parent_name",
+            "code", "name", "headcount",
+            "children",
+        ]
+
+    def get_children(self, obj):
+        qs = obj.children.all()
+        if not qs.exists():
+            return []
+        return StudyGroupSerializer(qs, many=True, context=self.context).data
+
+
+class ResourceTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ResourceType
+        fields = "__all__"
+
+
+class ResourceSerializer(serializers.ModelSerializer):
+    type_name = serializers.CharField(source="type.name", read_only=True)
+
+    class Meta:
+        model = Resource
+        fields = [
+            "id", "code", "name", "type", "type_name",
+            "student_capacity", "is_outdoor", "is_active",
+        ]
+
+
+class TeacherSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    email = serializers.EmailField(source="user.email", read_only=True)
+    telephone = serializers.CharField(
+        source="user.telephone", read_only=True
+    )
+
+    class Meta:
+        model = Teacher
+        fields = [
+            "id", "user", "full_name", "email",
+            "telephone", "max_weekly_minutes",
+        ]
+
+    def get_full_name(self, obj):
+        return obj.user.get_full_name() or obj.user.username
+
+
+class TeacherAvailabilitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeacherAvailability
+        fields = [
+            "id", "teacher", "weekday",
+            "start_minute", "end_minute", "preference",
+        ]
+
+    def validate(self, data):
+        if data["start_minute"] >= data["end_minute"]:
+            raise serializers.ValidationError(
+                "L'heure de début doit précéder l'heure de fin."
+            )
+        return data
+
+
+class CourseUnitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseUnit
+        fields = "__all__"
+
+
+class TeachingAssignmentSerializer(serializers.ModelSerializer):
+    teacher_name = serializers.CharField(
+        source="teacher.user.get_full_name", read_only=True
+    )
+    unit_name = serializers.CharField(
+        source="unit.name", read_only=True
+    )
+    group_name = serializers.CharField(
+        source="group.name", read_only=True
+    )
+
+    class Meta:
+        model = TeachingAssignment
+        fields = [
+            "id", "term", "unit", "unit_name",
+            "teacher", "teacher_name",
+            "group", "group_name",
+            "sessions_per_week", "duration_minutes",
+        ]
+
+
+# ──────────────────────────────────────────────
+#  Planning
+# ──────────────────────────────────────────────
+
+class ScheduleVersionSerializer(serializers.ModelSerializer):
+    created_by_name = serializers.CharField(
+        source="created_by.get_full_name", read_only=True
+    )
+    session_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = ScheduleVersion
+        fields = [
+            "id", "term", "number", "status",
+            "created_by", "created_by_name",
+            "published_at", "session_count",
+        ]
+        read_only_fields = ["published_at", "created_by"]
+
+
+WEEKDAY_LABELS = [
+    "Lundi", "Mardi", "Mercredi",
+    "Jeudi", "Vendredi", "Samedi", "Dimanche",
+]
+
+
+def minutes_to_time_str(minutes):
+    """Convertit un nombre de minutes depuis minuit en chaîne HH:MM."""
+    hours, mins = divmod(minutes, 60)
+    return f"{hours:02d}:{mins:02d}"
+
+
+class WeeklySessionSerializer(serializers.ModelSerializer):
+    """Lecture enrichie d'une séance hebdomadaire."""
+    teacher_name = serializers.CharField(
+        source="teacher.user.get_full_name", read_only=True
+    )
+    group_name = serializers.CharField(
+        source="group.name", read_only=True
+    )
+    resource_name = serializers.CharField(
+        source="resource.name", read_only=True
+    )
+    unit_name = serializers.CharField(
+        source="assignment.unit.name", read_only=True
+    )
+    weekday_label = serializers.SerializerMethodField()
+    start_time = serializers.SerializerMethodField()
+    end_time = serializers.SerializerMethodField()
+
+    class Meta:
+        model = WeeklySession
+        fields = [
+            "id", "version", "assignment",
+            "unit_name", "group", "group_name",
+            "teacher", "teacher_name",
+            "resource", "resource_name",
+            "weekday", "weekday_label",
+            "period", "start_time", "end_time",
+            "is_active",
+        ]
+
+    def get_weekday_label(self, obj):
+        return WEEKDAY_LABELS[obj.weekday]
+
+    def get_start_time(self, obj):
+        if obj.period:
+            return minutes_to_time_str(obj.period.lower)
+        return None
+
+    def get_end_time(self, obj):
+        if obj.period:
+            return minutes_to_time_str(obj.period.upper)
+        return None
+
+
+class WeeklySessionWriteSerializer(serializers.ModelSerializer):
+    """Écriture d'une séance — accepte start_minute / end_minute."""
+    start_minute = serializers.IntegerField(write_only=True)
+    end_minute = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = WeeklySession
+        fields = [
+            "id", "version", "assignment",
+            "group", "teacher", "resource",
+            "weekday", "start_minute", "end_minute",
+            "is_active",
+        ]
+
+    def validate(self, data):
+        start = data.pop("start_minute")
+        end = data.pop("end_minute")
+
+        if not 0 <= start < end <= 1440:
+            raise serializers.ValidationError(
+                "Intervalle horaire invalide."
+            )
+
+        data["period"] = NumericRange(start, end)
+
+        version = data.get("version")
+        if version and version.status != ScheduleVersion.Status.DRAFT:
+            raise serializers.ValidationError(
+                "Seules les versions brouillon sont modifiables."
+            )
+
+        group = data.get("group")
+        resource = data.get("resource")
+        if resource and group:
+            if group.headcount > resource.student_capacity:
+                raise serializers.ValidationError(
+                    "L'effectif du groupe dépasse la capacité de la ressource."
+                )
+
+        assignment = data.get("assignment")
+        if assignment and resource:
+            required = assignment.unit.required_resource_type_id
+            if required and resource.type_id != required:
+                raise serializers.ValidationError(
+                    "Le type de ressource ne correspond pas à l'ECUE."
+                )
+
+        return data
+
+    def create(self, validated_data):
+        session = super().create(validated_data)
+        self._create_occupancies(session)
+        return session
+
+    def update(self, instance, validated_data):
+        instance.occupancies.all().delete()
+        session = super().update(instance, validated_data)
+        self._create_occupancies(session)
+        return session
+
+    @staticmethod
+    def _create_occupancies(session):
+        """Crée les réservations de groupes feuilles."""
+        leaf_ids = _collect_leaf_ids(session.group)
+        occupancies = [
+            GroupOccupancy(
+                session=session,
+                version=session.version,
+                leaf_group=StudyGroup.objects.get(pk=lid),
+                weekday=session.weekday,
+                period=session.period,
+            )
+            for lid in leaf_ids
+        ]
+        GroupOccupancy.objects.bulk_create(occupancies)
+
+
+def _collect_leaf_ids(group):
+    """Renvoie les identifiants des groupes feuilles."""
+    children = list(group.children.all())
+    if not children:
+        return [group.id]
+    result = []
+    for child in children:
+        result.extend(_collect_leaf_ids(child))
+    return result
+
+
+# ──────────────────────────────────────────────
+#  FullCalendar : sérialisation adaptée
+# ──────────────────────────────────────────────
+
+class FullCalendarEventSerializer(serializers.Serializer):
+    """
+    Transforme une séance hebdomadaire en événement FullCalendar.
+    Le front fournit une date de référence (début de semaine),
+    et chaque événement renvoie un datetime ISO 8601 complet.
+    """
+    id = serializers.IntegerField(source="session_id")
+    title = serializers.CharField()
+    start = serializers.DateTimeField()
+    end = serializers.DateTimeField()
+    resourceId = serializers.IntegerField()
+    backgroundColor = serializers.CharField()
+    extendedProps = serializers.DictField()
+
+
+class FullCalendarResourceSerializer(serializers.Serializer):
+    """Ressource au sens FullCalendar (salle, terrain, piscine)."""
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    type = serializers.CharField()
+    capacity = serializers.IntegerField()
+```
+
+### 1.4 Filtres
+
+```python
+# api/filters.py
+import django_filters
+
+from planning.models import WeeklySession
+from pedagogie.models import TeachingAssignment
+
+
+class WeeklySessionFilter(django_filters.FilterSet):
+    version = django_filters.NumberFilter(field_name="version_id")
+    teacher = django_filters.NumberFilter(field_name="teacher_id")
+    group = django_filters.NumberFilter(field_name="group_id")
+    cohort = django_filters.NumberFilter(field_name="group__cohort_id")
+    resource = django_filters.NumberFilter(field_name="resource_id")
+    weekday = django_filters.NumberFilter()
+    resource_type = django_filters.NumberFilter(
+        field_name="resource__type_id"
+    )
+
+    class Meta:
+        model = WeeklySession
+        fields = [
+            "version", "teacher", "group", "cohort",
+            "resource", "weekday", "resource_type", "is_active",
+        ]
+
+
+class TeachingAssignmentFilter(django_filters.FilterSet):
+    term = django_filters.NumberFilter(field_name="term_id")
+    teacher = django_filters.NumberFilter(field_name="teacher_id")
+    group = django_filters.NumberFilter(field_name="group_id")
+    cohort = django_filters.NumberFilter(field_name="group__cohort_id")
+
+    class Meta:
+        model = TeachingAssignment
+        fields = ["term", "teacher", "group", "cohort"]
+```
+
+### 1.5 ViewSets
+
+```python
+# api/views.py
+from datetime import datetime, timedelta
+
+from django.db.models import Count, Q
+from django.utils import timezone
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+from core.permissions import (
+    IsDirection,
+    IsEnseignant,
+    IsPlanificateur,
+    ReadOnly,
+)
+from pedagogie.models import (
+    CourseUnit,
+    Teacher,
+    TeacherAvailability,
+    TeachingAssignment,
+    Term,
+)
+from planning.models import ScheduleVersion, WeeklySession
+from ressources.models import Resource, ResourceType
+from structure.models import Cohort, Department, Program, StudyGroup
+
+from .filters import TeachingAssignmentFilter, WeeklySessionFilter
+from .serializers import (
+    CohortSerializer,
+    CourseUnitSerializer,
+    DepartmentSerializer,
+    FullCalendarEventSerializer,
+    FullCalendarResourceSerializer,
+    ProgramSerializer,
+    ResourceSerializer,
+    ResourceTypeSerializer,
+    ScheduleVersionSerializer,
+    StudyGroupSerializer,
+    TeacherAvailabilitySerializer,
+    TeacherSerializer,
+    TeachingAssignmentSerializer,
+    WeeklySessionSerializer,
+    WeeklySessionWriteSerializer,
+    minutes_to_time_str,
+)
+
+WEEKDAY_LABELS = [
+    "Lundi", "Mardi", "Mercredi",
+    "Jeudi", "Vendredi", "Samedi", "Dimanche",
+]
+
+# Couleurs par type de ressource, à personnaliser
+COLORS = {
+    "SALLE": "#3788d8",
+    "AMPHI": "#6c5ce7",
+    "PISCINE": "#00cec9",
+    "GYMNASE": "#fdcb6e",
+    "PISTE": "#e17055",
+    "TERRAIN": "#00b894",
+    "DOJO": "#d63031",
+    "MUSCU": "#636e72",
+    "LABO_INFO": "#0984e3",
+}
+
+
+class DepartmentViewSet(viewsets.ModelViewSet):
+    queryset = Department.objects.all()
+    serializer_class = DepartmentSerializer
+    permission_classes = [IsPlanificateur | ReadOnly]
+
+
+class ProgramViewSet(viewsets.ModelViewSet):
+    queryset = Program.objects.select_related("department").all()
+    serializer_class = ProgramSerializer
+    permission_classes = [IsPlanificateur | ReadOnly]
+
+
+class CohortViewSet(viewsets.ModelViewSet):
+    queryset = Cohort.objects.select_related("program").all()
+    serializer_class = CohortSerializer
+    permission_classes = [IsPlanificateur | ReadOnly]
+    filterset_fields = ["program", "academic_year", "level"]
+
+
+class StudyGroupViewSet(viewsets.ModelViewSet):
+    queryset = StudyGroup.objects.select_related(
+        "cohort", "parent"
+    ).prefetch_related("children").all()
+    serializer_class = StudyGroupSerializer
+    permission_classes = [IsPlanificateur | ReadOnly]
+    filterset_fields = ["cohort", "parent"]
+
+
+class ResourceTypeViewSet(viewsets.ModelViewSet):
+    queryset = ResourceType.objects.all()
+    serializer_class = ResourceTypeSerializer
+    permission_classes = [IsPlanificateur | ReadOnly]
+
+
+class ResourceViewSet(viewsets.ModelViewSet):
+    queryset = Resource.objects.select_related("type").all()
+    serializer_class = ResourceSerializer
+    permission_classes = [IsPlanificateur | ReadOnly]
+    filterset_fields = ["type", "is_outdoor", "is_active"]
+
+    @action(detail=False, methods=["get"])
+    def fullcalendar_resources(self, request):
+        """
+        GET /api/resources/fullcalendar_resources/
+        Renvoie la liste des ressources au format FullCalendar.
+        """
+        qs = self.get_queryset().filter(is_active=True)
+        data = [
+            {
+                "id": r.id,
+                "title": r.name,
+                "type": r.type.code,
+                "capacity": r.student_capacity,
+            }
+            for r in qs
+        ]
+        serializer = FullCalendarResourceSerializer(data, many=True)
+        return Response(serializer.data)
+
+
+class TeacherViewSet(viewsets.ModelViewSet):
+    queryset = Teacher.objects.select_related("user").all()
+    serializer_class = TeacherSerializer
+    permission_classes = [IsPlanificateur | ReadOnly]
+
+
+class TeacherAvailabilityViewSet(viewsets.ModelViewSet):
+    queryset = TeacherAvailability.objects.select_related("teacher").all()
+    serializer_class = TeacherAvailabilitySerializer
+    permission_classes = [IsEnseignant | IsPlanificateur]
+    filterset_fields = ["teacher", "weekday"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if getattr(user, "role", None) == "ENS":
+            qs = qs.filter(teacher__user=user)
+        return qs
+
+
+class CourseUnitViewSet(viewsets.ModelViewSet):
+    queryset = CourseUnit.objects.all()
+    serializer_class = CourseUnitSerializer
+    permission_classes = [IsPlanificateur | ReadOnly]
+
+
+class TeachingAssignmentViewSet(viewsets.ModelViewSet):
+    queryset = TeachingAssignment.objects.select_related(
+        "unit", "teacher__user", "group"
+    ).all()
+    serializer_class = TeachingAssignmentSerializer
+    permission_classes = [IsPlanificateur | ReadOnly]
+    filterset_class = TeachingAssignmentFilter
+
+
+class ScheduleVersionViewSet(viewsets.ModelViewSet):
+    queryset = ScheduleVersion.objects.annotate(
+        session_count=Count("sessions")
+    ).all()
+    serializer_class = ScheduleVersionSerializer
+    permission_classes = [IsPlanificateur]
+    filterset_fields = ["term", "status"]
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    @action(detail=True, methods=["post"])
+    def validate(self, request, pk=None):
+        """POST /api/schedule-versions/{id}/validate/"""
+        version = self.get_object()
+        if version.status != ScheduleVersion.Status.DRAFT:
+            return Response(
+                {"detail": "Seul un brouillon peut être validé."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        version.status = ScheduleVersion.Status.VALIDATED
+        version.save(update_fields=["status"])
+        return Response(ScheduleVersionSerializer(version).data)
+
+    @action(detail=True, methods=["post"])
+    def publish(self, request, pk=None):
+        """POST /api/schedule-versions/{id}/publish/"""
+        version = self.get_object()
+        if version.status != ScheduleVersion.Status.VALIDATED:
+            return Response(
+                {"detail": "Seule une version validée peut être publiée."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Archiver l'ancienne version publiée du même semestre.
+        ScheduleVersion.objects.filter(
+            term=version.term,
+            status=ScheduleVersion.Status.PUBLISHED,
+        ).update(status=ScheduleVersion.Status.ARCHIVED)
+
+        version.status = ScheduleVersion.Status.PUBLISHED
+        version.published_at = timezone.now()
+        version.save(update_fields=["status", "published_at"])
+
+        # Déclencher les notifications (Celery).
+        from notifications.tasks import notify_schedule_published
+        notify_schedule_published.delay(version.id)
+
+        return Response(ScheduleVersionSerializer(version).data)
+
+    @action(detail=True, methods=["post"])
+    def generate(self, request, pk=None):
+        """POST /api/schedule-versions/{id}/generate/
+        Lance le solveur OR-Tools en tâche asynchrone.
+        """
+        version = self.get_object()
+        if version.status != ScheduleVersion.Status.DRAFT:
+            return Response(
+                {"detail": "Génération possible uniquement sur un brouillon."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from solver.tasks import run_solver
+        task = run_solver.delay(version.id)
+
+        return Response(
+            {"detail": "Génération lancée.", "task_id": str(task.id)},
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+
+class WeeklySessionViewSet(viewsets.ModelViewSet):
+    queryset = WeeklySession.objects.select_related(
+        "assignment__unit",
+        "group__cohort",
+        "teacher__user",
+        "resource__type",
+        "version",
+    ).all()
+    filterset_class = WeeklySessionFilter
+
+    def get_serializer_class(self):
+        if self.action in ("create", "update", "partial_update"):
+            return WeeklySessionWriteSerializer
+        return WeeklySessionSerializer
+
+    def get_permissions(self):
+        if self.action in ("list", "retrieve", "fullcalendar_events"):
+            return [ReadOnly()]
+        return [IsPlanificateur()]
+
+    @action(detail=False, methods=["get"])
+    def fullcalendar_events(self, request):
+        """
+        GET /api/sessions/fullcalendar_events/?version=1&week_start=2025-10-06
+        Renvoie les séances au format attendu par FullCalendar.
+        """
+        version_id = request.query_params.get("version")
+        week_start_str = request.query_params.get("week_start")
+
+        if not version_id:
+            return Response(
+                {"detail": "Le paramètre 'version' est requis."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            week_start = datetime.strptime(
+                week_start_str or "", "%Y-%m-%d"
+            ).date()
+        except (ValueError, TypeError):
+            week_start = _current_monday()
+
+        qs = self.get_queryset().filter(
+            version_id=version_id, is_active=True
+        )
+
+        # Appliquer les filtres optionnels.
+        teacher_id = request.query_params.get("teacher")
+        group_id = request.query_params.get("group")
+        cohort_id = request.query_params.get("cohort")
+        resource_id = request.query_params.get("resource")
+
+        if teacher_id:
+            qs = qs.filter(teacher_id=teacher_id)
+        if group_id:
+            qs = qs.filter(group_id=group_id)
+        if cohort_id:
+            qs = qs.filter(group__cohort_id=cohort_id)
+        if resource_id:
+            qs = qs.filter(resource_id=resource_id)
+
+        events = []
+        for session in qs:
+            day_offset = session.weekday
+            day_date = week_start + timedelta(days=day_offset)
+
+            start_dt = datetime.combine(
+                day_date,
+                _minutes_to_time(session.period.lower),
+            )
+            end_dt = datetime.combine(
+                day_date,
+                _minutes_to_time(session.period.upper),
+            )
+
+            resource_type_code = (
+                session.resource.type.code if session.resource else "SALLE"
+            )
+
+            events.append(
+                {
+                    "session_id": session.id,
+                    "title": (
+                        f"{session.assignment.unit.name}\n"
+                        f"{session.group.name}\n"
+                        f"{session.teacher.user.get_full_name()}"
+                    ),
+                    "start": start_dt.isoformat(),
+                    "end": end_dt.isoformat(),
+                    "resourceId": session.resource_id,
+                    "backgroundColor": COLORS.get(
+                        resource_type_code, "#636e72"
+                    ),
+                    "extendedProps": {
+                        "session_id": session.id,
+                        "unit": session.assignment.unit.name,
+                        "teacher": session.teacher.user.get_full_name(),
+                        "group": session.group.name,
+                        "resource": session.resource.name,
+                        "resource_type": resource_type_code,
+                        "weekday_label": WEEKDAY_LABELS[session.weekday],
+                        "start_time": minutes_to_time_str(
+                            session.period.lower
+                        ),
+                        "end_time": minutes_to_time_str(
+                            session.period.upper
+                        ),
+                    },
+                }
+            )
+
+        serializer = FullCalendarEventSerializer(events, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["post"])
+    def move(self, request, pk=None):
+        """
+        POST /api/sessions/{id}/move/
+        Déplace une séance (drag & drop depuis FullCalendar).
+        Corps : { weekday, start_minute, end_minute, resource_id }
+        """
+        session = self.get_object()
+
+        if session.version.status != ScheduleVersion.Status.DRAFT:
+            return Response(
+                {"detail": "Modification impossible hors brouillon."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = WeeklySessionWriteSerializer(
+            session, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(
+            WeeklySessionSerializer(session).data,
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["get"])
+    def conflicts(self, request, pk=None):
+        """
+        GET /api/sessions/{id}/conflicts/
+        Vérifie les conflits potentiels de cette séance.
+        """
+        session = self.get_object()
+        issues = _check_conflicts(session)
+        return Response({"conflicts": issues})
+
+
+# ──────────────────────────────────────────────
+#  Utilitaires
+# ──────────────────────────────────────────────
+
+def _current_monday():
+    today = timezone.now().date()
+    return today - timedelta(days=today.weekday())
+
+
+def _minutes_to_time(minutes):
+    from datetime import time
+    h, m = divmod(minutes, 60)
+    return time(hour=h, minute=m)
+
+
+def _check_conflicts(session):
+    """
+    Renvoie la liste des conflits détectés pour une séance.
+    """
+    issues = []
+    qs = WeeklySession.objects.filter(
+        version=session.version,
+        weekday=session.weekday,
+        is_active=True,
+    ).exclude(pk=session.pk)
+
+    overlapping = qs.filter(period__overlap=session.period)
+
+    # Enseignant
+    teacher_conflicts = overlapping.filter(teacher=session.teacher)
+    for conflict in teacher_conflicts:
+        issues.append(
+            {
+                "type": "teacher",
+                "message": (
+                    f"L'enseignant {session.teacher.user.get_full_name()} "
+                    f"est déjà affecté à la séance #{conflict.id}."
+                ),
+                "conflicting_session_id": conflict.id,
+            }
+        )
+
+    # Ressource
+    resource_conflicts = overlapping.filter(resource=session.resource)
+    for conflict in resource_conflicts:
+        issues.append(
+            {
+                "type": "resource",
+                "message": (
+                    f"La ressource {session.resource.name} "
+                    f"est déjà occupée par la séance #{conflict.id}."
+                ),
+                "conflicting_session_id": conflict.id,
+            }
+        )
+
+    # Groupes feuilles
+    leaf_ids = _collect_leaf_ids_from_group(session.group)
+    group_conflicts = overlapping.filter(
+        occupancies__leaf_group_id__in=leaf_ids
+    ).distinct()
+    for conflict in group_conflicts:
+        issues.append(
+            {
+                "type": "group",
+                "message": (
+                    f"Le groupe {session.group.name} chevauche "
+                    f"la séance #{conflict.id} ({conflict.group.name})."
+                ),
+                "conflicting_session_id": conflict.id,
+            }
+        )
+
+    return issues
+
+
+def _collect_leaf_ids_from_group(group):
+    children = list(group.children.all())
+    if not children:
+        return [group.id]
+    result = []
+    for child in children:
+        result.extend(_collect_leaf_ids_from_group(child))
+    return result
+```
+
+### 1.6 URLs
+
+```python
+# api/urls.py
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
+
+from .views import (
+    CohortViewSet,
+    CourseUnitViewSet,
+    DepartmentViewSet,
+    ProgramViewSet,
+    ResourceTypeViewSet,
+    ResourceViewSet,
+    ScheduleVersionViewSet,
+    StudyGroupViewSet,
+    TeacherAvailabilityViewSet,
+    TeacherViewSet,
+    TeachingAssignmentViewSet,
+    WeeklySessionViewSet,
+)
+
+router = DefaultRouter()
+router.register("departments", DepartmentViewSet)
+router.register("programs", ProgramViewSet)
+router.register("cohorts", CohortViewSet)
+router.register("groups", StudyGroupViewSet)
+router.register("resource-types", ResourceTypeViewSet)
+router.register("resources", ResourceViewSet)
+router.register("teachers", TeacherViewSet)
+router.register("teacher-availabilities", TeacherAvailabilityViewSet)
+router.register("course-units", CourseUnitViewSet)
+router.register("assignments", TeachingAssignmentViewSet)
+router.register("schedule-versions", ScheduleVersionViewSet)
+router.register("sessions", WeeklySessionViewSet)
+
+app_name = "api"
+
+urlpatterns = [
+    path("", include(router.urls)),
+]
+```
+
+```python
+# config/urls.py
+from django.contrib import admin
+from django.urls import include, path
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView,
+)
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/", include("api.urls")),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path(
+        "api/docs/",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
+    ),
+]
+```
+
+## 2. Intégration FullCalendar complète
+
+### 2.1 Template Django avec FullCalendar
+
+```html
+<!-- templates/planning/timetable.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INJS Abidjan — Emploi du temps</title>
+
+    <!-- FullCalendar 6 -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css"
+    >
+    <script
+      src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@fullcalendar/resource@6.1.11/index.global.min.js"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@fullcalendar/resource-timegrid@6.1.11/index.global.min.js"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@fullcalendar/resource-timeline@6.1.11/index.global.min.js"
+    ></script>
+
+    <!-- Alpine.js pour les filtres réactifs -->
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"
+    ></script>
+
+    <!-- HTMX -->
+    <script
+      src="https://unpkg.com/htmx.org@1.9.12"
+    ></script>
+
+    <style>
+        :root {
+            --injs-blue: #003366;
+            --injs-orange: #e67e22;
+            --injs-green: #27ae60;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: "Segoe UI", Tahoma, sans-serif;
+            background: #f5f6fa;
+            color: #2d3436;
+        }
+        .header {
+            background: var(--injs-blue);
+            color: #fff;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 1.4rem; }
+        .header .badge {
+            background: var(--injs-orange);
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .toolbar {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 2rem;
+            flex-wrap: wrap;
+            align-items: center;
+            background: #fff;
+            border-bottom: 1px solid #dfe6e9;
+        }
+        .toolbar select, .toolbar input, .toolbar button {
+            padding: 0.5rem 0.8rem;
+            border: 1px solid #b2bec3;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .toolbar button {
+            background: var(--injs-blue);
+            color: #fff;
+            cursor: pointer;
+            border: none;
+        }
+        .toolbar button:hover { opacity: 0.9; }
+        .toolbar button.secondary {
+            background: #636e72;
+        }
+        #calendar-container {
+            padding: 1rem 2rem;
+        }
+        #calendar {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+        /* Tooltip personnalisé */
+        .fc-tooltip {
+            position: absolute;
+            z-index: 9999;
+            background: #2d3436;
+            color: #fff;
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            max-width: 280px;
+            line-height: 1.4;
+            pointer-events: none;
+        }
+        /* Indicateur de conflit */
+        .conflict-badge {
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            background: #d63031;
+            color: #fff;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* Mode impression */
+        @media print {
+            .header, .toolbar { display: none; }
+            #calendar-container { padding: 0; }
+            #calendar { box-shadow: none; }
+        }
+    </style>
+</head>
+<body x-data="timetableApp()">
+
+    <div class="header">
+        <h1>🏟️ INJS Abidjan — Emploi du temps</h1>
+        <span class="badge" x-text="versionLabel"></span>
+    </div>
+
+    <div class="toolbar">
+        <label>
+            Version :
+            <select x-model="versionId" @change="reload()">
+                <template x-for="v in versions" :key="v.id">
+                    <option :value="v.id"
+                            x-text="'V' + v.number + ' — ' + v.status">
+                    </option>
+                </template>
+            </select>
+        </label>
+
+        <label>
+            Filtre par promotion :
+            <select x-model="cohortId" @change="reload()">
+                <option value="">— Toutes —</option>
+                <template x-for="c in cohorts" :key="c.id">
+                    <option :value="c.id" x-text="c.name"></option>
+                </template>
+            </select>
+        </label>
+
+        <label>
+            Filtre par enseignant :
+            <select x-model="teacherId" @change="reload()">
+                <option value="">— Tous —</option>
+                <template x-for="t in teachers" :key="t.id">
+                    <option :value="t.id" x-text="t.full_name"></option>
+                </template>
+            </select>
+        </label>
+
+        <label>
+            Filtre par ressource :
+            <select x-model="resourceId" @change="reload()">
+                <option value="">— Toutes —</option>
+                <template x-for="r in resources" :key="r.id">
+                    <option :value="r.id" x-text="r.title"></option>
+                </template>
+            </select>
+        </label>
+
+        <label>
+            Vue :
+            <select x-model="calendarView" @change="changeView()">
+                <option value="resourceTimeGridWeek">Semaine / Ressource</option>
+                <option value="timeGridWeek">Semaine classique</option>
+                <option value="resourceTimelineWeek">Timeline</option>
+                <option value="timeGridDay">Journée</option>
+            </select>
+        </label>
+
+        <button @click="printSchedule()">🖨️ Imprimer</button>
+        <button class="secondary" @click="exportPDF()">📄 PDF</button>
+    </div>
+
+    <div id="calendar-container">
+        <div id="calendar"></div>
+    </div>
+
+    <script>
+    const CSRF_TOKEN = '{{ csrf_token }}';
+    const API_BASE = '/api';
+
+    function timetableApp() {
+        return {
+            calendar: null,
+            versionId: '',
+            cohortId: '',
+            teacherId: '',
+            resourceId: '',
+            calendarView: 'resourceTimeGridWeek',
+            versions: [],
+            cohorts: [],
+            teachers: [],
+            resources: [],
+            tooltip: null,
+
+            get versionLabel() {
+                const v = this.versions.find(
+                    v => v.id == this.versionId
+                );
+                return v ? `Version ${v.number} — ${v.status}` : '—';
+            },
+
+            async init() {
+                await this.loadReferenceData();
+                this.initCalendar();
+            },
+
+            async loadReferenceData() {
+                const [vRes, cRes, tRes, rRes] = await Promise.all([
+                    fetch(`${API_BASE}/schedule-versions/?format=json`),
+                    fetch(`${API_BASE}/cohorts/?format=json`),
+                    fetch(`${API_BASE}/teachers/?format=json`),
+                    fetch(
+                        `${API_BASE}/resources/fullcalendar_resources/`
+                        + `?format=json`
+                    ),
+                ]);
+
+                this.versions = (await vRes.json()).results || await vRes.json();
+                this.cohorts = (await cRes.json()).results || await cRes.json();
+                this.teachers = (await tRes.json()).results || await tRes.json();
+                this.resources = await rRes.json();
+
+                // Sélectionner la première version publiée ou la première.
+                const published = this.versions.find(
+                    v => v.status === 'PUBLISHED'
+                );
+                this.versionId = published
+                    ? published.id
+                    : (this.versions[0]?.id || '');
+            },
+
+            buildEventUrl() {
+                const weekStart = this.getWeekStart();
+                let url = (
+                    `${API_BASE}/sessions/fullcalendar_events/`
+                    + `?version=${this.versionId}`
+                    + `&week_start=${weekStart}`
+                );
+                if (this.cohortId)
+                    url += `&cohort=${this.cohortId}`;
+                if (this.teacherId)
+                    url += `&teacher=${this.teacherId}`;
+                if (this.resourceId)
+                    url += `&resource=${this.resourceId}`;
+                return url;
+            },
+
+            getWeekStart() {
+                if (!this.calendar) {
+                    const today = new Date();
+                    const day = today.getDay();
+                    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+                    return new Date(
+                        today.setDate(diff)
+                    ).toISOString().split('T')[0];
+                }
+                return this.calendar
+                    .view
+                    .activeStart
+                    .toISOString()
+                    .split('T')[0];
+            },
+
+            initCalendar() {
+                const self = this;
+                const calendarEl = document.getElementById('calendar');
+
+                this.calendar = new FullCalendar.Calendar(calendarEl, {
+                    schedulerLicenseKey: 'GPL-My-Project-Is-Open-Source',
+                    locale: 'fr',
+                    timeZone: 'Africa/Abidjan',
+                    initialView: this.calendarView,
+                    headerToolbar: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: '',
+                    },
+                    slotMinTime: '07:00:00',
+                    slotMaxTime: '20:00:00',
+                    slotDuration: '00:30:00',
+                    allDaySlot: false,
+                    editable: true,      // drag & drop activé
+                    droppable: false,
+                    selectable: false,
+                    nowIndicator: true,
+                    weekends: true,       // samedi visible
+                    hiddenDays: [0],      // dimanche masqué
+
+                    resources: function (fetchInfo, successCallback) {
+                        fetch(
+                            `${API_BASE}/resources`
+                            + `/fullcalendar_resources/?format=json`
+                        )
+                            .then(r => r.json())
+                            .then(data => successCallback(data));
+                    },
+
+                    events: function (fetchInfo, successCallback) {
+                        if (!self.versionId) {
+                            successCallback([]);
+                            return;
+                        }
+                        fetch(self.buildEventUrl())
+                            .then(r => r.json())
+                            .then(data => successCallback(data));
+                    },
+
+                    // Drag & drop : déplacement d'une séance
+                    eventDrop: function (info) {
+                        const event = info.event;
+                        const props = event.extendedProps;
+
+                        const newWeekday = event.start.getDay() === 0
+                            ? 6
+                            : event.start.getDay() - 1;
+                        const newStartMin = (
+                            event.start.getHours() * 60
+                            + event.start.getMinutes()
+                        );
+                        const newEndMin = (
+                            event.end.getHours() * 60
+                            + event.end.getMinutes()
+                        );
+
+                        const newResourceId = (
+                            info.newResource
+                                ? info.newResource.id
+                                : props.resource_id
+                        );
+
+                        fetch(
+                            `${API_BASE}/sessions/`
+                            + `${props.session_id}/move/`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': CSRF_TOKEN,
+                                },
+                                body: JSON.stringify({
+                                    weekday: newWeekday,
+                                    start_minute: newStartMin,
+                                    end_minute: newEndMin,
+                                    resource: newResourceId,
+                                }),
+                            }
+                        )
+                        .then(async r => {
+                            if (!r.ok) {
+                                const err = await r.json();
+                                alert(
+                                    'Déplacement refusé : '
+                                    + JSON.stringify(err)
+                                );
+                                info.revert();
+                            }
+                        })
+                        .catch(() => info.revert());
+                    },
+
+                    // Tooltip au survol
+                    eventMouseEnter: function (info) {
+                        const props = info.event.extendedProps;
+                        const rect = info.el.getBoundingClientRect();
+                        self.showTooltip(props, rect);
+                    },
+                    eventMouseLeave: function () {
+                        self.hideTooltip();
+                    },
+
+                    // Clic : afficher les conflits
+                    eventClick: function (info) {
+                        const sid = info.event.extendedProps.session_id;
+                        fetch(
+                            `${API_BASE}/sessions/${sid}/conflicts/`
+                            + `?format=json`
+                        )
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.conflicts.length === 0) {
+                                    alert('✅ Aucun conflit détecté.');
+                                } else {
+                                    const msgs = data.conflicts.map(
+                                        c => `⚠️ ${c.message}`
+                                    );
+                                    alert(msgs.join('\n'));
+                                }
+                            });
+                    },
+
+                    datesSet: function () {
+                        self.calendar.refetchEvents();
+                    },
+                });
+
+                this.calendar.render();
+            },
+
+            reload() {
+                if (this.calendar) {
+                    this.calendar.refetchEvents();
+                }
+            },
+
+            changeView() {
+                if (this.calendar) {
+                    this.calendar.changeView(this.calendarView);
+                }
+            },
+
+            showTooltip(props, rect) {
+                this.hideTooltip();
+                const tip = document.createElement('div');
+                tip.className = 'fc-tooltip';
+                tip.innerHTML = `
+                    <strong>${props.unit}</strong><br>
+                    👤 ${props.teacher}<br>
+                    👥 ${props.group}<br>
+                    🏟️ ${props.resource} (${props.resource_type})<br>
+                    🕐 ${props.weekday_label}
+                       ${props.start_time} – ${props.end_time}
+                `;
+                tip.style.top = (rect.top + window.scrollY - 10) + 'px';
+                tip.style.left = (rect.right + 10) + 'px';
+                document.body.appendChild(tip);
+                this.tooltip = tip;
+            },
+
+            hideTooltip() {
+                if (this.tooltip) {
+                    this.tooltip.remove();
+                    this.tooltip = null;
+                }
+            },
+
+            printSchedule() {
+                window.print();
+            },
+
+            exportPDF() {
+                const weekStart = this.getWeekStart();
+                window.open(
+                    `/planning/pdf/`
+                    + `?version=${this.versionId}`
+                    + `&week_start=${weekStart}`
+                    + (this.cohortId
+                        ? `&cohort=${this.cohortId}`
+                        : ''),
+                    '_blank'
+                );
+            },
+        };
+    }
+    </script>
+</body>
+</html>
+```
+
+### 2.2 Vue Django pour servir le template
+
+```python
+# planning/views.py
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+
+
+@login_required
+def timetable_view(request):
+    return render(request, "planning/timetable.html")
+```
+
+### 2.3 Export PDF avec WeasyPrint
+
+```python
+# planning/pdf.py
+import io
+from datetime import datetime, timedelta
+
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from weasyprint import HTML
+
+from planning.models import ScheduleVersion, WeeklySession
+
+WEEKDAY_LABELS = [
+    "Lundi", "Mardi", "Mercredi",
+    "Jeudi", "Vendredi", "Samedi",
+]
+
+
+@login_required
+def timetable_pdf(request):
+    version_id = request.GET.get("version")
+    week_start_str = request.GET.get("week_start", "")
+    cohort_id = request.GET.get("cohort")
+
+    try:
+        week_start = datetime.strptime(week_start_str, "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        from django.utils import timezone
+
+        today = timezone.now().date()
+        week_start = today - timedelta(days=today.weekday())
+
+    version = ScheduleVersion.objects.get(pk=version_id)
+    qs = WeeklySession.objects.filter(
+        version=version, is_active=True
+    ).select_related(
+        "assignment__unit", "group", "teacher__user", "resource"
+    ).order_by("weekday", "period")
+
+    if cohort_id:
+        qs = qs.filter(group__cohort_id=cohort_id)
+
+    # Organiser par jour et créneau pour le template.
+    schedule = {}
+    for day_index, day_label in enumerate(WEEKDAY_LABELS):
+        sessions = qs.filter(weekday=day_index)
+        schedule[day_label] = [
+            {
+                "start": _fmt(s.period.lower),
+                "end": _fmt(s.period.upper),
+                "unit": s.assignment.unit.name,
+                "teacher": s.teacher.user.get_full_name(),
+                "group": s.group.name,
+                "resource": s.resource.name if s.resource else "—",
+            }
+            for s in sessions
+        ]
+
+    context = {
+        "version": version,
+        "week_start": week_start,
+        "week_end": week_start + timedelta(days=5),
+        "schedule": schedule,
+        "generated_at": datetime.now(),
+    }
+
+    html_string = render_to_string("planning/pdf_timetable.html", context)
+    pdf_file = HTML(string=html_string).write_pdf()
+
+    response = HttpResponse(pdf_file, content_type="application/pdf")
+    response["Content-Disposition"] = (
+        f'inline; filename="EDT_INJS_v{version.number}'
+        f'_{week_start.isoformat()}.pdf"'
+    )
+    return response
+
+
+def _fmt(minutes):
+    h, m = divmod(minutes, 60)
+    return f"{h:02d}:{m:02d}"
+```
+
+```html
+<!-- templates/planning/pdf_timetable.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: A3 landscape;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 10pt;
+            color: #222;
+        }
+        .header-block {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .header-block h1 {
+            font-size: 14pt;
+            margin: 0;
+            color: #003366;
+        }
+        .header-block h2 {
+            font-size: 11pt;
+            font-weight: normal;
+            color: #555;
+        }
+        .meta {
+            font-size: 8pt;
+            color: #888;
+            text-align: right;
+            margin-bottom: 0.5rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+        }
+        th {
+            background: #003366;
+            color: #fff;
+            padding: 6px 8px;
+            text-align: left;
+            font-size: 9pt;
+        }
+        td {
+            border: 1px solid #ccc;
+            padding: 5px 8px;
+            vertical-align: top;
+            font-size: 9pt;
+        }
+        tr:nth-child(even) td { background: #f8f9fa; }
+        .day-header {
+            background: #e67e22;
+            color: #fff;
+            font-weight: bold;
+            font-size: 10pt;
+            padding: 6px 10px;
+        }
+        .no-session { color: #999; font-style: italic; }
+        .footer {
+            font-size: 8pt;
+            color: #888;
+            text-align: center;
+            margin-top: 1rem;
+            border-top: 1px solid #ccc;
+            padding-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-block">
+        <h1>INSTITUT NATIONAL DE LA JEUNESSE ET DES SPORTS — ABIDJAN</h1>
+        <h2>
+            Emploi du temps — Version {{ version.number }}
+            — Semaine du {{ week_start|date:"d/m/Y" }}
+            au {{ week_end|date:"d/m/Y" }}
+        </h2>
+    </div>
+
+    <div class="meta">
+        Généré le {{ generated_at|date:"d/m/Y à H:i" }}
+        — Statut : {{ version.get_status_display }}
+    </div>
+
+    {% for day_label, sessions in schedule.items %}
+    <table>
+        <tr>
+            <td colspan="5" class="day-header">{{ day_label }}</td>
+        </tr>
+        <tr>
+            <th style="width:12%">Horaire</th>
+            <th style="width:30%">Matière</th>
+            <th style="width:20%">Enseignant</th>
+            <th style="width:18%">Groupe</th>
+            <th style="width:20%">Salle / Installation</th>
+        </tr>
+        {% for s in sessions %}
+        <tr>
+            <td>{{ s.start }} – {{ s.end }}</td>
+            <td>{{ s.unit }}</td>
+            <td>{{ s.teacher }}</td>
+            <td>{{ s.group }}</td>
+            <td>{{ s.resource }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" class="no-session">
+                Aucune séance programmée
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endfor %}
+
+    <div class="footer">
+        Direction des Études — INJS Abidjan
+        — Document officiel — Ne pas reproduire sans autorisation
+    </div>
+</body>
+</html>
+```
+
+### 2.4 URLs planning
+
+```python
+# planning/urls.py
+from django.urls import path
+
+from .pdf import timetable_pdf
+from .views import timetable_view
+
+app_name = "planning"
+
+urlpatterns = [
+    path("", timetable_view, name="timetable"),
+    path("pdf/", timetable_pdf, name="timetable-pdf"),
+]
+```
+
+```python
+# Ajouter dans config/urls.py
+urlpatterns += [
+    path("planning/", include("planning.urls")),
+]
+```
+
+---
+
+# B — Suite : Cahier des charges fonctionnel (CdCF)
+
+Ce document est destiné à être soumis à la Direction des Études de l'INJS d'Abidjan pour validation. Il peut servir de base à un appel d'offres ou à un engagement contractuel.
+
+---
+
+## CAHIER DES CHARGES FONCTIONNEL
+
+### Système de Gestion des Emplois du Temps — INJS Abidjan
+
+**Version :** 1.0 — Projet
+
+**Date :** Juillet 2025
+
+---
+
+### 1. OBJET DU DOCUMENT
+
+Le présent cahier des charges définit les exigences fonctionnelles, techniques et organisationnelles du futur système informatisé de gestion des emplois du temps de l'Institut National de la Jeunesse et des Sports (INJS) d'Abidjan. Il couvre la planification, la diffusion, le suivi de l'exécution et la traçabilité des emplois du temps pour l'ensemble des formations initiales et continues de l'établissement.
+
+---
+
+### 2. CONTEXTE ET ENJEUX
+
+#### 2.1 Présentation de l'établissement
+
+L'INJS d'Abidjan, établissement public de formation sous tutelle du ministère en charge des Sports et de la Jeunesse, assure la formation initiale et continue de cadres des métiers du sport, de l'éducation physique, de l'animation et de l'éducation populaire. Il accueille chaque année entre 800 et 1 500 apprenants, répartis en deux départements principaux (Sports/EPS et Jeunesse/Animation), plusieurs cycles (moniteur, maîtrise, professorat, licence, master) et des sessions de recyclage.
+
+#### 2.2 Situation actuelle
+
+La planification des emplois du temps repose aujourd'hui sur des processus manuels (tableaux Excel, documents Word) diffusés par affichage physique et par messagerie instantanée (WhatsApp). Ce mode de fonctionnement engendre :
+
+| Problème identifié | Impact |
+|---|---|
+| Conflits d'occupation (enseignant, salle, installation) non détectés en amont | Séances annulées, désorganisation |
+| Délai de communication des modifications | Absentéisme involontaire, perte d'heures |
+| Absence de suivi du volume horaire réellement dispensé | Risque de non-couverture de la maquette, difficultés pour le paiement des vacations |
+| Sous-utilisation ou saturation d'installations sportives coûteuses | Dégradation de la qualité pédagogique |
+| Absence de traçabilité des décisions de planification | Difficultés en cas de réclamation ou d'audit |
+
+#### 2.3 Objectifs du projet
+
+1. **Supprimer les conflits** de planification grâce à une détection automatique et à des contraintes en base de données.
+2. **Réduire à moins de 15 minutes** le délai entre une modification et sa notification aux personnes concernées.
+3. **Augmenter le taux d'occupation des installations sportives** d'au moins 15 points en un an.
+4. **Atteindre un taux de couverture de la maquette** supérieur à 95 % chaque semestre, vérifiable en temps réel.
+5. **Produire les états de vacations** en moins d'un jour ouvrable, contre environ trois semaines actuellement.
+6. **Assurer la traçabilité complète** de chaque décision de planification.
+
+---
+
+### 3. PÉRIMÈTRE FONCTIONNEL
+
+#### 3.1 Macro-fonctions
+
+| Réf. | Macro-fonction | Description |
+|---|---|---|
+| MF1 | Gestion des référentiels | Années, semestres, départements, filières, cycles, promotions, groupes, ECUE/UE, maquettes |
+| MF2 | Gestion des ressources humaines pédagogiques | Enseignants permanents et vacataires, spécialités, statuts, disponibilités |
+| MF3 | Gestion des installations et salles | Salles de cours, amphithéâtres, piscine, gymnase, piste d'athlétisme, terrains, dojo, salle de musculation, laboratoire informatique |
+| MF4 | Planification des emplois du temps | Saisie manuelle, génération automatique, validation, publication, gestion des versions |
+| MF5 | Consultation et diffusion | Consultation web et mobile (PWA), flux iCalendar, notifications (push, SMS, WhatsApp), export PDF, affichage kiosque |
+| MF6 | Gestion des modifications | Demandes de report, annulations, rattrapages, plans de repli en cas de pluie |
+| MF7 | Suivi d'exécution | Émargement, suivi des heures réalisées, rapprochement maquette/réalisé |
+| MF8 | Reporting et pilotage | Tableaux de bord, indicateurs clés, historique |
+| MF9 | Administration et sécurité | Gestion des utilisateurs, rôles, droits, audit trail |
+
+---
+
+#### 3.2 Exigences fonctionnelles détaillées
+
+##### MF1 — Gestion des référentiels
+
+| Réf. | Exigence | Priorité |
+|---|---|---|
+| MF1.01 | Le système doit permettre de définir une année académique avec ses dates de début et de fin. | Indispensable |
+| MF1.02 | Le système doit permettre de définir des semestres avec leurs dates et leur rattachement à une année. | Indispensable |
+| MF1.03 | Le système doit permettre de créer des départements, filières et cycles. | Indispensable |
+| MF1.04 | Le système doit permettre de créer des promotions (filière × cycle × niveau × année). | Indispensable |
+| MF1.05 | Le système doit permettre de découper une promotion en groupes et sous-groupes hiérarchiques (CM, TD, TP, pratique sportive, etc.). | Indispensable |
+| MF1.06 | Le système doit permettre de définir des UE et ECUE avec leur nature (théorique, pratique, mixte) et le type de ressource requis. | Indispensable |
+| MF1.07 | Le système doit permettre d'affecter des volumes horaires par ECUE, par groupe et par semestre (maquette pédagogique). | Indispensable |
+| MF1.08 | Le système doit permettre d'importer en masse les référentiels depuis un fichier structuré (CSV ou Excel). | Souhaitable |
+
+##### MF2 — Gestion des enseignants
+
+| Réf. | Exigence | Priorité |
+|---|---|---|
+| MF2.01 | Le système doit distinguer enseignants permanents, vacataires et détachés. | Indispensable |
+| MF2.02 | Le système doit permettre de définir les spécialités (ECUE enseignables) de chaque enseignant. | Indispensable |
+| MF2.03 | Le système doit permettre à chaque enseignant de déclarer ses disponibilités hebdomadaires par semestre, avec un niveau de préférence. | Indispensable |
+| MF2.04 | Le système doit permettre de définir une charge hebdomadaire maximale par enseignant. | Indispensable |
+| MF2.05 | Le système doit stocker le taux horaire des vacataires pour le calcul ultérieur des vacations. | Souhaitable |
+| MF2.06 | Le système doit permettre à un enseignant de formuler une demande de report de séance, soumise à validation. | Important |
+
+##### MF3 — Gestion des installations
+
+| Réf. | Exigence | Priorité |
+|---|---|---|
+| MF3.01 | Le système doit permettre de cataloguer toutes les ressources physiques avec leur type, capacité, caractéristiques (intérieur/extérieur) et plages d'ouverture. | Indispensable |
+| MF3.02 | Le système doit permettre d'enregistrer des indisponibilités exceptionnelles avec dates, motif et caractère exclusif. | Indispensable |
+| MF3.03 | Le système doit permettre de définir un « plan B » pour chaque séance extérieure : ressource de repli en cas de pluie. | Important |
+| MF3.04 | Le système doit permettre de visualiser en temps réel le taux d'occupation de chaque installation. | Important |
+| MF3.05 | Le système doit gérer les installations à occupation multiple (exemple : une piste d'athlétisme avec plusieurs couloirs). | Souhaitable |
+
+##### MF4 — Planification des emplois du temps
+
+| Réf. | Exigence | Priorité |
+|---|---|---|
+| MF4.01 | Le système doit empêcher tout chevauchement horaire pour un même enseignant, un même groupe (y compris les relations parent/enfant) et une même ressource, par une garantie en base de données. | Indispensable |
+| MF4.02 | Le système doit permettre la saisie manuelle d'une séance avec jour, heure, enseignant, groupe et ressource, en signalant immédiatement les conflits. | Indispensable |
+| MF4.03 | Le système doit proposer un moteur de génération automatique de l'emploi du temps respectant les contraintes dures et optimisant les contraintes souples. | Indispensable |
+| MF4.04 | Le système doit gérer des versions d'emploi du temps avec un cycle de vie : brouillon → validé → publié → archivé. | Indispensable |
+| MF4.05 | Seule une version publiée doit être visible des étudiants et enseignants. | Indispensable |
+| MF4.06 | Le système doit permettre le déplacement d'une séance par glisser-déposer, avec revalidation instantanée des contraintes. | Important |
+| MF4.07 | Le système doit permettre de dupliquer une version brouillon à partir d'une version existante. | Important |
+| MF4.08 | Le système doit permettre de définir les jours fériés, périodes de stage et périodes d'examen pendant lesquels aucune séance ne peut être planifiée. | Indispensable |
+
+##### MF4 — Contraintes dures du solveur
+
+| Réf. | Contrainte | Description |
+|---|---|---|
+| H1 | Unicité enseignant | Un enseignant ne peut assurer qu'une séance à un instant donné. |
+| H2 | Unicité groupe | Un groupe (ou un parent/enfant) ne peut avoir qu'une séance à un instant donné. |
+| H3 | Unicité ressource | Une ressource ne peut accueillir qu'une séance à un instant donné (sauf multi-occupation). |
+| H4 | Capacité | L'effectif du groupe ne doit pas dépasser la capacité de la ressource. |
+| H5 | Compatibilité ressource | Le type de ressource doit correspondre à la nature de l'ECUE (natation → piscine). |
+| H6 | Disponibilité enseignant | La séance doit être incluse dans les disponibilités déclarées. |
+| H7 | Périodes bloquées | Aucune séance pendant les jours fériés, examens, stages, congés. |
+| H8 | Pause déjeuner | Respect d'une pause minimale entre 12 h et 13 h 30 (à paramétrer). |
+
+##### MF4 — Contraintes souples du solveur
+
+| Réf. | Contrainte | Poids |
+|---|---|---|
+| S1 | Éviter les pratiques extérieures entre 11 h et 15 h (chaleur, ensoleillement). | Fort |
+| S2 | Minimiser les trous dans la journée des étudiants. | Moyen |
+| S3 | Regrouper les séances d'un vacataire sur un minimum de journées. | Moyen |
+| S4 | Maximum 2 séances pratiques intensives par jour pour un groupe ; pas deux charges lourdes consécutives. | Moyen |
+| S5 | Équilibrer la charge hebdomadaire entre les semaines du semestre. | Faible |
+| S6 | Éviter les changements de site entre deux séances consécutives. | Faible |
+| S7 | Placer les matières à forte charge cognitive de préférence le matin. | Faible |
+
+##### MF5 — Consultation et diffusion
+
+| Réf. | Exigence | Priorité |
+|---|---|---|
+| MF5.01 | Le système doit proposer une interface web responsive consultable depuis un ordinateur et un téléphone portable. | Indispensable |
+| MF5.02 | Le système doit proposer une application web progressive (PWA) consultable hors ligne après un premier chargement. | Important |
+| MF5.03 | Le système doit permettre de filtrer l'emploi du temps par promotion, enseignant, installation et jour. | Indispensable |
+| MF5.04 | Le système doit permettre d'exporter l'emploi du temps en PDF signé, au format officiel de l'INJS (en-tête, pied de page). | Indispensable |
+| MF5.05 | Le système doit générer un flux iCalendar (.ics) par promotion et par enseignant, abonnable depuis tout calendrier. | Important |
+| MF5.06 | Le système doit envoyer des notifications push (PWA) et SMS lors de toute modification d'une séance publiée. | Indispensable |
+| MF5.07 | Le système doit pouvoir envoyer des notifications via WhatsApp Business API. | Souhaitable |
+| MF5.08 | Le système doit permettre un affichage kiosque (écran à la Scolarité) avec rafraîchissement automatique. | Souhaitable |
+
+##### MF6 — Gestion des modifications
+
+| Réf. | Exigence | Priorité |
+|---|---|---|
+| MF6.01 | Le système doit permettre à un enseignant de soumettre une demande de report avec motif. | Important |
+| MF6.02 | Le système doit proposer au planificateur les créneaux libres compatibles pour le report. | Important |
+| MF6.03 | Le système doit gérer les annulations de séances avec motif et notification automatique. | Indispensable |
+| MF6.04 | Le système doit permettre de planifier des séances de rattrapage. | Important |
+| MF6.05 | Le système doit permettre d'activer un « plan B » (salle de repli) en cas de conditions météorologiques défavorables. | Souhaitable |
+
+##### MF7 — Suivi d'exécution
+
+| Réf. | Exigence | Priorité |
+|---|---|---|
+| MF7.01 | Le système doit permettre l'émargement numérique de l'enseignant pour chaque séance réalisée (QR code ou code à 6 chiffres). | Important |
+| MF7.02 | Le système doit calculer en temps réel le nombre d'heures réalisées par ECUE, groupe et enseignant. | Important |
+| MF7.03 | Le système doit produire un rapprochement maquette/réalisé (heures prévues vs heures effectuées) avec alertes si le taux de couverture est inférieur à un seuil paramétrable. | Important |
+| MF7.04 | Le système doit produire les états de vacation mensuels ou semestriels pour chaque enseignant vacataire. | Souhaitable |
+
+##### MF8 — Reporting et pilotage
+
+| Réf. | Exigence | Priorité |
+|---|---|---|
+| MF8.01 | Le système doit proposer un tableau de bord Direction avec les indicateurs suivants : taux d'occupation des installations, taux de couverture de la maquette, nombre de conflits détectés avant publication, nombre de séances annulées/reportées. | Important |
+| MF8.02 | Le système doit permettre d'exporter les données de reporting en format CSV et PDF. | Souhaitable |
+| MF8.03 | Le système doit conserver un historique des versions d'emploi du temps sur au moins 5 années académiques. | Important |
+
+##### MF9 — Administration et sécurité
+
+| Réf. | Exigence | Priorité |
+|---|---|---|
+| MF9.01 | Le système doit gérer les rôles suivants : Direction des Études, Planificateur, Chef de département, Enseignant, Étudiant, Gestionnaire d'installations. | Indispensable |
+| MF9.02 | Chaque rôle ne doit accéder qu'aux données et actions autorisées. | Indispensable |
+| MF9.03 | Toute modification d'une séance, d'une affectation ou d'une indisponibilité doit être consignée dans un journal d'audit (auteur, date, ancienne valeur, nouvelle valeur). | Indispensable |
+| MF9.04 | Le système doit être conforme à la loi ivoirienne n°2013-450 sur la protection des données à caractère personnel. | Indispensable |
+| MF9.05 | Le système doit permettre la sauvegarde automatique quotidienne des données avec stockage hors site. | Indispensable |
+
+---
+
+### 4. EXIGENCES TECHNIQUES
+
+#### 4.1 Architecture
+
+| Composant | Technologie retenue | Justification |
+|---|---|---|
+| Langage | Python 3.12+ | Écosystème riche, maintenabilité |
+| Framework | Django 5+ | ORM puissant, admin, sécurité intégrée |
+| API | Django REST Framework + drf-spectacular | Documentation OpenAPI automatique |
+| Base de données | PostgreSQL 15+ (extension btree_gist) | Contraintes d'exclusion temporelles |
+| Tâches asynchrones | Celery + Redis | Solveur, notifications, exports |
+| Solveur | Google OR-Tools CP-SAT | Solveur de contraintes performant et gratuit |
+| Interface front | FullCalendar 6 + Alpine.js + HTMX | Léger, compatible mobile, rendu serveur |
+| Export PDF | WeasyPrint | Fidélité au rendu, en-tête INJS |
+| Notifications | SMS (agrégateur local) + Push PWA + WhatsApp Business API | Couverture maximale |
+| Conteneurisation | Docker + Docker Compose | Reproductibilité, déploiement simplifié |
+
+#### 4.2 Performance
+
+| Exigence | Seuil |
+|---|---|
+| Temps de réponse pour la consultation d'un emploi du temps | < 2 secondes |
+| Temps de génération automatique d'un emploi du temps (15 promotions, 60 enseignants, 25 ressources) | < 3 minutes |
+| Nombre d'utilisateurs simultanés supportés | ≥ 500 |
+| Disponibilité | 99 % sur les heures ouvrables (7 h – 20 h, lundi – samedi) |
+| Temps de notification d'un changement | < 15 minutes |
+
+#### 4.3 Hébergement
+
+Le système sera hébergé sur un serveur VPS localisé en Afrique de l'Ouest (Abidjan ou Dakar) ou sur l'infrastructure propre de l'INJS, selon l'option retenue. Un onduleur et une connexion de secours doivent être prévus.
+
+#### 4.4 Résilience et continuité
+
+- Le système doit fonctionner en mode dégradé (consultation hors ligne via le cache PWA et les PDF) en cas de coupure réseau.
+- Les sauvegardes automatiques quotidiennes chiffrées doivent être stockées hors site.
+- Un plan de reprise d'activité (PRA) doit garantir un redémarrage en moins de 4 heures.
+
+---
+
+### 5. EXIGENCES ORGANISATIONNELLES
+
+#### 5.1 Gouvernance du projet
+
+| Rôle | Responsabilité |
+|---|---|
+| Chef de projet fonctionnel (INJS) | Validation des règles métier, recette fonctionnelle |
+| Directeur des Études (INJS) | Validation finale, arbitrage, signature du PV de recette |
+| Chef de projet technique (prestataire) | Conception, développement, tests, déploiement |
+| Référent Scolarité | Ateliers de cadrage, tests utilisateur |
+| Référents départementaux | Validation des maquettes et des affectations |
+
+#### 5.2 Formation
+
+| Public | Contenu | Durée estimée |
+|---|---|---|
+| Planificateurs Scolarité | Saisie, génération, validation, publication, gestion des modifications | 3 jours |
+| Chefs de département | Maquettes, affectations, consultation, reporting | 1 jour |
+| Enseignants | Déclaration de disponibilités, consultation, demandes de report, émargement | 0,5 jour |
+| Étudiants (délégués de promotion) | Installation de la PWA, consultation, flux iCal | 1 heure |
+| Direction des Études | Tableau de bord, validation, publication | 0,5 jour |
+| Gestionnaire d'installations | Catalogue, indisponibilités, taux d'occupation | 0,5 jour |
+
+#### 5.3 Accompagnement au démarrage
+
+Le prestataire doit assurer une présence sur site pendant les deux premières semaines de chaque semestre de la première année, afin d'accompagner les planificateurs lors de la première utilisation en conditions réelles.
+
+---
+
+### 6. PHASAGE ET LIVRABLES
+
+| Phase | Durée | Livrables |
+|---|---|---|
+| Phase 0 — Cadrage | 3 semaines | Compte-rendu d'ateliers, règles métier validées, catalogue des installations, données de référence |
+| Phase 1 — MVP | 8 semaines | Référentiels, saisie manuelle, détection des conflits, consultation web, export PDF, administration |
+| Phase 2 — Diffusion | 4 semaines | PWA, notifications SMS/push, flux iCalendar, affichage kiosque |
+| Phase 3 — Automatisation | 8 semaines | Solveur CP-SAT, disponibilités enseignants, gestion des indisponibilités, plan B météo |
+| Phase 4 — Valorisation | 4 semaines | Émargement, heures réalisées, états de vacation, tableaux de bord, rapprochement maquette/réalisé |
+| Phase 5 — Stabilisation | 4 semaines | Corrections, optimisations, documentation finale |
+
+**Durée totale estimée : 31 semaines (~8 mois).**
+
+---
+
+### 7. CRITÈRES DE RECETTE
+
+| Critère | Seuil d'acceptation |
+|---|---|
+| Aucun conflit enseignant/groupe/ressource ne peut être enregistré en base | 100 % |
+| Notification des modifications en moins de 15 minutes | 95 % des cas |
+| Taux de couverture de la maquette mesurable en temps réel | Fonctionnel |
+| Génération automatique d'un EDT valide en moins de 3 minutes | 90 % des tentatives |
+| Export PDF conforme à la charte INJS | 100 % |
+| Consultation hors ligne (PWA) après un premier chargement | Fonctionnel |
+| Historique d'audit de toute modification | 100 % |
+| Tests automatisés couvrant les règles métier critiques | Couverture > 80 % |
+
+---
+
+### 8. MAINTENANCE ET ÉVOLUTIONS
+
+Le prestataire doit proposer un contrat de maintenance corrective et évolutive d'une durée minimale de 12 mois après la recette définitive, incluant :
+
+- correction des anomalies bloquantes sous 24 heures ouvrables ;
+- correction des anomalies mineures sous 5 jours ouvrables ;
+- mises à jour de sécurité trimestrielles ;
+- évolutions mineures dans la limite d'un forfait annuel à définir.
+
+---
+
+### 9. ANNEXES TECHNIQUES
+
+#### Annexe A — Catalogue indicatif des installations
+
+| Code | Libellé | Type | Capacité | Intérieur/Extérieur |
+|---|---|---|---|---|
+| AMPHI-A | Amphithéâtre A | AMPHI | 300 | Intérieur |
+| AMPHI-B | Amphithéâtre B | AMPHI | 150 | Intérieur |
+| S-101 | Salle 101 | SALLE | 50 | Intérieur |
+| S-102 | Salle 102 | SALLE | 50 | Intérieur |
+| S-103 | Salle 103 | SALLE | 40 | Intérieur |
+| S-104 | Salle 104 | SALLE | 40 | Intérieur |
+| S-INFO | Laboratoire informatique | LABO_INFO | 30 | Intérieur |
+| GYM-1 | Gymnase principal | GYMNASE | 80 | Intérieur |
+| PISC-1 | Piscine | PISCINE | 30 | Extérieur |
+| PISTE-1 | Piste d'athlétisme | PISTE | 40 | Extérieur |
+| TERR-FOOT | Terrain de football | TERRAIN | 50 | Extérieur |
+| TERR-HAND | Terrain de handball | TERRAIN | 40 | Extérieur |
+| TERR-BASK | Terrain de basketball | TERRAIN | 30 | Extérieur |
+| TERR-VOLL | Terrain de volleyball | TERRAIN | 30 | Extérieur |
+| DOJO-1 | Dojo (judo, lutte, karaté) | DOJO | 30 | Intérieur |
+| MUSCU-1 | Salle de musculation | MUSCU | 20 | Intérieur |
+
+> ⚠️ **À compléter et valider avec le Gestionnaire des installations de l'INJS.**
+
+#### Annexe B — Grille horaire indicative
+
+| Créneau | Début | Fin | Observations |
+|---|---|---|---|
+| S1 | 07:00 | 09:00 | Pratique sportive privilégiée |
+| S2 | 09:15 | 11:15 | Cours théoriques ou pratiques |
+| S3 | 11:30 | 13:30 | Éviter pratique extérieure (chaleur) |
+| Pause | 13:30 | 14:30 | Restauration |
+| S4 | 14:30 | 16:30 | Cours théoriques ou pratiques |
+| S5 | 16:45 | 18:45 | Pratique sportive privilégiée |
+
+> ⚠️ **À valider avec la Direction des Études. Les durées de séance peuvent varier (1 h, 1 h 30, 2 h, 3 h pour certaines pratiques).**
+
+#### Annexe C — Diagramme de flux simplifié
+
+```
+┌─────────────────┐    ┌───────────────────┐    ┌──────────────────┐
+│  Chef de dépt.  │───▶│  Maquette + Aff.  │───▶│  Planificateur   │
+│  (MF1, MF2)     │    │  pédagogiques     │    │  (MF4)           │
+└─────────────────┘    └───────────────────┘    └────────┬─────────┘
+                                                         │
+                              ┌───────────────────┐      │
+                              │  Solveur OR-Tools  │◀─────┘
+                              │  (Génération auto) │
+                              └────────┬──────────┘
+                                       │
+                                       ▼
+                              ┌───────────────────┐
+                              │  Version brouillon │
+                              │  (ajustements      │
+                              │   manuels drag&    │
+                              │   drop)            │
+                              └────────┬──────────┘
+                                       │
+                              ┌────────▼──────────┐
+                              │  Validation        │
+                              │  Direction         │
+                              └────────┬──────────┘
+                                       │
+                              ┌────────▼──────────┐
+                              │  Publication       │──────────────┐
+                              └────────┬──────────┘              │
+                                       │                         │
+              ┌────────────────────────┼──────────────┐          │
+              ▼                        ▼              ▼          ▼
+     ┌──────────────┐    ┌──────────────┐    ┌─────────┐  ┌──────────┐
+     │  PWA/Web     │    │  SMS/Push/   │    │  PDF    │  │  iCal    │
+     │  (étudiants, │    │  WhatsApp    │    │  officiel│  │  (.ics)  │
+     │  enseignants)│    │              │    │         │  │          │
+     └──────────────┘    └──────────────┘    └─────────┘  └──────────┘
+```
+
+#### Annexe D — Matrice RACI
+
+| Activité | Direction | Planificateur | Chef Dépt. | Enseignant | Étudiant | Gest. Install. |
+|---|---|---|---|---|---|---|
+| Définir la maquette | A | — | R | C | — | — |
+| Affecter les enseignants | A | I | R | C | — | — |
+| Déclarer ses disponibilités | — | I | — | R | — | — |
+| Cataloguer les installations | I | C | — | — | — | R |
+| Générer l'EDT | A | R | C | — | — | I |
+| Valider la version | R | C | C | — | — | — |
+| Publier la version | R | R | I | I | I | I |
+| Consulter l'EDT | I | I | C | R | R | C |
+| Demander un report | I | A | I | R | — | — |
+| Émarger une séance | — | I | — | R | — | — |
+| Piloter les indicateurs | R | C | C | — | — | C |
+
+*R = Réalise, A = Approuve, C = Consulté, I = Informé.*
+
+---
+
+### 10. GLOSSAIRE
+
+| Terme | Définition |
+|---|---|
+| ECUE | Élément constitutif d'une unité d'enseignement (« matière ») |
+| UE | Unité d'enseignement (regroupement d'ECUE) |
+| Maquette | Ensemble des ECUE et de leurs volumes horaires pour une promotion et un semestre |
+| Affectation | Lien entre un ECUE, un enseignant et un groupe pour un semestre |
+| Séance hebdomadaire | Créneau récurrent chaque semaine du semestre |
+| Version d'EDT | État complet d'un emploi du temps à un instant donné (brouillon, validé, publié, archivé) |
+| Groupe feuille | Plus petit sous-groupe d'étudiants ne pouvant être divisé |
+| Contrainte dure | Condition qui ne peut en aucun cas être violée |
+| Contrainte souple | Préférence que le solveur optimise sans garantie absolue |
+| PWA | Progressive Web App — application web installable sur mobile, utilisable hors ligne |
+
+---
+
+**Fin du cahier des charges fonctionnel.**
+
+
