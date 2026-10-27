@@ -82,7 +82,40 @@ jobs:
         run: python manage.py collectstatic --noinput
 
       - name: Tests
-        run: python manage.py test --verbosity 1
+        run: python manage.py test --verbosity 1 2>&1 | tee /tmp/backend-tests.log
+
+      # Les journaux d'exécution ne sont pas toujours accessibles depuis un
+      # environnement restreint : on republie l'essentiel des échecs sous forme
+      # d'annotations, lisibles via l'API des check-runs.
+      - name: Détail des échecs
+        if: failure()
+        run: |
+          python - <<'PY'
+          import re
+
+          try:
+              lignes = open('/tmp/backend-tests.log', encoding='utf-8',
+                            errors='replace').read().splitlines()
+          except OSError:
+              print('::error::Journal de tests introuvable')
+              raise SystemExit(0)
+
+          blocs, courant = [], None
+          for ligne in lignes:
+              if re.match(r'^(FAIL|ERROR): ', ligne):
+                  courant = [ligne]
+                  blocs.append(courant)
+              elif courant is not None:
+                  if ligne.startswith('=') or re.match(r'^(Ran |OK|FAILED)', ligne):
+                      courant = None
+                  else:
+                      courant.append(ligne)
+
+          for bloc in blocs[:15]:
+              for ligne in bloc[:25]:
+                  print(f'::error::{ligne[:900]}')
+          print(f'::error::{len(blocs)} test(s) en échec sur PostgreSQL')
+          PY
 
   frontend:
     name: Frontend (React + Vite)
