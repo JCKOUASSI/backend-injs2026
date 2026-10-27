@@ -1,5 +1,5 @@
 """
-Modèles de l'app Statistiques & Bilans — SYGEP-CPFAE.
+Modèles de l'app Statistiques & Bilans — INJS-LMD.
 """
 import hashlib
 import json

@@ -9,7 +9,7 @@ from django.http import HttpResponse
 
 from .point_journalier import compute_point_journalier, MOIS_FR
 
-# Couleurs extraites du modèle CPFAE « POINT JOURNALIER CAT A » (Office theme accent2 + custom)
+# Couleurs extraites du modèle CPFAE (format de rapport historique CPFAE conservé) « POINT JOURNALIER CAT A » (Office theme accent2 + custom)
 FILL_HEADER = 'FFEDB131'       # Orange en-têtes (theme accent2)
 FILL_GROUPE = 'FFFBFDBB'       # Jaune clair — ligne GROUPES
 FILL_TOTAL = 'FFF7FA82'        # Jaune — colonne TOTAL
@@ -20,7 +20,7 @@ FILL_ABSENCE_JOUR = 'FFBDD7EE' # Bleu clair — taux absence du jour
 FONT_ABSENCE = 'FFFFFFFF'      # Blanc — pourcentages d'absence (fond orange)
 FMT_PCT = '0.00%'
 
-# Grille fixe modèle CPFAE (17 colonnes A→Q)
+# Grille fixe modèle CPFAE (format de rapport historique CPFAE conservé) (17 colonnes A→Q)
 COL_LABEL = 1
 COL_GROUP_START = 2
 COL_TOTAL = 14
@@ -169,7 +169,7 @@ def _filter_tableaux(data, formation_id=None, categorie=None, mois=None, jour=No
 
 
 def _write_bloc_creneau(ws, start_row, bloc, label_creneau, styles):
-    """Écrit MATIN ou SOIR — format CPFAE (colonnes B→M groupes, N total)."""
+    """Écrit MATIN ou SOIR — format CPFAE (format de rapport historique CPFAE conservé) (colonnes B→M groupes, N total)."""
     from openpyxl.utils import get_column_letter
 
     groupes = (bloc.get('groupes') or [])[:MAX_GROUP_COLS]
@@ -305,7 +305,7 @@ def _write_sidebar(ws, row_start, row_end, text, styles):
 
 
 def _write_sheet(ws, tb, styles):
-    """Remplit une feuille au format modèle CPFAE (17 colonnes, bande vague)."""
+    """Remplit une feuille au format modèle CPFAE (format de rapport historique CPFAE conservé) (17 colonnes, bande vague)."""
     from openpyxl.utils import get_column_letter
 
     # Ligne 1 — titre
@@ -358,7 +358,7 @@ def _write_sheet(ws, tb, styles):
 
     _write_sidebar(ws, 1, ROW_FOOTER_END, tb.get('vague_sidebar', 'SECONDE VAGUE'), styles)
 
-    # Largeurs colonnes (modèle CPFAE)
+    # Largeurs colonnes (modèle CPFAE (format de rapport historique CPFAE conservé))
     widths = {
         'A': 19.37, 'B': 35.51, 'C': 21.93, 'D': 38.47, 'E': 35.51,
         'F': 29.05, 'G': 15.47, 'N': 15.47, 'O': 13.0, 'P': 13.0, 'Q': 13.0,

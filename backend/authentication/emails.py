@@ -43,7 +43,7 @@ def _logo_candidates():
     return [
         base_dir / 'static' / 'img' / 'logo-injs.png',
         base_dir.parent / 'frontend' / 'src' / 'assets' / 'logo.png',
-        base_dir / 'static' / 'img' / 'logo-sygepcpfae.png',
+        # Logo fallback retiré : logo-sygepcpfae.png remplacé par logo-injs.png (déjà candidat #1)
     ]
 
 

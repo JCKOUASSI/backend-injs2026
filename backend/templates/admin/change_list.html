@@ -54,22 +54,22 @@
         </p>
         {{ cl.formset.non_form_errors }}
     {% endif %}
-    <div class="module{% if cl.has_filters %} filtered{% endif %}{% if cl.has_active_filters %} sygep-has-active-filters{% endif %}" id="changelist">
+    <div class="module{% if cl.has_filters %} filtered{% endif %}{% if cl.has_active_filters %} injs-has-active-filters{% endif %}" id="changelist">
       <div class="changelist-form-container">
-        <div class="sygep-changelist-toolbar">
+        <div class="injs-changelist-toolbar">
           {% block search %}{% search_form cl %}{% endblock %}
           {% if cl.has_filters %}
             <button
               type="button"
-              class="sygep-filter-btn"
-              id="sygep-filter-toggle"
+              class="injs-filter-btn"
+              id="injs-filter-toggle"
               aria-expanded="false"
               aria-controls="changelist-filter"
             >
               <span class="material-symbols-outlined">filter_list</span>
               {% translate "Filtres" %}
               {% if cl.has_active_filters %}
-                <span class="sygep-filter-btn-badge" title="{% translate 'Filtres actifs' %}">●</span>
+                <span class="injs-filter-btn-badge" title="{% translate 'Filtres actifs' %}">●</span>
               {% endif %}
             </button>
           {% endif %}
@@ -91,11 +91,11 @@
       </div>
       {% block filters %}
         {% if cl.has_filters %}
-          <div class="sygep-filter-backdrop" id="sygep-filter-backdrop" hidden></div>
+          <div class="injs-filter-backdrop" id="injs-filter-backdrop" hidden></div>
           <nav id="changelist-filter" aria-labelledby="changelist-filter-header">
-            <div class="sygep-filter-panel-header">
+            <div class="injs-filter-panel-header">
               <h2 id="changelist-filter-header">{% translate 'Filter' %}</h2>
-              <button type="button" class="sygep-filter-close" id="sygep-filter-close" aria-label="{% translate 'Fermer les filtres' %}">
+              <button type="button" class="injs-filter-close" id="injs-filter-close" aria-label="{% translate 'Fermer les filtres' %}">
                 <span class="material-symbols-outlined">close</span>
               </button>
             </div>

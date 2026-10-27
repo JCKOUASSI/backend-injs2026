@@ -495,9 +495,9 @@ antérieurs que la phase documentaire ne peut pas renommer sans toucher au code,
 migrations, à la CI, aux images ou aux canaux de publication des magasins d'applications :
 
 - dossier `qr_badge_mobile/`, images/conteneurs Docker `qr-badge-*`, image de CI
-  `sygep-backend-ci`, nom de base de données par défaut ;
+  `injs-backend-ci`, nom de base de données par défaut ;
 - noms de classes/énumérations côté backend (par ex. permissions de direction
-  `IsDFRC…`, `Pointage.Statut.FORCE_DFRC`), clés de rôles `CPFAE_ADMIN`/`CHEF_CPFAE_ADMIN`
+  `IsDFRC…`, `Pointage.Statut.FORCE_DFRC`), clés de rôles `CPFAE_ADMIN` (ancien nom technique, libellé INJS : "Admin INJS")/`CHEF_CPFAE_ADMIN` (ancien nom, libellé INJS : "Chef INJS Admin")
   (les 12 rôles sont figés par DA-05) ;
 - socle HTML legacy, service worker, courriels et anciens logos ;
 - URL GitHub Pages et noms de fichiers des pages légales déjà publiés pour les stores.

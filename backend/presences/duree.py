@@ -1,4 +1,4 @@
-"""Calculs de durée canoniques — source unique de vérité (règle SYGEP).
+"""Calculs de durée canoniques — source unique de vérité (règle INJS).
 
 Règle métier :
 - Toute durée de présence est bornée au créneau planifié de la séance

@@ -187,7 +187,7 @@ def build_formations():
                 grade,             # Grade
                 groupe_norm,       # Groupe
                 'PREMIERE VAGUE',  # Vague
-                'CPFAE-AGC',       # Lieu
+                'CPFAE-AGC',       # Lieu (ancien identifiant SYGEP, conservé pour import legacy)
                 '',                # Bâtiment
                 f['salle'],        # Salle
                 date_d,            # Date début

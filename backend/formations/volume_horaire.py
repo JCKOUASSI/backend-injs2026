@@ -112,7 +112,7 @@ def module_planned_minutes_for_period(
 
 
 def accumulate_sessions_volume(sessions, *, date_debut=None, date_fin=None):
-    """Agrège prévu / réalisé sur un iterable de séances (règle commune SYGEP)."""
+    """Agrège prévu / réalisé sur un iterable de séances (règle commune INJS)."""
     prevu_min = 0.0
     realise_min = 0.0
     nb_sessions = 0

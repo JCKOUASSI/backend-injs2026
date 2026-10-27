@@ -70,7 +70,7 @@ def admin_view_required(view_func):
         if not request.user.is_authenticated:
             return redirect('web-login')
         if request.user.role not in ('DIRECTION', 'CHEF_INJS_ADMIN', 'INJS_ADMIN', 'SECRETARIAT', 'CHEF_SECRETARIAT'):
-            messages.error(request, "Accès réservé à la Direction, CPFAE et Secrétariat.")
+            messages.error(request, "Accès réservé à la Direction, CPFAE (référence historique) et Secrétariat.")
             return redirect('web-dashboard')
         return view_func(request, *args, **kwargs)
     return wrapper
@@ -135,7 +135,7 @@ def login_view(request):
             return redirect('web-dashboard')
         elif user:
             return render(request, 'dashboard/login.html', {
-                'error': 'Accès réservé à la Direction, CPFAE, Secrétariat et Encadrants.'
+                'error': 'Accès réservé à la Direction, CPFAE (ancien périmètre, hors INJS actuel), Secrétariat et Encadrants.'
             })
         else:
             return render(request, 'dashboard/login.html', {

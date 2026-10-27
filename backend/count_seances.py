@@ -34,7 +34,7 @@ def is_noise(v):
     if re.match(r'^\d+\s*H', v): return True
     if any(k in v for k in ('MINISTERE','DIRECTION','CENTRE','REPUBLIQUE','UNION',
                              'FORMATION EN','EMPLOI','MATIERES','DU MODULE',
-                             'RESTANT','FORMATEUR','SITE','GROUPE','CPFAE',
+                             'RESTANT','FORMATEUR','SITE','GROUPE','CPFAE'  # en-têtes colonnes format historique (référence CPFAE),
                              'BATIMENT','SALLE','PERIODE','HORAIRE','VOLUME',
                              'FONCTION PUBLIQUE','RENFORCEMENT','MODERNISATION',
                              'AGC','AMADOU','----------')): return True

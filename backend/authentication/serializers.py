@@ -153,7 +153,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
             if users_with_role('CHEF_INJS_ADMIN').exists():
                 logger.warning('user_create_chef_cpfae_admin_already_exists')
                 raise serializers.ValidationError(
-                    {'role': "Un Chef CPFAE Admin existe déjà. Ce rôle est unique sur toute la plateforme."}
+                    {'role': "Un Chef CPFAE Admin (ancien nom, libellé INJS : Chef INJS Admin) existe déjà. Ce rôle est unique sur toute la plateforme."}
                 )
         if role == 'CHEF_SECRETARIAT' and secretariat:
             already_exists = users_with_role('CHEF_SECRETARIAT').filter(
@@ -244,9 +244,9 @@ class UserUpdateSerializer(serializers.ModelSerializer):
                 pk=self.instance.pk if self.instance else None
             ).exists()
             if already_exists:
-                logger.warning('user_update_chef_cpfae_admin_already_exists')
+                logger.warning('user_update_chef_cpfae_admin_already_exists  # rôle en rétrocompatibilité INJS')
                 raise serializers.ValidationError(
-                    {'role': "Un Chef CPFAE Admin existe déjà. Ce rôle est unique sur toute la plateforme."}
+                    {'role': "Un Chef CPFAE Admin (ancien nom, libellé INJS : Chef INJS Admin) existe déjà. Ce rôle est unique sur toute la plateforme."}
                 )
         if role == 'CHEF_SECRETARIAT' and secretariat:
             already_exists = users_with_role('CHEF_SECRETARIAT').filter(

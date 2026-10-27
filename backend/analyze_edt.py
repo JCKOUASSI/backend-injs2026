@@ -23,7 +23,7 @@ def find_edt_data(ws):
                     groupe_info = v.strip()
         if 'SITE' in full or 'CPFAE' in full:
             for v in vals:
-                if ('SITE' in v.upper() or 'CPFAE' in v.upper()) and not site_info:
+                if ('SITE' in v.upper() or 'CPFAE' in v.upper()) and not site_info:  # CPFAE hors périmètre INJS (référence historique)
                     site_info = v.strip()
         if 'MATIERES' in full or 'MATIERE' in full:
             header_row_idx = i

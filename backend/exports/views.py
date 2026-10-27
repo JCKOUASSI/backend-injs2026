@@ -210,7 +210,7 @@ def _session_realized_minutes_for_formateur(formateur_id, session, now=None):
         if pt.duree_presence_minutes is not None:
             total += float(pt.duree_presence_minutes)
         else:
-            # Règle commune SYGEP : durée clampée au créneau de la séance.
+            # Règle commune INJS : durée clampée au créneau de la séance.
             total += pointage_minutes_clampees(pt, now=now)
     return round(total, 1)
 

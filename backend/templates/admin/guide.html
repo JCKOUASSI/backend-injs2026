@@ -9,10 +9,10 @@
 {% block content_title %}{% endblock %}
 
 {% block content %}
-<div class="sygep-guide-page">
-  <header class="sygep-guide-header">
-    <h1 class="sygep-page-title">{{ title }}</h1>
-    <p class="sygep-guide-intro">
+<div class="injs-guide-page">
+  <header class="injs-guide-header">
+    <h1 class="injs-page-title">{{ title }}</h1>
+    <p class="injs-guide-intro">
       {% trans "Procédures pas à pas pour chaque action depuis l’administration INJS-LMD." %}
     </p>
     <a class="dfrc-quick-action-btn dfrc-quick-action-btn--secondary" href="{% url 'admin:index' %}">
@@ -21,7 +21,7 @@
     </a>
   </header>
 
-  <article class="sygep-guide-content module">
+  <article class="injs-guide-content module">
     {{ guide_html|safe }}
   </article>
 </div>

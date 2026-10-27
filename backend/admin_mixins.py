@@ -1,4 +1,4 @@
-"""Mixins partagés pour l'admin Django SYGEP-CPFAE."""
+"""Mixins partagés pour l'admin Django INJS-LMD."""
 
 from django.contrib import admin
 from django.db.models import Q
@@ -266,7 +266,7 @@ def patch_admin_related_widgets():
     """Désactive les boutons « + Ajouter » / supprimer sur les champs FK/M2M admin."""
     from django.contrib.admin.widgets import RelatedFieldWidgetWrapper
 
-    if getattr(RelatedFieldWidgetWrapper, '_cpfae_no_add_patch', False):
+    if getattr(RelatedFieldWidgetWrapper, '_injs_no_add_patch', False):
         return
 
     _original_init = RelatedFieldWidgetWrapper.__init__
@@ -293,4 +293,4 @@ def patch_admin_related_widgets():
         )
 
     RelatedFieldWidgetWrapper.__init__ = __init__
-    RelatedFieldWidgetWrapper._cpfae_no_add_patch = True
+    RelatedFieldWidgetWrapper._injs_no_add_patch = True

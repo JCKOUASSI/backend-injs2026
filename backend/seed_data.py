@@ -2,7 +2,7 @@
 Script manuel HORS RUNTIME Django (P00-05) : CLI opérateur
 d'import/reprise — sorties print() de console volontaires ;
 exclu du garde-fou check_repo_hygiene.
-Script de seed — données de démonstration SYGEP-CPFAE.
+Script de seed — données de démonstration INJS-LMD.
 Usage: python seed_data.py  (depuis backend/ avec venv activé)
 """
 import os

@@ -3,9 +3,9 @@
 (function () {
   function initChangelistFilters() {
     var changelist = document.getElementById('changelist');
-    var toggle = document.getElementById('sygep-filter-toggle');
-    var closeBtn = document.getElementById('sygep-filter-close');
-    var backdrop = document.getElementById('sygep-filter-backdrop');
+    var toggle = document.getElementById('injs-filter-toggle');
+    var closeBtn = document.getElementById('injs-filter-close');
+    var backdrop = document.getElementById('injs-filter-backdrop');
     var panel = document.getElementById('changelist-filter');
 
     if (!changelist || !toggle || !panel) {
@@ -13,16 +13,16 @@
     }
 
     function setOpen(open) {
-      changelist.classList.toggle('sygep-filters-open', open);
+      changelist.classList.toggle('injs-filters-open', open);
       toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
       if (backdrop) {
         backdrop.hidden = !open;
       }
-      document.body.classList.toggle('sygep-filter-panel-open', open);
+      document.body.classList.toggle('injs-filter-panel-open', open);
     }
 
     toggle.addEventListener('click', function () {
-      setOpen(!changelist.classList.contains('sygep-filters-open'));
+      setOpen(!changelist.classList.contains('injs-filters-open'));
     });
 
     if (closeBtn) {

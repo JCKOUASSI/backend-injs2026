@@ -45,7 +45,7 @@ def login_view(request):
             return redirect('web-dashboard')
         elif user:
             return render(request, 'dashboard/login.html', {
-                'error': 'Accès réservé au personnel autorisé (administration, CPFAE, secrétariat, finance, encadrants).'
+                'error': 'Accès réservé au personnel autorisé (administration, INJS, secrétariat, finance, encadrants).'
             })
         else:
             return render(request, 'dashboard/login.html', {

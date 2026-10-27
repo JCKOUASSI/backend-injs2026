@@ -1,5 +1,5 @@
 """
-Vues API — Module Statistiques & Bilans (SYGEP-CPFAE).
+Vues API — Module Statistiques et Bilans (INJS-LMD).
 
 Filtres disponibles sur GET /api/statistiques/ :
   ?formation_id=<id>     → stats pour une formation précise
@@ -917,7 +917,7 @@ INDICATEUR_META = {
 
 
 def _init_seuils_defaut():
-    """Crée les seuils CPFAE par défaut s'ils n'existent pas."""
+    """Crée les seuils par défaut (format INJS-LMD) s'ils n'existent pas."""
     created = []
     for indicateur, vals in SEUILS_DEFAUT.items():
         obj, was_created = ConfigAlerteSeuil.objects.get_or_create(
@@ -1336,7 +1336,7 @@ class AlertesSeuilsView(APIView):
         })
 
     def post(self, request):
-        """Initialise les seuils CPFAE par défaut."""
+        """Initialise les seuils par défaut (format INJS-LMD)."""
         if not _check_role(request.user, VALIDATION_ROLES):
             return Response({'detail': 'Accès non autorisé.'}, status=403)
         created = _init_seuils_defaut()

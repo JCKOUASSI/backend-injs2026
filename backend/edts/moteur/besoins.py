@@ -302,7 +302,7 @@ def calculate_teaching_needs(
                     'explication': (
                         'Des affectations pédagogiques existent, mais aucune ne porte '
                         'une formation INJS validée (périmètre L6). Les cycles legacy '
-                        'CPFAE/Sygepcpfae ne sont pas des formations INJS.'
+                        'CPFA ne sont pas des formations INJS (hors référentiel INJS).'
                     ),
                     'action_recommandee': (
                         'Vérifier le périmètre INJS des formations rattachées, ou '

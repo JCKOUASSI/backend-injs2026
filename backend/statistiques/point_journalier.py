@@ -1,5 +1,5 @@
 """
-Point journalier — format CPFAE (fichiers « POINT JOURNALIER CAT … »).
+Point journalier — format CPFAE (format de rapport historique CPFAE conservé) (fichiers « POINT JOURNALIER CAT … »).
 
 Optimisé : pré-chargement bulk des séances, inscriptions et pointages
 pour éviter les requêtes N+1 sur les filtres larges (année entière, etc.).
@@ -33,7 +33,7 @@ DEFAULT_HORAIRES = {'MATIN': '08H00-12H00', 'SOIR': '13H00-17H00'}
 
 
 def _organisme_label(categorie, grade=None):
-    """Libellé ligne DATE — ex. CATÉGORIE A_GRADE A3 (modèle CPFAE)."""
+    """Libellé ligne DATE — ex. CATÉGORIE A_GRADE A3 (modèle CPFAE (format de rapport historique CPFAE conservé))."""
     cat = (categorie or '').strip()
     gr = (grade or '').strip()
     if cat and gr:
@@ -103,7 +103,7 @@ def _salle_label(module):
 
 
 def _titre_ligne1(formation, categorie=None):
-    """Ligne 1 du modèle CPFAE (ex. FAC CAT A)."""
+    """Ligne 1 du modèle CPFAE (format de rapport historique CPFAE conservé) (ex. FAC CAT A)."""
     name = (formation.formation or '').strip().upper()
     cat = (categorie or '').strip().upper()
     if cat == '—':

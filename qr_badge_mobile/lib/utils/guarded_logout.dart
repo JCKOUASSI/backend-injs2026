@@ -26,7 +26,7 @@ Future<bool> performGuardedLogout(BuildContext context) async {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
-          'Code incorrect. Seuls un administrateur ou un chef CPFAE Admin '
+          'Code incorrect. Seuls un administrateur ou un chef INJS Admin '
           'peuvent fournir le code de déconnexion.',
         ),
       ),
@@ -71,7 +71,7 @@ class _SupervisorCodeDialogState extends State<_SupervisorCodeDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Saisissez le code fourni par un administrateur ou un chef CPFAE Admin.',
+            'Saisissez le code fourni par un administrateur ou un chef INJS Admin.',
           ),
           const SizedBox(height: 12),
           TextField(

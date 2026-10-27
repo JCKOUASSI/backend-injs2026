@@ -14,6 +14,6 @@ Localisation
 - La demande d’autorisation iOS apparaît via le prompt système après un court écran d’explication (sans bouton de sortie).
 
 Support
-- URL de support (publique) : https://tobi-nw.github.io/legalsygepcpfae/legal/support-qr-badge-mobile.html
-- Politique de confidentialité : https://tobi-nw.github.io/legalsygepcpfae/legal/confidentialite-qr-badge-mobile.html
+- URL de support (publique) : https://injs.badge-qr-code.pro/dashboard/legal/support-qr-badge-mobile/
+- Politique de confidentialité : https://injs.badge-qr-code.pro/dashboard/legal/confidentialite-qr-badge-mobile/
 

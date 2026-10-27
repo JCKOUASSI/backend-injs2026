@@ -226,7 +226,7 @@ class Pointage(models.Model):
     def calculer_duree(self):
         """Calcule la durée de présence côté serveur (R5).
 
-        Règle SYGEP unique : durée clampée au créneau planifié de la séance
+        Règle INJS unique : durée clampée au créneau planifié de la séance
         (voir ``presences.duree``), jamais négative.
         """
         from .duree import pointage_minutes_clampees

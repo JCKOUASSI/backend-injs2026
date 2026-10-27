@@ -739,7 +739,7 @@ class BadgeAccountProvisionTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         html = mail.outbox[0].alternatives[0][0]
         self.assertIn('data:image', html)
-        self.assertIn('SYGEP-CPFAE', html)
+        self.assertIn('INJS Abidjan', html)
 
 
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')

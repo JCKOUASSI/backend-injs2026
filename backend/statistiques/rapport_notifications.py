@@ -66,7 +66,7 @@ def _envoyer_email(destinataire, sujet, corps):
         send_mail(
             sujet,
             corps,
-            getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@sygep.local'),
+            getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@injs.local'),
             [destinataire.email],
             fail_silently=True,
         )
@@ -89,12 +89,12 @@ def _creer_notifications(destinataires, rapport, evenement, auteur, message):
             message=message,
             auteur=auteur,
         )
-        sujet = f"[SYGEP-CPFAE] {label_evt} — {titre}"
+        sujet = f"[INJS-LMD] {label_evt} — {titre}"
         corps = (
             f"Bonjour {dest.get_full_name() or dest.username},\n\n"
             f"{message}\n\n"
             f"Action effectuée par : {auteur_nom}\n\n"
-            f"— SYGEP-CPFAE / Statistiques & Bilans"
+            f"— INJS-LMD / Statistiques & Bilans"
         )
         _envoyer_email(dest, sujet, corps)
 

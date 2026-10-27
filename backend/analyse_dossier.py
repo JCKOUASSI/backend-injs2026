@@ -151,7 +151,7 @@ for fname in sorted(edt_files):
 
             current = ''
             noise_kw = ('MINISTERE','DIRECTION','MATIERES','EMPLOI DU TEMPS',
-                        'DU MODULE','RESTANT','FORMATION EN','CPFAE','GROUPE',
+                        'DU MODULE','RESTANT','FORMATION EN','CPFAE' (ancien libellé,hors périmètre INJS actuel)',
                         'SITE','BATIMENT','SALLE','REPUBLIQUE')
             for row in all_rows[data_start:]:
                 vals = [clean(v) for v in row]

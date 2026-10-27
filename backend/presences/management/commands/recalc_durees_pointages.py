@@ -2,7 +2,7 @@
 Commande : python manage.py recalc_durees_pointages
 
 Recalcule ``duree_presence_minutes`` de tous les pointages terminés avec la
-règle canonique SYGEP (presences.duree) : durée clampée au créneau planifié
+règle canonique INJS (presences.duree) : durée clampée au créneau planifié
 de la séance, jamais négative.
 
 À lancer une fois après l'unification des calculs de durée, pour corriger les
