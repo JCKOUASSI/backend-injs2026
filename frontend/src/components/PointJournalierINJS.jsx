@@ -117,7 +117,7 @@ function BlocCreneau({ label, bloc, nGroups }) {
   )
 }
 
-export function PointJournalierTableauCPFAE({ tb }) {
+export function PointJournalierTableauINJS({ tb }) {
   if (!tb) return null
 
   const nGroups = Math.max(
@@ -211,4 +211,4 @@ export function PointJournalierTableauCPFAE({ tb }) {
   )
 }
 
-export default PointJournalierTableauCPFAE
+export default PointJournalierTableauINJS

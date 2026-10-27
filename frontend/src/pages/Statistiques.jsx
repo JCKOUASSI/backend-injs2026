@@ -1,5 +1,5 @@
 /**
- * Statistiques.jsx — SYGEP-CPFAE
+ * Statistiques.jsx — INJS-LMD
  * Dashboard multi-onglets : Vue d'ensemble · Pédagogique · Administratif · Historique · Secrétariats · Rapports · Alertes
  */
 import { useState, useEffect, useCallback, useRef } from 'react'
@@ -18,7 +18,7 @@ import {
 } from '../utils/financePeriod'
 import { isSecretariatScopedRole, lockedSecretariatId } from '../utils/roles'
 import { useStatsMeta } from '../hooks/useStatsMeta'
-import { PointJournalierTableauCPFAE, pjPct } from '../components/PointJournalierCPFAE'
+import { PointJournalierTableauINJS, pjPct } from '../components/PointJournalierINJS'
 import { AuditeursNotoiresPanel, AuditeursNotoiresKpiStrip, filterAuditeursNotoires } from '../components/AuditeursNotoiresPanel'
 import RapportsWorkflowPanel from '../components/RapportsWorkflowPanel'
 
@@ -3234,7 +3234,7 @@ export default function Statistiques() {
                     >
                       <i className="bi bi-grid-3x3-gap me-1"/>Voir tous les tableaux
                     </button>
-                    <PointJournalierTableauCPFAE tb={pjDetail} />
+                    <PointJournalierTableauINJS tb={pjDetail} />
                   </div>
                 ) : (
                   <div style={{ background: '#fff', borderRadius: 10, padding: '1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,0.07)', color: '#64748b', fontSize: '0.85rem' }}>
@@ -3360,7 +3360,7 @@ export default function Statistiques() {
   )
 }
 
-// ── Point journalier (format CPFAE — voir PointJournalierCPFAE.jsx) ───────────
+// ── Point journalier (format historique INJS — voir PointJournalierINJS.jsx) ───────────
 
 function PointJournalierEnsemblePanel({ items, tableaux, annee, onSelectIndividuel }) {
   const selectTableau = (tableauId) => {
@@ -3433,7 +3433,7 @@ function PointJournalierEnsemblePanel({ items, tableaux, annee, onSelectIndividu
                 <i className="bi bi-arrows-fullscreen me-1"/>Plein écran
               </button>
             </div>
-            <PointJournalierTableauCPFAE tb={entry.tableau} />
+            <PointJournalierTableauINJS tb={entry.tableau} />
           </div>
         ))}
       </div>

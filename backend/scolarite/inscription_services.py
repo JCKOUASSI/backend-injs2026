@@ -277,6 +277,30 @@ def convertir_admission_en_inscription(admission, acteur=None, matricule=None,
             f'Dossier de pièces incomplet : {validees}/{total} pièce(s) obligatoire(s) validée(s).'
         )
 
+    # Idempotence : une admission ne produit qu'une seule inscription vivante.
+    # Sans ce garde-fou, un double clic (ou un rejeu réseau) créait deux
+    # inscriptions administratives pour la même admission, avec deux entrées
+    # de journal et un risque de double validation.
+    existante = (
+        InscriptionAdministrative.objects
+        .filter(admission=admission)
+        .exclude(statut__in=(S.ANNULEE, S.REJETEE))
+        .order_by('pk')
+        .first()
+    )
+    if existante is not None:
+        # Un rejeu « avec validation » fait progresser le dossier jusqu'à
+        # VALIDEE, mais ne réactive jamais un dossier suspendu ou terminé.
+        if valider:
+            for cible in (S.EN_ATTENTE, S.A_VALIDER, S.VALIDEE):
+                if cible in TRANSITIONS.get(existante.statut, set()):
+                    appliquer_transition(
+                        existante, cible, acteur=acteur,
+                        commentaire='Rejeu idempotent de la conversion.',
+                    )
+        existante.rejeu_idempotent = True
+        return existante
+
     participant, participant_cree = creer_ou_retrouver_participant(
         admission.candidat, admission.annee_academique, acteur=acteur, matricule=matricule,
     )
@@ -300,6 +324,7 @@ def convertir_admission_en_inscription(admission, acteur=None, matricule=None,
     champs.update({cle: valeur for cle, valeur in surcharges.items() if valeur is not None})
 
     inscription = InscriptionAdministrative(**champs)
+    inscription.rejeu_idempotent = False
     inscription.full_clean(exclude=['date_validation'])
     inscription.save()
 

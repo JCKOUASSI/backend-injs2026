@@ -446,7 +446,13 @@ class UserListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        qs = _staff_users_queryset(user).order_by('last_name', 'first_name')
+        # Performance : sans ces deux appels, la liste des comptes déclenchait
+        # une requête de groupes **par utilisateur** (N+1 mesuré à 21 requêtes
+        # pour 20 comptes) et une requête par secrétariat lié.
+        qs = (_staff_users_queryset(user)
+              .select_related('secretariat')
+              .prefetch_related('groups')
+              .order_by('last_name', 'first_name'))
         search = self.request.query_params.get('search')
         if search:
             qs = qs.filter(
@@ -585,7 +591,9 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        qs = _staff_users_queryset(user)
+        qs = (_staff_users_queryset(user)
+              .select_related('secretariat')
+              .prefetch_related('groups'))
         if get_user_role(user) == 'DIRECTION':
             for mobile_role in ('AUDITEUR', 'FORMATEUR'):
                 group_name = ROLE_GROUP_NAMES.get(mobile_role)

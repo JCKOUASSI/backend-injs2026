@@ -474,7 +474,13 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '15'))
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@qrbadge.local')
 
-DATA_UPLOAD_MAX_NUMBER_FIELDS = None
+# Nombre maximal de champs d'un formulaire POST. La valeur était ``None``
+# (protection désactivée) : une requête multipart très large pouvait saturer
+# un worker. On borne à 5 000 champs, largement au-dessus des formulaires
+# métier (imports, saisies en masse) tout en gardant la protection.
+DATA_UPLOAD_MAX_NUMBER_FIELDS = int(
+    os.environ.get('DATA_UPLOAD_MAX_NUMBER_FIELDS', '5000')
+)
 
 # drf-spectacular
 SPECTACULAR_SETTINGS = {

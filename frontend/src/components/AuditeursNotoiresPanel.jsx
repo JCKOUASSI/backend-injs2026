@@ -1,5 +1,5 @@
 /**
- * Absents notoires — inscrits sans pointage ou avec motif_notoire (définition CPFAE unifiée).
+ * Absents notoires — inscrits sans pointage ou avec motif_notoire (définition unifiée héritée).
  * Données API : { total, inscrits, pct, liste[] }
  */
 
