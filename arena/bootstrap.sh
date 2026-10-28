@@ -45,6 +45,29 @@ doivent rester alignés (cf. ``backend/config/tests/test_apercu_hardening.py``).
 """
 from config.settings import *  # noqa: F401,F403  (overlay : tout est repris)
 
+# ── Hôtes de l'aperçu ────────────────────────────────────────────────────────
+# Ce profil est réservé à l'aperçu et n'est jamais chargé en production. Il doit
+# fonctionner même sans ``backend/.env`` — fichier ignoré par Git, donc absent
+# après chaque réinitialisation du bac à sable. Sans ce bloc, Django répond
+# « 400 DisallowedHost » sur ``<port>-<sandbox>.e2b.app`` et l'aperçu reste
+# blanc, alors que le serveur écoute correctement.
+PREVIEW_HOST_SUFFIXE = ".e2b.app"
+if PREVIEW_HOST_SUFFIXE not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS = [*ALLOWED_HOSTS, PREVIEW_HOST_SUFFIXE]
+
+# Origines de l'aperçu : le site (port 3000) et l'admin (port 8000) sont servis
+# sous des hôtes distincts ; le joker de sous-domaine est accepté par Django.
+for _origine in ("https://*.e2b.app", "http://*.e2b.app"):
+    if _origine not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS = [*CSRF_TRUSTED_ORIGINS, _origine]
+
+# Appels directs à l'API depuis l'hôte d'aperçu (hors proxy Vite).
+if "e2b\\.app" not in CORS_ALLOWED_ORIGIN_REGEXES:
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        *CORS_ALLOWED_ORIGIN_REGEXES,
+        r"^https?://([a-z0-9-]+\.)*e2b\.app$",
+    ]
+
 # ── Cookies : noms dédiés ────────────────────────────────────────────────────
 # Un nom dédié neutralise définitivement tout vieux cookie csrftoken/sessionid
 # hérité du navigateur (cause du « incorrect length » sur les jetons tronqués).
@@ -75,8 +98,11 @@ PREVIEW_AUTOLOGIN_USERNAME = "admin"
 
 PYTHON
 
-# ── 3. Environnement de démonstration (optionnel) ────────────────────────────
-if [[ "${1:-}" == "--write-env" ]]; then
+# ── 3. Environnement de démonstration ────────────────────────────────────────
+# Le fichier est écrit d'office s'il est absent : sans lui, Django refuse de
+# démarrer (SECRET_KEY) puis l'aperçu est rejeté (ALLOWED_HOSTS). Un fichier
+# existant n'est JAMAIS écrasé, sauf demande explicite `--write-env`.
+if [[ ! -f "$ENV_FILE" || "${1:-}" == "--write-env" ]]; then
   log "Écriture de $ENV_FILE"
   cat > "$ENV_FILE" <<ENV
 SECRET_KEY=django-insecure-dev-demo-key-1234567890

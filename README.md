@@ -125,10 +125,16 @@ Profil d'aperçu (iframe de la plateforme, hôte `*.e2b.app`) — cookies CHIPS 
 auto-connexion de l'admin de démonstration, jamais actif en production :
 
 ```bash
-bash arena/bootstrap.sh          # (re)génère arena/settings_sandbox.py + mot de passe démo
+bash arena/bootstrap.sh          # (re)génère le profil d'aperçu + backend/.env si absent
 ./arena/lancer-api.sh            # API Django, port figé 8000
 ./arena/lancer-front.sh          # site Vite, port figé 3000 (proxy /api → 8000)
 ```
+
+`bootstrap.sh` écrit `backend/.env` **s'il est absent** (jamais d'écrasement
+silencieux) ; `--write-env` force sa réécriture. Le profil d'aperçu tolère par
+lui-même l'hôte `*.e2b.app` (hôtes + origines CSRF), afin que l'aperçu démarre
+même après une réinitialisation du bac à sable. Ce profil n'est jamais chargé
+en production.
 
 ### 4.1 Backend (Django)
 

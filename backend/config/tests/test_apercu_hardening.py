@@ -92,6 +92,50 @@ class OverlayCsrfHardeningTests(SimpleTestCase):
         self.assertIn('DJANGO_SUPERUSER_PASSWORD="$SANDBOX_ADMIN_PASSWORD"', contenu)
         self.assertIn('secrets.token_urlsafe(48)', contenu)
 
+    def test_hotes_de_l_apercu_toleres_sans_fichier_env(self):
+        """L'aperçu doit démarrer sans `backend/.env`.
+
+        `backend/.env` est ignoré par Git : il disparaît à chaque
+        réinitialisation du bac à sable. Sans hôte d'aperçu déclaré dans
+        l'overlay, Django répond `400 DisallowedHost` sur
+        `<port>-<sandbox>.e2b.app` et la vignette reste blanche (panne
+        reproduite lors de l'audit). Le profil d'aperçu — jamais chargé en
+        production — doit donc tolérer cet hôte par lui-même.
+        """
+        for profil in (OVERLAY, BOOTSTRAP):
+            contenu = _lire(profil)
+            with self.subTest(profil=profil.name):
+                self.assertIn('PREVIEW_HOST_SUFFIXE = ".e2b.app"', contenu)
+                self.assertIn('ALLOWED_HOSTS = [*ALLOWED_HOSTS, PREVIEW_HOST_SUFFIXE]',
+                              contenu)
+                self.assertIn('https://*.e2b.app', contenu)
+
+    def test_l_overlay_ne_fuit_pas_dans_la_configuration_de_production(self):
+        """L'hôte d'aperçu reste confiné au profil d'aperçu.
+
+        Les commentaires de `config/settings.py` peuvent mentionner l'hôte
+        d'aperçu (documentation) ; ce qui est interdit, c'est une déclaration
+        opérationnelle : constante dédiée, ou hôte ajouté à `ALLOWED_HOSTS`.
+        """
+        production = _lire(REPO / 'backend' / 'config' / 'settings.py')
+        self.assertNotIn('PREVIEW_HOST_SUFFIXE', production)
+        for ligne in production.splitlines():
+            depouillee = ligne.split('#')[0]
+            if 'ALLOWED_HOSTS' in depouillee or 'CSRF_TRUSTED_ORIGINS' in depouillee:
+                with self.subTest(ligne=ligne.strip()):
+                    self.assertNotIn('e2b', depouillee)
+
+    def test_bootstrap_ecrit_env_par_defaut(self):
+        """`bash arena/bootstrap.sh` doit suffire à rendre l'aperçu lançable.
+
+        Le README documente l'appel sans option ; le fichier `.env` n'était
+        pourtant écrit qu'avec `--write-env`, d'où un démarrage impossible
+        (SECRET_KEY absent) sur un bac à sable neuf.
+        """
+        contenu = _lire(BOOTSTRAP)
+        self.assertIn('if [[ ! -f "$ENV_FILE"', contenu)
+        self.assertIn('--write-env', contenu)
+
     def test_noms_de_cookies_dedies(self):
         # Un nom dédié neutralise définitivement tout vieux cookie csrftoken /
         # sessionid hérité du navigateur (cause du « incorrect length »).
@@ -267,7 +311,16 @@ class AdminSansCookieEnApercuTests(TestCase):
                 "Profil d'aperçu inactif : middlewares non branchés "
                 "(DEBUG valait False au chargement de settings.py).",
             )
-        get_user_model().objects.create_superuser('admin', 'admin@example.com', 'Temp#Pass123')
+        # Le compte peut déjà exister : `authentication.apps` en crée un au
+        # post_migrate lorsque DJANGO_SUPERUSER_* est défini (profil de démo).
+        # Le test vérifie l'auto-connexion, pas la création du compte.
+        admin, cree = get_user_model().objects.get_or_create(
+            username='admin',
+            defaults={'email': 'admin@example.com', 'is_staff': True, 'is_superuser': True},
+        )
+        if cree:
+            admin.set_password('Temp#Pass123')
+            admin.save(update_fields=['password'])
         with mock.patch.dict(os.environ, {'DEMO_ADMIN_AUTOLOGIN': '1'}):
             client = Client(enforce_csrf_checks=True)
             page = client.get('/admin/', HTTP_HOST='localhost')
