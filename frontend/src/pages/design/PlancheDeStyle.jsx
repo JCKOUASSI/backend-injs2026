@@ -202,7 +202,7 @@ export default function PlancheDeStyle() {
             Aucun jeton de couleur ne correspond au filtre « {recherche} ».
           </div>
         ) : (
-          <ul className="planche__palette">
+          <ul className="planche__palette" aria-label="Palette officielle des jetons de couleur">
             {echappementsSelectionnes.map((jeton) => (
               <li key={jeton.nom} className="planche__teinte">
                 <span

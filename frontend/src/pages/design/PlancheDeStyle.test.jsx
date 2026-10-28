@@ -53,6 +53,14 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+/**
+ * Bloc « socle réel » : au lieu de doubles, on injecte le VRAI
+ * `designSystem.css` dans le document. jsdom résout les propriétés
+ * personnalisées, ce qui permet de vérifier la chaîne complète
+ * feuille de style → lecture → affichage, et non seulement la logique.
+ */
+const CHEMIN_SOCLE = require('node:path').resolve(process.cwd(), 'src/styles/designSystem.css')
+
 function rendre() {
   return renderWithProviders(<PlancheDeStyle />, {
     routePattern: '/referentiels/planche-de-style',
@@ -215,5 +223,54 @@ describe('pages/design/PlancheDeStyle — composants de démonstration', () => {
     await screen.findByText('--injs-navy')
     expect(espion).not.toHaveBeenCalled()
     espion.mockRestore()
+  })
+})
+
+describe('pages/design/PlancheDeStyle — avec le socle réel', () => {
+  let baliseStyle = null
+
+  beforeEach(() => {
+    // On retire les doubles du bloc précédent pour lire le vrai document.
+    spyStyle.mockRestore()
+    if (styleSheetsInitial) Object.defineProperty(document, 'styleSheets', styleSheetsInitial)
+    else delete document.styleSheets
+    const cssReel = require('node:fs').readFileSync(CHEMIN_SOCLE, 'utf8')
+    baliseStyle = document.createElement('style')
+    baliseStyle.textContent = cssReel
+    document.head.appendChild(baliseStyle)
+  })
+
+  afterEach(() => {
+    baliseStyle?.remove()
+  })
+
+  it('affiche le jeton navy avec sa valeur réellement résolue', async () => {
+    rendre()
+    const table = await screen.findByRole('table', { name: /Couleurs \(\d+\)/ })
+    expect(within(table).getByText('--injs-navy')).toBeInTheDocument()
+    expect(within(table).getAllByText('#071B3A').length).toBeGreaterThan(0)
+  })
+
+  it('couvre TOUS les jetons déclarés dans le fichier de socle', async () => {
+    rendre()
+    await screen.findByText('--injs-navy')
+
+    const cssReel = require('node:fs').readFileSync(CHEMIN_SOCLE, 'utf8')
+    const attendus = [...new Set([...cssReel.matchAll(/(--injs-[a-z0-9-]+)\s*:/g)].map((m) => m[1]))]
+    const rendus = screen.getAllByRole('rowheader').map((cellule) => cellule.textContent)
+
+    const manquants = attendus.filter((nom) => !rendus.includes(nom))
+    expect(manquants).toEqual([])
+    expect(attendus.length).toBeGreaterThan(60)
+  })
+
+  it('la palette nomme ses pastilles et affiche la valeur réelle', async () => {
+    rendre()
+    await screen.findByText('--injs-navy')
+
+    const palette = screen.getByRole('list', { name: /Palette officielle/i })
+    const pastille = within(palette).getByText('navy').closest('.planche__teinte')
+    expect(pastille).toBeTruthy()
+    expect(within(pastille).getByText('#071B3A')).toBeInTheDocument()
   })
 })

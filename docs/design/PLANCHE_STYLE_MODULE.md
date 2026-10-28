@@ -59,7 +59,7 @@ dépôt comme archive de la maquette validée.
 | `frontend/src/lib/plancheStyle.js` | logique pure : classement, lecture, filtrage, contraste WCAG, point de rupture |
 | `frontend/src/lib/plancheStyle.test.js` | 29 tests, dont l'invariant « aucun jeton du socle n'est non classé » et la garde `.visually-hidden` |
 | `frontend/src/pages/design/PlancheDeStyle.jsx` | l'écran |
-| `frontend/src/pages/design/PlancheDeStyle.test.jsx` | 14 tests (lecture, filtre, copie, contrastes, responsive, modale, impression, absence d'appel API) |
+| `frontend/src/pages/design/PlancheDeStyle.test.jsx` | 17 tests, dont un bloc **avec le vrai `designSystem.css` injecté** : les 73 jetons du fichier sont tous affichés, `--injs-navy` vaut réellement `#071B3A` |
 | `frontend/src/styles/plancheDeStyle.css` | mise en page, portée strictement `.planche*` |
 | `frontend/src/App.jsx` | route `/referentiels/planche-de-style` |
 | `frontend/src/menu/arborescence.js` | entrée de menu + droits |
@@ -96,7 +96,7 @@ gardent la définition et vérifient qu'elle masque réellement le contenu.
 
 ## 6. Contrôles exécutés
 
-- `npx vitest run` → **103 fichiers, 1 960 tests OK** ;
+- `npx vitest run` → **103 fichiers, 1 963 tests OK** ;
 - `npm run build` → **OK** ;
 - `config.tests` (backend) non concerné par ce module : aucun fichier Python
   modifié.
@@ -104,7 +104,10 @@ gardent la définition et vérifient qu'elle masque réellement le contenu.
 ### NOT EXECUTED
 
 - **Vérification visuelle par navigateur** : aucun navigateur ne peut être
-  installé dans cet environnement (voir `docs/audit/REFONTE_VISUELLE_2026-10-28.md`,
+  installé dans cet environnement. En revanche, la chaîne complète
+  *feuille de style → lecture → affichage* est vérifiée en jsdom **avec le vrai
+  fichier de socle injecté** (les propriétés personnalisées y sont résolues :
+  `--injs-navy` → `#071B3A`), ce qui couvre le risque principal du module (voir `docs/audit/REFONTE_VISUELLE_2026-10-28.md`,
   section D.3). Le rendu est contrôlé par les tests DOM (jsdom), par le build de
   production et par le service réel des fichiers (module JSX et feuille de
   style répondant 200 sur le serveur de développement).
