@@ -44,6 +44,17 @@ fichiers autorisés, utilisés tels quels :
   écrasait les couleurs de l'emblème — supprimé ;
 - aucun logo généré, aucun fond dégradé sous le logo, aucune variante inventée.
 
+**Exception documentée — variante monochrome blanche (`16cb4fb`).** Le logo
+officiel porte le monogramme **INJS** et le libellé **ABIDJAN**, tous en bleu
+(#283A87, #283A88, #293A88, #2A3C89). Placé sur la plaque bleu nuit `#001a33`
+de l'en-tête de l'admin, il était bleu sur bleu, donc quasi illisible.
+`static/img/logo-injs-blanc.svg` reprend **le fichier officiel sans y toucher** :
+mêmes 6 tracés, même `viewBox="0 0 300 300"`, mêmes `transform="translate(...)"`,
+même élément `<text>ABIDJAN</text>`, même `aria-label`. Seules les 4 valeurs de
+`fill` passent en `#FFFFFF`. **Aucun filtre, aucune déformation, aucun
+redimensionnement du tracé** — c'est une déclinaison monochrome du fichier
+officiel, pas un logo différent. Contrôlé par 10 tests (`test_admin_logo`).
+
 ### A.3 Composants
 
 Le socle `frontend/src/styles/designSystem.css` (821 lignes, 12 sections) stylise
@@ -93,8 +104,10 @@ Couverture mesurée sur le code réel : **117 fichiers d'écran/composant sur 14
 **Aucun fichier `.js`, `.jsx` ou `.py` n'a été modifié** : la refonte est
 purement présentationnelle. Routes, contrats API, règles d'authentification et
 d'autorisation, filtres, pagination et validations sont intacts par construction.
-Le backend n'a été touché que sur **deux fichiers de présentation**
-(`templates/admin/login.html`, `static/admin/login.css`).
+Côté backend, seuls des fichiers de **présentation** ont été touchés :
+`templates/admin/login.html`, `static/admin/login.css`, `templates/admin/base.html`
+(en-tête uniquement), plus le SVG de déclinaison blanche — aucune vue, aucun
+modèle, aucun `urls.py`.
 
 ---
 
@@ -106,6 +119,8 @@ Le backend n'a été touché que sur **deux fichiers de présentation**
 |---|---|
 | `frontend/src/styles/designSystem.css` | socle unique : tokens, primitives, responsive, accessibilité, impression |
 | `docs/audit/REFONTE_VISUELLE_2026-10-28.md` | ce rapport |
+| `backend/static/img/logo-injs-blanc.svg` | variante monochrome blanche du logo officiel, pour fond sombre (`16cb4fb`) |
+| `backend/config/tests/test_admin_logo.py` | 10 tests : géométrie identique au logo officiel, `fill` blancs, `transform` inchangés, tailles de l'en-tête, `alt` |
 
 ### Modifiés — socle et connexions (`438c87a`)
 
@@ -226,6 +241,17 @@ bleu clair 7,94 · ciel/navy 7,95 · turquoise 10,74.
     « 2025 ») via `<tspan>`, ce qui supprime les troncatures en plein mot même sur
     12 mois. **4 tests de régression ajoutés.** Vérifié sur le serveur réel : `/admin/` 200, aucune
     virgule décimale dans les attributs.
+
+19. **Logo illisible dans l'en-tête de l'admin** (signalé par l'utilisateur) : le
+    monogramme bleu #283A87 était posé sur la plaque bleu nuit #001a33, sans
+    contraste utile. Le libellé « Abidjan » du logo disparaissait. Corrigé par la
+    variante blanche décrite en A.2, plaque agrandie **40 → 52 px**, icône
+    **32 → 44 px**. Au passage, le PNG base64 de **14 Ko codé en dur** dans
+    `base.html` (donc rechargé à chaque page, non cacheable) est remplacé par un
+    fichier statique servi par `{% static %}` : `base.html` passe de ~35 Ko à
+    **21 164 octets**. `alt="INJS Abidjan"` conservé pour les lecteurs d'écran.
+    **10 tests de régression ajoutés** dont un contrôle des contrastes de forme
+    (aucun `<filter>`, aucune couleur bleue résiduelle).
 
 ### D.3 Non exécuté — NOT EXECUTED
 
