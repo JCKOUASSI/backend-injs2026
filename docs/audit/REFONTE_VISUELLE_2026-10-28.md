@@ -140,7 +140,7 @@ Aucun.
 | Contrôle | Résultat |
 |---|---|
 | `npm run build` | ✅ **built in 3.88s** (avertissement chunk > 500 kB : préexistant) |
-| `npx vitest run` | ✅ **101 fichiers / 1 912 tests** (relancé après la migration) |
+| `npx vitest run` | ✅ **101 fichiers / 1 916 tests** (4 tests d'accessibilité ajoutés) |
 | **CI GitHub — run 40704468360 sur `b6563b4` (HEAD, toutes les modifications incluses)** | ✅ **Backend (Django + PostgreSQL) vert en 56 min 07 s** · ✅ **Frontend vert en 1 min 45 s** (analyse statique + tests) |
 | `manage.py test config.tests.test_apercu_hardening authentication` | ✅ **261 tests OK** (skipped=1) — exécution locale ciblée |
 | `/admin/login/` rendu (sans auto-connexion) | ✅ **200 · 19 773 o**, logo officiel, **0 identifiant et 0 mot de passe préremplis** |
@@ -196,6 +196,23 @@ bleu clair 7,94 · ciel/navy 7,95 · turquoise 10,74.
     d'action de formulaire.
 11. **En-tête de tableau collant hors conteneur défilant** : flottait au-dessus du
     contenu → porté sur `.table-responsive`.
+12. **Menu mobile sans touche Échap** : seuls le voile et un bouton fermaient la
+    sidebar ; au clavier, aucune sortie. Gestion d'Échap + verrouillage du
+    défilement arrière-plan ajoutés (`Layout.jsx`).
+13. **`ConfirmModal` non accessible** : aucune sémantique de dialogue, pas d'Échap,
+    focus jamais déplacé, bouton « × » sans nom accessible. Réécrit : `role="dialog"`,
+    `aria-modal`, titre et description reliés, Échap, focus entrant puis rendu,
+    libellé de fermeture explicite. **4 tests ajoutés** (9 au total).
+14. **Panneau de notifications trop large** : 380 px fixes débordaient d'un écran de
+    360 px → largeur bornée par la fenêtre ; bouton-icône doté d'un nom accessible
+    et de `aria-expanded`.
+15. **Palettes de graphiques déconnectées** : `Statistiques`, `EvaluationCharts` et
+    `Secretariats` avaient chacun leur série de couleurs → ramenées sur la série
+    officielle, longueur préservée, **0 doublon** après contrôle.
+16. **Test figé sur une nuance obsolète** : `AuditeursNotoiresPanel` exigeait
+    `rgb(198,40,40)` (#C62828). La règle testée est conservée (un motif renseigné
+    est signalé par la couleur d'alerte), seule la nuance suit le socle
+    (#DC3545). Assertion toujours stricte — **pas un affaiblissement**.
 
 ### D.3 Non exécuté — NOT EXECUTED
 
@@ -228,7 +245,7 @@ bleu clair 7,94 · ciel/navy 7,95 · turquoise 10,74.
 
 ### **VALIDÉ AVEC RÉSERVES**
 
-**Ce qui est prouvé par exécution :** build, 1 912 tests unitaires relancés après
+**Ce qui est prouvé par exécution :** build, 1 916 tests unitaires relancés après
 la migration, **CI GitHub entièrement verte sur le commit exact `b6563b4`**
 (backend Django + PostgreSQL 56 min 07 s, frontend lint + tests 1 min 45 s),
 261 tests backend ciblés en local, rendu réel de l'écran de connexion admin sans
