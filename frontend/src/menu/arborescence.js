@@ -1459,6 +1459,19 @@ export const ARBORESCENCE = [
         },
       },
       {
+        // Planche de style : documentation vivante du socle visuel, en lecture
+        // seule. Même garde que « Paramètres LMD » (trio d'administration) :
+        // l'écran ne modifie rien, mais il expose l'apparence de référence.
+        id: 'referentiels.planche_style',
+        libelle: 'Planche de style',
+        chemin: '/referentiels/planche-de-style',
+        droit: {
+          curp: ['parametres.parametre.consulter'],
+          legacy: [['web', 'operationnel']],
+          roles: ['ADMIN', 'CHEF_INJS_ADMIN', 'INJS_ADMIN'],
+        },
+      },
+      {
         // Import Excel (formations, modules, séances, participants) : même garde
         // que l'ancienne barre latérale (`peut(user, 'participants', 'gerer')`).
         id: 'referentiels.imports',

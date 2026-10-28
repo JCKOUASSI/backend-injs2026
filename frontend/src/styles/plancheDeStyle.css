@@ -1,0 +1,421 @@
+/**
+ * Planche de style — mise en page de l'écran `/referentiels/planche-de-style`.
+ *
+ * Portée volontairement étroite : toutes les règles sont préfixées `.planche`
+ * et ne s'appliquent qu'à cet écran. Aucun composant du socle n'est redéfini
+ * ici — la planche **montre** `designSystem.css`, elle ne le remplace pas.
+ * Le verre n'est utilisé que sur les panneaux de démonstration dédiés.
+ */
+
+.planche {
+  --planche-sombre: var(--injs-navy, #071b3a);
+  --planche-trait: var(--injs-border, #dce6f1);
+  --planche-trait-fort: var(--injs-border-strong, #c3d2e4);
+  --planche-surface: var(--injs-surface, #fff);
+  --planche-muet: var(--injs-text-muted, #64748b);
+  color: var(--injs-text, #0f1f33);
+}
+
+/* ── En-tête ─────────────────────────────────────────────────────────────── */
+
+.planche__entete {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  background: var(--planche-surface);
+  border: 1px solid var(--planche-trait);
+  border-radius: var(--injs-radius-lg, 20px);
+  box-shadow: var(--injs-shadow-card, 0 1px 3px rgba(16, 24, 40, 0.06));
+}
+
+.planche__logo {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid var(--planche-trait);
+  border-radius: var(--injs-radius-md, 14px);
+  padding: 6px;
+}
+
+.planche__entete-texte {
+  min-width: 0;
+}
+
+.planche__titre {
+  margin: 0;
+  font-size: var(--injs-fs-xl, 1.375rem);
+  font-weight: 800;
+  color: var(--injs-navy, #071b3a);
+}
+
+.planche__sous-titre {
+  margin: 0.15rem 0 0;
+  font-size: var(--injs-fs-sm, 0.8125rem);
+  color: var(--planche-muet);
+}
+
+/* ── Barre de repères (sticky) ───────────────────────────────────────────── */
+
+.planche__reperes {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  padding: 0.65rem 0.9rem;
+  margin-bottom: 1.25rem;
+  font-size: var(--injs-fs-sm, 0.8125rem);
+  background: var(--injs-glass-3-bg, rgba(252, 253, 255, 0.97));
+  border: 1px solid var(--planche-trait);
+  border-radius: var(--injs-radius-md, 14px);
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  .planche__reperes {
+    backdrop-filter: blur(var(--injs-glass-blur, 16px));
+    -webkit-backdrop-filter: blur(var(--injs-glass-blur, 16px));
+  }
+}
+
+.planche__repere-valeur {
+  font-weight: 800;
+  color: var(--injs-blue-royal, #1267d6);
+  font-variant-numeric: tabular-nums;
+}
+
+.planche__repere-note {
+  color: var(--planche-muet);
+}
+
+/* ── Recherche ───────────────────────────────────────────────────────────── */
+
+.planche__recherche {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+.planche__recherche .form-control {
+  min-width: 15rem;
+}
+
+/* ── Sommaire ────────────────────────────────────────────────────────────── */
+
+.planche__sommaire {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.planche__sommaire a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  font-size: var(--injs-fs-sm, 0.8125rem);
+  font-weight: 600;
+  color: var(--injs-blue, #104a8e);
+  text-decoration: none;
+  background: var(--injs-blue-pale, #eaf5ff);
+  border: 1px solid var(--planche-trait);
+  border-radius: var(--injs-radius-pill, 9999px);
+  transition: var(--injs-transition-fast, 120ms ease-in-out);
+}
+
+.planche__sommaire a:hover,
+.planche__sommaire a:focus-visible {
+  background: #fff;
+  border-color: var(--injs-blue-royal, #1267d6);
+  color: var(--injs-blue-royal, #1267d6);
+}
+
+/* ── Sections ────────────────────────────────────────────────────────────── */
+
+.planche__section {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem 1.35rem;
+  background: var(--planche-surface);
+  border: 1px solid var(--planche-trait);
+  border-radius: var(--injs-radius-lg, 20px);
+  box-shadow: var(--injs-shadow-card, 0 1px 3px rgba(16, 24, 40, 0.06));
+  /* L'ancre ne doit pas finir sous la barre de repères collante. */
+  scroll-margin-top: 5.5rem;
+}
+
+.planche__section-titre {
+  margin: 0 0 0.2rem;
+  font-size: var(--injs-fs-md, 1rem);
+  font-weight: 800;
+  color: var(--injs-navy, #071b3a);
+}
+
+.planche__note {
+  margin: 0 0 1rem;
+  font-size: var(--injs-fs-sm, 0.8125rem);
+  color: var(--planche-muet);
+}
+
+.planche__ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.85rem;
+}
+
+.planche__ligne:last-child {
+  margin-bottom: 0;
+}
+
+.planche__grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+}
+
+/* ── Pastilles de couleur ────────────────────────────────────────────────── */
+
+.planche__palette {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.planche__teinte {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--planche-trait);
+  border-radius: var(--injs-radius-sm, 8px);
+  background: var(--injs-surface-alt, #f8fafd);
+  min-width: 0;
+}
+
+.planche__teinte-echantillon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: var(--injs-radius-sm, 8px);
+  border: 1px solid rgba(15, 31, 51, 0.14);
+}
+
+.planche__teinte-texte {
+  min-width: 0;
+  font-size: var(--injs-fs-xs, 0.75rem);
+  line-height: 1.35;
+}
+
+.planche__teinte-nom {
+  display: block;
+  font-family: var(--injs-font-mono, monospace);
+  font-weight: 700;
+  color: var(--injs-navy, #071b3a);
+  overflow-wrap: anywhere;
+}
+
+.planche__teinte-valeur {
+  display: block;
+  color: var(--planche-muet);
+  font-family: var(--injs-font-mono, monospace);
+  overflow-wrap: anywhere;
+}
+
+/* ── Table des jetons ────────────────────────────────────────────────────── */
+
+.planche__table-jetons {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--injs-fs-sm, 0.8125rem);
+}
+
+.planche__table-jetons caption {
+  caption-side: top;
+  text-align: left;
+  padding-bottom: 0.5rem;
+  font-weight: 700;
+  color: var(--injs-navy, #071b3a);
+}
+
+.planche__table-jetons th,
+.planche__table-jetons td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--planche-trait);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.planche__table-jetons th {
+  font-size: var(--injs-fs-xs, 0.75rem);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--planche-muet);
+  white-space: nowrap;
+}
+
+.planche__code {
+  font-family: var(--injs-font-mono, monospace);
+  font-size: var(--injs-fs-xs, 0.75rem);
+  color: var(--injs-blue, #104a8e);
+  overflow-wrap: anywhere;
+}
+
+.planche__valeur {
+  font-family: var(--injs-font-mono, monospace);
+  font-size: var(--injs-fs-xs, 0.75rem);
+  color: var(--injs-text-soft, #475569);
+  overflow-wrap: anywhere;
+}
+
+.planche__valeur--absente {
+  color: var(--injs-warning, #f59e0b);
+  font-style: italic;
+}
+
+/* ── Bouton de copie ─────────────────────────────────────────────────────── */
+
+.planche__copier {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 0.85rem;
+  color: var(--injs-blue, #104a8e);
+  background: #fff;
+  border: 1px solid var(--planche-trait-fort);
+  border-radius: var(--injs-radius-sm, 8px);
+  cursor: pointer;
+  transition: var(--injs-transition-fast, 120ms ease-in-out);
+}
+
+.planche__copier:hover {
+  border-color: var(--injs-blue-royal, #1267d6);
+  color: var(--injs-blue-royal, #1267d6);
+}
+
+.planche__copier:focus-visible {
+  outline: var(--injs-focus-outline, 2px solid #1267d6);
+  outline-offset: 2px;
+  box-shadow: var(--injs-focus-ring);
+}
+
+.planche__copier--fait {
+  color: var(--injs-success, #16a36a);
+  border-color: var(--injs-success, #16a36a);
+}
+
+/* ── Verdict de contraste ────────────────────────────────────────────────── */
+
+.planche__verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.planche__ratio {
+  font-family: var(--injs-font-mono, monospace);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.planche__echantillon-texte {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--injs-radius-sm, 8px);
+  border: 1px solid var(--planche-trait);
+  font-weight: 700;
+  font-size: var(--injs-fs-xs, 0.75rem);
+}
+
+/* ── État vide et messages ───────────────────────────────────────────────── */
+
+.planche__vide {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--planche-muet);
+  background: var(--injs-surface-alt, #f8fafd);
+  border: 1px dashed var(--planche-trait-fort);
+  border-radius: var(--injs-radius-md, 14px);
+}
+
+/* ── Scène de modale (aperçu borné) ──────────────────────────────────────── */
+
+.planche__scene {
+  position: relative;
+  height: 260px;
+  overflow: hidden;
+  border: 1px dashed var(--planche-trait-fort);
+  border-radius: var(--injs-radius-md, 14px);
+}
+
+/* La modale réelle est en `position: fixed` : on la borne à la scène. */
+.planche__scene .modal-overlay {
+  position: absolute;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .planche__entete {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .planche__recherche {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .planche__recherche .form-control {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .planche__section {
+    padding: 1rem;
+  }
+
+  .planche__table-jetons th:nth-child(2),
+  .planche__table-jetons td:nth-child(2) {
+    /* Sur mobile, la valeur passe sous le nom plutôt que d'être tronquée. */
+    display: block;
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planche__sommaire a,
+  .planche__copier {
+    transition: none;
+  }
+}
+
+@media print {
+  .planche__reperes,
+  .planche__recherche,
+  .planche__copier {
+    display: none !important;
+  }
+
+  .planche__section {
+    break-inside: avoid;
+    box-shadow: none;
+  }
+}

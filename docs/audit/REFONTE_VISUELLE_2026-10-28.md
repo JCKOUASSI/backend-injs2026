@@ -73,6 +73,20 @@ les primitives déjà présentes dans le code, **sans nouvelle bibliothèque** :
   alignés, pied replié en colonne sur mobile, fermeture Escape, focus capturé.
 - **États vides et chargement** : message explicite, jamais un tableau nu.
 
+### A.3 bis Planche de style intégrée à l'application
+
+La planche de style n'est plus un HTML statique posé à côté de l'application :
+elle devient l'écran **`/referentiels/planche-de-style`** (Référentiels → Planche
+de style). Elle **lit le socle au lieu de le recopier** : les noms de jetons
+proviennent de `getComputedStyle` et d'un parcours récursif de
+`document.styleSheets`, les valeurs sont résolues par le navigateur, les
+contrastes sont **calculés** (WCAG 2.2) et la largeur mesurée donne le point de
+rupture actif. Fonctions associées : filtrage sur nom **et** valeur, copie d'un
+jeton en un clic, sommaire d'ancres, impression, démonstration du composant réel
+`ConfirmModal`. L'écran est en **lecture seule** (aucun appel API, aucune
+donnée métier, aucun chiffre inventé) et partage la garde des écrans
+d'administration. Détail : `docs/design/PLANCHE_STYLE_MODULE.md`.
+
 ### A.4 Glassmorphism maîtrisé
 
 Trois niveaux de verre (`--injs-glass-1/2/3`) avec `backdrop-filter` et **repli
@@ -120,6 +134,10 @@ modèle, aucun `urls.py`.
 | `frontend/src/styles/designSystem.css` | socle unique : tokens, primitives, responsive, accessibilité, impression |
 | `docs/audit/REFONTE_VISUELLE_2026-10-28.md` | ce rapport |
 | `backend/static/img/logo-injs-blanc.svg` | variante monochrome blanche du logo officiel, pour fond sombre (`16cb4fb`) |
+| `docs/design/PLANCHE_STYLE_MODULE.md` | documentation du module « Planche de style » intégré au frontend |
+| `frontend/src/lib/plancheStyle.js` (+ `.test.js`) | logique pure de la planche : lecture des jetons, filtrage, contraste WCAG, point de rupture |
+| `frontend/src/pages/design/PlancheDeStyle.jsx` (+ `.test.jsx`) | écran `/referentiels/planche-de-style` |
+| `frontend/src/styles/plancheDeStyle.css` | mise en page du module, portée `.planche*` |
 | `backend/config/tests/test_admin_logo.py` | 10 tests : géométrie identique au logo officiel, `fill` blancs, `transform` inchangés, tailles de l'en-tête, `alt` |
 
 ### Modifiés — socle et connexions (`438c87a`)

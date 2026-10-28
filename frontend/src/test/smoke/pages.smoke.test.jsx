@@ -58,6 +58,7 @@ import Referentiels from '@/pages/Referentiels'
 import Secretariats from '@/pages/Secretariats'
 import Statistiques from '@/pages/Statistiques'
 import Users from '@/pages/Users'
+import PlancheDeStyle from '@/pages/design/PlancheDeStyle'
 import ArchivesDashboard from '@/pages/archives/ArchivesDashboard'
 import ArchiveListesNotes from '@/pages/archives/ArchiveListesNotes'
 import ArchiveCahiersAppel from '@/pages/archives/ArchiveCahiersAppel'
@@ -114,6 +115,7 @@ const PAGES = [
   ['Profile', Profile, '/profile', '/profile'],
   ['Rattrapages', Rattrapages, '/rattrapages', '/rattrapages'],
   ['Referentiels', Referentiels, '/referentiels', '/referentiels'],
+  ['PlancheDeStyle', PlancheDeStyle, '/referentiels/planche-de-style', '/referentiels/planche-de-style'],
   ['Secretariats', Secretariats, '/secretariats', '/secretariats'],
   ['Statistiques', Statistiques, '/statistiques', '/statistiques'],
   ['Users', Users, '/users', '/users'],

@@ -25,6 +25,8 @@ import Organigramme from './pages/Organigramme'
 import Referentiels from './pages/Referentiels'
 import Parametres from './pages/Parametres'
 import FeatureFlags from './pages/FeatureFlags'
+// Planche de style : documentation vivante du socle visuel (lecture seule).
+import PlancheDeStyle from './pages/design/PlancheDeStyle'
 // U4 — console CURP d'administration des comptes (derrière le drapeau
 // CURP_UI_ADMIN : sans la capacité habilitations_admin.gerer, rien n'apparaît).
 import HabilitationsLayout from './pages/habilitations/HabilitationsLayout'
@@ -620,6 +622,13 @@ function App() {
             <ProtectedRoute allowedRoles={ADMIN_LEVEL_ROLES}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/parametres">Paramètres</Link></li><li className="separator">/</li><li>Fonctionnalités</li></>}>
                 <FeatureFlags />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/referentiels/planche-de-style" element={
+            <ProtectedRoute allowedRoles={ADMIN_LEVEL_ROLES}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/referentiels">Référentiels</Link></li><li className="separator">/</li><li>Planche de style</li></>}>
+                <PlancheDeStyle />
               </Layout>
             </ProtectedRoute>
           } />
