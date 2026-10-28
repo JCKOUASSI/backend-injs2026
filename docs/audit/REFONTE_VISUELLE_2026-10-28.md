@@ -222,8 +222,9 @@ bleu clair 7,94 · ciel/navy 7,95 · turquoise 10,74.
     s'empilaient au bord gauche et le camembert avait un centre et un rayon nuls.
     Corrigé par `{% localize off %}` autour des SVG ; tailles de police sorties
     dans les données (7,5 px au lieu de 9) ; viewBox minimal porté à 420 px pour
-    limiter l'agrandissement ; troncature calculée sur l'espace réel. **3 tests de
-    régression ajoutés.** Vérifié sur le serveur réel : `/admin/` 200, aucune
+    limiter l'agrandissement ; **libellés répartis sur deux lignes** (« sept. » /
+    « 2025 ») via `<tspan>`, ce qui supprime les troncatures en plein mot même sur
+    12 mois. **4 tests de régression ajoutés.** Vérifié sur le serveur réel : `/admin/` 200, aucune
     virgule décimale dans les attributs.
 
 ### D.3 Non exécuté — NOT EXECUTED
