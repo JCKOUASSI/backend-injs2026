@@ -11,16 +11,42 @@ def build_histogram(items, *, height=150, color='#0b478a', value_key='value'):
     values = [item.get(value_key, 0) for item in items]
     peak = max(values) or 1
     count = len(items)
-    bar_w = max(22, min(48, max(280 // count - 10, 22)))
-    width = max(count * (bar_w + 10) + 40, 280)
+
+    # Géométrie : le SVG est étiré à la largeur de sa carte (width:100%). Une
+    # largeur intrinsèque trop faible agrandissait donc les libellés jusqu'à
+    # les faire se chevaucher. On dimensionne à ~420 px minimum pour que le
+    # facteur d'agrandissement reste proche de 1.
+    gap = 12
+    bar_w = max(24, min(44, max(320 // count - gap, 24)))
+    marge = 24
+    width = max(count * (bar_w + gap) + 2 * marge, 420)
+
+    # Tailles de police exposées aux gabarits : elles ne sont plus figées
+    # dans le HTML, ce qui évite qu'une modification d'un côté désaccorde
+    # l'autre.
+    label_font = 7.5
+    value_font = 9
+    # Largeur approximative d'un caractère à cette taille (police système).
+    largeur_car = label_font * 0.56
+    max_car = max(4, int((bar_w + gap - 6) / largeur_car))
 
     bars = []
     for index, item in enumerate(items):
         value = item.get(value_key, 0)
         bar_h = max(6, round(value / peak * (height - 24))) if value > 0 else 0
         bar_h = bar_h or 2
-        x = 20 + index * (bar_w + 10)
+        x = marge + index * (bar_w + gap)
         label = str(item.get('label', ''))
+        # Troncature calculée sur l'espace réellement disponible, et non sur
+        # un nombre de caractères arbitraire.
+        if len(label) <= max_car:
+            label_short = label
+        else:
+            # Couper de préférence sur le séparateur (« sept. 2025 » -> « sept. »)
+            # plutôt qu'au milieu d'un mot (« sept. 2… »), puis ellipsis en
+            # dernier recours si même le premier mot est trop long.
+            premier = label.split(' ')[0]
+            label_short = premier if len(premier) <= max_car else f'{label[:max_car - 1]}…'
         bars.append({
             **item,
             'x': x,
@@ -29,17 +55,19 @@ def build_histogram(items, *, height=150, color='#0b478a', value_key='value'):
             'bar_h': bar_h,
             'text_x': x + bar_w / 2,
             'value_y': height - bar_h - 4,
-            'label_y': height + 14,
-            'label_short': f'{label[:9]}…' if len(label) > 10 else label,
+            'label_y': height + 13,
+            'label_short': label_short,
             'show_value': value > 0,
             'fill': item.get('color', color),
         })
 
     return {
         'width': width,
-        'height': height + 52,
+        'height': height + 48,
         'plot_height': height,
         'bars': bars,
+        'label_font': label_font,
+        'value_font': value_font,
     }
 
 
