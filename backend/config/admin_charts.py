@@ -26,6 +26,7 @@ def build_histogram(items, *, height=150, color='#0b478a', value_key='value'):
     # l'autre.
     label_font = 7.5
     value_font = 9
+    label_line_gap = 8
     # Largeur approximative d'un caractère à cette taille (police système).
     largeur_car = label_font * 0.56
     max_car = max(4, int((bar_w + gap - 6) / largeur_car))
@@ -39,14 +40,10 @@ def build_histogram(items, *, height=150, color='#0b478a', value_key='value'):
         label = str(item.get('label', ''))
         # Troncature calculée sur l'espace réellement disponible, et non sur
         # un nombre de caractères arbitraire.
-        if len(label) <= max_car:
-            label_short = label
-        else:
-            # Couper de préférence sur le séparateur (« sept. 2025 » -> « sept. »)
-            # plutôt qu'au milieu d'un mot (« sept. 2… »), puis ellipsis en
-            # dernier recours si même le premier mot est trop long.
-            premier = label.split(' ')[0]
-            label_short = premier if len(premier) <= max_car else f'{label[:max_car - 1]}…'
+        label_lines = _decouper_libelle(label, max_car)
+        # `label_short` reste fourni pour les usages qui veulent une seule
+        # chaîne (infobulles, aria) ; l'axe utilise `label_lines`.
+        label_short = ' '.join(label_lines)
         bars.append({
             **item,
             'x': x,
@@ -57,6 +54,7 @@ def build_histogram(items, *, height=150, color='#0b478a', value_key='value'):
             'value_y': height - bar_h - 4,
             'label_y': height + 13,
             'label_short': label_short,
+            'label_lines': label_lines,
             'show_value': value > 0,
             'fill': item.get('color', color),
         })
@@ -68,6 +66,7 @@ def build_histogram(items, *, height=150, color='#0b478a', value_key='value'):
         'bars': bars,
         'label_font': label_font,
         'value_font': value_font,
+        'label_line_gap': label_line_gap,
     }
 
 
@@ -163,3 +162,22 @@ def build_stacked_bars(items, *, value_keys=('presents', 'absents')):
         })
 
     return rows
+
+def _tronquer(texte, max_car):
+    """Tronque un fragment à la largeur disponible, avec ellipsis si besoin."""
+    if len(texte) <= max_car:
+        return texte
+    return f'{texte[:max_car - 1]}…'
+
+
+def _decouper_libelle(label, max_car):
+    """Découpe un libellé en au plus deux lignes pour l'axe des abscisses.
+
+    « sept. 2025 » devient ['sept.', '2025'] : sur deux lignes, chaque fragment
+    tient dans l'espace entre deux barres, même avec 12 mois. Un libellé d'un
+    seul mot reste sur une ligne.
+    """
+    morceaux = label.split(None, 1)
+    if len(morceaux) == 2:
+        return [_tronquer(morceaux[0], max_car), _tronquer(morceaux[1], max_car)]
+    return [_tronquer(label, max_car)]

@@ -95,14 +95,24 @@ class AdminChartsRenderingTests(SimpleTestCase):
         self.assertEqual(self._controler(html), [])
 
     def test_libelles_histogramme_ne_se_chevauchent_pas(self):
-        """La largeur d'un libellé doit tenir dans l'espace entre deux barres."""
+        """La ligne la plus longue doit tenir dans l'espace entre deux barres."""
         chart = build_histogram([
             {'label': f'{m} 2026', 'value': 1}
             for m in ('janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin')
         ])
         largeur_car = chart['label_font'] * 0.56
         for barre in chart['bars']:
-            largeur = len(barre['label_short']) * largeur_car
-            self.assertLessEqual(largeur, barre['bar_w'] + 12, barre['label_short'])
-            # Le libellé centré ne doit pas sortir du cadre à gauche.
-            self.assertGreaterEqual(barre['text_x'] - largeur / 2, 0, barre['label_short'])
+            for ligne in barre['label_lines']:
+                largeur = len(ligne) * largeur_car
+                self.assertLessEqual(largeur, barre['bar_w'] + 12, ligne)
+                # Le libellé centré ne doit pas sortir du cadre à gauche.
+                self.assertGreaterEqual(barre['text_x'] - largeur / 2, 0, ligne)
+
+    def test_libelles_sur_deux_lignes(self):
+        """« sept. 2026 » doit être réparti sur deux lignes : mois puis année."""
+        chart = build_histogram([{'label': 'sept. 2026', 'value': 3}])
+        self.assertEqual(chart['bars'][0]['label_lines'], ['sept.', '2026'])
+        # Libellé d'un seul mot : une seule ligne, pas de découpe artificielle.
+        chart2 = build_histogram([{'label': 'Total', 'value': 3}])
+        self.assertEqual(chart2['bars'][0]['label_lines'], ['Total'])
+        self.assertIn('label_line_gap', chart2)

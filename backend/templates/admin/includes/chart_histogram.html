@@ -37,7 +37,7 @@
                 text-anchor="middle"
                 font-size="{{ chart.label_font|default:7.5 }}"
                 fill="#64748b"
-            >{{ bar.label_short }}</text>
+            >{% for ligne in bar.label_lines %}<tspan x="{{ bar.text_x }}" dy="{% if forloop.first %}0{% else %}{{ chart.label_line_gap|default:8 }}{% endif %}">{{ ligne }}</tspan>{% endfor %}</text>
         </g>
         {% endfor %}
     </svg>
