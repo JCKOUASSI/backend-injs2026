@@ -117,6 +117,17 @@ jobs:
           print(f'::error::{len(blocs)} test(s) en échec sur PostgreSQL')
           PY
 
+      # Conserve le journal complet : un échec isolé sur PostgreSQL doit rester
+      # diagnosticable (les journaux Actions ne sont pas toujours accessibles).
+      - name: Journal des tests (artefact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-tests-log
+          path: /tmp/backend-tests.log
+          if-no-files-found: ignore
+          retention-days: 7
+
   frontend:
     name: Frontend (React + Vite)
     runs-on: ubuntu-latest

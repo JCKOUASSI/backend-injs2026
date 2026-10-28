@@ -21,15 +21,15 @@
 | Django | 5.1.4 |
 | Django REST Framework | 3.15.2 |
 | Base de données utilisée | SQLite (`backend/db.sqlite3`) |
-| PostgreSQL | **absent** du bac à sable (`psql`/`postgres` introuvables) |
+| PostgreSQL | **absent** du bac à sable (`psql`/`postgres` introuvables) — la suite a toutefois été exécutée sur PostgreSQL 16 **via la CI GitHub Actions** (§7.7) |
 | Docker | **absent** |
 | Node / npm | présents, `frontend/node_modules` installé |
 
-Conséquence assumée : **tous** les contrôles de base de données (transactions,
-contraintes, requêtes, migrations) ont été exécutés sur SQLite. Les
-comportements spécifiquement PostgreSQL (verrous `SELECT … FOR UPDATE`, index
-partiels, `JSONB`, contraintes d'exclusion) sont **NON EXÉCUTÉS** et ne sont
-donc pas déclarés conformes.
+Conséquence assumée : les contrôles de base de données menés **localement**
+(transactions, contraintes, requêtes, migrations) l'ont été sur SQLite. Le
+moteur de production a depuis été exercé par la CI (`.github/workflows/ci.yml`,
+service `postgres:16`) : **2 451 tests verts sur PostgreSQL** (§7.7). Restent
+non couverts : tests de charge et volumétrie réelle.
 
 ---
 
@@ -408,8 +408,28 @@ Le job backend tourne sur **PostgreSQL**, pas sur SQLite : c'est le moteur de
 production et le seul moyen de vérifier les comportements qui en dépendent.
 Les cinq commandes backend ont été rejouées localement avec l'environnement du
 workflow (`DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY`, `POSTGRES_*`) : elles passent.
-Le job lui-même n'a pas pu être exécuté ici (pas de runner GitHub) → **NON
-EXÉCUTÉ** en tant que workflow.
+**Exécution réelle du workflow** (PR #1) :
+
+| Run | Commit | Frontend | Backend (PostgreSQL 16) |
+|---|---|---|---|
+| 1 | `9c5dbc0` | ❌ (test en course, voir ci-dessous) | ❌ (échec non diagnostiqué, journaux inaccessibles) |
+| 2 | `ba01cbd` | ✅ | ✅ **2 451 tests verts sur PostgreSQL** |
+
+Le premier passage a révélé un **test instable réel** :
+`src/pages/Modules.test.jsx › filtre par secrétariat, vague, grade et groupe`
+interrogeait un `<select>` alimenté par une requête distincte de celle de la
+liste ; en CI la liste répond plus vite, le select n'était pas encore monté
+(`TestingLibraryElementError: Unable to find … "Tous les secrétariats"`).
+Corrigé par une attente explicite de l'option (aucune assertion retirée).
+
+En revanche, l'échec du job backend au run 1 **n'a pas pu être diagnostiqué** :
+les journaux d'exécution ne sont pas accessibles depuis l'environnement d'audit
+et le workflow n'était pas encore instrumenté. Le code backend est identique
+entre les runs 1 et 2 (seuls un test frontend et le workflow ont changé) : il
+s'agit donc d'un test instable sur PostgreSQL, **non identifié à ce jour**. Le
+workflow publie désormais le détail des échecs en annotations et le journal
+complet en artefact (`backend-tests-log`, 7 jours) pour rendre la prochaine
+occurrence diagnosticable. Ce point est ouvert (§8.3).
 
 ---
 
@@ -419,7 +439,7 @@ EXÉCUTÉ** en tant que workflow.
 
 | Contrôle | Raison |
 |---|---|
-| Vérification PostgreSQL (verrous, index partiels, contraintes avancées) | Pas de serveur PostgreSQL |
+| Vérification PostgreSQL | **faite en CI** : suite complète verte sur PostgreSQL 16 (§7.7). Non exécutée localement (pas de serveur) |
 | Migration sur base de production | Interdit sans autorisation explicite |
 | Suite de tests Flutter (`qr_badge_mobile`) | SDK Flutter indisponible, `pub.dev` inaccessible |
 | Parcours de paiement réel (mobile money, passerelles) | Pas d'accès aux fournisseurs |
@@ -445,7 +465,10 @@ EXÉCUTÉ** en tant que workflow.
 * ~~Résorber les collisions d'`operationId` OpenAPI~~ → fait (§7.6).
 * Supprimer `backend/referentiel_injs/` ou l'enregistrer réellement (décision
   d'équipe, non prise ici).
-* Exécuter réellement le workflow CI après fusion de la PR (premier passage).
+* **Identifier le test instable sur PostgreSQL** à l'origine de l'échec du
+  run 1 (le journal sera désormais conservé en artefact).
+* Faire tourner la suite plusieurs fois de suite en CI pour mesurer la
+  stabilité avant de déclarer le backend « toujours vert ».
 
 ---
 
@@ -457,6 +480,7 @@ EXÉCUTÉ** en tant que workflow.
 | Frontend | `npx vitest run` | **101 fichiers / 1 915 tests — OK** |
 | ESLint | `npm run lint` | 0 erreur, 0 avertissement |
 | Hygiène dépôt | `check_repo_hygiene` | CONFORME |
+| CI (GitHub Actions) | workflow `CI` sur la PR #1 | **frontend ✅ / backend PostgreSQL ✅** |
 
 Tests ajoutés par cet audit (22) :
 
