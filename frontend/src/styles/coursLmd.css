@@ -19,7 +19,7 @@
   border: 1px solid #E7ECF3;
   border-radius: 18px;
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05),
-              0 16px 40px -18px rgba(11, 31, 58, 0.18);
+              0 16px 40px -18px rgba(7, 27, 58, 0.18);
   overflow: hidden;
 }
 
@@ -32,7 +32,7 @@
   width: 260px;
   height: 260px;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(42, 127, 255, 0.14), rgba(42, 127, 255, 0));
+  background: radial-gradient(closest-side, rgba(18, 103, 214, 0.14), rgba(18, 103, 214, 0));
   pointer-events: none;
 }
 
@@ -46,10 +46,10 @@
   align-items: center;
   justify-content: center;
   border-radius: 14px;
-  background: linear-gradient(135deg, #0B1F3A 0%, #1E62D0 100%);
+  background: linear-gradient(135deg, var(--injs-navy) 0%, var(--injs-blue-royal) 100%);
   color: #FFFFFF;
   font-size: 1.35rem;
-  box-shadow: 0 8px 20px -8px rgba(11, 31, 58, 0.45);
+  box-shadow: 0 8px 20px -8px rgba(7, 27, 58, 0.45);
 }
 
 .cours-hero-text {
@@ -67,14 +67,14 @@
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #2563EB;
+  color: var(--injs-blue-royal);
 }
 
 .cours-hero-title {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 800;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   letter-spacing: -0.02em;
   line-height: 1.15;
 }
@@ -108,9 +108,9 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.2;
-  background: #DBEAFE;
-  color: #2563EB;
-  border: 1px solid #BFDBFE;
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal);
+  border: 1px solid var(--injs-border-strong);
   white-space: nowrap;
 }
 
@@ -160,7 +160,7 @@
   border: 1px solid #E9ECF2;
   border-radius: 18px;
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05),
-              0 16px 40px -18px rgba(11, 31, 58, 0.18);
+              0 16px 40px -18px rgba(7, 27, 58, 0.18);
   overflow: hidden;
   margin-bottom: 1.25rem;
 }
@@ -183,12 +183,12 @@
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   letter-spacing: -0.01em;
 }
 
 .cours-toolbar-title i {
-  color: #2A7FFF;
+  color: var(--injs-blue-royal);
   font-size: 0.95rem;
 }
 
@@ -267,8 +267,8 @@
 .cours-input:focus {
   outline: none;
   background: #FFFFFF;
-  border-color: #2A7FFF;
-  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.14);
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.14);
 }
 
 /* Select pilule avec chevron personnalisé (pas d'appearance native brut). */
@@ -312,10 +312,10 @@
 }
 
 .cours-refresh:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
   border-color: transparent;
   color: #FFFFFF;
-  box-shadow: 0 6px 16px -6px rgba(37, 99, 235, 0.5);
+  box-shadow: 0 6px 16px -6px rgba(18, 103, 214, 0.5);
 }
 
 .cours-refresh:disabled {
@@ -338,9 +338,9 @@
   gap: 0.3rem;
   padding: 0.3rem 0.75rem;
   border-radius: 9999px;
-  background: #EFF6FF;
-  color: #2563EB;
-  border: 1px solid #BFDBFE;
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal);
+  border: 1px solid var(--injs-border-strong);
   font-size: 0.74rem;
   font-weight: 700;
   white-space: nowrap;
@@ -372,7 +372,7 @@
   border: 1px solid #E7ECF3;
   border-radius: 18px;
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05),
-              0 16px 40px -18px rgba(11, 31, 58, 0.18);
+              0 16px 40px -18px rgba(7, 27, 58, 0.18);
 }
 
 .cours-panel::before {
@@ -382,7 +382,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #0B1F3A 0%, #2563EB 55%, #2A7FFF 100%);
+  background: linear-gradient(90deg, var(--injs-navy) 0%, var(--injs-blue-royal) 55%, var(--injs-blue-royal) 100%);
   pointer-events: none;
   z-index: 2;
 }
@@ -400,11 +400,11 @@
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 .cours-panel-title i {
-  color: #2A7FFF;
+  color: var(--injs-blue-royal);
 }
 
 /* ── 6. TABLEAU : en-tête clair, colonnes calibrées ── */
@@ -462,7 +462,7 @@ table.cours-table tbody tr:hover td {
 }
 
 table.cours-table tbody tr:hover td:first-child {
-  box-shadow: inset 3px 0 0 rgba(42, 127, 255, 0.55);
+  box-shadow: inset 3px 0 0 rgba(18, 103, 214, 0.55);
 }
 
 table.cours-table tbody tr.cours-row--active td {
@@ -470,7 +470,7 @@ table.cours-table tbody tr.cours-row--active td {
 }
 
 table.cours-table tbody tr.cours-row--active td:first-child {
-  box-shadow: inset 3px 0 0 #2563EB;
+  box-shadow: inset 3px 0 0 var(--injs-blue-royal);
 }
 
 /* ── 7. CELLULES : code, intitulé, chips, avatar, effectif, statut ── */
@@ -480,7 +480,7 @@ table.cours-table tbody tr.cours-row--active td:first-child {
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.01em;
-  color: #0F274A;
+  color: var(--injs-navy-mid);
   background: #F1F5F9;
   border: 1px solid #E2E8F0;
   border-radius: 8px;
@@ -490,7 +490,7 @@ table.cours-table tbody tr.cours-row--active td:first-child {
 
 .cours-intitule {
   font-weight: 600;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   font-size: 0.88rem;
 }
 
@@ -517,7 +517,7 @@ table.cours-table tbody tr.cours-row--active td:first-child {
   border: 1px solid #E2E8F0;
 }
 
-.cours-type--cm { background: #DBEAFE; color: #2563EB; border-color: #BFDBFE; }
+.cours-type--cm { background: var(--injs-blue-pale); color: var(--injs-blue-royal); border-color: var(--injs-border-strong); }
 .cours-type--td { background: #F3E8FF; color: #7E22CE; border-color: #E9D5FF; }
 .cours-type--tp { background: #CCFBF1; color: #0F766E; border-color: #99F6E4; }
 
@@ -558,7 +558,7 @@ table.cours-table tbody tr.cours-row--active td:first-child {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0B1F3A 0%, #1E62D0 100%);
+  background: linear-gradient(135deg, var(--injs-navy) 0%, var(--injs-blue-royal) 100%);
   color: #FFFFFF;
   font-size: 0.66rem;
   font-weight: 800;
@@ -573,7 +573,7 @@ table.cours-table tbody tr.cours-row--active td:first-child {
 
 .cours-effectif-val {
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   font-size: 0.95rem;
 }
 
@@ -604,8 +604,8 @@ table.cours-table tbody tr.cours-row--active td:first-child {
 
 .cours-statut--proposee { background: #FFFBEB; color: #B45309; border-color: #FDE68A; }
 .cours-statut--validee { background: #ECFDF5; color: #047857; border-color: #A7F3D0; }
-.cours-statut--planifiee { background: #EFF6FF; color: #2563EB; border-color: #BFDBFE; }
-.cours-statut--realisee { background: #0B1F3A; color: #FFFFFF; border-color: #0B1F3A; }
+.cours-statut--planifiee { background: var(--injs-blue-pale); color: var(--injs-blue-royal); border-color: var(--injs-border-strong); }
+.cours-statut--realisee { background: var(--injs-navy); color: #FFFFFF; border-color: var(--injs-navy); }
 
 /* ── 8. SÉANCES : barre de progression + pastille d'alerte ── */
 .cours-prog {
@@ -622,7 +622,7 @@ table.cours-table tbody tr.cours-row--active td:first-child {
 .cours-prog-count {
   font-size: 0.78rem;
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   font-variant-numeric: tabular-nums;
 }
 
@@ -643,7 +643,7 @@ table.cours-table tbody tr.cours-row--active td:first-child {
 .cours-prog-fill {
   height: 6px;
   border-radius: 9999px;
-  background: linear-gradient(90deg, #2563EB 0%, #2A7FFF 100%);
+  background: linear-gradient(90deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
   transition: width 0.3s ease;
 }
 
@@ -686,17 +686,17 @@ table.cours-table tbody tr.cours-row--active td:first-child {
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #EFF6FF 0%, #E0EDFF 100%);
-  border: 1px solid #DBEAFE;
-  box-shadow: 0 8px 18px -10px rgba(37, 99, 235, 0.55);
-  color: #2A7FFF;
+  background: linear-gradient(135deg, var(--injs-blue-pale) 0%, #E0EDFF 100%);
+  border: 1px solid var(--injs-blue-pale);
+  box-shadow: 0 8px 18px -10px rgba(18, 103, 214, 0.55);
+  color: var(--injs-blue-royal);
   font-size: 1.4rem;
 }
 
 .cours-state-title {
   font-size: 0.98rem;
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 .cours-state-text {
@@ -722,7 +722,7 @@ table.cours-table tbody tr.cours-row--active td:first-child {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #0B1F3A 0%, #2563EB 55%, #2A7FFF 100%);
+  background: linear-gradient(90deg, var(--injs-navy) 0%, var(--injs-blue-royal) 55%, var(--injs-blue-royal) 100%);
   pointer-events: none;
   z-index: 2;
 }
@@ -738,11 +738,11 @@ table.cours-table tbody tr.cours-row--active td:first-child {
   align-items: center;
   gap: 0.5rem;
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 .cours-detail-title i {
-  color: #2A7FFF;
+  color: var(--injs-blue-royal);
 }
 
 .cours-deflist {
@@ -791,7 +791,7 @@ table.cours-table tbody tr.cours-row--active td:first-child {
 }
 
 .cours-detail-subtitle i {
-  color: #2A7FFF;
+  color: var(--injs-blue-royal);
 }
 
 .cours-timeline {
@@ -811,7 +811,7 @@ table.cours-table tbody tr.cours-row--active td:first-child {
   padding: 0.55rem 0.75rem;
   background: #F8FAFC;
   border: 1px solid #EDF1F6;
-  border-left: 3px solid #2563EB;
+  border-left: 3px solid var(--injs-blue-royal);
   border-radius: 12px;
 }
 
@@ -819,7 +819,7 @@ table.cours-table tbody tr.cours-row--active td:first-child {
 .cours-toolbar .btn:focus-visible,
 .cours-panel .btn:focus-visible,
 .cours-detail .btn:focus-visible {
-  outline: 2px solid #2563EB;
+  outline: 2px solid var(--injs-blue-royal);
   outline-offset: 2px;
 }
 

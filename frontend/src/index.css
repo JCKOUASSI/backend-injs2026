@@ -6,10 +6,14 @@
    Glassmorphism intégral, fond mesh lumineux, boutons pilules & plaquettes pastel
    ========================================================================== */
 
+/* Les NOMS de tokens historiques sont conservés (contrat avec les écrans),
+   mais leurs VALEURS pointent vers la palette officielle du logo (#283A87)
+   définie dans styles/designSystem.css. Aucun écran n'est cassé : seule la
+   teinte change, pour une identité unique sur toute l'application. */
 :root {
-  --navy: #0B1F3A;
-  --navy-mid: #0F274A;
-  --navy-soft: #123E6A;
+  --navy: var(--injs-navy);
+  --navy-mid: var(--injs-navy-mid);
+  --navy-soft: var(--injs-blue);
   --dusty: #c5d2e4;
   --dusty-mid: #a8bad4;
   --ci-warning: #F59E0B;
@@ -19,8 +23,8 @@
   --ci-white: #FFFFFF;
   --ci-light: #dce6f2;
   --ci-danger: #EF4444;
-  --ci-blue: #2563EB;
-  --ci-blue-dark: #123E6A;
+  --ci-blue: var(--injs-blue-royal);
+  --ci-blue-dark: var(--injs-blue);
   --ci-purple: #7B1FA2;
   --bg-color: #EDF4FB;
   --card-bg: rgba(255, 255, 255, 0.88);
@@ -47,8 +51,8 @@
      (transparent / noir) et les cartes se cassent.
      Elles pointent toutes vers les tokens du Dashboard Engine
      afin de garantir un rendu homogène sur toute l'application. */
-  --primary: #2563EB;          /* bleu action INJS (réf. LMD2026) */
-  --primary-dark: #1D4ED8;
+  --primary: var(--injs-blue-royal);   /* aliasé sur la palette officielle */
+  --primary-dark: var(--injs-blue);
   --secondary: #475569;        /* gris ardoise          */
   --success: #10B981;          /* vert succès           */
   --warning: #F59E0B;          /* ambre avertissement   */
@@ -169,7 +173,7 @@ body {
   overflow: hidden;
 }
 .top-bar .breadcrumb li { white-space: nowrap; }
-.top-bar .breadcrumb a { color: #2563EB; text-decoration: none; font-weight: 600; }
+.top-bar .breadcrumb a { color: var(--injs-blue-royal); text-decoration: none; font-weight: 600; }
 .top-bar .breadcrumb a:hover { text-decoration: underline; }
 .top-bar .breadcrumb .separator { color: #94A3B8; }
 
@@ -184,7 +188,7 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #0B1F3A 0%, #2563EB 100%);
+  background: linear-gradient(135deg, var(--injs-navy) 0%, var(--injs-blue-royal) 100%);
   color: #fff;
   display: flex;
   align-items: center;
@@ -211,7 +215,7 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
 .page-title {
   font-size: 1.65rem;
   font-weight: 800;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   margin: 0 0 0.25rem;
   letter-spacing: -0.02em;
 }
@@ -249,7 +253,7 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
   background: rgba(255, 255, 255, 0.5);
   border-bottom: 1px solid rgba(226, 232, 240, 0.8);
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 .card-body { padding: 1.4rem; }
 .card-body-flush { padding: 0; }
@@ -291,11 +295,11 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
   font-size: 1.45rem;
   flex-shrink: 0;
 }
-.stat-icon.bg-primary { background: #EFF6FF; color: #2A7FFF; }
+.stat-icon.bg-primary { background: #EFF6FF; color: var(--injs-blue-royal); }
 .stat-icon.bg-success { background: #ECFDF5; color: #10B981; }
 .stat-icon.bg-info { background: #E0F2FE; color: #0284C7; }
 .stat-icon.bg-warning { background: #FFFBEB; color: #F59E0B; }
-.stat-card .stat-value { font-size: 2rem; font-weight: 800; line-height: 1.1; color: #0B1F3A; }
+.stat-card .stat-value { font-size: 2rem; font-weight: 800; line-height: 1.1; color: var(--injs-navy); }
 .stat-card .stat-label { font-size: 0.78rem; color: #64748B; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; margin-bottom: 0.2rem; }
 
 /* ═══ Boutons Prémiums Unifiés ═══
@@ -319,7 +323,7 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
 
 .btn-primary,
 .btn-dfrc {
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%) !important;
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%) !important;
   color: #FFFFFF !important;
   border: none;
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
@@ -327,7 +331,7 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
 }
 .btn-primary:hover,
 .btn-dfrc:hover {
-  background: linear-gradient(135deg, #1852B5 0%, #256FD0 100%) !important;
+  background: linear-gradient(135deg, #1852B5 0%, var(--injs-blue-royal) 100%) !important;
   box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
   transform: translateY(-1px);
   color: #FFFFFF !important;
@@ -385,11 +389,11 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
 .btn-outline-primary {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(8px);
-  color: #2563EB;
-  border: 1.5px solid #2A7FFF;
+  color: var(--injs-blue-royal);
+  border: 1.5px solid var(--injs-blue-royal);
 }
 .btn-outline-primary:hover {
-  background: #2A7FFF;
+  background: var(--injs-blue-royal);
   color: #FFFFFF;
   transform: translateY(-1px);
 }
@@ -438,7 +442,7 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
 .form-control:focus, .form-input:focus, .form-select:focus, .form-textarea:focus, .input:focus {
   outline: none;
   background: #FFFFFF;
-  border-color: #2A7FFF;
+  border-color: var(--injs-blue-royal);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
 }
 .input-group { display: flex; }
@@ -471,7 +475,7 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
   vertical-align: middle;
 }
 .table th {
-  background: #0B1F3A;
+  background: var(--injs-navy);
   color: #FFFFFF;
   font-size: 0.78rem;
   text-transform: uppercase;
@@ -532,7 +536,7 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
 .badge-bg-info,
 .badge-planifiee {
   background: #DBEAFE;
-  color: #2563EB;
+  color: var(--injs-blue-royal);
   border: 1px solid #BFDBFE;
 }
 
@@ -546,7 +550,7 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
 
 .badge-direction { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
 .badge-dfrc { background: #F3E8FF; color: #7E22CE; border: 1px solid #E9D5FF; }
-.badge-secretariat { background: #DBEAFE; color: #1D4ED8; border: 1px solid #BFDBFE; }
+.badge-secretariat { background: #DBEAFE; color: var(--injs-blue); border: 1px solid #BFDBFE; }
 .badge-formateur { background: #F3E8FF; color: #6B21A8; border: 1px solid #E9D5FF; }
 .badge-participant, .badge-auditeur { background: #E0F2FE; color: #0284C7; border: 1px solid #BAE6FD; }
 
@@ -589,7 +593,7 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
 }
 .modal-header h5 {
   font-weight: 800;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   margin: 0;
   font-size: 1.1rem;
 }
@@ -652,7 +656,7 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
   background: rgba(219, 234, 254, 0.85);
   color: #1E40AF;
   border: 1px solid #BFDBFE;
-  border-left: 4px solid #2A7FFF;
+  border-left: 4px solid var(--injs-blue-royal);
 }
 
 /* ═══ Pagination Dépolie ═══ */
@@ -678,13 +682,13 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
 }
 .pagination-btn:hover:not(:disabled) {
   background: #FFFFFF;
-  border-color: #2A7FFF;
-  color: #2563EB;
+  border-color: var(--injs-blue-royal);
+  color: var(--injs-blue-royal);
   transform: translateY(-1px);
 }
 .pagination-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .pagination-num--active {
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%) !important;
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%) !important;
   color: #FFFFFF !important;
   border-color: transparent !important;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
@@ -741,7 +745,7 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
 .btn-quick-action-secondary,
 .quick-action-link {
   background: #FFFFFF !important;
-  color: #0B1F3A !important;
+  color: var(--injs-navy) !important;
   border: 1.5px solid #CBD5E1 !important;
   box-shadow: 0 2px 6px rgba(11, 31, 58, 0.04) !important;
 }
@@ -749,14 +753,14 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
 .btn-quick-action-secondary:hover,
 .quick-action-link:hover {
   background: #F8FAFC !important;
-  border-color: #2A7FFF !important;
-  color: #2563EB !important;
+  border-color: var(--injs-blue-royal) !important;
+  color: var(--injs-blue-royal) !important;
   transform: translateY(-2px) !important;
   box-shadow: 0 6px 18px rgba(37, 99, 235, 0.16) !important;
 }
 
 .btn-quick-action-primary {
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%) !important;
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%) !important;
   color: #FFFFFF !important;
   border: 1.5px solid transparent !important;
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.32) !important;
@@ -784,12 +788,12 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
 .btn-quick-action-secondary .quick-action-icon-wrap,
 .quick-action-link .quick-action-icon-wrap {
   background: rgba(37, 99, 235, 0.1);
-  color: #2A7FFF;
+  color: var(--injs-blue-royal);
 }
 
 .btn-quick-action-secondary:hover .quick-action-icon-wrap,
 .quick-action-link:hover .quick-action-icon-wrap {
-  background: #2A7FFF;
+  background: var(--injs-blue-royal);
   color: #FFFFFF;
 }
 
@@ -843,7 +847,7 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
   width: 44px;
   height: 44px;
   border: 4px solid rgba(37, 99, 235, 0.15);
-  border-top-color: #2A7FFF;
+  border-top-color: var(--injs-blue-royal);
   border-radius: 50%;
   animation: spin 0.9s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite;
 }
