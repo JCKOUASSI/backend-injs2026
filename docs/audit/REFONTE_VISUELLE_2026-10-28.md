@@ -186,6 +186,11 @@ bleu clair 7,94 · ciel/navy 7,95 · turquoise 10,74.
    (`Parametres.jsx`). La modale de paramètres n'avait donc aucun style propre.
 9. **Carte KPI** : `backdrop-filter` sur fond opaque (aucun effet visible, coût
    de composition) retiré ; libellé 10 px → 12 px.
+9bis. **`.btn-info` inexistant** : `MaquetteDetail.jsx` l'utilise, mais aucune règle
+   ne le définissait — le bouton tombait sur le style `.btn` neutre. Variante
+   ajoutée (`#0B5A6B` → `#0E7490`, blanc à **5,36:1** ; la teinte `#0D9488`
+   n'offrait que 3,74:1). Trouvé en construisant la planche de style, en
+   vérifiant que chaque classe affichée existe réellement dans le CSS.
 10. **Boutons pleine largeur sous 480 px** : une règle `.btn { width: 100% }`
     cassait barres d'outils et tableaux → limitée aux pieds de modale et blocs
     d'action de formulaire.
@@ -194,13 +199,20 @@ bleu clair 7,94 · ciel/navy 7,95 · turquoise 10,74.
 
 ### D.3 Non exécuté — NOT EXECUTED
 
-- **Captures d'écran aux 7 largeurs (360, 390, 768, 1024, 1366, 1440, 1920 px)** :
-  Playwright et les navigateurs headless ne sont pas installables dans cet
-  environnement (`npx playwright --version` échoue). Le responsive a été contrôlé
-  par **analyse statique** : 30 points de rupture, aucune largeur fixe non
-  contenue, débordement des tableaux confié à `.table-responsive`, zones tactiles
-  ≥ 40 px, champs à 16 px sous 390 px (anti-zoom iOS).
-  **Une validation visuelle humaine reste nécessaire.**
+- **Captures d'écran automatiques** : aucun navigateur n'est disponible et aucun ne
+  peut l'être ici. Vérifié et documenté : aucun binaire (`chromium`, `chrome`,
+  `firefox`) ; Chromium récupéré via npm (0 paquet bloqué) mais **inutilisable**,
+  il manque `libnss3.so`, `libnspr4.so`, `libnssutil3.so` ; ces paquets ne sont pas
+  installables (dépôts système injoignables) et n'existent sur aucun registre
+  autorisé ; les trois CDN de navigateurs (`cdn.playwright.dev`,
+  `storage.googleapis.com`, `edgedl.me.gvt1.com`) répondent tous `000`.
+  **Contournement livré :** `docs/design/apercu-design-system.html`, planche
+  autonome embarquant le **CSS réel** et le logo officiel, rendue par le
+  navigateur de l'utilisateur (servie sur le port 8080 de l'aperçu).
+  Le responsive reste contrôlé par analyse statique : 30 points de rupture, aucune
+  largeur fixe non contenue, débordement des tableaux confié à `.table-responsive`,
+  zones tactiles ≥ 40 px, champs à 16 px sous 390 px (anti-zoom iOS).
+  **La validation esthétique finale reste humaine.**
 - **Tests end-to-end navigateur** et **audit Lighthouse / axe-core** : même cause.
 - **Compte exact des tests backend du run CI** : le job est vert, mais le journal
   détaillé n'est pas téléchargeable depuis cet environnement (`gh run view --log`
