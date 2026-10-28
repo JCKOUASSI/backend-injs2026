@@ -485,7 +485,7 @@ occurrence diagnosticable. Ce point est ouvert (§8.3).
 | Build frontend | `npm run build` | **OK** (5,3 s) |
 | ESLint | `npm run lint` | 0 erreur, 0 avertissement |
 | Hygiène dépôt | `check_repo_hygiene` | CONFORME |
-| CI (GitHub Actions) | workflow `CI` sur la PR #1 | **frontend ✅ / backend PostgreSQL ✅** |
+| CI (GitHub Actions) | workflow `CI` sur la PR #1 | run **40637703852** (`dae2d94`) : **frontend ✅ (2 min 06 s)** / **backend PostgreSQL ✅** |
 
 Tests ajoutés par cet audit (22) :
 
@@ -508,9 +508,14 @@ Ran 2464 tests in 732.257s
 OK (skipped=9)
 ```
 
-Rejeu effectué **après** les correctifs de la §11 (le premier passage, lancé
-avant, avait donné 2464 tests OK en 753 s sur un code intermédiaire) :
-`/tmp/suite-finale-3.log`.
+Rejeu effectué **après** les correctifs de la §11 (un premier passage, lancé
+avant ces correctifs, avait donné 2464 tests OK en 753 s sur un code
+intermédiaire) : `/tmp/suite-finale-3.log`.
+
+Le run CI PostgreSQL 40637703852 est **vert** sur le même code. Le nombre exact
+de tests côté PostgreSQL n'est pas cité ici : l'artefact de journal n'était pas
+téléchargeable depuis le bac à sable (seuls les hôtes GitHub sont accessibles),
+et aucun chiffre n'est avancé sans pièce.
 
 ---
 
