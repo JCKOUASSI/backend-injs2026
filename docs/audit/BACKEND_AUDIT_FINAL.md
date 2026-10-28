@@ -415,6 +415,7 @@ workflow (`DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY`, `POSTGRES_*`) : elles passent.
 | 1 | `9c5dbc0` | ❌ (test en course, voir ci-dessous) | ❌ (échec non diagnostiqué, journaux inaccessibles) |
 | 2 | `ba01cbd` | ✅ | ✅ **2 451 tests verts sur PostgreSQL** |
 | 3 | `96bdffa` | ✅ | ✅ |
+| relance | `9309449` | ✅ | ✅ |
 
 Le premier passage a révélé un **test instable réel** :
 `src/pages/Modules.test.jsx › filtre par secrétariat, vague, grade et groupe`
@@ -428,7 +429,8 @@ les journaux d'exécution ne sont pas accessibles depuis l'environnement d'audit
 et le workflow n'était pas encore instrumenté. Le code backend est identique
 entre les runs 1, 2 et 3 (seuls un test frontend et le workflow ont changé) : il
 s'agit donc d'un test instable sur PostgreSQL, **non identifié à ce jour** —
-deux exécutions complètes consécutives sont néanmoins vertes (runs 2 et 3). Le
+**trois exécutions complètes consécutives sont néanmoins vertes** (runs 2, 3 et
+la relance sur `9309449`), sur PostgreSQL 16 comme sur SQLite. Le
 workflow publie désormais le détail des échecs en annotations et le journal
 complet en artefact (`backend-tests-log`, 7 jours) pour rendre la prochaine
 occurrence diagnosticable. Ce point est ouvert (§8.3).
