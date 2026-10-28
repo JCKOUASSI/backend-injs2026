@@ -65,3 +65,9 @@ MIDDLEWARE.insert(MIDDLEWARE.index("django.contrib.auth.middleware.Authenticatio
 PREVIEW_AUTOLOGIN_ENABLED = True
 PREVIEW_AUTOLOGIN_USERNAME = "admin"
 
+# ── Racine du port 8000 → admin Django (navigateurs) ─────────────────────────
+# Ouvrir l'aperçu de l'API affichait le JSON de la racine : l'admin semblait
+# inaccessible. Seules les navigations (Accept: text/html) sont redirigées ;
+# les clients d'API reçoivent toujours le JSON.
+MIDDLEWARE.append('arena.preview_admin_redirect.AdminRedirectApercuMiddleware')
+

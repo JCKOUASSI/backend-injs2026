@@ -136,6 +136,24 @@ class OverlayCsrfHardeningTests(SimpleTestCase):
         self.assertIn('if [[ ! -f "$ENV_FILE"', contenu)
         self.assertIn('--write-env', contenu)
 
+    def test_racine_du_port_8000_ouvre_l_admin_pour_un_navigateur(self):
+        """Ouvrir l'aperçu de l'API ne doit pas afficher un bloc JSON.
+
+        La racine renvoyait le JSON de l'API : le tableau de bord semblait
+        inaccessible. Un navigateur (Accept: text/html) doit être redirigé vers
+        `/admin/` ; les clients d'API gardent la réponse JSON.
+        """
+        for profil in (OVERLAY, BOOTSTRAP):
+            with self.subTest(profil=profil.name):
+                self.assertIn(
+                    'arena.preview_admin_redirect.AdminRedirectApercuMiddleware',
+                    _lire(profil),
+                )
+
+    def test_redirection_racine_reservee_au_profil_d_apercu(self):
+        production = _lire(REPO / 'backend' / 'config' / 'settings.py')
+        self.assertNotIn('preview_admin_redirect', production)
+
     def test_noms_de_cookies_dedies(self):
         # Un nom dédié neutralise définitivement tout vieux cookie csrftoken /
         # sessionid hérité du navigateur (cause du « incorrect length »).
