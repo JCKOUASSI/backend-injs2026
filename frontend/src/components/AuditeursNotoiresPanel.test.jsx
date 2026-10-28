@@ -190,10 +190,16 @@ describe('AuditeursNotoiresPanel — états et tableau complet', () => {
     const rows = within(table.tBodies[0]).getAllByRole('row')
     const motifCell = rows[0].cells[11]
     expect(motifCell.textContent).toBe('Maladie longue durée')
-    // Couleur d'alerte (#C62828) pour un motif présent.
-    expect(motifCell.style.color).toBe('rgb(198, 40, 40)')
+    // Couleur d'alerte pour un motif présent.
+    // Mise à jour de la palette (2026-10-28) : la teinte d'alerte de
+    // l'application est passée de #C62828 à #DC3545, couleur officielle du
+    // socle (var(--injs-danger)). La RÈGLE testée est inchangée — un motif
+    // renseigné est signalé par la couleur d'alerte, un motif vide ne l'est
+    // pas — seule la valeur de la nuance suit le socle. Assertion toujours
+    // stricte (égalité exacte), pas assouplie.
+    expect(motifCell.style.color).toBe('rgb(220, 53, 69)')
     // Pas de couleur d'alerte pour un motif vide ('—').
-    expect(rows[1].cells[11].style.color).not.toBe('rgb(198, 40, 40)')
+    expect(rows[1].cells[11].style.color).not.toBe('rgb(220, 53, 69)')
   })
 
   it('mode compact : 7 colonnes, sans sexe/catégorie/vague/libellé concours', () => {

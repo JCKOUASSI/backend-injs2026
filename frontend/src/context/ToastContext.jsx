@@ -33,7 +33,7 @@ export function ToastProvider({ children }) {
   const value = useMemo(() => ({ showToast }), [showToast])
 
   const iconMap = { success: 'check-circle-fill', error: 'exclamation-triangle-fill', info: 'info-circle-fill' }
-  const bgMap = { success: '#125a99', error: '#c62828', info: '#1565C0' }
+  const bgMap = { success: '#104A8E', error: '#DC3545', info: '#104A8E' }
 
   return (
     <ToastContext.Provider value={value}>

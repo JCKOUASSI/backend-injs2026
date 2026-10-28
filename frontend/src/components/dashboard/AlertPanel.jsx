@@ -25,7 +25,7 @@ export default function AlertPanel({ alerts = [] }) {
     {
       id: 'groupes',
       icon: 'bi-people-fill',
-      iconColor: '#2F80ED',
+      iconColor: '#1267D6',
       message: '7 groupes sans enseignant',
       tag: 'Pédagogie',
       tagClass: 'plaquette-pedagogie',
@@ -43,7 +43,7 @@ export default function AlertPanel({ alerts = [] }) {
     {
       id: 'validation',
       icon: 'bi-check-circle-fill',
-      iconColor: '#10B981',
+      iconColor: '#16A36A',
       message: '94% des dossiers validés',
       tag: 'Excellent',
       tagClass: 'plaquette-excellent',
@@ -56,7 +56,7 @@ export default function AlertPanel({ alerts = [] }) {
     ? alerts.map((al, idx) => ({
         id: `dyn-${idx}`,
         icon: al.icon || 'bi-info-circle-fill',
-        iconColor: al.type === 'critical' ? '#EF4444' : al.type === 'warning' ? '#F59E0B' : '#2F80ED',
+        iconColor: al.type === 'critical' ? '#EF4444' : al.type === 'warning' ? '#F59E0B' : '#1267D6',
         message: al.message,
         tag: al.type === 'critical' ? 'Urgent' : al.type === 'warning' ? 'Attention' : 'Info',
         tagClass: al.type === 'critical' ? 'plaquette-urgent' : al.type === 'warning' ? 'plaquette-scolarite' : 'plaquette-pedagogie',
@@ -67,11 +67,11 @@ export default function AlertPanel({ alerts = [] }) {
   return (
     <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0B1F3A', margin: 0, display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: 0, display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
           <i className="bi bi-bell-fill" style={{ color: '#EF4444' }} />
           Alertes institutionnelles
         </h3>
-        <Link to="/scolarite" style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2F80ED', textDecoration: 'none' }}>
+        <Link to="/scolarite" style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1267D6', textDecoration: 'none' }}>
           Voir tout →
         </Link>
       </div>

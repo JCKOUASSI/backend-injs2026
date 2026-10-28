@@ -4,11 +4,11 @@
  */
 
 const C = {
-  header: '#EDB131',
+  header: '#F59E0B',
   groupe: '#FBFDBB',
   total: '#F7FA82',
   sidebar: '#FFFF00',
-  absence: '#EDB131',
+  absence: '#F59E0B',
   absenceJour: '#BDD7EE',
   border: '#000',
 }

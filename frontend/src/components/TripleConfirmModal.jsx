@@ -27,11 +27,11 @@ export default function TripleConfirmModal({ title, subject, onConfirm, onCancel
   const isLast = step === STEPS.length - 1
 
   const btnDanger = {
-    background: '#c62828', color: '#fff', border: 'none',
+    background: '#DC3545', color: '#fff', border: 'none',
     padding: '0.45rem 1.2rem', borderRadius: 6, fontWeight: 500, cursor: 'pointer', fontSize: '0.9rem',
   }
   const btnWarning = {
-    background: '#e69700', color: '#fff', border: 'none',
+    background: '#D97706', color: '#fff', border: 'none',
     padding: '0.45rem 1.2rem', borderRadius: 6, fontWeight: 500, cursor: 'pointer', fontSize: '0.9rem',
   }
 
@@ -50,7 +50,7 @@ export default function TripleConfirmModal({ title, subject, onConfirm, onCancel
           <h5>
             <i
               className={`bi bi-${current.variant === 'danger' ? 'exclamation-triangle' : 'archive'} me-2`}
-              style={{ color: current.variant === 'danger' ? '#f5c10b' : '#e69700' }}
+              style={{ color: current.variant === 'danger' ? '#f5c10b' : '#D97706' }}
             />
             {title || 'Archivage'} — étape {step + 1}/{STEPS.length}
           </h5>
@@ -73,7 +73,7 @@ export default function TripleConfirmModal({ title, subject, onConfirm, onCancel
                 key={i}
                 style={{
                   flex: 1, height: 4, borderRadius: 2,
-                  background: i <= step ? (i === STEPS.length - 1 ? '#c62828' : '#e69700') : '#e2e8f0',
+                  background: i <= step ? (i === STEPS.length - 1 ? '#DC3545' : '#D97706') : '#e2e8f0',
                   transition: 'background 0.2s',
                 }}
               />

@@ -815,7 +815,7 @@ export default function ModuleDetail() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', borderBottom: '1px solid #f1f5f9' }}>
                   {[
                     { icon: 'bi-calendar3',   value: sessions.length,      label: 'SÉANCES',    color: '#0e58ab' },
-                    { icon: 'bi-people',      value: participants.length,   label: 'AUDITEURS',  color: '#1d4ed8' },
+                    { icon: 'bi-people',      value: participants.length,   label: 'AUDITEURS',  color: '#104A8E' },
                     { icon: 'bi-check-circle',value: nbTerminees,           label: 'TERMINÉES',  color: '#7c3aed' },
                     { icon: 'bi-person-video3',value: formateurs.length,    label: 'ENSEIGNANTS', color: 'var(--ci-warning)' },
                   ].map((c, i) => (
@@ -1117,7 +1117,7 @@ export default function ModuleDetail() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem', marginBottom: '1rem' }}>
               {[
                 { label: 'ATTENDUS',      value: nbAttendus, icon: 'bi-people',             bg: '#f8fafc', border: '#cbd5e1', color: '#475569' },
-                { label: 'EN SALLE',      value: nbEnSalle,  icon: 'bi-person-check',        bg: '#eff6ff', border: '#93c5fd', color: '#1d4ed8' },
+                { label: 'EN SALLE',      value: nbEnSalle,  icon: 'bi-person-check',        bg: '#eff6ff', border: '#93c5fd', color: '#104A8E' },
                 { label: 'PRÉSENTS',      value: nbPresents, icon: 'bi-check-circle',         bg: '#f0f6fd', border: '#80b7f5', color: '#0b478a' },
                 { label: 'ABSENTS',       value: nbAbsents,  icon: 'bi-person-x',             bg: '#fef2f2', border: '#fca5a5', color: '#dc2626' },
                 { label: 'TAUX PRÉSENCE', value: `${taux}%`, icon: 'bi-graph-up',             bg: '#fefce8', border: '#fcdf4d', color: taux < 50 ? '#dc2626' : '#d9a106' },
@@ -1243,7 +1243,7 @@ export default function ModuleDetail() {
                         )}
                         {ptsAud.length > 0 && (
                           <>
-                            {subBar('bi-people', 'Étudiants', '#eff6ff', '#bfdbfe', '#1d4ed8', ptsAud.length)}
+                            {subBar('bi-people', 'Étudiants', '#eff6ff', '#bfdbfe', '#104A8E', ptsAud.length)}
                             <table className="table mb-0">
                               {theadPresence}
                               <tbody>{ptsAud.map(presenceRow)}</tbody>
@@ -1349,7 +1349,7 @@ export default function ModuleDetail() {
                       <div className="card-body-flush">
                         {absAud.length > 0 && (
                           <>
-                            {absentSubBar('bi-people', 'Étudiants absents', '#eff6ff', '#bfdbfe', '#1d4ed8', absAud.length)}
+                            {absentSubBar('bi-people', 'Étudiants absents', '#eff6ff', '#bfdbfe', '#104A8E', absAud.length)}
                             <table className="table mb-0">
                               {theadAbsent}
                               <tbody>{absAud.map(absentRow)}</tbody>

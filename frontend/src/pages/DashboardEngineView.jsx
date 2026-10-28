@@ -297,8 +297,8 @@ export default function DashboardEngineView() {
                   centerTotal={1248}
                   data={[
                     { label: 'Licence : 62%', value: 773, display: '773', color: '#1E40AF' },
-                    { label: 'Master : 28%', value: 349, display: '349', color: '#2F80ED' },
-                    { label: 'Doctorat : 10%', value: 126, display: '126', color: '#38BDF8' },
+                    { label: 'Master : 28%', value: 349, display: '349', color: '#1267D6' },
+                    { label: 'Doctorat : 10%', value: 126, display: '126', color: '#35BDF5' },
                   ]}
                 />
 
@@ -306,7 +306,7 @@ export default function DashboardEngineView() {
                 <RadialGaugeCard
                   title="Taux de réussite"
                   value={78}
-                  color="#10B981"
+                  color="#16A36A"
                   trend="+5%"
                   trendComparison="✓ vs 2025"
                   trendPositive={true}
@@ -316,7 +316,7 @@ export default function DashboardEngineView() {
                 <RadialGaugeCard
                   title="Taux d'abandon"
                   value={6}
-                  color="#2563EB"
+                  color="#1267D6"
                   trend="-2%"
                   trendComparison="✓ vs 2025"
                   trendPositive={true}
@@ -326,7 +326,7 @@ export default function DashboardEngineView() {
                 <RadialGaugeCard
                   title="Taux de diplomation"
                   value={72}
-                  color="#10B981"
+                  color="#16A36A"
                   trend="+6%"
                   trendComparison="✓ vs 2025"
                   trendPositive={true}
@@ -346,7 +346,7 @@ export default function DashboardEngineView() {
                   centerTotal={1248}
                   data={[
                     { label: 'Hommes 58%', value: 723, display: '723', color: '#1E40AF' },
-                    { label: 'Femmes 42%', value: 525, display: '525', color: '#38BDF8' },
+                    { label: 'Femmes 42%', value: 525, display: '525', color: '#35BDF5' },
                   ]}
                 />
 
@@ -384,7 +384,7 @@ export default function DashboardEngineView() {
                   <button
                     type="button"
                     onClick={() => fetchTabData('overview')}
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#2F80ED', padding: 0 }}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#1267D6', padding: 0 }}
                     title="Actualiser les données"
                   >
                     <i className="bi bi-arrow-repeat" style={{ fontSize: '1rem' }} />
@@ -456,7 +456,7 @@ export default function DashboardEngineView() {
                 )}
                 <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
-                    <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0B1F3A', margin: '0 0 0.5rem 0' }}>
+                    <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: '0 0 0.5rem 0' }}>
                       Contrôle Réglementaire & Sélections
                     </h3>
                     <p style={{ fontSize: '0.82rem', color: '#64748B' }}>
@@ -527,7 +527,7 @@ export default function DashboardEngineView() {
                 <TeachingLoadBarChart title="Répartition des Enseignements par Cycle" />
                 <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
-                    <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0B1F3A', margin: '0 0 0.5rem 0' }}>
+                    <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: '0 0 0.5rem 0' }}>
                       Architecture & Maquettes LMD
                     </h3>
                     <p style={{ fontSize: '0.82rem', color: '#64748B' }}>
@@ -600,13 +600,13 @@ export default function DashboardEngineView() {
                 <RadialGaugeCard
                   title="Taux d'assiduité global"
                   value={94}
-                  color="#10B981"
+                  color="#16A36A"
                   trend="+2%"
                   trendComparison="vs semaine passée"
                 />
                 <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
-                    <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0B1F3A', margin: '0 0 0.5rem 0' }}>
+                    <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: '0 0 0.5rem 0' }}>
                       Badgeage Biométrique & Pointage QR
                     </h3>
                     <p style={{ fontSize: '0.82rem', color: '#64748B' }}>
@@ -684,7 +684,7 @@ export default function DashboardEngineView() {
                 />
                 <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
-                    <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0B1F3A', margin: '0 0 0.5rem 0' }}>
+                    <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: '0 0 0.5rem 0' }}>
                       Échéanciers & Quittances de Paiement
                     </h3>
                     <p style={{ fontSize: '0.82rem', color: '#64748B' }}>
@@ -754,13 +754,13 @@ export default function DashboardEngineView() {
                 <RadialGaugeCard
                   title="Taux de validation de jurys"
                   value={100}
-                  color="#10B981"
+                  color="#16A36A"
                   trend="100%"
                   trendComparison="PV clôturés"
                 />
                 <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
-                    <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0B1F3A', margin: '0 0 0.5rem 0' }}>
+                    <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: '0 0 0.5rem 0' }}>
                       Registre & Scellement Cryptographique SHA-256
                     </h3>
                     <p style={{ fontSize: '0.82rem', color: '#64748B' }}>
@@ -851,7 +851,7 @@ export default function DashboardEngineView() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
                   <div>
                     <div className="plaquette plaquette-primary mb-2">Mon parcours LMD</div>
-                    <h2 style={{ margin: 0, color: '#0B1F3A', fontWeight: 800, fontSize: '1.35rem' }}>
+                    <h2 style={{ margin: 0, color: '#071B3A', fontWeight: 800, fontSize: '1.35rem' }}>
                       {data.etudiant || greetingName}
                     </h2>
                     <p style={{ margin: '0.35rem 0 0', color: '#64748B', fontSize: '0.92rem' }}>
@@ -865,7 +865,7 @@ export default function DashboardEngineView() {
                     <div style={{ fontSize: '0.75rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                       Situation financière
                     </div>
-                    <div style={{ fontWeight: 800, color: '#10B981', fontSize: '1.05rem' }}>
+                    <div style={{ fontWeight: 800, color: '#16A36A', fontSize: '1.05rem' }}>
                       {data.solde_finance || data.kpis?.solde_finance || 'À jour'}
                     </div>
                   </div>
@@ -919,7 +919,7 @@ export default function DashboardEngineView() {
                 <LmdPipeline steps={data.pipeline || []} />
                 <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
-                    <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0B1F3A', margin: '0 0 0.5rem 0' }}>
+                    <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: '0 0 0.5rem 0' }}>
                       Timeline LMD personnelle
                     </h3>
                     <p style={{ fontSize: '0.82rem', color: '#64748B' }}>
@@ -956,7 +956,7 @@ export default function DashboardEngineView() {
             <>
               <div className="glass-panel mb-3" style={{ padding: '1.25rem 1.5rem' }}>
                 <div className="plaquette plaquette-primary mb-2">Espace enseignant</div>
-                <h2 style={{ margin: 0, color: '#0B1F3A', fontWeight: 800, fontSize: '1.35rem' }}>
+                <h2 style={{ margin: 0, color: '#071B3A', fontWeight: 800, fontSize: '1.35rem' }}>
                   {data.enseignant || greetingName}
                 </h2>
                 <p style={{ margin: '0.35rem 0 0', color: '#64748B', fontSize: '0.92rem' }}>
@@ -1023,7 +1023,7 @@ export default function DashboardEngineView() {
                 <TeachingLoadBarChart title="Charge d'enseignement (CM / TD / TP)" />
                 <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
-                    <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0B1F3A', margin: '0 0 0.5rem 0' }}>
+                    <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: '0 0 0.5rem 0' }}>
                       Affectations pédagogiques
                     </h3>
                     <p style={{ fontSize: '0.82rem', color: '#64748B' }}>

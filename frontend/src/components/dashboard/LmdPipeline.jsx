@@ -35,8 +35,8 @@ export default function LmdPipeline({ steps = [] }) {
     <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
       <div className="pipeline-card-header">
         <div>
-          <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: '#0B1F3A', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <i className="bi bi-diagram-3-fill" style={{ color: '#2F80ED' }}></i>
+          <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: '#071B3A', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <i className="bi bi-diagram-3-fill" style={{ color: '#1267D6' }}></i>
             Parcours LMD – De la candidature au diplôme
           </h3>
           <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 500 }}>
