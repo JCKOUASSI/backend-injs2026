@@ -141,7 +141,8 @@ Aucun.
 |---|---|
 | `npm run build` | ✅ **built in 3.88s** (avertissement chunk > 500 kB : préexistant) |
 | `npx vitest run` | ✅ **101 fichiers / 1 912 tests** (relancé après la migration) |
-| `manage.py test config.tests.test_apercu_hardening authentication` | ✅ **261 tests OK** (skipped=1) — tour précédent, aucun fichier backend modifié depuis |
+| **CI GitHub — run 40704468360 sur `b6563b4` (HEAD, toutes les modifications incluses)** | ✅ **Backend (Django + PostgreSQL) vert en 56 min 07 s** · ✅ **Frontend vert en 1 min 45 s** (analyse statique + tests) |
+| `manage.py test config.tests.test_apercu_hardening authentication` | ✅ **261 tests OK** (skipped=1) — exécution locale ciblée |
 | `/admin/login/` rendu (sans auto-connexion) | ✅ **200 · 19 773 o**, logo officiel, **0 identifiant et 0 mot de passe préremplis** |
 | Ressources statiques | ✅ `login.css` 200 (9 640 o) · `logo-injs.svg` 200 (1 960 o) |
 | Vite sert le socle | ✅ `designSystem.css` 200 (29 184 o) · `/` 200 |
@@ -201,8 +202,9 @@ bleu clair 7,94 · ciel/navy 7,95 · turquoise 10,74.
   ≥ 40 px, champs à 16 px sous 390 px (anti-zoom iOS).
   **Une validation visuelle humaine reste nécessaire.**
 - **Tests end-to-end navigateur** et **audit Lighthouse / axe-core** : même cause.
-- **Suite backend complète (2 464 tests)** : non relancée ce tour-ci, faute de
-  modification backend depuis la dernière exécution verte.
+- **Compte exact des tests backend du run CI** : le job est vert, mais le journal
+  détaillé n'est pas téléchargeable depuis cet environnement (`gh run view --log`
+  échoue). Le statut est donc « suite complète passée », sans décompte vérifié ici.
 - **Chasse aux sélecteurs CSS morts** : un détecteur a été écrit, mais beaucoup de
   classes sont construites dynamiquement (`hab-niveau-${niveau}`,
   `badge-${statut}`), ce qui produit des faux positifs. Seul le cas
@@ -215,11 +217,17 @@ bleu clair 7,94 · ciel/navy 7,95 · turquoise 10,74.
 ### **VALIDÉ AVEC RÉSERVES**
 
 **Ce qui est prouvé par exécution :** build, 1 912 tests unitaires relancés après
-la migration, 261 tests backend, rendu réel de l'écran de connexion admin sans
+la migration, **CI GitHub entièrement verte sur le commit exact `b6563b4`**
+(backend Django + PostgreSQL 56 min 07 s, frontend lint + tests 1 min 45 s),
+261 tests backend ciblés en local, rendu réel de l'écran de connexion admin sans
 préremplissage, service des ressources statiques, intégrité complète des tokens
 CSS, 0 bleu historique, 15/15 paires de contraste du socle et 7/7 badges
 d'habilitation conformes AA, absence de référence SYGEP-CPFAE, absence totale de
 modification de logique applicative.
+
+**Conséquence :** la non-régression fonctionnelle n'est plus une promesse mais un
+fait mesuré — les suites complètes frontend et backend passent sur l'infrastructure
+GitHub, pas seulement sur cette machine.
 
 **Ce qui reste réservé :**
 
