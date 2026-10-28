@@ -214,6 +214,18 @@ bleu clair 7,94 · ciel/navy 7,95 · turquoise 10,74.
     est signalé par la couleur d'alerte), seule la nuance suit le socle
     (#DC3545). Assertion toujours stricte — **pas un affaiblissement**.
 
+17. **Graphiques de l'accueil admin illisibles** (signalé par l'utilisateur sur
+    « Pointages par mois ») : la cause n'était pas la taille de police mais la
+    **localisation française des flottants dans les attributs SVG**. Les gabarits
+    émettaient `x="46,0"`, `cx="98,0"`, `r="45,1"` ; la virgule est invalide en
+    SVG, le navigateur ignorait l'attribut et retombait à 0 — tous les libellés
+    s'empilaient au bord gauche et le camembert avait un centre et un rayon nuls.
+    Corrigé par `{% localize off %}` autour des SVG ; tailles de police sorties
+    dans les données (7,5 px au lieu de 9) ; viewBox minimal porté à 420 px pour
+    limiter l'agrandissement ; troncature calculée sur l'espace réel. **3 tests de
+    régression ajoutés.** Vérifié sur le serveur réel : `/admin/` 200, aucune
+    virgule décimale dans les attributs.
+
 ### D.3 Non exécuté — NOT EXECUTED
 
 - **Captures d'écran automatiques** : aucun navigateur n'est disponible et aucun ne
