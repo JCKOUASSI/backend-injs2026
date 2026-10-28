@@ -25,11 +25,28 @@ PREFIXE_ADMIN = '/admin/'
 class AutoLoginApercuMiddleware:
     """Rend ``/admin/`` utilisable sans cookie (iframe d'aperçu)."""
 
+    #: Une déconnexion explicite doit rester effective. Sans ce drapeau, la
+    #: requête suivante sur /admin/ reconnectait aussitôt le compte de
+    #: démonstration : la session était pourtant bien détruite, mais le bouton
+    #: « Déconnexion » semblait ne rien faire.
+    #: Drapeau de PROCESSUS (et non de session) : dans l'iframe d'aperçu les
+    #: cookies peuvent être totalement bloqués, donc un marqueur de session ne
+    #: survivrait pas — c'est précisément le cas d'usage de ce middleware.
+    _deconnecte = False
+
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        return self.get_response(request)
+        response = self.get_response(request)
+        if self._actif(request):
+            chemin = request.path.rstrip('/')
+            if chemin.endswith('/logout'):
+                AutoLoginApercuMiddleware._deconnecte = True
+            elif chemin.endswith('/login') and request.method == 'POST':
+                if getattr(request, 'user', None) and request.user.is_authenticated:
+                    AutoLoginApercuMiddleware._deconnecte = False
+        return response
 
     @staticmethod
     def _actif(request):
@@ -42,6 +59,20 @@ class AutoLoginApercuMiddleware:
     def process_view(self, request, view_func, view_args, view_kwargs):
         if not self._actif(request):
             return None
+
+        chemin = request.path.rstrip('/')
+
+        # Une déconnexion ne doit jamais être suivie d'une reconnexion.
+        if chemin.endswith('/logout'):
+            return None
+
+        if AutoLoginApercuMiddleware._deconnecte:
+            # On ne reconnecte plus, mais on laisse la connexion manuelle
+            # possible : sans dispense CSRF, l'iframe sans cookies renverrait 403.
+            if chemin.endswith('/login'):
+                request.csrf_processing_done = True
+            return None
+
         # 1) Pas de jeton CSRF par cookie : la vue est réputée vérifiée.
         request.csrf_processing_done = True
         # 2) Session de démonstration, sans cookie.
