@@ -31,7 +31,6 @@ import Dashboard from '@/pages/Dashboard'
 import DecisionsPedagogiques from '@/pages/DecisionsPedagogiques'
 import EdtNew from '@/pages/EdtNew'
 import Edts from '@/pages/Edts'
-import EvaluationAcademique from '@/pages/EvaluationAcademique'
 import EvaluationDashboard from '@/pages/EvaluationDashboard'
 import EvaluationDetail from '@/pages/EvaluationDetail'
 import EvaluationList from '@/pages/EvaluationList'
@@ -54,8 +53,6 @@ import Parametres from '@/pages/Parametres'
 import FeatureFlags from '@/pages/FeatureFlags'
 import Participants from '@/pages/Participants'
 import Profile from '@/pages/Profile'
-import QuizList from '@/pages/QuizList'
-import QuizTake from '@/pages/QuizTake'
 import Rattrapages from '@/pages/Rattrapages'
 import Referentiels from '@/pages/Referentiels'
 import Secretariats from '@/pages/Secretariats'
@@ -91,7 +88,6 @@ const PAGES = [
   ['DecisionsPedagogiques', DecisionsPedagogiques, '/formations/:formationId/decisions', '/formations/1/decisions'],
   ['EdtNew', EdtNew, '/edt/nouveau', '/edt/nouveau'],
   ['Edts', Edts, '/edt', '/edt'],
-  ['EvaluationAcademique', EvaluationAcademique, '*', '/x'],
   ['EvaluationDashboard', EvaluationDashboard, '*', '/x'],
   ['EvaluationDetail', EvaluationDetail, '/evaluations/:id', '/evaluations/1'],
   ['EvaluationList', EvaluationList, '/evaluations', '/evaluations'],
@@ -116,8 +112,6 @@ const PAGES = [
   ['FeatureFlags', FeatureFlags, '/parametres/flags', '/parametres/flags'],
   ['Participants', Participants, '/participants', '/participants'],
   ['Profile', Profile, '/profile', '/profile'],
-  ['QuizList', QuizList, '*', '/quiz'],
-  ['QuizTake', QuizTake, '*', '/quiz/1'],
   ['Rattrapages', Rattrapages, '/rattrapages', '/rattrapages'],
   ['Referentiels', Referentiels, '/referentiels', '/referentiels'],
   ['Secretariats', Secretariats, '/secretariats', '/secretariats'],

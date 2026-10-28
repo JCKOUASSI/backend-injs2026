@@ -19,7 +19,7 @@ export const getRefFormations = () => api.get('/formations/ref/formations/')
 export const getRefCategories = () => api.get('/formations/ref/categories/')
 export const getRefGrades = () => api.get('/formations/ref/grades/')
 export const getRefVagues = () => api.get('/formations/ref/vagues/')
-export const getFormationsOperationnelles = () => api.get('/formations/formations/')
+export const getFormationsOperationnelles = () => api.get('/formations/list/')
 
 // ── Candidatures ────────────────────────────────────────────────────────────
 

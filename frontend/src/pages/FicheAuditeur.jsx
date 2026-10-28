@@ -13,7 +13,7 @@ export default function FicheAuditeur() {
     const fetch = async () => {
       setLoading(true)
       try {
-        const { data } = await api.get(`/suiviEvaluation/auditeurs/${participantId}/formations/${formationId}/fiche/`)
+        const { data } = await api.get(`/evaluations/auditeurs/${participantId}/formations/${formationId}/fiche/`)
         setFiche(data)
       } catch (err) {
         showToast(err?.response?.data?.detail || 'Erreur chargement fiche', 'error')
@@ -25,8 +25,8 @@ export default function FicheAuditeur() {
 
   const download = async (type) => {
     const path = type === 'pdf'
-      ? `/suiviEvaluation/auditeurs/${participantId}/formations/${formationId}/fiche/export/pdf/`
-      : `/suiviEvaluation/auditeurs/${participantId}/formations/${formationId}/fiche/export/xlsx/`
+      ? `/evaluations/auditeurs/${participantId}/formations/${formationId}/fiche/export/pdf/`
+      : `/evaluations/auditeurs/${participantId}/formations/${formationId}/fiche/export/xlsx/`
     try {
       const { blob, fileName } = await api.getBlob(path)
       const url = URL.createObjectURL(blob)
@@ -59,8 +59,13 @@ export default function FicheAuditeur() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
           <div><strong>Formation</strong><div>{fiche.formation_libelle}</div></div>
           <div><strong>Moyenne générale</strong><div>{fiche.moyenne_generale ?? '—'}</div></div>
-          <div><strong>Classement</strong><div>{fiche.classement ?? '—'}</div></div>
-          <div><strong>Décision finale</strong><div>{fiche.decision_finale_detail?.decision_display || '—'}</div></div>
+          <div><strong>Classement</strong><div>{fiche.classement ? (fiche.classement_sur ? `${fiche.classement} / ${fiche.classement_sur}` : fiche.classement) : '—'}</div></div>
+          <div>
+            <strong>Verdict pédagogique</strong>
+            <div>{fiche.decision_finale_detail?.decision_display || '—'}</div>
+            <small>Verdict interne de suivi (notes et assiduité) — ne vaut pas décision de jury.</small>
+          </div>
+          <div><strong>Décision officielle (jury)</strong><div>{fiche.decision_officielle?.decision_display || '—'}</div></div>
         </div>
       </div>
 

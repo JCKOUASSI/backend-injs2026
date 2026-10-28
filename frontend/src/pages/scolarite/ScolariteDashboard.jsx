@@ -54,7 +54,7 @@ export default function ScolariteDashboard() {
         api.get('/finances-etudiantes/paiements/'),
         api.get('/finances-etudiantes/echeanciers/'),
         api.get('/juries/sessions/'),
-        api.get('/referentiels/parcours/'),
+        api.get('/scolarite/ref/parcours/'),
       ])
 
       const inscData = inscStatsRes.status === 'fulfilled' ? inscStatsRes.value.data : {}

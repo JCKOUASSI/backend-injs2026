@@ -20,14 +20,16 @@ import FicheAuditeur from '@/pages/FicheAuditeur'
 
 const PID = 7
 const FID = 10
-const fichePath = `/suiviEvaluation/auditeurs/${PID}/formations/${FID}/fiche/`
+const fichePath = `/evaluations/auditeurs/${PID}/formations/${FID}/fiche/`
 
 const FICHE = {
   participant_nom: 'Awa Koné',
   formation_libelle: 'L1 LSF 2025-2026',
   moyenne_generale: '14.50',
   classement: 3,
+  classement_sur: 12,
   decision_finale_detail: { decision_display: 'Admis(e) de droit' },
+  decision_officielle: { decision_display: 'Admis par le jury' },
   suivi_modules: [
     {
       id: 1, module_intitule: 'LSF Niveau 1 — A1', nb_epreuves: 3,
@@ -78,8 +80,10 @@ describe('FicheAuditeur — affichage', () => {
     expect(await screen.findByText(/Awa Koné/)).toBeInTheDocument()
     expect(screen.getByText('L1 LSF 2025-2026')).toBeInTheDocument()
     expect(screen.getByText('14.50')).toBeInTheDocument()
-    expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.getByText('3 / 12')).toBeInTheDocument()
     expect(screen.getByText('Admis(e) de droit')).toBeInTheDocument()
+    // Le verdict interne et la décision officielle sont deux lignes distinctes.
+    expect(screen.getByText('Admis par le jury')).toBeInTheDocument()
 
     // Deux modules suivis.
     expect(screen.getByText('LSF Niveau 1 — A1')).toBeInTheDocument()
@@ -101,12 +105,13 @@ describe('FicheAuditeur — affichage', () => {
       moyenne_generale: null,
       classement: null,
       decision_finale_detail: null,
+      decision_officielle: null,
       suivi_modules: [],
     }
     mount()
     expect(await screen.findByText(/Karim Diop/)).toBeInTheDocument()
-    // Moyenne / classement / décision non rendus → trois tirets.
-    expect(screen.getAllByText('—')).toHaveLength(3)
+    // Moyenne / classement / verdict pédagogique / décision officielle → quatre tirets.
+    expect(screen.getAllByText('—')).toHaveLength(4)
   })
 
   it("signale l'erreur et affiche « fiche introuvable » quand le chargement échoue", async () => {

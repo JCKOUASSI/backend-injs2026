@@ -44,7 +44,7 @@ export default function FormationDetail() {
   const [selectedQrModule, setSelectedQrModule] = useState(null)
 
   // Session creation
-  const [newSession, setNewSession] = useState({ date_journee: '', numero: 1, heure_debut_prevue: '', heure_fin_prevue: '' })
+  const [newSession, setNewSession] = useState({ module_id: '', date_journee: '', numero: 1, heure_debut_prevue: '', heure_fin_prevue: '' })
   const [showNewSession, setShowNewSession] = useState(false)
 
   // Présences dashboard
@@ -487,15 +487,21 @@ export default function FormationDetail() {
   const handleCreateSession = async (e) => {
     e.preventDefault()
     try {
+      // Une séance appartient obligatoirement à un module : sans module, le
+      // backend ne peut pas déterminer à quel cours la rattacher.
+      if (!newSession.module_id) {
+        showToast('Choisissez le module concerné par la séance', 'error')
+        return
+      }
       const nextNumero = sessions.length + 1
       const payload = {
         ...newSession,
         numero: nextNumero,
         intitule: `Séance ${nextNumero}`,
       }
-      await api.post(`/formations/${id}/sessions/new/`, payload)
+      await api.post(`/formations/${id}/modules/${newSession.module_id}/sessions/new/`, payload)
       setShowNewSession(false)
-      setNewSession({ date_journee: '', heure_debut_prevue: '', heure_fin_prevue: '' })
+      setNewSession({ module_id: '', date_journee: '', heure_debut_prevue: '', heure_fin_prevue: '' })
       loadFormationData()
       showToast('Séance créée')
     } catch (err) { showToast(err.response?.data?.detail || 'Erreur lors de la création', 'error') }
@@ -1108,6 +1114,16 @@ export default function FormationDetail() {
               <div className="card-body">
                 {showNewSession ? (
                   <form onSubmit={handleCreateSession} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                    <div className="form-group" style={{ flex: '1 1 220px' }}>
+                      <label className="form-label">Module *</label>
+                      <select className="form-select form-select-sm" required value={newSession.module_id}
+                        onChange={e => setNewSession({...newSession, module_id: e.target.value})}>
+                        <option value="">— Choisir un module —</option>
+                        {formationModules.map(m => (
+                          <option key={m.id} value={m.id}>{m.intitule}</option>
+                        ))}
+                      </select>
+                    </div>
                     <div className="form-group" style={{ flex: '1 1 140px' }}>
                       <label className="form-label">Date *</label>
                       <input type="date" className="form-control form-control-sm" required value={newSession.date_journee}

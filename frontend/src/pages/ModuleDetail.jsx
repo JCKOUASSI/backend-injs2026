@@ -435,7 +435,7 @@ export default function ModuleDetail() {
       if (selectedPresenceSessionId !== 'ALL') {
         body.session_id = parseInt(selectedPresenceSessionId, 10)
       }
-      const res = await api.post(`/formations/${formationId}/force-badgeage-étudiants-bulk/`, body)
+      const res = await api.post(`/formations/${formationId}/force-badgeage-auditeurs-bulk/`, body)
       const sessionsInfo = (res.data.sessions || [])
         .filter(s => s.nb_badges > 0)
         .map(s => `${s.session_intitule}: ${s.nb_badges}/${s.nb_absents} (${s.taux_pct}%)`)

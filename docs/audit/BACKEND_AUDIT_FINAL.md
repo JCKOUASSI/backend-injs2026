@@ -480,8 +480,9 @@ occurrence diagnosticable. Ce point est ouvert (§8.3).
 
 | Suite | Commande | Résultat |
 |---|---|---|
-| Backend | `USE_SQLITE=1 .venv/bin/python manage.py test` | **2 451 tests — 0 échec, 9 ignorés** (voir §9.1) |
-| Frontend | `npx vitest run` | **101 fichiers / 1 915 tests — OK** |
+| Backend | `USE_SQLITE=1 .venv/bin/python manage.py test` | **2 464 tests — 0 échec, 9 ignorés** (voir §9.1) |
+| Frontend | `npx vitest run` | **101 fichiers / 1 912 tests — OK** (3 cas retirés avec les pages mortes, §11.5) |
+| Build frontend | `npm run build` | **OK** (5,3 s) |
 | ESLint | `npm run lint` | 0 erreur, 0 avertissement |
 | Hygiène dépôt | `check_repo_hygiene` | CONFORME |
 | CI (GitHub Actions) | workflow `CI` sur la PR #1 | **frontend ✅ / backend PostgreSQL ✅** |
@@ -493,15 +494,23 @@ Tests ajoutés par cet audit (22) :
 * `core/tests/test_validators_fichiers.py` — 9 tests (extensions, taille,
   application par les services) ;
 * `authentication/test_performance_comptes.py` — 1 test (N+1) ;
-* `core/tests/test_schema_openapi.py` — 2 tests (unicité des `operationId`).
+* `core/tests/test_schema_openapi.py` — 2 tests (unicité des `operationId`) ;
+* `core/tests/test_admin_complet.py` — 6 tests (couverture, ouverture des
+  178 listes, lecture seule, recherche, préchargement) — §11 ;
+* `suiviEvaluation/tests/test_fiches_api.py` — 13 tests (fiches auditeur et
+  enseignant, exports PDF/XLSX, contrôle d'accès) — §11.5.
 
 ### 9.1 Résultat exact de la suite backend
 
 ```
-Ran 2451 tests in 671.706s
+Ran 2464 tests in 732.257s
 
 OK (skipped=9)
 ```
+
+Rejeu effectué **après** les correctifs de la §11 (le premier passage, lancé
+avant, avait donné 2464 tests OK en 753 s sur un code intermédiaire) :
+`/tmp/suite-finale-3.log`.
 
 ---
 
@@ -515,3 +524,141 @@ requête N+1 sur la liste des comptes. La dérive de migrations est résorbée.
 
 Les limites de cet audit sont explicites : aucune vérification PostgreSQL, ni
 Flutter, ni charge, ni production.
+
+---
+
+## 11. Remise à niveau de l'administration et alignement frontend ↔ backend
+
+Second passage d'audit, ciblé sur deux questions : **l'administration permet-elle
+réellement de gérer tout le domaine métier ?** et **le site appelle-t-il des
+adresses qui existent ?** Chaque constat ci-dessous est adossé à une commande
+exécutée dans le bac à sable (SQLite, données de démonstration
+`seed_injs_complet` + lots 1.2 / 3.1 / 4.1).
+
+### 11.1 Couverture de l'administration : 137/178 → 178/178
+
+Constat mesuré (`admin.site.is_registered` sur les 178 modèles des 21
+applications métier) : **41 modèles n'étaient pas inscrits**, alors que
+certains portent des objets pilotés depuis le site (campagnes d'admission,
+épreuves, sessions de jury, affectations pédagogiques, organigramme, demandes
+d'accès). L'administrateur ne pouvait pas les corriger : deux sources de
+vérité incohérentes.
+
+Correctif : `backend/core/admin_completion.py`, branché depuis
+`core/apps.py::ready()`, inscrit ces 41 modèles de façon homogène —
+18 **opérationnels** (éditables, avec recherche, filtres bornés, préchargement)
+et 23 **en lecture seule** (historiques, notifications, valeurs calculées : on
+les consulte, on ne les édite pas). Aucun modèle déjà inscrit n'est remplacé.
+
+Preuve : `core/tests/test_admin_complet.py` — les **178** listes sont ouvertes
+en HTTP avec un compte administrateur ; toute liste mal configurée (champ
+inexistant, `list_display` erroné) échouerait.
+
+### 11.2 Performances des listes : 3 064 → 1 850 requêtes (‑40 %)
+
+Mesure : ouverture des 178 listes d'administration, requêtes comptées par
+`CaptureQueriesContext`.
+
+| Indicateur | Avant | Après |
+|---|---|---|
+| Requêtes cumulées (178 listes) | 3 064 | **1 850** |
+| Maximum sur une liste | 337 (`correctionnotemodule`) | **46** (`inscriptionpedagogique`) |
+| Médiane | 10 | 9 |
+
+Trois causes distinctes, toutes corrigées :
+
+1. **50 listes exposaient une clé étrangère sans `select_related`** → une
+   requête par ligne. Sur 12 écrans représentatifs : **306 → 177 requêtes
+   (‑42 %)**, par exemple `inscriptionadministrative` 41 → 17, `affectationcreneau`
+   37 → 11.
+2. **Les `__str__` remontent des relations** : `select_related('inscription')`
+   ne suffit pas quand `InscriptionAdministrative.__str__` lit
+   `etudiant.matricule` ; le préchargement suit désormais un niveau de plus
+   (borné à 20 jointures).
+3. **Filtres de barre latérale coûteux** : les filtres sur clé étrangère à
+   forte cardinalité rendaient `str()` de chaque objet lié (337 requêtes pour
+   une liste **vide**). Les modèles ajoutés automatiquement n'utilisent plus
+   que des filtres bornés (choix énumérés, booléens).
+
+### 11.3 Recherche et filtres : 53 listes sans recherche → 0
+
+`enrichir_listes()` complète les listes vides, sans jamais retirer un champ
+existant. Une liste sans colonne texte reste cherchable via la première colonne
+texte de sa relation (`candidat__nom`). Restent **8 listes sans filtre** faute
+de champ à cardinalité bornée (Formation, Echéancier, Quittance, etc.) : un
+filtre sur clé étrangère non bornée chargerait toute la table liée.
+
+### 11.4 Défauts réels révélés par les tests
+
+* **`QRTokenAdmin.etat_validite`** levait `AttributeError: 'NoneType' object has
+  no attribute 'est_terminee'` : `QRToken.session` est nullable. Corrigé.
+* **`ReferentielJournal.cible`** est une `GenericForeignKey` : l'inclure dans
+  `select_related` provoque un `FieldError`. La détection ne retient désormais
+  que les `ForeignKey` concrètes.
+
+### 11.5 Alignement frontend ↔ backend : 40 appels sans route → 0
+
+Script d'analyse : extraction des appels `api.*` du site, substitution des
+gabarits (`${…}` → `1`, `urlParams()` → `1`), résolution par `django.urls.resolve`.
+**308 appels distincts, 40 sans route** au départ.
+
+Corrigés côté **site** (le backend était correct) :
+
+| Écran | Appel (avant) | Appel (après) |
+|---|---|---|
+| Mon espace | `/scan/me/fiche/` | `/me/fiche/` (route `presences`, 200) |
+| Scolarité — formations | `/formations/formations/` | `/formations/list/` |
+| Tableau de bord scolarité | `/referentiels/parcours/` | `/scolarite/ref/parcours/` |
+| Module — badgeage forcé | `force-badgeage-étudiants-bulk` | `force-badgeage-auditeurs-bulk` |
+
+Corrigés côté **backend** (fonctionnalité réelle, absente) :
+
+* **Fiche étudiant et fiche enseignant** : les écrans
+  `/auditeurs/:id/formations/:id/fiche` et `/formateurs/:id/modules/:id/fiche`
+  sont routés et accessibles, mais leur préfixe `/suiviEvaluation/…` ne
+  correspondait à aucun montage (l'application est montée sous
+  `/api/evaluations/`) **et aucune vue n'existait** → « Erreur chargement
+  fiche ». Création de `suiviEvaluation/fiches_api.py` (4 routes JSON + PDF +
+  XLSX) qui réutilise le moteur existant (`services.py`, `MoyenneModule`,
+  `DecisionPedagogique`) : aucune règle de calcul n'est réinventée. La fiche
+  distingue explicitement le **verdict pédagogique interne** de la **décision
+  officielle du jury** (`jurys.DecisionJury`) — l'écran ne peut plus les
+  confondre. Accès contrôlé par rôle (`IsConsultationFiche`, `IsFicheExport`),
+  pas par simple authentification. 13 tests.
+* **Création d'une séance depuis la formation** : l'écran postait sur
+  `/formations/:id/sessions/new/`, qui n'existe pas (une séance appartient
+  obligatoirement à un module). Le formulaire demande désormais le module et
+  poste sur `/formations/:id/modules/:mid/sessions/new/`.
+
+Reste **12 appels** signalés par le script : tous sont des **gabarits**
+(`${endpoint}?${params}`, `${url}${id}/`, `${cfg.endpoint}`, `${verbe}`,
+`urlParams(filtres)`) dont les routes cibles existent — vérifié une par une.
+**Aucun appel frontend ne pointe plus vers le vide.**
+
+Code mort retiré : `QuizList.jsx`, `QuizTake.jsx`, `EvaluationAcademique.jsx`
+n'étaient importés nulle part et visaient une API jamais implémentée
+(`/evaluations/quiz/`, `/evaluations/epreuves/`, `/evaluations/mes-quiz/`).
+L'écran réellement en service est `/evaluations/questionnaires` (application
+`suiviEvaluation`, montée et testée). Le test de fumée a été ajusté.
+
+### 11.6 Tests alignés (et non affaiblis)
+
+Les corrections de route ont rendu obsolètes les attentes de 9 tests
+frontend qui mockaient les anciennes adresses (`/scan/me/fiche/`,
+`/formations/formations/`, `/suiviEvaluation/…`, `/formations/:id/sessions/new/`).
+Ils ont été alignés sur les routes réelles — aucune assertion supprimée, deux
+assertions ajoutées (module obligatoire, distinction verdict/décision
+officielle).
+
+Nouveaux tests backend : `core/tests/test_admin_complet.py` (6) et
+`suiviEvaluation/tests/test_fiches_api.py` (13).
+
+### 11.7 Limites de ce passage
+
+* Mesures faites sur **SQLite** avec données de démonstration ; un volume de
+  production peut modifier les seuils (les ordres de grandeur restent).
+* Aucune vérification visuelle des deux fiches dans un navigateur : elles sont
+  validées par API (200, 404, exports binaires valides) et par tests.
+* `satisfaction_auditeurs` reste `None` tant qu'aucune réponse de questionnaire
+  n'est rattachée au module ; `appreciation_pedagogique` reste vide : aucun
+  modèle ne la porte — la donnée n'est pas inventée.
