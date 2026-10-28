@@ -243,3 +243,27 @@ describe('lib/plancheStyle — couverture du socle réel', () => {
     }
   })
 })
+
+/**
+ * L'utilitaire `.visually-hidden` est employé par plusieurs écrans (évaluations,
+ * planche de style). Il n'était défini NULLE PART en CSS : le texte réservé aux
+ * lecteurs d'écran s'affichait à l'écran. Ce test empêche la réapparition du
+ * défaut (classe utilisée sans définition).
+ */
+describe('socle — utilitaire .visually-hidden', () => {
+  const fs = require('node:fs')
+  const path = require('node:path')
+  const css = fs.readFileSync(path.resolve(process.cwd(), 'src/styles/designSystem.css'), 'utf8')
+
+  it('est défini dans le socle', () => {
+    expect(css).toMatch(/\.visually-hidden\s*\{/)
+  })
+
+  it('masque réellement le contenu (1 px, clip, sans bord)', () => {
+    const bloc = css.match(/\.visually-hidden\s*\{([\s\S]*?)\}/)[1]
+    expect(bloc).toMatch(/position:\s*absolute/)
+    expect(bloc).toMatch(/width:\s*1px/)
+    expect(bloc).toMatch(/height:\s*1px/)
+    expect(bloc).toMatch(/clip:\s*rect\(0, 0, 0, 0\)/)
+  })
+})

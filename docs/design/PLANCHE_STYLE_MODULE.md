@@ -57,7 +57,7 @@ dépôt comme archive de la maquette validée.
 | Fichier | Rôle |
 |---|---|
 | `frontend/src/lib/plancheStyle.js` | logique pure : classement, lecture, filtrage, contraste WCAG, point de rupture |
-| `frontend/src/lib/plancheStyle.test.js` | 27 tests, dont l'invariant « aucun jeton du socle n'est non classé » |
+| `frontend/src/lib/plancheStyle.test.js` | 29 tests, dont l'invariant « aucun jeton du socle n'est non classé » et la garde `.visually-hidden` |
 | `frontend/src/pages/design/PlancheDeStyle.jsx` | l'écran |
 | `frontend/src/pages/design/PlancheDeStyle.test.jsx` | 14 tests (lecture, filtre, copie, contrastes, responsive, modale, impression, absence d'appel API) |
 | `frontend/src/styles/plancheDeStyle.css` | mise en page, portée strictement `.planche*` |
@@ -82,9 +82,21 @@ L'écran ne persiste rien, ne modifie aucun jeton, n'écrit en base ni en
 `localStorage`. Il observe le CSS chargé. C'est la raison pour laquelle il
 partage la garde des écrans d'administration sans exposer d'action.
 
+## 5 bis. Défaut connexe corrigé — `.visually-hidden`
+
+En construisant l'écran, un défaut **préexistant** a été trouvé : la classe
+`.visually-hidden` était employée par plusieurs écrans (`EvaluationsModule`,
+planche de style) sans **aucune définition CSS** dans le projet (Bootstrap CSS
+n'est pas chargé, seules les icônes le sont). Le texte censé être réservé aux
+lecteurs d'écran s'affichait donc visuellement à tout le monde.
+
+L'utilitaire standard a été ajouté au socle (`designSystem.css`, section 13) :
+ajout purement **additif**, aucune règle existante n'est modifiée. Deux tests
+gardent la définition et vérifient qu'elle masque réellement le contenu.
+
 ## 6. Contrôles exécutés
 
-- `npx vitest run` → **103 fichiers, 1 958 tests OK** ;
+- `npx vitest run` → **103 fichiers, 1 960 tests OK** ;
 - `npm run build` → **OK** ;
 - `config.tests` (backend) non concerné par ce module : aucun fichier Python
   modifié.

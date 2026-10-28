@@ -826,6 +826,23 @@ label.required::after {
   .card-body { padding: var(--injs-space-4); }
 }
 
+/* ── 13. UTILITAIRES D'ACCESSIBILITÉ ─────────────────────────────────────────
+   `.visually-hidden` était utilisé dans le code (évaluations, planche de
+   style) SANS AUCUNE DÉFINITION en CSS : le texte censé être réservé aux
+   lecteurs d'écran s'affichait donc à tout le monde. Ajout de l'utilitaire
+   standard — purement additif, aucune règle existante n'est modifiée. */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
 /* Impression : on retire les effets coûteux, on garde la lisibilité. */
 @media print {
   .btn, .modal-overlay, .sidebar { display: none !important; }
