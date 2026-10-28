@@ -6,7 +6,7 @@
 /* Fond de la barre latérale */
 .sidebar {
   width: var(--sidebar-width);
-  background: linear-gradient(180deg, #0A1E3F 0%, #06152D 100%) !important;
+  background: linear-gradient(180deg, #071B3A 0%, #0B2D5B 55%, #1D2B66 100%) !important;
   color: #FFFFFF;
   position: fixed;
   top: 0;
@@ -63,12 +63,18 @@
   transform: scale(1.06);
 }
 
+/* Logo officiel INJS : JAMAIS de filtre ni de recoloration (règle projet).
+   Sur fond nuit, on le pose sur une plaque blanche pour garantir sa
+   lisibilité tout en conservant ses couleurs et ses proportions. */
 .sidebar-logo {
   width: 40px;
   height: 40px;
+  padding: 4px;
   object-fit: contain;
-  background: transparent;
-  filter: brightness(0) invert(1);
+  background: #FFFFFF;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.45);
+  flex-shrink: 0;
 }
 
 .sidebar-brand-title {
@@ -82,7 +88,7 @@
 .sidebar-brand-badge {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #38BDF8;
+  color: var(--injs-sky, #35BDF5);
   letter-spacing: 0.03em;
 }
 

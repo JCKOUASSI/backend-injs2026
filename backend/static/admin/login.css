@@ -1,158 +1,322 @@
+/* ==========================================================================
+   INJS-LMD 2026 — CONNEXION À L'ADMINISTRATION DJANGO
+   --------------------------------------------------------------------------
+   Refonte premium alignée sur le socle du site (styles/designSystem.css) :
+   mêmes bleus institutionnels (dérivés du logo #283A87), même langage de
+   verre, mêmes rayons et ombres. L'administrateur retrouve l'identité de
+   l'application dès la première page.
+
+   Aucun style fonctionnel Django n'est supprimé : les sélecteurs natifs
+   (#container, main.content, .errornote, .submit-row…) restent honorés.
+   ========================================================================== */
+
+:root {
+  --injs-indigo: #283A87;
+  --injs-navy: #071B3A;
+  --injs-navy-mid: #0B2D5B;
+  --injs-blue: #104A8E;
+  --injs-blue-royal: #1267D6;
+  --injs-sky: #35BDF5;
+  --injs-text: #0F1F33;
+  --injs-text-soft: #475569;
+  --injs-text-muted: #64748B;
+  --injs-border: #DCE6F1;
+  --injs-border-strong: #C3D2E4;
+  --injs-danger: #DC3545;
+  --injs-danger-soft: #FDEBEC;
+  --injs-radius-sm: 8px;
+  --injs-radius-lg: 20px;
+  --injs-font: 'Inter', 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto,
+               Helvetica, Arial, sans-serif;
+  --injs-focus-ring: 0 0 0 3px rgba(53, 189, 245, 0.55);
+}
+
+/* ── Fond institutionnel bleu nuit ─────────────────────────────────────── */
 body.login.injs-admin,
 body.injs-admin:not(.injs-layout-active) {
-    background: #ffffff !important;
-    min-height: 100vh;
-    margin: 0;
-    padding: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 12% 10%, rgba(53, 189, 245, 0.22) 0%, transparent 62%),
+    radial-gradient(ellipse 65% 55% at 90% 90%, rgba(40, 58, 135, 0.55) 0%, transparent 62%),
+    linear-gradient(155deg, #071B3A 0%, #0B2D5B 52%, #1D2B66 100%) !important;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-family: var(--injs-font);
 }
 
 body.login.injs-admin #container {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    width: 100%;
-    margin: 0;
-    padding: 24px;
-    box-sizing: border-box;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  margin: 0;
+  padding: 24px;
+  box-sizing: border-box;
 }
 
 body.login.injs-admin #header,
 body.login.injs-admin .breadcrumbs,
 body.login.injs-admin #footer,
 body.login.injs-admin .injs-breadcrumbs {
-    display: none !important;
+  display: none !important;
 }
 
 body.login.injs-admin main.content,
 body.login.injs-admin #content-start {
-    width: 100%;
-    max-width: 440px;
-    margin: 0 auto;
-    padding: 0;
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 0;
 }
 
 body.login.injs-admin #content {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    float: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  float: none;
 }
 
+/* ── Coque ─────────────────────────────────────────────────────────────── */
 .injs-login-shell {
-    width: 100%;
+  position: relative;
+  width: 100%;
 }
 
+.injs-login-aura {
+  position: absolute;
+  inset: -40px -60px;
+  border-radius: 40px;
+  background: radial-gradient(closest-side, rgba(53, 189, 245, 0.18), transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Carte de connexion : verre intermédiaire, fond quasi opaque pour que
+   les libellés gardent un contraste maximal même sans `backdrop-filter`. */
 .injs-login-card {
-    background: #fff;
-    border: 1px solid rgba(15, 23, 42, 0.08);
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-    padding: 36px 32px;
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: var(--injs-radius-lg);
+  box-shadow: 0 24px 60px -12px rgba(7, 27, 58, 0.55);
+  padding: 36px 32px 28px;
+}
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .injs-login-card {
+    background: rgba(255, 255, 255, 0.93);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
 }
 
+/* ── Marque et logo officiel ───────────────────────────────────────────── */
 .injs-login-brand {
-    text-align: center;
-    margin-bottom: 24px;
+  text-align: center;
+  margin-bottom: 22px;
 }
 
+/* Plaque blanche : le logo officiel n'est ni recoloré ni déformé. */
 .injs-login-icon-box {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 72px;
-    height: 72px;
-    border-radius: 16px;
-    background: #001a33;
-    margin-bottom: 12px;
-    box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  padding: 10px;
+  border-radius: 22px;
+  background: #FFFFFF;
+  border: 1px solid var(--injs-border);
+  box-shadow: 0 10px 26px -12px rgba(7, 27, 58, 0.45);
+  margin-bottom: 14px;
+  box-sizing: border-box;
 }
 
 .injs-login-icon {
-    display: block;
-    width: 52px;
-    height: 52px;
-    object-fit: contain;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .injs-login-brand h1 {
-    margin: 0;
-    font-size: 1.45rem;
-    font-weight: 800;
-    color: #0b478a;
-    letter-spacing: -0.01em;
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--injs-navy-mid);
 }
 
 .injs-login-brand p {
-    margin: 6px 0 0;
-    color: #64748b;
-    font-size: 14px;
-    font-weight: 500;
+  margin: 6px 0 0;
+  color: var(--injs-text-soft);
+  font-size: 0.88rem;
+  font-weight: 600;
 }
 
+.injs-login-brand .injs-login-sub {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--injs-text-muted);
+}
+
+/* ── Champs ────────────────────────────────────────────────────────────── */
 .injs-login-card .form-row {
-    margin-bottom: 16px;
+  margin-bottom: 16px;
+  padding: 0;
+  border: 0;
 }
 
 .injs-login-card label {
-    display: block;
-    margin-bottom: 6px;
-    font-weight: 600;
-    font-size: 13px;
-    color: #334155;
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--injs-text);
+}
+
+.injs-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #FFFFFF;
+  border: 1px solid var(--injs-border-strong);
+  border-radius: var(--injs-radius-sm);
+  transition: border-color 180ms ease-in-out, box-shadow 180ms ease-in-out;
+}
+.injs-field:hover { border-color: var(--injs-blue-royal); }
+.injs-field:focus-within {
+  border-color: var(--injs-blue-royal);
+  box-shadow: var(--injs-focus-ring);
+}
+
+.injs-field-icon {
+  padding: 0 0 0 12px;
+  font-size: 0.95rem;
+  line-height: 1;
+  opacity: 0.55;
+  font-style: normal;
+  flex-shrink: 0;
 }
 
 .injs-login-card input[type="text"],
 .injs-login-card input[type="password"] {
-    width: 100%;
-    box-sizing: border-box;
-    border-radius: 12px;
-    border: 1px solid rgba(15, 23, 42, 0.12);
-    padding: 10px 14px;
-    font-size: 14px;
-    font-family: inherit;
-    outline: none;
-    transition: all 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  background: transparent;
+  padding: 11px 12px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--injs-text);
+  outline: none;
+  border-radius: var(--injs-radius-sm);
 }
+.injs-login-card input::placeholder { color: var(--injs-text-muted); }
 
-.injs-login-card input[type="text"] {
-    border: 1.5px solid #ea9d0c;
-    box-shadow: 0 0 0 3px rgba(234, 157, 12, 0.18);
-    background: #ffffff;
+/* Révéler le mot de passe : bouton icône avec nom accessible. */
+.injs-reveal {
+  border: 0;
+  background: transparent;
+  color: var(--injs-text-muted);
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: var(--injs-radius-sm);
+  flex-shrink: 0;
 }
-
-.injs-login-card input[type="password"] {
-    background-color: #ebf3fb;
-    border: 1px solid rgba(15, 23, 42, 0.12);
+.injs-reveal:hover { color: var(--injs-blue-royal); background: #EAF5FF; }
+.injs-reveal:focus-visible {
+  outline: 2px solid var(--injs-blue-royal);
+  outline-offset: 1px;
 }
+.injs-reveal[aria-pressed="true"] { color: var(--injs-blue-royal); }
 
-.injs-login-card input[type="text"]:focus,
-.injs-login-card input[type="password"]:focus {
-    border-color: #ea9d0c;
-    box-shadow: 0 0 0 3px rgba(234, 157, 12, 0.25);
-}
-
+/* ── Bouton principal ──────────────────────────────────────────────────── */
 .injs-login-card .submit-row {
-    margin-top: 24px;
-    padding: 0;
-    background: transparent;
-    border: none;
+  margin-top: 22px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  float: none;
 }
 
 .injs-login-card .submit-row input {
-    width: 100%;
-    background: #ea9d0c;
-    border: none;
-    color: #fff;
-    padding: 12px 20px;
-    border-radius: 999px;
-    font-weight: 700;
-    font-size: 15px;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(234, 157, 12, 0.3);
-    transition: background 0.15s ease, transform 0.1s ease;
+  width: 100%;
+  border: none;
+  color: #FFFFFF;
+  padding: 13px 20px;
+  border-radius: var(--injs-radius-sm);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  background: linear-gradient(135deg, #283A87 0%, #1267D6 55%, #35BDF5 100%);
+  background-size: 170% 170%;
+  background-position: 0% 50%;
+  box-shadow: 0 10px 24px -10px rgba(18, 103, 214, 0.75);
+  transition: background-position 180ms ease-in-out, box-shadow 180ms ease-in-out,
+              transform 120ms ease-in-out;
+}
+.injs-login-card .submit-row input:hover {
+  background-position: 100% 50%;
+  box-shadow: 0 14px 30px -12px rgba(18, 103, 214, 0.85);
+}
+.injs-login-card .submit-row input:active { transform: translateY(1px); }
+.injs-login-card .submit-row input:focus-visible {
+  outline: 2px solid var(--injs-sky);
+  outline-offset: 2px;
 }
 
-.injs-login-card .submit-row input:hover {
-    background: #d48b0a;
+/* ── Erreurs : couleur ET texte, jamais la couleur seule ───────────────── */
+.injs-login-card .errornote {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: var(--injs-danger-soft);
+  border: 1px solid #F5C2C7;
+  border-left: 4px solid var(--injs-danger);
+  border-radius: var(--injs-radius-sm);
+  color: #A3222F;
+  font-size: 0.83rem;
+  font-weight: 600;
+  padding: 10px 12px;
+  margin: 0 0 16px;
+}
+.injs-login-card .errorlist {
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+  color: #A3222F;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* ── Pied institutionnel ───────────────────────────────────────────────── */
+.injs-login-foot {
+  margin: 20px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--injs-border);
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--injs-text-muted);
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  body.login.injs-admin #container { padding: 12px; }
+  .injs-login-card { padding: 26px 20px 22px; border-radius: 16px; }
+  .injs-login-icon-box { width: 68px; height: 68px; border-radius: 18px; }
+  .injs-login-brand h1 { font-size: 1.2rem; }
+  /* 16 px minimum : évite le zoom automatique iOS au focus. */
+  .injs-login-card input[type="text"],
+  .injs-login-card input[type="password"] { font-size: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .injs-login-card .submit-row input,
+  .injs-field { transition: none; }
 }

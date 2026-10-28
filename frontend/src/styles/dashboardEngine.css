@@ -5,37 +5,28 @@
               #F0F6FC (Fond lumineux), Verre dépoli & bordures luminescentes
    ========================================================================== */
 
+/* Tokens DÉLÉGUÉS au socle central `styles/designSystem.css`.
+   Ce bloc ne redéfinissait que des doublons avec des valeurs contradictoires
+   (rayons 12 px au lieu de 14/20, verts #10B981, cyan #38BDF8). Les valeurs
+   sont désormais des ALIAS : une seule source de vérité pour toute
+   l'application, sans changer les noms utilisés par les écrans. */
 :root {
-  --injs-blue-dark: #0B1F3A;
-  --injs-blue-navy: #0F274A;
-  --injs-blue-institution: #123E6A;
-  --injs-blue-accent: #2A7FFF;
-  --injs-blue-vibrant: #2563EB;
-  --injs-cyan: #38BDF8;
-  --injs-teal: #06B6D4;
-  --injs-blue-light: #EBF4FC;
-  --injs-blue-tint: #F0F6FC;
-  --injs-bg: #F0F5FA;
-  --injs-surface: #FFFFFF;
-  --injs-text-primary: #0F172A;
-  --injs-text-secondary: #475569;
-  --injs-text-muted: #94A3B8;
-  --injs-border: #E2E8F0;
-  --injs-border-glass: rgba(255, 255, 255, 0.85);
-  --injs-success: #10B981;
-  --injs-success-bg: #ECFDF5;
-  --injs-warning: #F59E0B;
-  --injs-warning-bg: #FFFBEB;
-  --injs-danger: #EF4444;
-  --injs-danger-bg: #FEF2F2;
-  --injs-info: #0284C7;
-  --injs-radius-sm: 8px;
-  --injs-radius-md: 12px;
-  --injs-radius-lg: 12px;
+  --injs-blue-dark: var(--injs-navy-mid);
+  --injs-blue-navy: var(--injs-navy-mid);
+  --injs-blue-institution: var(--injs-blue);
+  --injs-blue-accent: var(--injs-blue-royal);
+  --injs-blue-vibrant: var(--injs-blue-royal);
+  --injs-cyan: var(--injs-sky);
+  --injs-blue-light: var(--injs-blue-pale);
+  --injs-blue-tint: var(--injs-blue-mist);
+  --injs-text-primary: var(--injs-text);
+  --injs-text-secondary: var(--injs-text-soft);
+  --injs-border-glass: rgba(255, 255, 255, 0.7);
+  --injs-success-bg: var(--injs-success-soft);
+  --injs-warning-bg: var(--injs-warning-soft);
+  --injs-danger-bg: var(--injs-danger-soft);
   --injs-radius-xl: 22px;
-  --injs-radius-pill: 9999px;
-  --injs-shadow-glass: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
-  --injs-shadow-card: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+  --injs-shadow-glass: var(--injs-shadow-soft);
 }
 
 .dashboard-engine-wrapper,

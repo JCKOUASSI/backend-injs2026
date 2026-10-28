@@ -74,17 +74,12 @@
      identique sur l'ensemble de l'application. */
   --bg-app-lmd2026: linear-gradient(160deg, #EAF1FB 0%, #DCE8F7 100%);
 
-  /* ── Échelle d'espacement ────────────────────────────────────────────────
+  /* ── Échelle d'espacement : déplacée dans styles/designSystem.css ────────
+     (source unique ; ces tokens y sont désormais définis une seule fois)
      Dérivée de la gouttière de référence du Dashboard Engine
      (1.5rem vertical / 1.75rem horizontal). Ces tokens servent à
      harmoniser les écrans qui construisaient leur propre conteneur
      (.container-fluid) au lieu de `.page-content`. */
-  --injs-space-1: 0.25rem;
-  --injs-space-2: 0.5rem;
-  --injs-space-3: 0.75rem;
-  --injs-space-4: 1rem;
-  --injs-space-5: 1.5rem;
-  --injs-space-6: 1.75rem;
 
   /* ── Épaisseur de bordure ───────────────────────────────────────────────
      Alignée sur la bordure de carte de la référence (--border-color). */

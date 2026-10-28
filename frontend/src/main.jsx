@@ -14,6 +14,11 @@ import './styles/login.css'
 // fenêtres. Chargée après index.css / finance.css, elle prend donc le
 // dessus sur la cascade. Ne jamais la remonter.
 import './styles/harmonisation.css'
+// Socle de design institutionnel INJS-LMD 2026 (tokens + composants).
+// Importé APRÈS les feuilles historiques : il unifie la palette autour du
+// bleu officiel du logo (#283A87) et prend le dessus sur la cascade.
+// Ne pas le remonter avant index.css, sinon les anciens tokens gagnent.
+import './styles/designSystem.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
