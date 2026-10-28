@@ -344,6 +344,19 @@ textarea:focus-visible,
 }
 .btn-success:hover:not(:disabled) { box-shadow: 0 10px 22px -8px rgba(10, 99, 64, 0.68); color: #FFFFFF; }
 
+/* Info : turquoise institutionnel. .btn-info était UTILISÉ dans
+   MaquetteDetail.jsx sans aucune définition — le bouton retombait sur le
+   style .btn par défaut. #0D9488 ne donne que 3,74:1 avec du blanc, d'où
+   l'emploi d'un turquoise plus profond (5,36:1). La teinte claire
+   --injs-info reste réservée aux accents sur fond sombre. */
+.btn-info {
+  background: linear-gradient(135deg, #0B5A6B 0%, #0E7490 100%);
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 6px 16px -6px rgba(14, 116, 144, 0.5);
+}
+.btn-info:hover:not(:disabled) { box-shadow: 0 10px 22px -8px rgba(14, 116, 144, 0.62); color: #FFFFFF; }
+
 /* 4.4 Avertissement — contraste AA garanti (texte ambre foncé sur fond clair) */
 .btn-warning,
 .btn-outline-warning {
