@@ -76,6 +76,11 @@ class TeachingNeed:
     #: Heuristique de difficulté (étape 20) : plus c'est élevé, plus la
     #: séance est traitée tôt. Calculée par `contraintes.difficulte`.
     difficulte: int = 0
+    #: Provenance du besoin (additif, défaut = comportement historique).
+    #: ``AFFECTATION`` : issu d'une AffectationPedagogique (chaîne LMD interne).
+    #: ``MAQUETTE`` : dérivé de la maquette pour une cohorte importée, sans
+    #: affectation pédagogique (aucun ``affectation_pedagogique_id``).
+    origine: str = 'AFFECTATION'
 
     def __str__(self):
         return (f'{self.type_enseignement} {self.intitule} '

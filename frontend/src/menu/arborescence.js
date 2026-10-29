@@ -337,6 +337,17 @@ export const ARBORESCENCE = [
         },
       },
       {
+        // Demande 21 : entrée d'échelle annuelle — import du fichier des
+        // inscrits puis EDT de TOUTES les cohortes de l'année en une passe.
+        id: 'get_injs.generation_annuelle',
+        libelle: 'Génération annuelle & import',
+        chemin: '/edt/generation-annuelle',
+        droit: {
+          curp: ['edt.emploi_du_temps.generer'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
         id: 'get_injs.presences_seance',
         libelle: 'Présences de séance (QR & émargement)',
         chemin: '/edt/presences',

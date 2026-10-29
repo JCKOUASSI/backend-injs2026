@@ -19,6 +19,8 @@ import './styles/harmonisation.css'
 // bleu officiel du logo (#283A87) et prend le dessus sur la cascade.
 // Ne pas le remonter avant index.css, sinon les anciens tokens gagnent.
 import './styles/designSystem.css'
+// Écran GET-INJS (demande 21) : feuille strictement locale à cet écran.
+import './styles/getinjs.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

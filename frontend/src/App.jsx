@@ -65,6 +65,7 @@ import Edts from './pages/Edts'
 import EdtPresences from './pages/EdtPresences'
 import CoursLmd from './pages/CoursLmd'
 import EdtNew from './pages/EdtNew'
+import GenerationAnnuelle from './pages/getinjs/GenerationAnnuelle'
 import AffectationNew from './pages/AffectationNew'
 
 import FicheAuditeur from './pages/FicheAuditeur'
@@ -687,6 +688,13 @@ function App() {
             <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Nouvel EDT</li></>}>
                 <EdtNew />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/edt/generation-annuelle" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Génération annuelle</li></>}>
+                <GenerationAnnuelle />
               </Layout>
             </ProtectedRoute>
           } />
