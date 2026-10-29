@@ -387,6 +387,18 @@ PUBLIC_QR_SCAN_ENABLED = os.environ.get(
 # Délai avant marquage ABSENT_NON_BADGE (commande auto_close_pointages)
 AUTO_ABSENT_DELAI_MINUTES = int(os.environ.get('AUTO_ABSENT_DELAI_MINUTES', 60))
 
+# Chaîne admission → inscription administrative → parcours pédagogique.
+#
+# Désactivé par défaut : la règle métier en vigueur dans l'application est que
+# la génération des inscriptions pédagogiques reste une ACTION EXPLICITE du
+# service de scolarité (verrouillée par scolarite/tests/test_frontieres_metier.py).
+# L'activer enchaîne automatiquement la génération depuis la maquette ACTIVE à
+# la validation administrative. L'opération reste idempotente et n'échoue jamais
+# la validation : sans maquette active, elle est différée et journalisée.
+INJS_AUTO_INSCRIPTION_PEDAGOGIQUE = os.environ.get(
+    'INJS_AUTO_INSCRIPTION_PEDAGOGIQUE', 'False',
+).lower() in ('true', '1', 'yes')
+
 # Paramètres anti-fraude mobile (heartbeat + geofence)
 MOBILE_HEARTBEAT_DISABLED = os.environ.get(
     'MOBILE_HEARTBEAT_DISABLED',

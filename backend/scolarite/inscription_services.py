@@ -82,7 +82,49 @@ def appliquer_transition(inscription, nouveau_statut, acteur=None, commentaire='
         nouvelle_valeur=nouveau_statut,
         commentaire=commentaire,
     )
+
+    # ── Enchaînement : validation administrative → parcours pédagogique ─────
+    # Une inscription validée ouvre le parcours académique : les inscriptions
+    # pédagogiques sont générées depuis la maquette active. L'opération est
+    # idempotente (la génération ignore les ECUE déjà rattachées) et n'échoue
+    # JAMAIS la validation : si aucune maquette n'est active — cas normal en
+    # début d'année, les maquettes étant validées institutionnellement — la
+    # génération est DIFFÉRÉE et journalisée, pas contournée.
+    # NOTE — frontière métier : par défaut, la validation administrative ne crée
+    # AUCUNE inscription pédagogique (règle existante, verrouillée par
+    # scolarite/tests/test_frontieres_metier.py). L'enchaînement automatique
+    # n'est donc actif que si l'établissement l'active explicitement via
+    # INJS_AUTO_INSCRIPTION_PEDAGOGIQUE = True.
+    if nouveau_statut == S.VALIDEE and _auto_pedagogie_active():
+        _declencher_parcours_pedagogique(inscription, acteur)
     return inscription
+
+
+def _auto_pedagogie_active():
+    """L'enchaînement validation → pédagogie est-il activé par l'établissement ?"""
+    from django.conf import settings
+
+    return bool(getattr(settings, 'INJS_AUTO_INSCRIPTION_PEDAGOGIQUE', False))
+
+
+def _declencher_parcours_pedagogique(inscription, acteur=None):
+    """Génère les inscriptions pédagogiques après validation administrative.
+
+    Retourne la liste des lignes créées (vide si différée). Ne lève jamais :
+    l'absence de maquette active est un état normal, consigné au journal.
+    """
+    from .pedagogie_services import PedagogieImpossible, generer_inscriptions_pedagogiques
+
+    try:
+        return generer_inscriptions_pedagogiques(inscription, acteur=acteur)
+    except PedagogieImpossible as raison:
+        journaliser(
+            JournalScolarite.Action.INSCRIPTION_PEDAGOGIQUE_DIFFEREE,
+            objet=inscription,
+            acteur=acteur,
+            commentaire=str(raison),
+        )
+        return []
 
 
 # ── Lot L1/L3 — changement de parcours, radiation, clôture d'année ───────────
