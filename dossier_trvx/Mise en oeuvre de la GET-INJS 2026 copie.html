@@ -1,0 +1,1253 @@
+Partie 1 :
+
+Processus expert A → Z de génération des emplois du temps INJS-LMD
+
+Pour l’INJS, l’emploi du temps ne doit pas être construit comme une simple grille « classe × professeur × salle ». Il doit être généré à partir de la maquette pédagogique LMD validée, puis transformé en séances planifiées, avec contrôle des contraintes pédagogiques, humaines, matérielles et calendaires.
+
+Le principe directeur est :
+
+Formation → Parcours/Spécialité → Promotion → Groupe → Maquette → UE → ECUE → Affectation pédagogique → Créneaux → Salles et Espaces → Séances → Emploi du temps → Publication → Présences
+
+⸻
+
+1. A — Initialiser l’année académique
+
+Créer ou ouvrir l’année académique INJS.
+
+Exemple :
+
+Année académique : 2026-2027
+Établissement : INJS
+Site : INJS Marcory
+Statut : Préparation
+
+Définir :
+
+* date de début de l’année ;
+* date de fin ;
+* périodes de cours ;
+* périodes d’examens ;
+* vacances/interruption ;
+* jours ouvrables ;
+* horaires autorisés ;
+* jours fériés ;
+* contraintes spécifiques INJS.
+
+Exemple de journée
+
+07:30 – 09:30
+09:45 – 11:45
+12:00 – 14:00
+14:00 – 16:00
+16:15 – 18:15
+
+Les créneaux deviennent ensuite des ressources utilisables par le moteur EDT.
+
+⸻
+
+2. B — Charger les formations INJS
+
+Le moteur ne doit utiliser que les formations INJS-LMD validées.
+
+Structure :
+
+Formation
+   ↓
+Parcours / Spécialité
+   ↓
+Niveau
+   ↓
+Semestre
+   ↓
+Promotion
+   ↓
+Groupe
+
+Pour INJS-LMD, la structure validée est :
+
+Licence : S1 → S6
+Master  : S7 → S10
+
+avec :
+
+30 ECTS / semestre
+60 ECTS / niveau
+
+Les anciennes formations provenant du périmètre CPFAE/Sygepcpfae ne doivent pas être recyclées comme formations INJS.
+
+⸻
+
+3. C — Créer les promotions
+
+Pour chaque formation/parcours :
+
+Formation
+  └── Parcours
+       └── Niveau
+            └── Promotion
+                 └── Groupe(s)
+
+Exemple :
+
+Formation : Éducation Motricité
+Niveau : Licence 1
+Semestre : S1
+Promotion : 2026-2027
+Groupe : EM-L1-G1
+
+Le système doit connaître l’effectif :
+
+EM-L1-G1
+Effectif : 42 étudiants
+
+Cette donnée est essentielle pour choisir les salles.
+
+⸻
+
+4. D — Charger la maquette pédagogique
+
+La maquette constitue le source de vérité pédagogique.
+
+Pour chaque semestre :
+
+UE
+ ├── ECUE
+ │    ├── CM
+ │    ├── TD
+ │    ├── TP
+ │    └── autres activités
+ ├── crédits
+ └── coefficient
+
+Exemple conceptuel :
+
+UE01 — Sciences fondamentales
+    ECUE01 — Anatomie
+        CM : 20 h
+        TD : 10 h
+    ECUE02 — Physiologie
+        CM : 20 h
+        TD : 10 h
+
+Le moteur EDT ne doit donc jamais inventer les cours.
+
+Il planifie ce qui est défini dans la maquette.
+
+⸻
+
+5. E — Transformer la maquette en besoins horaires
+
+C’est une étape fondamentale.
+
+Le système transforme :
+
+ECUE + volume horaire
+
+en :
+
+besoins de séances
+
+Exemple :
+
+Anatomie
+CM = 20 h
+TD = 10 h
+
+peut devenir :
+
+10 séances CM × 2 h
+5 séances TD × 2 h
+
+Donc :
+
+15 séances à programmer
+
+Le découpage doit être paramétrable.
+
+⸻
+
+6. F — Définir les groupes pédagogiques
+
+Un ECUE peut être enseigné :
+
+* à toute une promotion ;
+* à un groupe ;
+* à plusieurs groupes ;
+* en demi-groupe ;
+* en sous-groupes pratiques.
+
+Exemple :
+
+EM-L1
+ ├── G1
+ ├── G2
+ └── G3
+
+Pour un TP :
+
+TP Anatomie
+ ├── G1 → Salle TP-A
+ ├── G2 → Salle TP-A
+ └── G3 → Salle TP-A
+
+Le moteur doit donc distinguer :
+
+groupe cible
+
+et
+
+groupe administratif.
+
+⸻
+
+7. G — Affecter les enseignants
+
+Chaque ECUE doit avoir une ou plusieurs affectations pédagogiques.
+
+Exemple :
+
+ECUE : Anatomie
+Enseignant : Dr X
+Groupe : EM-L1-G1
+Type : CM
+Volume : 20 h
+
+Le système doit pouvoir gérer :
+
+ECUE
+   ↓
+Affectation pédagogique
+   ↓
+Enseignant
+   ↓
+Groupe
+   ↓
+Séances
+
+C’est particulièrement important pour INJS-LMD car la séance ne doit pas être reconstruite artificiellement à partir de données historiques CPFAE.
+
+⸻
+
+8. H — Définir les disponibilités des enseignants
+
+Pour chaque enseignant :
+
+Disponibilité
+├── Lundi
+├── Mardi
+├── Mercredi
+├── Jeudi
+└── Vendredi
+
+avec éventuellement :
+
+08:00–10:00 disponible
+10:00–12:00 indisponible
+14:00–18:00 disponible
+
+Mais il faut distinguer :
+
+Disponibilité
+
+L’enseignant peut enseigner.
+
+Indisponibilité
+
+L’enseignant ne peut pas enseigner.
+
+Préférence
+
+L’enseignant préfère un créneau mais peut éventuellement enseigner ailleurs.
+
+Le moteur doit donner priorité aux contraintes fortes.
+
+⸻
+
+9. I — Définir les disponibilités des salles
+
+Même principe pour les salles.
+
+Exemple :
+
+Salle A101
+Capacité : 50
+Type : Cours
+Disponibilité :
+    Lun–Ven
+    07:30–18:15
+
+Pour une salle spécialisée :
+
+Gymnase
+Type : Sport
+Capacité : 80
+
+ou :
+
+Salle informatique
+Type : Informatique
+Capacité : 30
+
+Le moteur doit vérifier :
+
+capacité >= effectif
+
+et :
+
+type_salle compatible avec type_cours
+
+⸻
+
+10. J — Définir les contraintes pédagogiques
+
+Toutes les contraintes ne sont pas du même niveau.
+
+Contraintes absolues
+
+Elles doivent être respectées à 100 %.
+
+Conflit enseignant
+
+Un enseignant ne peut pas être :
+
+Lundi 08:00–10:00 → G1
+Lundi 08:00–10:00 → G2
+
+Conflit groupe
+
+Un groupe ne peut pas suivre deux cours simultanément.
+
+Conflit salle
+
+Une salle ne peut accueillir deux séances simultanément.
+
+Capacité
+
+effectif ≤ capacité salle
+
+Compatibilité
+
+Un TP nécessitant une salle spécialisée ne doit pas être envoyé dans une salle ordinaire.
+
+⸻
+
+11. K — Définir les contraintes souples
+
+Certaines règles peuvent être violées si nécessaire, mais avec pénalité.
+
+Exemples :
+
+Éviter plus de 4 h consécutives
+Éviter les trous dans l'emploi du temps
+Éviter 8 h de cours dans une journée
+Éviter de placer le même ECUE toujours au même moment
+Respecter les préférences enseignants
+Équilibrer les matières dans la semaine
+
+On obtient alors une fonction d’optimisation :
+
+Score EDT =
+    conflits × pénalité très élevée
+  + trous × pénalité
+  + surcharge × pénalité
+  + préférences ignorées × pénalité
+  + déséquilibre × pénalité
+
+⸻
+
+12. L — Définir les créneaux disponibles
+
+Le moteur construit la matrice :
+
+Jour × Heure × Salle
+
+Exemple :
+
+Jour	Créneau	Salle
+Lundi	08–10	A101
+Lundi	10–12	A101
+Lundi	14–16	A101
+Mardi	08–10	A101
+
+Chaque créneau devient une ressource.
+
+⸻
+
+13. M — Construire les séances à programmer
+
+C’est ici que l’on passe réellement de la pédagogie à l’EDT.
+
+Exemple :
+
+Affectation pédagogique :
+Anatomie
+EM-L1-G1
+Dr X
+CM
+20 h
+
+Le moteur produit :
+
+ANAT-CM-001
+ANAT-CM-002
+ANAT-CM-003
+...
+ANAT-CM-010
+
+Chaque séance possède notamment :
+
+formation
+parcours
+promotion
+groupe
+semestre
+UE
+ECUE
+type
+enseignant
+durée
+salle requise
+
+⸻
+
+14. N — Classer les séances par difficulté
+
+C’est une technique importante pour l’algorithme.
+
+Le moteur ne doit pas forcément commencer par les séances les plus simples.
+
+Il doit programmer en premier les séances les plus contraintes :
+
+Priorité 1
+
+salles spécialisées
+
+Priorité 2
+
+enseignants très peu disponibles
+
+Priorité 3
+
+groupes très chargés
+
+Priorité 4
+
+cours nécessitant plusieurs groupes
+
+Priorité 5
+
+cours ordinaires
+
+C’est une stratégie de constraint-first scheduling.
+
+⸻
+
+15. O — Générer automatiquement les possibilités
+
+Pour chaque séance :
+
+séance
+   ↓
+créneaux compatibles
+   ↓
+enseignant disponible ?
+   ↓
+groupe disponible ?
+   ↓
+salle disponible ?
+   ↓
+capacité suffisante ?
+   ↓
+type compatible ?
+
+Si oui :
+
+candidat valide
+
+Sinon :
+
+candidat rejeté
+
+⸻
+
+16. P — Résoudre les conflits
+
+Le moteur peut utiliser plusieurs stratégies.
+
+Stratégie 1 — Backtracking
+
+Il place une séance.
+
+Si une contradiction apparaît :
+
+retour arrière
+
+et essaie une autre combinaison.
+
+Stratégie 2 — CSP
+
+Le problème est traité comme :
+
+Variables
+Domaines
+Contraintes
+
+Stratégie 3 — Optimisation
+
+Pour un établissement plus complexe :
+
+CP-SAT
+MILP
+Constraint Programming
+
+Pour INJS-LMD, une approche CSP/CP-SAT avec heuristiques métier est particulièrement adaptée à terme.
+
+⸻
+
+17. Q — Générer plusieurs solutions
+
+Il est préférable que le moteur puisse produire :
+
+Solution A
+Solution B
+Solution C
+
+avec des différences de répartition.
+
+Mais le système ne doit pas présenter un simple « score magique » comme vérité métier.
+
+Il doit afficher les critères :
+
+Conflits : 0
+Volume programmé : 100 %
+Salles compatibles : 100 %
+Trous étudiants : 8
+Contraintes souples non satisfaites : 4
+
+L’administrateur peut ensuite choisir la proposition à soumettre à validation.
+
+⸻
+
+18. R — Effectuer le contrôle automatique
+
+Avant toute publication :
+
+Contrôle pédagogique
+
+100 % des heures de la maquette couvertes ?
+
+Contrôle enseignant
+
+Aucun chevauchement ?
+
+Contrôle groupe
+
+Aucun chevauchement ?
+
+Contrôle salle
+
+Aucun chevauchement ?
+
+Contrôle capacité
+
+Toutes les salles adaptées ?
+
+Contrôle semestre
+
+Cours appartenant au bon semestre ?
+
+Contrôle volume
+
+heures planifiées = heures demandées
+
+⸻
+
+19. S — Générer un rapport de validation
+
+Exemple :
+
+AUDIT EDT — EM L1 S1
+Séances attendues              120
+Séances générées               120
+Séances valides                120
+Conflits enseignants             0
+Conflits groupes                 0
+Conflits salles                  0
+Salles insuffisantes             0
+Heures non programmées           0
+Contraintes critiques violées    0
+STATUT : PRÊT POUR VALIDATION
+
+⸻
+
+20. T — Validation humaine
+
+L’algorithme ne doit pas publier directement.
+
+Workflow :
+
+BROUILLON
+   ↓
+GÉNÉRÉ
+   ↓
+CONTRÔLÉ
+   ↓
+À VALIDER
+   ↓
+VALIDÉ
+   ↓
+PUBLIÉ
+
+Cela permet à la scolarité/direction pédagogique de faire les derniers ajustements.
+
+⸻
+
+21. U — Gestion des modifications manuelles
+
+L’administrateur doit pouvoir déplacer une séance.
+
+Exemple :
+
+Anatomie
+Lundi 08–10
+        ↓
+Mardi 10–12
+
+Mais le système doit immédiatement vérifier :
+
+enseignant disponible ?
+groupe disponible ?
+salle disponible ?
+capacité ?
+compatibilité ?
+
+Si une règle forte est violée :
+
+❌ Déplacement impossible : l’enseignant est déjà affecté au créneau sélectionné.
+
+⸻
+
+22. V — Verrouillage de l’emploi du temps
+
+Une fois validé :
+
+EDT version V1
+Statut : VALIDÉ
+
+Les modifications ne doivent pas écraser silencieusement la version précédente.
+
+Exemple :
+
+EDT EM S1 — V1
+       ↓
+Modification
+       ↓
+EDT EM S1 — V2
+
+Historique :
+
+V1 → publié le 28/09
+V2 → publié le 30/09
+
+⸻
+
+23. W — Publier l’EDT
+
+L’EDT peut être publié par :
+
+Formation
+
+Éducation Motricité
+
+Niveau
+
+L1
+
+Groupe
+
+EM-L1-G1
+
+Enseignant
+
+Planning individuel
+
+Salle
+
+Occupation de A101
+
+Semaine
+
+Semaine du 05/10/2026
+
+⸻
+
+24. X — Générer les séances opérationnelles
+
+C’est une distinction essentielle pour INJS-LMD.
+
+L’emploi du temps n’est pas simplement une vue.
+
+Une ligne EDT validée doit conduire à une séance LMD réelle :
+
+EDT
+ ↓
+Séance
+ ↓
+Cours
+ ↓
+Présence
+
+Exemple :
+
+Lundi 05/10
+08:00–10:00
+EM-L1-G1
+Anatomie
+Dr X
+Salle A101
+
+devient une séance exploitable par le système de présence.
+
+⸻
+
+25. Y — Connecter les présences
+
+La séance peut ensuite alimenter :
+
+QR
+ ↓
+Badgeage
+ ↓
+Géolocalisation
+ ↓
+Présence étudiant
+ ↓
+Présence enseignant
+
+Le système sait alors précisément :
+
+Quelle séance ?
+Quel groupe ?
+Quel ECUE ?
+Quel enseignant ?
+Quelle salle ?
+Quel créneau ?
+
+C’est pourquoi la chaîne Affectation pédagogique → Séance est fondamentale.
+
+⸻
+
+26. Z — Suivi et recalcul
+
+Un EDT vivant doit gérer :
+
+* absence d’un enseignant ;
+* indisponibilité d’une salle ;
+* changement de groupe ;
+* remplacement d’enseignant ;
+* cours annulé ;
+* séance reportée ;
+* fermeture temporaire d’une salle ;
+* modification de calendrier ;
+* changement de promotion.
+
+Exemple :
+
+Séance S-104
+Annulée
+   ↓
+Motif : enseignant indisponible
+   ↓
+Recherche automatique d'un nouveau créneau
+   ↓
+Proposition
+   ↓
+Validation
+   ↓
+Nouvelle séance
+
+⸻
+
+Architecture cible INJS-LMD
+
+Je recommande de matérialiser la chaîne suivante :
+
+                    ANNÉE ACADÉMIQUE
+                           │
+                           ▼
+                      FORMATION
+                           │
+                           ▼
+                 PARCOURS / SPÉCIALITÉ
+                           │
+                           ▼
+                         NIVEAU
+                           │
+                           ▼
+                       SEMESTRE
+                           │
+                           ▼
+                      PROMOTION
+                           │
+                           ▼
+                         GROUPE
+                           │
+                           ▼
+                    MAQUETTE LMD
+                           │
+                           ▼
+                           UE
+                           │
+                           ▼
+                         ECUE
+                           │
+                           ▼
+               AFFECTATION PÉDAGOGIQUE
+                    │             │
+                    ▼             ▼
+               ENSEIGNANT       GROUPE
+                    │             │
+                    └──────┬──────┘
+                           ▼
+                    BESOIN HORAIRE
+                           │
+                           ▼
+                    GÉNÉRATION EDT
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+           CRÉNEAU       SALLE       CONTRAINTES
+              │            │            │
+              └────────────┼────────────┘
+                           ▼
+                    MOTEUR D'OPTIMISATION
+                           │
+                           ▼
+                    PROPOSITION EDT
+                           │
+                           ▼
+                       CONTRÔLE
+                           │
+                           ▼
+                       VALIDATION
+                           │
+                           ▼
+                       PUBLICATION
+                           │
+                           ▼
+                        SÉANCES
+                           │
+             ┌─────────────┼─────────────┐
+             ▼             ▼             ▼
+         PRÉSENCES      QR/APP        GÉOLOCALISATION
+
+Les 10 objets fondamentaux du moteur EDT
+
+Pour votre INJS-LMD, je structurerais le moteur autour de ces objets :
+
+Objet	Rôle
+AcademicYear	année académique
+Formation	formation INJS
+Parcours	parcours/spécialité
+Promotion	cohorte
+Groupe	groupe pédagogique
+AffectationPédagogique	qui enseigne quoi à quel groupe
+Creneau	période horaire
+Salle	ressource physique
+Seance	occurrence réelle d’un cours
+EmploiDuTemps	ensemble/version des séances
+
+Et surtout :
+
+L’EDT est une projection optimisée des affectations pédagogiques dans le temps et l’espace.
+
+Il ne doit pas devenir une deuxième source de vérité pédagogique.
+
+⸻
+
+Workflow fonctionnel recommandé dans l’application INJS-LMD
+
+Dans l’interface Scolarité → EDT, je recommande :
+
+01. Année académique
+        ↓
+02. Formations
+        ↓
+03. Promotions / Groupes
+        ↓
+04. Maquettes
+        ↓
+05. Affectations pédagogiques
+        ↓
+06. Disponibilités enseignants
+        ↓
+07. Salles
+        ↓
+08. Créneaux
+        ↓
+09. Contraintes EDT
+        ↓
+10. Générer
+        ↓
+11. Contrôler
+        ↓
+12. Corriger / Ajuster
+        ↓
+13. Valider
+        ↓
+14. Publier
+        ↓
+15. Générer les séances
+        ↓
+16. Présences / QR
+        ↓
+17. Suivi / modifications
+
+Point critique pour votre projet actuel
+
+Dans l’état actuel de votre INJS-LMD, le point à sécuriser est précisément la jonction :
+
+Maquette
+   ↓
+Affectation pédagogique
+   ↓
+Séance
+   ↓
+EDT
+
+et non une génération heuristique basée uniquement sur :
+
+groupe + cycle + enseignant + salle
+
+Le L1 déjà réalisé, avec AffectationCreneau.affectation_pedagogique, va justement dans cette direction. La prochaine étape logique est donc de faire de l’affectation pédagogique la source directe des séances EDT, puis de faire consommer ces séances par les APIs Cours/Séances/Présences.
+
+Architecture cible finale
+
+MAQUETTE LMD VALIDÉE
+        ↓
+BESOINS HORAIRES
+        ↓
+AFFECTATIONS PÉDAGOGIQUES
+        ↓
+CONTRAINTES
+ ┌──────┼───────┬────────┐
+ ▼      ▼       ▼        ▼
+Groupe Enseignant Salle  Créneau
+ └──────┼───────┴────────┘
+        ↓
+   MOTEUR EDT
+        ↓
+PROPOSITION
+        ↓
+AUDIT AUTOMATIQUE
+        ↓
+VALIDATION SCOLARITÉ
+        ↓
+PUBLICATION
+        ↓
+SÉANCES LMD
+        ↓
+COURS / QR / PRÉSENCES
+        ↓
+STATISTIQUES & PILOTAGE
+
+C’est cette chaîne que je recommande de prendre comme spécification fonctionnelle de référence du générateur d’emplois du temps INJS-LMD.
+
+
+Partie 2 :
+
+CPFAE/Sygepcpfae doit être sorti de la logique de conception de l’INJS-LMD. Le rapport ne doit pas chercher à reproduire un « point journalier CPFAE » ni à rattacher les séances INJS à un ancien Module CPFAE.
+
+J’ai vérifié les éléments publics disponibles : l’INJS de Côte d’Ivoire est bien implanté à Marcory et sa mission couvre la formation initiale et continue dans les domaines du sport, de la jeunesse et des loisirs. Les sources publiques montrent également plusieurs cycles/formations, notamment les formations de Professeurs de Collège et différentes options/spécialités.  
+
+Le bon modèle métier pour INJS-LMD
+
+Il faut raisonner à partir de cette chaîne :
+
+Année académique → Formation → Parcours/Spécialité → Promotion → Groupe → Maquette pédagogique → UE → ECUE → Enseignant → Séance → Salle → Présence
+
+et non :
+
+RefFormation CPFAE → Module CPFAE → point journalier CPFAE
+
+1. Référentiels / Scolarité
+
+La Scolarité définit notamment :
+
+* année académique ;
+* cycles et niveaux ;
+* formations ;
+* mentions/parcours/spécialités ;
+* promotions ;
+* étudiants ;
+* groupes ;
+* inscriptions pédagogiques.
+
+La formation doit donc être l’élément qui donne le contexte académique de l’étudiant.
+
+2. Formations & pédagogie
+
+La maquette pédagogique décrit ce qui doit être enseigné :
+
+Formation → semestre/période → UE → ECUE → crédits → volume horaire → enseignant(s).
+
+L’ECUE est particulièrement important : c’est lui qui représente l’objet pédagogique réellement enseigné.
+
+3. Enseignants / intervenants
+
+Un enseignant n’est pas simplement « affecté à un module ».
+
+Il doit pouvoir être associé à :
+
+* une formation ;
+* une UE/ECUE ;
+* une période ;
+* un groupe ;
+* éventuellement une activité pratique ou sportive ;
+* une séance planifiée.
+
+Cela permet de savoir qui devait assurer quoi, pour quel groupe et quand.
+
+4. Groupes
+
+Le groupe devient une vraie unité d’exécution pédagogique.
+
+Exemple :
+
+Licence / Formation X
+→ Niveau L1
+→ Promotion 2026
+→ Groupe A
+
+La même formation peut donc avoir plusieurs groupes ayant des séances différentes.
+
+5. EDT
+
+L’EDT n’est pas simplement un calendrier.
+
+Une séance EDT doit être une instance planifiée de l’enseignement :
+
+ECUE + Groupe + Enseignant + Date + Heure début/fin + Salle + activité
+
+avec éventuellement :
+
+* séance normale ;
+* TP ;
+* activité pratique/sportive ;
+* rattrapage ;
+* séance déplacée ;
+* séance annulée ;
+* séance exceptionnelle.
+
+C’est cette séance qui devient la référence pour le badgeage.
+
+6. Présence QR Code
+
+C’est ici que tous les modules convergent.
+
+Pour une séance donnée :
+
+SEANCE
+ ├── Formation
+ ├── Niveau
+ ├── Groupe
+ ├── UE
+ ├── ECUE
+ ├── Enseignant
+ ├── Salle
+ ├── Date/heure
+ └── Zone de badgeage
+
+Puis :
+
+SEANCE
+      ↓
+OUVERTURE DU BADGEAGE
+      ↓
+QR étudiant
+      ↓
+Identification étudiant
+      ↓
+Vérification inscription/groupe
+      ↓
+Vérification séance
+      ↓
+Vérification temporelle
+      ↓
+Vérification géographique
+      ↓
+PRESENCE
+
+Le système doit donc pouvoir répondre sans ambiguïté :
+
+Quel étudiant était attendu à quelle séance, avec quel groupe, quel enseignant, dans quelle salle et à quel moment ?
+
+7. Badgeage automatique
+
+Le QR ne doit pas créer une présence « dans le vide ».
+
+Il doit être rattaché à la séance active.
+
+Par exemple :
+
+Etudiant
+   ↓
+Groupe
+   ↓
+Séance active
+   ↓
+ECUE
+   ↓
+Enseignant
+   ↓
+Salle / zone
+   ↓
+Badge QR
+   ↓
+Présence enregistrée
+
+La présence peut alors porter :
+
+* étudiant ;
+* séance ;
+* date/heure ;
+* type de badgeage ;
+* position GPS ;
+* distance de la zone autorisée ;
+* appareil ;
+* QR/token utilisé ;
+* résultat de validation.
+
+8. Badgeage manuel / forcé
+
+Le manuel ne doit pas contourner la séance.
+
+Il doit corriger une situation réelle :
+
+étudiant présent mais badgeage QR impossible.
+
+Donc :
+
+Séance
+  ↓
+Étudiant attendu
+  ↓
+Présence manuelle
+  ↓
+Motif obligatoire
+  ↓
+Agent/enseignant ayant effectué la correction
+  ↓
+Traçabilité
+
+Cela permet ensuite de distinguer :
+
+* présence QR normale ;
+* présence QR refusée ;
+* présence manuelle justifiée ;
+* absence ;
+* anomalie de badgeage.
+
+9. Géolocalisation
+
+La géolocalisation doit être attachée au contexte de séance, pas au concept CPFAE.
+
+Elle peut servir à vérifier :
+
+« L’étudiant qui tente de badger est-il réellement dans la zone autorisée pour cette séance ? »
+
+Il faut cependant conserver l’arbitrage métier déjà identifié :
+
+zone obligatoire avec refus hors zone ou zone utilisée comme alerte.
+
+Il ne faut pas inventer cette règle.
+
+⸻
+
+Ce que cela change dans l’audit
+
+Le point A-13 doit être reformulé.
+
+Il ne faut plus demander :
+
+« Comment rattacher une séance EDT CPFAE à un Module du socle ? »
+
+mais :
+
+« Quelle est la relation canonique entre une séance EDT INJS-LMD et la structure pédagogique INJS (Formation → Parcours/Spécialité → Groupe → UE → ECUE), afin que la séance constitue la référence commune pour l’exécution des enseignements et la gestion des présences QR ? »
+
+C’est une question beaucoup plus fondamentale.
+
+Architecture fonctionnelle cible
+
+                    RÉFÉRENTIELS
+                         │
+                         ▼
+                    SCOLARITÉ
+                         │
+             ┌───────────┴───────────┐
+             ▼                       ▼
+       FORMATIONS              ÉTUDIANTS
+             │                       │
+             ▼                       ▼
+       MAQUETTES                  GROUPES
+             │                       │
+        ┌────┴────┐                  │
+        ▼         ▼                  │
+       UE       ECUE ◄───────────────┘
+        │         │
+        └────┬────┘
+             ▼
+        ENSEIGNANTS
+             │
+             ▼
+            EDT
+             │
+             ▼
+           SÉANCE
+        ┌────┼───────────┐
+        ▼    ▼           ▼
+     GROUPE ECUE      ENSEIGNANT
+        │
+        ▼
+   SALLE / ZONE
+        │
+        ▼
+   BADGEAGE QR
+    ┌────┴─────┐
+    ▼          ▼
+AUTOMATIQUE   MANUEL
+    │          │
+    └────┬─────┘
+         ▼
+      PRÉSENCE
+         │
+         ▼
+ STATISTIQUES / SUIVI
+
+Conséquence importante
+
+Le vrai objet pivot n’est donc pas Module.
+
+C’est Séance, elle-même construite à partir de la structure pédagogique INJS.
+
+Ainsi, les modules Scolarité, Formations, Étudiants, Enseignants, EDT, Présences QR, Géolocalisation et Statistiques travaillent sur le même événement métier.
+
+Et c’est précisément cette architecture qu’il faut maintenant confronter au dépôt backend-injs : modèles existants → relations → API → frontend → workflows QR → données de test → tests E2E.
+
+Je recommande donc de corriger le rapport d’audit avant de lancer le Lot 1, afin que les prochaines corrections ne soient plus contaminées par l’héritage CPFAE/Sygepcpfae.  
+
+Partie 3 :
+
+
+
+
+
+
+
+
+
+
+
+
+

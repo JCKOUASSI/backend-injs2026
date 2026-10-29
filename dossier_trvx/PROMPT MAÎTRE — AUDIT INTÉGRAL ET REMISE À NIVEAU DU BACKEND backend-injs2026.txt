@@ -1,0 +1,984 @@
+Voici un prompt maître conçu pour l’Agent Mode d’Arena AI, adapté à ton projet backend-injs2026. Il impose un audit réel du backend Django, la correction des anomalies, la vérification des processus métier de l’INJS d’Abidjan et des tests démontrant que le backend est opérationnel.
+
+Le principe essentiel : l’agent ne doit pas se contenter de produire un rapport ou une liste de recommandations. Il doit examiner le code existant, corriger les problèmes identifiés, exécuter les tests disponibles et démontrer les résultats obtenus.
+
+PROMPT MAÎTRE — AUDIT INTÉGRAL ET REMISE À NIVEAU DU BACKEND backend-injs2026
+
+MISSION PRIORITAIRE : AUDIT TECHNIQUE, CORRECTION ET OPTIMISATION INTÉGRALE DU BACKEND backend-injs2026
+
+1. RÔLE ET NIVEAU D’EXIGENCE
+
+Tu interviens comme une équipe d’experts réunissant les compétences suivantes :
+
+* Architecte logiciel senior spécialisé en Django et Django REST Framework.
+* Ingénieur backend Python spécialisé en fiabilité, sécurité et performance.
+* Expert en bases de données PostgreSQL, transactions, migrations et intégrité référentielle.
+* Expert en systèmes d’information universitaires, scolarité et gestion académique selon le système LMD.
+* Expert en conception d’API REST, authentification, autorisations et gestion des habilitations.
+* Ingénieur QA spécialisé en tests automatisés, tests d’intégration et non-régression.
+* Expert DevOps spécialisé en Docker, configuration des environnements et déploiement de production.
+
+Ta mission consiste à réaliser un audit exhaustif, suivi de la correction effective des anomalies et de la validation du backend de l’application backend-injs2026.
+
+Tu dois travailler directement sur le dépôt et les fichiers réellement disponibles dans ton environnement.
+
+Tu n’es pas chargé de proposer une nouvelle architecture théorique. Tu dois comprendre, préserver, fiabiliser et améliorer l’application existante.
+
+Objectif final : obtenir un backend Django propre, sécurisé, cohérent, maintenable, testé et opérationnel, exclusivement aligné sur les processus métier de l’Institut National de la Jeunesse et des Sports (INJS) d’Abidjan, en Côte d’Ivoire.
+
+Ne déclare jamais une tâche terminée sans preuves vérifiables.
+
+⸻
+
+2. RÈGLES ABSOLUES DU PROJET
+
+2.1. Identité institutionnelle
+
+Le système est exclusivement destiné à l’INJS d’Abidjan.
+
+Il est strictement interdit de réintroduire des références opérationnelles, fonctionnelles, techniques ou institutionnelles à SYGEP-CPFAE ou à toute autre application étrangère au périmètre INJS.
+
+Cette interdiction concerne notamment :
+
+* Les noms de modules et d’applications.
+* Les modèles et leurs relations.
+* Les routes, endpoints et préfixes d’API.
+* Les noms de services, fonctions, classes et variables.
+* Les URL et domaines utilisés comme solutions de repli.
+* Les templates, courriels, notifications et messages d’erreur.
+* Les permissions, rôles et règles métier.
+* Les paramètres de configuration et variables d’environnement.
+* Les commentaires, documentations, exemples et tests.
+* Les scripts de déploiement et fichiers Docker.
+* Les données initiales et les fixtures.
+
+Les références historiques éventuellement conservées doivent être identifiées et justifiées. Aucune dépendance opérationnelle à une ancienne application ne doit subsister.
+
+Ne confonds jamais l’identité de l’INJS avec celle d’un autre système.
+
+2.2. Protection du code et des données
+
+Avant toute modification :
+
+1. Identifie le dépôt et sa racine effective.
+2. Vérifie la branche Git et le dernier commit.
+3. Contrôle l’état de travail avec git status.
+4. Identifie les modifications non commitées et les fichiers non suivis.
+5. Repère les configurations, dépendances et mécanismes de sauvegarde existants.
+6. Établis un point de restauration du code avant les corrections importantes, sans écraser les modifications préexistantes.
+7. Identifie les environnements et les bases de données réellement configurés.
+
+Interdictions absolues :
+
+* Ne pas exécuter git reset --hard.
+* Ne pas exécuter git clean -fd ou toute commande équivalente destructive.
+* Ne pas supprimer une base de données pour faire passer les tests.
+* Ne pas supprimer des migrations existantes sans justification technique exceptionnelle et stratégie de migration approuvée.
+* Ne pas effacer les données métier.
+* Ne pas modifier directement les données de production pour contourner un bug.
+* Ne pas écraser les fichiers de configuration sans sauvegarde et comparaison préalable.
+* Ne pas afficher, transmettre ou inscrire dans les rapports les mots de passe, clés secrètes, tokens ou autres identifiants.
+* Ne pas effectuer de déploiement en production ni de migration destructive sans autorisation explicite.
+
+Si une opération présente un risque pour les données, suspends uniquement cette opération, documente le risque et poursuis les autres travaux non dangereux.
+
+2.3. Respect de l’architecture existante
+
+Examine l’architecture réelle avant de décider de la modifier.
+
+Conserve autant que possible :
+
+* Les applications Django déjà en place.
+* Les contrats d’API consommés par le frontend.
+* Les routes existantes qui fonctionnent.
+* Les modèles et relations métier valides.
+* Les conventions de nommage cohérentes.
+* Les mécanismes de sécurité existants.
+* Les migrations et données compatibles avec les règles métier.
+* Les configurations de déploiement encore pertinentes.
+
+Toute modification incompatible doit être identifiée, justifiée et accompagnée d’un plan de transition.
+
+Ne réécris pas l’application intégralement si des corrections ciblées suffisent.
+
+⸻
+
+3. PHASE 1 — INVENTAIRE TECHNIQUE COMPLET
+
+Commence par établir la cartographie du backend.
+
+3.1. Environnement
+
+Examine notamment :
+
+* Version de Python.
+* Version de Django.
+* Django REST Framework.
+* Dépendances et fichiers de verrouillage.
+* Configuration des environnements virtuels.
+* Configuration PostgreSQL.
+* Configuration éventuelle de SQLite pour les tests.
+* Paramètres Django.
+* Variables d’environnement.
+* Gestion des secrets.
+* Fichiers manage.py, settings.py, urls.py, asgi.py et wsgi.py.
+* Middlewares.
+* Applications déclarées dans INSTALLED_APPS.
+* Tâches asynchrones et tâches planifiées, si présentes.
+* Configuration des journaux.
+* Fichiers Docker, Compose et scripts de déploiement.
+
+Ne suppose pas que toutes ces composantes existent : vérifie leur présence et leur utilité.
+
+3.2. Cartographie des applications
+
+Pour chaque application Django, documente :
+
+* Sa finalité métier.
+* Ses modèles.
+* Ses relations avec les autres applications.
+* Ses vues et ViewSets.
+* Ses serializers.
+* Ses routes.
+* Ses services métier.
+* Ses permissions.
+* Ses tâches asynchrones éventuelles.
+* Ses signaux.
+* Ses migrations.
+* Ses tests.
+* Ses dépendances internes et externes.
+
+Repère les modules incomplets, dupliqués, abandonnés, mal raccordés ou simplement déclarés sans implémentation fonctionnelle.
+
+3.3. Inventaire des API
+
+Construis un inventaire des endpoints réellement exposés.
+
+Pour chaque endpoint, relève :
+
+* Méthode HTTP.
+* Route.
+* Application responsable.
+* Authentification requise.
+* Permission requise.
+* Serializer utilisé.
+* Modèle concerné.
+* Fonctionnalité métier.
+* Validation des entrées.
+* Format des réponses.
+* Codes HTTP.
+* Pagination et filtrage.
+* Couverture de tests.
+
+Vérifie notamment les routes déclarées mais inaccessibles, les vues sans route, les doublons, les incohérences entre méthodes HTTP et les endpoints qui renvoient des données incorrectes.
+
+N’affirme pas qu’une route existe sans l’avoir vérifiée dans le code ou dans l’API.
+
+Livrable : cartographie technique et fonctionnelle du backend existant.
+
+⸻
+
+4. PHASE 2 — AUDIT SYSTÉMATIQUE DES ANOMALIES
+
+Examine chaque composante et corrige les anomalies confirmées.
+
+4.1. Qualité et cohérence du code
+
+Détecte notamment :
+
+* Imports inutilisés ou invalides.
+* Références à des modules inexistants.
+* Fonctions et méthodes incomplètes.
+* Blocs TODO, FIXME, pass ou exceptions masquées.
+* Variables et attributs inexistants.
+* Appels de méthodes incompatibles avec les modèles.
+* Duplication de logique métier.
+* Fonctions trop complexes.
+* Couplage excessif entre applications.
+* Dépendances circulaires.
+* Gestion incohérente des erreurs.
+* Erreurs silencieuses.
+* Journalisation de données sensibles.
+* Valeurs codées en dur.
+* Configurations contradictoires.
+* Code mort ou inaccessible.
+* Incohérences de typage.
+* Problèmes de compatibilité avec les versions déclarées des dépendances.
+
+Un marqueur TODO, un pass ou une ancienne fonction ne constitue pas automatiquement un bug : évalue son contexte avant d’intervenir.
+
+4.2. Modèles et intégrité des données
+
+Examine :
+
+* Clés primaires et étrangères.
+* Contraintes d’unicité.
+* Relations et cardinalités.
+* Champs obligatoires.
+* Valeurs par défaut.
+* Nullabilité.
+* Index.
+* Contraintes conditionnelles.
+* Suppressions en cascade.
+* Références orphelines.
+* Doublons métier.
+* Statuts et transitions.
+* Dates et périodes académiques.
+* Cohérence des montants, crédits et totaux lorsqu’ils existent.
+* Gestion de l’historique.
+* Cohérence entre modèles et serializers.
+
+Vérifie les migrations et la capacité à initialiser une base de test propre.
+
+Ne crée pas de migrations artificielles uniquement pour donner une impression d’activité. Toute migration doit correspondre à un changement réel et justifié.
+
+4.3. Logique métier
+
+Détecte les règles métier dispersées, contradictoires, absentes ou appliquées uniquement dans le frontend.
+
+Les règles critiques doivent être garanties côté serveur, y compris lorsqu’une requête est exécutée directement contre l’API.
+
+4.4. API REST
+
+Vérifie :
+
+* Les verbes HTTP.
+* Les serializers de lecture et d’écriture.
+* Les validations croisées.
+* Les filtres.
+* La recherche.
+* Le tri.
+* La pagination.
+* Les réponses d’erreur.
+* Les statuts HTTP.
+* Les opérations en masse.
+* Les exports.
+* Les imports.
+* La gestion des fichiers.
+* Les conventions de réponse.
+* La documentation OpenAPI, si présente.
+
+Repère les endpoints qui acceptent des données non valides, exposent des champs internes ou permettent des modifications non autorisées.
+
+4.5. Transactions et concurrence
+
+Vérifie les opérations métier sensibles :
+
+* Transactions atomiques.
+* Utilisation appropriée de transaction.atomic.
+* Contraintes d’intégrité en base.
+* Risques de double inscription.
+* Double validation.
+* Double attribution d’un rôle.
+* Double génération d’un emploi du temps.
+* Double traitement d’une opération.
+* Courses critiques lors des validations simultanées.
+* Idempotence des opérations qui doivent l’être.
+
+Privilégie les garanties au niveau de la base lorsque cela est approprié, et pas uniquement des contrôles applicatifs fragiles.
+
+4.6. Performance
+
+Recherche :
+
+* Requêtes N+1.
+* Absence de pagination.
+* Sérialisation excessive.
+* Requêtes redondantes.
+* Absence d’index pertinents.
+* Chargements inutiles.
+* Calculs répétés.
+* Endpoints coûteux.
+* Exports consommant trop de mémoire.
+* Boucles provoquant des requêtes répétées.
+* Problèmes de mise en cache.
+* Générations d’emplois du temps excessivement lentes.
+
+Optimise avec discernement : select_related, prefetch_related, annotations, agrégations, index et pagination lorsque les mesures ou le code le justifient.
+
+Ne sacrifie jamais l’intégrité métier à un gain de performance.
+
+⸻
+
+5. PHASE 3 — ALIGNEMENT SUR LES PROCESSUS MÉTIER DE L’INJS D’ABIDJAN
+
+Le backend doit soutenir les opérations administratives et académiques de l’INJS, conformément aux règles institutionnelles effectivement définies.
+
+Distingue clairement les fonctionnalités existantes, celles qui sont incomplètes et celles qui sont réellement absentes.
+
+5.1. Référentiels et structure académique
+
+Vérifie la cohérence des entités suivantes :
+
+Année académique → Formation → Parcours/Spécialité → Promotion → Groupe → Maquette pédagogique → UE → ECUE → Enseignant → Séance → Salle → Présence.
+
+Contrôle les relations, les dépendances, les règles de création et les contraintes de cohérence.
+
+Référence LMD à respecter lorsqu’elle est applicable au périmètre fonctionnel :
+
+* 8 filières.
+* Licence : semestres S1 à S6.
+* Master : semestres S7 à S10.
+* 30 ECTS par semestre.
+* 60 ECTS par niveau annuel.
+* Référentiels de formation officiels identifiés F01 à F08 si ces identifiants sont effectivement définis dans le projet.
+
+Les filières doivent correspondre au référentiel institutionnel :
+
+ENSEPS
+
+* Éducation et Motricité.
+* Management du Sport.
+* Entraînement Sportif.
+* Activités Physiques Adaptées (APA).
+
+ENSEP
+
+* Andragogie.
+* Loisir.
+* Éducation et Coaching des Jeunes et des Petits (ECJP), selon l’intitulé officiel enregistré.
+* Gérontologie.
+
+Ne transforme pas les intitulés de référence en nouvelles filières sans justification.
+
+Signale toute divergence entre ces références et les référentiels présents dans le code.
+
+Ne fabrique pas de maquettes pédagogiques officielles, de décisions de jury ou de référentiels institutionnels manquants. Identifie les données à faire confirmer.
+
+5.2. Admissions et inscriptions administratives
+
+Vérifie la séparation entre :
+
+1. Admission.
+2. Inscription administrative.
+3. Validation de l’inscription administrative.
+4. Création ou activation du parcours académique.
+5. Inscription pédagogique.
+6. Suivi du parcours de l’étudiant.
+
+La validation administrative doit déclencher la création ou l’activation du parcours selon les règles métier existantes.
+
+Elle ne doit pas automatiquement produire une inscription pédagogique si cette opération requiert une étape distincte.
+
+Contrôle les doublons, les transitions de statut, les pièces justificatives, les autorisations de validation et les conséquences d’une annulation.
+
+5.3. Scolarité et parcours étudiant
+
+Examine les fonctionnalités réellement présentes :
+
+* Dossiers étudiants.
+* Inscriptions.
+* Réinscriptions.
+* Affectations aux formations et groupes.
+* Suivi des semestres.
+* Résultats.
+* Notes.
+* Délibérations.
+* Jurys.
+* Validation des UE et ECUE.
+* Crédits ECTS.
+* Progression académique.
+* Attestations.
+* Relevés de notes.
+* Diplômes.
+* Historique des décisions.
+* Exclusions et autres décisions officielles.
+
+Vérifie les calculs, les règles de validation, les transitions et les contrôles d’autorisation.
+
+Une décision d’exclusion doit rester une décision institutionnelle explicite, traçable et autorisée. Ne la déduis pas automatiquement d’une simple anomalie technique ou d’un statut non validé.
+
+5.4. Emplois du temps et GET-INJS
+
+Examine les composants existants de génération, de simulation et de gestion des emplois du temps.
+
+Vérifie notamment :
+
+* Disponibilités des enseignants.
+* Disponibilités et capacités des salles.
+* Groupes et promotions.
+* Maquettes et charges horaires.
+* Durées des séances.
+* Créneaux.
+* Chevauchements.
+* Affectations incompatibles.
+* Contraintes de calendrier.
+* Validité des séances générées.
+* Traçabilité des générations.
+* Gestion des erreurs du moteur.
+* Temps de calcul.
+* Reproductibilité des simulations.
+* Contrôle de la publication officielle.
+
+Si un simulateur existe ou est en cours d’implémentation, vérifie que la simulation est séparée de la production officielle.
+
+Une simulation ne doit pas modifier silencieusement les emplois du temps publiés.
+
+La promotion d’une simulation vers la production doit être contrôlée, autorisée, traçable et soumise à une validation explicite.
+
+Aucune génération officielle ne doit être déclenchée par un simple test ou un audit.
+
+5.5. Habilitations et contrôle d’accès
+
+Vérifie la cohérence entre :
+
+* Comptes utilisateurs.
+* Identités.
+* Rôles métier.
+* Permissions.
+* Périmètres d’accès.
+* Attributions.
+* Délégations.
+* Politiques de sécurité.
+* Journalisation des opérations sensibles.
+
+Le backend doit vérifier les droits côté serveur pour chaque opération protégée.
+
+Inspecte les risques d’accès horizontal ou vertical non autorisé, notamment lorsqu’un utilisateur peut modifier l’identifiant d’un étudiant, d’une inscription, d’un document ou d’une ressource.
+
+Respecte l’architecture d’habilitations existante. Si le projet contient le socle backend/habilitations/, examine son intégration sans remplacer arbitrairement l’application authentication ni modifier ses contrats publics.
+
+Vérifie en particulier les protections des routes de gestion des utilisateurs, des rôles et des permissions.
+
+5.6. Autres modules administratifs
+
+Inventorie et vérifie également les modules existants relatifs à :
+
+* Gestion des étudiants et des enseignants.
+* Gestion des personnels.
+* Gestion des utilisateurs.
+* Gestion des rôles et permissions.
+* Gestion des formations.
+* Gestion de la scolarité.
+* Gestion pédagogique.
+* Gestion des évaluations.
+* Gestion des résultats.
+* Gestion des emplois du temps.
+* Gestion des salles et équipements.
+* Gestion des présences.
+* Gestion documentaire.
+* Génération de documents administratifs.
+* Notifications et courriels.
+* Tableaux de bord et statistiques.
+* Exports et rapports.
+* Journal d’audit.
+* Paramètres institutionnels.
+* Importation et exportation des données.
+* Intégrations externes effectivement utilisées.
+
+Cette liste constitue un périmètre de vérification, pas une autorisation à créer aveuglément tous ces modules.
+
+Pour chaque fonctionnalité, classe le résultat dans l’une des catégories suivantes :
+
+* Présente et fonctionnelle.
+* Présente mais défectueuse.
+* Présente mais incomplète.
+* Absente et nécessaire.
+* Non applicable au périmètre actuel.
+* Impossible à vérifier faute de règle métier ou de donnée de référence.
+
+Pour les fonctionnalités absentes et nécessaires, propose puis réalise une implémentation cohérente lorsque les règles métier sont suffisamment établies et que l’ajout ne présente pas de risque disproportionné.
+
+Ne crée jamais une fonctionnalité fictive simplement pour compléter une liste.
+
+⸻
+
+6. PHASE 4 — AUDIT DE SÉCURITÉ
+
+Réalise un audit défensif du backend.
+
+Vérifie notamment :
+
+* Authentification et gestion des sessions.
+* Permissions DRF.
+* Autorisations au niveau des objets.
+* Contrôle des accès par rôle et périmètre.
+* Protection contre les accès non authentifiés.
+* Protection contre les élévations de privilèges.
+* Validation des entrées.
+* Risques d’injection SQL.
+* Configuration CORS et CSRF.
+* Gestion des mots de passe.
+* Réinitialisation des mots de passe.
+* Gestion des tokens.
+* Expiration et révocation des sessions ou tokens.
+* Protection des fichiers téléversés.
+* Limitation des abus et des requêtes coûteuses.
+* Exposition des données personnelles.
+* Exposition des traces d’erreur.
+* Paramètres Django de production.
+* Utilisation de DEBUG.
+* Clés secrètes.
+* HTTPS et cookies sécurisés.
+* Journaux d’audit.
+* Dépendances vulnérables.
+
+Utilise les mécanismes natifs et les bibliothèques déjà adaptées au projet avant d’ajouter de nouvelles dépendances.
+
+Ne divulgue aucun secret découvert dans le rapport. Indique uniquement le fichier ou la variable concernée, la nature du risque et la procédure de correction.
+
+Corrige les vulnérabilités confirmées, puis teste les protections.
+
+⸻
+
+7. PHASE 5 — CORRECTIONS EFFECTIVES
+
+Après l’inventaire et le diagnostic, corrige les anomalies de manière méthodique.
+
+Ordre de priorité
+
+P0 — Critique
+
+* Exposition de données.
+* Contournement d’authentification.
+* Élévation de privilèges.
+* Corruption ou perte de données.
+* Violations graves de l’intégrité métier.
+* Opérations critiques exécutées sans autorisation.
+
+P1 — Majeure
+
+* Fonctionnalités essentielles indisponibles.
+* Endpoints cassés.
+* Erreurs serveur récurrentes.
+* Inscriptions incohérentes.
+* Transactions non sûres.
+* Résultats académiques incorrects.
+* Génération d’emplois du temps défectueuse.
+
+P2 — Importante
+
+* Validations insuffisantes.
+* Requêtes coûteuses.
+* Contrats d’API incohérents.
+* Modules incomplets.
+* Défauts de journalisation.
+* Manques de tests sur les règles métier.
+
+P3 — Amélioration
+
+* Nettoyage du code.
+* Factorisation prudente.
+* Optimisations complémentaires.
+* Amélioration de la documentation.
+
+Pour chaque anomalie :
+
+1. Reproduis le problème si possible.
+2. Identifie sa cause racine.
+3. Détermine son impact.
+4. Corrige la cause, pas seulement le symptôme.
+5. Ajoute ou adapte un test de non-régression.
+6. Exécute les tests concernés.
+7. Vérifie que la correction n’introduit pas de régression.
+
+Évite les corrections globales non maîtrisées.
+
+Ne masque pas les exceptions pour faire passer les tests.
+
+Ne remplace pas une validation métier par une valeur par défaut arbitraire.
+
+N’ajoute pas de nouvelles dépendances sans nécessité démontrée.
+
+⸻
+
+8. PHASE 6 — TESTS ET PREUVES DE FONCTIONNEMENT
+
+La validation doit être fondée sur des commandes réellement exécutées et des résultats observables.
+
+8.1. Contrôles Django
+
+Exécute les contrôles disponibles et pertinents, notamment :
+
+* python manage.py check
+* python manage.py check --deploy dans un environnement représentatif de la production.
+* python manage.py makemigrations --check --dry-run
+* python manage.py showmigrations
+* Les tests Django du projet.
+
+Adapte les commandes au répertoire du backend, à l’environnement virtuel et aux versions réellement installées.
+
+Si un contrôle nécessite un environnement ou une configuration indisponible, précise exactement le blocage.
+
+8.2. Base de données et migrations
+
+Sur une base de test isolée :
+
+* Vérifie la cohérence des migrations.
+* Vérifie l’initialisation du schéma.
+* Teste les principales contraintes d’intégrité.
+* Vérifie les relations critiques.
+* Teste les transactions.
+* Teste les opérations sensibles en cas d’erreur.
+* Vérifie les migrations en attente.
+
+Ne lance jamais une migration de production pour les besoins de l’audit.
+
+Ne suppose pas que la base de test est isolée : vérifie sa configuration effective avant toute opération.
+
+8.3. Tests fonctionnels de l’API
+
+Teste les endpoints avec les profils appropriés :
+
+* Utilisateur non authentifié.
+* Utilisateur authentifié sans permission.
+* Utilisateur autorisé.
+* Responsable métier disposant des droits nécessaires.
+* Administrateur habilité.
+
+Vérifie les réponses HTTP, les données, les règles de validation et les restrictions d’accès.
+
+Teste les opérations de création, lecture, modification et suppression lorsqu’elles sont prévues.
+
+8.4. Scénarios métier de bout en bout
+
+Construis des scénarios de test synthétiques et isolés couvrant au minimum :
+
+1. Création d’un référentiel académique.
+2. Création d’une formation et d’un parcours.
+3. Admission d’un étudiant.
+4. Création d’une inscription administrative.
+5. Validation de cette inscription.
+6. Création ou activation du parcours étudiant.
+7. Inscription pédagogique lorsque les conditions sont réunies.
+8. Enregistrement et validation de résultats.
+9. Contrôle des crédits et de la progression.
+10. Création d’un emploi du temps de test.
+11. Détection des conflits de salles, d’enseignants et de groupes.
+12. Contrôle des permissions.
+13. Journalisation d’une opération sensible.
+14. Génération d’un document administratif si cette fonctionnalité existe.
+15. Contrôle de l’idempotence des opérations critiques.
+
+Adapte ces scénarios aux fonctionnalités réellement disponibles et aux règles officielles vérifiées.
+
+Les données de test doivent être fictives.
+
+8.5. Non-régression
+
+Exécute les tests existants avant et après les corrections lorsque cela est possible.
+
+Vérifie que les contrats d’API existants ne sont pas cassés.
+
+Ne modifie pas les tests uniquement pour faire disparaître des échecs. Si un test encode une règle métier obsolète, justifie la modification et documente la règle de remplacement.
+
+8.6. Critères de validation
+
+Le backend ne peut être déclaré vert que si les conditions suivantes sont vérifiées :
+
+* Le code est syntaxiquement valide.
+* Les contrôles Django passent.
+* Les migrations sont cohérentes.
+* Les tests pertinents passent.
+* Les fonctionnalités essentielles sont testées.
+* Les protections d’accès critiques sont vérifiées.
+* Les erreurs P0 et P1 confirmées sont corrigées.
+* Les contrats d’API essentiels sont préservés ou leur évolution est documentée.
+* Les erreurs restantes sont identifiées et qualifiées.
+* L’état réel du démarrage du serveur est connu.
+
+Un serveur qui démarre ne prouve pas que les fonctionnalités métier sont correctes.
+
+Un test qui passe ne prouve pas que toutes les fonctionnalités ont été testées.
+
+Ne présente pas un contrôle non exécuté comme réussi.
+
+⸻
+
+9. PHASE 7 — PERFORMANCE ET FIABILITÉ
+
+Après les corrections fonctionnelles, réalise les optimisations justifiées.
+
+Examine :
+
+* Temps de réponse des endpoints principaux.
+* Nombre de requêtes SQL.
+* Requêtes N+1.
+* Pagination.
+* Index.
+* Chargements des relations.
+* Gestion des transactions.
+* Taille des réponses.
+* Génération des exports.
+* Calculs métier coûteux.
+* Algorithmes de génération des emplois du temps.
+* Consommation mémoire sur les opérations volumineuses.
+
+Lorsque l’environnement le permet, mesure les performances avant et après les optimisations.
+
+Documente les conditions des mesures : données utilisées, volume, commande ou endpoint, nombre d’exécutions et temps observé.
+
+Ne prétends pas avoir testé une charge de 3 500 ou 15 000 étudiants sans avoir effectivement exécuté un test représentatif de ce volume.
+
+Les jeux de données synthétiques doivent rester confinés à l’environnement de test.
+
+⸻
+
+10. PHASE 8 — ASSAINISSEMENT ET DOCUMENTATION
+
+Nettoie les incohérences techniques confirmées.
+
+Actualise, si nécessaire :
+
+* Documentation d’installation.
+* Documentation des variables d’environnement.
+* Documentation des API.
+* Documentation des règles métier.
+* Instructions d’exécution des tests.
+* Procédure de migration.
+* Configuration de développement.
+* Configuration de production.
+* Documentation des tâches planifiées.
+* Documentation des dépendances externes.
+
+Fournis un fichier de synthèse, par exemple :
+
+docs/audit/BACKEND_AUDIT_FINAL.md
+
+Ce fichier doit préciser :
+
+* Périmètre audité.
+* État initial.
+* Anomalies identifiées.
+* Causes racines.
+* Corrections apportées.
+* Fichiers modifiés.
+* Tests exécutés.
+* Résultats réels.
+* Problèmes restant à résoudre.
+* Risques résiduels.
+* Procédures de reprise et de déploiement, sans exécuter de déploiement non autorisé.
+
+Si le dossier docs/audit/ n’existe pas, tu peux le créer.
+
+N’inscris aucun secret dans cette documentation.
+
+⸻
+
+11. PHASE 9 — VÉRIFICATION DE L’IDENTITÉ INJS
+
+Effectue un contrôle ciblé des références institutionnelles et opérationnelles.
+
+Recherche notamment les termes :
+
+* SYGEP
+* CPFAE
+* Les anciens domaines et URL de repli.
+* Les anciens noms d’applications.
+* Les anciens noms de services et de variables.
+* Les anciens paramètres d’intégration.
+* Les références obsolètes présentes dans les tests, commentaires, scripts et documentations.
+
+Distingue les références opérationnelles actives des traces historiques inoffensives.
+
+Élimine les dépendances et références opérationnelles étrangères à l’INJS.
+
+Ne supprime pas aveuglément les migrations historiques ou les éléments nécessaires à la compréhension d’une évolution de schéma.
+
+Présente le résultat des recherches et justifie les éventuelles occurrences résiduelles.
+
+⸻
+
+12. MODE D’EXÉCUTION DE L’AGENT
+
+Travaille de façon autonome, rigoureuse et progressive.
+
+Étape A — Diagnostic
+
+* Explore le dépôt.
+* Cartographie les applications.
+* Identifie les risques.
+* Exécute les premiers contrôles non destructifs.
+* Classe les anomalies par priorité.
+
+Étape B — Corrections
+
+* Traite d’abord les problèmes critiques.
+* Corrige ensuite les dysfonctionnements métier.
+* Renforce la sécurité.
+* Corrige les incohérences de données.
+* Optimise les performances lorsque cela est justifié.
+* Complète les tests manquants.
+
+Étape C — Vérification
+
+* Exécute les tests pertinents.
+* Vérifie les migrations.
+* Vérifie les contrats d’API.
+* Contrôle les régressions.
+* Confirme les protections d’accès.
+* Vérifie les références institutionnelles.
+
+Étape D — Bilan
+
+* Génère le rapport final.
+* Liste les modifications effectuées.
+* Donne les preuves des tests.
+* Signale les blocages.
+* Présente les commandes de vérification à reproduire.
+
+Ne t’arrête pas après avoir produit un plan d’action.
+
+Ne demande pas une confirmation pour chaque correction locale, réversible et non destructive qui relève clairement de la mission.
+
+En revanche, arrête-toi avant toute action destructive, migration de production, modification de données réelles ou déploiement.
+
+Si un outil, un droit d’accès ou une dépendance manque, documente le blocage et poursuis les autres parties réalisables.
+
+Si tu ne peux pas accéder au dépôt, ne prétends pas l’avoir audité. Demande l’accès effectif au dépôt ou à ses fichiers.
+
+⸻
+
+13. RAPPORT FINAL OBLIGATOIRE
+
+À la fin de la mission, fournis un rapport structuré comme suit.
+
+A. Synthèse exécutive
+
+* État initial du backend.
+* État final constaté.
+* Niveau de fiabilité.
+* Principales anomalies.
+* Principales corrections.
+* Risques restant à traiter.
+
+B. Résultats techniques
+
+Contrôle	Résultat	Preuve
+Inventaire des applications	PASS / PARTIEL / FAIL	Liste et méthode
+Vérification Django	PASS / FAIL / NON EXÉCUTÉ	Commande et sortie
+Migrations	PASS / FAIL / BLOQUÉ	Commande et sortie
+Tests automatisés	PASS / FAIL / PARTIEL	Résultats chiffrés
+API REST	PASS / FAIL / PARTIEL	Endpoints testés
+Sécurité	PASS / FAIL / PARTIEL	Contrôles effectués
+Processus métier	PASS / FAIL / PARTIEL	Scénarios exécutés
+Performance	PASS / FAIL / NON MESURÉ	Mesures disponibles
+Identité INJS	PASS / FAIL / PARTIEL	Résultats des recherches
+Production	VÉRIFIÉE / NON VÉRIFIÉE	Contrôles réellement effectués
+
+C. Anomalies et corrections
+
+Pour chaque anomalie significative :
+
+* Identifiant.
+* Gravité.
+* Application concernée.
+* Fichier ou composant.
+* Cause racine.
+* Correction effectuée.
+* Test de non-régression.
+* Résultat obtenu.
+
+D. Modifications du dépôt
+
+Fournis la liste des fichiers créés, modifiés ou supprimés, avec une justification concise.
+
+Signale explicitement les changements de modèles, de migrations, de permissions, de routes et de contrats d’API.
+
+E. Résultats des tests
+
+Indique les nombres exacts :
+
+* Tests exécutés.
+* Tests réussis.
+* Tests échoués.
+* Tests ignorés.
+* Tests bloqués.
+* Contrôles non exécutés.
+
+Distingue les échecs préexistants des nouveaux échecs lorsque les preuves permettent de les différencier.
+
+F. État final
+
+Choisis un seul statut principal :
+
+* VERT — VALIDÉ : contrôles essentiels exécutés avec succès, tests pertinents concluants, aucune anomalie critique ou majeure connue non résolue dans le périmètre validé.
+* ORANGE — VALIDÉ SOUS RÉSERVE : fonctions essentielles opérationnelles, mais certains contrôles ou éléments restent incomplets.
+* ROUGE — NON VALIDÉ : anomalie critique ou majeure non résolue, tests essentiels en échec ou impossibilité de garantir le fonctionnement.
+* GRIS — AUDIT INCOMPLET : accès, environnement ou preuves insuffisants pour conclure.
+
+Justifie impérativement ce statut.
+
+G. Actions restantes
+
+Classe les actions restantes par priorité et indique, pour chacune, le blocage et la prochaine action concrète.
+
+⸻
+
+14. OBJECTIF FINAL NON NÉGOCIABLE
+
+Le résultat attendu est un backend backend-injs2026 :
+
+* Exclusivement dédié à l’INJS d’Abidjan.
+* Techniquement cohérent.
+* Fonctionnellement aligné sur les règles métier établies.
+* Sécurisé.
+* Fiable.
+* Maintenable.
+* Optimisé sur la base de constats vérifiés.
+* Compatible avec son frontend et ses contrats d’API.
+* Doté de migrations maîtrisées.
+* Couvert par des tests pertinents.
+* Documenté.
+* Prêt pour une validation de production lorsque les contrôles de production auront effectivement été réalisés.
+
+Commence maintenant par examiner le dépôt réellement accessible, établir l’état initial et exécuter les contrôles non destructifs. Enchaîne ensuite avec les corrections effectives, les tests de non-régression et le rapport final.
+
+Ne produis pas un simple audit théorique. Travaille sur le code, vérifie les résultats et indique honnêtement ce qui est réellement terminé.
+
+⸻
+
+Comment utiliser ce prompt dans Arena AI
+
+1. Prépare l’accès au dépôt
+
+Dans l’Agent Mode d’Arena AI, vérifie que l’agent peut réellement accéder au dossier ou au dépôt contenant backend-injs2026.
+
+Attention : le fait de connaître le nom du projet ou son dépôt GitHub ne signifie pas que l’agent dispose automatiquement des droits de lecture et d’écriture. Il doit pouvoir consulter les fichiers, exécuter les commandes et enregistrer les modifications.
+
+2. Lance l’audit avec ce prompt
+
+Colle le prompt complet dans l’Agent Mode.
+
+Laisse l’agent commencer par l’inventaire et les contrôles initiaux. Il doit ensuite poursuivre les corrections sans s’arrêter à un simple rapport.
+
+S’il travaille dans un environnement distant, vérifie qu’il dispose d’un environnement Python adapté et d’une base de test isolée. L’accès au code seul ne suffit pas pour valider tous les comportements.
+
+3. Exige des preuves, pas des déclarations
+
+À la fin, vérifie particulièrement les éléments suivants :
+
+Point de contrôle	Résultat exigé
+Code source	Modifications réellement enregistrées
+Django	Résultat de manage.py check
+Migrations	Vérification de cohérence effectuée
+Tests	Nombre de tests exécutés et résultats
+API	Endpoints essentiels testés
+Métier INJS	Scénarios de scolarité et de gestion académique vérifiés
+Sécurité	Contrôles d’accès et permissions testés
+Références étrangères	Recherche documentée des références opérationnelles résiduelles
+Rapport	docs/audit/BACKEND_AUDIT_FINAL.md ou équivalent
+Production	Aucune affirmation de validation sans contrôles réels
+
+4. Attention à trois risques majeurs
+
+Risque n° 1 — L’agent réécrit trop de code.
+Le prompt lui demande de corriger l’existant, pas de remplacer systématiquement les modèles, les applications ou les routes.
+
+Risque n° 2 — L’agent modifie les données pour faire passer les tests.
+Les tests doivent utiliser une base isolée et des données synthétiques. Aucune suppression ou réinitialisation des données métier ne doit être réalisée pour obtenir un résultat vert.
+
+Risque n° 3 — L’agent annonce un backend opérationnel sans l’avoir testé.
+Un audit réussi doit s’appuyer sur des résultats de commandes et des tests observables. Si Arena AI ne peut pas accéder à PostgreSQL, démarrer Django ou exécuter les tests, le rapport doit le signaler.
+
+⸻
+
+Mon conseil pour ton projet
+
+Pour backend-injs2026, je recommande de faire de l’intégrité des processus métier, de la sécurité et de la non-régression les trois critères prioritaires.
+
+Un backend peut démarrer correctement sur le port 8000 tout en présentant des défauts importants : inscription administrative qui ne déclenche pas le parcours attendu, permissions incohérentes, calculs de crédits incorrects ou génération d’emplois du temps qui ne respecte pas les contraintes.
+
+Le but n’est donc pas simplement d’obtenir une coche verte sur les contrôles Django. Il faut vérifier que les règles métier sont effectivement appliquées côté serveur et que les fonctionnalités existantes restent opérationnelles après les corrections.
+
+Résultat attendu : un backend validé par des preuves, et non déclaré vert sur la seule base de l’absence d’erreurs apparentes.
