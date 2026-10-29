@@ -202,11 +202,48 @@ Les 2 612 tests exécutés par groupes l'ont été **sur ce contenu exact** : le
 | Fusion avec `origin/main` | **Refusée par Git** : histoires non liées (`3a9bb64` n'est pas un ancêtre de `c4886b8`). Aucune fusion forcée. |
 | Vérification | Extraction rejouée depuis la branche : **19 feuilles, 323 UE** — fonctionne sans dépendre de `main` |
 
+### Réconciliation de l'histoire (traitement définitif)
+
+Le problème n'était pas seulement la perte des 8 commits : la branche locale avait `3a9bb64`
+pour racine, alors que la PR distante pointe `5369acf`, **31 commits plus loin**. Un `push`
+aurait donc été refusé (avance non rapide) et la PR n'aurait pas contenu la reprise.
+
+Vérification préalable du contenu, arbre local **contre** la tête distante `5369acf` :
+
+| Mesure | Résultat |
+|---|---|
+| Fichiers supprimés par la reprise | **0** |
+| Fichiers ajoutés | 21 |
+| Fichiers modifiés | 10 (corrections voulues : double suffixe de cycle, `statut_validation`, `FamilleModule`, `notes_exports`, etc.) |
+| Lignes | 9 553 ajoutées, 36 retirées — toutes intentionnelles, aucune régression de la PR |
+
+L'arbre local est donc un **sur-ensemble** de la PR. Un commit de jonction a été créé avec
+deux parents — `5369acf` (tête distante) et `31d30f1` (reprise locale) — et **exactement**
+l'arbre validé par les 2 612 tests :
+
+```
+*   de78150 Réconciliation de l'histoire : reprise du contenu après re-clonage
+|\
+| * 31d30f1 … 2973019   (reprise locale : 4 commits conservés)
+* | 5369acf …           (PR distante : 31 commits conservés)
+```
+
+| Contrôle | Résultat |
+|---|---|
+| `git diff reprise-locale-31d30f1 HEAD` | **vide** — arbre strictement identique, aucune modification de fichier |
+| `git status` | propre |
+| `git merge-base --is-ancestor origin/… HEAD` | **vrai** → le `push` sera une avance rapide, sans `--force` |
+| Opérations destructrices (`reset --hard`, `clean`, suppression) | **aucune** |
+| Sauvegarde de l'ancienne tête | étiquette locale `reprise-locale-31d30f1` |
+
+Les résultats de tests restent valides : **aucun fichier n'a changé**, seule la lignée de commits
+a été réparée.
+
 ### Conséquence à retenir
 
-Le travail reste **local et non poussé**. Un nouveau recyclage du bac à sable effacerait
-définitivement ces commits. Une publication vers `origin/arena/d40e4a41-backend-injs2026`
-est la seule protection durable.
+Le travail reste **local et non poussé** : c'est la seule opération encore en attente, et elle
+requiert votre autorisation. Un nouveau recyclage du bac à sable effacerait ces commits. La branche
+est désormais **prête à être publiée en avance rapide** sur `origin/arena/d40e4a41-backend-injs2026`.
 
 ---
 
