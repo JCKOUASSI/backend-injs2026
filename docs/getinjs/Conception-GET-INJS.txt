@@ -690,7 +690,7 @@ Le présent document décrit la conception du module GET-INJS capable de :
     préexistant (config/tests/test_apercu_hardening : POST /admin/logout/
     sans jeton CSRF renvoie 403 ; reproduit à l'identique sur HEAD 928cf55,
     sans rapport avec GET-INJS)
-  - frontend, suite complète ..................... 1 974 tests OK
+  - frontend, suite complète ..................... 1 976 tests OK
   - build Vite + ESLint .......................... OK
   - recette HTTP réelle sur 3 500 inscrits ....... analyse 3 500/3 500 valides,
     import 3 500 créées puis 0 créée / 3 500 mises à jour au réimport,
