@@ -310,3 +310,64 @@ cd /home/user/backend-injs2026
 cat /tmp/injs-validation/<groupe>.log
 cat /tmp/injs-validation/<groupe>.exit
 ```
+
+---
+
+## 9. Chasse aux défauts sur l'application en service
+
+Les tests passaient, mais un test ne prouve que ce qu'il regarde. J'ai donc **exercé
+l'application réellement démarrée** (API `:8000`, site `:3000`), comme le ferait un utilisateur.
+
+### Parcours vérifié de bout en bout
+
+| Geste | Résultat mesuré |
+|---|---|
+| `GET /` (navigateur) | 302 → `/admin/` |
+| `GET /admin/` sans cookie | **200**, aucun `X-Frame-Options` → l'iframe s'affiche |
+| `POST /admin/logout/` sans jeton | **302** (était **403** : bug corrigé, §4) |
+| Après déconnexion, `GET /admin/` | 302 → `/admin/login/` — la sortie tient |
+| `GET /admin/login/` | 200, formulaire et jeton présents |
+| **Connexion manuelle** avec les identifiants du `.env` | **302 → `/admin/`**, puis pages en 200 |
+| `GET /admin/scolarite/ue/` | 200 — **323 UE** affichées |
+| Proxy du site `:3000` → `/api` | 200 ; l'hôte d'aperçu `*.e2b.app` est accepté |
+| `POST /api/auth/login/` via le proxy, origine `localhost:3000` | 200 + jeton d'accès, cookie `refresh_token` posé |
+| `/api/auth/me/` avec `Authorization: Bearer` **et** avec `X-JWT-Access` | 200 dans les deux cas |
+
+### Balayage systématique (recherche de 5xx)
+
+| Périmètre | Volume | Résultat |
+|---|---:|---|
+| Routes API en lecture, compte administrateur | **360** | 247×200, 56×405, 41×403 (rôles), 15×400 (paramètres), **1×500** |
+| Mêmes routes avec `?search=`, `?ordering=`, `?page=` | **741** | **toutes 200** |
+| Listes d'admin (`ModelAdmin` enregistrés) | **181** | **toutes 200** |
+| Pages d'ajout d'admin | 181 | 140×200, 41×403 (journaux/audits en lecture seule — voulu) |
+| Recherche d'admin `?q=` sur chaque liste | 181 | 180×200, **1×500** |
+| Audit des `ModelAdmin` (recherche, filtres, colonnes, tri) | 181 | **0 anomalie** après correctif |
+
+### Les deux défauts trouvés et corrigés
+
+| # | Défaut | Cause | Effet utilisateur | Correctif |
+|---|---|---|---|---|
+| 1 | `GET /api/graduation/modeles/` → **500** | tri sur `formation__libelle` alors que `RefFormation` n'a que `intitule` | la liste des modèles de documents (diplômes, attestations) était inaccessible | tri sur `formation__intitule` |
+| 2 | `GET /admin/equivalences/demandeequivalencedispense/?q=…` → **500** | `search_fields` référence `libelle`, absent du modèle | toute recherche dans les équivalences affichait une erreur 500 | recherche sur `diplome_origine`, `etablissement_origine`, `motif` |
+
+Les deux sont **de même nature** : un champ supposé qui n'existe pas. Ni l'un ni l'autre n'était couvert
+par un test — d'où leur présence malgré une suite verte.
+
+### Tests de non-régression ajoutés
+
+| Test | Fichier | Vérifié |
+|---|---|---|
+| `TestListeModelesDocuments` | `backend/graduation/tests/test_diplomes.py` | la liste renvoie 200 et la formation est bien libellée |
+| `EquivalenceAdminTests` (2 tests) | `backend/equivalences/tests/test_equivalences.py` | la recherche d'admin renvoie 200 et trouve par établissement |
+
+**Preuve d'efficacité** : correctifs retirés temporairement → **3 tests en erreur** ; correctifs remis →
+**OK**. Groupe `divers` rejoué : **139 tests, code 0** (136 + les 3 nouveaux).
+
+### Ce que ce balayage ne couvre pas (**NOT EXECUTED**)
+
+- **Aucun navigateur réel** : `libnss3` est absent du bac à sable, donc pas de rendu headless. La
+  cohérence visuelle (CSS, iframe, interactions JS) n'est pas vérifiée par outil ; elle est vérifiée
+  au niveau HTTP et par les 1 979 tests frontend.
+- **Les écritures** (POST/PUT/DELETE métier) n'ont pas été exercées sur les données réelles : cela
+  créerait des données non demandées. Elles restent couvertes par les tests, pas par le balayage.
