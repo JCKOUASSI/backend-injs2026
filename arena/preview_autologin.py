@@ -42,7 +42,11 @@ class AutoLoginApercuMiddleware:
         if self._actif(request):
             chemin = request.path.rstrip('/')
             if chemin.endswith('/logout'):
-                AutoLoginApercuMiddleware._deconnecte = True
+                # Ne basculer que si la déconnexion a réellement abouti : un
+                # 403 (CSRF) ne doit pas laisser croire que l'utilisateur est
+                # sorti alors que sa session est intacte.
+                if response.status_code < 400:
+                    AutoLoginApercuMiddleware._deconnecte = True
             elif chemin.endswith('/login') and request.method == 'POST':
                 if getattr(request, 'user', None) and request.user.is_authenticated:
                     AutoLoginApercuMiddleware._deconnecte = False
@@ -64,6 +68,13 @@ class AutoLoginApercuMiddleware:
 
         # Une déconnexion ne doit jamais être suivie d'une reconnexion.
         if chemin.endswith('/logout'):
+            # …mais elle doit pouvoir ABOUTIR sans jeton : dans l'iframe
+            # d'aperçu les cookies sont filtrés, donc aucun csrftoken n'est
+            # disponible. Sans cette dispense, le bouton « Déconnexion »
+            # affichait une page 403 « vérification CSRF échouée » alors que
+            # la session était bel et bien détruite : erreur visible pour
+            # l'utilisateur, pour une action qui avait réussi.
+            request.csrf_processing_done = True
             return None
 
         if AutoLoginApercuMiddleware._deconnecte:

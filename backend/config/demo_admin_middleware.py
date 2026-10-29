@@ -56,10 +56,13 @@ class DemoAdminAutoLoginMiddleware:
             chemin = request.path.rstrip('/')
             if chemin.endswith('/logout'):
                 # Déconnexion demandée : on refuse de reconnecter ensuite.
-                DemoAdminAutoLoginMiddleware._suspendu = True
-                session = getattr(request, 'session', None)
-                if session is not None:
-                    session[self.CLE_DECONNEXION] = True
+                # Seulement si elle a réellement abouti : un 403 ne doit pas
+                # suspendre la démo alors que la session est intacte.
+                if response.status_code < 400:
+                    DemoAdminAutoLoginMiddleware._suspendu = True
+                    session = getattr(request, 'session', None)
+                    if session is not None:
+                        session[self.CLE_DECONNEXION] = True
             elif chemin.endswith('/login') and request.method == 'POST':
                 # Connexion explicite réussie : la démo peut reprendre la main.
                 if getattr(request, 'user', None) and request.user.is_authenticated:
@@ -91,6 +94,14 @@ class DemoAdminAutoLoginMiddleware:
 
         # Une déconnexion ne doit jamais être suivie d'une reconnexion.
         if chemin.endswith('/logout'):
+            # …mais elle doit pouvoir ABOUTIR sans jeton : dans l'iframe
+            # d'aperçu les cookies sont filtrés, donc aucun csrftoken n'est
+            # disponible. Sans cette dispense, le bouton « Déconnexion »
+            # affichait une page 403 « vérification CSRF échouée » alors que
+            # la session était détruite : erreur visible pour une action
+            # réussie. Ce middleware étant PLUS EXTERNE que CsrfViewMiddleware,
+            # c'est ici que le drapeau doit être posé en premier.
+            request.csrf_processing_done = True
             return None
 
         if self._est_suspendu(request):
