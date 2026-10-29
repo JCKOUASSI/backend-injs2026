@@ -81,24 +81,24 @@ Caractéristiques :
 
 | Groupe | Applications | Code | Tests | Durée | Résultat |
 |---|---|---:|---:|---:|---|
-| `scolarite` | scolarite | **0** | 454 | 109,9 s | **RÉUSSI** |
-| `formations` | formations | **0** | 270 | 68,4 s | **RÉUSSI** |
-| `auth` | authentication | **0** | 239 | 129,3 s | **RÉUSSI** |
-| `habilitations` | habilitations | **0** | 480 | 273,2 s | **RÉUSSI** |
-| `edt` | edts, presences | **0** | 429 | 116,8 s | **RÉUSSI** |
-| `evaluations` | evaluations, jurys | **0** | 230 | 85,3 s | **RÉUSSI** |
+| `scolarite` | scolarite | **0** | 454 | 114,0 s | **RÉUSSI** |
+| `formations` | formations | **0** | 270 | 69,2 s | **RÉUSSI** |
+| `auth` | authentication | **0** | 239 | 131,4 s | **RÉUSSI** |
+| `habilitations` | habilitations | **0** | 480 | 277,2 s | **RÉUSSI** |
+| `edt` | edts, presences | **0** | 429 | 116,1 s | **RÉUSSI** |
+| `evaluations` | evaluations, jurys | **0** | 230 | 85,0 s | **RÉUSSI** |
 | `pilotage` | statistiques, config, dashboard | **0** | 195 | 24,9 s | **RÉUSSI** (correctif §4) |
-| `socle` | core, admissions, administrations, referentiels | **0** | 179 | 68,6 s | **RÉUSSI** |
-| `divers` | parametres, suiviEvaluation, graduation, equivalences, stages, patrimoine, ressources_humaines, finances_etudiantes, exports | **0** | 136 | 26,4 s | **RÉUSSI** |
-| **Total** | **21 applications** | **0** | **2 612** | — | **0 échec** |
+| `socle` | core, admissions, administrations, referentiels | **0** | 179 | 67,9 s | **RÉUSSI** |
+| `divers` | parametres, suiviEvaluation, graduation, equivalences, stages, patrimoine, ressources_humaines, finances_etudiantes, exports | **0** | 139 | 30,4 s | **RÉUSSI** |
+| **Total** | **21 applications** | **0** | **2 615** | — | **0 échec** |
 
-**Exécution intégrale de contrôle** : la suite a été **rejouée en entier, les 9 groupes, après le correctif de
-la déconnexion d'aperçu** (`/tmp/injs-validation/SUITE-COMPLETE-2.log`, `CODE_GLOBAL=0`). Tous les fichiers
-`.exit` valent **0**. Une première exécution intégrale (`SUITE-COMPLETE.log`) avait déjà validé les 9 groupes
-avant ce correctif.
+**Exécution intégrale de contrôle** : la suite a été **rejouée en entier, les 9 groupes**, après le correctif
+de la déconnexion d'aperçu **et** les deux correctifs du §9 (`/tmp/injs-validation/SUITE-COMPLETE-3.log`,
+`CODE_GLOBAL=0`). Tous les fichiers `.exit` valent **0**. Deux exécutions intégrales antérieures
+(`SUITE-COMPLETE.log`, `SUITE-COMPLETE-2.log`) avaient déjà validé les 9 groupes.
 
-**Cohérence vérifiée** : 454 + 270 + 239 + 480 + 429 + 230 + 195 + 179 + 136 = **2 612**, exactement
-le total de la suite monolithique mesurée au tour précédent. **La totalité de la suite a donc bien
+**Cohérence vérifiée** : 454 + 270 + 239 + 480 + 429 + 230 + 195 + 179 + 139 = **2 615**, exactement
+le total monolithique mesuré auparavant (2 612) **plus les 3 tests de non-régression ajoutés au §9**. **La totalité de la suite a donc bien
 été exécutée**, par groupes, sans en omettre aucun.
 
 ### Frontend
@@ -188,7 +188,7 @@ corriger le seul middleware interne (premier correctif tenté) ne pouvait pas su
 
 | Catégorie | Nombre | Détail |
 |---|---:|---|
-| Tests **réussis** | **2 612** backend + **1 979** frontend | **9 groupes sur 9** + suite frontend complète |
+| Tests **réussis** | **2 615** backend + **1 979** frontend | **9 groupes sur 9** + suite frontend complète |
 | Tests **échoués** | **0** | l'unique échec préexistant a été corrigé côté test (§4) |
 | Tests **interrompus** | **0** (après scission du groupe `auth`) | 1 interruption transitoire, reprise avec un budget adapté |
 | Tests **non exécutés** | **0** sur le périmètre backend | total des groupes = total monolithique |
