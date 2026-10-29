@@ -81,16 +81,19 @@ Caractéristiques :
 
 | Groupe | Applications | Code | Tests | Durée | Résultat |
 |---|---|---:|---:|---:|---|
-| `scolarite` | scolarite | 0 | 454 | 111 s | **RÉUSSI** |
-| `formations` | formations | 0 | 270 | 69 s | **RÉUSSI** |
-| `auth` | authentication | 0 | 239 | 136 s | **RÉUSSI** |
-| `habilitations` | habilitations | 0 | 480 | 271 s | **RÉUSSI** |
-| `edt` | edts, presences | 0 | 429 | 117 s | **RÉUSSI** |
-| `evaluations` | evaluations, jurys | 0 | 230 | 86 s | **RÉUSSI** |
-| `pilotage` | statistiques, config, dashboard | **0** | 195 | 26 s | **RÉUSSI** (après correction du test, §4) |
-| `socle` | core, admissions, administrations, referentiels | 0 | 179 | 68 s | **RÉUSSI** |
-| `divers` | parametres, suiviEvaluation, graduation, equivalences, stages, patrimoine, ressources_humaines, finances_etudiantes, exports | 0 | 136 | 26 s | **RÉUSSI** |
+| `scolarite` | scolarite | **0** | 454 | 111,5 s | **RÉUSSI** |
+| `formations` | formations | **0** | 270 | 68,7 s | **RÉUSSI** |
+| `auth` | authentication | **0** | 239 | 129,8 s | **RÉUSSI** |
+| `habilitations` | habilitations | **0** | 480 | 271,3 s | **RÉUSSI** |
+| `edt` | edts, presences | **0** | 429 | 113,2 s | **RÉUSSI** |
+| `evaluations` | evaluations, jurys | **0** | 230 | 85,1 s | **RÉUSSI** |
+| `pilotage` | statistiques, config, dashboard | **0** | 195 | 24,9 s | **RÉUSSI** (test corrigé, §4) |
+| `socle` | core, admissions, administrations, referentiels | **0** | 179 | 68,0 s | **RÉUSSI** |
+| `divers` | parametres, suiviEvaluation, graduation, equivalences, stages, patrimoine, ressources_humaines, finances_etudiantes, exports | **0** | 136 | 26,2 s | **RÉUSSI** |
 | **Total** | **21 applications** | **0** | **2 612** | — | **0 échec** |
+
+**Exécution intégrale de contrôle** : la suite a été **rejouée en entier, les 9 groupes, après la correction du
+test CSRF** (`/tmp/injs-validation/SUITE-COMPLETE.log`, `CODE_GLOBAL=0`). Tous les fichiers `.exit` valent **0**.
 
 **Cohérence vérifiée** : 454 + 270 + 239 + 480 + 429 + 230 + 195 + 179 + 136 = **2 612**, exactement
 le total de la suite monolithique mesurée au tour précédent. **La totalité de la suite a donc bien
@@ -179,7 +182,7 @@ dès que le jeton est fourni.
 | Tests **interrompus** | **0** (après scission du groupe `auth`) | 1 interruption transitoire, reprise avec un budget adapté |
 | Tests **non exécutés** | **0** sur le périmètre backend | total des groupes = total monolithique |
 | **NOT EXECUTED** | parcours navigateur réel | `libnss3` absent : rendu headless impossible |
-| **NOT EXECUTED** | CI distante | aucun push effectué |
+| **NOT EXECUTED** | CI distante | aucun workflow de CI configuré sur le dépôt |
 
 La suite backend **a été exécutée intégralement** (2 612 tests, par groupes). Elle n'est pas
 « entièrement verte » : un test échoue, pour une raison préexistante et assumée.
@@ -271,11 +274,16 @@ l'arbre validé par les 2 612 tests :
 Les résultats de tests restent valides : **aucun fichier n'a changé**, seule la lignée de commits
 a été réparée.
 
-### Conséquence à retenir
+### Publication
 
-Le travail reste **local et non poussé** : c'est la seule opération encore en attente, et elle
-requiert votre autorisation. Un nouveau recyclage du bac à sable effacerait ces commits. La branche
-est désormais **prête à être publiée en avance rapide** sur `origin/arena/d40e4a41-backend-injs2026`.
+Autorisation obtenue, la branche a été poussée en **avance rapide**, sans `--force` :
+
+```
+5369acf..33a8e5e  arena/d40e4a41-backend-injs2026 -> arena/d40e4a41-backend-injs2026
+```
+
+Le travail n'est plus vulnérable à un recyclage du bac à sable : `origin` porte désormais l'arbre
+validé. La PR #1 n'a **pas** été fusionnée (hors instruction).
 
 ---
 
