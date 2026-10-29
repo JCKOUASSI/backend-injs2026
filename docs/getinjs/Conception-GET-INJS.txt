@@ -1,0 +1,703 @@
+================================================================================
+ CONCEPTION-GET-INJS
+ Dossier de conception pour la refonte complète du module « GET-INJS »
+ (Gestion des Emplois du Temps) de l'application backend-injs2026
+ Institut National de la Jeunesse et des Sports — INJS d'Abidjan
+================================================================================
+
+Version      : 1.1
+Date         : 2026-10-29
+Portée       : module GET-INJS (backend Django + frontend React)
+Sources      : dossier_trvx/ (8 documents métier listés au §1.2)
+Statut       : document de conception — opposable pour la réalisation
+
+Révision 1.1 — compléments livrés et vérifiés depuis la 1.0 :
+  - écran frontend « Génération annuelle & import » (/edt/generation-annuelle) ;
+  - admin Django des inscriptions importées (lecture seule, traçabilité) ;
+  - motif et explication GLOBAUX sur un bilan IMPOSSIBLE (plus jamais de
+    « Impossible » sans cause ni action) ;
+  - effectifs de recette mesurés en base de développement (3 500 inscrits).
+
+Ce document est téléchargeable depuis l'application :
+    GET /api/edts/lmd/conception/
+et il est stocké dans le dépôt :
+    docs/getinjs/Conception-GET-INJS.txt
+
+Il n'existe PAS de copie en base : le fichier du dépôt est l'unique source.
+
+
+================================================================================
+1. OBJET ET PÉRIMÈTRE
+================================================================================
+
+1.1 Objet
+
+Le présent document décrit la conception du module GET-INJS capable de :
+
+  (a) générer TOUS les emplois du temps d'une année académique donnée,
+      par filière, formation, parcours, groupe, vague et semestre, pour
+      l'ensemble des étudiants inscrits (au moins 3 500 par année) ;
+  (b) importer un fichier externe d'inscrits et produire les emplois du temps
+      correspondants, MÊME SI l'inscription de ces étudiants n'a pas été faite
+      dans l'application de base ni selon le principe du parcours ;
+  (c) servir de base à la refonte du module GET-INJS de backend-injs2026,
+      dont les fonctionnalités de base sont :
+        1. Tableau des emplois du temps
+        2. Créer un emploi du temps
+        3. Présences de séances (QR & émargement)
+        4. Cours
+        5. Salles & espaces
+        6. Disponibilités
+        7. Enseignants
+        8. Conflits & contraintes
+        9. Rattrapages & examens
+       10. Export / Impression
+
+1.2 Documents de référence (dossier_trvx)
+
+  1. Mise en œuvre GET-INJS 2026 - Proposition Arena.txt
+  2. Mise en œuvre de la GET-INJS 2026.txt
+  3. Formations et Modules INJS.txt
+  4. Processus expert A → Z de génération des emplois du temps INJS-LMD.txt
+  5. Liste des Bâtiments, salles et espaces de formation de l'INJS.txt
+  6. INJS D'ABIDJAN — RÉFÉRENTIEL EXHAUSTIF DE L'OFFRE DE FORMATION2.xlsx
+  7. RÉFÉRENTIEL EXHAUSTIF DE L'OFFRE DE FORMATION.docx
+  8. référentiel des infrastructures de l'INJS d'Abidjan.docx
+
+1.3 Principe directeur (issu du document 4)
+
+  Formation → Parcours/Spécialité → Promotion → Groupe → Maquette → UE → ECUE
+  → Affectation pédagogique → Créneaux → Salles → Séances → Emploi du temps
+  → Publication → Présences
+
+  L'emploi du temps n'est PAS une grille « classe × professeur × salle » : il
+  est dérivé de la maquette LMD validée, puis transformé en séances planifiées
+  sous contraintes pédagogiques, humaines, matérielles et calendaires.
+
+1.4 Référentiel LMD INJS (non négociable)
+
+  - 8 filières (F01 → F08) ;
+  - Licence : S1 → S6 ; Master : S7 → S10 ;
+  - 30 ECTS par semestre, 60 ECTS par niveau ;
+  - aucune formation du corpus CPFAE/Sygepcpfae n'est recyclée en formation INJS.
+
+1.5 Hors périmètre
+
+  - Aucune décision de jury, aucune maquette, aucun intitulé d'UE/ECUE n'est
+    inventé par le module : ces données viennent du référentiel et des maquettes.
+  - Aucune publication automatique : la publication reste un geste humain.
+  - Aucune donnée de démonstration n'est produite par le moteur.
+
+
+================================================================================
+2. ÉTAT DES LIEUX (ce qui existe déjà, ce qui manquait)
+================================================================================
+
+2.1 Existant réutilisé (aucune réécriture)
+
+  Backend
+    edts/models.py                 CreneauTemplate, EmploiDuTemps,
+                                   AffectationCreneau, DisponibiliteHoraire,
+                                   ConflitEdt, JournalEdt
+    edts/moteur/besoins.py         ECUE → volume → type → groupe = TeachingNeed
+    edts/moteur/contraintes.py     C1 → C10 (dures) + pénalités souples
+    edts/moteur/generation.py      backtracking déterministe, budget borné
+    edts/moteur/validation.py      audit de couverture / conflits / volumes
+    edts/moteur/publication.py     persistance transactionnelle, idempotente
+    edts/moteur/orchestration.py   génération coordonnée multi-formations
+    edts/api_lmd.py                routes /api/edts/lmd/…
+    edts/permissions.py            IsEdtPlanification, IsEdtValidation,
+                                   IsEdtReadOnlyOrPlanification
+
+  Frontend
+    pages/Edts.jsx                 tableau des emplois du temps
+    pages/EdtNew.jsx               création d'un emploi du temps
+    pages/EdtPresences.jsx         présences de séances (QR & émargement)
+    menu/arborescence.js           section « GET-INJS » et ses 6 sous-entrées
+    styles/designSystem.css        socle visuel unique
+
+2.2 Ce qui manquait (l'objet de la présente livraison)
+
+  Manque 1 — L'effectif était une CAPACITÉ DÉCLARÉE.
+    `besoins._effectif()` retournait `Groupe.capacite_max`. Aucun dénombrement
+    d'étudiants réels n'existait : la contrainte C4 (capacité de salle) portait
+    donc sur une valeur déclarée, pas sur les inscrits.
+
+  Manque 2 — Aucun import d'inscrits externe.
+    Le moteur partait nécessairement des `AffectationPedagogique`. Une cohorte
+    inscrite hors de l'application (fichier Excel/CSV du service scolarité)
+    n'avait aucune affectation : elle ne produisait AUCUN emploi du temps.
+
+  Manque 3 — Aucune génération « année entière » par groupe.
+    L'orchestration existante (`generer_coordonne`) agrège par FORMATION. Le
+    besoin exprimé est par GROUPE (filière, formation, groupe, vague, semestre).
+
+  Manque 4 — Les besoins dérivés de la maquette n'existaient pas.
+    Rien ne savait convertir `ECUE.volume_cm / volume_td / volume_tp` en séances
+    planifiables sans passer par une affectation.
+
+  Manque 5 — Le document de conception n'existait pas et n'était pas
+    téléchargeable depuis l'application.
+
+  Manque 6 — Aucun écran ne donnait accès à ces fonctions.
+    L'import et la génération annuelle n'étaient atteignables que par l'API :
+    un secrétariat ne pouvait ni déposer un fichier, ni lire un bilan.
+
+  Manque 7 — Aucune trace consultable des inscrits importés.
+    Les lignes importées n'étaient visibles nulle part dans l'administration :
+    impossible de vérifier un matricule, une cohorte ou l'origine d'un effectif.
+
+
+================================================================================
+3. ARCHITECTURE CIBLE
+================================================================================
+
+3.1 Vue d'ensemble
+
+   ┌──────────────────────────────────────────────────────────────────────────┐
+   │  FRONTEND — module GET-INJS (/edt, /edt/nouveau, /edt/presences,         │
+   │             /edt/generation-annuelle, /edt/import-inscrits)              │
+   └───────────────┬──────────────────────────────────────────────────────────┘
+                   │ HTTPS / JSON (proxy Vite → Django)
+   ┌───────────────▼──────────────────────────────────────────────────────────┐
+   │  API — edts/api.py (historique)   edts/api_lmd.py (LOT 2/3)              │
+   │        edts/api_getinjs.py (AJOUT : import + génération annuelle)        │
+   └───────────────┬──────────────────────────────────────────────────────────┘
+                   │ appels de service (aucune logique dans la vue)
+   ┌───────────────▼──────────────────────────────────────────────────────────┐
+   │  MOTEUR — edts/moteur/                                                    │
+   │    import_inscrits.py   fichier → cohortes → InscriptionImportee          │
+   │    besoins.py           AffectationPedagogique → TeachingNeed             │
+   │    besoins_maquette.py  Maquette ACTIVE → TeachingNeed (cohortes importées)│
+   │    contraintes.py       C1…C10 + pénalités                                │
+   │    generation.py        backtracking borné                                │
+   │    validation.py        audit bloquant / warnings                         │
+   │    publication.py       persistance transactionnelle, idempotente         │
+   │    annee.py             orchestration par GROUPE de l'année entière       │
+   └───────────────┬──────────────────────────────────────────────────────────┘
+                   │ ORM Django
+   ┌───────────────▼──────────────────────────────────────────────────────────┐
+   │  DONNÉES — scolarite (AnneeAcademique, Parcours, Niveau, Semestre,        │
+   │  Maquette, UE, ECUE, Groupe, AffectationPedagogique) · formations         │
+   │  (RefFormation, RefVague, RefSite, RefBatiment, RefSalle, Formateur)      │
+   │  · edts (CreneauTemplate, EmploiDuTemps, AffectationCreneau,              │
+   │  DisponibiliteHoraire, ConflitEdt, InscriptionImportee)                   │
+   └──────────────────────────────────────────────────────────────────────────┘
+
+3.2 Règle d'architecture : pas de table « Promotion »
+
+  Le `scolarite.Groupe` porte déjà la promotion (année + formation + parcours +
+  niveau + vague + nom). Aucune table `Promotion` n'est créée : ce serait
+  reproduire l'architecture héritée CPFAE, exclue du périmètre INJS.
+
+3.3 Règle d'architecture : les cohortes importées ne polluent rien
+
+  L'import écrit UNIQUEMENT des `InscriptionImportee`. Il ne crée ni `Etudiant`,
+  ni `Inscription`, ni `AffectationPedagogique`. La donnée importée reste
+  identifiable par (fichier, empreinte SHA-256, ligne source) et supprimable
+  sans toucher aux dossiers métier réels.
+
+3.4 Règle d'architecture : le moteur ne publie jamais
+
+  `annee.generer_annee` produit des BROUILLONS. La publication exige une
+  validation humaine explicite via `POST /api/edts/lmd/{id}/publish/`.
+
+
+================================================================================
+4. MODÈLE DE DONNÉES (ajouts)
+================================================================================
+
+4.1 InscriptionImportee — edts/models.py
+
+  Champ                     Type                   Rôle
+  ------------------------  ---------------------  ----------------------------
+  annee_academique          FK AnneeAcademique     année de l'inscription
+  matricule                 Char(64)               clé d'idempotence avec l'année
+  nom / prenoms             Char(150)              identité lue dans le fichier
+  sexe                      Char(1) M/F            normalisé
+  date_naissance            Date (optionnelle)     normalisée (formats FR/ISO)
+  filiere_code              Char(10)               F01…F08 si présent
+  ref_formation             FK RefFormation        PÉRIMÈTRE INJS UNIQUEMENT
+  parcours                  FK Parcours (null)     résolu ou absent
+  niveau                    FK Niveau              L1…M2
+  semestre                  FK Semestre (null)     résolu dans le niveau
+  groupe                    FK Groupe (null)       cohorte pédagogique
+  vague                     FK RefVague (null)     vague d'inscription
+  statut                    INSCRIT / RADIE        un radié ne compte pas
+  fichier                   Char(255)              nom du fichier source
+  empreinte                 Char(64) SHA-256       identifie le lot d'import
+  ligne_source              Int                    numéro de ligne d'origine
+  created_at / updated_at   DateTime               audit
+
+  Contraintes
+    UNIQUE (annee_academique, matricule)
+    INDEX  (annee_academique, groupe)
+    INDEX  (annee_academique, ref_formation, niveau)
+    INDEX  (empreinte)
+
+  Migration : edts/migrations/0007_inscriptionimportee.py
+
+4.2 TeachingNeed — extensions additives (edts/moteur/besoins.py)
+
+  Champ ajouté : origine (str, défaut 'AFFECTATION')
+    AFFECTATION : besoin issu d'une AffectationPedagogique (chaîne interne)
+    MAQUETTE    : besoin dérivé de la maquette (cohorte importée)
+
+  Aucun champ existant n'est renommé, retiré ou rendu obligatoire : les jeux
+  de tests antérieurs restent valides.
+
+4.3 Aucun changement destructif
+
+  Aucune migration ne supprime de table ni de colonne. Aucune donnée métier
+  n'est supprimée. Aucun secret n'est stocké dans le module.
+
+
+================================================================================
+5. FONCTIONNEMENT — IMPORT D'UN FICHIER D'INSCRITS (situation n°2)
+================================================================================
+
+5.1 Formats acceptés
+
+  - CSV : séparateur détecté automatiquement (« ; », « , », tabulation) ;
+          encodages essayés dans l'ordre utf-8-sig, utf-8, latin-1 ;
+  - Excel : .xlsx, .xlsm (première feuille, en-tête sur la ligne 1) ;
+            lecture via openpyxl, DÉJÀ dépendance du projet.
+  - Taille maximale : 20 Mo (protection mémoire, réponse 413 motivée).
+
+5.2 Reconnaissance des colonnes
+
+  Les en-têtes sont normalisés (sans accent, minuscules, séparateurs ramenés
+  à « _ ») puis rapprochés de synonymes métier. Exemples reconnus :
+
+    matricule   → « Matricule », « N° Matricule », « Numéro matricule »,
+                  « Code étudiant », « Identifiant »
+    nom         → « Nom », « Nom de famille », « Nom étudiant », « Patronyme »
+    prenoms     → « Prénom », « Prénom(s) », « Prénoms »
+    formation   → « Formation », « Filière », « Cycle », « Code formation »
+    niveau      → « Niveau », « Niveau d'étude », « Licence 1 », « L1 »
+    semestre    → « Semestre », « S1 », « Semestre 3 »
+    groupe      → « Groupe », « Groupe pédagogique », « Code groupe »
+    vague       → « Vague », « Vague d'inscription »
+    sexe        → « Sexe », « Genre » (M/F, Masculin/Féminin)
+    date_naissance → « Date de naissance », « DDN » (15/03/2004, 2004-03-15)
+
+  Colonnes obligatoires : matricule, nom, formation, niveau.
+  Si l'une manque, l'import est refusé avec la liste exacte des colonnes
+  manquantes (motif COLONNES_OBLIGATOIRES_ABSENTES) — jamais un import muet.
+
+5.3 Résolution des cohortes
+
+  - La formation est cherchée UNIQUEMENT dans le périmètre INJS
+    (`formations.referentiel_injs_l6.formations_injs`) : par code filière,
+    puis intitulé exact, puis code, puis comparaison normalisée tolérante.
+  - Une formation trouvée mais HORS périmètre INJS donne le motif
+    FORMATION_HORS_PERIMETRE (distinct de FORMATION_ABSENTE) : le message
+    d'erreur dit lequel des deux cas s'applique.
+  - Le niveau est résolu par code (L1…M2), libellé, ou « Licence 1 » → L1.
+    Un niveau SAISI mais introuvable est REFUSÉ : il n'est jamais déduit du
+    semestre (« L9 + S1 » ne devient pas « L1 »).
+  - Le semestre est résolu dans le niveau ; un semestre incohérent est refusé.
+  - Le groupe et la vague sont créés si absents — UNIQUEMENT en mode import
+    réel, jamais en analyse, et jamais si la ligne est rejetée.
+
+5.4 Modes de fonctionnement
+
+  ANALYSE (POST …/import/inscrits/analyser/) :
+    produit le rapport complet SANS AUCUNE ÉCRITURE. Sert à valider un fichier
+    client avant intégration (aucun groupe, aucune vague, aucune inscription
+    créés).
+
+  IMPORT RÉEL (POST …/import/inscrits/) :
+    écrit de façon TRANSACTIONNELLE. Si aucune ligne n'est exploitable,
+    la transaction est annulée : aucune cohorte partielle ne subsiste.
+
+5.5 Rapport d'import (toujours rendu, jamais masqué)
+
+  applique, fichier, empreinte,
+  lignes_lues, lignes_valides, lignes_rejetees,
+  creees, mises_a_jour,
+  erreurs[] {ligne, motif, detail} (200 premières, compteur de troncature),
+  colonnes_reconnues, colonnes_ignorees,
+  cohortes[] {formation, filiere_code, parcours, niveau, semestre, groupe,
+              vague, effectif},
+  effectif_total,
+  motif_echec, detail.
+
+5.6 Motifs de rejet (explicites, un par ligne)
+
+  MATRICULE_MANQUANT, NOM_MANQUANT, FORMATION_ABSENTE,
+  FORMATION_HORS_PERIMETRE, NIVEAU_ABSENT, SEMESTRE_ABSENT,
+  FICHIER_VIDE, FORMAT_NON_SUPPORTE, COLONNES_OBLIGATOIRES_ABSENTES.
+
+5.7 Idempotence
+
+  Clé : (annee_academique, matricule). Réimporter le même fichier met à jour
+  les lignes existantes (compteur `mises_a_jour`) sans créer de doublon.
+  Un réimport avec un groupe différent DÉPLACE l'étudiant de cohorte, sans
+  créer une seconde inscription.
+
+5.8 Effectif réel
+
+  `import_inscrits.effectifs_par_groupe(annee_id)` retourne le dénombrement
+  des `InscriptionImportee` de statut INSCRIT, par groupe. C'est cette valeur
+  qui alimente la contrainte de capacité C4, à la place de la capacité déclarée.
+
+
+================================================================================
+6. FONCTIONNEMENT — GÉNÉRATION DES EDT D'UNE ANNÉE (situation n°1)
+================================================================================
+
+6.1 Point d'entrée
+
+  Service : edts/moteur/annee.py → generer_annee(annee_academique_id, …)
+  API     : POST /api/edts/lmd/generate-annee/
+
+6.2 Algorithme
+
+  ÉTAPE 1 — Périmètre
+    Groupes actifs de l'année, filtrés sur le périmètre INJS. Les groupes des
+    cycles legacy sont comptés à part (groupes_hors_perimetre) et jamais
+    planifiés.
+
+  ÉTAPE 2 — Besoins, en deux sources
+    (a) Affectations pédagogiques planifiables (VALIDEE/PLANIFIEE) → besoins
+        historiques (origine = AFFECTATION). Source PRIORITAIRE.
+    (b) Pour les groupes SANS affectation (cohortes importées) → besoins
+        dérivés de la maquette ACTIVE (origine = MAQUETTE) :
+           Maquette ACTIVE → UE → ECUE → volume_cm / volume_td / volume_tp
+           → nb_séances = arrondi(volume / durée du créneau réel)
+        Sans maquette active, le groupe n'est PAS planifié et il est listé
+        dans detail['sans_maquette'].
+
+  ÉTAPE 3 — Effectif
+    effectifs_par_groupe(année) → dénombrement réel des inscrits importés ;
+    à défaut, capacité déclarée du groupe ; à défaut, inconnu (None).
+    Une valeur inconnue n'est JAMAIS remplacée par un nombre inventé.
+
+  ÉTAPE 4 — Placement, groupe par groupe, coordonné
+    Pour chaque groupe : generate_schedule(besoins=…, occupations_initiales=…).
+    Les placements d'un groupe sont injectés dans l'état d'occupation global :
+    aucun groupe suivant ne peut placer la même salle, le même enseignant ou
+    le même créneau de groupe (C1/C2/C3).
+
+  ÉTAPE 5 — Persistance (optionnelle, persister=true)
+    Un `EmploiDuTemps` par groupe (population_type = GROUPE, version 1,
+    statut BROUILLON) est créé si absent. Le plan est validé puis écrit
+    (`publication.persister_plan`). Une régénération avec remplacer=true
+    désactive les séances antérieures : aucune duplication.
+
+  ÉTAPE 6 — Bilan
+    Statut global : COMPLETE / PARTIELLE / IMPOSSIBLE.
+    Un groupe non planifié ou non persisté rend le bilan PARTIELLE : une
+    opération incomplète n'est jamais présentée comme réussie.
+
+6.3 Contraintes appliquées (C1 → C10)
+
+  C1  Un enseignant ne peut pas dispenser deux séances simultanées.
+  C2  Un groupe ne peut pas suivre deux séances simultanées.
+  C3  Une salle ne peut pas accueillir deux séances simultanées.
+  C4  La capacité de la salle doit couvrir l'effectif du groupe.
+  C5  L'enseignant ne doit pas être déclaré indisponible.
+  C6  La salle ne doit pas être déclarée indisponible.
+  C7  Le type de salle doit être compatible avec la nature de la séance.
+  C8  Ancrage pédagogique : la séance garde un contexte réel — affectation
+      pédagogique, ou ECUE pour une cohorte importée. Sans ni l'un ni l'autre,
+      la séance est refusée.
+  C9  La séance doit tenir dans les semaines planifiées.
+  C10 Le volume horaire attendu doit être couvert.
+
+  Les préférences (DISPONIBILITE_STATUT = PREFERENCE) sont des pénalités
+  souples : elles influencent le score, jamais un blocage.
+
+6.4 Passation à l'échelle (3 500 étudiants et plus)
+
+  - le solveur est borné (budget de placements) : il ne boucle jamais
+    indéfiniment, et un budget épuisé est signalé (BUDGET_EXHAUSTED) ;
+  - la génération est séquentielle et déterministe (ordre stable des groupes) :
+    deux exécutions identiques donnent le même plan à données égales ;
+  - mesuré en test : 25 cohortes / 4 375 étudiants générées et persistées en
+    une opération sur un canevas de 25 créneaux et 3 salles ;
+  - la mémoire ne dépend pas du nombre d'étudiants : seuls les besoins
+    (ECUE × type × groupe) sont matérialisés, pas les étudiants individuels.
+
+6.5 Ce que le moteur ne fera jamais
+
+  - inventer un enseignant (une séance sans enseignant est possible, signalée
+    en warning, jamais pourvue d'un titulaire fictif) ;
+  - inventer un créneau, une salle, une durée ;
+  - publier automatiquement ;
+  - produire un horaire pour une cohorte sans maquette.
+
+
+================================================================================
+7. API — CONTRATS
+================================================================================
+
+7.1 Import
+
+  POST /api/edts/lmd/import/inscrits/analyser/
+  POST /api/edts/lmd/import/inscrits/
+    multipart/form-data :
+      annee_academique_id  (int, requis)
+      fichier              (file, requis ; .csv / .xlsx)
+    Réponses :
+      200  rapport complet (import/analyse réussi)
+      400  FICHIER_REQUIS | ANNEE_ACADEMIQUE_REQUISE
+      404  ANNEE_ACADEMIQUE_INTROUVABLE
+      409  motif de format ou de référentiel (ex. COLONNES_OBLIGATOIRES_ABSENTES)
+      413  FICHIER_TROP_VOLUMINEUX
+      422  aucune ligne exploitable (lignes_valides = 0)
+
+  GET /api/edts/lmd/import/inscrits/synthese/?annee=<id>
+    200 {annee_academique_id, effectif_total, nb_cohortes, cohortes[]}
+
+7.2 Génération
+
+  POST /api/edts/lmd/generate-annee/
+    JSON :
+      annee_academique_id  (int, requis)
+      semaines             (liste d'entiers, défaut [1])
+      persister            (bool, défaut false → prévisualisation)
+      remplacer            (bool, défaut true → idempotence)
+      inclure_maquette     (bool, défaut true → cohortes importées incluses)
+    Réponses :
+      200  bilan complet ou partiel (prévisualisation)
+      201  bilan complet ET persisté
+      409  ANNEE sans groupe INJS (AUCUN_GROUPE_INJS) ou génération impossible
+      400/404 pour une année absente ou inconnue
+
+    Un 409 est TOUJOURS motivé au niveau global :
+      AUCUN_GROUPE_INJS        aucune cohorte INJS active pour l'année ;
+      AUCUN_BESOIN_PLANIFIABLE groupes présents mais ni affectation ni maquette ;
+      AUCUN_PLACEMENT_POSSIBLE  besoins calculés, aucune séance plaçable
+                                (le motif par groupe porte le détail).
+    Chaque motif est accompagné de `detail.explication` (le fait constaté) et
+    `detail.action_recommandee` (ce qu'il faut faire) : un écran ne doit jamais
+    afficher « Impossible » sans cause ni remède.
+
+    Bilan :
+      status_global, motif_echec, detail {explication, action_recommandee},
+      annee_academique_id, semaines,
+      groupes[] {groupe_id, groupe, formation, parcours, niveau, vague,
+                 effectif, statut, motif_echec, seances_attendues,
+                 seances_placees, seances_non_placees, blocs_placees,
+                 heures_attendues, taux_couverture, conflits, edt_id},
+      totaux {nb_groupes, nb_groupes_planifies, nb_groupes_complets,
+              nb_groupes_non_planifies, etudiants_couverts, seances_attendues,
+              seances_placees, seances_non_placees, heures_attendues,
+              edts_persistes, groupes_hors_perimetre},
+      sources {affectations_pedagogiques, maquette},
+      persistence_demandee
+
+7.3 Conception
+
+  GET /api/edts/lmd/conception/
+    200  fichier Conception-GET-INJS.txt en pièce jointe (text/plain)
+    404  CONCEPTION_INTROUVABLE si le fichier du dépôt est absent
+
+7.4 Sécurité
+
+  - import et génération : permission de planification EDT ;
+  - synthèse et conception : lecture réservée aux comptes authentifiés ;
+  - aucun second RBAC : les permissions `edts.permissions` s'appliquent ;
+  - l'interface n'accorde rien : elle projette ce que le serveur autorise.
+
+
+================================================================================
+8. LES DIX FONCTIONNALITÉS DE BASE — ÉTAT ET CONCEPTION
+================================================================================
+
+ 1. TABLEAU DES EMPLOIS DU TEMPS
+    Écran /edt (pages/Edts.jsx), API GET /api/edts/emplois/.
+    L'effectif réel par cohorte est désormais visible sur l'écran de
+    génération annuelle (tableau « cohortes importées ») et peut être repris
+    par /edt.
+    À aligner sur le socle visuel : filtres par année, formation, parcours,
+    niveau, groupe, vague, semestre, statut ; vue semaine et vue liste ;
+    colonne « effectif » alimentée par le dénombrement des inscrits importés.
+    État : EXISTANT — à enrichir du filtre vague et de l'effectif réel.
+
+ 2. CRÉER UN EMPLOI DU TEMPS
+    Écran /edt/nouveau (pages/EdtNew.jsx) pour l'unité, et écran
+    /edt/generation-annuelle (pages/getinjs/GenerationAnnuelle.jsx) pour
+    l'année entière : choix de l'année, dépôt du fichier d'inscrits,
+    analyse sans écriture, import, génération, bilan par groupe.
+    Création manuelle ET génération automatique.
+    Tout EDT créé naît en BROUILLON ; aucune publication implicite.
+    État : EXISTANT + NOUVEAU (génération annuelle, écran inclus).
+
+ 3. PRÉSENCES DE SÉANCES (QR & ÉMARGEMENT)
+    Écran /edt/presences (pages/EdtPresences.jsx) ; modèles de pointage et
+    QR côté backend ; l'application mobile Flutter (qr_badge_mobile) consomme
+    les mêmes séances. La séance générée porte sa clé pédagogique (affectation
+    ou ECUE), ce qui rend le pointage rattachable au cours.
+    État : EXISTANT — la présente livraison garantit que les séances issues
+    de cohortes importées restent pointables (ancrage ECUE de C8).
+
+ 4. COURS
+    Les cours proviennent des ECUE (maquette) et des AffectationsPedagogiques.
+    `GET /api/scolarite/pedagogie/cours/` expose les cours planifiés.
+    État : EXISTANT.
+
+ 5. SALLES & ESPACES
+    Référentiel formations.RefSite / RefBatiment / RefSalle (type de lieu,
+    capacité), référentiel issu du document « Liste des Bâtiments, salles et
+    espaces ». Utilisé par C3/C4/C6/C7.
+    État : EXISTANT — à compléter par l'import du référentiel d'infrastructures
+    (document 8 du dossier) si nécessaire.
+
+ 6. DISPONIBILITÉS
+    Modèle DisponibiliteHoraire (enseignant ou salle ; DISPONIBLE /
+    INDISPONIBLE / PREFERENCE) ; routes
+    GET /api/edts/lmd/availability/teachers/ et …/rooms/.
+    État : EXISTANT.
+
+ 7. ENSEIGNANTS
+    formations.Formateur + AffectationPedagogique. Un besoin sans enseignant
+    reste planifiable mais signalé : le module n'invente aucun titulaire.
+    État : EXISTANT.
+
+ 8. CONFLITS & CONTRAINTES
+    Détection C1→C10 (contraintes.py), journalisation ConflitEdt, audit
+    /api/edts/lmd/constraints/ et /lmd/audit/. Les conflits inter-EDT sont
+    détectés après persistance (services.conflits_inter_edt).
+    État : EXISTANT.
+
+ 9. RATTRAPAGES & EXAMENS
+    Nature de séance EVALUATION / REMPLACEMENT dans AffectationCreneau ;
+    écran /rattrapages (pages/Rattrapages.jsx) ; les examens se planifient
+    comme des séances de nature EVALUATION, soumises aux mêmes contraintes.
+    État : EXISTANT — à étendre pour la planification en lot des examens.
+
+10. EXPORT / IMPRESSION
+    Le socle possède une feuille @media print (designSystem.css) ; les
+    emplois du temps s'exportent depuis le tableau. À compléter : export PDF
+    et Excel par groupe/enseignant/salle, et vue imprimable hebdomadaire.
+    État : PARTIEL — feuille d'impression existante, export dédié à réaliser.
+
+
+================================================================================
+9. SÉCURITÉ, QUALITÉ, EXPLOITABILITÉ
+================================================================================
+
+9.1 Sécurité
+  - aucune élévation de privilège : permissions du module réutilisées ;
+  - aucun secret stocké, journalisé ou renvoyé par l'API ;
+  - taille de fichier bornée, aucun chemin utilisateur ouvert (pas d'écriture
+    disque du fichier importé : le contenu est lu en mémoire) ;
+  - le document de conception est servi depuis un chemin FIXE du dépôt.
+
+9.2 Qualité
+  - services métier purs et testés séparément de l'HTTP ;
+  - aucun repli silencieux : chaque échec porte un motif affichable ;
+  - comptabilité alignée sur `generation.metrics` (une seule source de vérité
+    pour les séances attendues/placées) ;
+  - les tests construisent leurs données (TestCase) : la base de développement
+    n'est jamais touchée.
+
+9.3 Exploitabilité
+  - migration unique et réversible (0007_inscriptionimportee) ;
+  - aucune dépendance nouvelle ;
+  - aucun impact sur les routes existantes : tout est ajouté.
+
+
+================================================================================
+10. RECETTE — SCÉNARIOS D'ACCEPTATION
+================================================================================
+
+  S1  Import d'un CSV « ; » de 42 étudiants d'une filière → 42 lignes valides,
+      effectif_total = 42, une cohorte créée.
+  S2  Import du même fichier une seconde fois → creees = 0,
+      mises_a_jour = 42, aucune duplication.
+  S3  Analyse d'un fichier SANS appliquer → aucune écriture en base.
+  S4  Fichier contenant une formation legacy → ligne rejetée avec
+      FORMATION_HORS_PERIMETRE, les autres lignes traitées.
+  S5  Fichier sans colonne « matricule » → refus global motivé.
+  S6  Génération annuelle d'une cohorte importée → séances placées,
+      effectif = dénombrement réel, EDT BROUILLON.
+  S7  Génération de deux groupes partageant la même salle → aucun
+      chevauchement (C2/C3), bilan COMPLETE.
+  S8  Régénération avec persister=true → mêmes EDT, aucun doublon de séance.
+  S9  Groupe sans maquette active → NON_PLANIFIE motivé, bilan PARTIELLE.
+  S10 25 cohortes / 4 375 étudiants → couverture totale, bilan COMPLETE.
+  S11 Téléchargement de /api/edts/lmd/conception/ → fichier joint non vide.
+  S12 Un compte sans droit de planification ne peut ni importer ni générer.
+
+
+================================================================================
+11. ÉCARTS CONNUS ET TRAVAUX RESTANTS
+================================================================================
+
+  R1  [LEVÉ en 1.1] Écran dédié « Génération annuelle & import » livré :
+      /edt/generation-annuelle, entrée de menu GET-INJS, styles dédiés,
+      11 tests vitest. Reste à étendre, si le commanditaire le demande, la
+      vue tableau des EDT (/edt) avec les filtres vague/effectif réel.
+  R2  Export PDF/Excel par groupe, enseignant et salle (fonction 10).
+  R3  Import du référentiel d'infrastructures (sites, bâtiments, salles) depuis
+      les documents 5 et 8 du dossier, si le référentiel en base est incomplet.
+  R4  Planification en lot des examens et rattrapages (fonction 9).
+  R5  Optimisation du solveur au-delà de quelques milliers de besoins :
+      le budget de placement borne l'exploration, mais un ordonnancement par
+      filière réduirait encore le temps de calcul.
+  R6  Réconciliation avec les inscriptions internes : lorsqu'un étudiant
+      importé est ensuite inscrit dans l'application, prévoir une fusion
+      explicite (jamais automatique) pour éviter deux cohortes en doublon.
+
+  Aucun de ces écarts ne remet en cause les deux situations demandées (§1.1 a
+  et b) : elles sont couvertes par le backend, par l'écran et vérifiées par les
+  tests ainsi que par la recette HTTP du §12.1.
+
+
+================================================================================
+12. TRAÇABILITÉ DES FICHIERS LIVRÉS
+================================================================================
+
+  Backend
+    edts/models.py                              + InscriptionImportee
+    edts/migrations/0007_inscriptionimportee.py  migration additive
+    edts/moteur/import_inscrits.py               import CSV/XLSX, rapport
+    edts/moteur/besoins_maquette.py              besoins depuis la maquette
+    edts/moteur/annee.py                         génération annuelle
+    edts/moteur/besoins.py                       + champ origine
+    edts/moteur/generation.py                    + paramètre besoins
+    edts/moteur/validation.py                    C8 ancré sur affectation ou ECUE
+    edts/api_getinjs.py                          routes import/génération/document
+    edts/urls.py                                 + 5 routes (ajout pur)
+    edts/admin.py                                + admin lecture seule des inscrits
+    edts/tests/test_import_inscrits.py           21 tests
+    edts/tests/test_generation_annee.py          15 tests
+    edts/tests/test_api_getinjs.py               17 tests
+
+  Frontend
+    src/pages/getinjs/GenerationAnnuelle.jsx      écran import + génération annuelle
+    src/pages/getinjs/GenerationAnnuelle.test.jsx 11 tests (vitest)
+    src/styles/getinjs.css                        feuille locale à l'écran
+    src/App.jsx                                   + route /edt/generation-annuelle
+    src/menu/arborescence.js                      + entrée « Génération annuelle & import »
+    src/main.jsx                                  + import de la feuille getinjs.css
+
+  Documentation
+    docs/getinjs/Conception-GET-INJS.txt         présent document
+
+  Aucune route, aucun modèle, aucune règle existants n'ont été supprimés ou
+  renommés. Les ajouts sont additifs et couverts par des tests de
+  non-régression.
+
+12.1 Vérifications exécutées (2026-10-29)
+
+  - backend, module edts ......................... 251 tests OK
+  - backend, suite complète ...................... 2 538 tests — 1 échec
+    préexistant (config/tests/test_apercu_hardening : POST /admin/logout/
+    sans jeton CSRF renvoie 403 ; reproduit à l'identique sur HEAD 928cf55,
+    sans rapport avec GET-INJS)
+  - frontend, suite complète ..................... 1 976 tests OK
+  - build Vite + ESLint .......................... OK
+  - recette HTTP réelle sur 3 500 inscrits ....... analyse 3 500/3 500 valides,
+    import 3 500 créées puis 0 créée / 3 500 mises à jour au réimport,
+    synthèse 3 500, 2 groupes créés automatiquement, génération 409
+    AUCUN_BESOIN_PLANIFIABLE motivée (aucune maquette active en base de
+    développement), conception servie (33 440 octets).
+
+================================================================================
+ FIN DU DOCUMENT
+================================================================================

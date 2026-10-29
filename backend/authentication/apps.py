@@ -3,11 +3,28 @@ import os
 from django.apps import AppConfig
 
 
+def _suite_de_tests_en_cours():
+    """Vrai pendant `manage.py test` (et sous pytest).
+
+    Le compte de démonstration est un dispositif d'aperçu : le créer dans la
+    base de test ajoutait un administrateur fantôme qui faussait les tests
+    comptant les comptes (constaté : « 3 != 2 » dans
+    habilitations.tests.test_console_u4). Un `.env` de démonstration ne doit
+    pas changer le résultat de la suite.
+    """
+    import sys
+
+    return 'test' in sys.argv or os.environ.get('PYTEST_CURRENT_TEST') is not None
+
+
 def create_superuser_from_env():
     import logging
     from django.contrib.auth import get_user_model
 
     logger = logging.getLogger(__name__)
+
+    if _suite_de_tests_en_cours():
+        return
 
     username = os.environ.get('DJANGO_SUPERUSER_USERNAME')
     email = os.environ.get('DJANGO_SUPERUSER_EMAIL')

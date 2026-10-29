@@ -1,41 +1,32 @@
 /* ==========================================================================
    DESIGN SYSTEM INJS-LMD 2026 — PREMIUM GLASSMORPHISM DASHBOARD ENGINE
    Inspiré de la maquette institutionnelle INJS Marcory
-   Couleurs : #0B1F3A (Bleu foncé), #2563EB (Bleu action), #38BDF8 (Cyan clair),
+   Couleurs : var(--injs-navy) (Bleu foncé), var(--injs-blue-royal) (Bleu action), var(--injs-sky) (Cyan clair),
               #F0F6FC (Fond lumineux), Verre dépoli & bordures luminescentes
    ========================================================================== */
 
+/* Tokens DÉLÉGUÉS au socle central `styles/designSystem.css`.
+   Ce bloc ne redéfinissait que des doublons avec des valeurs contradictoires
+   (rayons 12 px au lieu de 14/20, verts #10B981, cyan var(--injs-sky)). Les valeurs
+   sont désormais des ALIAS : une seule source de vérité pour toute
+   l'application, sans changer les noms utilisés par les écrans. */
 :root {
-  --injs-blue-dark: #0B1F3A;
-  --injs-blue-navy: #0F274A;
-  --injs-blue-institution: #123E6A;
-  --injs-blue-accent: #2A7FFF;
-  --injs-blue-vibrant: #2563EB;
-  --injs-cyan: #38BDF8;
-  --injs-teal: #06B6D4;
-  --injs-blue-light: #EBF4FC;
-  --injs-blue-tint: #F0F6FC;
-  --injs-bg: #F0F5FA;
-  --injs-surface: #FFFFFF;
-  --injs-text-primary: #0F172A;
-  --injs-text-secondary: #475569;
-  --injs-text-muted: #94A3B8;
-  --injs-border: #E2E8F0;
-  --injs-border-glass: rgba(255, 255, 255, 0.85);
-  --injs-success: #10B981;
-  --injs-success-bg: #ECFDF5;
-  --injs-warning: #F59E0B;
-  --injs-warning-bg: #FFFBEB;
-  --injs-danger: #EF4444;
-  --injs-danger-bg: #FEF2F2;
-  --injs-info: #0284C7;
-  --injs-radius-sm: 8px;
-  --injs-radius-md: 12px;
-  --injs-radius-lg: 12px;
+  --injs-blue-dark: var(--injs-navy-mid);
+  --injs-blue-navy: var(--injs-navy-mid);
+  --injs-blue-institution: var(--injs-blue);
+  --injs-blue-accent: var(--injs-blue-royal);
+  --injs-blue-vibrant: var(--injs-blue-royal);
+  --injs-cyan: var(--injs-sky);
+  --injs-blue-light: var(--injs-blue-pale);
+  --injs-blue-tint: var(--injs-blue-mist);
+  --injs-text-primary: var(--injs-text);
+  --injs-text-secondary: var(--injs-text-soft);
+  --injs-border-glass: rgba(255, 255, 255, 0.7);
+  --injs-success-bg: var(--injs-success-soft);
+  --injs-warning-bg: var(--injs-warning-soft);
+  --injs-danger-bg: var(--injs-danger-soft);
   --injs-radius-xl: 22px;
-  --injs-radius-pill: 9999px;
-  --injs-shadow-glass: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
-  --injs-shadow-card: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+  --injs-shadow-glass: var(--injs-shadow-soft);
 }
 
 .dashboard-engine-wrapper,
@@ -64,7 +55,7 @@
 
 .glass-panel-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 35px -5px rgba(11, 31, 58, 0.09), 0 0 1px 1px rgba(255, 255, 255, 1);
+  box-shadow: 0 14px 35px -5px rgba(7, 27, 58, 0.09), 0 0 1px 1px rgba(255, 255, 255, 1);
 }
 
 /* ── En-tête de Salutation (Greeting Banner) ── */
@@ -117,7 +108,7 @@
 .campus-hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(11, 31, 58, 0.92) 0%, rgba(26, 75, 140, 0.8) 100%);
+  background: linear-gradient(135deg, rgba(7, 27, 58, 0.92) 0%, rgba(26, 75, 140, 0.8) 100%);
   z-index: 1;
 }
 
@@ -151,7 +142,7 @@
 
 /* ── Boutons Prémiums ── */
 .btn-premium-primary {
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
   color: #FFFFFF !important;
   border: none;
   border-radius: var(--injs-radius-pill);
@@ -161,7 +152,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 4px 14px rgba(18, 103, 214, 0.35);
   cursor: pointer;
   text-decoration: none;
   transition: all 0.2s ease;
@@ -169,9 +160,9 @@
 }
 
 .btn-premium-primary:hover {
-  background: linear-gradient(135deg, #1D4ED8 0%, #256FD0 100%);
+  background: linear-gradient(135deg, var(--injs-blue) 0%, var(--injs-blue-royal) 100%);
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+  box-shadow: 0 6px 18px rgba(18, 103, 214, 0.45);
 }
 
 .btn-premium-glass {
@@ -188,7 +179,7 @@
   cursor: pointer;
   text-decoration: none;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(11, 31, 58, 0.04);
+  box-shadow: 0 2px 8px rgba(7, 27, 58, 0.04);
 }
 
 .btn-premium-glass:hover {
@@ -227,9 +218,9 @@
 
 .plaquette-pedagogie,
 .plaquette-primary {
-  background: #DBEAFE;
-  color: #2563EB;
-  border: 1px solid #BFDBFE;
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal);
+  border: 1px solid var(--injs-border-strong);
 }
 
 .plaquette-organisation,
@@ -260,7 +251,7 @@
 }
 
 .trend-pill.neutral {
-  color: #2563EB;
+  color: var(--injs-blue-royal);
 }
 
 .trend-comparison {
@@ -283,9 +274,10 @@
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.4rem;
-  background: #FFFFFF;
-  backdrop-filter: blur(14px);
-  border: 1px solid #E9ECF2;
+  background: var(--injs-surface);
+  /* Fond opaque : un backdrop-filter ici ne produirait aucun effet visible
+     tout en coûtant une passe de flou au compositeur. */
+  border: 1px solid var(--injs-border);
   border-radius: var(--injs-radius-lg);
   box-shadow: var(--injs-shadow-card);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -293,11 +285,11 @@
 
 .top-kpi-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 30px -5px rgba(11, 31, 58, 0.08);
+  box-shadow: 0 12px 30px -5px rgba(7, 27, 58, 0.08);
 }
 
 .top-kpi-label {
-  font-size: 10px;
+  font-size: var(--injs-fs-xs);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -318,7 +310,7 @@
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: #EFF6FF;
+  background: var(--injs-blue-pale);
   color: var(--injs-blue-accent);
   display: flex;
   align-items: center;
@@ -365,13 +357,13 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
   color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.15rem;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 12px rgba(18, 103, 214, 0.3);
   margin-bottom: 0.45rem;
   transition: transform 0.2s ease;
 }
@@ -501,7 +493,7 @@
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--injs-blue-accent);
-  background: #EFF6FF;
+  background: var(--injs-blue-pale);
   padding: 0.15rem 0.4rem;
   border-radius: 6px;
   white-space: nowrap;
@@ -588,9 +580,9 @@
 }
 
 .dash-tab-btn.active {
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
   color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 12px rgba(18, 103, 214, 0.3);
 }
 
 /* ════ Actions Rapides Dépolies & Boutons Pilules Prémiums ════ */
@@ -601,7 +593,7 @@
   border: 1px solid rgba(255, 255, 255, 0.85) !important;
   border-radius: 18px !important;
   padding: 1.15rem 1.4rem !important;
-  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.06), 0 0 1px 1px rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 10px 30px -5px rgba(7, 27, 58, 0.06), 0 0 1px 1px rgba(255, 255, 255, 0.9) !important;
   margin-top: 1.25rem;
   margin-bottom: 1.25rem;
 }
@@ -645,33 +637,33 @@
 .btn-quick-action-secondary,
 .quick-action-link {
   background: #FFFFFF !important;
-  color: #0B1F3A !important;
+  color: var(--injs-navy) !important;
   border: 1.5px solid #CBD5E1 !important;
-  box-shadow: 0 2px 6px rgba(11, 31, 58, 0.04) !important;
+  box-shadow: 0 2px 6px rgba(7, 27, 58, 0.04) !important;
 }
 
 .btn-quick-action-secondary:hover,
 .quick-action-link:hover {
   background: #F8FAFC !important;
-  border-color: #2A7FFF !important;
-  color: #2563EB !important;
+  border-color: var(--injs-blue-royal) !important;
+  color: var(--injs-blue-royal) !important;
   transform: translateY(-2px) !important;
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.16) !important;
+  box-shadow: 0 6px 18px rgba(18, 103, 214, 0.16) !important;
 }
 
 /* Bouton Primaire (première action mise en exergue) */
 .btn-quick-action-primary {
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%) !important;
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%) !important;
   color: #FFFFFF !important;
   border: 1.5px solid transparent !important;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.32) !important;
+  box-shadow: 0 4px 14px rgba(18, 103, 214, 0.32) !important;
 }
 
 .btn-quick-action-primary:hover {
-  background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%) !important;
+  background: linear-gradient(135deg, var(--injs-blue) 0%, var(--injs-blue-royal) 100%) !important;
   color: #FFFFFF !important;
   transform: translateY(-2px) !important;
-  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.42) !important;
+  box-shadow: 0 8px 22px rgba(18, 103, 214, 0.42) !important;
 }
 
 /* Pastille Icône dans le bouton */
@@ -689,13 +681,13 @@
 
 .btn-quick-action-secondary .quick-action-icon-wrap,
 .quick-action-link .quick-action-icon-wrap {
-  background: rgba(37, 99, 235, 0.1);
-  color: #2A7FFF;
+  background: rgba(18, 103, 214, 0.1);
+  color: var(--injs-blue-royal);
 }
 
 .btn-quick-action-secondary:hover .quick-action-icon-wrap,
 .quick-action-link:hover .quick-action-icon-wrap {
-  background: #2A7FFF;
+  background: var(--injs-blue-royal);
   color: #FFFFFF;
 }
 

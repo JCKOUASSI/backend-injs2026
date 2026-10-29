@@ -16,8 +16,12 @@ export function ToastProvider({ children }) {
   // Nettoie toutes les temporisations encore actives lorsque le provider est démonté
   // pour éviter toute mise à d'état sur un composant démonté
   useEffect(() => {
+    // Copie de la référence au montage : au démontage, `activeTimers.current`
+    // peut avoir été remplacé, c'est la liste capturée qui doit être nettoyée.
+    const timers = activeTimers
     return () => {
-      activeTimers.current.forEach(timer => clearTimeout(timer))
+      timers.current.forEach(timer => clearTimeout(timer))
+      timers.current = []
     }
   }, [])
 
@@ -29,7 +33,7 @@ export function ToastProvider({ children }) {
   const value = useMemo(() => ({ showToast }), [showToast])
 
   const iconMap = { success: 'check-circle-fill', error: 'exclamation-triangle-fill', info: 'info-circle-fill' }
-  const bgMap = { success: '#125a99', error: '#c62828', info: '#1565C0' }
+  const bgMap = { success: '#104A8E', error: '#DC3545', info: '#104A8E' }
 
   return (
     <ToastContext.Provider value={value}>

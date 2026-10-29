@@ -8,6 +8,7 @@ et versionnés ensemble.
 from django.urls import path
 
 from . import api
+from . import api_getinjs as g
 from . import api_lmd as lmd
 
 # Pas d'app_name volontaire : le jeu de routes est monté deux fois
@@ -33,6 +34,20 @@ urlpatterns_lmd = [
     path('lmd/availability/rooms/', lmd.disponibilites_salles_api,
          name='edt-lmd-availability-rooms'),
     path('lmd/slots/', lmd.slots_api, name='edt-lmd-slots'),
+
+    # ── GET-INJS : import des inscrits + génération annuelle (AJOUT) ────────
+    # Routes nouvelles, préfixées `lmd/` : aucune route existante n'est
+    # modifiée. Déclarées avant `lmd/<int:pk>/…` (le littéral n'est pas capté
+    # par `<int:pk>`).
+    path('lmd/import/inscrits/analyser/', g.analyser_import_api,
+         name='edt-lmd-import-inscrits-analyser'),
+    path('lmd/import/inscrits/synthese/', g.synthese_import_api,
+         name='edt-lmd-import-inscrits-synthese'),
+    path('lmd/import/inscrits/', g.importer_inscrits_api,
+         name='edt-lmd-import-inscrits'),
+    path('lmd/generate-annee/', g.generate_annee_api,
+         name='edt-lmd-generate-annee'),
+    path('lmd/conception/', g.conception_api, name='edt-lmd-conception'),
 
     # Génération / validation / publication (§6, §10, §11)
     path('lmd/generate/', lmd.generate_api, name='edt-lmd-generate'),

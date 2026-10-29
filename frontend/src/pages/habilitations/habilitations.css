@@ -4,7 +4,7 @@
    ========================================================================== */
 
 .hab-bandeau {
-  background: linear-gradient(135deg, #2563EB 0%, #0B1F3A 100%);
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-navy) 100%);
   color: #fff;
   font-size: 0.84rem;
   font-weight: 600;
@@ -46,7 +46,7 @@
   gap: 0.65rem;
   padding: 0.55rem 0.85rem;
   border-radius: 10px;
-  color: #475569;
+  color: var(--injs-text-soft);
   text-decoration: none;
   font-size: 0.88rem;
   font-weight: 600;
@@ -56,11 +56,11 @@
 
 .hab-nav a:hover {
   background: rgba(241, 245, 249, 0.9);
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 .hab-nav a.active {
-  background: linear-gradient(90deg, #2563EB 0%, #2A7FFF 100%) !important;
+  background: linear-gradient(90deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%) !important;
   color: #FFFFFF !important;
   box-shadow: 0 4px 12px rgba(30, 112, 235, 0.35);
 }
@@ -100,18 +100,18 @@
 
 .hab-carte h2, .hab-carte h3 {
   margin-top: 0;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   font-weight: 800;
 }
 
 .hab-badge-sensible {
-  background: #FEE2E2;
-  color: #DC2626;
+  background: var(--injs-danger-soft);
+  color: #A3222F;
   font-size: 0.72rem;
   font-weight: 700;
   border-radius: 9999px;
   padding: 0.2em 0.6em;
-  border: 1px solid #FECACA;
+  border: 1px solid rgba(163, 34, 47, 0.28);
 }
 
 .hab-badge-statut {
@@ -121,9 +121,9 @@
   font-size: 0.72rem;
   font-weight: 700;
 }
-.hab-badge-statut.ACTIF { background: #D1FAE5; color: #059669; border: 1px solid #A7F3D0; }
-.hab-badge-statut.SUSPENDU { background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A; }
-.hab-badge-statut.REVOQUE { background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; }
+.hab-badge-statut.ACTIF { background: var(--injs-success-soft); color: #0E7A4F; border: 1px solid rgba(14, 122, 79, 0.28); }
+.hab-badge-statut.SUSPENDU { background: var(--injs-warning-soft); color: #8A5A00; border: 1px solid rgba(138, 90, 0, 0.28); }
+.hab-badge-statut.REVOQUE { background: var(--injs-danger-soft); color: #A3222F; border: 1px solid rgba(163, 34, 47, 0.28); }
 
 .hab-etapes {
   display: flex;
@@ -140,21 +140,21 @@
   border-radius: 10px;
   padding: 0.5rem 0.75rem;
   font-size: 0.82rem;
-  color: #64748B;
+  color: var(--injs-text-muted);
   transition: all 0.2s;
 }
 
 .hab-etape.active {
-  border-color: #2A7FFF;
-  background: #EBF3FF;
-  color: #2563EB;
+  border-color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal);
   font-weight: 700;
 }
 
 .hab-etape.terminee {
-  background: #ECFDF5;
-  border-color: #A7F3D0;
-  color: #059669;
+  background: var(--injs-success-soft);
+  border-color: rgba(14, 122, 79, 0.28);
+  color: #0E7A4F;
 }
 
 .hab-table {
@@ -172,7 +172,7 @@
 }
 
 .hab-table thead th {
-  background: #0B1F3A;
+  background: var(--injs-navy);
   color: #FFFFFF;
   position: sticky;
   top: 0;
@@ -199,15 +199,15 @@
 .hab-matrice th {
   background: rgba(241, 245, 249, 0.9);
   font-weight: 700;
-  color: #334155;
+  color: var(--injs-text-soft);
 }
 
-.hab-niveau-N4 { background: #FEE2E2; color: #DC2626; font-weight: 700; }
-.hab-niveau-N3 { background: #FEF3C7; color: #D97706; font-weight: 600; }
-.hab-niveau-N2 { background: #DBEAFE; color: #2563EB; font-weight: 600; }
-.hab-niveau-N1 { background: #E0F2FE; color: #0284C7; }
-.hab-niveau-N0 { background: #F8FAFC; color: #94A3B8; }
-.hab-provisoire { position: relative; outline: 1px dashed #7b1fa2; }
+.hab-niveau-N4 { background: var(--injs-danger-soft); color: #A3222F; font-weight: 700; }
+.hab-niveau-N3 { background: var(--injs-warning-soft); color: #8A5A00; font-weight: 600; }
+.hab-niveau-N2 { background: var(--injs-blue-pale); color: var(--injs-blue-royal); font-weight: 600; }
+.hab-niveau-N1 { background: var(--injs-blue-pale); color: #0369A1; }
+.hab-niveau-N0 { background: var(--injs-surface-alt); color: #526175; }
+.hab-provisoire { position: relative; outline: 2px dashed var(--injs-info); }
 
 .hab-filtres {
   display: flex;
@@ -221,16 +221,16 @@
 
 .hab-recap { line-height: 1.8; }
 .hab-recap .libelle {
-  color: #64748B;
+  color: var(--injs-text-muted);
   display: inline-block;
   min-width: 11rem;
   font-weight: 600;
 }
 
 .hab-403 {
-  border: 1px solid #FECACA;
+  border: 1px solid rgba(163, 34, 47, 0.28);
   background: rgba(254, 242, 242, 0.85);
-  color: #991B1B;
+  color: #A3222F;
   border-radius: 12px;
   padding: 1.25rem;
   margin: 1.5rem 0;
@@ -238,7 +238,7 @@
 }
 
 .hab-muted {
-  color: #64748B;
+  color: var(--injs-text-muted);
   font-size: 0.84rem;
 }
 
@@ -246,7 +246,7 @@
 .hab-arbre {
   list-style: none;
   padding-left: 1.1rem;
-  border-left: 1px dashed #CBD5E1;
+  border-left: 1px dashed var(--injs-border-strong);
   margin: 0.25rem 0 0.25rem 0.35rem;
 }
 
@@ -268,7 +268,7 @@
 }
 
 .hab-badge-critique {
-  background: #7F1D1D;
+  background: var(--injs-danger);
 }
 
 .hab-grille {
@@ -303,12 +303,12 @@
 .hab-barre-libelle {
   min-width: 9rem;
   font-size: 0.8rem;
-  color: #334155;
+  color: var(--injs-text-soft);
 }
 
 .hab-barre-piste {
   flex: 1;
-  background: #E2E8F0;
+  background: var(--injs-border);
   border-radius: 999px;
   height: 0.6rem;
   overflow: hidden;
@@ -317,7 +317,7 @@
 .hab-barre {
   display: block;
   height: 100%;
-  background: #2563EB;
+  background: var(--injs-blue-royal);
   border-radius: 999px;
 }
 
@@ -325,12 +325,12 @@
   min-width: 2.4rem;
   text-align: right;
   font-size: 0.8rem;
-  color: #475569;
+  color: var(--injs-text-soft);
 }
 
 /* Lien contextuel discret vers une vue d'impact (crosshair). */
 .hab-lien-impact {
-  color: #2563EB;
+  color: var(--injs-blue-royal);
   opacity: 0.75;
 }
 
@@ -357,26 +357,26 @@
 }
 
 .hab-alerte-critique {
-  background: #FEE2E2;
-  color: #991B1B;
-  border: 1px solid #FECACA;
+  background: var(--injs-danger-soft);
+  color: #A3222F;
+  border: 1px solid rgba(163, 34, 47, 0.28);
 }
 
 .hab-alerte-attention {
-  background: #FEF3C7;
+  background: var(--injs-warning-soft);
   color: #92400E;
-  border: 1px solid #FDE68A;
+  border: 1px solid rgba(138, 90, 0, 0.28);
 }
 
 .hab-alerte-info {
-  background: #DBEAFE;
+  background: var(--injs-blue-pale);
   color: #1E40AF;
-  border: 1px solid #BFDBFE;
+  border: 1px solid var(--injs-border-strong);
 }
 
 /* ── Lot B : comparaison de rôles ────────────────────────────────────── */
 .hab-diff-table td:nth-child(2) {
-  color: #991B1B;
+  color: #A3222F;
 }
 
 .hab-diff-table td:nth-child(3) {
@@ -392,17 +392,17 @@
 }
 
 .hab-diff-ajouts {
-  background: #ECFDF5;
-  border: 1px solid #A7F3D0;
+  background: var(--injs-success-soft);
+  border: 1px solid rgba(14, 122, 79, 0.28);
   color: #065F46;
   border-radius: 10px;
   padding: 0.45rem 0.75rem;
 }
 
 .hab-diff-retraits {
-  background: #FEF2F2;
-  border: 1px solid #FECACA;
-  color: #991B1B;
+  background: var(--injs-danger-soft);
+  border: 1px solid rgba(163, 34, 47, 0.28);
+  color: #A3222F;
   border-radius: 10px;
   padding: 0.45rem 0.75rem;
 }

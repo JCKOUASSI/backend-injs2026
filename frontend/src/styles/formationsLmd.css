@@ -49,8 +49,8 @@
 }
 
 .flmd-search .form-control:focus {
-  border-color: #2a7fff;
-  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
 }
 
 .flmd-search .btn {
@@ -107,8 +107,8 @@
 
 .flmd-chip--blue {
   background: #EBF3FF;
-  border-color: #BFDBFE;
-  color: #2563EB;
+  border-color: var(--injs-border-strong);
+  color: var(--injs-blue-royal);
 }
 
 /* -- 6. BLOC CYCLE -- */
@@ -136,7 +136,7 @@
   margin: 0;
   font-size: 0.98rem;
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   letter-spacing: -0.01em;
 }
 
@@ -171,7 +171,7 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #2A7FFF;
+  color: var(--injs-blue-royal);
 }
 
 .flmd-vide {
@@ -211,7 +211,7 @@
 }
 
 .flmd-niveau-head strong {
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 .flmd-niveau-meta {
@@ -233,7 +233,7 @@
 
 .flmd-maquette {
   padding-left: 0.85rem;
-  border-left: 3px solid #BFDBFE;
+  border-left: 3px solid var(--injs-border-strong);
 }
 
 .flmd-maquette-head {
@@ -246,7 +246,7 @@
 .flmd-maquette-lib {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 .flmd-ues {
@@ -269,7 +269,7 @@
 
 .flmd-ue-code {
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 .flmd-ecues {

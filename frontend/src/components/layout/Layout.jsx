@@ -28,6 +28,21 @@ export default function Layout({ children, breadcrumb }) {
   )
   const [searchTerm, setSearchTerm] = useState('')
 
+  // Fermeture du menu mobile à la touche Échap (convention clavier, WCAG 2.1.1)
+  // et blocage du défilement de l'arrière-plan tant qu'il est ouvert, pour
+  // éviter de faire défiler le contenu derrière le panneau.
+  useEffect(() => {
+    if (!(isMobile && sidebarOpen)) return undefined
+    const onKeyDown = (e) => { if (e.key === 'Escape') setSidebarOpen(false) }
+    const ancienOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = ancienOverflow
+    }
+  }, [isMobile, sidebarOpen])
+
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth <= 992
@@ -191,7 +206,7 @@ export default function Layout({ children, breadcrumb }) {
                 }}
                 onFocus={(e) => {
                   e.target.style.background = '#FFFFFF'
-                  e.target.style.borderColor = '#2F80ED'
+                  e.target.style.borderColor = '#1267D6'
                   e.target.style.boxShadow = '0 0 0 3px rgba(47, 128, 237, 0.15)'
                 }}
                 onBlur={(e) => {
@@ -230,7 +245,7 @@ export default function Layout({ children, breadcrumb }) {
               }}
               title="Année Académique Active"
             >
-              <i className="bi bi-calendar3" style={{ color: '#2F80ED' }} />
+              <i className="bi bi-calendar3" style={{ color: '#1267D6' }} />
               <span>2026 – 2027</span>
               <i className="bi bi-chevron-down" style={{ fontSize: '0.68rem', color: '#94A3B8' }} />
             </div>
@@ -299,7 +314,7 @@ export default function Layout({ children, breadcrumb }) {
                   height: '36px',
                   borderRadius: '50%',
                   overflow: 'hidden',
-                  background: 'linear-gradient(135deg, #0B1F3A 0%, #1E62D0 100%)',
+                  background: 'linear-gradient(135deg, #071B3A 0%, #1267D6 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',

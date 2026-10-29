@@ -154,12 +154,27 @@ def verifier_enseignants(placements, violations, warnings):
                 f'{besoin.intitule} : aucun enseignant, les conflits C1/C5 ne sont '
                 'pas garantis.'
             )
-        # C8 — cohérence pédagogique : la séance garde sa clé d'affectation.
-        if not besoin.affectation_pedagogique_id:
+        # C8 — cohérence pédagogique : une séance doit rester ancrée à un
+        # contexte pédagogique réel. Deux ancrages sont admis :
+        #   * l'AFFECTATION PÉDAGOGIQUE (chaîne LMD interne, cas historique) ;
+        #   * l'ECUE (cas des COHORTES IMPORTÉES : besoins dérivés de la
+        #     maquette active, sans affectation — voir `besoins_maquette`).
+        # L'ECUE est bien un ancrage métier complet : elle porte l'UE, le
+        # semestre et la maquette d'origine. Une séance qui ne porterait NI
+        # affectation NI ECUE reste une violation : la règle n'est pas
+        # assouplie, elle est appliquée à l'ancrage réellement disponible.
+        if not besoin.affectation_pedagogique_id and not besoin.ecue_id:
             violations.append(C.Violation(
                 C.C8_COHERENCE_PEDAGOGIQUE,
-                f'{besoin.intitule} : séance sans affectation pédagogique (C8).',
+                f'{besoin.intitule} : séance sans ancrage pédagogique (ni '
+                'affectation, ni ECUE) — C8.',
             ))
+        elif not besoin.affectation_pedagogique_id:
+            warnings.append(
+                f'{besoin.intitule} : séance issue de la maquette (ECUE '
+                f'{besoin.ecue_id}) sans affectation pédagogique — ancrage '
+                'vérifié au niveau de l’ECUE.'
+            )
     return violations
 
 

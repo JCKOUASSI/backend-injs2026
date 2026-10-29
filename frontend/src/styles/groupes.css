@@ -27,7 +27,7 @@
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid #E9ECF2;
   border-radius: 18px;
-  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px -5px rgba(7, 27, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
 }
 
 .grp-hero-text {
@@ -50,9 +50,9 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.2;
-  background: #DBEAFE;
-  color: #2563EB;
-  border: 1px solid #BFDBFE;
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal);
+  border: 1px solid var(--injs-border-strong);
 }
 
 .grp-hero-title {
@@ -61,14 +61,14 @@
   gap: 0.55rem;
   font-size: 1.45rem;
   font-weight: 800;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   margin: 0;
   letter-spacing: -0.02em;
   line-height: 1.15;
 }
 
 .grp-hero-title i {
-  color: #2A7FFF;
+  color: var(--injs-blue-royal);
   font-size: 1.3rem;
 }
 
@@ -85,7 +85,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
   color: #FFFFFF;
   border: none;
   border-radius: 9999px;
@@ -93,14 +93,14 @@
   font-size: 0.85rem;
   font-weight: 700;
   white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 14px rgba(18, 103, 214, 0.3);
   transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .grp-action:hover:not(:disabled) {
-  background: linear-gradient(135deg, #1D4ED8 0%, #256FD0 100%);
+  background: linear-gradient(135deg, var(--injs-blue) 0%, var(--injs-blue-royal) 100%);
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+  box-shadow: 0 6px 18px rgba(18, 103, 214, 0.45);
 }
 
 .grp-action:disabled {
@@ -131,7 +131,7 @@
 
 .grp-kpi:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 30px -5px rgba(11, 31, 58, 0.08);
+  box-shadow: 0 12px 30px -5px rgba(7, 27, 58, 0.08);
 }
 
 .grp-kpi-label {
@@ -149,7 +149,7 @@
   font-size: 1.6rem;
   font-weight: 800;
   line-height: 1.1;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   letter-spacing: -0.02em;
 }
 
@@ -162,7 +162,7 @@
   background: #FFFFFF;
   border: 1px solid #E9ECF2;
   border-radius: 18px;
-  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px -5px rgba(7, 27, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
   overflow: hidden;
   margin-bottom: 0 !important;
 }
@@ -184,21 +184,21 @@
   gap: 0.5rem;
   font-size: 1rem;
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   margin: 0;
 }
 
 .grp-panel-title i {
-  color: #2A7FFF;
+  color: var(--injs-blue-royal);
   font-size: 1.05rem;
 }
 
 .grp-count-pill {
   padding: 0.3rem 0.75rem;
   border-radius: 9999px;
-  background: #EFF6FF;
-  color: #2563EB;
-  border: 1px solid #BFDBFE;
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal);
+  border: 1px solid var(--injs-border-strong);
   font-size: 0.74rem;
   font-weight: 700;
   white-space: nowrap;
@@ -244,8 +244,8 @@
 
 .grp-field .form-select:focus {
   background-color: #FFFFFF;
-  border-color: #2A7FFF;
-  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
 }
 
 /* -- 6. ALERTE ECHECS DE REPARTITION -- */
@@ -294,7 +294,7 @@
   width: 1.3rem;
   height: 1.3rem;
   border-width: 2px;
-  color: #2A7FFF;
+  color: var(--injs-blue-royal);
 }
 
 /* -- 8. TABLEAU -- */
@@ -344,7 +344,7 @@
 
 .grp-nom {
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 .grp-formation {
@@ -361,7 +361,7 @@
 
 .grp-effectif {
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 .grp-effectif-cap {

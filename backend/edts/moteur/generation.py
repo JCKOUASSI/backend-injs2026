@@ -457,6 +457,7 @@ def generate_schedule(
     budget=BUDGET_PLACEMENTS_DEFAUT,
     perimetre_injs_seulement=True,
     occupations_initiales=None,
+    besoins=None,
 ):
     """Génère un plan d'emploi du temps (étape L) — **sans jamais publier**.
 
@@ -484,6 +485,13 @@ def generate_schedule(
     * ``C9_CALENDRIER``                 — aucune période autorisée ;
     * ``AUCUNE_SALLE_COMPATIBLE``       — ni salle ne peut accueillir (C7/C4).
 
+    LOT GET-INJS (additif) — ``besoins`` : liste de ``TeachingNeed`` déjà
+    calculés. Elle permet de planifier des cohortes **importées**, dont les
+    besoins sont dérivés de la maquette (``edts.moteur.besoins_maquette``)
+    plutôt que d'``AffectationPedagogique``. ``None`` (défaut) conserve
+    strictement le comportement historique : les besoins sont alors recalculés
+    depuis les affectations.
+
     Le service n'écrit rien en base : il renvoie un plan. La persistance est
     l'affaire de ``publication.py`` et de la couche API.
     """
@@ -491,16 +499,21 @@ def generate_schedule(
     from formations.models import RefSalle
 
     # 1. Besoins — peut déjà refuser avec un motif explicite.
-    resultat_besoins = calculate_teaching_needs(
-        annee_academique_id=annee_academique_id,
-        ref_formation_id=ref_formation_id,
-        parcours_id=parcours_id,
-        niveau_id=niveau_id,
-        semestre_id=semestre_id,
-        groupe_ids=groupe_ids,
-        duree_seance_heures=duree_seance_heures,
-        perimetre_injs_seulement=perimetre_injs_seulement,
-    )
+    if besoins is not None:
+        from edts.moteur.besoins import BesoinsResult
+
+        resultat_besoins = BesoinsResult(besoins=list(besoins))
+    else:
+        resultat_besoins = calculate_teaching_needs(
+            annee_academique_id=annee_academique_id,
+            ref_formation_id=ref_formation_id,
+            parcours_id=parcours_id,
+            niveau_id=niveau_id,
+            semestre_id=semestre_id,
+            groupe_ids=groupe_ids,
+            duree_seance_heures=duree_seance_heures,
+            perimetre_injs_seulement=perimetre_injs_seulement,
+        )
     if resultat_besoins.vide:
         return GenerationResult(
             status=GENERATION_IMPOSSIBLE,

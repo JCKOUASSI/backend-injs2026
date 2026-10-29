@@ -82,6 +82,21 @@ export default defineConfig(({ mode }) => {
         '/media': proxyOpts,
       },
     },
+    // Serveur de PRÉVISUALISATION (`vite preview`) : sert le bundle de
+    // production sur le même port et avec le même proxy que le serveur de
+    // développement. Utile quand le mode développement est perturbé par la
+    // passerelle d'aperçu (WebSocket/HMR) : la démonstration reste possible.
+    preview: {
+      port: 3000,
+      strictPort: true,
+      host: true,
+      allowedHosts: ['.e2b.app', '.trycloudflare.com', 'localhost', '127.0.0.1'],
+      proxy: {
+        '/api': proxyOpts,
+        '/static': proxyOpts,
+        '/media': proxyOpts,
+      },
+    },
     build: {
       outDir: 'dist',
       sourcemap: mode !== 'production',

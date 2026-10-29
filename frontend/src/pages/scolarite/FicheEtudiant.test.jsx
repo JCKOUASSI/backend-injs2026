@@ -53,7 +53,7 @@ const setupRoutes = (etudiant = etudiantAvecInscription) => {
     { id: 7, nom: 'Groupe B', effectif: 10, capacite_max: 30, places_restantes: 20 },
     { id: 8, nom: 'Groupe plein', effectif: 30, capacite_max: 30, places_restantes: 0 },
   ])
-  apiController.setRoute('/formations/formations/', () => [{ id: 1, formation: 'Module opérationnel 1' }])
+  apiController.setRoute('/formations/list/', () => [{ id: 1, formation: 'Module opérationnel 1' }])
   apiController.setRoute(/\/passerelle\/analyser\/$/, () => ({
     a_creer: [{ ecue: 'ECUE1', module: 'Module opérationnel 1' }], existantes: [], non_rapprochees: [],
   }))

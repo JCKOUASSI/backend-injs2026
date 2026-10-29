@@ -12,17 +12,17 @@ export function VectorSplineAreaChart({
   const series = [
     {
       name: 'Étudiants',
-      color: '#2F80ED',
+      color: '#1267D6',
       data: [820, 950, 1040, 1120, 1180, 1248],
     },
     {
       name: 'Candidats',
-      color: '#38BDF8',
+      color: '#35BDF5',
       data: [1450, 1680, 1890, 2050, 2200, 2340],
     },
     {
       name: 'Enseignants',
-      color: '#06B6D4',
+      color: '#0D9488',
       data: [142, 155, 164, 172, 179, 186],
     },
   ]
@@ -63,7 +63,7 @@ export function VectorSplineAreaChart({
     <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
         <div>
-          <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0B1F3A', margin: 0 }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#071B3A', margin: 0 }}>
             {title}
           </h3>
         </div>
@@ -162,7 +162,7 @@ export function VectorDonutChart({
   return (
     <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
       {title && (
-        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0B1F3A', margin: '0 0 0.75rem 0' }}>
+        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: '0 0 0.75rem 0' }}>
           {title}
         </h3>
       )}
@@ -184,7 +184,7 @@ export function VectorDonutChart({
                   cy="50"
                   r="38"
                   fill="transparent"
-                  stroke={slice.color || '#2F80ED'}
+                  stroke={slice.color || '#1267D6'}
                   strokeWidth="15"
                   strokeDasharray={strokeDasharray}
                   strokeDashoffset={strokeDashoffset}
@@ -193,7 +193,7 @@ export function VectorDonutChart({
                 />
               )
             })}
-            <text x="50" y="47" textAnchor="middle" fontSize="13" fontWeight="800" fill="#0B1F3A">
+            <text x="50" y="47" textAnchor="middle" fontSize="13" fontWeight="800" fill="#071B3A">
               {typeof total === 'number' ? total.toLocaleString('fr-FR') : total}
             </text>
             <text x="50" y="61" textAnchor="middle" fontSize="8" fill="#64748B" fontWeight="600">
@@ -211,7 +211,7 @@ export function VectorDonutChart({
                     width: 8,
                     height: 8,
                     borderRadius: '50%',
-                    backgroundColor: item.color || '#2F80ED',
+                    backgroundColor: item.color || '#1267D6',
                     flexShrink: 0,
                   }}
                 />
@@ -232,7 +232,7 @@ export function VectorDonutChart({
 export function RadialGaugeCard({
   title,
   value = 75,
-  color = '#10B981',
+  color = '#16A36A',
   trend = '+5%',
   trendComparison = 'vs 2025',
   trendPositive = true,
@@ -278,7 +278,7 @@ export function RadialGaugeCard({
           <i className={`bi ${trendPositive ? 'bi-arrow-up-short' : 'bi-arrow-down-short'}`} />
           {trend}
         </span>
-        <span className="trend-comparison" style={{ color: '#10B981', fontWeight: 600 }}>✓ {trendComparison}</span>
+        <span className="trend-comparison" style={{ color: '#16A36A', fontWeight: 600 }}>✓ {trendComparison}</span>
       </div>
     </div>
   )
@@ -292,16 +292,16 @@ export function TeachingLoadBarChart({
 }) {
   const categories = ['Licence', 'Master', 'Doctorat']
   const series = [
-    { name: 'CM', color: '#0B1F3A', values: [340, 210, 85] },
-    { name: 'TD', color: '#2F80ED', values: [290, 175, 45] },
-    { name: 'TP', color: '#38BDF8', values: [220, 130, 20] },
+    { name: 'CM', color: '#071B3A', values: [340, 210, 85] },
+    { name: 'TD', color: '#1267D6', values: [290, 175, 45] },
+    { name: 'TP', color: '#35BDF5', values: [220, 130, 20] },
   ]
   const maxVal = 400
 
   return (
     <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0B1F3A', margin: 0 }}>
+        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: 0 }}>
           {title}
         </h3>
         <div style={{ display: 'flex', gap: '0.65rem', fontSize: '0.72rem', fontWeight: 600 }}>
@@ -373,7 +373,7 @@ export function VectorBarChart({
   subtitle,
   data = [],
   height = 180,
-  barColor = '#2F80ED',
+  barColor = '#1267D6',
 }) {
   const maxVal = Math.max(...data.map((d) => d.value), 5)
 
@@ -381,7 +381,7 @@ export function VectorBarChart({
     <div className="glass-panel" style={{ height: '100%' }}>
       {title && (
         <div style={{ marginBottom: '0.75rem' }}>
-          <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0B1F3A', margin: 0 }}>
+          <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: 0 }}>
             {title}
           </h3>
           {subtitle && <span style={{ fontSize: '0.75rem', color: '#64748B' }}>{subtitle}</span>}
@@ -406,7 +406,7 @@ export function VectorBarChart({
                   fill={item.color || barColor}
                   rx="4"
                 />
-                <text x={x + barWidth / 2} y={Math.max(15, y - 6)} textAnchor="middle" fontSize="11" fontWeight="700" fill="#0B1F3A">
+                <text x={x + barWidth / 2} y={Math.max(15, y - 6)} textAnchor="middle" fontSize="11" fontWeight="700" fill="#071B3A">
                   {item.value}
                 </text>
                 <text x={x + barWidth / 2} y="160" textAnchor="middle" fontSize="11" fill="#64748B" fontWeight="600">

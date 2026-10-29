@@ -524,7 +524,10 @@ def inscrire_depuis_admission(request):
         return Response({'error': erreur.messages[0]}, status=409)
     except ValidationError as erreur:
         return Response(getattr(erreur, 'message_dict', {'error': str(erreur)}), status=400)
-    return Response(_serialize_inscription(inscription, detail=True), status=201)
+    # Un rejeu idempotent ne crée rien : 200 (et non 201) pour ne pas laisser
+    # croire au client qu'une seconde inscription vient d'être ouverte.
+    statut_http = 200 if getattr(inscription, 'rejeu_idempotent', False) else 201
+    return Response(_serialize_inscription(inscription, detail=True), status=statut_http)
 
 
 @api_view(['GET'])

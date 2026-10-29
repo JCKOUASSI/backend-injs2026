@@ -337,6 +337,17 @@ export const ARBORESCENCE = [
         },
       },
       {
+        // Demande 21 : entrée d'échelle annuelle — import du fichier des
+        // inscrits puis EDT de TOUTES les cohortes de l'année en une passe.
+        id: 'get_injs.generation_annuelle',
+        libelle: 'Génération annuelle & import',
+        chemin: '/edt/generation-annuelle',
+        droit: {
+          curp: ['edt.emploi_du_temps.generer'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
         id: 'get_injs.presences_seance',
         libelle: 'Présences de séance (QR & émargement)',
         chemin: '/edt/presences',
@@ -1454,6 +1465,19 @@ export const ARBORESCENCE = [
         chemin: '/parametres/flags',
         droit: {
           curp: ['parametres.parametre.administrer'],
+          legacy: [['web', 'operationnel']],
+          roles: ['ADMIN', 'CHEF_INJS_ADMIN', 'INJS_ADMIN'],
+        },
+      },
+      {
+        // Planche de style : documentation vivante du socle visuel, en lecture
+        // seule. Même garde que « Paramètres LMD » (trio d'administration) :
+        // l'écran ne modifie rien, mais il expose l'apparence de référence.
+        id: 'referentiels.planche_style',
+        libelle: 'Planche de style',
+        chemin: '/referentiels/planche-de-style',
+        droit: {
+          curp: ['parametres.parametre.consulter'],
           legacy: [['web', 'operationnel']],
           roles: ['ADMIN', 'CHEF_INJS_ADMIN', 'INJS_ADMIN'],
         },

@@ -284,7 +284,7 @@ class FinanceRecapModulesTest(TestCase):
 
         titre, texte = _finance_paie_pied_de_page({
             'pied_page_titre': 'DOCUMENT INTERNE',
-            'pied_page_texte': 'CPFAE Bouaké — Tel 20 21 34 08',
+            'pied_page_texte': 'INJS Abidjan — Tel 20 21 34 08',
         })
         self.assertEqual(titre, 'DOCUMENT INTERNE')
-        self.assertEqual(texte, 'CPFAE Bouaké — Tel 20 21 34 08')
+        self.assertEqual(texte, 'INJS Abidjan — Tel 20 21 34 08')
