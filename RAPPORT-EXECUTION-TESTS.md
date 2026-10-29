@@ -81,19 +81,21 @@ Caractéristiques :
 
 | Groupe | Applications | Code | Tests | Durée | Résultat |
 |---|---|---:|---:|---:|---|
-| `scolarite` | scolarite | **0** | 454 | 111,5 s | **RÉUSSI** |
-| `formations` | formations | **0** | 270 | 68,7 s | **RÉUSSI** |
-| `auth` | authentication | **0** | 239 | 129,8 s | **RÉUSSI** |
-| `habilitations` | habilitations | **0** | 480 | 271,3 s | **RÉUSSI** |
-| `edt` | edts, presences | **0** | 429 | 113,2 s | **RÉUSSI** |
-| `evaluations` | evaluations, jurys | **0** | 230 | 85,1 s | **RÉUSSI** |
-| `pilotage` | statistiques, config, dashboard | **0** | 195 | 24,9 s | **RÉUSSI** (test corrigé, §4) |
-| `socle` | core, admissions, administrations, referentiels | **0** | 179 | 68,0 s | **RÉUSSI** |
-| `divers` | parametres, suiviEvaluation, graduation, equivalences, stages, patrimoine, ressources_humaines, finances_etudiantes, exports | **0** | 136 | 26,2 s | **RÉUSSI** |
+| `scolarite` | scolarite | **0** | 454 | 109,9 s | **RÉUSSI** |
+| `formations` | formations | **0** | 270 | 68,4 s | **RÉUSSI** |
+| `auth` | authentication | **0** | 239 | 129,3 s | **RÉUSSI** |
+| `habilitations` | habilitations | **0** | 480 | 273,2 s | **RÉUSSI** |
+| `edt` | edts, presences | **0** | 429 | 116,8 s | **RÉUSSI** |
+| `evaluations` | evaluations, jurys | **0** | 230 | 85,3 s | **RÉUSSI** |
+| `pilotage` | statistiques, config, dashboard | **0** | 195 | 24,9 s | **RÉUSSI** (correctif §4) |
+| `socle` | core, admissions, administrations, referentiels | **0** | 179 | 68,6 s | **RÉUSSI** |
+| `divers` | parametres, suiviEvaluation, graduation, equivalences, stages, patrimoine, ressources_humaines, finances_etudiantes, exports | **0** | 136 | 26,4 s | **RÉUSSI** |
 | **Total** | **21 applications** | **0** | **2 612** | — | **0 échec** |
 
-**Exécution intégrale de contrôle** : la suite a été **rejouée en entier, les 9 groupes, après la correction du
-test CSRF** (`/tmp/injs-validation/SUITE-COMPLETE.log`, `CODE_GLOBAL=0`). Tous les fichiers `.exit` valent **0**.
+**Exécution intégrale de contrôle** : la suite a été **rejouée en entier, les 9 groupes, après le correctif de
+la déconnexion d'aperçu** (`/tmp/injs-validation/SUITE-COMPLETE-2.log`, `CODE_GLOBAL=0`). Tous les fichiers
+`.exit` valent **0**. Une première exécution intégrale (`SUITE-COMPLETE.log`) avait déjà validé les 9 groupes
+avant ce correctif.
 
 **Cohérence vérifiée** : 454 + 270 + 239 + 480 + 429 + 230 + 195 + 179 + 136 = **2 612**, exactement
 le total de la suite monolithique mesurée au tour précédent. **La totalité de la suite a donc bien
@@ -108,52 +110,61 @@ le total de la suite monolithique mesurée au tour précédent. **La totalité d
 
 ---
 
-## 4. Le seul échec — analysé puis corrigé
+## 4. L'échec unique : un vrai bug, pas un test en retard
 
 `config.tests.test_apercu_hardening.PreviewAutoLoginTests::test_admin_est_connecte_et_post_ne_bloque_pas_sur_csrf`
 
-| | |
+### Constat utilisateur
+
+Dans l'aperçu, **cliquer « Déconnexion » renvoyait une page d'erreur 403**
+« La vérification CSRF a échoué » — alors que la session était bel et bien détruite. L'utilisateur
+voyait un échec pour une action réussie, et le drapeau de déconnexion se posait quand même.
+
+| Mesure (`enforce_csrf_checks=True`, aucun jeton) | Valeur |
 |---|---|
-| **Source** | `backend/config/tests/test_apercu_hardening.py` |
-| **Nature** | Le test postait `/admin/logout/` **sans jeton CSRF** avec `enforce_csrf_checks=True` et exigeait un code ≠ 403 |
-| **Réponse obtenue** | **403** — comportement correct de Django |
-| **Préexistence** | **Prouvée** : reproduit sur le commit de base `5369acf`, hors de tout apport de ce travail |
+| `GET /admin/` | 200 — auto-connexion effective |
+| `POST /admin/logout/` | **403**, page d'erreur CSRF affichée |
+| Drapeau `_deconnecte` après ce 403 | **`True`** — la déconnexion était pourtant prise en compte |
+| `GET /admin/` ensuite | 302 vers `/admin/login/` |
 
-### L'hypothèse initiale était fausse
+### Deux diagnostics successifs, dont un faux
 
-Le premier diagnostic concluait qu'il faudrait « affaiblir le CSRF ». **Vérification faite, c'est inexact** :
-le middleware d'aperçu rend bien l'admin utilisable sans cookie, la dispense CSRF **fonctionne** sur les
-routes `/admin/`, et seul `/admin/logout/` en est exclu — par décision explicite du code
-(`arena/preview_autologin.py`, `process_view` : `if chemin.endswith('/logout'): return None`), afin qu'une
-déconnexion reste une action d'état protégée.
+1. **Hypothèse « préexistant, il faudrait affaiblir le CSRF »** — **fausse.** Aucun affaiblissement n'est
+   nécessaire : la dispense CSRF fonctionne sur les routes admin (`POST /admin/login/` → 200).
+2. **Piste « ordre des middlewares »** — essayée (déplacer le middleware avant `CsrfViewMiddleware`),
+   **sans effet** : 403 inchangé. Piste abandonnée, `arena/settings_sandbox.py` restauré à l'identique.
 
-Mesures (profil d'aperçu, `enforce_csrf_checks=True`, sans jeton) :
+### Cause réelle : **deux** middlewares d'auto-connexion, tous deux en cause
 
-| Requête | Code | Lecture |
-|---|---:|---|
-| `GET /admin/` | 200 | auto-connexion effective, admin affiché |
-| `POST /admin/login/` | 200 | dispense CSRF **active** |
-| `POST /admin/jsi18n/` | 405 | route en lecture seule |
-| `POST /admin/logout/` | **403** | exclusion **voulue** du périmètre de la dispense |
+Le profil d'aperçu empile deux middlewares équivalents, et la chaîne effective explique tout :
 
-Une piste a été explorée puis **abandonnée** : déplacer `AutoLoginApercuMiddleware` avant
-`CsrfViewMiddleware`. Résultat identique (403) — la cause n'était pas l'ordre des middlewares mais le
-retour anticipé sur `/logout`. Le fichier `arena/settings_sandbox.py` a été **restauré à l'identique**
-(aucun changement de configuration conservé).
+| # | Middleware | Rôle |
+|---:|---|---|
+| 6 | `config.demo_admin_middleware.DemoAdminAutoLoginMiddleware` | **externe** à CsrfView — décide le premier |
+| 7 | `django.middleware.csrf.CsrfViewMiddleware` | contrôle CSRF |
+| 9 | `arena.preview_autologin.AutoLoginApercuMiddleware` | interne — ajouté par l'overlay sandbox |
 
-### Correction retenue : le test, pas le contrôle
+Les deux contenaient le même retour anticipé — `if chemin.endswith('/logout'): return None` — qui
+sortait **avant** de poser `csrf_processing_done`. Le middleware **externe** tranchait donc seul :
+corriger le seul middleware interne (premier correctif tenté) ne pouvait pas suffire.
 
-| | |
+### Correction appliquée (cause, pas symptôme)
+
+| Fichier | Modification |
 |---|---|
-| **Fichier modifié** | `backend/config/tests/test_apercu_hardening.py` (test uniquement) |
-| **Production** | **Aucune ligne de code applicatif modifiée** ; CSRF intact, aucune exemption ajoutée |
-| **Test conservé** | même classe, même nom de méthode (traçabilité), corps réécrit et **plus strict** |
-| **Nouvelles assertions** | ① sans jeton → **403** *et* session de démonstration intacte ; ② avec le jeton du cookie → **302**, puis `GET /admin/` redirige vers `/admin/login/` (déconnexion réellement effective) |
-| **Rejeu** | groupe `pilotage` → **195 tests, code 0, RÉUSSI** (`/tmp/injs-validation/pilotage.log`) |
+| `backend/config/demo_admin_middleware.py` | `csrf_processing_done = True` pour `/admin/logout/` ; drapeau de déconnexion posé **seulement si** `status_code < 400` |
+| `arena/preview_autologin.py` | même dispense sur la branche `/logout`, même garde sur le drapeau |
+| `backend/config/tests/test_apercu_hardening.py` | test réécrit (même nom) sur le contrat réel |
 
-Le test ne se contente plus de constater qu'un POST passe : il vérifie que le contrôle **protège**
-(un lien tiers ne peut pas déconnecter l'utilisateur) *et* que l'administration reste **utilisable**
-dès que le jeton est fourni.
+| Garantie | Vérification |
+|---|---|
+| Production intacte | `preview_autologin` **absent** de `config/settings.py` ; les deux middlewares exigent `DEBUG` (+ variable d'environnement) — test dédié |
+| Contrôle CSRF conservé | `CsrfViewMiddleware` toujours présent dans `MIDDLEWARE` — assertion dans le test |
+| Périmètre | exemption limitée à `/admin/` **et** au profil d'aperçu ; aucune vue exemptée globalement |
+| Aucun test supprimé | même classe, même nom de méthode ; assertions **plus nombreuses** qu'à l'origine |
+
+**Rejeu ciblé** : `test_apercu_hardening` + `test_preview_autologin` + `test_demo_admin_logout`
+→ **30 tests, OK (1 ignoré)**.
 
 ---
 
@@ -167,7 +178,7 @@ dès que le jeton est fourni.
 | 4 | `node_modules` absent | Non persistant | `npm ci` | **Résolu** |
 | 5 | Groupe `auth` interrompu à 420 s | `authentication` (188 s) + `habilitations` (355 s) = 543 s > budget | **Scission en deux groupes** (budgets 300 s et 600 s) | **Résolu** |
 | 6 | Séparateur `read` du harnais | Bug de mon script (`apps` ne prenait que le 1ᵉʳ mot) | Séparateur `\|` | **Résolu** |
-| 7 | CSRF `PreviewAutoLoginTests` | Test en retard sur le contrat (exclusion de `/logout` voulue par le code) | Test réécrit, plus strict ; CSRF inchangé | **Résolu** |
+| 7 | Déconnexion d'aperçu en 403 | **Deux** middlewares d'auto-connexion sortaient avant de dispenser le CSRF sur `/logout` | Dispense posée dans les deux ; drapeau conditionné au succès ; test réécrit (§4) | **Résolu** |
 
 **Aucun test n'a été supprimé, désactivé ou affaibli pour obtenir un résultat vert.**
 
