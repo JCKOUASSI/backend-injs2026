@@ -154,7 +154,63 @@ La suite backend **a été exécutée intégralement** (2 612 tests, par groupes
 
 ---
 
-## 7. Rejeu
+## 7. Incident Git — re-clonage en cours de session
+
+### Constat
+
+En fin de tour, `git log` ne présentait plus que `3a9bb64` (base) comme ancêtre de la branche :
+les **8 commits** des tours précédents (`b5d0968` → `0dc7588`) avaient disparu de `.git`.
+
+### Cause
+
+Le reflog est sans ambiguïté :
+
+```
+HEAD@{2}: clone: from https://github.com/JCKOUASSI/backend-injs2026.git
+HEAD@{1}: checkout: moving from main to arena/d40e4a41-backend-injs2026
+HEAD@{0}: commit: ...
+```
+
+Le répertoire `.git` a été **recréé par un clone neuf** en cours de session (même phénomène que
+la disparition de `.venv`, `db.sqlite3`, `staticfiles`, `node_modules` et `.env`).
+Les objets des commits locaux n'existaient plus dans la nouvelle base d'objets ; ils n'avaient
+jamais été poussés, donc aucun distant ne les conservait.
+
+### Impact réel : **aucune perte de contenu**
+
+L'arbre de travail avait conservé l'intégralité des fichiers. Vérification fichier par fichier :
+
+| Contenu critique | Présent |
+|---|---|
+| `FamilleModule`, `controler_completude`, clonage de la famille | ✅ |
+| `INJS_AUTO_INSCRIPTION_PEDAGOGIQUE` (services + réglages) | ✅ |
+| Complétude exposée dans l'API | ✅ |
+| `statut_validation` / `valeur_institutionnelle` | ✅ |
+| `_seuil_affiche` (aucun seuil inventé) | ✅ |
+| `_cycle_de_intitule` (double suffixe corrigé) | ✅ |
+| 6 rapports, 4 commandes, 1 script, 1 harnais de tests | ✅ |
+
+Les 2 612 tests exécutés par groupes l'ont été **sur ce contenu exact** : leurs résultats restent valides.
+
+### Traitement
+
+| Action | Détail |
+|---|---|
+| Aucun `reset --hard`, aucun `clean`, aucune suppression | Respecté |
+| Consolidation | `edc9569` — tout le contenu dans un commit unique et documenté |
+| Classeur officiel | `2524a40` — ajout forcé (`.gitignore` ligne 48), branche autosuffisante |
+| Fusion avec `origin/main` | **Refusée par Git** : histoires non liées (`3a9bb64` n'est pas un ancêtre de `c4886b8`). Aucune fusion forcée. |
+| Vérification | Extraction rejouée depuis la branche : **19 feuilles, 323 UE** — fonctionne sans dépendre de `main` |
+
+### Conséquence à retenir
+
+Le travail reste **local et non poussé**. Un nouveau recyclage du bac à sable effacerait
+définitivement ces commits. Une publication vers `origin/arena/d40e4a41-backend-injs2026`
+est la seule protection durable.
+
+---
+
+## 8. Rejeu
 
 ```bash
 cd /home/user/backend-injs2026
