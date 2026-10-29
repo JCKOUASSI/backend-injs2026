@@ -87,10 +87,10 @@ Caractéristiques :
 | `habilitations` | habilitations | 0 | 480 | 271 s | **RÉUSSI** |
 | `edt` | edts, presences | 0 | 429 | 117 s | **RÉUSSI** |
 | `evaluations` | evaluations, jurys | 0 | 230 | 86 s | **RÉUSSI** |
-| `pilotage` | statistiques, config, dashboard | 1 | 195 | 26 s | **ÉCHOUÉ** (1 test) |
+| `pilotage` | statistiques, config, dashboard | **0** | 195 | 26 s | **RÉUSSI** (après correction du test, §4) |
 | `socle` | core, admissions, administrations, referentiels | 0 | 179 | 68 s | **RÉUSSI** |
 | `divers` | parametres, suiviEvaluation, graduation, equivalences, stages, patrimoine, ressources_humaines, finances_etudiantes, exports | 0 | 136 | 26 s | **RÉUSSI** |
-| **Total** | **21 applications** | — | **2 612** | — | **1 échec** |
+| **Total** | **21 applications** | **0** | **2 612** | — | **0 échec** |
 
 **Cohérence vérifiée** : 454 + 270 + 239 + 480 + 429 + 230 + 195 + 179 + 136 = **2 612**, exactement
 le total de la suite monolithique mesurée au tour précédent. **La totalité de la suite a donc bien
@@ -105,20 +105,52 @@ le total de la suite monolithique mesurée au tour précédent. **La totalité d
 
 ---
 
-## 4. Le seul échec
+## 4. Le seul échec — analysé puis corrigé
 
 `config.tests.test_apercu_hardening.PreviewAutoLoginTests::test_admin_est_connecte_et_post_ne_bloque_pas_sur_csrf`
 
 | | |
 |---|---|
-| **Source** | `backend/config/tests/test_apercu_hardening.py:188` |
-| **Nature** | Le test poste `/admin/logout/` **sans jeton CSRF** avec `enforce_csrf_checks=True` et exige un code ≠ 403 |
+| **Source** | `backend/config/tests/test_apercu_hardening.py` |
+| **Nature** | Le test postait `/admin/logout/` **sans jeton CSRF** avec `enforce_csrf_checks=True` et exigeait un code ≠ 403 |
 | **Réponse obtenue** | **403** — comportement correct de Django |
-| **Préexistence** | **Prouvée** : reproduit sur le commit de base `5369acf` dans un worktree isolé, sans aucune modification de ce travail |
-| **Correction appliquée** | **Aucune, volontairement** |
-| **Justification** | Faire passer ce test exigerait d'exempter la déconnexion du contrôle CSRF, c'est-à-dire d'affaiblir un contrôle de sécurité. Interdit par les consignes. |
-| **Recommandation** | Corriger le **test** (envoyer un `csrfmiddlewaretoken` valide), pas l'application |
-| **Statut** | **OUVERT** — décision du responsable technique |
+| **Préexistence** | **Prouvée** : reproduit sur le commit de base `5369acf`, hors de tout apport de ce travail |
+
+### L'hypothèse initiale était fausse
+
+Le premier diagnostic concluait qu'il faudrait « affaiblir le CSRF ». **Vérification faite, c'est inexact** :
+le middleware d'aperçu rend bien l'admin utilisable sans cookie, la dispense CSRF **fonctionne** sur les
+routes `/admin/`, et seul `/admin/logout/` en est exclu — par décision explicite du code
+(`arena/preview_autologin.py`, `process_view` : `if chemin.endswith('/logout'): return None`), afin qu'une
+déconnexion reste une action d'état protégée.
+
+Mesures (profil d'aperçu, `enforce_csrf_checks=True`, sans jeton) :
+
+| Requête | Code | Lecture |
+|---|---:|---|
+| `GET /admin/` | 200 | auto-connexion effective, admin affiché |
+| `POST /admin/login/` | 200 | dispense CSRF **active** |
+| `POST /admin/jsi18n/` | 405 | route en lecture seule |
+| `POST /admin/logout/` | **403** | exclusion **voulue** du périmètre de la dispense |
+
+Une piste a été explorée puis **abandonnée** : déplacer `AutoLoginApercuMiddleware` avant
+`CsrfViewMiddleware`. Résultat identique (403) — la cause n'était pas l'ordre des middlewares mais le
+retour anticipé sur `/logout`. Le fichier `arena/settings_sandbox.py` a été **restauré à l'identique**
+(aucun changement de configuration conservé).
+
+### Correction retenue : le test, pas le contrôle
+
+| | |
+|---|---|
+| **Fichier modifié** | `backend/config/tests/test_apercu_hardening.py` (test uniquement) |
+| **Production** | **Aucune ligne de code applicatif modifiée** ; CSRF intact, aucune exemption ajoutée |
+| **Test conservé** | même classe, même nom de méthode (traçabilité), corps réécrit et **plus strict** |
+| **Nouvelles assertions** | ① sans jeton → **403** *et* session de démonstration intacte ; ② avec le jeton du cookie → **302**, puis `GET /admin/` redirige vers `/admin/login/` (déconnexion réellement effective) |
+| **Rejeu** | groupe `pilotage` → **195 tests, code 0, RÉUSSI** (`/tmp/injs-validation/pilotage.log`) |
+
+Le test ne se contente plus de constater qu'un POST passe : il vérifie que le contrôle **protège**
+(un lien tiers ne peut pas déconnecter l'utilisateur) *et* que l'administration reste **utilisable**
+dès que le jeton est fourni.
 
 ---
 
@@ -132,7 +164,7 @@ le total de la suite monolithique mesurée au tour précédent. **La totalité d
 | 4 | `node_modules` absent | Non persistant | `npm ci` | **Résolu** |
 | 5 | Groupe `auth` interrompu à 420 s | `authentication` (188 s) + `habilitations` (355 s) = 543 s > budget | **Scission en deux groupes** (budgets 300 s et 600 s) | **Résolu** |
 | 6 | Séparateur `read` du harnais | Bug de mon script (`apps` ne prenait que le 1ᵉʳ mot) | Séparateur `\|` | **Résolu** |
-| 7 | CSRF `PreviewAutoLoginTests` | Préexistant | Non corrigé (sécurité) | **Ouvert** |
+| 7 | CSRF `PreviewAutoLoginTests` | Test en retard sur le contrat (exclusion de `/logout` voulue par le code) | Test réécrit, plus strict ; CSRF inchangé | **Résolu** |
 
 **Aucun test n'a été supprimé, désactivé ou affaibli pour obtenir un résultat vert.**
 
@@ -142,8 +174,8 @@ le total de la suite monolithique mesurée au tour précédent. **La totalité d
 
 | Catégorie | Nombre | Détail |
 |---|---:|---|
-| Tests **réussis** | **2 611** backend + **1 979** frontend | 8 groupes sur 9 + suite frontend complète |
-| Tests **échoués** | **1** | CSRF préexistant, documenté |
+| Tests **réussis** | **2 612** backend + **1 979** frontend | **9 groupes sur 9** + suite frontend complète |
+| Tests **échoués** | **0** | l'unique échec préexistant a été corrigé côté test (§4) |
 | Tests **interrompus** | **0** (après scission du groupe `auth`) | 1 interruption transitoire, reprise avec un budget adapté |
 | Tests **non exécutés** | **0** sur le périmètre backend | total des groupes = total monolithique |
 | **NOT EXECUTED** | parcours navigateur réel | `libnss3` absent : rendu headless impossible |

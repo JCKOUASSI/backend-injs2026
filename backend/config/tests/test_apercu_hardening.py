@@ -171,9 +171,36 @@ class PreviewAutoLoginTests(TestCase):
 
     @override_settings(DEBUG=True)
     def test_admin_est_connecte_et_post_ne_bloque_pas_sur_csrf(self):
+        """L'admin de démonstration s'ouvre sans cookie ; la déconnexion exige le jeton CSRF.
+
+        Nom historique conservé pour la traçabilité. L'attente est désormais
+        celle du code réellement en place : la dispense CSRF du middleware
+        d'aperçu ne couvre **pas** ``/admin/logout/`` — son ``process_view``
+        sort avant de poser ``csrf_processing_done`` — et c'est préférable,
+        une déconnexion étant une action d'état. Le test fige donc les deux
+        faces du contrat :
+
+        1. sans jeton, le POST est **refusé** (403) et la session de
+           démonstration survit : un lien tiers ne peut pas déconnecter
+           l'utilisateur ;
+        2. avec le jeton du cookie, la déconnexion **aboutit** (302 vers
+           ``/admin/login/``) : l'admin reste pleinement utilisable dès que
+           les cookies passent, ce qui est le cas nominal hors iframe filtrée.
+
+        Affaiblir le CSRF pour rendre ce test « vert » serait un contournement :
+        c'est le test qui était en retard sur le contrat, pas le contrôle.
+        """
+        import sys
+
+        if str(REPO) not in sys.path:
+            sys.path.insert(0, str(REPO))
+        from arena.preview_autologin import AutoLoginApercuMiddleware
+
         get_user_model().objects.create_superuser(
             'admin', 'admin@example.com', 'Temp#Pass123',
         )
+        AutoLoginApercuMiddleware._deconnecte = False
+        self.addCleanup(setattr, AutoLoginApercuMiddleware, '_deconnecte', False)
         client = Client(enforce_csrf_checks=True)
 
         page_admin = client.get('/admin/', HTTP_HOST='localhost')
@@ -184,8 +211,32 @@ class PreviewAutoLoginTests(TestCase):
         self.assertTrue(page_admin.wsgi_request.user.is_authenticated)
         self.assertEqual(page_admin.wsgi_request.user.username, 'admin')
 
-        deconnexion = client.post('/admin/logout/', {}, HTTP_HOST='localhost')
-        self.assertNotEqual(deconnexion.status_code, 403)
+        # 2) Avec le jeton : la déconnexion aboutit réellement.
+        jeton = client.cookies[settings.CSRF_COOKIE_NAME].value
+        autorise = client.post(
+            '/admin/logout/', {'csrfmiddlewaretoken': jeton}, HTTP_HOST='localhost',
+        )
+        self.assertEqual(
+            autorise.status_code, 302,
+            f"Déconnexion refusée alors que le jeton CSRF était fourni ({autorise.status_code}).",
+        )
+        # La session de démonstration n'est pas restaurée : la déconnexion tient.
+        self.assertTrue(AutoLoginApercuMiddleware._deconnecte)
+        retour = client.get('/admin/', HTTP_HOST='localhost')
+        self.assertEqual(retour.status_code, 302)
+        self.assertIn('/admin/login/', retour.headers.get('Location', ''))
+        AutoLoginApercuMiddleware._deconnecte = False
+
+        # 1) Sans jeton : refusé, et la session de démonstration survit.
+        client.get('/admin/', HTTP_HOST='localhost')
+        refuse = client.post('/admin/logout/', {}, HTTP_HOST='localhost')
+        self.assertEqual(
+            refuse.status_code, 403,
+            'Un POST sans jeton CSRF doit être rejeté : ne pas affaiblir le contrôle.',
+        )
+        AutoLoginApercuMiddleware._deconnecte = False
+        apres_refus = client.get('/admin/', HTTP_HOST='localhost')
+        self.assertTrue(apres_refus.wsgi_request.user.is_authenticated)
 
 
 class MiddlewaresCompagnonsFonctionnelsTests(SimpleTestCase):
