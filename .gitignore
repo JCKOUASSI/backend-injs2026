@@ -44,10 +44,10 @@ backend/.seed_ok
 backend/.venv/.deps_ok
 backend/db.sqlite3
 # P00-02 — données nominatives et classeurs d'import : hors dépôt
-*.numbers
-*.xlsx
-*.xls
-*.csv
+# Supprimé: *.numbers -> fichiers de données inclus dans le dépôt
+# Supprimé: *.xlsx -> fichiers de données inclus dans le dépôt
+# Supprimé: *.xls -> fichiers de données inclus dans le dépôt
+# Supprimé: *.csv -> fichiers de données inclus dans le dépôt
 **/importverif/
 # Exception 1 : modèles vides d'import (en-têtes + 1 ligne fictive)
 !docs/modeles/
