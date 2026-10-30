@@ -439,3 +439,61 @@ Le tableau de bord présentait des chiffres **qui n'existent nulle part en base*
 | `npx vitest run` | **106 fichiers, 1 987 tests, code 0** (1 979 + 8 nouveaux) |
 | `npm run build` | **code 0** |
 | Backend | **aucun fichier modifié** dans cette étape ; suite backend validée au §9 (2 615 tests) |
+
+---
+
+## 11. Identifiants de connexion : l'admin d'aperçu était inaccessible
+
+### Le symptôme, tel qu'il s'est produit
+
+Les journaux du serveur d'aperçu conservent la tentative réelle : le **30/10 à 05:25:58**,
+`POST /api/auth/login/` avec l'identifiant `admin` → **401 `login_failed_bad_credentials`**,
+depuis un navigateur (Edge, 10.12.0.160). Autrement dit : les identifiants publiés ne fonctionnaient pas.
+
+### Trois défauts enchaînés
+
+| # | Défaut | Conséquence |
+|---|---|---|
+| 1 | `bootstrap.sh` tirait un mot de passe **aléatoire de 64 caractères**, écrit seulement dans `backend/.env` | mot de passe impossible à recopier ; aucun identifiant connu n'existait |
+| 2 | `DJANGO_SUPERUSER_PASSWORD` n'était appliqué qu'à la **création** du compte | un `.env` régénéré annonçait des identifiants qui échouaient ; le fichier mentait |
+| 3 | Le drapeau de déconnexion de l'aperçu est **global au processus** | après une déconnexion, l'auto-connexion ne reprend pas : il faut se connecter à la main — avec un mot de passe que personne ne connaissait |
+
+### Corrections
+
+| Fichier | Correction |
+|---|---|
+| `arena/bootstrap.sh` | identifiant de **démonstration publié : `admin` / `admin123`**, surchargeable par `PREVIEW_ADMIN_PASSWORD` (8 caractères minimum) ; le message de fin affiche enfin la valeur au lieu de la chaîne littérale `$SANDBOX_ADMIN_PASSWORD` |
+| `backend/authentication/apps.py` | le mot de passe du `.env` est **remis à niveau** sur le compte existant (`DJANGO_SUPERUSER_RESET_PASSWORD`), et un compte désactivé est réactivé |
+| `backend/config/settings.py` | `STORAGES=STORAGE_DE_TEST` — exportée de longue date par le harnais mais **lue par personne** — devient effective : plus de dépendance au manifeste `collectstatic` dans les tests |
+| `README.md` | identifiants d'aperçu documentés, avec l'avertissement « jamais en production » |
+
+### Portée de sécurité
+
+| Garantie | Vérification |
+|---|---|
+| Production inchangée | `config/settings.py` ne contient **aucune** variable `DJANGO_SUPERUSER*` (test dédié) ; `bootstrap.sh` n'écrit que `backend/.env` et le profil d'aperçu |
+| Le mot de passe n'est pas la barrière | le profil ouvre déjà l'admin sans mot de passe (`DEMO_ADMIN_AUTOLOGIN=1`) ; l'identifiant sert au **retour manuel** |
+| Surchargeable | `PREVIEW_ADMIN_PASSWORD='…' bash arena/bootstrap.sh --write-env` |
+| Ancien test « mot de passe aléatoire » | **remplacé**, non supprimé : il figeait la règle défectueuse. La nouvelle exigence est « publié, saisissable, surchargeable », plus stricte sur ce qui compte |
+
+### Vérifications réelles (serveurs démarrés)
+
+| Geste | Résultat |
+|---|---|
+| `POST /api/auth/login/` `admin` / `admin123` via le proxy :3000 | **200**, jeton d'accès, rôle `ADMIN` |
+| `GET /api/auth/me/` avec ce jeton | **200** |
+| `GET /api/dashboard/overview/` | **200** |
+| `POST /admin/logout/` puis `POST /admin/login/` `admin` / `admin123` | **302 → `/admin/`** |
+| `/admin/`, `/admin/scolarite/ue/`, `/admin/parametres/parametre/` | **200** |
+| Tests ciblés `config.tests.test_apercu_hardening` + `authentication.test_isolation_compte_demo` | **29 tests OK** |
+| Suite complète rejouée | **9 groupes, 2 620 tests, code 0** |
+
+**Preuve d'efficacité** : les 3 tests de remise à niveau échouent sur le code précédent (`FAILED (failures=2)`
+sur le groupe ciblé) et passent après correctif.
+
+### Effet de bord favorable
+
+Supprimer la dépendance au manifeste statique fait disparaître une panne récurrente : les 4 à 7 échecs
+`dashboard.tests.PublicBadgePage*` constatés après chaque recyclage du bac à sable **ne se reproduisent plus**,
+puisque les tests ne dépendent plus d'un `collectstatic` préalable (groupe `pilotage` exécuté avec
+`backend/staticfiles/` supprimé : **197 tests, code 0**).
