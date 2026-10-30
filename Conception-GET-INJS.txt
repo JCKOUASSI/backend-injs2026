@@ -610,10 +610,11 @@ PARTIE 6 — TESTS ET PERFORMANCES
   Configuration Django                  PASS          manage.py check → 0 issue
   Migrations cohérentes                 PASS          makemigrations --check → « No changes »
   Migration 0008 appliquée              PASS          migrate edts → OK
-  Tests backend groupe EDT              PASS          560 tests, code 0 (./arena/tests_par_groupe.sh edt)
+  Tests backend groupe EDT              PASS          570 tests, code 0 (./arena/tests_par_groupe.sh edt)
   dont identifiants de groupe           PASS          15 tests (edts.tests.test_identifiants_groupes)
   dont canevas officiel                 PASS          19 tests (edts.tests.test_canevas_officiel)
-  dont audit du canevas (nouveau)       PASS          3 tests (CANEVAS_HORS_REFERENTIEL/CHEVAUCHEMENT)
+  dont audit du canevas                PASS          3 tests (CANEVAS_HORS_REFERENTIEL/CHEVAUCHEMENT)
+  dont jeu de démonstration (nouveau)   PASS          10 tests (edts.tests.test_donnees_demonstration)
   dont cohérence documentaire (nouveau) PASS          4 tests (core.tests.test_docs_coherence)
   dont outil de mesure                  PASS          4 tests (edts.tests.test_benchmark)
   dont réglage reproductible (nouveau)  PASS          16 tests (edts.tests.test_regler_contraintes)
@@ -653,6 +654,9 @@ PARTIE 6 — TESTS ET PERFORMANCES
   Charge 100 → 14 000 étudiants          PASS          voir 6.2 (exécutions réelles)
   Charge avec règles souples actives     PASS          voir 6.2 bis : +5,4 % (3 500), +6,9 % (14 000),
                                                      plan identique, zéro séance perdue
+  Parcours complet sur la démo (live)   PASS          audit OK → 4 EDT générés et persistés →
+                                                     24 séances placées / 0 non placée →
+                                                     exports PDF 2 263 o, XLSX 6 525 o, CSV 476 o
   git diff --check                      PASS          aucune erreur d'espace
   Suite backend sur PostgreSQL 16.2     PASS          les neuf groupes, 2 733 tests, code 0
                                                      (serveur réel via pgserver, base injs_pg)
