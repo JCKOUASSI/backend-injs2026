@@ -348,6 +348,17 @@ export const ARBORESCENCE = [
         },
       },
       {
+        // LOT 2 — campagnes de génération : trace persistante (périmètre,
+        // bilan, anomalies, durée, historique) et publication contrôlée.
+        id: 'get_injs.campagnes',
+        libelle: 'Campagnes de génération',
+        chemin: '/edt/campagnes',
+        droit: {
+          curp: ['edt.emploi_du_temps.generer'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
         id: 'get_injs.presences_seance',
         libelle: 'Présences de séance (QR & émargement)',
         chemin: '/edt/presences',

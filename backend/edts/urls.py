@@ -66,6 +66,23 @@ urlpatterns_lmd = [
     path('lmd/<int:pk>/result/', lmd.result_api, name='edt-lmd-result'),
     path('lmd/<int:pk>/grille/', lmd.grille_api, name='edt-lmd-grille'),
 
+    # ── LOT 2 — campagnes de génération (AJOUT) ─────────────────────────────
+    # Routes nouvelles sous `campagnes/` : aucune route existante modifiée.
+    path('campagnes/', g.campagnes_api, name='edt-campagnes'),
+    path('campagnes/<int:pk>/', g.campagne_detail_api, name='edt-campagne-detail'),
+    path('campagnes/<int:pk>/demarrer/', g.campagne_demarrer_api,
+         name='edt-campagne-demarrer'),
+    path('campagnes/<int:pk>/statut/', g.campagne_statut_api,
+         name='edt-campagne-statut'),
+    path('campagnes/<int:pk>/resultat/', g.campagne_resultat_api,
+         name='edt-campagne-resultat'),
+    path('campagnes/<int:pk>/donnees-pretes/', g.campagne_donnees_pretes_api,
+         name='edt-campagne-donnees-pretes'),
+    path('campagnes/<int:pk>/valider/', g.campagne_valider_api,
+         name='edt-campagne-valider'),
+    path('campagnes/<int:pk>/publier/', g.campagne_publier_api,
+         name='edt-campagne-publier'),
+
     # Opérations sur séance (§12, §13)
     path('lmd/items/<int:pk>/move/', lmd.item_move_api, name='edt-lmd-item-move'),
     path('lmd/items/<int:pk>/cancel/', lmd.item_cancel_api, name='edt-lmd-item-cancel'),

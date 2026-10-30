@@ -21,13 +21,20 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from edts.permissions import IsEdtPlanification, IsEdtReadOnlyOrPlanification
+from edts.permissions import (
+    IsEdtPlanification, IsEdtReadOnlyOrPlanification, IsEdtValidation,
+)
 
 #: Taille maximale acceptée pour un fichier d'inscrits (protection mémoire).
 TAILLE_MAX_FICHIER = 20 * 1024 * 1024  # 20 Mo
 
 #: Emplacement du document de conception, servi en téléchargement.
-CHEMIN_CONCEPTION = Path(settings.BASE_DIR).parent / 'docs' / 'getinjs' / 'Conception-GET-INJS.txt'
+#: Le document **livré** est à la racine du dépôt (exigence de la mission) ;
+#: ``docs/getinjs/Conception-GET-INJS.txt`` reste servi en repli pour ne pas
+#: casser les liens existants.
+RACINE_DEPOT = Path(settings.BASE_DIR).parent
+CHEMIN_CONCEPTION = RACINE_DEPOT / 'Conception-GET-INJS.txt'
+CHEMIN_CONCEPTION_REPLI = RACINE_DEPOT / 'docs' / 'getinjs' / 'Conception-GET-INJS.txt'
 
 
 def _int(valeur):
@@ -240,20 +247,201 @@ def conception_api(request):
     base qui pourrait diverger. S'il est absent, la réponse le dit
     explicitement (404 motivé) au lieu de servir un contenu vide.
     """
-    if not CHEMIN_CONCEPTION.is_file():
+    chemin = CHEMIN_CONCEPTION if CHEMIN_CONCEPTION.is_file() else CHEMIN_CONCEPTION_REPLI
+    if not chemin.is_file():
         return Response({
             'status': 'BLOCKING',
             'motif_echec': 'CONCEPTION_INTROUVABLE',
             'detail': {
                 'explication': 'Le document de conception est absent du dépôt.',
-                'chemin_attendu': str(CHEMIN_CONCEPTION),
+                'chemins_attendus': [str(CHEMIN_CONCEPTION), str(CHEMIN_CONCEPTION_REPLI)],
             },
         }, status=status.HTTP_404_NOT_FOUND)
 
     reponse = FileResponse(
-        CHEMIN_CONCEPTION.open('rb'),
+        chemin.open('rb'),
         as_attachment=True,
         filename='Conception-GET-INJS.txt',
         content_type='text/plain; charset=utf-8',
     )
     return reponse
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# LOT 2 — CAMPAGNES DE GÉNÉRATION
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# Routes AJOUTÉES sous ``campagnes/`` : aucune route existante n'est renommée ni
+# supprimée. Les permissions existantes (``edts.permissions``) restent seules
+# juges : planification pour créer/lancer, validation pour valider/publier,
+# lecture pour consulter.
+
+def _refus(exc):
+    """Traduit un refus métier en réponse HTTP structurée (jamais un 500)."""
+    statuts_http = {
+        'CAMPAGNE_INTROUVABLE': status.HTTP_404_NOT_FOUND,
+        'ANNEE_ACADEMIQUE_INTROUVABLE': status.HTTP_404_NOT_FOUND,
+        'CAMPAGNE_DEJA_EN_COURS': status.HTTP_409_CONFLICT,
+        'CAMPAGNE_DEJA_EXISTANTE': status.HTTP_409_CONFLICT,
+        'TRANSITION_REFUSEE': status.HTTP_409_CONFLICT,
+        'VALIDATION_BLOQUANTE': status.HTTP_409_CONFLICT,
+        'PUBLICATION_INCOMPLETE': status.HTTP_409_CONFLICT,
+        'PUBLICATION_ECHOUEE': status.HTTP_409_CONFLICT,
+        'AUCUN_EDT_A_VALIDER': status.HTTP_409_CONFLICT,
+        'AUCUN_EDT_A_PUBLIER': status.HTTP_409_CONFLICT,
+    }
+    return Response(
+        {'status': 'BLOCKING', 'motif_echec': exc.motif, 'detail': exc.detail},
+        status=statuts_http.get(exc.motif, status.HTTP_400_BAD_REQUEST),
+    )
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def campagnes_api(request):
+    """GET liste / POST crée une campagne de génération.
+
+    GET : ``?annee=<id>`` filtre par année académique.
+    POST : ``annee_academique_id`` et ``libelle`` requis ; ``semaines``,
+    ``perimetre`` et ``parametres`` optionnels.
+    """
+    from edts.moteur.campagnes import (
+        TransitionRefusee, campagne_en_dict, creer_campagne,
+    )
+    from edts.models import CampagneGeneration
+
+    if request.method == 'GET':
+        qs = CampagneGeneration.objects.select_related('annee_academique', 'cree_par')
+        annee_id = _int(request.query_params.get('annee'))
+        if annee_id:
+            qs = qs.filter(annee_academique_id=annee_id)
+        donnees = [campagne_en_dict(c) for c in qs[:200]]
+        return Response({'count': qs.count(), 'results': donnees})
+
+    annee_id = _int(request.data.get('annee_academique_id'))
+    libelle = (request.data.get('libelle') or '').strip()
+    if annee_id is None or not libelle:
+        return Response({
+            'status': 'BLOCKING',
+            'motif_echec': 'PARAMETRES_INCOMPLETS',
+            'detail': {
+                'explication': 'annee_academique_id et libelle sont requis.',
+                'champs_attendus': ['annee_academique_id', 'libelle'],
+            },
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    semaines = request.data.get('semaines') or []
+    if isinstance(semaines, str):
+        semaines = [s for s in semaines.replace(' ', '').split(',') if s]
+    perimetre = request.data.get('perimetre') or {}
+    parametres = request.data.get('parametres') or {}
+    try:
+        campagne = creer_campagne(
+            annee_academique_id=annee_id,
+            libelle=libelle,
+            user=request.user,
+            semaines=semaines,
+            perimetre=perimetre if isinstance(perimetre, dict) else {},
+            parametres=parametres if isinstance(parametres, dict) else {},
+        )
+    except TransitionRefusee as exc:
+        return _refus(exc)
+    return Response(campagne_en_dict(campagne), status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def campagne_detail_api(request, pk):
+    """GET /api/edts/campagnes/<pk>/ — fiche de la campagne."""
+    from edts.moteur.campagnes import TransitionRefusee, campagne_en_dict, _charger
+
+    try:
+        campagne = _charger(pk)
+    except TransitionRefusee as exc:
+        return _refus(exc)
+    return Response(campagne_en_dict(campagne))
+
+
+@api_view(['POST'])
+@permission_classes([IsEdtPlanification])
+def campagne_demarrer_api(request, pk):
+    """POST /api/edts/campagnes/<pk>/demarrer/ — lance une exécution.
+
+    ``asynchrone`` (défaut vrai) : la génération tourne en arrière-plan et
+    l'API répond immédiatement avec l'identifiant d'exécution ; l'avancement
+    s'observe sur ``/statut/``. ``asynchrone=false`` exécute dans la requête
+    (utile aux petits périmètres et aux tests).
+    """
+    from edts.moteur.campagnes import TransitionRefusee, demarrer_campagne
+
+    asynchrone = str(request.data.get('asynchrone', 'true')).lower() not in ('false', '0', 'non')
+    try:
+        resultat = demarrer_campagne(pk, user=request.user, asynchrone=asynchrone)
+    except TransitionRefusee as exc:
+        return _refus(exc)
+    return Response(resultat, status=status.HTTP_202_ACCEPTED if asynchrone else status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def campagne_statut_api(request, pk):
+    """GET /api/edts/campagnes/<pk>/statut/ — interrogation périodique."""
+    from edts.moteur.campagnes import TransitionRefusee, statut_campagne
+
+    try:
+        return Response(statut_campagne(pk))
+    except TransitionRefusee as exc:
+        return _refus(exc)
+
+
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def campagne_resultat_api(request, pk):
+    """GET /api/edts/campagnes/<pk>/resultat/ — bilan par groupe + historique."""
+    from edts.moteur.campagnes import TransitionRefusee, resultat_campagne
+
+    try:
+        return Response(resultat_campagne(pk))
+    except TransitionRefusee as exc:
+        return _refus(exc)
+
+
+@api_view(['POST'])
+@permission_classes([IsEdtPlanification])
+def campagne_donnees_pretes_api(request, pk):
+    """POST /api/edts/campagnes/<pk>/donnees-pretes/ — ``BROUILLON`` → ``PRET``."""
+    from edts.moteur.campagnes import TransitionRefusee, marquer_pret
+
+    try:
+        return Response(marquer_pret(pk, user=request.user))
+    except TransitionRefusee as exc:
+        return _refus(exc)
+
+
+@api_view(['POST'])
+@permission_classes([IsEdtValidation])
+def campagne_valider_api(request, pk):
+    """POST /api/edts/campagnes/<pk>/valider/ — contrôle et validation.
+
+    Réservé à la Direction / Admin, comme la validation d'un EDT unitaire.
+    """
+    from edts.moteur.campagnes import TransitionRefusee, valider_campagne
+
+    try:
+        return Response(valider_campagne(pk, user=request.user))
+    except TransitionRefusee as exc:
+        return _refus(exc)
+
+
+@api_view(['POST'])
+@permission_classes([IsEdtValidation])
+def campagne_publier_api(request, pk):
+    """POST /api/edts/campagnes/<pk>/publier/ — publication atomique du périmètre."""
+    from edts.moteur.campagnes import TransitionRefusee, publier_campagne
+
+    try:
+        return Response(publier_campagne(
+            pk, user=request.user, motif=(request.data.get('motif') or '').strip(),
+        ))
+    except TransitionRefusee as exc:
+        return _refus(exc)

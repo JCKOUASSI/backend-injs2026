@@ -131,60 +131,179 @@ def _chevauche(debut_a, fin_a, debut_b, fin_b):
     return debut_a < fin_b and debut_b < fin_a
 
 
-def _periode_indisponible(enseignant_id, salle_id, annee_id, jour, heure_debut, heure_fin):
+def indexer_disponibilites(annee_id):
+    """Charge en **une requête** les disponibilités de l'année.
+
+    Pourquoi : les contrôles C5/C6 et la préférence enseignante étaient évalués
+    par une requête SQL *par candidat* (créneau × salle). Sur 3 500 étudiants,
+    cela produisait des dizaines de milliers de requêtes et une génération de
+    plusieurs minutes. L'index est construit une fois, puis consulté en mémoire.
+
+    L'index est volontairement simple : ``{clé: [(debut, fin), …]}`` où la clé
+    est ``(identifiant, jour)``. Le recouvrement horaire reste calculé en
+    Python (portable SQLite/PostgreSQL).
+    """
+    from edts.models import DisponibiliteHoraire
+
+    index = {'indisponibles': {}, 'preferences': {}}
+    lignes = DisponibiliteHoraire.objects.filter(
+        annee_academique_id=annee_id,
+    ).values('enseignant_id', 'salle_id', 'jour', 'heure_debut', 'heure_fin', 'statut')
+    for ligne in lignes.iterator():
+        cle_ressource = (
+            ('E', ligne['enseignant_id']) if ligne['enseignant_id']
+            else ('S', ligne['salle_id'])
+        )
+        cle = (cle_ressource, ligne['jour'])
+        cible = (
+            index['indisponibles'] if ligne['statut'] == 'INDISPONIBLE'
+            else index['preferences'] if ligne['statut'] == 'PREFERENCE'
+            else None
+        )
+        if cible is None:  # DISPONIBLE : ouverture explicite, aucune contrainte
+            continue
+        cible.setdefault(cle, []).append((ligne['heure_debut'], ligne['heure_fin']))
+    return index
+
+
+def _periode_indisponible(enseignant_id, salle_id, annee_id, jour, heure_debut, heure_fin,
+                          index=None):
     """Contrôle fin : une indisponibilité couvre-t-elle *effectivement* la plage ?
 
     Le filtrage SQL s'arrête au jour (index ``(enseignant, annee, statut)``) ;
     le recouvrement horaire est évalué en Python, comme le fait déjà
     ``edts.services.horaires_en_chevauchement`` — portable SQLite/PostgreSQL.
+
+    ``index`` (issu de :func:`indexer_disponibilites`) évite toute requête :
+    c'est le chemin utilisé par le moteur de génération.
     """
     from edts.models import DisponibiliteHoraire
+
+    if enseignant_id:
+        cle = (('E', enseignant_id), jour)
+    elif salle_id:
+        cle = (('S', salle_id), jour)
+    else:
+        return False
+
+    if index is not None:
+        periodes = index['indisponibles'].get(cle, ())
+        return any(
+            _chevauche(heure_debut, heure_fin, debut, fin) for debut, fin in periodes
+        )
 
     qs = DisponibiliteHoraire.objects.filter(
         annee_academique_id=annee_id, statut='INDISPONIBLE', jour=jour,
     )
     if enseignant_id:
         qs = qs.filter(enseignant_id=enseignant_id)
-    elif salle_id:
-        qs = qs.filter(salle_id=salle_id)
     else:
-        return False
+        qs = qs.filter(salle_id=salle_id)
     return any(
         _chevauche(heure_debut, heure_fin, d.heure_debut, d.heure_fin)
         for d in qs
     )
 
 
-def indisponible_enseignant(enseignant_id, annee_id, jour, heure_debut, heure_fin):
+def indisponible_enseignant(enseignant_id, annee_id, jour, heure_debut, heure_fin,
+                            index=None):
     """C5 — l'enseignant est-il déclaré indisponible sur ce créneau ?"""
     if not enseignant_id:
         return False
     return _periode_indisponible(
-        enseignant_id, None, annee_id, jour, heure_debut, heure_fin,
+        enseignant_id, None, annee_id, jour, heure_debut, heure_fin, index=index,
     )
 
 
-def indisponible_salle(salle_id, annee_id, jour, heure_debut, heure_fin):
+def indisponible_salle(salle_id, annee_id, jour, heure_debut, heure_fin, index=None):
     """C6 — la salle est-elle déclarée indisponible sur ce créneau ?"""
     if not salle_id:
         return False
     return _periode_indisponible(
-        None, salle_id, annee_id, jour, heure_debut, heure_fin,
+        None, salle_id, annee_id, jour, heure_debut, heure_fin, index=index,
     )
 
 
 
 # ── Conflits sur ressource partagée (C1 / C2 / C3) ───────────────────────────
 
+def indexer_occupations(occupations):
+    """Index ``(ressource, jour) → [(début, fin), …]`` des séances placées.
+
+    Le solveur vérifiait chaque candidat contre **toutes** les occupations
+    déjà posées : coût linéaire par candidat, donc quadratique à l'échelle de
+    14 000 étudiants. L'index ramène la vérification aux seules séances du
+    même jour pour la ressource concernée.
+    """
+    index = {}
+    for place in occupations:
+        ajouter_occupation(index, place)
+    return index
+
+
+def _cles_ressource(place):
+    return [
+        (prefixe, ressource, _valeur(place, 'jour'))
+        for prefixe, ressource in (
+            ('E', _valeur(place, 'enseignant_id')),
+            ('G', _valeur(place, 'groupe_id')),
+            ('S', _valeur(place, 'salle_id')),
+        )
+        if ressource
+    ]
+
+
+def ajouter_occupation(index, place):
+    """Ajoute une occupation à l'index incrémental du solveur."""
+    plage = (_valeur(place, 'heure_debut'), _valeur(place, 'heure_fin'))
+    for cle in _cles_ressource(place):
+        index.setdefault(cle, []).append(plage)
+
+
+def retirer_occupation(index, place):
+    """Retire la dernière occupation ajoutée (retour arrière du solveur)."""
+    for cle in _cles_ressource(place):
+        liste = index.get(cle)
+        if liste:
+            liste.pop()
+
+
+def _conflits_depuis_index(index, *, enseignant_id, groupe_id, salle_id,
+                           jour, heure_debut, heure_fin):
+    conflits = []
+    for prefixe, ressource, code, message in (
+        ('E', enseignant_id, C1_CONFLIT_ENSEIGNANT, 'Enseignant déjà occupé sur ce créneau.'),
+        ('G', groupe_id, C2_CONFLIT_GROUPE, 'Groupe déjà occupé sur ce créneau.'),
+        ('S', salle_id, C3_CONFLIT_SALLE, 'Salle déjà occupée sur ce créneau.'),
+    ):
+        if not ressource:
+            continue
+        for debut, fin in index.get((prefixe, ressource, jour), ()):
+            if _chevauche(heure_debut, heure_fin, debut, fin):
+                conflits.append((code, message))
+                break
+    return conflits
+
+
 def conflit_ressource(occupations, *, enseignant_id=None, groupe_id=None, salle_id=None,
-                      jour=None, heure_debut=None, heure_fin=None, exclure=None):
+                      jour=None, heure_debut=None, heure_fin=None, exclure=None,
+                      index=None):
     """Renvoie la liste des occupations déjà placées en conflit.
 
     ``occupations`` est l'état courant du solveur : une liste d'objets
     ``Placement`` (ou de dicts à clés ``enseignant_id``/``groupe_id``/
     ``salle_id``/``jour``/``heure_debut``/``heure_fin``). La vérification est
     purement fonctionnelle — aucun accès base, donc testable sans fixture.
+
+    ``index`` (voir :func:`indexer_occupations`) évite le parcours complet de
+    la liste quand le solveur le fournit ; le résultat est identique.
     """
+    if index is not None:
+        return _conflits_depuis_index(
+            index,
+            enseignant_id=enseignant_id, groupe_id=groupe_id, salle_id=salle_id,
+            jour=jour, heure_debut=heure_debut, heure_fin=heure_fin,
+        )
     conflits = []
     for place in occupations:
         if exclure is not None and _identifiant(place) == exclure:
@@ -262,15 +381,22 @@ def trier_par_difficulte(besoins):
         key=lambda b: (-b.difficulte, b.affectation_pedagogique_id),
     )
 
-def preference_enseignant(enseignant_id, annee_id, jour, heure_debut, heure_fin):
+def preference_enseignant(enseignant_id, annee_id, jour, heure_debut, heure_fin,
+                          index=None):
     """Vrai si l'enseignant a exprimé une *préférence* sur ce créneau (étape K).
 
     Préférence = contrainte SOUPLE : elle produit une pénalité, jamais un rejet.
+    ``index`` évite une requête par candidat dans le moteur.
     """
     from edts.models import DisponibiliteHoraire
 
     if not enseignant_id or not annee_id:
         return False
+    if index is not None:
+        periodes = index['preferences'].get((('E', enseignant_id), jour), ())
+        return any(
+            _chevauche(heure_debut, heure_fin, debut, fin) for debut, fin in periodes
+        )
     return any(
         _chevauche(heure_debut, heure_fin, d.heure_debut, d.heure_fin)
         for d in DisponibiliteHoraire.objects.filter(

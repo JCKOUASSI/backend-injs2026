@@ -27,6 +27,7 @@ from datetime import datetime, time
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 from scolarite.models import AnneeAcademique, Groupe
 
@@ -729,3 +730,149 @@ class InscriptionImportee(models.Model):
     @property
     def nom_complet(self):
         return f'{self.nom} {self.prenoms}'.strip()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# GET-INJS APP — CAMPAGNES DE GÉNÉRATION (LOT 2)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class CampagneGeneration(models.Model):
+    """Campagne de génération des emplois du temps d'une année académique.
+
+    Pourquoi cette entité. La génération existait, mais son exécution n'était
+    qu'un appel HTTP : rien ne conservait le périmètre demandé, le bilan, les
+    anomalies, l'auteur, la durée, ni la possibilité de rejouer la même
+    campagne. Une campagne rend le traitement **traçable, reprenable et
+    publiable** — et interdit deux exécutions simultanées du même périmètre.
+
+    Cycle de vie (transitions contrôlées par ``edts.moteur.campagnes``) :
+
+        BROUILLON → VALIDATION_DONNEES → PRET → EN_COURS
+              → TERMINE | TERMINE_AVEC_ANOMALIES | ECHEC
+              → VALIDE → PUBLIE
+    """
+
+    class Statut(models.TextChoices):
+        BROUILLON = 'BROUILLON', 'Brouillon'
+        VALIDATION_DONNEES = 'VALIDATION_DONNEES', 'Validation des données'
+        PRET = 'PRET', 'Prêt à générer'
+        EN_COURS = 'EN_COURS', 'En cours'
+        TERMINE = 'TERMINE', 'Terminé'
+        TERMINE_AVEC_ANOMALIES = 'TERMINE_AVEC_ANOMALIES', 'Terminé avec anomalies'
+        ECHEC = 'ECHEC', 'Échec'
+        VALIDE = 'VALIDE', 'Validé'
+        PUBLIE = 'PUBLIE', 'Publié'
+
+    annee_academique = models.ForeignKey(
+        AnneeAcademique,
+        on_delete=models.PROTECT,
+        related_name='campagnes_getinjs',
+    )
+    libelle = models.CharField(max_length=255)
+    #: Semaines académiques planifiées (ex. [1, 2, 3]).
+    semaines = models.JSONField(
+        default=list, blank=True,
+        help_text='Semaines académiques ciblées ; liste vide = semaine 1.',
+    )
+    #: Périmètre : listes d'identifiants (formations, niveaux, groupes).
+    #: Vide = tout le périmètre INJS de l'année.
+    perimetre = models.JSONField(
+        default=dict, blank=True,
+        help_text='Filtres de périmètre : formations, niveaux, groupes.',
+    )
+    #: Paramètres passés au moteur (persister, remplacer, inclure_maquette…).
+    parametres = models.JSONField(default=dict, blank=True)
+    statut = models.CharField(
+        max_length=25, choices=Statut.choices, default=Statut.BROUILLON,
+        db_index=True,
+    )
+    cree_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='campagnes_getinjs_creees',
+    )
+    demarree_le = models.DateTimeField(null=True, blank=True)
+    terminee_le = models.DateTimeField(null=True, blank=True)
+    #: Bilan détaillé par groupe (celui de ``moteur.annee.generer_annee``).
+    bilan = models.JSONField(default=dict, blank=True)
+    #: Anomalies explicites : groupes non planifiés, séances non placées…
+    anomalies = models.JSONField(default=list, blank=True)
+    #: Mesures et compteurs (durée, effectif, séances, requêtes SQL si mesurées).
+    statistiques = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'GET-INJS – Campagne de génération'
+        verbose_name_plural = 'GET-INJS – Campagnes de génération'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['annee_academique', 'libelle'],
+                name='uniq_campagne_annee_libelle',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['annee_academique', 'statut']),
+            models.Index(fields=['statut', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.libelle} — {self.get_statut_display()}'
+
+    @property
+    def en_cours(self):
+        return self.statut == self.Statut.EN_COURS
+
+
+class ExecutionCampagne(models.Model):
+    """Une exécution d'une campagne — historique complet, reprise et mesures.
+
+    Chaque lancement crée une ligne, y compris les échecs : un échec silencieux
+    est précisément ce que la mission interdit. Le bilan et les anomalies sont
+    recopiés ici pour que l'historique reste lisible même si la campagne est
+    relancée plusieurs fois.
+    """
+
+    class Statut(models.TextChoices):
+        EN_COURS = 'EN_COURS', 'En cours'
+        TERMINE = 'TERMINE', 'Terminé'
+        TERMINE_AVEC_ANOMALIES = 'TERMINE_AVEC_ANOMALIES', 'Terminé avec anomalies'
+        ECHEC = 'ECHEC', 'Échec'
+
+    campagne = models.ForeignKey(
+        CampagneGeneration, on_delete=models.CASCADE, related_name='executions',
+    )
+    numero = models.PositiveIntegerField(help_text='Numéro d’exécution dans la campagne (1, 2, 3…).')
+    statut = models.CharField(
+        max_length=25, choices=Statut.choices, default=Statut.EN_COURS, db_index=True,
+    )
+    lancee_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='executions_campagnes_getinjs',
+    )
+    demarree_le = models.DateTimeField(default=timezone.now)
+    terminee_le = models.DateTimeField(null=True, blank=True)
+    duree_ms = models.PositiveBigIntegerField(null=True, blank=True)
+    bilan = models.JSONField(default=dict, blank=True)
+    anomalies = models.JSONField(default=list, blank=True)
+    statistiques = models.JSONField(default=dict, blank=True)
+    erreur = models.TextField(
+        blank=True, default='',
+        help_text='Message technique de l’échec — jamais masqué.',
+    )
+
+    class Meta:
+        ordering = ['-numero']
+        verbose_name = 'GET-INJS – Exécution de campagne'
+        verbose_name_plural = 'GET-INJS – Exécutions de campagne'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['campagne', 'numero'],
+                name='uniq_execution_campagne_numero',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.campagne_id} / exécution {self.numero}'

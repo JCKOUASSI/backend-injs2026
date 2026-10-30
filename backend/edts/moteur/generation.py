@@ -191,12 +191,12 @@ def _salles_compatibles(besoin, salles):
     return sorted(compatibles, key=lambda s: (s.capacite or 10 ** 6, s.pk))
 
 
-def _penalites(besoin, creneau, salle, annee_id):
+def _penalites(besoin, creneau, salle, annee_id, index=None):
     """Contraintes SOUPLES (étape K) — jamais bloquantes."""
     penalites = []
     if not C.preference_enseignant(
         besoin.enseignant_id, annee_id, creneau.jour,
-        creneau.heure_debut, creneau.heure_fin,
+        creneau.heure_debut, creneau.heure_fin, index=index,
     ):
         penalites.append(C.Penalite(
             'PREFERENCE_ENSEIGNANT_NON_RESPECTEE',
@@ -234,6 +234,8 @@ def candidats(besoin, contexte, occupations):
     semaines = contexte['semaines']
     retenus, ecartees = [], []
     creneaux_testes = salles_testes = 0
+    index = contexte.get('index_disponibilites')
+    index_occupations = contexte.get('index_occupations')
     eligibles = _salles_compatibles(besoin, salles)
 
     for creneau in creneaux:
@@ -242,7 +244,7 @@ def candidats(besoin, contexte, occupations):
         # C5 — indisponibilité enseignant (dure).
         if C.indisponible_enseignant(
             besoin.enseignant_id, annee_id, creneau.jour,
-            creneau.heure_debut, creneau.heure_fin,
+            creneau.heure_debut, creneau.heure_fin, index=index,
         ):
             base.append(C.Violation(
                 C.C5_DISPONIBILITE_ENSEIGNANT,
@@ -262,7 +264,7 @@ def candidats(besoin, contexte, occupations):
             # C6 — indisponibilité salle.
             if C.indisponible_salle(
                 salle.pk, annee_id, creneau.jour,
-                creneau.heure_debut, creneau.heure_fin,
+                creneau.heure_debut, creneau.heure_fin, index=index,
             ):
                 violations.append(C.Violation(
                     C.C6_DISPONIBILITE_SALLE,
@@ -278,12 +280,13 @@ def candidats(besoin, contexte, occupations):
                 jour=creneau.jour,
                 heure_debut=creneau.heure_debut,
                 heure_fin=creneau.heure_fin,
+                index=index_occupations,
             ):
                 violations.append(C.Violation(code, message, ressource=salle.nom))
             if violations:
                 ecartees.append(violations)
                 continue
-            penalites = _penalites(besoin, creneau, salle, annee_id)
+            penalites = _penalites(besoin, creneau, salle, annee_id, index=index)
             retenus.append(Placement(
                 besoin=besoin, creneau=creneau, salle=salle,
                 semaine_debut=semaines[0], semaine_fin=semaines[-1],
@@ -319,10 +322,19 @@ def _backtrack(restes, index, occupations, budget, contexte):
             return None
         budget[0] -= 1
         occupations.append(candidat)
+        index_occupations = contexte.get('index_occupations')
+        if index_occupations is not None:
+            from edts.moteur import contraintes as C
+
+            C.ajouter_occupation(index_occupations, candidat)
         suite = _backtrack(restes, index + 1, occupations, budget, contexte)
         if suite is not None:
             return [candidat] + suite
         occupations.pop()
+        if index_occupations is not None:
+            from edts.moteur import contraintes as C
+
+            C.retirer_occupation(index_occupations, candidat)
     return None
 
 
@@ -332,11 +344,16 @@ def _construire_contexte(creneaux, salles, annee_id, semaines):
     Il est **distinct** des besoins : ceux-ci restent immuables. Aucune donnée
     de résolution n'est donc collée sur l'objet métier.
     """
+    from edts.moteur import contraintes as C
+
     return {
         'creneaux': creneaux,
         'salles': salles,
         'annee_id': annee_id,
         'semaines': list(semaines),
+        # Une seule requête pour toutes les disponibilités de l'année : le
+        # solveur ne fait plus de SQL par candidat.
+        'index_disponibilites': C.indexer_disponibilites(annee_id),
     }
 
 
@@ -565,6 +582,9 @@ def generate_schedule(
     contexte = _construire_contexte(creneaux, salles, annee_academique_id, semaines)
     besoins = list(resultat_besoins.besoins)
     occupations = list(occupations_initiales or [])
+    # Index incrémental des occupations : le solveur ne parcourt plus toute la
+    # liste à chaque candidat (facteur déterminant au-delà de 3 500 étudiants).
+    contexte['index_occupations'] = C.indexer_occupations(occupations)
     budget_liste = [budget]
     placements = _backtrack(besoins, 0, occupations, budget_liste, contexte) or []
 

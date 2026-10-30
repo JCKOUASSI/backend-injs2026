@@ -1,4 +1,14 @@
 ================================================================================
+NOTE DE RENVOI (2026-10-30)
+Le document de référence du module LIVRÉ (campagnes de génération, mesures de
+charge, matrice de traçabilité, journal d'implémentation) est à la racine du
+dépôt :  Conception-GET-INJS.txt
+Ce fichier demeure la conception détaillée du module EDT telle qu'établie
+antérieurement ; il est conservé pour ne casser aucun lien ni téléchargement.
+L'API /api/edts/lmd/conception/ sert en priorité le document de la racine.
+================================================================================
+
+================================================================================
  CONCEPTION-GET-INJS
  Dossier de conception pour la refonte complète du module « GET-INJS »
  (Gestion des Emplois du Temps) de l'application backend-injs2026
