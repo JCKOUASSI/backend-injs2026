@@ -371,3 +371,71 @@ par un test — d'où leur présence malgré une suite verte.
   au niveau HTTP et par les 1 979 tests frontend.
 - **Les écritures** (POST/PUT/DELETE métier) n'ont pas été exercées sur les données réelles : cela
   créerait des données non demandées. Elles restent couvertes par les tests, pas par le balayage.
+
+---
+
+## 10. Qualité : audits statiques et données inventées dans l'interface
+
+### 10.1 Audits statiques (aucune écriture, aucune donnée métier touchée)
+
+| Audit | Périmètre | Résultat |
+|---|---|---|
+| Champs référencés par les `ModelAdmin` (recherche, tri, colonnes, filtres, jointures) | 181 admin | **0 anomalie** |
+| Champs référencés par les serializers DRF | 59 serializers | **0 champ fantôme** |
+| Champs de recherche / tri / filtre des vues DRF | 10 vues + 181 admin | **0 anomalie** |
+| Routes appelées par le frontend ↔ motifs d'URL Django | **260 chemins distincts** | **0 route manquante** (les 12 écarts apparents sont des bases concaténées ou des verbes existants) |
+| `makemigrations --check --dry-run` | 21 applications | **No changes detected** |
+| `manage.py check` | projet entier | **0 problème** |
+| ESLint (`npm run lint`) | `frontend/src` | **code 1 → 0** (voir 10.2) |
+| Build de production (`npm run build`) | frontend | **code 0** |
+
+### 10.2 Lint en échec : corrigé
+
+`npm run lint` **échouait** (code de sortie 1), contrairement à ce qu'annonçait la fiche de la PR :
+
+| Fichier | Problème | Correction |
+|---|---|---|
+| `src/lib/plancheStyle.test.js` | 4× `require` non défini (CommonJS dans un module ESM) | imports `node:fs` / `node:path` en tête de fichier |
+| `src/pages/design/PlancheDeStyle.test.jsx` | 3× `require` non défini + `render` importé sans usage | imports ESM, import inutile retiré |
+
+Résultat : **0 erreur, 0 avertissement** (code 0). Les 46 tests de ces deux fichiers restent verts.
+
+### 10.3 Données inventées affichées comme officielles : corrigées
+
+Le tableau de bord présentait des chiffres **qui n'existent nulle part en base** :
+
+| Élément affiché | Valeur fabriquée | Origine |
+|---|---|---|
+| KPI « Étudiants inscrits / Candidats / Enseignants / Diplômes » | 1 248 / 2 340 / 186 / 85 | replis `?? valeur` du composant |
+| « Évolution des effectifs 2021-2026 » | 820 → 1 248 étudiants, 1 450 → 2 340 candidats | série codée en dur |
+| « Répartition des formations » | 62 % / 28 % / 10 % (773 / 349 / 126) | données codées en dur |
+| « Répartition par sexe » | 58 % / 42 % (723 / 525) | données codées en dur |
+| Jauges « réussite / abandon / diplomation » | 78 % / 6 % / 72 %, « +5 % », « vs 2025 » | valeurs **par défaut** du composant |
+| « Situation financière » | 248 500 000 / 215 780 000 / 32 720 000 FCFA, taux 87 % | valeurs **par défaut** du composant |
+| « Charge d'enseignement » | 340 h CM, 290 h TD, 220 h TP | série codée en dur |
+| « Activité récente » | noms d'étudiants (M. Sarr, A. Traoré), horodatages, paiement 125 000 FCFA | liste d'exemples par défaut |
+| Barre de navigation | « Dr. Mamadou Diallo » à la place de l'identité réelle | nom de démonstration |
+| En-tête du tableau de bord | « 15/09/2026 10:42 » | date de synchronisation figée |
+
+**Règle appliquée** : une interface ne fabrique jamais une donnée officielle. Là où l'API fournit la donnée, elle est branchée ; ailleurs l'écran affiche **« — »** ou un état vide explicite.
+
+| Fichier | Correction |
+|---|---|
+| `components/dashboard/Charts.jsx` | jauges, courbe d'évolution et charge d'enseignement sans valeurs par défaut ; états vides explicites ; grilles calculées sur les données réelles |
+| `components/dashboard/ExecutiveWidgets.jsx` | flux d'activité et situation financière vides par défaut |
+| `components/dashboard/KpiCard.jsx` | « vs ‹année précédente› » uniquement si une variation est réellement fournie |
+| `components/layout/Layout.jsx` | identité réelle du compte, repli sur l'identifiant |
+| `pages/DashboardEngineView.jsx` | KPI liés à l'API, répartition issue de `charts.repartition_formations`, taux non calculés à « — », fausses variations supprimées, date de synchro réelle |
+
+**Tests ajoutés** — `frontend/src/components/dashboard/Charts.test.jsx` (8 tests) : jauge sans taux → « — » et aucun « 75 % / +5 % / vs 2025 » ; courbe sans série → message d'absence d'historique ; donut vide ; charge horaire vide ; situation financière sans montant ; flux d'activité sans nom fictif.
+
+**Preuve d'efficacité** : sur le code précédent, **6 des 8 tests échouent** ; après correction, **8/8 verts**.
+
+### 10.4 Vérifications finales
+
+| Contrôle | Résultat |
+|---|---|
+| `npm run lint` | **code 0** — 0 erreur, 0 avertissement |
+| `npx vitest run` | **106 fichiers, 1 987 tests, code 0** (1 979 + 8 nouveaux) |
+| `npm run build` | **code 0** |
+| Backend | **aucun fichier modifié** dans cette étape ; suite backend validée au §9 (2 615 tests) |
