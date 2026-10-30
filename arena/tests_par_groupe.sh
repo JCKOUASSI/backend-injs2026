@@ -32,7 +32,10 @@ declare -A GROUPES=(
   [scolarite]="scolarite|420"
   [formations]="formations|420"
   [auth]="authentication|300"
-  [habilitations]="habilitations|600"
+  # Budget relevé après mesure : 271 s sur SQLite, 625 s sur PostgreSQL 16
+  # (le même code, mêmes tests). Un budget trop court ne signale pas un échec,
+  # il fabrique un « INTERROMPU » — c'est-à-dire une vérité perdue.
+  [habilitations]="habilitations|1200"
   [edt]="edts presences|360"
   [evaluations]="evaluations jurys|360"
   [pilotage]="statistiques config dashboard|300"

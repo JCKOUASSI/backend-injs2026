@@ -111,7 +111,13 @@ def besoins_depuis_maquette(*, annee_academique_id=None, groupe_ids=None,
     if annee_academique_id is not None:
         groupes = groupes.filter(annee_academique_id=annee_academique_id)
     if groupe_ids:
-        groupes = groupes.filter(pk__in=list(groupe_ids))
+        # Même piège que dans `besoins.affectations_planifiables` : une chaîne
+        # « 10 » se découpe en caractères. Normalisation partagée.
+        from edts.moteur.identifiants import normaliser_ids
+
+        identifiants = normaliser_ids(groupe_ids)
+        if identifiants:
+            groupes = groupes.filter(pk__in=identifiants)
     groupes = groupes.order_by('ref_formation__intitule', 'niveau__ordre', 'nom')
 
     if not groupes.exists():

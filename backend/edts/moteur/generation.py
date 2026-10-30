@@ -157,6 +157,41 @@ class GenerationResult:
     #: du budget de recherche.
     finalite: str | None = None
 
+    def __post_init__(self):
+        """Complète les métriques absentes, y compris sur un échec précoce.
+
+        Les sorties anticipées (aucun besoin, canevas vide, calendrier absent)
+        ne calculaient aucun compteur : le dictionnaire restait vide, et tout
+        consommateur qui lit `metrics['seances_attendues']` — l'API, le bilan
+        annuel, les écrans — levait un `KeyError` au lieu d'afficher un échec
+        expliqué. Un échec doit rester un résultat lisible : les compteurs sont
+        donc à zéro, et la raison reste dans `motif_echec` / `detail`.
+        """
+        socle = {
+            'seances_attendues': 0,
+            'seances_placees': 0,
+            'seances_non_placees': 0,
+            'heures_attendues': 0.0,
+            'heures_placees': 0.0,
+            'taux_couverture': 0.0,
+            'score_penalites': 0,
+            'creneaux_explores': 0,
+            'nb_conflits_critiques': 0,
+            'budget_configured': 0,
+            'budget_restant': 0,
+            'nb_placements_effectues': 0,
+            'finalite': self.finalite,
+            # Politique souple : vide tant qu'aucun plan n'a été évalué, mais
+            # la CLÉ existe — un consommateur ne doit jamais avoir à deviner
+            # si l'absence signifie « inactive » ou « bug ».
+            'contraintes_souples': {
+                'politique': None, 'active': False, 'trous': 0,
+                'series_trop_longues': 0, 'journees_surchargees': 0,
+                'detail': [],
+            },
+        }
+        self.metrics = {**socle, **(self.metrics or {})}
+
     @property
     def succes(self):
         return self.status == GENERATION_OK

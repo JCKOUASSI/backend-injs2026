@@ -173,6 +173,7 @@ def affectations_planifiables(
     RefFormation (service L6). Un cycle legacy (CPFAE, Sygepcpfae, plans de
     professorat) est donc **exclu de la planification**, sans être supprimé.
     """
+    from edts.moteur.identifiants import normaliser_ids
     from formations.referentiel_injs_l6 import formations_injs
     from scolarite.models import AffectationPedagogique
 
@@ -194,8 +195,12 @@ def affectations_planifiables(
         qs = qs.filter(niveau_id=niveau_id)
     if semestre_id is not None:
         qs = qs.filter(semestre_id=semestre_id)
-    if groupe_ids:
-        qs = qs.filter(groupe_id__in=list(groupe_ids))
+    # `normaliser_ids` et non `list(groupe_ids)` : une chaîne « 10 » ne doit pas
+    # devenir ['1', '0']. Défaut réel : tout groupe dont la clé primaire
+    # dépassait 9 était déclaré sans affectation (cf. identifiants.py).
+    identifiants = normaliser_ids(groupe_ids)
+    if identifiants:
+        qs = qs.filter(groupe_id__in=identifiants)
     return qs.order_by('pk')
 
 
