@@ -730,3 +730,74 @@ class TestExportXlsxEmploiDuTemps(BaseLMD):
         edt = self.creer_edt()
         r = APIClient().get(f'/api/edts/lmd/{edt.pk}/export.xlsx/')
         self.assertIn(r.status_code, (401, 403))
+
+
+class TestCandidatsDeplacement(BaseLMD):
+    """`GET /api/edts/lmd/items/<id>/move/` — propositions + cause réelle.
+
+    La route ne doit jamais renvoyer « 0 candidat » sans explication : quand le
+    plan existant est déjà en violation, c'est cette violation qui bloque, et
+    elle est renvoyée telle quelle.
+    """
+
+    def test_plan_valide_propose_des_positions(self):
+        self.connecter('SECRETARIAT')
+        edt, _gen = self.generer_et_persister()
+        seance = edt.affectations.filter(actif=True).first()
+        r = self.client_api.get(f'/api/edts/lmd/items/{seance.pk}/move/')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        corps = r.json()
+        self.assertTrue(corps['plan_valide'], corps.get('violations_plan'))
+        self.assertGreater(corps['nb_candidats'], 0)
+        candidat = corps['candidats'][0]
+        for cle in ('creneau_template_id', 'jour', 'heure_debut',
+                    'heure_fin', 'salle_id', 'salle_nom', 'salle_capacite'):
+            self.assertIn(cle, candidat)
+
+    def test_plan_deja_invalide_explique_la_cause(self):
+        """Séance sans ancrage pédagogique → C8 bloque TOUT déplacement."""
+        self.connecter('SECRETARIAT')
+        edt = self.creer_edt()
+        self.f.creer_creneaux(heures=((8, 10), (10, 12)))
+        creneau = CreneauTemplate.objects.first()
+        self.f.creer_affectation(volume=2, groupe=self.groupe)
+        # Séance volontairement posée sans affectation pédagogique ni ECUE.
+        from edts.models import AffectationCreneau
+
+        orpheline = AffectationCreneau.objects.create(
+            emploi_du_temps=edt, creneau_template=creneau, semaine_debut=1,
+            semaine_fin=10, salle=None, salle_nom='', formation=self.f.cycle,
+            groupe=self.groupe, affectation_pedagogique=None,
+            nature='COURS', intitule='Séance non ancrée', actif=True)
+        # Une SECONDE séance non ancrée reste dans le plan pendant le
+        # déplacement : c'est elle qui rend le plan invalide (la séance déplacée
+        # est exclue de la validation, puisqu'elle change de position).
+        autre_creneau = CreneauTemplate.objects.exclude(pk=creneau.pk).first()
+        AffectationCreneau.objects.create(
+            emploi_du_temps=edt, creneau_template=autre_creneau, semaine_debut=1,
+            semaine_fin=10, salle=None, salle_nom='', formation=self.f.cycle,
+            groupe=self.groupe, affectation_pedagogique=None,
+            nature='COURS', intitule='Autre séance non ancrée', actif=True)
+        r = self.client_api.get(f'/api/edts/lmd/items/{orpheline.pk}/move/')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        corps = r.json()
+        self.assertFalse(corps['plan_valide'])
+        self.assertTrue(corps['violations_plan'])
+        codes = {v['contrainte'] for v in corps['violations_plan']}
+        self.assertIn('C8_COHERENCE_PEDAGOGIQUE', codes)
+        self.assertIn('explication', corps)
+        self.assertIn('action_recommandee', corps)
+
+    def test_l_adaptateur_expose_ecue_id(self):
+        """Régression : sans `ecue_id`, la revalidation levait un 500."""
+        from edts.api_lmd import _BesoinAffectation
+
+        self.connecter('SECRETARIAT')
+        edt, _gen = self.generer_et_persister()
+        seance = (edt.affectations.filter(actif=True)
+                  .select_related('affectation_pedagogique', 'emploi_du_temps')
+                  .first())
+        besoin = _BesoinAffectation(seance, 2.0, 30)
+        self.assertTrue(hasattr(besoin, 'ecue_id'))
+        self.assertEqual(besoin.ecue_id,
+                         seance.affectation_pedagogique.ecue_id)

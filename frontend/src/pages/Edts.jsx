@@ -4,6 +4,8 @@ import api from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { useAuth } from '../context/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
+import DeplacerSeance from '../components/edt/DeplacerSeance'
+import AnnulerSeance from '../components/edt/AnnulerSeance'
 import {
   ROLES_PLANIFICATION, ROLES_VALIDATION,
   construireMatriceGrille, classeBadgeStatut, formatDuree, formatHeure,
@@ -251,6 +253,10 @@ export default function Edts() {
     [edtsAffiches, selectedId, detail],
   )
   const gele = selectedEdt ? ['VALIDE', 'PUBLIE', 'ARCHIVE', 'EN_VALIDATION'].includes(selectedEdt.statut) : true
+  // Modales de modification réglementée (déplacement revalidé / annulation motivée).
+  const [aDeplacer, setADeplacer] = useState(null)
+  const [aAnnuler, setAAnnuler] = useState(null)
+  const [aReactiver, setAReactiver] = useState(null)
   const modifiable = peutPlanifier && !gele
   const matrice = useMemo(() => construireMatriceGrille(grille, conflits), [grille, conflits])
   const nbSemaines = selectedEdt ? (selectedEdt.semaine_fin || 1) - (selectedEdt.semaine_debut || 1) + 1 : 0
@@ -616,6 +622,37 @@ export default function Edts() {
                                                 {[a.enseignant_nom, a.groupe, a.salle_nom && `salle ${a.salle_nom}`].filter(Boolean).join(' · ')}
                                               </div>
                                               <div className="small text-muted">s{a.semaine_debut}–s{a.semaine_fin}</div>
+                                              {modifiable && (
+                                                <div className="d-flex gap-1 mt-1">
+                                                  <button
+                                                    type="button"
+                                                    className="btn btn-sm btn-outline-primary py-0 px-1"
+                                                    title="Déplacer (revalidation C1→C10)"
+                                                    onClick={(e) => { e.stopPropagation(); setADeplacer(a) }}
+                                                  >
+                                                    <i className="bi bi-arrows-move" />
+                                                  </button>
+                                                  {a.actif === false ? (
+                                                    <button
+                                                      type="button"
+                                                      className="btn btn-sm btn-outline-success py-0 px-1"
+                                                      title="Réactiver la séance"
+                                                      onClick={(e) => { e.stopPropagation(); setAReactiver(a) }}
+                                                    >
+                                                      <i className="bi bi-arrow-counterclockwise" />
+                                                    </button>
+                                                  ) : (
+                                                    <button
+                                                      type="button"
+                                                      className="btn btn-sm btn-outline-danger py-0 px-1"
+                                                      title="Annuler la séance (motif requis)"
+                                                      onClick={(e) => { e.stopPropagation(); setAAnnuler(a) }}
+                                                    >
+                                                      <i className="bi bi-slash-circle" />
+                                                    </button>
+                                                  )}
+                                                </div>
+                                              )}
                                             </div>
                                           ))}
                                         </>
@@ -662,6 +699,11 @@ export default function Edts() {
                                 <>
                                   <button className="btn btn-sm btn-outline-primary me-1" title="Modifier" onClick={() => setEdition(aff)}>
                                     <i className="bi bi-pencil" />
+                                  </button>
+                                  <button className="btn btn-sm btn-outline-info me-1"
+                                          title="Déplacer (revalidation C1→C10 par le serveur)"
+                                          onClick={() => setADeplacer(aff)}>
+                                    <i className="bi bi-arrows-move" />
                                   </button>
                                   <button className="btn btn-sm btn-outline-secondary me-1" title="Désactiver / réactiver" onClick={() => basculerAffectation(aff)}>
                                     <i className={`bi ${aff.actif ? 'bi-pause-circle' : 'bi-play-circle'}`} />
@@ -742,6 +784,32 @@ export default function Edts() {
           )}
         </div>
       </div>
+
+      {aDeplacer && (
+        <DeplacerSeance
+          affectation={aDeplacer}
+          onClose={() => setADeplacer(null)}
+          onMoved={() => {
+            setADeplacer(null)
+            showToast('Séance déplacée : position revalidée C1→C10')
+            chargerDetail(selectedId, vue === 'grille' ? semaine : null)
+          }}
+        />
+      )}
+      {(aAnnuler || aReactiver) && (
+        <AnnulerSeance
+          affectation={aAnnuler || aReactiver}
+          reactiver={!!aReactiver}
+          onClose={() => { setAAnnuler(null); setAReactiver(null) }}
+          onDone={() => {
+            const reactivee = !!aReactiver
+            setAAnnuler(null)
+            setAReactiver(null)
+            showToast(reactivee ? 'Séance réactivée' : 'Séance annulée (motif journalisé)')
+            chargerDetail(selectedId, vue === 'grille' ? semaine : null)
+          }}
+        />
+      )}
 
       {edition && (
         <ModalEditionAffectation

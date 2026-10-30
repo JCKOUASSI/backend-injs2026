@@ -691,10 +691,15 @@ class _BesoinAffectation:
     TeachingNeed → AffectationPedagogique est préservée.
     """
 
+    # ``ecue_id`` est nécessaire : la validation (C8) distingue deux ancrages
+    # pédagogiques — l'affectation pédagogique, ou l'ECUE pour les cohortes
+    # importées. Sans cet attribut, rejouer la validation sur un EDT persisté
+    # levait un AttributeError (500) au lieu de rendre un verdict.
     __slots__ = ('affectation_pedagogique_id', 'annee_academique_id',
                  'ref_formation_id', 'groupe_id', 'enseignant_id', 'nature',
                  'type_enseignement', 'intitule', 'effectif', 'nb_seances',
-                 'duree_seance_heures', 'credits', 'volume_horaire')
+                 'duree_seance_heures', 'credits', 'volume_horaire',
+                 'ecue_id')
 
     def __init__(self, affectation, duree_heures, effectif):
         ap = affectation.affectation_pedagogique
@@ -713,6 +718,9 @@ class _BesoinAffectation:
         self.duree_seance_heures = duree_heures
         self.credits = 0
         self.volume_horaire = duree_heures
+        # Ancrage ECUE : connu via l'affectation pédagogique quand elle existe ;
+        # sinon `None` et C8 tranchera sur l'absence d'ancrage — jamais deviné.
+        self.ecue_id = ap.ecue_id if ap else None
 
 
 class _PlacementAffectation:
@@ -810,11 +818,34 @@ def _candidats_deplacement(affectation):
                     'salle_id': salle.pk, 'salle_nom': salle.nom,
                     'salle_capacite': salle.capacite,
                 })
-    return Response({
+    # Le plan EXISTANT est validé pour lui-même : quand il est déjà en
+    # violation, aucun déplacement ne peut être accepté (le candidat serait
+    # rejeté à cause d'une faute qu'il n'a pas causée). On renvoie donc la
+    # cause réelle au lieu d'une liste vide sans explication.
+    rapport_plan = V.validate_schedule(occupation)
+    violations_plan = [v.as_dict() for v in rapport_plan.violations]
+    reponse = {
         'affectation_id': affectation.pk,
         'nb_candidats': len(propositions),
         'candidats': propositions,
-    })
+        'plan_valide': rapport_plan.valide,
+        'violations_plan': violations_plan,
+        'warnings_plan': rapport_plan.warnings,
+    }
+    if not rapport_plan.valide:
+        codes = sorted({v['contrainte'] for v in violations_plan})
+        reponse['explication'] = (
+            'Le plan actuel de cet emploi du temps viole déjà '
+            f'{len(violations_plan)} contrainte(s) ({", ".join(codes)}). '
+            'Aucun déplacement ne peut être validé tant que ces points ne sont '
+            'pas corrigés : la position demandée serait refusée pour une faute '
+            'qu’elle n’a pas causée.'
+        )
+        reponse['action_recommandee'] = (
+            'Corrigez d’abord les séances signalées (ancrage pédagogique, salle '
+            'compatible, conflits), puis relancez le déplacement.'
+        )
+    return Response(reponse)
 
 
 @api_view(['GET', 'POST'])

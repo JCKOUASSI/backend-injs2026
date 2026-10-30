@@ -399,9 +399,19 @@ PARTIE 5 — GUIDE UTILISATEUR
   ou colonne « Motif » du bilan de campagne.
 
 5.7 Modifier une séance
-  Tableau des emplois du temps → EDT du groupe → déplacer/annuler une séance
-  (`/api/edts/lmd/items/<id>/move/`, `/cancel/`) ; toute modification déclenche
-  une nouvelle vérification des contraintes.
+  Tableau des emplois du temps → grille : chaque séance porte deux actions.
+
+  « Déplacer » (`/api/edts/lmd/items/<id>/move/`) : le serveur liste les
+  positions qu'il a lui-même validées (créneau + salle), l'utilisateur en
+  choisit une, puis le serveur revalide C1→C10 sur le plan complet et refuse
+  en 409 avec le code de la contrainte violée. Si le plan existant est déjà en
+  violation, l'écran affiche cette cause AVANT « aucune position » — un plan
+  invalide bloque tout déplacement, et le dire évite un diagnostic faux.
+
+  « Annuler » (`/api/edts/lmd/items/<id>/cancel/`) : motif obligatoire,
+  désactivation logique (aucune suppression), journalisée et réversible via
+  « Réactiver ». Sans motif : 400 MOTIF_ANNULATION_REQUIS. Sur un EDT publié
+  ou archivé : 409 STATUT_EDT_INVALIDE.
 
 5.8 Simuler une variante
   Générer avec « Enregistrer les EDT › décoché : le plan est produit et
@@ -445,7 +455,7 @@ PARTIE 6 — TESTS ET PERFORMANCES
   Configuration Django                  PASS          manage.py check → 0 issue
   Migrations cohérentes                 PASS          makemigrations --check → « No changes »
   Migration 0008 appliquée              PASS          migrate edts → OK
-  Tests backend groupe EDT              PASS          453 tests, code 0 (./arena/tests_par_groupe.sh edt)
+  Tests backend groupe EDT              PASS          456 tests, code 0 (./arena/tests_par_groupe.sh edt)
   dont campagnes (nouveaux)             PASS          16 tests (edts.tests.test_campagnes)
   dont export PDF (nouveau)             PASS          4 tests (TestExportPdfEmploiDuTemps)
   dont export XLSX (nouveau)            PASS          4 tests (TestExportXlsxEmploiDuTemps)
@@ -453,8 +463,11 @@ PARTIE 6 — TESTS ET PERFORMANCES
                                                      17 colonnes, filtres serveur appliqués
   Export PDF d'un EDT                   PASS          application/pdf, 3 066 octets, grille réelle
                                                      (texte extrait et image de contrôle produite)
-  Tests frontend                        PASS          110 fichiers / 2 012 tests, code 0
+  Tests frontend                        PASS          112 fichiers / 2 022 tests, code 0
   dont campagnes / versions / audit     PASS          6 + 5 + 4 tests
+  dont déplacement / annulation         PASS          6 + 4 tests (components/edt)
+  Déplacement d'une séance (live)       PASS          GET 26 candidats (plan valide), POST 200 accepté,
+                                                     annulation motivée 200 réversible, sans motif 400
   Lint frontend                         PASS          npm run lint → code 0
   Build frontend                        PASS          npm run build → code 0
   Import externe (CSV)                  PASS          test_import_inscrits + benchmark (100 → 14 000)
@@ -562,7 +575,21 @@ Ordre chronologique réel :
     (`edt.emploi_du_temps.consulter`) : code retiré, l'entrée s'appuie sur
     `valider`/`publier` qui existent réellement au catalogue.
 19. Frontend final : 110 fichiers / 2 012 tests, lint 0, build 0.
-20. Export PDF implémenté : `GET /api/edts/lmd/<id>/export.pdf/` (reportlab,
+20 bis. Écran de modification de séance : deux composants
+    (`components/edt/DeplacerSeance.jsx`, `AnnulerSeance.jsx`) câblés dans la
+    grille et dans le tableau des créneaux, 10 tests frontend, et 3 tests
+    backend sur les candidats de déplacement.
+    Deux défauts réels trouvés en exerçant la route sur des données réelles :
+    (a) `_BesoinAffectation` n'exposait pas `ecue_id`, exigé par C8 depuis les
+        cohortes importées → la route `move/` répondait 500 au lieu d'un verdict ;
+    (b) un plan déjà invalide renvoyait « 0 candidat » sans explication, ce qui
+        faisait croire à une absence de place alors que la cause était une
+        violation préexistante (C8). L'API renvoie désormais `plan_valide`,
+        `violations_plan`, `explication` et `action_recommandee`.
+    Preuve HTTP réelle (EDT temporaire, transaction annulée) : GET 26 candidats,
+    POST 200 accepté, annulation 200 réversible, réactivation 200, sans motif 400.
+
+21. Export PDF implémenté : `GET /api/edts/lmd/<id>/export.pdf/` (reportlab,
     déjà présent dans requirements). La vue réutilise `grille_hebdomadaire`,
     donc l'imprimé ne peut pas diverger de l'écran ; un EDT vide écrit
     explicitement « aucune séance » au lieu de fabriquer une ligne.
