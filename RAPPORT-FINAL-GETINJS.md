@@ -1,7 +1,7 @@
 # Rapport final — GET INJS APP
 
 **INJS d'Abidjan — Marcory, Côte d'Ivoire**
-**Date :** 30 octobre 2026 · **Branche :** `arena/d40e4a41-backend-injs2026` · **HEAD :** `2f293b2`
+**Date :** 30 octobre 2026 · **Branche :** `arena/d40e4a41-backend-injs2026` · **HEAD :** `44a0484`
 **Objet :** état réel du générateur d'emplois du temps, preuves à l'appui.
 **Document de conception détaillé :** `Conception-GET-INJS.txt` (identique dans `docs/getinjs/`).
 
@@ -37,6 +37,7 @@ environnement, avec le motif), **FAIL** (exécuté, en échec).
 | 6 | **PostgreSQL exécuté pour la première fois** | `d837e66`, `1c2b785` | 9 groupes verts, 2 733 tests |
 | 7 | CI distante : tentative réelle, écart consigné | `327d746` | étapes du workflow rejouées en local |
 | 8 | Canevas officiel contrôlable + pause déduite, pas inventée | `a33da2b`, `d26fc6c` | 19 tests + 3 avertissements d'audit |
+| 9 | Jeu de démonstration identifiable (aperçu réellement utilisable) | `44a0484` | 10 tests, parcours complet vérifié en direct |
 
 ## 3. Preuves d'exécution (30 octobre 2026)
 
@@ -48,12 +49,12 @@ environnement, avec le motif), **FAIL** (exécuté, en échec).
 | formations | 270 | PASS | PASS |
 | auth | 242 | PASS | PASS |
 | habilitations | 480 | PASS | PASS (625 s) |
-| **edt + presences** | **560** | PASS (102 s) | PASS (112 s) |
+| **edt + presences** | **570** | PASS (120 s) | PASS (112 s) |
 | evaluations | 230 | PASS | PASS |
 | pilotage | 201 | PASS | PASS |
 | socle | 183 | PASS (48 s) | PASS (97 s) |
 | divers | 139 | PASS | PASS |
-| **Total** | **2 759** | **PASS** | **PASS** |
+| **Total** | **2 769** | **PASS** | **PASS** |
 
 PostgreSQL 16.2 obtenu sans privilège racine (`pgserver`), base `injs_pg`,
 **208 tables créées par les migrations réelles** — aucun schéma fabriqué à la main.
@@ -78,13 +79,28 @@ PostgreSQL 16.2 obtenu sans privilège racine (`pgserver`), base `injs_pg`,
 PostgreSQL est **2,5× à 2,7× plus rapide** que SQLite sur la génération :
 les chiffres SQLite publiés précédemment sont un majorant.
 
+### Parcours complet sur la base de démonstration (30 octobre 2026)
+
+Chaîne entière exercée par l'API réelle, sans passer par le shell :
+
+| Étape | Résultat mesuré |
+|---|---|
+| Audit « puis-je générer ? » | **OK** — 3 contrôles verts, `generable: true` |
+| Génération annuelle (4 groupes) | `status_global: COMPLETE`, 4 EDT persistés |
+| Séances | **24 placées / 0 non placée**, 240 étudiants couverts |
+| Contraintes souples (actives) | 0 trou, 0 série longue, 0 journée chargée, **0 pénalité** |
+| Grille d'un EDT | jours et créneaux réels du canevas officiel, salles affectées |
+| Export PDF | 200 — 2 263 octets |
+| Export XLSX | 200 — 6 525 octets |
+| Export CSV | 200 — 476 octets, en-têtes et lignes conformes |
+
 ### Services en ligne (aperçus)
 
 | Service | État |
 |---|---|
 | API Django `:8000` | RUNNING (200) |
 | Site GET-INJS `:3000` | RUNNING (200) |
-| Flutter web `:3001` | **BLOCKED** — SDK absent, sources inaccessibles |
+| Flutter web `:3001` | **BLOCKED** — SDK absent ; `storage.googleapis.com` et `pub.dev` répondent `SSL_ERROR_SYSCALL` (revérifié le 30/10 à 21 h) |
 
 ---
 
@@ -154,4 +170,8 @@ python manage.py regler_contraintes_souples --verifier
 
 # charge reproductible (rien n'est conservé en base)
 python manage.py benchmark_getinjs --etudiants 3500
+
+# rendre l'aperçu utilisable (jeu marqué DEMO-…), puis le retirer
+python manage.py donnees_demonstration_getinjs
+python manage.py donnees_demonstration_getinjs --supprimer
 ```
