@@ -73,7 +73,7 @@ urlpatterns = [
     path('api/rh/', include('ressources_humaines.urls')),
     path('api/patrimoine/', include('patrimoine.urls')),
 
-    # Web dashboard CPFAE
+    # Web dashboard INJS
     path('dashboard/', include('dashboard.urls')),
 
     # QR code images publiques (hors préfixe /api/) — routes minimales uniquement

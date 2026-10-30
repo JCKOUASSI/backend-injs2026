@@ -13,6 +13,8 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from core.validators import valider_preuve_paiement
+
 from .models import (
     Echeancier, Facture, LigneEcheancier, Paiement,
     Quittance, RapprochementComptable, Remboursement, Tarification,
@@ -112,6 +114,7 @@ def confirmer_paiement(paiement, utilisateur, date_echeance=None):
         raise ValidationError(
             "Une preuve (pièce justificative) est obligatoire pour confirmer un paiement."
         )
+    valider_preuve_paiement(paiement.preuve)
     paiement.statut = 'CONFIRME'
     paiement.date_rapprochement = timezone.now()
     paiement.save(update_fields=['statut', 'date_rapprochement'])

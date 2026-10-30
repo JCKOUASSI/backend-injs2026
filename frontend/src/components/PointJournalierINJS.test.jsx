@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
-import PointJournalierTableauCPFAE, { pjPct } from '@/components/PointJournalierCPFAE'
+import PointJournalierTableauINJS, { pjPct } from '@/components/PointJournalierINJS'
 
 /* ------------------------------------------------------------------ */
 /* Données                                                              */
@@ -67,7 +67,7 @@ const blockRows = (label) => {
 /* pjPct — formatage des pourcentages                                   */
 /* ═══════════════════════════════════════════════════════════════════ */
 
-describe('PointJournalierCPFAE — pjPct', () => {
+describe('PointJournalierINJS — pjPct', () => {
   it('formate une fraction en pourcentage français à 2 décimales', () => {
     expect(pjPct(0)).toBe('0,00%')
     expect(pjPct(0.5)).toBe('50,00%')
@@ -89,17 +89,17 @@ describe('PointJournalierCPFAE — pjPct', () => {
 })
 
 /* ═══════════════════════════════════════════════════════════════════ */
-/* PointJournalierTableauCPFAE — structure générale                    */
+/* PointJournalierTableauINJS — structure générale                    */
 /* ═══════════════════════════════════════════════════════════════════ */
 
-describe('PointJournalierTableauCPFAE — en-têtes du modèle Excel', () => {
+describe('PointJournalierTableauINJS — en-têtes du modèle Excel', () => {
   it('ne rend rien sans données', () => {
-    const { container } = render(<PointJournalierTableauCPFAE tb={null}/>)
+    const { container } = render(<PointJournalierTableauINJS tb={null}/>)
     expect(container.firstChild).toBeNull()
   })
 
   it('rend le titre, la ligne DATE, l’organisme et la barre latérale de vague', () => {
-    render(<PointJournalierTableauCPFAE tb={TB}/>)
+    render(<PointJournalierTableauINJS tb={TB}/>)
     const table = screen.getByRole('table')
 
     expect(within(table).getByText('INJS MARCORY — POINT JOURNALIER')).toBeInTheDocument()
@@ -112,15 +112,15 @@ describe('PointJournalierTableauCPFAE — en-têtes du modèle Excel', () => {
   })
 
   it('retombe sur « SECONDE VAGUE » si la sidebar est absente, et accepte une valeur personnalisée', () => {
-    const { rerender } = render(<PointJournalierTableauCPFAE tb={{ ...TB, vague_sidebar: undefined }}/>)
+    const { rerender } = render(<PointJournalierTableauINJS tb={{ ...TB, vague_sidebar: undefined }}/>)
     expect(screen.getByText('SECONDE VAGUE')).toBeInTheDocument()
 
-    rerender(<PointJournalierTableauCPFAE tb={{ ...TB, vague_sidebar: '  PREMIÈRE VAGUE  ' }}/>)
+    rerender(<PointJournalierTableauINJS tb={{ ...TB, vague_sidebar: '  PREMIÈRE VAGUE  ' }}/>)
     expect(screen.getByText('PREMIÈRE VAGUE')).toBeInTheDocument() // valeur trimée
   })
 
   it('affiche les taux du jour en pied de tableau', () => {
-    render(<PointJournalierTableauCPFAE tb={TB}/>)
+    render(<PointJournalierTableauINJS tb={TB}/>)
     expect(screen.getByText('Taux de présence du jour')).toBeInTheDocument()
     expect(screen.getByText("Taux d'absence du jour")).toBeInTheDocument()
     expect(screen.getByText('82,00%')).toBeInTheDocument()
@@ -128,7 +128,7 @@ describe('PointJournalierTableauCPFAE — en-têtes du modèle Excel', () => {
   })
 
   it('affiche « — » pour les taux du jour manquants', () => {
-    render(<PointJournalierTableauCPFAE tb={{
+    render(<PointJournalierTableauINJS tb={{
       ...TB, taux_presence_jour: null, taux_absence_jour: undefined,
     }}/>)
     expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(2)
@@ -139,9 +139,9 @@ describe('PointJournalierTableauCPFAE — en-têtes du modèle Excel', () => {
 /* Blocs matin / soir                                                   */
 /* ═══════════════════════════════════════════════════════════════════ */
 
-describe('PointJournalierTableauCPFAE — créneaux matin et soir', () => {
+describe('PointJournalierTableauINJS — créneaux matin et soir', () => {
   it('rend l’en-tête horaire, les groupes, les salles et les 5 lignes de données du matin', () => {
-    render(<PointJournalierTableauCPFAE tb={TB}/>)
+    render(<PointJournalierTableauINJS tb={TB}/>)
     const rows = blockRows('MATIN')
     expect(rows).toHaveLength(9)
 
@@ -171,7 +171,7 @@ describe('PointJournalierTableauCPFAE — créneaux matin et soir', () => {
   })
 
   it('rend les totaux du créneau dans la dernière colonne', () => {
-    render(<PointJournalierTableauCPFAE tb={TB}/>)
+    render(<PointJournalierTableauINJS tb={TB}/>)
     const rows = blockRows('MATIN')
     // HTMLCollection n'expose pas .at() : helper de dernière cellule.
     const lastCell = (row) => row.cells[row.cells.length - 1]
@@ -185,7 +185,7 @@ describe('PointJournalierTableauCPFAE — créneaux matin et soir', () => {
   })
 
   it('complète par des cellules vides quand un créneau a moins de groupes que le maximum', () => {
-    render(<PointJournalierTableauCPFAE tb={TB}/>)
+    render(<PointJournalierTableauINJS tb={TB}/>)
     // Le MAX des groupes matin/soir est 2 (matin) : le soir n'a qu'un seul
     // groupe → une cellule de padding par ligne.
     const rows = blockRows('SOIR')
@@ -202,7 +202,7 @@ describe('PointJournalierTableauCPFAE — créneaux matin et soir', () => {
   })
 
   it('n’émet aucun bloc (et ne plante pas) pour un créneau absent', () => {
-    render(<PointJournalierTableauCPFAE tb={{ ...TB, soir: null }}/>)
+    render(<PointJournalierTableauINJS tb={{ ...TB, soir: null }}/>)
     expect(blockRows('MATIN')).not.toBeNull()
     expect(blockRows('SOIR')).toBeNull()
     // Le maximum retombe sur les 2 groupes du matin.
@@ -210,7 +210,7 @@ describe('PointJournalierTableauCPFAE — créneaux matin et soir', () => {
   })
 
   it('fonctionne avec un seul groupe sur chaque créneau (minimum nGroups = 1)', () => {
-    render(<PointJournalierTableauCPFAE tb={{
+    render(<PointJournalierTableauINJS tb={{
       ...TB,
       matin: { horaire: null, groupes: [], total: {} },
       soir: {
@@ -229,7 +229,7 @@ describe('PointJournalierTableauCPFAE — créneaux matin et soir', () => {
   })
 
   it('affiche 0 et « — » pour les valeurs de cellules manquantes', () => {
-    render(<PointJournalierTableauCPFAE tb={{
+    render(<PointJournalierTableauINJS tb={{
       ...TB,
       matin: {
         horaire: '08h-12h',

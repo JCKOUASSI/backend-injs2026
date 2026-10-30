@@ -3,7 +3,7 @@ import api from '../../services/api'
 import { useToast } from '../../context/ToastContext'
 import ArchiveModuleBrowser from '../../components/archives/ArchiveModuleBrowser'
 
-const ACCENT = '#1565c0'
+const ACCENT = '#104A8E'
 
 const MENTION_LABELS = {
   TRES_BIEN: 'Très bien', BIEN: 'Bien', ASSEZ_BIEN: 'Assez bien',
@@ -12,9 +12,9 @@ const MENTION_LABELS = {
 const MENTION_COLORS = {
   TRES_BIEN: { background: '#e8eff5', color: '#093f70' },
   BIEN: { background: '#e3f2fd', color: '#0d47a1' },
-  ASSEZ_BIEN: { background: '#e8eaf6', color: '#283593' },
+  ASSEZ_BIEN: { background: '#e8eaf6', color: '#283A87' },
   PASSABLE: { background: '#fffae1', color: '#f5b417' },
-  INSUFFISANT: { background: '#ffebee', color: '#b71c1c' },
+  INSUFFISANT: { background: '#ffebee', color: '#A3222F' },
   '': { background: '#f5f5f5', color: '#9e9e9e' },
 }
 
@@ -181,7 +181,7 @@ function ListeNoteDocument({ module, onBack }) {
                     <td style={{ ...tdStyle, fontSize: '0.78rem', color: 'var(--text-muted)' }}>{n.matricule || '—'}</td>
                     <td style={{ ...tdStyle, fontWeight: 600, whiteSpace: 'nowrap' }}>{n.nom} {n.prenom}</td>
                     <td style={tdStyle}>
-                      {n.grade && <span style={{ fontSize: '0.78rem', background: '#e8eaf6', color: '#283593', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{n.grade}</span>}
+                      {n.grade && <span style={{ fontSize: '0.78rem', background: '#e8eaf6', color: '#283A87', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{n.grade}</span>}
                     </td>
                     {colonnes.map(c => {
                       const cell = n.notes?.[String(c.id)]
@@ -191,20 +191,20 @@ function ListeNoteDocument({ module, onBack }) {
                         </td>
                       )
                     })}
-                    <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 700, color: moyNum != null ? (moyNum >= criteres.seuil_admission ? '#125a99' : '#b71c1c') : 'var(--text-muted)' }}>
+                    <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 700, color: moyNum != null ? (moyNum >= criteres.seuil_admission ? '#104A8E' : '#A3222F') : 'var(--text-muted)' }}>
                       {moyNum != null && !isNaN(moyNum) ? moyNum.toFixed(2) : '—'}
                     </td>
                     <td style={{ ...tdStyle, textAlign: 'center' }}><MentionBadge mention={n.mention || ''} /></td>
                     <td style={{ ...tdStyle, textAlign: 'center' }}>
                       {taux != null ? (
-                        <span style={{ fontWeight: 600, color: taux >= criteres.taux_presence_min ? '#125a99' : '#b71c1c' }}>{taux}%</span>
+                        <span style={{ fontWeight: 600, color: taux >= criteres.taux_presence_min ? '#104A8E' : '#A3222F' }}>{taux}%</span>
                       ) : '—'}
                     </td>
                     <td style={{ ...tdStyle, textAlign: 'center' }}>
                       {moyNum != null && taux != null ? (
                         n.admissible
-                          ? <span style={{ color: '#125a99', fontWeight: 700 }}><i className="bi bi-check-circle-fill"></i> Oui</span>
-                          : <span style={{ color: '#b71c1c', fontWeight: 600 }}><i className="bi bi-x-circle"></i> Non</span>
+                          ? <span style={{ color: '#104A8E', fontWeight: 700 }}><i className="bi bi-check-circle-fill"></i> Oui</span>
+                          : <span style={{ color: '#A3222F', fontWeight: 600 }}><i className="bi bi-x-circle"></i> Non</span>
                       ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                     </td>
                     <td style={{ ...tdStyle, textAlign: 'center' }}>

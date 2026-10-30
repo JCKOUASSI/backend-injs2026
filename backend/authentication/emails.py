@@ -43,7 +43,6 @@ def _logo_candidates():
     return [
         base_dir / 'static' / 'img' / 'logo-injs.png',
         base_dir.parent / 'frontend' / 'src' / 'assets' / 'logo.png',
-        # Logo fallback retiré : logo-sygepcpfae.png remplacé par logo-injs.png (déjà candidat #1)
     ]
 
 
@@ -72,7 +71,7 @@ def _html_logo_block() -> str:
         return ''
     return (
         f"<div style='margin-bottom:14px;'>"
-        f"<img src='{data_uri}' alt='INJS' "
+        f"<img src='{data_uri}' alt='INJS Abidjan' "  # alt = nom de l'institution, comme les gabarits web
         f"style='width:88px; height:auto; display:inline-block;'>"
         f"</div>"
     )

@@ -10,7 +10,7 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({});
     dotenv.testLoad(
-      fileInput: 'API_BASE_URL=https://api.sygepcpfae.org\nHEARTBEAT_ENABLED=true\n',
+      fileInput: 'API_BASE_URL=https://api.injs.ci\nHEARTBEAT_ENABLED=true\n',
     );
   });
 

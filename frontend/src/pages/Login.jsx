@@ -2,8 +2,29 @@ import { useState } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { ADMIN_URL } from '../services/api'
+import { anneeAcademiqueCourante } from '../utils/anneeAcademique'
 import logo from '../assets/logo-injs.svg'
 import '../styles/login.css'
+
+/**
+ * Ouverture de l'administration Django.
+ *
+ * L'admin est servi par le port 8000 (le proxy du port 3000 bloque /admin par
+ * conception, cf. vite.config.js). Dans l'aperçu intégré, la navigation de
+ * l'iframe vers une autre origine peut être refusée par la page hôte : on
+ * ouvre donc un onglet dédié et, si les fenêtres surgissantes sont bloquées
+ * (sandbox d'iframe sans allow-popups), on navigue dans l'onglet courant.
+ */
+function ouvrirAdmin(event) {
+  if (!ADMIN_URL.startsWith('http')) return
+  event.preventDefault()
+  const fenetre = window.open(ADMIN_URL, '_blank')
+  if (fenetre) {
+    try { fenetre.opener = null } catch { /* cross-origin : sans conséquence */ }
+    return
+  }
+  window.location.assign(ADMIN_URL)
+}
 
 export default function Login() {
   const [username, setUsername] = useState('')
@@ -78,7 +99,7 @@ export default function Login() {
           <p className="login-brand-place">Marcory — Abidjan, Côte d'Ivoire</p>
           <div className="login-brand-footer">
             <p>Système Licence — Master — Doctorat (LMD)</p>
-            <p>Année académique 2025-2026</p>
+            <p>Année académique {anneeAcademiqueCourante()}</p>
           </div>
         </aside>
 
@@ -195,7 +216,14 @@ export default function Login() {
           )}
 
           <div className="login-admin-btn-wrap">
-            <a href={ADMIN_URL} className="btn-login-admin" title="Interface d'administration">
+            <a
+              href={ADMIN_URL}
+              className="btn-login-admin"
+              title={`Interface d'administration — ${ADMIN_URL}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={ouvrirAdmin}
+            >
               <i className="bi bi-gear-fill me-1"></i>
               administration
             </a>

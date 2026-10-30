@@ -41,3 +41,41 @@ class TestConfigTests(TestCase):
         self.assertIsNotNone(apps.get_app_config('graduation'))
         self.assertEqual(apps.get_app_config('graduation').verbose_name,
                          "LMD – Diplômation & Documents officiels")
+
+
+class TestListeModelesDocuments(TestCase):
+    """Régression : la liste des modèles de documents renvoyait 500.
+
+    `RefFormation` nomme son champ `intitule` ; le tri de la vue portait sur
+    `formation__libelle`, un champ inexistant. Dès qu'un modèle existait, la
+    requête levait un `FieldError` et l'interface affichait une erreur 500.
+    """
+
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+
+        from formations.models import RefFormation
+        from graduation.models import ModeleDocument
+
+        self.user = get_user_model().objects.create_user(
+            username='secr', password='x', role='SECRETARIAT',
+        )
+        self.formation = RefFormation.objects.create(intitule='LICENCE STAPS')
+        ModeleDocument.objects.create(
+            type=ModeleDocument.Type.ATTESTATION,
+            libelle='Attestation de scolarité',
+            formation=self.formation,
+        )
+
+    def test_liste_accessible_et_triee_par_intitule(self):
+        from rest_framework.test import APIClient
+
+        client = APIClient()
+        client.force_authenticate(self.user)
+        reponse = client.get('/api/graduation/modeles/')
+
+        self.assertEqual(reponse.status_code, 200, reponse.content[:300])
+        resultats = reponse.json()['results']
+        self.assertEqual(len(resultats), 1)
+        self.assertEqual(resultats[0]['libelle'], 'Attestation de scolarité')
+        self.assertEqual(resultats[0]['formation'], str(self.formation))

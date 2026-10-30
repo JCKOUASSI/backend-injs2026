@@ -8,6 +8,7 @@ et versionnés ensemble.
 from django.urls import path
 
 from . import api
+from . import api_getinjs as g
 from . import api_lmd as lmd
 
 # Pas d'app_name volontaire : le jeu de routes est monté deux fois
@@ -34,6 +35,20 @@ urlpatterns_lmd = [
          name='edt-lmd-availability-rooms'),
     path('lmd/slots/', lmd.slots_api, name='edt-lmd-slots'),
 
+    # ── GET-INJS : import des inscrits + génération annuelle (AJOUT) ────────
+    # Routes nouvelles, préfixées `lmd/` : aucune route existante n'est
+    # modifiée. Déclarées avant `lmd/<int:pk>/…` (le littéral n'est pas capté
+    # par `<int:pk>`).
+    path('lmd/import/inscrits/analyser/', g.analyser_import_api,
+         name='edt-lmd-import-inscrits-analyser'),
+    path('lmd/import/inscrits/synthese/', g.synthese_import_api,
+         name='edt-lmd-import-inscrits-synthese'),
+    path('lmd/import/inscrits/', g.importer_inscrits_api,
+         name='edt-lmd-import-inscrits'),
+    path('lmd/generate-annee/', g.generate_annee_api,
+         name='edt-lmd-generate-annee'),
+    path('lmd/conception/', g.conception_api, name='edt-lmd-conception'),
+
     # Génération / validation / publication (§6, §10, §11)
     path('lmd/generate/', lmd.generate_api, name='edt-lmd-generate'),
     # LOT 3 — génération COORDONNÉE multi-filières (ajout, aucune route
@@ -50,6 +65,42 @@ urlpatterns_lmd = [
     path('lmd/<int:pk>/audit/', lmd.edt_audit_api, name='edt-lmd-edt-audit'),
     path('lmd/<int:pk>/result/', lmd.result_api, name='edt-lmd-result'),
     path('lmd/<int:pk>/grille/', lmd.grille_api, name='edt-lmd-grille'),
+    path('lmd/<int:pk>/export.pdf/', lmd.export_pdf_api,
+         name='edt-lmd-export-pdf'),
+
+    # ── LOT 2 — campagnes de génération (AJOUT) ─────────────────────────────
+    # Routes nouvelles sous `campagnes/` : aucune route existante modifiée.
+    path('campagnes/', g.campagnes_api, name='edt-campagnes'),
+    path('campagnes/<int:pk>/', g.campagne_detail_api, name='edt-campagne-detail'),
+    path('campagnes/<int:pk>/demarrer/', g.campagne_demarrer_api,
+         name='edt-campagne-demarrer'),
+    path('campagnes/<int:pk>/statut/', g.campagne_statut_api,
+         name='edt-campagne-statut'),
+    path('campagnes/<int:pk>/resultat/', g.campagne_resultat_api,
+         name='edt-campagne-resultat'),
+    path('campagnes/<int:pk>/donnees-pretes/', g.campagne_donnees_pretes_api,
+         name='edt-campagne-donnees-pretes'),
+    path('campagnes/<int:pk>/valider/', g.campagne_valider_api,
+         name='edt-campagne-valider'),
+    path('campagnes/<int:pk>/publier/', g.campagne_publier_api,
+         name='edt-campagne-publier'),
+
+    # ── LOT 2 — campagnes de génération (AJOUT) ─────────────────────────────
+    # Routes nouvelles sous `campagnes/` : aucune route existante modifiée.
+    path('campagnes/', g.campagnes_api, name='edt-campagnes'),
+    path('campagnes/<int:pk>/', g.campagne_detail_api, name='edt-campagne-detail'),
+    path('campagnes/<int:pk>/demarrer/', g.campagne_demarrer_api,
+         name='edt-campagne-demarrer'),
+    path('campagnes/<int:pk>/statut/', g.campagne_statut_api,
+         name='edt-campagne-statut'),
+    path('campagnes/<int:pk>/resultat/', g.campagne_resultat_api,
+         name='edt-campagne-resultat'),
+    path('campagnes/<int:pk>/donnees-pretes/', g.campagne_donnees_pretes_api,
+         name='edt-campagne-donnees-pretes'),
+    path('campagnes/<int:pk>/valider/', g.campagne_valider_api,
+         name='edt-campagne-valider'),
+    path('campagnes/<int:pk>/publier/', g.campagne_publier_api,
+         name='edt-campagne-publier'),
 
     # Opérations sur séance (§12, §13)
     path('lmd/items/<int:pk>/move/', lmd.item_move_api, name='edt-lmd-item-move'),

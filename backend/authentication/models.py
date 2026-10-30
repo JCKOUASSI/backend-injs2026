@@ -93,7 +93,7 @@ class User(AbstractUser):
         return f"{self.get_full_name()} ({self.role})"
 
     @property
-    def is_chef_cpfae_admin(self):
+    def is_chef_injs_admin(self):
         return self.role == self.Role.CHEF_INJS_ADMIN
 
     @property

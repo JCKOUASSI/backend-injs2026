@@ -415,7 +415,7 @@ export default function Dashboard() {
                 label: 'Nombre Enseignants Présents/Attendus',
                 value: `${selectedPeriodStats.formateursPresents || 0}/${selectedPeriodStats.formateursAttendus || 0}`,
                 icon: 'bi-person-badge-fill',
-                color: '#11407d',
+                color: '#0B2D5B',
                 bg: 'rgba(17,64,125,0.1)',
                 tooltip: 'Enseignants pointés présents ce jour par rapport au nombre attendu sur les séances du jour.',
               },
@@ -441,7 +441,7 @@ export default function Dashboard() {
                 label: `Taux de présence (${periodLabels[presencePeriod].toLowerCase()})`,
                 value: `${(selectedPeriodStats.taux || 0).toFixed(1)}%`,
                 icon: 'bi-graph-up-arrow',
-                color: '#11407d',
+                color: '#0B2D5B',
                 bg: 'rgba(17,64,125,0.1)',
                 tooltip: 'Pourcentage de présence calculé sur la période sélectionnée (présents / attendus).',
               },
@@ -486,7 +486,7 @@ export default function Dashboard() {
                 label: 'Pointages du jour',
                 value: stats?.pointages_aujourd_hui || 0,
                 icon: 'bi-qr-code-scan',
-                color: '#11407d',
+                color: '#0B2D5B',
                 bg: 'rgba(17,64,125,0.1)',
                 tooltip: 'Nombre total d’entrées ou sorties enregistrées par badgeage QR ce jour (tous rôles confondus).',
               }]),
@@ -580,7 +580,7 @@ export default function Dashboard() {
         const absents = Math.max(attendus - presents, 0)
         const tauxPresence = selected.taux
         const tauxAbsence = attendus > 0 ? Number((100 - tauxPresence).toFixed(1)) : 0
-        const absColor = tauxAbsence >= 50 ? '#e53e3e' : tauxAbsence >= 25 ? '#F5B100' : '#11407d'
+        const absColor = tauxAbsence >= 50 ? '#e53e3e' : tauxAbsence >= 25 ? '#D97706' : '#0B2D5B'
         return (
           <div
             className="card"
@@ -615,7 +615,7 @@ export default function Dashboard() {
                 </div>
               )}
               <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.85rem', width: '100%', justifyContent: 'flex-end' }}>
-                <span><span style={{ fontWeight: 700, color: '#11407d' }}>{presents}</span> <span className="text-muted">présents</span></span>
+                <span><span style={{ fontWeight: 700, color: '#0B2D5B' }}>{presents}</span> <span className="text-muted">présents</span></span>
                 <span><span style={{ fontWeight: 700, color: absColor }}>{absents}</span> <span className="text-muted">absents</span></span>
                 <span><span style={{ fontWeight: 700, color: '#718096' }}>{attendus}</span> <span className="text-muted">attendus</span></span>
               </div>
@@ -625,7 +625,7 @@ export default function Dashboard() {
                 <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${tauxPresence}%`, background: 'var(--ci-success)', borderRadius: 6, transition: 'width 0.4s' }}></div>
                 <div style={{ position: 'absolute', left: `${tauxPresence}%`, top: 0, height: '100%', width: `${tauxAbsence}%`, background: absColor, opacity: 0.7, borderRadius: '0 6px 6px 0', transition: 'width 0.4s' }}></div>
               </div>
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#11407d', whiteSpace: 'nowrap' }}>{tauxPresence.toFixed(1)}% présents</span>
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0B2D5B', whiteSpace: 'nowrap' }}>{tauxPresence.toFixed(1)}% présents</span>
               <span style={{ fontSize: '0.82rem', fontWeight: 700, color: absColor, whiteSpace: 'nowrap' }}>{tauxAbsence.toFixed(1)}% absents</span>
             </div>
             {attendus === 0 && (
@@ -664,7 +664,7 @@ export default function Dashboard() {
                     const taux = attendus > 0 ? Math.round(presents / attendus * 100) : 0
                     const tauxAbsence = attendus > 0 ? Math.round(absents / attendus * 100) : 0
                     const tauxColor = taux >= 75 ? 'var(--ci-success)' : taux >= 50 ? 'var(--ci-warning)' : '#e53e3e'
-                    const absColor = tauxAbsence >= 50 ? '#e53e3e' : tauxAbsence >= 25 ? '#F5B100' : '#718096'
+                    const absColor = tauxAbsence >= 50 ? '#e53e3e' : tauxAbsence >= 25 ? '#D97706' : '#718096'
                     const moduleLabel = f.module || f.intitule || '—'
                     const siteLabel = [f.site, f.batiment, f.salle].filter(Boolean).join(' / ') || '—'
                     return (
@@ -798,7 +798,7 @@ export default function Dashboard() {
                           <td style={{ fontSize: '0.82rem', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pt.module || '—'}</td>
                           <td style={{ fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{formatDate(pt.date)}</td>
                           <td style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}>{fmtTime(pt.heure_entree)}</td>
-                          <td style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: pt.heure_sortie ? '#11407d' : '#94a3b8' }}>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: pt.heure_sortie ? '#0B2D5B' : '#94a3b8' }}>
                             {fmtTime(pt.heure_sortie)}
                           </td>
                         </tr>

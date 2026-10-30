@@ -1,0 +1,851 @@
+/* ==========================================================================
+   INJS-LMD 2026 — SYSTÈME DE DESIGN INSTITUTIONNEL (socle unique)
+   --------------------------------------------------------------------------
+   Source de vérité des couleurs, typographie, espacements, rayons, ombres,
+   transitions et surfaces « verre ». Toute nouvelle règle visuelle doit
+   puiser ici plutôt que réinventer une valeur.
+
+   Palette harmonisée sur le BLEU OFFICIEL DU LOGO (#283A87), relevé dans
+   `src/assets/logo-injs.svg` : c'est la teinte identitaire de l'INJS
+   d'Abidjan. Les bleus de travail en dérivent (plus sombres pour les fonds,
+   plus lumineux pour les accents), sans jamais altérer le logo lui-même.
+
+   Ce fichier est importé EN DERNIER (après harmonisation.css) :
+   - les tokens écrasent volontairement les anciens alias (--primary, --navy…) ;
+   - les règles de composants se placent en fin de cascade.
+   Il ne contient AUCUNE logique métier et ne touche à aucun contrat d'API.
+   ========================================================================== */
+
+/* ── 1. TOKENS ──────────────────────────────────────────────────────────── */
+:root {
+  /* 1.1 Bleus institutionnels — dérivés du logo #283A87 */
+  --injs-indigo: #283A87;        /* teinte exacte du logo officiel */
+  --injs-indigo-dark: #1D2B66;
+  --injs-navy: #071B3A;          /* fonds profonds, sidebar, connexion */
+  --injs-navy-mid: #0B2D5B;
+  --injs-blue: #104A8E;          /* bleu institutionnel de travail */
+  --injs-blue-royal: #1267D6;    /* actions principales */
+  --injs-sky: #35BDF5;           /* accents lumineux, états actifs */
+  --injs-cyan: #00A6FF;
+  --injs-blue-pale: #EAF5FF;
+  --injs-blue-mist: #F4F8FD;
+
+  /* 1.2 Surfaces */
+  --injs-bg: #F4F8FD;
+  --injs-surface: #FFFFFF;
+  --injs-surface-alt: #F8FAFD;
+  --injs-border: #DCE6F1;
+  --injs-border-strong: #C3D2E4;
+
+  /* 1.3 Couleurs fonctionnelles (jamais utilisées seules : toujours
+         accompagnées d'une icône ou d'un libellé — WCAG 1.4.1) */
+  --injs-success: #16A36A;
+  --injs-success-soft: #E7F8EF;
+  --injs-warning: #F59E0B;
+  --injs-warning-soft: #FFF4DF;
+  --injs-danger: #DC3545;
+  --injs-danger-soft: #FDEBEC;
+  --injs-info: #805AD5;
+  --injs-info-soft: #F1EBFC;
+  --injs-teal: #0D9488;
+  --injs-teal-soft: #E2F6F4;
+
+  /* 1.4 Texte — contrastes vérifiés sur fond blanc */
+  --injs-text: #0F1F33;
+  --injs-text-soft: #475569;
+  --injs-text-muted: #64748B;
+  --injs-text-invert: #FFFFFF;
+
+  /* 1.5 Typographie */
+  --injs-font: 'Inter', 'Poppins', 'Sora', system-ui, -apple-system,
+               BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --injs-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  --injs-fs-xs: 0.75rem;
+  --injs-fs-sm: 0.8125rem;
+  --injs-fs-base: 0.9375rem;
+  --injs-fs-md: 1rem;
+  --injs-fs-lg: 1.125rem;
+  --injs-fs-xl: 1.375rem;
+  --injs-fs-2xl: 1.75rem;
+  --injs-lh-tight: 1.25;
+  --injs-lh-base: 1.55;
+
+  /* 1.6 Espacements (échelle de 4 px) */
+  --injs-space-1: 0.25rem;
+  --injs-space-2: 0.5rem;
+  --injs-space-3: 0.75rem;
+  --injs-space-4: 1rem;
+  --injs-space-5: 1.5rem;
+  --injs-space-6: 2rem;
+  --injs-space-7: 2.5rem;
+
+  /* 1.7 Rayons */
+  --injs-radius-sm: 8px;
+  --injs-radius-md: 14px;
+  --injs-radius-lg: 20px;
+  --injs-radius-pill: 9999px;
+
+  /* 1.8 Ombres — teintées du bleu institutionnel, jamais grises */
+  --injs-shadow-soft: 0 4px 18px rgba(11, 45, 91, 0.08);
+  --injs-shadow-card: 0 1px 3px rgba(16, 24, 40, 0.06),
+                      0 1px 2px rgba(16, 24, 40, 0.04);
+  --injs-shadow-premium: 0 12px 32px rgba(11, 45, 91, 0.14);
+  --injs-shadow-float: 0 24px 60px -12px rgba(7, 27, 58, 0.32);
+
+  /* 1.9 Mouvement */
+  --injs-transition: 180ms ease-in-out;
+  --injs-transition-fast: 120ms ease-in-out;
+
+  /* 1.10 Dégradés de référence */
+  --injs-gradient-primary: linear-gradient(135deg, var(--injs-indigo) 0%, var(--injs-blue-royal) 55%, var(--injs-sky) 100%);
+  --injs-gradient-navy: linear-gradient(160deg, #071B3A 0%, #0B2D5B 48%, #1D2B66 100%);
+  --injs-gradient-app: linear-gradient(160deg, #EAF1FB 0%, #DCE8F7 100%);
+
+  /* 1.11 Surfaces « verre » — trois intensités, jamais aléatoires */
+  --injs-glass-1-bg: rgba(255, 255, 255, 0.72);
+  --injs-glass-1-border: rgba(255, 255, 255, 0.55);
+  --injs-glass-2-bg: rgba(255, 255, 255, 0.86);
+  --injs-glass-2-border: rgba(255, 255, 255, 0.72);
+  --injs-glass-3-bg: rgba(252, 253, 255, 0.97);
+  --injs-glass-3-border: rgba(220, 230, 241, 0.9);
+  --injs-glass-blur: 16px;
+
+  /* 1.12 Focus — indicateur unique, visible sur fond clair ET sombre */
+  --injs-focus-ring: 0 0 0 3px rgba(53, 189, 245, 0.55);
+  --injs-focus-outline: 2px solid var(--injs-blue-royal);
+
+  /* 1.13 Points de rupture documentés (utilisés en @media plus bas) */
+  --injs-bp-mobile: 480px;
+  --injs-bp-tablet: 768px;
+  --injs-bp-laptop: 1024px;
+  --injs-bp-desktop: 1366px;
+
+  /* ── 1.14 Alias de compatibilité ──────────────────────────────────────
+     L'application historique référence ces noms dans des styles inline et
+     de nombreuses feuilles. On les REPOINTE vers les nouveaux tokens plutôt
+     que de les supprimer : aucun écran ne retombe sur une valeur initiale,
+     et toute l'application hérite de la palette institutionnelle d'un coup. */
+  --navy: var(--injs-navy);
+  --navy-mid: var(--injs-navy-mid);
+  --navy-soft: var(--injs-blue);
+  --primary: var(--injs-blue-royal);
+  --primary-dark: var(--injs-indigo);
+  --secondary: var(--injs-text-soft);
+  --success: var(--injs-success);
+  --warning: var(--injs-warning);
+  --danger: var(--injs-danger);
+  --info: var(--injs-cyan);
+  --border: var(--injs-border);
+  --border-color: var(--injs-border);
+  --text: var(--injs-text);
+  --text-primary: var(--injs-text);
+  --text-secondary: var(--injs-text-soft);
+  --text-muted: var(--injs-text-muted);
+  --bg-color: var(--injs-bg);
+  --bg-secondary: var(--injs-surface-alt);
+  --card-bg: var(--injs-surface);
+  --ci-blue: var(--injs-blue-royal);
+  --ci-blue-dark: var(--injs-blue);
+  --ci-success: var(--injs-success);
+  --ci-success-dark: #0E8A58;
+  --ci-warning: var(--injs-warning);
+  --ci-danger: var(--injs-danger);
+  --ci-purple: var(--injs-info);
+  --ci-light: var(--injs-border);
+  --radius: var(--injs-radius-sm);
+  --radius-lg: var(--injs-radius-md);
+  --shadow-glass: var(--injs-shadow-soft);
+  --shadow-card: var(--injs-shadow-card);
+  --border-glass: rgba(255, 255, 255, 0.7);
+  --font-lmd2026: var(--injs-font);
+}
+
+/* ── 2. BASE ────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--injs-font);
+  color: var(--injs-text);
+  line-height: var(--injs-lh-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus clavier unique et visible partout (WCAG 2.4.7).
+   `:focus-visible` évite d'encadrer les clics souris. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible,
+.btn:focus-visible,
+.nav-item:focus-visible {
+  outline: var(--injs-focus-outline);
+  outline-offset: 2px;
+  border-radius: var(--injs-radius-sm);
+}
+
+/* Respect de la préférence système de réduction des animations (WCAG 2.3.3). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Barre de défilement discrète et institutionnelle. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--injs-border-strong) transparent;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--injs-border-strong);
+  border-radius: var(--injs-radius-pill);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background-color: var(--injs-text-muted); background-clip: content-box; }
+
+/* ── 3. SURFACES « VERRE » ──────────────────────────────────────────────────
+   Trois niveaux, un usage précis. Le flou est décoratif : le fond reste
+   suffisamment opaque pour que le texte garde son contraste même sans
+   `backdrop-filter` (Firefox ancien, mode économie d'énergie). */
+.glass-panel-1,
+.glass-panel-2,
+.glass-panel-3 {
+  border-radius: var(--injs-radius-lg);
+  border: 1px solid var(--injs-glass-2-border);
+  box-shadow: var(--injs-shadow-soft);
+}
+.glass-panel-1 { background: var(--injs-glass-1-bg); }
+.glass-panel-2 { background: var(--injs-glass-2-bg); }
+.glass-panel-3 {
+  background: var(--injs-glass-3-bg);
+  border-color: var(--injs-glass-3-border);
+  box-shadow: var(--injs-shadow-premium);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .glass-panel-1,
+  .glass-panel-2,
+  .glass-panel-3 {
+    backdrop-filter: blur(var(--injs-glass-blur));
+    -webkit-backdrop-filter: blur(var(--injs-glass-blur));
+  }
+}
+
+/* Repli explicite : sans flou, on densifie le fond pour préserver le texte. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-panel-1 { background: rgba(255, 255, 255, 0.94); }
+  .glass-panel-2 { background: rgba(255, 255, 255, 0.97); }
+}
+
+/* Les zones denses ne sont JAMAIS translucides : lisibilité d'abord. */
+.table-responsive,
+.form-grid,
+.modal-body {
+  background-color: transparent;
+}
+
+/* ── 4. BOUTONS ─────────────────────────────────────────────────────────────
+   Un dégradé = une fonction. Aucune couleur décorative arbitraire.
+   Tous les états sont couverts : normal, survol, focus, pression,
+   désactivation, chargement. */
+.btn {
+  --btn-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-family: var(--injs-font);
+  font-weight: 600;
+  font-size: var(--injs-fs-sm);
+  line-height: 1.2;
+  padding: 0.55rem 1.05rem;
+  border-radius: var(--injs-radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform var(--injs-transition-fast),
+              box-shadow var(--injs-transition),
+              background-color var(--injs-transition),
+              border-color var(--injs-transition),
+              color var(--injs-transition);
+  box-shadow: var(--btn-shadow);
+}
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled,
+.btn.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+.btn-sm {
+  padding: 0.35rem 0.7rem;
+  font-size: var(--injs-fs-xs);
+  border-radius: var(--injs-radius-sm);
+  gap: 0.35rem;
+}
+.btn-lg { padding: 0.75rem 1.4rem; font-size: var(--injs-fs-md); }
+.btn i { font-size: 0.95em; line-height: 1; }
+
+/* 4.1 Principal — bleu institutionnel vers bleu ciel */
+.btn-primary,
+.btn-dfrc,
+.btn-premium-primary {
+  background: var(--injs-gradient-primary);
+  background-size: 160% 160%;
+  background-position: 0% 50%;
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 6px 16px -6px rgba(18, 103, 214, 0.65);
+}
+.btn-primary:hover:not(:disabled),
+.btn-dfrc:hover:not(:disabled),
+.btn-premium-primary:hover:not(:disabled) {
+  background-position: 100% 50%;
+  box-shadow: 0 10px 22px -8px rgba(18, 103, 214, 0.75);
+  color: #FFFFFF;
+}
+.btn-primary:disabled,
+.btn-dfrc:disabled,
+.btn-premium-primary:disabled { box-shadow: none; }
+
+/* 4.2 Secondaire — surface claire, bordure bleue */
+.btn-secondary,
+.btn-outline-secondary {
+  background: var(--injs-surface);
+  border-color: var(--injs-border-strong);
+  color: var(--injs-blue);
+}
+.btn-secondary:hover:not(:disabled),
+.btn-outline-secondary:hover:not(:disabled) {
+  background: var(--injs-blue-pale);
+  border-color: var(--injs-blue-royal);
+  color: var(--injs-indigo-dark);
+}
+
+/* 4.3 Succès — dégradé assombri pour que le texte blanc atteigne AA
+   (#16A36A seul ne donne que 3,24:1 ; #0A6340→#0F8152 donne 4,90 à 7,31).
+   La teinte vive --injs-success reste réservée aux badges et icônes. */
+.btn-success,
+.btn-outline-success {
+  background: linear-gradient(135deg, #0A6340 0%, #0F8152 100%);
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 6px 16px -6px rgba(10, 99, 64, 0.55);
+}
+.btn-success:hover:not(:disabled) { box-shadow: 0 10px 22px -8px rgba(10, 99, 64, 0.68); color: #FFFFFF; }
+
+/* Info : turquoise institutionnel. .btn-info était UTILISÉ dans
+   MaquetteDetail.jsx sans aucune définition — le bouton retombait sur le
+   style .btn par défaut. #0D9488 ne donne que 3,74:1 avec du blanc, d'où
+   l'emploi d'un turquoise plus profond (5,36:1). La teinte claire
+   --injs-info reste réservée aux accents sur fond sombre. */
+.btn-info {
+  background: linear-gradient(135deg, #0B5A6B 0%, #0E7490 100%);
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 6px 16px -6px rgba(14, 116, 144, 0.5);
+}
+.btn-info:hover:not(:disabled) { box-shadow: 0 10px 22px -8px rgba(14, 116, 144, 0.62); color: #FFFFFF; }
+
+/* 4.4 Avertissement — contraste AA garanti (texte ambre foncé sur fond clair) */
+.btn-warning,
+.btn-outline-warning {
+  background: var(--injs-warning-soft);
+  border-color: #F0C36B;
+  color: #8A5A00;
+}
+.btn-warning:hover:not(:disabled),
+.btn-outline-warning:hover:not(:disabled) {
+  background: #FFE9BF;
+  border-color: var(--injs-warning);
+  color: #6E4800;
+}
+
+/* 4.5 Danger — action destructive : jamais sans confirmation côté produit */
+.btn-danger,
+.btn-outline-danger {
+  background: linear-gradient(135deg, #B02A37 0%, var(--injs-danger) 100%);
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 6px 16px -6px rgba(220, 53, 69, 0.55);
+}
+.btn-danger:hover:not(:disabled) { box-shadow: 0 10px 22px -8px rgba(220, 53, 69, 0.7); color: #FFFFFF; }
+
+/* 4.6 Information — turquoise */
+.btn-outline-info {
+  background: var(--injs-teal-soft);
+  border-color: #7DD3C8;
+  color: #0B6B62;
+}
+.btn-outline-info:hover:not(:disabled) {
+  background: #C8EEEA;
+  border-color: var(--injs-teal);
+  color: #07524B;
+}
+
+/* 4.7 Action spécialisée — violet (rapports, analyses) */
+.btn-outline-primary {
+  background: var(--injs-surface);
+  border-color: var(--injs-border-strong);
+  color: var(--injs-blue);
+}
+.btn-outline-primary:hover:not(:disabled) {
+  background: var(--injs-blue-pale);
+  border-color: var(--injs-blue-royal);
+}
+
+.btn-premium-glass {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: var(--injs-glass-2-border);
+  color: var(--injs-blue);
+  box-shadow: var(--injs-shadow-soft);
+}
+.btn-premium-glass:hover:not(:disabled) { background: #FFFFFF; }
+
+/* 4.8 Lien-bouton et bouton icône : nom accessible obligatoire (aria-label) */
+.btn-icon {
+  padding: 0.45rem;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  border-radius: var(--injs-radius-sm);
+  background: transparent;
+  border-color: transparent;
+  color: var(--injs-text-soft);
+}
+.btn-icon:hover:not(:disabled) { background: var(--injs-blue-pale); color: var(--injs-blue); }
+
+/* 4.9 Chargement : le bouton reste cliquable-désactivé, sans clignotement */
+.btn.is-loading,
+.btn[aria-busy='true'] {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+.btn.is-loading::after,
+.btn[aria-busy='true']::after {
+  content: '';
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: injs-spin 700ms linear infinite;
+}
+.btn-secondary.is-loading::after,
+.btn-outline-secondary.is-loading::after,
+.btn-premium-glass.is-loading::after {
+  border-color: rgba(18, 103, 214, 0.3);
+  border-top-color: var(--injs-blue-royal);
+}
+@keyframes injs-spin { to { transform: rotate(360deg); } }
+
+.btn-close {
+  background: transparent;
+  border: 0;
+  color: var(--injs-text-muted);
+  opacity: 1;
+  border-radius: var(--injs-radius-sm);
+  transition: background-color var(--injs-transition), color var(--injs-transition);
+}
+.btn-close:hover { background: var(--injs-danger-soft); color: var(--injs-danger); }
+
+/* ── 5. FORMULAIRES ────────────────────────────────────────────────────── */
+.form-label,
+label.form-label {
+  display: block;
+  font-weight: 600;
+  font-size: var(--injs-fs-sm);
+  color: var(--injs-text);
+  margin-bottom: 0.3rem;
+}
+
+.form-control,
+.form-select {
+  font-family: var(--injs-font);
+  font-size: var(--injs-fs-sm);
+  color: var(--injs-text);
+  background-color: var(--injs-surface);
+  border: 1px solid var(--injs-border-strong);
+  border-radius: var(--injs-radius-sm);
+  padding: 0.5rem 0.75rem;
+  min-height: 2.4rem;
+  transition: border-color var(--injs-transition),
+              box-shadow var(--injs-transition),
+              background-color var(--injs-transition);
+}
+.form-control::placeholder { color: var(--injs-text-muted); opacity: 1; }
+.form-control:hover:not(:disabled),
+.form-select:hover:not(:disabled) { border-color: var(--injs-blue-royal); }
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--injs-blue-royal);
+  box-shadow: var(--injs-focus-ring);
+  outline: none;
+  background-color: #FFFFFF;
+}
+
+.form-control:disabled,
+.form-select:disabled,
+.form-control[readonly] {
+  background-color: var(--injs-surface-alt);
+  color: var(--injs-text-muted);
+  border-color: var(--injs-border);
+  cursor: not-allowed;
+}
+
+/* État invalide : la couleur ne suffit jamais — on ajoute un liseré ET
+   le message texte reste affiché sous le champ (WCAG 1.4.1 / 3.3.1). */
+.form-control.is-invalid,
+.form-select.is-invalid,
+.was-validated .form-control:invalid,
+.was-validated .form-select:invalid {
+  border-color: var(--injs-danger);
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.16);
+  background-image: none;
+}
+.invalid-feedback,
+.form-error {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: var(--injs-fs-xs);
+  font-weight: 600;
+  color: #B02A37;
+}
+.invalid-feedback::before,
+.form-error::before { content: '⚠ '; }
+
+.form-check-input {
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 1.5px solid var(--injs-border-strong);
+  border-radius: 5px;
+  transition: background-color var(--injs-transition), border-color var(--injs-transition);
+}
+.form-check-input:checked {
+  background-color: var(--injs-blue-royal);
+  border-color: var(--injs-blue-royal);
+}
+.form-check-input:focus { box-shadow: var(--injs-focus-ring); border-color: var(--injs-blue-royal); }
+.form-check-label { font-size: var(--injs-fs-sm); color: var(--injs-text); }
+
+/* Champ obligatoire : signalé en texte, pas seulement par une couleur. */
+.form-label.required::after,
+label.required::after {
+  content: ' *';
+  color: var(--injs-danger);
+  font-weight: 700;
+}
+
+/* ── 6. CARTES ─────────────────────────────────────────────────────────── */
+.card {
+  background: var(--injs-surface);
+  border: 1px solid var(--injs-border);
+  border-radius: var(--injs-radius-md);
+  box-shadow: var(--injs-shadow-card);
+  transition: box-shadow var(--injs-transition), transform var(--injs-transition);
+}
+.card:hover { box-shadow: var(--injs-shadow-soft); }
+
+.card-header,
+.card-header-bar {
+  background: linear-gradient(180deg, var(--injs-surface-alt) 0%, var(--injs-surface) 100%);
+  border-bottom: 1px solid var(--injs-border);
+  border-radius: var(--injs-radius-md) var(--injs-radius-md) 0 0;
+  font-weight: 700;
+  color: var(--injs-navy-mid);
+}
+
+/* Filet d'ancrage supérieur : signature visuelle institutionnelle. */
+.card-accent { position: relative; overflow: hidden; }
+.card-accent::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--injs-gradient-primary);
+}
+
+/* ── 7. TABLEAUX DE DONNÉES ─────────────────────────────────────────────────
+   Densité maîtrisée, en-tête institutionnel, survol discret.
+   Aucune transparence : ces zones doivent rester parfaitement lisibles. */
+.table-responsive {
+  border-radius: var(--injs-radius-md);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table {
+  width: 100%;
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--injs-fs-sm);
+  color: var(--injs-text);
+  background: var(--injs-surface);
+}
+.table > thead > tr > th,
+.table thead th {
+  background: linear-gradient(180deg, #F1F6FC 0%, #E8F0FA 100%);
+  color: var(--injs-navy-mid);
+  font-weight: 700;
+  font-size: var(--injs-fs-xs);
+  letter-spacing: 0.02em;
+  text-transform: none;
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid var(--injs-border-strong);
+  white-space: nowrap;
+}
+
+/* En-tête collant uniquement dans un conteneur qui défile réellement :
+   ailleurs il flotterait par-dessus la page et masquerait du contenu. */
+.table-responsive .table > thead > tr > th,
+.table-responsive .table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.table > tbody > tr > td,
+.table tbody td {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--injs-border);
+  vertical-align: middle;
+}
+.table > tbody > tr:last-child > td { border-bottom: 0; }
+.table-hover > tbody > tr:hover > td,
+.table tbody tr:hover > td { background: var(--injs-blue-pale); }
+.table-sm > tbody > tr > td,
+.table-sm thead th { padding: 0.45rem 0.6rem; }
+.table-light > thead > tr > th { background: var(--injs-surface-alt); }
+
+/* Ligne sélectionnée / active : liseré gauche, pas de fond criard. */
+.table tbody tr.is-selected > td { background: var(--injs-blue-pale); }
+.table tbody tr.is-selected > td:first-child {
+  box-shadow: inset 3px 0 0 var(--injs-blue-royal);
+}
+
+/* Résultat vide / chargement : message explicite, jamais un tableau nu. */
+.table-empty,
+.empty-state {
+  padding: var(--injs-space-6) var(--injs-space-4);
+  text-align: center;
+  color: var(--injs-text-muted);
+  font-size: var(--injs-fs-sm);
+}
+
+/* ── 8. BADGES ET PASTILLES D'ÉTAT ─────────────────────────────────────── */
+.badge,
+.status-pill,
+.trend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.6rem;
+  border-radius: var(--injs-radius-pill);
+  font-size: var(--injs-fs-xs);
+  font-weight: 700;
+  line-height: 1.3;
+  border: 1px solid transparent;
+}
+.badge-success, .badge-actif, .badge-valide {
+  background: var(--injs-success-soft);
+  color: #0E7A4F;
+  border-color: #B7E7CE;
+}
+.badge-warning, .badge-attente, .badge-en-attente {
+  background: var(--injs-warning-soft);
+  color: #8A5A00;
+  border-color: #F3D49A;
+}
+.badge-danger, .badge-inactif, .badge-refuse {
+  background: var(--injs-danger-soft);
+  color: #A3222F;
+  border-color: #F5C2C7;
+}
+.badge-info {
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue);
+  border-color: #BFDCF5;
+}
+.badge-neutral, .badge-secondary {
+  background: var(--injs-surface-alt);
+  color: var(--injs-text-soft);
+  border-color: var(--injs-border);
+}
+
+/* ── 9. FENÊTRES MODALES ──────────────────────────────────────────────────
+   Verre renforcé : fond quasi opaque pour que la lecture reste confortable,
+   ombre profonde pour détacher la fenêtre, focus piégé côté composant. */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--injs-space-4);
+  background: rgba(7, 27, 58, 0.52);
+  z-index: 1050;
+  animation: injs-fade-in 160ms ease-out;
+}
+
+.modal-content,
+.injs-modal {
+  background: var(--injs-surface);
+  border: 1px solid var(--injs-glass-3-border);
+  border-radius: var(--injs-radius-lg);
+  box-shadow: var(--injs-shadow-float);
+  max-width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: injs-modal-in 180ms ease-out;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--injs-space-3);
+  padding: var(--injs-space-4) var(--injs-space-5);
+  border-bottom: 1px solid var(--injs-border);
+  background: linear-gradient(180deg, #F7FAFE 0%, #FFFFFF 100%);
+}
+.modal-title {
+  font-size: var(--injs-fs-lg);
+  font-weight: 700;
+  color: var(--injs-navy-mid);
+  margin: 0;
+}
+.modal-body {
+  padding: var(--injs-space-5);
+  overflow-y: auto;
+  font-size: var(--injs-fs-sm);
+}
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--injs-space-2);
+  padding: var(--injs-space-3) var(--injs-space-5);
+  border-top: 1px solid var(--injs-border);
+  background: var(--injs-surface-alt);
+}
+
+@keyframes injs-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes injs-modal-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── 10. NOTIFICATIONS ET MESSAGES ─────────────────────────────────────── */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--injs-space-2);
+  padding: 0.75rem 1rem;
+  border-radius: var(--injs-radius-sm);
+  border: 1px solid transparent;
+  font-size: var(--injs-fs-sm);
+  font-weight: 500;
+}
+.alert-success { background: var(--injs-success-soft); border-color: #B7E7CE; color: #0E7A4F; }
+.alert-warning { background: var(--injs-warning-soft); border-color: #F3D49A; color: #8A5A00; }
+.alert-danger, .alert-error { background: var(--injs-danger-soft); border-color: #F5C2C7; color: #A3222F; }
+.alert-info { background: var(--injs-blue-pale); border-color: #BFDCF5; color: var(--injs-blue); }
+
+/* ── 11. ÉTATS DE CHARGEMENT ────────────────────────────────────────────── */
+.spinner,
+.injs-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid rgba(18, 103, 214, 0.18);
+  border-top-color: var(--injs-blue-royal);
+  border-radius: 50%;
+  animation: injs-spin 700ms linear infinite;
+}
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--injs-space-6);
+}
+/* Squelettes de chargement : profondeur sans scintillement agressif. */
+.skeleton {
+  background: linear-gradient(90deg, #EEF3F9 25%, #F7FAFD 37%, #EEF3F9 63%);
+  background-size: 400% 100%;
+  border-radius: var(--injs-radius-sm);
+  animation: injs-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes injs-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+/* ── 12. RESPONSIVE ─────────────────────────────────────────────────────────
+   Les tableaux ne sont jamais écrasés : ils défilent horizontalement.
+   Les zones tactiles restent ≥ 40 px sur mobile. */
+@media (max-width: 1024px) {
+  .btn { padding: 0.5rem 0.9rem; }
+}
+
+@media (max-width: 768px) {
+  .modal-overlay { padding: var(--injs-space-2); align-items: flex-end; }
+  .modal-content,
+  .injs-modal {
+    border-radius: var(--injs-radius-lg) var(--injs-radius-lg) 0 0;
+    max-height: 94vh;
+    width: 100%;
+  }
+  .modal-header { padding: var(--injs-space-3) var(--injs-space-4); }
+  .modal-body { padding: var(--injs-space-4); }
+  .modal-footer { padding: var(--injs-space-3) var(--injs-space-4); flex-wrap: wrap; }
+  .modal-footer .btn { flex: 1 1 auto; }
+
+  /* Actions tactiles confortables. */
+  .btn, .btn-sm { min-height: 2.5rem; }
+  .table > thead > tr > th,
+  .table > tbody > tr > td { padding: 0.55rem 0.65rem; }
+}
+
+@media (max-width: 480px) {
+  /* Pleine largeur réservée aux boutons d'action de formulaire et de modale :
+     l'appliquer à tous les .btn casserait les barres d'outils et les tableaux. */
+  .modal-footer .btn,
+  .injs-form-actions .btn,
+  .injs-actions-stack > .btn { width: 100%; }
+  .btn-group .btn { width: auto; }
+  .card-body { padding: var(--injs-space-4); }
+}
+
+/* ── 13. UTILITAIRES D'ACCESSIBILITÉ ─────────────────────────────────────────
+   `.visually-hidden` était utilisé dans le code (évaluations, planche de
+   style) SANS AUCUNE DÉFINITION en CSS : le texte censé être réservé aux
+   lecteurs d'écran s'affichait donc à tout le monde. Ajout de l'utilitaire
+   standard — purement additif, aucune règle existante n'est modifiée. */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Impression : on retire les effets coûteux, on garde la lisibilité. */
+@media print {
+  .btn, .modal-overlay, .sidebar { display: none !important; }
+  .card, .table { box-shadow: none; border-color: #999; }
+  body { background: #FFFFFF; }
+}

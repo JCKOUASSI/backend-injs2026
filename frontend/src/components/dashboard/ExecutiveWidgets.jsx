@@ -2,31 +2,34 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 
 /**
- * Composant « Activité récente »
- * Conforme à la maquette INJS : flux avec horodatage, icône de catégorie et intitulé précis.
+ * Composant « Activité récente ».
+ *
+ * Les entrées proviennent EXCLUSIVEMENT de l'appelant. Ce composant affichait
+ * auparavant un jeu d'exemples (noms d'étudiants, montants, horodatages
+ * inventés) qui se présentait comme l'activité réelle de l'établissement :
+ * aucune donnée officielle ne doit être fabriquée côté interface.
  */
 export function RecentActivityTimeline({
   title = 'Activité récente',
-  items = [
-    { time: '10:42', text: 'Nouvelle inscription – Licence STAPS (Étudiant : M. Sarr)', icon: 'bi-person-plus-fill', color: '#2F80ED' },
-    { time: '10:31', text: 'Note publiée – UE Théorie du Sport (Groupe : L2-A)', icon: 'bi-clipboard-check-fill', color: '#10B981' },
-    { time: '10:17', text: 'Groupe créé – L1 STAPS (Responsable : Dr. Keita)', icon: 'bi-people-fill', color: '#38BDF8' },
-    { time: '09:58', text: 'Jury validé – Master Management du Sport (PV en cours)', icon: 'bi-award-fill', color: '#8B5CF6' },
-    { time: '09:44', text: 'Paiement enregistré – 125 000 FCFA (Étudiant : A. Traoré)', icon: 'bi-credit-card-2-front-fill', color: '#F59E0B' },
-  ],
+  items = [],
 }) {
   return (
     <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0B1F3A', margin: 0 }}>
+        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: 0 }}>
           {title}
         </h3>
-        <Link to="/scolarite" style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2F80ED', textDecoration: 'none' }}>
+        <Link to="/scolarite" style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1267D6', textDecoration: 'none' }}>
           Voir tout →
         </Link>
       </div>
 
       <div className="recent-activity-timeline">
+        {items.length === 0 && (
+          <p style={{ fontSize: '0.8rem', color: '#64748B', margin: 0 }}>
+            Aucune activité enregistrée.
+          </p>
+        )}
         {items.map((item, idx) => (
           <div className="activity-timeline-row" key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94A3B8', minWidth: '38px' }}>
@@ -56,20 +59,24 @@ export function RecentActivityTimeline({
  */
 export function FinancialSituationCard({
   title = 'Situation financière',
-  rate = 87,
-  recettes = '248 500 000 FCFA',
-  paiements = '215 780 000 FCFA',
-  impayes = '32 720 000 FCFA',
+  // Aucune valeur par défaut : des montants « plausibles » codés en dur
+  // s'affichaient comme la situation financière réelle de l'INJS.
+  rate = null,
+  recettes = null,
+  paiements = null,
+  impayes = null,
 }) {
   const radius = 24
   const strokeWidth = 6
   const circumference = 2 * Math.PI * radius
-  const strokeDashoffset = circumference - (rate / 100) * circumference
+  const affiche = (valeur) => (valeur === null || valeur === undefined || valeur === '' ? '—' : valeur)
+  const taux = typeof rate === 'number' ? rate : null
+  const strokeDashoffset = taux === null ? circumference : circumference - (taux / 100) * circumference
 
   return (
     <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.25rem' }}>
-        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0B1F3A', margin: 0 }}>
+        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: 0 }}>
           {title}
         </h3>
       </div>
@@ -84,7 +91,7 @@ export function FinancialSituationCard({
               cy="31"
               r={radius}
               fill="transparent"
-              stroke="#2F80ED"
+              stroke="#1267D6"
               strokeWidth={strokeWidth}
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
@@ -93,7 +100,7 @@ export function FinancialSituationCard({
             />
           </svg>
           <div style={{ position: 'absolute', textAlign: 'center', lineHeight: 1 }}>
-            <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0B1F3A' }}>{rate}%</span>
+            <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#071B3A' }}>{taux === null ? '—' : `${taux}%`}</span>
           </div>
         </div>
 
@@ -107,23 +114,23 @@ export function FinancialSituationCard({
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.8rem', marginTop: '0.35rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ color: '#475569', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <span style={{ color: '#38BDF8', fontSize: '0.75rem' }}>◆</span> Recettes
+            <span style={{ color: '#35BDF5', fontSize: '0.75rem' }}>◆</span> Recettes
           </span>
-          <strong style={{ color: '#0F172A', fontWeight: 700 }}>{recettes}</strong>
+          <strong style={{ color: '#0F172A', fontWeight: 700 }}>{affiche(recettes)}</strong>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ color: '#475569', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <span style={{ color: '#10B981', fontSize: '0.75rem' }}>◆</span> Paiements
+            <span style={{ color: '#16A36A', fontSize: '0.75rem' }}>◆</span> Paiements
           </span>
-          <strong style={{ color: '#0F172A', fontWeight: 700 }}>{paiements}</strong>
+          <strong style={{ color: '#0F172A', fontWeight: 700 }}>{affiche(paiements)}</strong>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ color: '#475569', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <span style={{ color: '#EF4444', fontSize: '0.75rem' }}>◆</span> Impayés
           </span>
-          <strong style={{ color: '#DC2626', fontWeight: 700 }}>{impayes}</strong>
+          <strong style={{ color: '#DC2626', fontWeight: 700 }}>{affiche(impayes)}</strong>
         </div>
       </div>
     </div>

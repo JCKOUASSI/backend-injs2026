@@ -45,6 +45,7 @@ class JournalScolarite(models.Model):
         MATRICULE_GENERE = 'MATRICULE_GENERE', 'Matricule généré'
         INSCRIPTION_PEDAGOGIQUE_GENEREE = 'INSCRIPTION_PEDAGOGIQUE_GENEREE', 'Inscriptions pédagogiques générées'
         INSCRIPTION_PEDAGOGIQUE_MANUELLE = 'INSCRIPTION_PEDAGOGIQUE_MANUELLE', 'Modification pédagogique manuelle'
+        INSCRIPTION_PEDAGOGIQUE_DIFFEREE = 'INSCRIPTION_PEDAGOGIQUE_DIFFEREE', 'Inscriptions pédagogiques non générées (maquette indisponible)'
         GROUPE_AFFECTATION = 'GROUPE_AFFECTATION', 'Affectation à un groupe'
         GROUPE_CHANGEMENT = 'GROUPE_CHANGEMENT', 'Changement de groupe'
         REINSCRIPTION = 'REINSCRIPTION', 'Réinscription'
@@ -905,6 +906,74 @@ class Maquette(models.Model):
                         ref_modules_vus[ecue.ref_module_id] = ecue.code
         return problemes
 
+    # ── Complétude du référentiel (contrôle non bloquant) ────────────────────
+    #: Cible institutionnelle confirmée : 30 crédits ECTS par semestre.
+    CREDITS_PAR_SEMESTRE = 30
+
+    def controler_completude(self):
+        """Décrit, semestre par semestre, ce que la maquette documente vraiment.
+
+        Ce contrôle est **informatif** : il ne modifie rien et ne bloque aucune
+        opération. Il existe pour rendre visible une incomplétude de la source
+        officielle au lieu de la laisser se traduire par des totaux faux.
+
+        Cas réel visé : la maquette M1 de la filière MS ne documente que le
+        semestre S7 (30 ECTS) — le référentiel officiel ne contient aucune UE
+        pour S8. Le niveau affiche donc 30 crédits au lieu de 60, sans qu'aucune
+        donnée n'ait été inventée pour combler l'écart.
+
+        Retourne un dictionnaire sérialisable tel quel en JSON.
+        """
+        from django.db.models import Count, Sum
+
+        semestres = list(
+            Semestre.objects.filter(niveau=self.niveau).order_by('numero')
+        )
+        lignes = []
+        semestres_vides = []
+        total_niveau = 0
+        for semestre in semestres:
+            agregat = self.unites_enseignement.filter(semestre=semestre).aggregate(
+                total=Sum('credits'), nb=Count('id'),
+            )
+            total = agregat['total'] or 0
+            nb_ue = agregat['nb'] or 0
+            total_niveau += total
+            if nb_ue == 0:
+                semestres_vides.append(semestre.numero)
+            lignes.append({
+                'semestre_id': semestre.pk,
+                'numero': semestre.numero,
+                'libelle': semestre.libelle,
+                'nb_ue': nb_ue,
+                'credits': total,
+                'credits_attendus': self.CREDITS_PAR_SEMESTRE,
+                'ecart': total - self.CREDITS_PAR_SEMESTRE,
+            })
+
+        attendu_niveau = self.CREDITS_PAR_SEMESTRE * len(semestres)
+        complet = (
+            bool(semestres)
+            and not semestres_vides
+            and total_niveau == attendu_niveau
+        )
+        return {
+            'maquette_id': self.pk,
+            'niveau': self.niveau.code if self.niveau_id else None,
+            'filiere_code': (
+                self.ref_formation.filiere_code
+                if self.ref_formation_id and self.ref_formation
+                else None
+            ),
+            'semestres': lignes,
+            'semestres_vides': semestres_vides,
+            'credits_documentes': total_niveau,
+            'credits_attendus': attendu_niveau,
+            'credits_manquants': max(attendu_niveau - total_niveau, 0),
+            'complet': complet,
+            'statut': self.statut,
+        }
+
     # ── Lot L1 — clonage de version (correctif d'une maquette aboutie) ────────
     def cloner(self, utilisateur=None):
         """Crée une nouvelle version BROUILLON copiée de cette maquette.
@@ -941,6 +1010,10 @@ class Maquette(models.Model):
                 credits=ue.credits,
                 caractere=ue.caractere,
                 ordre=ue.ordre,
+                # La famille officielle fait partie de l'identité pédagogique de
+                # l'UE : un clonage qui la perdrait rendrait la nouvelle version
+                # inexploitable pour l'analyse des crédits par domaine.
+                famille=ue.famille,
             )
             for ecue in ue.ecues.all():
                 if ecue.archive:
@@ -966,6 +1039,32 @@ class Maquette(models.Model):
         return clone
 
 
+class FamilleModule(models.Model):
+    """Famille de modules du référentiel INJS (« Sciences biomédicales », …).
+
+    Le classeur officiel attribue à chaque UE une famille (feuille 8, colonne
+    « Famille de modules », 12 valeurs). Cette famille est un axe d'analyse
+    (répartition des crédits par domaine) : elle est donc portée par un
+    référentiel et non par un simple texte libre.
+
+    Le code est **technique** (slug du libellé officiel) : le classeur ne publie
+    aucun code de famille. Le libellé, lui, est repris mot pour mot.
+    """
+
+    code = models.CharField(max_length=60, unique=True)
+    libelle = models.CharField(max_length=150, unique=True)
+    ordre = models.PositiveSmallIntegerField(default=1)
+    actif = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['ordre', 'libelle']
+        verbose_name = 'LMD – Famille de modules'
+        verbose_name_plural = 'LMD – Familles de modules'
+
+    def __str__(self):
+        return self.libelle
+
+
 class UE(models.Model):
     """Unité d'enseignement d'une maquette, rattachée à un semestre."""
 
@@ -983,6 +1082,11 @@ class UE(models.Model):
     credits = models.PositiveSmallIntegerField(default=0, verbose_name='Crédits ECTS')
     caractere = models.CharField(max_length=20, choices=Caractere.choices, default=Caractere.OBLIGATOIRE)
     ordre = models.PositiveSmallIntegerField(default=1)
+    famille = models.ForeignKey(
+        FamilleModule, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='unites_enseignement',
+        help_text='Famille officielle du référentiel (axe d’analyse des crédits).',
+    )
 
     class Meta:
         ordering = ['semestre__numero', 'ordre', 'code']

@@ -7,6 +7,7 @@ import AppNotificationsBell from '../AppNotificationsBell'
 import Sidebar from './Sidebar'
 import { FINANCE_MODULE_ROLES } from '../../utils/roles'
 import avatarDirector from '../../assets/avatar-director.jpg'
+import api from '../../services/api'
 
 /**
  * Coquille de l'application : barre latérale RBAC + barre supérieure Glassmorphism.
@@ -14,7 +15,7 @@ import avatarDirector from '../../assets/avatar-director.jpg'
  * Conforme au design institutionnel INJS Marcory :
  * - Gestion du masquage/déploiement de la sidebar (bureau et mobile/tablette)
  * - Barre de recherche globale (« Rechercher un étudiant, une formation, un cours... »)
- * - Sélecteur d'année académique (« 2026 – 2027 »)
+ * - Année académique courante, lue depuis `/api/scolarite/annee-courante/`
  * - Cloche de notification temps réel
  * - Plaquette utilisateur avec avatar exécutif, nom complet et badge de rôle
  */
@@ -27,6 +28,37 @@ export default function Layout({ children, breadcrumb }) {
     typeof window !== 'undefined' ? window.innerWidth <= 992 : false
   )
   const [searchTerm, setSearchTerm] = useState('')
+  // Année académique réellement configurée. L'en-tête affichait la constante
+  // « 2026 – 2027 », donc une année qui pouvait ne pas exister dans le
+  // référentiel ; sans année en base, on affiche « — ».
+  const [anneeAcademique, setAnneeAcademique] = useState(null)
+
+  useEffect(() => {
+    let annule = false
+    api.get('/scolarite/annee-courante/')
+      .then((res) => {
+        if (annule) return
+        const data = res?.data ?? res
+        setAnneeAcademique(data?.annee?.libelle || data?.libelle || null)
+      })
+      .catch(() => { if (!annule) setAnneeAcademique(null) })
+    return () => { annule = true }
+  }, [])
+
+  // Fermeture du menu mobile à la touche Échap (convention clavier, WCAG 2.1.1)
+  // et blocage du défilement de l'arrière-plan tant qu'il est ouvert, pour
+  // éviter de faire défiler le contenu derrière le panneau.
+  useEffect(() => {
+    if (!(isMobile && sidebarOpen)) return undefined
+    const onKeyDown = (e) => { if (e.key === 'Escape') setSidebarOpen(false) }
+    const ancienOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = ancienOverflow
+    }
+  }, [isMobile, sidebarOpen])
 
   useEffect(() => {
     const handleResize = () => {
@@ -66,13 +98,18 @@ export default function Layout({ children, breadcrumb }) {
     && !hasAppRole(user, ['ARCHIVE'])
   const showAppNotifications = isDirection || canViewStatistiques || canViewFinanceNotifications
 
-  const userInitials = `${(user?.first_name || '')[0] || ''}${(user?.last_name || '')[0] || ''}`.toUpperCase() || 'MD'
-  
-  // Nom d'affichage aligné sur la maquette pour la Direction ou nom réel
+  // Nom réel de l'utilisateur connecté. Aucun nom de démonstration : la barre
+  // affichait « Dr. Mamadou Diallo » à la place de l'identité réelle dès que le
+  // compte n'avait pas de prénom — un nom qui n'existe pas dans l'établissement.
+  const initiales = `${(user?.first_name || '')[0] || ''}${(user?.last_name || '')[0] || ''}`.toUpperCase()
+  const userInitials = initiales
+    || (user?.username || '').slice(0, 2).toUpperCase()
+    || '?'
+
   const isUserDirection = user?.role === 'DIRECTION' || !user?.role
-  const displayName = isUserDirection && (!user?.first_name || user?.username === 'admin')
-    ? 'Dr. Mamadou Diallo'
-    : (user?.get_full_name ? user.get_full_name() : `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'Dr. Mamadou Diallo')
+  const displayName = (user?.get_full_name
+    ? user.get_full_name()
+    : `${user?.first_name || ''} ${user?.last_name || ''}`.trim()) || user?.username || 'Utilisateur'
 
   const roleLabel = getUserRoles(user)
     .map((r) => LIBELLES_ROLES[r] || r)
@@ -191,7 +228,7 @@ export default function Layout({ children, breadcrumb }) {
                 }}
                 onFocus={(e) => {
                   e.target.style.background = '#FFFFFF'
-                  e.target.style.borderColor = '#2F80ED'
+                  e.target.style.borderColor = '#1267D6'
                   e.target.style.boxShadow = '0 0 0 3px rgba(47, 128, 237, 0.15)'
                 }}
                 onBlur={(e) => {
@@ -230,8 +267,8 @@ export default function Layout({ children, breadcrumb }) {
               }}
               title="Année Académique Active"
             >
-              <i className="bi bi-calendar3" style={{ color: '#2F80ED' }} />
-              <span>2026 – 2027</span>
+              <i className="bi bi-calendar3" style={{ color: '#1267D6' }} />
+              <span>{anneeAcademique || '—'}</span>
               <i className="bi bi-chevron-down" style={{ fontSize: '0.68rem', color: '#94A3B8' }} />
             </div>
 
@@ -299,7 +336,7 @@ export default function Layout({ children, breadcrumb }) {
                   height: '36px',
                   borderRadius: '50%',
                   overflow: 'hidden',
-                  background: 'linear-gradient(135deg, #0B1F3A 0%, #1E62D0 100%)',
+                  background: 'linear-gradient(135deg, #071B3A 0%, #1267D6 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',

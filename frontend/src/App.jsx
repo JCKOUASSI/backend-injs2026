@@ -25,6 +25,8 @@ import Organigramme from './pages/Organigramme'
 import Referentiels from './pages/Referentiels'
 import Parametres from './pages/Parametres'
 import FeatureFlags from './pages/FeatureFlags'
+// Planche de style : documentation vivante du socle visuel (lecture seule).
+import PlancheDeStyle from './pages/design/PlancheDeStyle'
 // U4 — console CURP d'administration des comptes (derrière le drapeau
 // CURP_UI_ADMIN : sans la capacité habilitations_admin.gerer, rien n'apparaît).
 import HabilitationsLayout from './pages/habilitations/HabilitationsLayout'
@@ -63,6 +65,10 @@ import Edts from './pages/Edts'
 import EdtPresences from './pages/EdtPresences'
 import CoursLmd from './pages/CoursLmd'
 import EdtNew from './pages/EdtNew'
+import GenerationAnnuelle from './pages/getinjs/GenerationAnnuelle'
+import CampagnesGeneration from './pages/getinjs/CampagnesGeneration'
+import VersionsPublication from './pages/getinjs/VersionsPublication'
+import AuditDonnees from './pages/getinjs/AuditDonnees'
 import AffectationNew from './pages/AffectationNew'
 
 import FicheAuditeur from './pages/FicheAuditeur'
@@ -623,6 +629,13 @@ function App() {
               </Layout>
             </ProtectedRoute>
           } />
+          <Route path="/referentiels/planche-de-style" element={
+            <ProtectedRoute allowedRoles={ADMIN_LEVEL_ROLES}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/referentiels">Référentiels</Link></li><li className="separator">/</li><li>Planche de style</li></>}>
+                <PlancheDeStyle />
+              </Layout>
+            </ProtectedRoute>
+          } />
           <Route path="/statistiques" element={
             <ProtectedRoute allowedRoles={STATS_ALLOWED_ROLES} capacite={{ module: 'statistiques', action: 'voir' }}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Statistiques</li></>}>
@@ -678,6 +691,34 @@ function App() {
             <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Nouvel EDT</li></>}>
                 <EdtNew />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/edt/generation-annuelle" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Génération annuelle</li></>}>
+                <GenerationAnnuelle />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/edt/campagnes" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Campagnes de génération</li></>}>
+                <CampagnesGeneration />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/edt/versions" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Versions &amp; publication</li></>}>
+                <VersionsPublication />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/edt/audit" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Audit des données</li></>}>
+                <AuditDonnees />
               </Layout>
             </ProtectedRoute>
           } />

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import api, { API_BASE_URL, ADMIN_URL, setSessionExpiredCallback } from '@/services/api'
+import api, { API_BASE_URL, ADMIN_URL, setSessionExpiredCallback, urlAdminAbsolue } from '@/services/api'
 import { fetchResponse, flushPromises } from '@/test/utils/async'
 
 const REFRESH_URL = `${API_BASE_URL}/auth/token/refresh/`
@@ -31,6 +31,31 @@ describe('services/api.js', () => {
     })
     it("dérive l'URL admin de VITE_API_URL (.../api → .../admin/)", () => {
       expect(ADMIN_URL.endsWith('/admin/')).toBe(true)
+    })
+
+    // Le proxy du port 3000 bloque /admin (plugin injs-blocage-admin) : le lien
+    // doit viser le port 8000, sinon le bouton « administration » renvoie 404.
+    it('vise le port 8000 en développement local', () => {
+      expect(
+        urlAdminAbsolue('/admin/', {
+          protocol: 'http:', hostname: 'localhost', port: '3000',
+        }),
+      ).toBe('http://localhost:8000/admin/')
+    })
+
+    it("vise l'hôte d'aperçu du port 8000 derrière l'iframe *.e2b.app", () => {
+      expect(
+        urlAdminAbsolue('/admin/', {
+          protocol: 'https:', hostname: '3000-abc123def.e2b.app', port: '',
+        }),
+      ).toBe('https://8000-abc123def.e2b.app/admin/')
+    })
+
+    it('laisse intacte une URL absolue ou une origine déjà correcte', () => {
+      const absolue = 'https://injs.exemple.ci/admin/'
+      expect(urlAdminAbsolue(absolue, { hostname: 'localhost', port: '3000' })).toBe(absolue)
+      const production = { protocol: 'https:', hostname: 'injs.exemple.ci', port: '' }
+      expect(urlAdminAbsolue('/admin/', production)).toBe('/admin/')
     })
   })
 
