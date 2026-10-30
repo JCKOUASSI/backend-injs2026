@@ -129,6 +129,14 @@ SOUPLES_DEFAUT = {
     'poids_surcharge': 3,
 }
 
+#: Codes des pénalités souples produites par le moteur. Déclarés ici une seule
+#: fois : l'API, le bilan annuel et les écrans les lisent au même endroit.
+CODES_SOUPLES = (
+    'TROU_HORAIRE',
+    'PLUS_DE_X_HEURES_CONSECUTIVES',
+    'SURCHARGE_JOURNALIERE',
+)
+
 #: Clés admises et type attendu (validation stricte : une faute de frappe dans
 #: un réglage ne doit pas être ignorée en silence).
 _CHAMPS_SOUPLES = {

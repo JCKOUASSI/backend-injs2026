@@ -30,6 +30,7 @@ n'ont aucun volume, n'est pas planifié : il est listé avec son motif.
 
 from __future__ import annotations
 
+from edts.moteur import contraintes as C
 from edts.moteur import generation as G
 from edts.moteur import orchestration as O
 from edts.moteur.besoins import calculate_teaching_needs
@@ -161,6 +162,11 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
 
     # ── 3. Génération coordonnée, groupe par groupe ───────────────────────────
     occupations = O.occupations_persistees(annee_academique_id, semaines=semaines)
+    # Politique souple lue UNE fois pour toute l'année : tous les groupes sont
+    # jugés par la même règle, même si quelqu'un modifie le réglage pendant la
+    # génération. Cela évite aussi une lecture par groupe (59 pour 3 500
+    # étudiants, mesuré).
+    politique_souples = C.politique_souples()
     lignes = []
     for groupe in groupes_injs:
         besoins = besoins_par_groupe.get(groupe.pk, [])
@@ -191,6 +197,7 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
             budget=budget,
             occupations_initiales=occupations,
             besoins=besoins,
+            contraintes_souples=politique_souples,
         )
 
         # Coordination : ces placements pèsent sur les groupes suivants.
@@ -225,6 +232,14 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
             'heures_attendues': resultat.metrics['heures_attendues'],
             'taux_couverture': resultat.metrics['taux_couverture'],
             'conflits': len(resultat.conflits),
+            # Contraintes souples : le bilan annuel doit dire ce que la
+            # politique active a produit. Sans cela, activer les règles dans
+            # l'admin resterait invisible là où l'INJS arbitre réellement.
+            'contraintes_souples': resultat.metrics.get('contraintes_souples'),
+            'penalites_souples': sum(
+                1 for place in resultat.placements for p in place.penalites
+                if p.code in C.CODES_SOUPLES
+            ),
             'edt_id': None,
             'edt_cree': False,
         }
@@ -311,6 +326,27 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
             'heures_attendues': round(sum(l.get('heures_attendues', 0) for l in lignes), 2),
             'edts_persistes': len([l for l in lignes if l.get('edt_id')]),
             'groupes_hors_perimetre': hors_perimetre,
+            # Bilan des règles souples sur l'année entière (zéro si la
+            # politique est inactive — c'est le cas par défaut).
+            'contraintes_souples': {
+                'active': any(
+                    (l.get('contraintes_souples') or {}).get('active')
+                    for l in lignes
+                ),
+                'trous': sum(
+                    (l.get('contraintes_souples') or {}).get('trous', 0)
+                    for l in lignes
+                ),
+                'series_trop_longues': sum(
+                    (l.get('contraintes_souples') or {}).get('series_trop_longues', 0)
+                    for l in lignes
+                ),
+                'journees_surchargees': sum(
+                    (l.get('contraintes_souples') or {}).get('journees_surchargees', 0)
+                    for l in lignes
+                ),
+                'penalites': sum(l.get('penalites_souples', 0) for l in lignes),
+            },
         },
         'sources': {
             'affectations_pedagogiques': {

@@ -54,9 +54,29 @@ class Command(BaseCommand):
         )
         parser.add_argument('--json', dest='fichier_json', default='',
                             help='Écrit le rapport de mesures dans ce fichier JSON.')
+        parser.add_argument(
+            '--max-consecutives', dest='max_consecutives', type=float, default=None,
+            help='Borne de série consécutive à appliquer pendant la mesure '
+                 '(défaut : valeur enregistrée dans l’administration).',
+        )
+        parser.add_argument(
+            '--max-jour', dest='max_jour', type=float, default=None,
+            help='Borne journalière à appliquer pendant la mesure '
+                 '(défaut : valeur enregistrée dans l’administration).',
+        )
+        parser.add_argument(
+            '--souples', choices=('inactif', 'actif'), default='inactif',
+            help='Régime des contraintes souples pendant la mesure. Le réglage '
+                 'est appliqué dans la transaction annulée : la base n’est pas '
+                 'modifiée. « actif » permet de mesurer le coût réel de la '
+                 'politique (une lecture de réglage par génération de groupe).',
+        )
 
     def handle(self, *args, **options):
         volumes = list(ETAPES_STANDARD) if options['tous'] else [options['etudiants']]
+        self.souples = options['souples']
+        self.max_consecutives = options['max_consecutives']
+        self.max_jour = options['max_jour']
         rapports = []
         for volume in volumes:
             rapport = self._scenario(
@@ -72,6 +92,16 @@ class Command(BaseCommand):
                 f"{rapport['seances_non_placees']} non placées, "
                 f"{rapport['requetes_sql']} requêtes SQL."
             ))
+            if rapport.get('contraintes_souples_bilan') is not None:
+                bilan_souple = rapport['contraintes_souples_bilan']
+                self.stdout.write(
+                    '    contraintes souples : '
+                    f"{'actives' if bilan_souple['active'] else 'inactives'}, "
+                    f"{bilan_souple['trous']} trou(s), "
+                    f"{bilan_souple['series_trop_longues']} série(s) longue(s), "
+                    f"{bilan_souple['journees_surchargees']} journée(s) chargée(s), "
+                    f"{bilan_souple['penalites']} pénalité(s)."
+                )
             if rapport.get('erreur'):
                 self.stderr.write(self.style.ERROR(rapport['erreur']))
 
@@ -127,11 +157,18 @@ class Command(BaseCommand):
             )
             site = RefSite.objects.create(nom=f'SITE BENCHMARK {nb_etudiants}')
             batiment = RefBatiment.objects.create(site=site, nom='B1')
+            # ``get_or_create`` et non ``create`` : la base réelle contient déjà
+            # les 24 créneaux du canevas officiel. Un benchmark qui exige une
+            # table vide n'est pas rejouable là où l'on veut mesurer.
+            crees, reutilises = 0, 0
             for jour in ('LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI'):
                 for debut, fin in ((8, 10), (10, 12), (14, 16), (16, 18)):
-                    CreneauTemplate.objects.create(
-                        jour=jour, heure_debut=heure(debut, 0), heure_fin=heure(fin, 0),
+                    _, cree = CreneauTemplate.objects.get_or_create(
+                        jour=jour, heure_debut=heure(debut, 0),
+                        heure_fin=heure(fin, 0),
                     )
+                    crees += int(cree)
+                    reutilises += int(not cree)
             for index in range(groupes):
                 Groupe.objects.create(
                     annee_academique=annee, ref_formation=formation,
@@ -183,6 +220,22 @@ class Command(BaseCommand):
             rapport['etudiants_importes'] = import_rapport.effectif_total
             rapport['lignes_rejetees'] = import_rapport.lignes_rejetees
 
+            # Régime des contraintes souples, appliqué dans la transaction
+            # (donc annulé avec elle) : la mesure ne laisse aucune trace.
+            from edts.models import PolitiqueContraintesSouples
+            from edts.moteur import contraintes as C
+            reglages = {'actives': self.souples == 'actif'}
+            if self.max_consecutives is not None:
+                reglages['max_heures_consecutives'] = self.max_consecutives
+            if self.max_jour is not None:
+                reglages['max_heures_par_jour'] = self.max_jour
+            PolitiqueContraintesSouples.objects.update_or_create(
+                pk=1, defaults=reglages,
+            )
+            rapport['contraintes_souples_regime'] = self.souples
+            rapport['contraintes_souples_politique'] = C.politique_lisible(
+                C.politique_souples())
+
             debut = time.monotonic()
             with CaptureQueriesContext(connection) as requetes:
                 bilan = generer_annee(annee.pk, semaines=[1], persister=False)
@@ -194,6 +247,10 @@ class Command(BaseCommand):
             rapport['seances_placees'] = bilan.get('totaux', {}).get('seances_placees', 0)
             rapport['seances_non_placees'] = bilan.get('totaux', {}).get('seances_non_placees', 0)
             rapport['etudiants_couverts'] = bilan.get('totaux', {}).get('etudiants_couverts', 0)
+            rapport['contraintes_souples_bilan'] = bilan.get('totaux', {}).get(
+                'contraintes_souples')
+            rapport['creneaux_crees'] = crees
+            rapport['creneaux_reutilises'] = reutilises
             if bilan.get('status_global') == 'IMPOSSIBLE':
                 rapport['erreur'] = (
                     'Génération impossible : '

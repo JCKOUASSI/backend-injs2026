@@ -537,7 +537,9 @@ PARTIE 6 — TESTS ET PERFORMANCES
   Configuration Django                  PASS          manage.py check → 0 issue
   Migrations cohérentes                 PASS          makemigrations --check → « No changes »
   Migration 0008 appliquée              PASS          migrate edts → OK
-  Tests backend groupe EDT              PASS          500 tests, code 0 (./arena/tests_par_groupe.sh edt)
+  Tests backend groupe EDT              PASS          506 tests, code 0 (./arena/tests_par_groupe.sh edt)
+  dont outil de mesure (nouveau)        PASS          3 tests (edts.tests.test_benchmark)
+  dont bilan annuel souple (nouveau)    PASS          3 tests (BilanContraintesSouplesTests)
   dont contraintes souples              PASS          20 tests (edts.tests.test_contraintes_souples)
   dont politique réglable (nouveau)     PASS          24 tests (edts.tests.test_politique_admin)
   Tests backend groupe socle            PASS          179 tests, code 0
@@ -568,6 +570,8 @@ PARTIE 6 — TESTS ET PERFORMANCES
   Publication atomique                  PASS          test_campagnes.test_validation_et_publication_atomiques
   Non-régression (445 tests EDT)        PASS          aucune régression après optimisation
   Charge 100 → 14 000 étudiants          PASS          voir 6.2 (exécutions réelles)
+  Charge avec règles souples actives     PASS          voir 6.2 bis : +5,4 % (3 500), +6,9 % (14 000),
+                                                     plan identique, zéro séance perdue
   git diff --check                      PASS          aucune erreur d'espace
   Navigateur réel (E2E écran)           NOT RUN       pas de navigateur headless (libnss3 absent)
   Aperçu mobile (Flutter web)           BLOCKED       SDK Flutter absent et non téléchargeable
@@ -613,6 +617,41 @@ PARTIE 6 — TESTS ET PERFORMANCES
   « campagne » lancée en arrière-plan. Aucun test au-delà de 14 000 n'a été
   réalisé : la cible de la mission est atteinte, pas dépassée.
 
+6.2 bis Mesure de l'activation des contraintes souples (2026-10-30)
+
+  Jusqu'ici, l'activation n'était pas mesurée : le coût d'une règle qu'on
+  n'active pas est nul, mais celui d'une règle activée ne se déduit pas. La
+  commande `benchmark_getinjs` accepte désormais `--souples inactif|actif`
+  (et `--max-consecutives`, `--max-jour`) et publie le bilan des règles.
+
+  Mesures réelles, base SQLite du bac à sable, transaction annulée :
+
+    Volume  Régime                        Import     Génération  Placées  NP
+    ------  ----------------------------  ---------  ----------  -------  --
+    3 500   inactif (défaut)               14 663 ms   8 598 ms    2 065   0
+    3 500   actif, bornes 4 h / 8 h        14 072 ms   9 063 ms    2 065   0
+    3 500   actif, 2 h consécutives        14 344 ms   8 925 ms    2 065   0
+    3 500   actif, 2 h par jour            14 320 ms   9 416 ms    2 065   0
+    14 000  inactif                       57 802 ms  139 659 ms   8 190   0
+    14 000  actif                         58 654 ms  149 353 ms   8 190   0
+
+  Coût de l'activation : **+5,4 % à 3 500** et **+6,9 % à 14 000**, pour un
+  plan identique (mêmes 2 065 / 8 190 séances, zéro non placée). Ce coût a été
+  ramené de +78 % à +5 % par une factorisation : les règles souples ne
+  dépendent que du groupe et du créneau, jamais de la salle, et étaient
+  pourtant recalculées pour chaque salle éligible.
+
+  Trois constats mesurés, pas supposés :
+    - avec les bornes par défaut (4 h consécutives, 8 h/jour), le plan produit
+      par le moteur ne contient **aucune** violation : activer les règles en
+      l'état est neutre ;
+    - sous une borne de 2 h consécutives, le solveur **arbitre** : il préfère un
+      trou (poids 1) à une série trop longue (poids 2) — 295 trous, 0 série
+      signalée, aucun besoin perdu ;
+    - sous une borne de 2 h par jour, 295 journées surchargées sont signalées,
+      et les 2 065 séances restent placées : la politique n'écarte rien, à
+      l'échelle annuelle comme au niveau du groupe.
+
 6.3 Contrôles non exécutés
 
   - Tests sur PostgreSQL : non exécutés (pas de serveur dans le bac à sable).
@@ -620,6 +659,8 @@ PARTIE 6 — TESTS ET PERFORMANCES
   - Parcours navigateur complet : non exécuté (pas de navigateur headless).
   - Tests de charge en parallèle (deux campagnes simultanées) : non exécuté ;
     le verrou pessimiste est couvert par un test unitaire, pas par une mesure.
+  - Charge sur PostgreSQL : non mesurée (aucun serveur dans le bac à sable) ;
+    les chiffres de 6.2 et 6.2 bis sont SQLite.
 
 --------------------------------------------------------------------------------
 PARTIE 7 — JOURNAL D'IMPLÉMENTATION
@@ -740,6 +781,32 @@ Ordre chronologique réel :
     Comptes : groupe EDT 500 tests code 0 ; groupe socle 179 tests code 0 ;
     frontend 112 fichiers / 2 025 tests ; lint 0 ; build 0.
 
+24. Chantier 4 — vérification complète et mesure de l'activation.
+    (a) Les NEUF groupes de tests backend ont été rejoués, un par un, avec leur
+        code de sortie : scolarite 454, formations 270, auth 242,
+        habilitations 480, evaluations 230, pilotage 201, divers 139, edt 500,
+        socle 179 — soit 2 695 tests, tous au vert (aucun groupe sauté).
+    (b) Le bilan annuel (`generer_annee`) expose désormais les règles souples :
+        par groupe (`contraintes_souples`, `penalites_souples`) et en totaux
+        (`active`, `trous`, `series_trop_longues`, `journees_surchargees`,
+        `penalites`). Sans cela, activer la politique restait invisible là où
+        l'INJS arbitre réellement.
+    (c) Défauts corrigés :
+        - `benchmark_getinjs` arrêtait sur `UNIQUE` toute exécution sur une base
+          contenant déjà les créneaux officiels : un outil de mesure non
+          rejouable ne mesure rien. `get_or_create` + comptage des créneaux
+          créés/réutilisés ;
+        - le calcul des règles souples était refait pour chaque salle éligible
+          alors qu'il ne dépend que du groupe et du créneau : +78 % de temps de
+          génération à 3 500 étudiants. Factorisé à +5,4 % ;
+        - la politique était relue en base à chaque groupe (59 lectures pour
+          3 500 étudiants, 234 pour 14 000) : lue une seule fois par année, donc
+          tous les groupes sont jugés par la même règle même si le réglage
+          change pendant la génération.
+    (d) Mesures réelles consignées en 6.2 bis (3 500 et 14 000 étudiants, deux
+        régimes, quatre politiques de bornes).
+    Comptes : groupe EDT 506 tests code 0 ; neuf groupes 2 695 tests code 0.
+
 Erreurs rencontrées et solutions :
   - `campaigne_en_dict` (NameError) → renommé `campagne_en_dict`.
   - Migration de statut de maquette refusée en test → scénario remplacé.
@@ -819,9 +886,9 @@ Déjà présent avant la mission (vérifié, non réécrit) :
 Non exécuté / non couvert :
   - au-delà de 14 000 étudiants : non mesuré ;
   - PostgreSQL, navigateur réel, CI distante ;
-  - contraintes souples : réglables dans l'admin, mais INACTIVES par défaut
-    (aucune pondération officielle) ; leur activation n'a pas été mesurée sur
-    un volume réel de 3 500+ étudiants ;
+  - contraintes souples : réglables dans l'admin, INACTIVES par défaut ; le
+    COÛT d'activation est mesuré (6.2 bis) mais la PERTINENCE des bornes reste
+    une décision pédagogique de l'INJS, non tranchée ici ;
   - capture d'écran de l'écran de réglage : NOT RUN (aucun navigateur headless
     dans le bac à sable) ; la preuve est HTTP (codes 200/302/403 et charge
     utile JSON), pas visuelle.

@@ -433,8 +433,7 @@ def contraintes_api(request):
                 'souples » (sans redéploiement). Le réglage de déploiement '
                 'EDTS_CONTRAINTES_SOUPLES reste possible ; il est alors '
                 'surchargé par la ligne enregistrée.'),
-            'codes': ['TROU_HORAIRE', 'PLUS_DE_X_HEURES_CONSECUTIVES',
-                      'SURCHARGE_JOURNALIERE'],
+            'codes': list(C.CODES_SOUPLES),
         },
         'capacite_inconnue': (
             'Une salle sans capacité renseignée (NULL) n’est jamais considérée '

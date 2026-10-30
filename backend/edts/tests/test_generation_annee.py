@@ -278,3 +278,63 @@ class EchelleTests(BaseAnneeTest):
         # 25 cohortes × 2 blocs = 50 blocs ; 25 créneaux × 3 salles = 75 places.
         self.assertGreaterEqual(bilan['totaux']['seances_placees'], 50)
         self.assertEqual(bilan['status_global'], A.ANNEE_COMPLETE)
+
+
+class BilanContraintesSouplesTests(BaseAnneeTest):
+    """Le bilan annuel doit refléter les règles souples, sinon elles sont invisibles.
+
+    L'INJS arbitre au niveau de l'année, pas du groupe. Une politique activée
+    dans l'administration doit donc apparaître dans ce que la direction lit :
+    nombre de trous, de séries trop longues, de journées surchargées, et
+    pénalités produites. Le contrôle est fait dans les deux régimes.
+    """
+
+    def setUp(self):
+        super().setUp()
+        from edts.models import PolitiqueContraintesSouples
+
+        self.Politique = PolitiqueContraintesSouples
+
+    def _bilan(self):
+        self.importer([
+            f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'
+            for i in range(30)
+        ])
+        return A.generer_annee(self.annee.pk, semaines=[1])
+
+    def test_regime_inactif_par_defaut_ne_signale_rien(self):
+        bilan = self._bilan()
+        souples = bilan['totaux']['contraintes_souples']
+        self.assertFalse(souples['active'])
+        self.assertEqual(souples['trous'], 0)
+        self.assertEqual(souples['penalites'], 0)
+        # La ligne par groupe porte aussi le détail (utile au diagnostic).
+        self.assertFalse(bilan['groupes'][0]['contraintes_souples']['active'])
+
+    def test_politique_activee_dans_l_admin_remonte_dans_le_bilan(self):
+        # Borne à 1 h : toute séance de 2 h dépasse, donc chaque journée
+        # travaillée est signalée. Un bloc récurrent ne compte qu'une fois par
+        # semaine (c'est un créneau), c'est pourquoi la borne doit être basse.
+        self.Politique.objects.update_or_create(
+            pk=1, defaults={'actives': True, 'max_heures_par_jour': 1,
+                            'motif': 'Test bilan annuel.'})
+        bilan = self._bilan()
+        souples = bilan['totaux']['contraintes_souples']
+        self.assertTrue(souples['active'])
+        self.assertGreaterEqual(souples['journees_surchargees'], 1)
+        self.assertGreaterEqual(souples['penalites'], 1)
+        self.assertEqual(bilan['groupes'][0]['penalites_souples'],
+                         souples['penalites'])
+
+    def test_les_penalites_ne_retirent_aucune_seance_du_bilan(self):
+        """Preuve à l'échelle annuelle : la politique ne bloque jamais."""
+        temoin = self._bilan()
+        self.Politique.objects.update_or_create(
+            pk=1, defaults={'actives': True, 'max_heures_par_jour': 1,
+                            'max_heures_consecutives': 1})
+        avec = self._bilan()
+        self.assertEqual(avec['totaux']['seances_placees'],
+                         temoin['totaux']['seances_placees'])
+        self.assertEqual(avec['totaux']['seances_non_placees'],
+                         temoin['totaux']['seances_non_placees'])
+        self.assertEqual(avec['status_global'], temoin['status_global'])
