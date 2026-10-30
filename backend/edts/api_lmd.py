@@ -402,12 +402,23 @@ def contraintes_api(request):
     """
     from edts.moteur import contraintes as C
 
+    effectif = C.politique_effective()
     return Response({
         'dures': [{'code': code, 'libelle': libelle}
                   for code, libelle in LIBELLES_CONTRAINTES.items()],
         'avertissements': [LIBELLE_PREFERENCES],
         'souples': {
-            'politique': C.politique_souples(),
+            'politique': C.politique_lisible(effectif['politique']),
+            # D'où viennent réellement les règles appliquées : sans cette
+            # information, un utilisateur ne peut pas savoir si le moteur suit
+            # les défauts du code, un réglage de déploiement ou SA décision.
+            'origine': effectif['origine'],
+            'reglage': (
+                {**effectif['reglage'],
+                 'politique': C.politique_lisible(
+                     effectif['reglage']['politique'])}
+                if effectif['reglage'] else None
+            ),
             'actives_par_defaut': C.SOUPLES_DEFAUT['actives'],
             'explication': (
                 'Contraintes souples (trous, séries de plus de '
@@ -417,7 +428,11 @@ def contraintes_api(request):
                 'les activer revient à une décision explicite de l’INJS. '
                 'Elles ne bloquent jamais un placement : elles produisent des '
                 'pénalités visibles (score).'),
-            'activation': 'Réglage Django EDTS_CONTRAINTES_SOUPLES.',
+            'activation': (
+                'Admin Django › « GET-INJS – Politique des contraintes '
+                'souples » (sans redéploiement). Le réglage de déploiement '
+                'EDTS_CONTRAINTES_SOUPLES reste possible ; il est alors '
+                'surchargé par la ligne enregistrée.'),
             'codes': ['TROU_HORAIRE', 'PLUS_DE_X_HEURES_CONSECUTIVES',
                       'SURCHARGE_JOURNALIERE'],
         },

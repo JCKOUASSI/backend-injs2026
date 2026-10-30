@@ -71,6 +71,12 @@ LECTURE_SEULE = (
     'admissions.NoteConcoursHistorique',
     'jurys.NotificationJury',
     'habilitations.RoleVersion',
+    # Objets produits par le moteur GET-INJS : les campagnes et leurs exécutions
+    # sont des traces d'exécution, jamais saisies à la main. Elles doivent être
+    # consultables (bilan, anomalies, auteur, durée) mais pas éditables, sans
+    # quoi on pourrait réécrire l'historique d'une génération.
+    'edts.CampagneGeneration',
+    'edts.ExecutionCampagne',
 )
 
 # Champs jamais affichés en liste (volumineux ou techniques).

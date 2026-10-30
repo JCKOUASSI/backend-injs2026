@@ -431,7 +431,8 @@ PARTIE 5 — GUIDE UTILISATEUR
     pause_dejeuner=None      aucune pause institutionnelle supposée
 
   Priorité de configuration : défauts < réglage Django
-  `EDTS_CONTRAINTES_SOUSPLES` < paramètre explicite de `generate_schedule()`
+  `EDTS_CONTRAINTES_SOUPLES` < **ligne enregistrée dans l'admin** (voir
+  §5.7 ter) < paramètre explicite de `generate_schedule()`
   (`contraintes_souples=`). Un réglage mal orthographié ou mal typé lève une
   erreur explicite : un `ValueError` plutôt qu'une règle silencieusement
   ignorée.
@@ -457,11 +458,42 @@ PARTIE 5 — GUIDE UTILISATEUR
       dédié (avec et sans pause déclarée).
 
   Visibilité : `GET /api/edts/lmd/constraints/` renvoie
-  `souples.politique`, `actives_par_defaut: false`, l'explication, le moyen
-  d'activation et les trois codes. Aucune règle ne s'applique sans être
-  affichée. Le bilan de génération expose `metrics.contraintes_souples`
-  (`active`, `trous`, `series_trop_longues`, `journees_surchargees`,
-  `detail`).
+  `souples.politique`, `souples.origine`, `souples.reglage`,
+  `actives_par_defaut: false`, l'explication, le moyen d'activation et les
+  trois codes. Aucune règle ne s'applique sans être affichée. Le bilan de
+  génération expose `metrics.contraintes_souples` (`active`, `trous`,
+  `series_trop_longues`, `journees_surchargees`, `detail`).
+  Les pauses sont stockées en minutes (unité interne du moteur) et rendues en
+  « 12:15 – 13:30 » partout où un humain les lit (API, écrans).
+
+5.7 ter Régler les contraintes souples depuis l'administration
+  Admin Django › « GET-INJS – Politique des contraintes souples ».
+
+  Pourquoi une table et pas seulement un réglage : `EDTS_CONTRAINTES_SOUPLES`
+  ne s'applique qu'au déploiement. L'INJS ne peut donc pas décider seule qu'une
+  journée de 9 h devient problématique — il faudrait modifier un fichier et
+  redémarrer le service. La ligne unique `edts.PolitiqueContraintesSouples`
+  (migration 0009) donne cette main au secrétariat / à la direction.
+
+  Garanties :
+    - **ligne unique** — `save()` force la clé primaire à 1 ; la seconde ligne
+      est impossible, donc aucune ambiguïté sur les règles appliquées ;
+    - **désactivée par défaut** — créer la ligne ne change rien tant que
+      « actives » n'est pas coché ; le comportement historique est préservé ;
+    - **non supprimable** — supprimer effacerait la trace de la décision ;
+      l'admin refuse l'ajout d'une seconde ligne (403) et la suppression ;
+    - **traçable** — auteur (`modifie_par`, renseigné par l'admin elle-même),
+      date (`modifie_le`) et motif libre ; l'API expose ces trois champs ;
+    - **validée** — pause incomplète ou inversée, borne nulle, poids nul sont
+      refusés avec un message qui dit quoi corriger (un poids nul rendrait la
+      pénalité invisible : pour ne pas appliquer une règle, on la désactive).
+
+  Effet visible : l'écran « Audit des données » affiche la politique effective,
+  son **origine** (« valeurs par défaut du code », « réglage de déploiement »,
+  « réglage enregistré dans l'administration »), les bornes, la pause déclarée
+  ou son absence, les poids, le motif et le dernier auteur. Un utilisateur peut
+  donc toujours savoir qui a décidé quoi, et si la règle qu'il subit vient du
+  code ou de son établissement.
 
 5.8 Simuler une variante
   Générer avec « Enregistrer les EDT › décoché : le plan est produit et
@@ -505,8 +537,11 @@ PARTIE 6 — TESTS ET PERFORMANCES
   Configuration Django                  PASS          manage.py check → 0 issue
   Migrations cohérentes                 PASS          makemigrations --check → « No changes »
   Migration 0008 appliquée              PASS          migrate edts → OK
-  Tests backend groupe EDT              PASS          476 tests, code 0 (./arena/tests_par_groupe.sh edt)
-  dont contraintes souples (nouveau)    PASS          20 tests (edts.tests.test_contraintes_souples)
+  Tests backend groupe EDT              PASS          500 tests, code 0 (./arena/tests_par_groupe.sh edt)
+  dont contraintes souples              PASS          20 tests (edts.tests.test_contraintes_souples)
+  dont politique réglable (nouveau)     PASS          24 tests (edts.tests.test_politique_admin)
+  Tests backend groupe socle            PASS          179 tests, code 0
+                                                     (./arena/tests_par_groupe.sh socle)
   dont campagnes (nouveaux)             PASS          16 tests (edts.tests.test_campagnes)
   dont export PDF (nouveau)             PASS          4 tests (TestExportPdfEmploiDuTemps)
   dont export XLSX (nouveau)            PASS          4 tests (TestExportXlsxEmploiDuTemps)
@@ -514,8 +549,7 @@ PARTIE 6 — TESTS ET PERFORMANCES
                                                      17 colonnes, filtres serveur appliqués
   Export PDF d'un EDT                   PASS          application/pdf, 3 066 octets, grille réelle
                                                      (texte extrait et image de contrôle produite)
-  Tests frontend                        PASS          112 fichiers / 2 022 tests, code 0
-                                                     (rejoués après le chantier 2 : inchangés)
+  Tests frontend                        PASS          112 fichiers / 2 025 tests, code 0
   dont campagnes / versions / audit     PASS          6 + 5 + 4 tests
   dont déplacement / annulation         PASS          6 + 4 tests (components/edt)
   Déplacement d'une séance (live)       PASS          GET 26 candidats (plan valide), POST 200 accepté,
@@ -524,6 +558,9 @@ PARTIE 6 — TESTS ET PERFORMANCES
                                                      actives_par_defaut=false, 3 codes
   Contraintes souples (solveur)         PASS          activation = mêmes séances placées + pénalités
                                                      signalées ; aucun besoin écarté
+  Politique réglée par l'admin (live)   PASS          admin HTTP : liste 200, ajout 302, seconde
+                                                     ligne 403 ; API origine=base, politique et
+                                                     trace (motif, auteur, date) exposées
   Lint frontend                         PASS          npm run lint → code 0
   Build frontend                        PASS          npm run build → code 0
   Import externe (CSV)                  PASS          test_import_inscrits + benchmark (100 → 14 000)
@@ -681,6 +718,28 @@ Ordre chronologique réel :
     Comptes : groupe EDT 476 tests code 0 (456 + 20) ; frontend inchangé
     112 fichiers / 2 022 tests ; preuve HTTP réelle sur l'API 8000.
 
+23. Chantier 3 — la politique des contraintes souples devient réglable SANS
+    redéploiement. Un réglage Django n'est pas un outil de gouvernance : il
+    faut un développeur pour l'activer. Ajout d'une ligne unique
+    `edts.PolitiqueContraintesSouples` (migration 0009), de son écran
+    d'administration (validation, traçabilité, ni ajout ni suppression) et de
+    son affichage dans « Audit des données » avec l'origine de la politique.
+    Priorité complétée : défauts < réglage Django < ligne de l'admin <
+    paramètre de génération.
+    Trois défauts corrigés, aucun contourné :
+    (a) `auto_now_add` renvoyait `created_at = NULL` dans l'UPDATE d'une ligne
+        dont la clé primaire est forcée à 1 → `NOT NULL constraint failed` ;
+        remplacé par `default=timezone.now` (stable en INSERT comme en UPDATE) ;
+    (b) les bornes de pause sortaient en minutes depuis minuit dans l'API
+        (« 735 → 810 ») : unité interne d'un côté, `pause_lisible()` de l'autre ;
+    (c) le contrôle transversal de l'admin a révélé que `CampagneGeneration` et
+        `ExecutionCampagne` (livrés au LOT 2) n'étaient PAS administrables —
+        un administrateur ne pouvait consulter ni le bilan ni les anomalies
+        d'une campagne. Enregistrés en lecture seule (`LECTURE_SEULE`) : une
+        trace d'exécution se consulte, ne se réécrit pas.
+    Comptes : groupe EDT 500 tests code 0 ; groupe socle 179 tests code 0 ;
+    frontend 112 fichiers / 2 025 tests ; lint 0 ; build 0.
+
 Erreurs rencontrées et solutions :
   - `campaigne_en_dict` (NameError) → renommé `campagne_en_dict`.
   - Migration de statut de maquette refusée en test → scénario remplacé.
@@ -760,9 +819,12 @@ Déjà présent avant la mission (vérifié, non réécrit) :
 Non exécuté / non couvert :
   - au-delà de 14 000 étudiants : non mesuré ;
   - PostgreSQL, navigateur réel, CI distante ;
-  - contraintes souples : codées mais INACTIVES par défaut (aucune
-    pondération officielle) ; leur activation n'a pas été mesurée sur un
-    volume réel de 3 500+ étudiants.
+  - contraintes souples : réglables dans l'admin, mais INACTIVES par défaut
+    (aucune pondération officielle) ; leur activation n'a pas été mesurée sur
+    un volume réel de 3 500+ étudiants ;
+  - capture d'écran de l'écran de réglage : NOT RUN (aucun navigateur headless
+    dans le bac à sable) ; la preuve est HTTP (codes 200/302/403 et charge
+    utile JSON), pas visuelle.
 
 Actions nécessitant une décision ou une habilitation :
   - saisie du patrimoine réel (salles, capacités) ;

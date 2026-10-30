@@ -21,6 +21,42 @@ const CONTRAINTES = {
   ],
   avertissements: ['Préférence horaire de l’enseignant'],
   capacite_inconnue: 'Une salle sans capacité renseignée n’est jamais considérée comme suffisante.',
+  souples: {
+    politique: {
+      actives: false,
+      max_heures_consecutives: 4,
+      max_heures_par_jour: 8,
+      tolerance_minutes: 15,
+      penaliser_trous: true,
+      pause_dejeuner: null,
+      poids_trou: 1,
+      poids_consecutif: 2,
+      poids_surcharge: 3,
+    },
+    origine: 'defaut',
+    reglage: null,
+    actives_par_defaut: false,
+    activation: 'Admin Django › « GET-INJS – Politique des contraintes souples ».',
+  },
+}
+
+const CONTRAINTES_ACTIVES = {
+  ...CONTRAINTES,
+  souples: {
+    ...CONTRAINTES.souples,
+    politique: {
+      ...CONTRAINTES.souples.politique,
+      actives: true,
+      max_heures_par_jour: 9,
+      pause_dejeuner: ['12:15', '13:30'],
+    },
+    origine: 'base',
+    reglage: {
+      motif: 'Journée continue validée par la direction.',
+      modifie_par: 'direction',
+      modifie_le: '2026-10-30T09:30:00Z',
+    },
+  },
 }
 
 const AUDIT_OK = {
@@ -91,6 +127,46 @@ describe('AuditDonnees', () => {
     await waitFor(() => expect(screen.getByText('Contraintes appliquées par le moteur')).toBeInTheDocument())
     expect(screen.getByText(/Un groupe ne peut pas suivre deux séances simultanément/)).toBeInTheDocument()
     expect(screen.getByText(/Préférences \(non bloquantes\)/)).toBeInTheDocument()
+  })
+
+  it('affiche les contraintes souples désactivées avec leur origine', async () => {
+    apiController.setRoute(/\/edts\/lmd\/audit\//, AUDIT_OK)
+    monter()
+
+    await waitFor(() => expect(screen.getByTestId('politique-souples')).toBeInTheDocument())
+    expect(screen.getByText('désactivées')).toBeInTheDocument()
+    expect(screen.getByText(/valeurs par défaut du code/)).toBeInTheDocument()
+    expect(screen.getByText(/aucune déclarée/)).toBeInTheDocument()
+    expect(screen.getByText(/Interruption tolérée : 15 min/)).toBeInTheDocument()
+  })
+
+  it('affiche la politique active, sa pause et sa trace de décision', async () => {
+    // Première route déclarée = première servie : on repart d'une table vide.
+    apiController.reset()
+    apiController.setRoute(/\/scolarite\/ref\/annees\/$/, { results: ANNEES })
+    apiController.setRoute(/\/edts\/lmd\/constraints\/$/, CONTRAINTES_ACTIVES)
+    apiController.setRoute(/\/edts\/lmd\/audit\//, AUDIT_OK)
+    monter()
+
+    await waitFor(() => expect(screen.getByText('actives')).toBeInTheDocument())
+    expect(screen.getByText(/réglage enregistré dans l’administration/)).toBeInTheDocument()
+    expect(screen.getByText(/Total maximum par jour : 9 h/)).toBeInTheDocument()
+    expect(screen.getByText(/12:15 – 13:30/)).toBeInTheDocument()
+    expect(screen.getByText(/Journée continue validée par la direction/)).toBeInTheDocument()
+    expect(screen.getByText(/Dernière modification par direction/)).toBeInTheDocument()
+  })
+
+  it('reste lisible quand l’API ne fournit pas encore les contraintes souples', async () => {
+    const sansSouples = { ...CONTRAINTES }
+    delete sansSouples.souples
+    apiController.reset()
+    apiController.setRoute(/\/scolarite\/ref\/annees\/$/, { results: ANNEES })
+    apiController.setRoute(/\/edts\/lmd\/constraints\/$/, sansSouples)
+    apiController.setRoute(/\/edts\/lmd\/audit\//, AUDIT_OK)
+    monter()
+
+    await waitFor(() => expect(screen.getByText('Contraintes appliquées par le moteur')).toBeInTheDocument())
+    expect(screen.queryByTestId('politique-souples')).not.toBeInTheDocument()
   })
 
   it('affiche l’erreur serveur plutôt qu’un écran vide', async () => {

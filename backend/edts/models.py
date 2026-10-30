@@ -876,3 +876,178 @@ class ExecutionCampagne(models.Model):
 
     def __str__(self):
         return f'{self.campagne_id} / exécution {self.numero}'
+
+
+class PolitiqueContraintesSouples(models.Model):
+    """Politique des contraintes souples, réglable depuis l'admin Django.
+
+    Pourquoi une table et pas seulement un réglage Django. Le réglage
+    ``EDTS_CONTRAINTES_SOUPLES`` ne s'applique qu'au **déploiement** : l'INJS
+    ne peut pas décider qu'une journée de 9 h devient problématique sans
+    qu'un développeur modifie un fichier et redémarre le service. Cette ligne
+    unique donne la main au secrétariat / à la direction, avec une trace
+    (auteur, date, motif) et sans redéploiement.
+
+    Trois garanties de conception :
+
+    * **Ligne unique** — ``save()`` force la clé primaire à 1 : il n'existe
+      jamais deux politiques concurrentes, donc jamais d'ambiguïté sur les
+      règles appliquées ;
+    * **Désactivée par défaut** — ``actives=False`` : créer la ligne ne change
+      rien au comportement du solveur tant que personne ne l'active ;
+    * **Traçable** — ``modifie_par``, ``modifie_le`` et ``motif`` sont
+      conservés : « qui a décidé quoi, quand et pourquoi » reste lisible.
+
+    Priorité effective (cf. ``edts.moteur.contraintes.politique_souples``) :
+    défauts du code < réglage Django < **cette ligne** < paramètre explicite
+    d'une génération. La ligne l'emporte sur le réglage Django parce qu'elle
+    est la décision opérationnelle la plus récente ; le paramètre de génération
+    l'emporte sur tout le reste parce qu'il est explicite et local.
+    """
+
+    actives = models.BooleanField(
+        default=False,
+        help_text='Si décoché, le moteur ignore entièrement les règles souples '
+                  '(comportement historique).',
+    )
+    max_heures_consecutives = models.FloatField(
+        default=4.0,
+        help_text='Série de cours continue au-delà de laquelle une pénalité est '
+                  'produite. La pause déjeuner, si elle est déclarée, rompt la série.',
+    )
+    max_heures_par_jour = models.FloatField(
+        default=8.0,
+        help_text='Total de cours d’une journée de groupe au-delà duquel une '
+                  'pénalité est produite.',
+    )
+    tolerance_minutes = models.PositiveSmallIntegerField(
+        default=15,
+        help_text='Interruption entre deux séances qui n’est pas considérée '
+                  'comme un trou (récréation, changement de salle).',
+    )
+    penaliser_trous = models.BooleanField(
+        default=True,
+        help_text='Produire une pénalité pour chaque trou horaire du groupe.',
+    )
+    pause_debut = models.TimeField(
+        null=True, blank=True,
+        help_text='Début de la pause institutionnelle (déjeuner). Vide = aucune '
+                  'pause supposée : le moteur n’invente pas d’horaire.',
+    )
+    pause_fin = models.TimeField(
+        null=True, blank=True,
+        help_text='Fin de la pause institutionnelle. À remplir avec le début.',
+    )
+    poids_trou = models.PositiveSmallIntegerField(default=1)
+    poids_consecutif = models.PositiveSmallIntegerField(default=2)
+    poids_surcharge = models.PositiveSmallIntegerField(default=3)
+    motif = models.TextField(
+        blank=True, default='',
+        help_text='Pourquoi cette politique (décision de la direction, '
+                  'calendrier particulier…). Facultatif mais recommandé.',
+    )
+    modifie_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='politiques_souples_modifiees',
+        help_text='Dernier utilisateur à avoir enregistré cette politique.',
+    )
+    modifie_le = models.DateTimeField(auto_now=True)
+    # ``default`` plutôt que ``auto_now_add`` : la clé primaire est forcée à 1
+    # dans ``save()``, ce qui fait considérer la ligne comme « existante » et
+    # enverrait ``created_at = NULL`` dans l'UPDATE. Un défaut est stable dans
+    # les deux chemins (INSERT initial, UPDATE ultérieur).
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        verbose_name = 'GET-INJS – Politique des contraintes souples'
+        verbose_name_plural = 'GET-INJS – Politique des contraintes souples'
+
+    def __str__(self):
+        etat = 'activée' if self.actives else 'désactivée'
+        return (f'Contraintes souples ({etat}) — '
+                f'{self.max_heures_consecutives:g} h consécutives, '
+                f'{self.max_heures_par_jour:g} h/jour')
+
+    # ── Validation ───────────────────────────────────────────────────────────
+    def clean(self):
+        """Refuse les politiques incohérentes — un réglage faux doit se voir.
+
+        Les messages sont rédigés pour l'utilisateur de l'admin : ils disent ce
+        qui ne va pas et quoi faire, sans jargon.
+        """
+        erreurs = {}
+        if bool(self.pause_debut) != bool(self.pause_fin):
+            erreurs['pause_debut'] = (
+                'Renseignez le début ET la fin de la pause, ou laissez les deux '
+                'vides pour n’en déclarer aucune.'
+            )
+        elif self.pause_debut and self.pause_fin <= self.pause_debut:
+            erreurs['pause_fin'] = 'La fin de la pause doit être après son début.'
+        if self.max_heures_consecutives is not None \
+                and self.max_heures_consecutives <= 0:
+            erreurs['max_heures_consecutives'] = (
+                'La borne doit être supérieure à 0 h ; pour désactiver les '
+                'règles souples, décochez « actives ».'
+            )
+        if self.max_heures_par_jour is not None and self.max_heures_par_jour <= 0:
+            erreurs['max_heures_par_jour'] = (
+                'La borne doit être supérieure à 0 h ; pour désactiver les '
+                'règles souples, décochez « actives ».'
+            )
+        for champ in ('poids_trou', 'poids_consecutif', 'poids_surcharge'):
+            if not getattr(self, champ, 1):
+                erreurs[champ] = (
+                    'Un poids nul rendrait la pénalité invisible. Pour ne pas '
+                    'appliquer une règle, désactivez-la ou décochez la règle '
+                    'correspondante.'
+                )
+        if erreurs:
+            raise ValidationError(erreurs)
+        super().clean()
+
+    # ── Lecture par le moteur ────────────────────────────────────────────────
+    def en_politique(self):
+        """Convertit la ligne en politique lisible par ``contraintes``.
+
+        Les bornes de la pause sont exprimées en **minutes depuis minuit**,
+        l'unité interne du moteur (cf. ``contraintes.SOUPLES_DEFAUT``). Les
+        heures et minutes lisibles sont produites à l'affichage par
+        ``contraintes.pause_lisible`` : une seule conversion, jamais deux.
+        """
+        pause = None
+        if self.pause_debut and self.pause_fin:
+            pause = (self.pause_debut.hour * 60 + self.pause_debut.minute,
+                     self.pause_fin.hour * 60 + self.pause_fin.minute)
+        return {
+            'actives': bool(self.actives),
+            'max_heures_consecutives': float(self.max_heures_consecutives),
+            'max_heures_par_jour': float(self.max_heures_par_jour),
+            'tolerance_minutes': int(self.tolerance_minutes),
+            'penaliser_trous': bool(self.penaliser_trous),
+            'pause_dejeuner': pause,
+            'poids_trou': int(self.poids_trou),
+            'poids_consecutif': int(self.poids_consecutif),
+            'poids_surcharge': int(self.poids_surcharge),
+        }
+
+    def resume(self):
+        """Trace lisible pour l'API : qui a réglé quoi, quand et pourquoi."""
+        return {
+            'politique': self.en_politique(),
+            'motif': self.motif or '',
+            'modifie_par': (
+                self.modifie_par.get_username() if self.modifie_par_id else None
+            ),
+            'modifie_le': self.modifie_le.isoformat() if self.modifie_le else None,
+        }
+
+    def save(self, *args, **kwargs):
+        """Force la ligne unique : une seule politique peut exister."""
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def charger(cls):
+        """Politique enregistrée, ou ``None`` si personne n'a encore réglé."""
+        return cls.objects.filter(pk=1).first()

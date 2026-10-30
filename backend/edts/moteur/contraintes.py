@@ -118,8 +118,11 @@ SOUPLES_DEFAUT = {
     'penaliser_trous': True,
     #: Pause institutionnelle (déjeuner) qui ne compte pas comme un « trou ».
     #: ``None`` = aucune exemption (comportement explicite, rien d'inventé) ;
-    #: sinon ``('12:00', '13:30')``. L'INJS n'ayant pas publié d'horaire de
-    #: pause, aucune valeur n'est imposée : elle se configure.
+    #: sinon un couple de **minutes depuis minuit** ``(735, 810)``, forme
+    #: interne la plus simple à comparer. Les réglages et l'API s'expriment en
+    #: ``('12:15', '13:30')`` et sont convertis : ``pause_lisible()`` fait le
+    #: chemin inverse pour l'affichage. L'INJS n'ayant publié aucune pause
+    #: officielle, aucune valeur n'est imposée : elle se configure.
     'pause_dejeuner': None,
     'poids_trou': 1,
     'poids_consecutif': 2,
@@ -141,45 +144,125 @@ _CHAMPS_SOUPLES = {
 }
 
 
-def politique_souples(override=None):
-    """Politique effective des contraintes souples.
+#: Origines possibles d'une politique effective, de la plus faible à la plus
+#: forte. Sert à expliquer à l'utilisateur *d'où* viennent les règles qu'il subit.
+ORIGINES = ('defaut', 'reglage_django', 'base', 'parametre')
+
+
+def _appliquer(politique, source, etiquette):
+    """Fusionne une couche de réglage dans ``politique`` (validation stricte)."""
+    if not source:
+        return
+    if not isinstance(source, dict):
+        raise ValueError(
+            f'{etiquette} doit être un dictionnaire '
+            f'(reçu : {type(source).__name__}).')
+    for cle, valeur in source.items():
+        if cle not in _CHAMPS_SOUPLES:
+            raise ValueError(
+                f'Réglage de contrainte souple inconnu : « {cle} » ({etiquette}). '
+                f'Clés admises : {", ".join(sorted(_CHAMPS_SOUPLES))}.')
+        attendu = _CHAMPS_SOUPLES[cle]
+        if cle == 'pause_dejeuner':
+            politique[cle] = _valider_pause(valeur)
+            continue
+        # bool est une sous-classe d'int : on teste strictement.
+        if attendu is bool and not isinstance(valeur, bool):
+            raise ValueError(f'« {cle} » doit être un booléen (reçu : {valeur!r}).')
+        if attendu is not bool and (
+                isinstance(valeur, bool)
+                or not isinstance(valeur, attendu)):
+            raise ValueError(f'« {cle} » doit être un nombre (reçu : {valeur!r}).')
+        if attendu is not bool and valeur < 0:
+            raise ValueError(f'« {cle} » ne peut pas être négatif (reçu : {valeur!r}).')
+        politique[cle] = valeur
+
+
+def _politique_base():
+    """Politique enregistrée dans l'admin Django, ou ``None``.
+
+    Lecture volontairement tolérante à l'absence de table (migration pas encore
+    appliquée, test unitaire sans base) : dans ce cas le moteur se rabat sur les
+    couches inférieures au lieu de planter. Toute autre erreur remonte.
+    """
+    try:
+        from edts.models import PolitiqueContraintesSouples
+    except Exception:  # pragma: no cover - import circulaire improbable
+        return None
+    from django.db import OperationalError, ProgrammingError
+
+    try:
+        ligne = PolitiqueContraintesSouples.charger()
+    except (OperationalError, ProgrammingError):
+        return None
+    return ligne
+
+
+def politique_effective(override=None):
+    """Politique + origine + trace de réglage, pour l'API et les diagnostics.
 
     Ordre de priorité : ``SOUPLES_DEFAUT`` < réglage Django
-    ``EDTS_CONTRAINTES_SOUPLES`` < ``override`` (paramètre de génération).
+    ``EDTS_CONTRAINTES_SOUPLES`` < ligne de l'admin < ``override`` (paramètre
+    explicite d'une génération).
 
-    Une clé inconnue ou une valeur de type invalide lève ``ValueError`` : un
-    réglage mal orthographié ne doit pas être ignoré sans bruit.
+    Pourquoi la ligne de l'admin passe avant le réglage Django : le réglage
+    décrit l'installation, la ligne décrit la décision opérationnelle de l'INJS.
+    La décision la plus récente et la plus visible doit gagner ; l'appelant qui
+    passe ``override`` garde le dernier mot, car il est explicite et local.
     """
     from django.conf import settings
 
     politique = dict(SOUPLES_DEFAUT)
-    for source in (getattr(settings, 'EDTS_CONTRAINTES_SOUPLES', None), override):
-        if not source:
-            continue
-        if not isinstance(source, dict):
-            raise ValueError(
-                'EDTS_CONTRAINTES_SOUPLES doit être un dictionnaire '
-                f'(reçu : {type(source).__name__}).')
-        for cle, valeur in source.items():
-            if cle not in _CHAMPS_SOUPLES:
-                raise ValueError(
-                    f'Réglage de contrainte souple inconnu : « {cle} ». '
-                    f'Clés admises : {", ".join(sorted(_CHAMPS_SOUPLES))}.')
-            attendu = _CHAMPS_SOUPLES[cle]
-            if cle == 'pause_dejeuner':
-                politique[cle] = _valider_pause(valeur)
-                continue
-            # bool est une sous-classe d'int : on teste strictement.
-            if attendu is bool and not isinstance(valeur, bool):
-                raise ValueError(f'« {cle} » doit être un booléen (reçu : {valeur!r}).')
-            if attendu is not bool and (
-                    isinstance(valeur, bool)
-                    or not isinstance(valeur, attendu)):
-                raise ValueError(f'« {cle} » doit être un nombre (reçu : {valeur!r}).')
-            if attendu is not bool and valeur < 0:
-                raise ValueError(f'« {cle} » ne peut pas être négatif (reçu : {valeur!r}).')
-            politique[cle] = valeur
-    return politique
+    origine = 'defaut'
+    ligne = None
+
+    _appliquer(politique, getattr(settings, 'EDTS_CONTRAINTES_SOUPLES', None),
+               'EDTS_CONTRAINTES_SOUPLES')
+    if getattr(settings, 'EDTS_CONTRAINTES_SOUPLES', None):
+        origine = 'reglage_django'
+
+    ligne = _politique_base()
+    if ligne is not None:
+        _appliquer(politique, ligne.en_politique(), 'Politique enregistrée')
+        origine = 'base'
+
+    if override:
+        _appliquer(politique, override, 'Paramètre de génération')
+        origine = 'parametre'
+
+    return {
+        'politique': politique,
+        'origine': origine,
+        'reglage': ligne.resume() if ligne is not None else None,
+    }
+
+
+def politique_souples(override=None):
+    """Politique effective des contraintes souples (dict prêt pour le moteur).
+
+    Une clé inconnue ou une valeur de type invalide lève ``ValueError`` : un
+    réglage mal orthographié ne doit pas être ignoré sans bruit — ni dans le
+    réglage Django, ni dans la ligne enregistrée, ni dans un appel explicite.
+    """
+    return politique_effective(override)['politique']
+
+
+def pause_lisible(valeur):
+    """Minutes internes → ``['12:15', '13:30']`` (ou ``None``).
+
+    L'unité interne (minutes) n'a aucune raison de fuiter dans une API ou dans
+    un écran : personne ne lit « pause de 735 à 810 ».
+    """
+    if not valeur:
+        return None
+    return [f'{int(minutes) // 60:02d}:{int(minutes) % 60:02d}' for minutes in valeur]
+
+
+def politique_lisible(politique):
+    """Copie d'une politique où ``pause_dejeuner`` est exprimée en HH:MM."""
+    lisible = dict(politique)
+    lisible['pause_dejeuner'] = pause_lisible(politique.get('pause_dejeuner'))
+    return lisible
 
 
 def _minutes(heure):
@@ -204,16 +287,33 @@ def _minutes_depuis_texte(valeur):
     return heures * 60 + minutes
 
 
+def _minute_unique(valeur):
+    """Une borne de pause : ``'12:15'`` (réglage) ou ``735`` (interne)."""
+    if isinstance(valeur, bool):
+        raise ValueError(f'Horaire de pause invalide : {valeur!r}.')
+    if isinstance(valeur, int):
+        if not 0 <= valeur <= 24 * 60:
+            raise ValueError(f'Horaire de pause hors bornes : {valeur!r}.')
+        return valeur
+    return _minutes_depuis_texte(valeur)
+
+
 def _valider_pause(valeur):
-    """Valide ``pause_dejeuner`` : ``None`` ou ``('HH:MM', 'HH:MM')``."""
+    """Valide ``pause_dejeuner`` : ``None`` ou un couple de deux bornes.
+
+    Deux écritures sont admises, parce qu'elles ont chacune leur raison d'être :
+    ``('12:15', '13:30')`` pour un réglage lisible (admin, settings) et
+    ``(735, 810)`` pour la forme interne déjà convertie. Toute autre valeur est
+    refusée explicitement.
+    """
     if valeur is None:
         return None
     if not isinstance(valeur, (tuple, list)) or len(valeur) != 2:
         raise ValueError(
             'pause_dejeuner doit être None ou un couple ("HH:MM", "HH:MM") '
             f'(reçu : {valeur!r}).')
-    debut = _minutes_depuis_texte(valeur[0])
-    fin = _minutes_depuis_texte(valeur[1])
+    debut = _minute_unique(valeur[0])
+    fin = _minute_unique(valeur[1])
     if fin <= debut:
         raise ValueError(
             f'pause_dejeuner : la fin doit suivre le début (reçu : {valeur!r}).')
@@ -350,7 +450,8 @@ def resume_souples(placements, politique=None):
     """
     politique = politique or politique_souples()
     resume = {
-        'politique': politique,
+        # Version lisible : ce bilan part dans l'API et dans les écrans.
+        'politique': politique_lisible(politique),
         'active': bool(politique['actives']),
         'trous': 0,
         'series_trop_longues': 0,

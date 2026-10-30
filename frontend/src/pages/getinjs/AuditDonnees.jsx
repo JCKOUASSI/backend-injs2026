@@ -16,6 +16,87 @@ import '../../styles/ecransGeneriques.css'
  * règles dures (C1 → C10) et sépare explicitement les préférences.
  */
 
+/** Libellés des origines de la politique de contraintes souples. */
+const ORIGINES = {
+  defaut: 'valeurs par défaut du code',
+  reglage_django: 'réglage de déploiement',
+  base: 'réglage enregistré dans l’administration',
+  parametre: 'paramètre de cette génération',
+}
+
+/** « 4 » → « 4 h », « 4,5 » → « 4 h 30 ». */
+function heures(valeur) {
+  if (valeur === null || valeur === undefined) return '—'
+  const total = Math.round(Number(valeur) * 60)
+  const h = Math.floor(total / 60)
+  const m = total % 60
+  return m ? `${h} h ${String(m).padStart(2, '0')}` : `${h} h`
+}
+
+function dateLisible(iso) {
+  if (!iso) return ''
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })
+}
+
+/**
+ * Bloc « contraintes souples ».
+ *
+ * Affiche la politique **effective** et surtout son origine : un utilisateur
+ * doit pouvoir savoir si le moteur suit les défauts du code, un réglage de
+ * déploiement ou la décision enregistrée dans l'administration. Aucune règle
+ * n'est présentée comme active si la politique ne l'est pas.
+ */
+function PolitiqueSouples({ souples }) {
+  const politique = souples.politique || {}
+  const reglage = souples.reglage
+  const active = Boolean(politique.actives)
+  return (
+    <div className="card mt-3" data-testid="politique-souples">
+      <div className="card-body">
+        <h5 className="card-title">
+          Contraintes souples{' '}
+          <span className={`badge ${active ? 'badge-warning' : 'badge-neutral'}`}>
+            {active ? 'actives' : 'désactivées'}
+          </span>
+        </h5>
+        <p className="small text-muted mb-2">
+          Origine : {ORIGINES[souples.origine] || souples.origine || 'inconnue'}.
+          {' '}Ces règles ne bloquent jamais un placement : elles produisent des
+          pénalités visibles.
+        </p>
+        <ul className="list-unstyled small mb-2">
+          <li>Série consécutive maximale : {heures(politique.max_heures_consecutives)}</li>
+          <li>Total maximum par jour : {heures(politique.max_heures_par_jour)}</li>
+          <li>Interruption tolérée : {politique.tolerance_minutes ?? '—'} min</li>
+          <li>
+            Pause institutionnelle :{' '}
+            {politique.pause_dejeuner
+              ? `${politique.pause_dejeuner[0]} – ${politique.pause_dejeuner[1]}`
+              : 'aucune déclarée (une coupure méridienne compte alors comme un trou)'}
+          </li>
+          <li>
+            Poids : trou {politique.poids_trou ?? '—'} · série {politique.poids_consecutif ?? '—'} · surcharge {politique.poids_surcharge ?? '—'}
+          </li>
+        </ul>
+        {reglage?.motif && (
+          <p className="small mb-1">
+            <strong>Motif enregistré :</strong> {reglage.motif}
+          </p>
+        )}
+        {reglage && (
+          <p className="small text-muted mb-2">
+            Dernière modification par {reglage.modifie_par || 'un compte supprimé'}
+            {dateLisible(reglage.modifie_le) ? ` le ${dateLisible(reglage.modifie_le)}` : ''}.
+          </p>
+        )}
+        <p className="small text-muted mb-0">{souples.activation}</p>
+      </div>
+    </div>
+  )
+}
+
 const NIVEAUX = {
   OK: { libelle: 'OK', classe: 'badge-success', icone: 'bi-check-circle' },
   WARNING: { libelle: 'Avertissement', classe: 'badge-warning', icone: 'bi-exclamation-triangle' },
@@ -185,6 +266,8 @@ export default function AuditDonnees() {
               </div>
             </div>
           )}
+
+          {contraintes?.souples && <PolitiqueSouples souples={contraintes.souples} />}
         </>
       )}
     </div>
