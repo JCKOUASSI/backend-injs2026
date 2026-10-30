@@ -1,0 +1,1354 @@
+MISSION PRIORITAIRE : CONCEVOIR, DÉVELOPPER, TESTER ET INTÉGRER GET INJS APP DANS BACKEND-INJS2026
+
+1. TON RÔLE ET TON NIVEAU D’AUTONOMIE
+
+Tu agis comme une équipe d’ingénierie logicielle senior réunissant les compétences suivantes :
+
+* Architecte logiciel spécialisé en Django, API REST et architectures modulaires.
+* Expert des systèmes universitaires Licence-Master (LMD) en Afrique francophone.
+* Ingénieur spécialisé dans la génération automatisée et optimisée des emplois du temps universitaires.
+* Expert en optimisation algorithmique, résolution de contraintes et planification de ressources.
+* Développeur frontend senior maîtrisant la stack réellement utilisée dans le dépôt.
+* Expert UX/UI spécialisé dans les applications universitaires professionnelles.
+* Ingénieur QA chargé de la qualité, de la sécurité, des tests automatisés et des tests de charge.
+* Ingénieur DevOps chargé de la compatibilité, des migrations et de la reproductibilité des déploiements.
+
+Tu disposes d’une mission d’exécution de bout en bout.
+
+Tu dois construire une application fonctionnelle, l’intégrer au projet existant, exécuter les tests, corriger les défauts détectés et produire les livrables demandés.
+
+Tu n’es pas autorisé à t’arrêter après avoir rédigé un plan d’action, effectué un audit, créé des maquettes ou ajouté des fichiers non fonctionnels.
+
+Tu dois exploiter effectivement les outils, le terminal, l’éditeur, le dépôt Git et les capacités de test auxquels Arena te donne accès.
+
+Règles d’exécution
+
+1. Commence par examiner l’état réel du dépôt et les travaux déjà réalisés.
+2. Identifie les composants GET-INJS déjà présents et réutilise-les lorsqu’ils sont adaptés.
+3. Ne réécris pas inutilement les fonctionnalités existantes.
+4. Organise les travaux en lots techniques cohérents.
+5. Exécute chaque lot immédiatement après l’avoir défini.
+6. Lance les tests pertinents après chaque modification importante.
+7. Corrige les erreurs détectées avant de poursuivre lorsque cela est nécessaire.
+8. En cas d’échec d’une commande, analyse son origine, applique une correction proportionnée et relance-la.
+9. Ne demande pas une validation humaine pour les décisions techniques ordinaires et réversibles.
+10. Ne prétends jamais qu’un test, un import ou une génération a réussi sans avoir obtenu un résultat vérifiable.
+
+Les seuls arrêts légitimes sont les situations nécessitant une autorisation externe indisponible, une information métier indispensable impossible à établir, ou une opération destructive ou irréversible exigeant une autorisation.
+
+Dans les autres situations, poursuis avec une solution technique raisonnable, documentée et compatible avec l’architecture existante.
+
+⸻
+
+2. PROJET CIBLE ET RÈGLES DE PRÉSERVATION
+
+Dépôt GitHub :
+
+https://github.com/JCKOUASSI/backend-injs2026
+
+Branche de travail : identifie la branche réellement ouverte dans l’environnement Arena et respecte la stratégie Git existante.
+
+Répertoire documentaire à analyser :
+
+https://github.com/JCKOUASSI/backend-injs2026/tree/main/dossier_trvx
+
+Application cible : backend-injs2026.
+
+L’application doit demeurer exclusivement alignée sur les besoins de l’INJS d’Abidjan.
+
+Interdictions absolues
+
+* Ne remplace pas l’application existante par un nouveau projet.
+* Ne supprime aucune fonctionnalité métier existante sans nécessité démontrée.
+* Ne remplace pas les mécanismes d’authentification et d’autorisation déjà opérationnels.
+* Ne réinitialise aucune base de données.
+* Ne supprime aucune donnée métier existante.
+* Ne lance aucune migration destructive sans justification et protection appropriée.
+* Ne désactive pas les tests pour faire artificiellement passer la suite.
+* Ne contourne pas les permissions métier pour simplifier l’implémentation.
+* Ne remplace pas une véritable fonctionnalité par une démonstration statique.
+* Ne modifie pas les paramètres de production pour faire passer les tests locaux.
+* Ne force aucun push Git et ne réécrit pas l’historique partagé.
+* Ne considère pas une ancienne sauvegarde comme une source fiable de données métier sans vérification.
+
+Ne crée pas de dépendance fonctionnelle avec un autre système de gestion universitaire.
+
+Respecte les conventions, les applications Django, les API, les services, les modèles, les permissions, les drapeaux de fonctionnalités et les tests déjà présents dans backend-injs2026.
+
+Protection de l’état initial
+
+Avant toute modification :
+
+* Examine git status.
+* Identifie la branche et le commit courant.
+* Examine les modifications locales non commitées.
+* Identifie les migrations existantes.
+* Vérifie les applications Django installées.
+* Identifie les mécanismes d’authentification, de permissions et de journalisation.
+* Localise les composants existants de gestion des emplois du temps.
+* Repère les éventuels travaux récents sur les campagnes de génération, les simulations et les tests de charge.
+* Détermine les changements réellement nécessaires.
+
+Ne supprime et n’écrase aucun travail préexistant.
+
+Conserve une trace des changements effectués et de leurs résultats.
+
+⸻
+
+3. ANALYSE OBLIGATOIRE DES HUIT DOCUMENTS DE RÉFÉRENCE
+
+Tu dois rechercher, ouvrir et analyser le contenu réel des huit fichiers suivants dans dossier_trvx :
+
+1. Mise en oeuvre GET-INJS 2026 - Proposition Arena.txt
+2. Mise en oeuvre de la GET-INJS 2026.txt
+3. Formations et Modules INJS.txt
+4. Processus expert A → Z de génération des emplois du temps INJS-LMD.txt
+5. Liste des Bâtiments, salles et espaces de formation de l'INJS.txt
+6. INJS D'ABIDJAN — RÉFÉRENTIEL EXHAUSTIF DE L'OFFRE DE FORMATION2.xlsx
+7. RÉFÉRENTIEL EXHAUSTIF DE L'OFFRE DE FORMATION.docx
+8. référentiel des infrastructures de l'INJS d'Abidjan.docx
+
+N’invente pas le contenu des documents.
+
+Si les fichiers ne sont pas présents dans l’environnement local, récupère-les depuis le dépôt accessible à Arena, au moyen de Git, de l’interface GitHub ou d’un autre mécanisme disponible.
+
+Si un document est absent de la branche courante, vérifie s’il existe dans une autre branche ou dans les fichiers du projet avant de conclure à son indisponibilité.
+
+Si un document demeure inaccessible, poursuis l’implémentation à partir des sources disponibles et documente précisément les informations manquantes.
+
+Analyse du classeur Excel
+
+Examine réellement le classeur Excel, notamment :
+
+* Les feuilles présentes.
+* Les filières.
+* Les formations.
+* Les parcours et spécialités.
+* Les niveaux et semestres.
+* Les unités d’enseignement.
+* Les éléments constitutifs des unités d’enseignement.
+* Les volumes horaires.
+* Les crédits ECTS.
+* Les enseignants, lorsqu’ils sont renseignés.
+* Les contraintes et particularités de chaque formation.
+* Les éventuelles lacunes ou contradictions du référentiel.
+
+Compare le classeur aux deux documents Word et aux documents textuels.
+
+Construis une matrice de traçabilité reliant chaque règle métier importante à sa source documentaire, à son implémentation et à ses tests.
+
+Ne considère pas qu’une information absente est automatiquement égale à zéro.
+
+Ne complète pas arbitrairement les volumes horaires, les semestres, les crédits ou les affectations manquants.
+
+Les éléments ambigus doivent être signalés et rendus configurables lorsque cela est possible.
+
+⸻
+
+4. ARCHITECTURE CIBLE ET ORGANISATION DES FICHIERS
+
+Crée à la racine du dépôt un dossier dédié nommé exactement :
+
+get-injs-app/
+
+Ce dossier constitue le livrable documentaire et fonctionnel identifiable de la mini-application.
+
+Il doit contenir les éléments propres à GET INJS APP : documentation, spécifications, référentiels exploités, architecture, scénarios de test, scripts spécifiques, résultats de validation et fichiers de conception.
+
+Les composants exécutables doivent néanmoins respecter les contraintes techniques du dépôt.
+
+Attention : le tiret de get-injs-app ne constitue pas un nom de module Python importable. Le package Django exécutable doit donc utiliser un nom Python valide, par exemple get_injs_app, dans l’emplacement cohérent avec l’architecture existante.
+
+Ne crée pas une architecture artificielle obligeant à contourner les règles d’importation Python.
+
+Organise les fichiers de manière à satisfaire simultanément les deux exigences suivantes :
+
+1. Le livrable GET INJS APP est regroupé sous get-injs-app/ à la racine.
+2. Le code exécuté par Django est importable, testé et intégré normalement dans backend-injs2026.
+
+Si certains fichiers doivent être placés dans les répertoires techniques existants pour être exécutables, documente explicitement leur rôle et leur emplacement dans get-injs-app/Conception-GET-INJS.txt.
+
+Ne duplique pas inutilement les mêmes fichiers source dans plusieurs emplacements.
+
+Modularité
+
+Sépare clairement, selon les conventions du projet :
+
+* Les modèles métier.
+* Les services de gestion des étudiants importés.
+* Les services de génération des emplois du temps.
+* Le moteur de résolution des contraintes.
+* Les règles de validation.
+* Les API REST.
+* Les permissions.
+* Les tâches longues et leur suivi.
+* Les simulateurs.
+* Les campagnes de génération.
+* Les exports et rapports.
+* Les tests automatisés.
+* Les composants d’interface.
+* La documentation technique.
+
+Réutilise les bibliothèques et les dépendances existantes lorsqu’elles répondent correctement aux besoins.
+
+N’ajoute pas de dépendance lourde sans justification technique.
+
+⸻
+
+5. OBJECTIF FONCTIONNEL DE GET INJS APP
+
+Développer une véritable mini-application de gestion et de génération des emplois du temps de l’INJS d’Abidjan.
+
+Nom affiché :
+
+GET INJS APP — Gestion des Emplois du Temps de l’INJS d’Abidjan
+
+L’application doit permettre de préparer, simuler, générer, contrôler, valider, publier, consulter et exporter les emplois du temps d’une année académique.
+
+Elle doit gérer les emplois du temps en fonction des dimensions réellement disponibles dans les référentiels :
+
+* Année académique.
+* Filière.
+* Formation.
+* Parcours.
+* Spécialité.
+* Promotion.
+* Niveau.
+* Semestre.
+* Groupe.
+* Sous-groupe, si nécessaire.
+* Vague, lorsqu’elle existe dans l’organisation pédagogique.
+* UE.
+* ECUE.
+* Enseignant.
+* Salle ou espace de formation.
+* Jour.
+* Heure.
+* Durée.
+* Type de séance.
+* Statut de validation.
+
+Ces dimensions ne doivent pas être toutes obligatoires pour chaque formation.
+
+Une génération doit pouvoir porter sur une année entière, une filière, une formation, un semestre, une promotion, un groupe ou une combinaison compatible de critères.
+
+Les filtres doivent refléter les données réellement disponibles et les règles métier applicables.
+
+⸻
+
+6. PREMIÈRE SITUATION : ÉTUDIANTS DÉJÀ INSCRITS DANS BACKEND-INJS2026
+
+GET INJS APP doit exploiter les données de scolarité existantes.
+
+Elle doit pouvoir retrouver les étudiants à partir des inscriptions administratives, des inscriptions pédagogiques, des formations, des parcours et des affectations académiques disponibles.
+
+Cependant, elle doit respecter strictement la distinction entre :
+
+* Admission.
+* Inscription administrative.
+* Inscription pédagogique.
+* Parcours académique.
+* Affectation à une promotion ou à un groupe.
+* Décision officielle de jury.
+
+Une inscription administrative validée ne doit pas créer automatiquement une inscription pédagogique si le comportement actuel du projet ne le prévoit pas.
+
+Ne modifie pas les règles de validation des inscriptions pour faciliter la génération des emplois du temps.
+
+Résultat attendu
+
+Pour une année académique donnée, le système doit pouvoir :
+
+1. Identifier les étudiants concernés.
+2. Déterminer leurs formations et affectations.
+3. Identifier les UE et ECUE applicables.
+4. Construire les groupes pédagogiques nécessaires.
+5. Déterminer les séances à planifier.
+6. Affecter les enseignants disponibles.
+7. Affecter les salles appropriées.
+8. Résoudre les contraintes.
+9. Détecter les incompatibilités.
+10. Produire les emplois du temps.
+11. Présenter les résultats pour validation.
+12. Publier les emplois du temps validés.
+13. Permettre leur consultation et leur export.
+
+Si les données d’un étudiant sont insuffisantes ou contradictoires, identifie précisément le problème.
+
+Ne fabrique pas silencieusement une affectation académique.
+
+⸻
+
+7. DEUXIÈME SITUATION : IMPORTATION D’UN FICHIER EXTERNE D’ÉTUDIANTS
+
+Cette fonctionnalité est obligatoire.
+
+GET INJS APP doit fonctionner même lorsque les étudiants ne sont pas inscrits dans backend-injs2026 et même lorsqu’aucun parcours académique exploitable n’existe pour eux dans l’application.
+
+Le fichier externe constitue alors une source de données d’entrée pour la génération des emplois du temps.
+
+Formats
+
+Prends en charge au minimum :
+
+* CSV.
+* XLSX.
+
+Ajoute d’autres formats uniquement si cela est utile et compatible avec l’architecture existante.
+
+Parcours d’importation
+
+Développe un véritable processus comprenant :
+
+1. Téléversement du fichier.
+2. Sélection de l’année académique cible.
+3. Identification de la feuille Excel pertinente.
+4. Détection des colonnes.
+5. Association des colonnes aux champs attendus.
+6. Prévisualisation des données.
+7. Validation du format.
+8. Contrôle des champs obligatoires.
+9. Détection des doublons.
+10. Détection des incohérences.
+11. Contrôle des filières, formations et niveaux.
+12. Identification des groupes et vagues.
+13. Rapport d’anomalies.
+14. Confirmation de l’importation.
+15. Enregistrement du lot d’importation.
+16. Préparation des données pour la génération.
+17. Possibilité de corriger les erreurs et de réimporter.
+18. Consultation du bilan final.
+
+Ne rends pas l’importation définitive avant les validations nécessaires.
+
+Ne rejette pas l’ensemble du fichier simplement parce que certaines lignes sont invalides : lorsque cela est sûr et cohérent, conserve les lignes valides et isole les lignes rejetées avec leur motif.
+
+Le comportement doit être explicite et documenté.
+
+Champs possibles
+
+Les champs doivent être configurables en fonction des données réellement disponibles :
+
+* Matricule.
+* Nom.
+* Prénoms.
+* Sexe, si nécessaire.
+* Année académique.
+* Filière.
+* Formation.
+* Parcours.
+* Spécialité.
+* Niveau.
+* Semestre.
+* Promotion.
+* Groupe.
+* Sous-groupe.
+* Vague.
+* Statut d’inscription.
+* UE ou ECUE, lorsque les données sont disponibles.
+
+Ne rends pas obligatoires des champs qui ne sont pas nécessaires au scénario de génération considéré.
+
+Résolution des affectations académiques
+
+Si le fichier ne contient pas de parcours académique, le système doit pouvoir construire une affectation opérationnelle à partir des données disponibles, notamment :
+
+* Le référentiel de formation.
+* L’année académique sélectionnée.
+* La formation.
+* Le niveau.
+* Le semestre.
+* La promotion.
+* Le groupe.
+* La vague.
+
+Lorsque des règles nécessaires ne peuvent pas être déterminées, demande une configuration explicite dans l’interface ou signale les données manquantes.
+
+N’invente pas le parcours d’un étudiant.
+
+N’écris pas automatiquement dans les tables officielles d’inscription des étudiants importés simplement pour contourner l’absence de parcours.
+
+Isolation des données externes
+
+Crée une source de données ou une campagne d’importation identifiable.
+
+Distingue clairement :
+
+* Les étudiants issus de la scolarité officielle.
+* Les étudiants importés depuis un fichier.
+* Les données préparées pour la génération.
+* Les éventuelles correspondances avec des étudiants existants.
+
+Préviens les doublons et les conflits entre les sources.
+
+Un import externe ne doit jamais écraser silencieusement les informations officielles d’un étudiant.
+
+Le fonctionnement doit être idempotent lorsque le même fichier est importé une nouvelle fois selon les mêmes paramètres.
+
+Capacité
+
+Le système doit être conçu pour traiter au minimum :
+
+* 3 500 étudiants.
+* 7 000 étudiants.
+* 14 000 étudiants.
+
+Ces valeurs constituent des objectifs de dimensionnement, et non une preuve de performance.
+
+Les performances doivent être mesurées sur un jeu de données synthétique et reproductible.
+
+⸻
+
+8. MOTEUR DE GÉNÉRATION DES EMPLOIS DU TEMPS
+
+Le moteur de génération constitue le cœur métier de GET INJS APP.
+
+Il doit s’appuyer sur les informations réelles du référentiel et sur les contraintes de l’INJS.
+
+Contraintes obligatoires
+
+Le moteur doit prendre en compte, selon les données et les règles applicables :
+
+Étudiants
+
+* Un étudiant ne peut pas assister à deux séances simultanées.
+* Les séances doivent correspondre à sa formation et à son groupe.
+* Les UE et ECUE doivent être compatibles avec le niveau et le semestre.
+* Les contraintes de capacité des groupes doivent être respectées.
+
+Enseignants
+
+* Un enseignant ne peut pas assurer deux séances simultanément.
+* Les disponibilités connues doivent être respectées.
+* Les volumes horaires doivent être cohérents avec les données de référence.
+* Les compétences ou affectations pédagogiques doivent être respectées lorsqu’elles sont renseignées.
+
+Salles et infrastructures
+
+* Une salle ne peut pas accueillir deux séances simultanément.
+* La capacité de la salle doit être suffisante.
+* Le type d’espace doit être adapté à l’activité.
+* Les indisponibilités et contraintes connues doivent être respectées.
+* Les installations sportives doivent être traitées comme des ressources spécifiques lorsqu’elles sont nécessaires.
+
+Organisation pédagogique
+
+* Les horaires doivent respecter les plages autorisées.
+* Les durées doivent correspondre aux paramètres de séance.
+* Les volumes horaires doivent être cohérents avec les référentiels.
+* Les règles de progression et les semestres doivent être respectés.
+* Les cours magistraux, travaux dirigés, travaux pratiques et activités sportives doivent être distingués lorsque cela s’applique.
+
+Contraintes supplémentaires
+
+* Pauses.
+* Indisponibilités.
+* Capacités maximales.
+* Temps de déplacement, lorsqu’une donnée fiable existe.
+* Contraintes spécifiques aux formations.
+* Prévention des conflits entre groupes partageant des ressources.
+
+Contraintes dures et préférences
+
+Distingue deux catégories :
+
+1. Contraintes dures : leur violation interdit la validation de l’emploi du temps.
+2. Contraintes souples : elles peuvent être optimisées sans rendre nécessairement la génération impossible.
+
+Une préférence ne doit jamais être traitée comme une contrainte dure sans justification métier.
+
+Algorithme
+
+Choisis une stratégie adaptée aux composants et dépendances existants.
+
+Tu peux notamment utiliser :
+
+* Une génération par contraintes.
+* Une stratégie de placement progressif.
+* Une recherche heuristique.
+* Un moteur d’optimisation existant.
+* Une approche hybride combinant placement, détection des conflits et amélioration itérative.
+
+Ne choisis pas une technologie uniquement parce qu’elle est populaire.
+
+Justifie le choix par les contraintes du projet, les performances mesurées et la maintenabilité.
+
+Le moteur doit être déterministe lorsque les mêmes données, paramètres et graine de génération sont utilisés.
+
+Si aucune solution complète n’est trouvée, retourne un état explicite, les contraintes bloquantes et des pistes de correction.
+
+Ne présente jamais un emploi du temps comportant des violations de contraintes dures comme un résultat validé.
+
+Résultats attendus
+
+Pour chaque génération, conserve :
+
+* L’identifiant de la campagne.
+* L’année académique.
+* Les critères de génération.
+* La source des étudiants.
+* La version des référentiels utilisés.
+* Les paramètres.
+* La date de création.
+* L’auteur.
+* Le statut.
+* Le nombre d’étudiants concernés.
+* Le nombre de groupes.
+* Le nombre de séances.
+* Le nombre de séances planifiées.
+* Le nombre de séances non planifiées.
+* Le nombre de conflits.
+* Le détail des anomalies.
+* Les mesures de performance.
+* Le résultat de la validation.
+* La version publiée, le cas échéant.
+
+⸻
+
+9. SIMULATEUR, CAMPAGNES ET PUBLICATION
+
+GET INJS APP doit proposer un espace de simulation permettant de préparer une génération avant sa publication officielle.
+
+Simulateur
+
+L’utilisateur autorisé doit pouvoir :
+
+* Créer une simulation.
+* Modifier ses paramètres.
+* Sélectionner les étudiants ou les groupes concernés.
+* Sélectionner l’année académique.
+* Définir les ressources disponibles.
+* Lancer une simulation.
+* Consulter les résultats.
+* Visualiser les conflits.
+* Comparer les variantes.
+* Corriger les paramètres.
+* Relancer la simulation.
+* Enregistrer les résultats.
+* Reprendre une simulation sauvegardée.
+* Abandonner une simulation sans modifier les emplois du temps officiels.
+
+Les modifications apportées à une simulation ne doivent pas affecter les emplois du temps déjà publiés.
+
+Campagnes
+
+Une campagne doit permettre de regrouper et de suivre les générations par année académique et par périmètre métier.
+
+Elle doit offrir :
+
+* Le suivi de progression.
+* Le statut de chaque tâche.
+* Les erreurs éventuelles.
+* Les résultats partiels.
+* Le nombre d’éléments traités.
+* Les temps d’exécution.
+* La possibilité de reprendre une tâche interrompue lorsque cela est sûr.
+* L’identification des résultats produits.
+
+Les traitements longs ne doivent pas bloquer inutilement les requêtes HTTP.
+
+Utilise le mécanisme de tâches asynchrones déjà présent dans le projet, s’il est adapté.
+
+N’ajoute pas un nouveau système de traitement asynchrone sans nécessité démontrée.
+
+Validation et publication
+
+Prévois un workflow clair :
+
+BROUILLON → SIMULATION → À CORRIGER ou PRÊT À VALIDER → VALIDÉ → PUBLIÉ.
+
+Adapte les transitions si le modèle existant impose une convention différente.
+
+La validation doit contrôler les contraintes dures.
+
+La publication doit être autorisée uniquement aux utilisateurs disposant des permissions nécessaires.
+
+Une nouvelle génération ne doit pas écraser silencieusement un emploi du temps officiel.
+
+Prévois une gestion explicite des versions et, lorsque cela est nécessaire, un mécanisme de retour à une version antérieure.
+
+⸻
+
+10. MODÈLE DE DONNÉES ET PERSISTANCE
+
+Conçois des modèles cohérents et normalisés, en évitant les duplications inutiles.
+
+Selon les besoins réels et les conventions du projet, prévois les concepts suivants :
+
+* Année académique de référence.
+* Référentiel de formation.
+* Source de données.
+* Lot d’importation.
+* Ligne importée ou rapport d’anomalies.
+* Affectation pédagogique de génération.
+* Groupe de génération.
+* Campagne.
+* Simulation.
+* Séance planifiée.
+* Affectation d’enseignant.
+* Affectation de salle.
+* Conflit détecté.
+* Validation.
+* Publication.
+* Version d’emploi du temps.
+* Journal d’exécution.
+
+Ne crée pas systématiquement un nouveau modèle si un modèle existant répond déjà au besoin.
+
+Définis les contraintes d’unicité pertinentes.
+
+Utilise les transactions de base de données pour les opérations qui doivent être atomiques.
+
+Préviens les courses concurrentes et les doubles lancements de génération.
+
+Utilise des index adaptés aux recherches courantes et aux volumes attendus.
+
+Évite les requêtes N+1.
+
+Évite de charger inutilement les 14 000 étudiants en mémoire lorsque des traitements par lots sont plus adaptés.
+
+Toute nouvelle migration doit être contrôlée, réversible lorsque cela est raisonnablement possible et testée sur une base de test.
+
+⸻
+
+11. API, SÉCURITÉ ET PERMISSIONS
+
+Intègre GET INJS APP au système d’authentification et d’autorisation existant.
+
+Ne crée pas un second système d’identité.
+
+Réutilise les permissions métier, les rôles et les mécanismes de contrôle du projet.
+
+Les rôles et actions doivent suivre le catalogue réellement applicable, sans créer de privilèges excessifs.
+
+Prévois, selon les conventions existantes, les fonctionnalités API nécessaires pour :
+
+* Consulter les référentiels.
+* Consulter les années académiques.
+* Importer un fichier.
+* Prévisualiser un import.
+* Valider un import.
+* Consulter les anomalies.
+* Préparer une génération.
+* Créer une simulation.
+* Lancer une campagne.
+* Suivre son état.
+* Consulter les conflits.
+* Valider une génération.
+* Publier un emploi du temps.
+* Consulter les emplois du temps.
+* Exporter les résultats.
+* Consulter l’historique.
+
+Adapte les chemins au style de routage existant.
+
+Ne suppose pas qu’un utilisateur authentifié possède toutes les permissions.
+
+Contrôle les autorisations côté serveur.
+
+Protège les imports de fichiers : type, taille, validation du contenu, accès, stockage et traitement.
+
+Évite les injections, les accès non autorisés entre campagnes et les divulgations de données personnelles.
+
+Ne journalise pas inutilement les données personnelles complètes des étudiants.
+
+Les endpoints de lancement doivent éviter les doublons et les exécutions concurrentes incohérentes.
+
+⸻
+
+12. INTERFACE UTILISATEUR
+
+L’interface doit être intégrée à l’application existante, sans créer un portail parallèle.
+
+Respecte la stack frontend réellement installée dans le dépôt.
+
+Ne migre pas le frontend vers Flutter si l’application utilise déjà une autre stack, sauf si une décision d’architecture existante l’exige explicitement.
+
+La mention de Flutter dans le besoin architectural ne justifie pas une réécriture du frontend existant.
+
+Direction UX/UI
+
+Construis une interface professionnelle adaptée à l’INJS d’Abidjan.
+
+Respecte l’identité visuelle existante, notamment le bleu foncé et le bleu ciel lorsqu’ils correspondent à la charte de l’application.
+
+L’interface doit être claire, cohérente, responsive et accessible.
+
+Ne réalise pas une simple page de démonstration.
+
+Écrans attendus
+
+1. Tableau de bord
+
+* Année académique sélectionnée.
+* Nombre d’étudiants concernés.
+* Répartition par filière.
+* Répartition par formation.
+* Nombre de groupes.
+* Campagnes en cours.
+* Générations terminées.
+* Générations en échec.
+* Conflits détectés.
+* Emplois du temps publiés.
+
+2. Référentiels
+
+* Consultation des filières et formations.
+* Consultation des niveaux et semestres.
+* Consultation des groupes.
+* Consultation des salles et espaces.
+* Consultation des enseignants et ressources disponibles.
+
+3. Importation
+
+* Téléversement.
+* Mapping des colonnes.
+* Prévisualisation.
+* Résumé des anomalies.
+* Validation.
+* Suivi du traitement.
+* Téléchargement du rapport d’importation.
+
+4. Génération
+
+* Sélection de l’année académique.
+* Sélection des étudiants ou de leur source.
+* Filtres par filière, formation, groupe, vague et semestre.
+* Paramètres de génération.
+* Lancement.
+* Progression.
+* Résultats.
+* Conflits.
+* Relance après correction.
+
+5. Simulateur
+
+* Création.
+* Modification.
+* Comparaison.
+* Sauvegarde.
+* Visualisation.
+* Validation.
+
+6. Consultation des emplois du temps
+
+* Vue hebdomadaire.
+* Vue journalière.
+* Vue par étudiant.
+* Vue par groupe.
+* Vue par formation.
+* Vue par enseignant.
+* Vue par salle.
+* Vue par semestre.
+* Vue globale d’une année académique, dans les limites des permissions.
+
+7. Validation et publication
+
+* Contrôle des conflits.
+* Rapport de validation.
+* Validation par utilisateur autorisé.
+* Publication.
+* Historique des versions.
+
+8. Rapports et exports
+
+* PDF.
+* Excel.
+* CSV, lorsque pertinent.
+* Rapports de conflits.
+* Rapports de génération.
+* Rapports de couverture des étudiants.
+* Rapports de charge des salles et des enseignants.
+
+Tous les écrans doivent être raccordés aux véritables API et aux données persistées.
+
+Les indicateurs ne doivent pas être alimentés par des valeurs fictives en production.
+
+⸻
+
+13. PERFORMANCE : OBJECTIF DE 3 500 À 14 000 ÉTUDIANTS
+
+Ne confonds pas la capacité d’importation avec la capacité de génération.
+
+Importer 14 000 lignes dans une base ne prouve pas qu’un emploi du temps complet peut être généré correctement pour 14 000 étudiants.
+
+La génération doit être organisée en fonction des groupes pédagogiques et des ressources partagées.
+
+Évite de produire une séance distincte par étudiant lorsqu’une même séance collective concerne un groupe entier.
+
+Les conflits doivent néanmoins tenir compte de l’ensemble des étudiants concernés.
+
+Optimisations attendues
+
+* Traitements par lots.
+* Requêtes optimisées.
+* Indexation.
+* Pagination.
+* Opérations groupées sur la base.
+* Réutilisation des données de référence.
+* Éviction des calculs redondants.
+* Tâches asynchrones pour les opérations longues.
+* Progression observable.
+* Gestion contrôlée des erreurs.
+* Reprise sûre des opérations interrompues.
+* Mesure de la consommation mémoire et des temps de traitement.
+
+Tests de charge
+
+Construis un jeu de données synthétique reproductible pour :
+
+* 3 500 étudiants.
+* 7 000 étudiants.
+* 14 000 étudiants.
+
+Teste séparément :
+
+1. L’importation.
+2. La validation des données.
+3. La construction des groupes.
+4. La préparation des séances.
+5. La génération.
+6. La détection des conflits.
+7. La persistance.
+8. La consultation des résultats.
+9. Les exports lorsque cela est réalisable.
+
+Mesure les temps, les volumes traités, les erreurs et la mémoire disponible lorsque l’environnement le permet.
+
+Fixe des objectifs de performance explicites à partir des capacités de l’environnement de test.
+
+N’annonce aucune durée de génération garantie sans mesure.
+
+Si le moteur atteint une limite, identifie précisément le goulot d’étranglement et améliore-le.
+
+Ne fabrique pas un résultat de performance.
+
+⸻
+
+14. TESTS ET CRITÈRES DE QUALITÉ
+
+Tu dois ajouter des tests automatisés correspondant aux nouvelles fonctionnalités.
+
+Tests métier
+
+* Sélection des étudiants d’une année académique.
+* Respect des inscriptions existantes.
+* Importation d’étudiants externes sans parcours enregistré.
+* Mapping des colonnes.
+* Gestion des doublons.
+* Gestion des lignes invalides.
+* Respect des formations.
+* Respect des niveaux et semestres.
+* Constitution des groupes.
+* Génération des séances.
+* Détection des conflits.
+* Capacité des salles.
+* Disponibilités des enseignants.
+* Respect des contraintes dures.
+* Validation.
+* Publication.
+* Versionnement.
+* Isolation des simulations.
+* Isolation des données importées.
+* Idempotence des opérations.
+* Contrôle des permissions.
+
+Tests de non-régression
+
+Les tests doivent démontrer que les fonctionnalités existantes restent opérationnelles.
+
+Teste notamment les applications Django touchées et leurs dépendances.
+
+Conserve les tests préexistants.
+
+Ne modifie pas artificiellement leurs attentes pour masquer une régression.
+
+Lorsqu’un test échoue, détermine si le problème vient du code modifié, d’une hypothèse métier erronée, de l’environnement ou d’un défaut préexistant.
+
+Corrige les défauts introduits par ton travail.
+
+Pour un défaut préexistant, documente le résultat et vérifie qu’il n’a pas été aggravé.
+
+Qualité technique
+
+Vérifie au minimum :
+
+* Les imports Python.
+* Les contrôles Django.
+* Les migrations.
+* Les tests unitaires.
+* Les tests d’intégration.
+* Les tests API.
+* Les tests frontend disponibles.
+* Le lint du frontend si configuré.
+* Le build de production du frontend.
+* Les permissions.
+* Les erreurs dans les journaux.
+* Les éventuelles requêtes N+1.
+* La compatibilité avec les paramètres du projet.
+
+N’affirme pas que l’ensemble du projet est vert si tu n’as testé qu’un sous-ensemble.
+
+Distingue les tests exécutés, les tests réussis, les tests échoués et les tests non exécutés.
+
+⸻
+
+15. INTÉGRATION SANS RÉGRESSION
+
+L’intégration doit être progressive.
+
+Avant de modifier les fichiers de configuration, identifie les applications, routes, dépendances et conventions existantes.
+
+Vérifie les migrations et les modèles susceptibles d’être affectés.
+
+Respecte les règles métier déjà établies.
+
+Ne modifie pas les comportements de scolarité sans nécessité démontrée.
+
+Ne désactive pas un drapeau de fonctionnalité existant pour contourner un problème.
+
+Si une activation progressive est appropriée, utilise le mécanisme de feature flags existant.
+
+Le nouveau module doit pouvoir être testé indépendamment de la génération officielle.
+
+Les simulations et les imports externes doivent rester isolés tant qu’ils ne sont pas validés.
+
+Ne touche pas à la base de production pendant le développement et les tests.
+
+Ne lance aucune opération de déploiement en production sans autorisation explicite.
+
+⸻
+
+16. DOCUMENT OBLIGATOIRE : Conception-GET-INJS.txt
+
+Crée le fichier suivant à la racine du dossier dédié :
+
+get-injs-app/Conception-GET-INJS.txt
+
+Ce document doit être un compte rendu technique complet et fidèle à l’implémentation réellement réalisée.
+
+Il doit contenir :
+
+A. Présentation
+
+* Objectif de GET INJS APP.
+* Périmètre fonctionnel.
+* Architecture retenue.
+* Principales décisions techniques.
+
+B. Analyse documentaire
+
+* Liste des huit documents examinés.
+* Informations métier extraites.
+* Règles de génération.
+* Référentiels utilisés.
+* Lacunes, ambiguïtés et arbitrages.
+* Correspondance entre exigences et implémentation.
+
+C. Architecture
+
+* Arborescence des fichiers créés.
+* Emplacement du package Django.
+* Emplacement des composants frontend.
+* Modèles et relations.
+* Services.
+* API.
+* Permissions.
+* Moteur de génération.
+* Importation.
+* Simulateur.
+* Campagnes.
+* Exports.
+
+D. Implémentation
+
+* Fonctionnalités réellement terminées.
+* Fonctionnalités partiellement réalisées.
+* Fonctionnalités non réalisées, avec justification.
+* Principales modifications.
+* Migrations.
+* Dépendances ajoutées.
+* Mesures de sécurité.
+* Stratégie de performance.
+
+E. Commandes réellement exécutées
+
+Consigne les commandes significatives utilisées pour :
+
+* Explorer le dépôt.
+* Examiner les documents.
+* Installer les dépendances éventuellement nécessaires.
+* Créer les fichiers.
+* Générer les migrations.
+* Appliquer les migrations sur l’environnement de test.
+* Exécuter les tests.
+* Exécuter les tests de charge.
+* Contrôler Django.
+* Exécuter le lint.
+* Construire le frontend.
+* Vérifier l’état Git.
+* Produire les résultats de validation.
+
+Indique les commandes avec leur répertoire d’exécution et leur résultat réel.
+
+N’invente aucune commande exécutée.
+
+Pour les commandes importantes, précise si elles ont réussi, échoué ou été relancées après correction.
+
+N’inclus aucun secret, jeton, mot de passe ou contenu sensible.
+
+F. Résultats des tests
+
+* Commandes exactes.
+* Nombre de tests exécutés.
+* Nombre de tests réussis.
+* Nombre de tests échoués.
+* Tests non exécutés.
+* Tests de charge.
+* Volumes traités.
+* Temps mesurés.
+* Limites identifiées.
+* Régressions éventuelles.
+
+G. Utilisation
+
+Explique précisément comment :
+
+* Accéder à GET INJS APP.
+* Sélectionner une année académique.
+* Importer un fichier.
+* Corriger les anomalies.
+* Lancer une génération.
+* Simuler plusieurs variantes.
+* Analyser les conflits.
+* Valider un emploi du temps.
+* Publier une version.
+* Consulter et exporter les résultats.
+
+H. Exploitation et maintenance
+
+* Configuration requise.
+* Variables d’environnement nécessaires, sans valeurs secrètes.
+* Commandes de lancement.
+* Commandes de test.
+* Migrations.
+* Tâches asynchrones.
+* Surveillance des traitements.
+* Procédure de diagnostic.
+* Sauvegarde et restauration applicables.
+* Limites connues.
+* Pistes d’amélioration.
+
+Le document doit être suffisamment précis pour qu’un autre développeur puisse comprendre, vérifier, exécuter et maintenir le module.
+
+Il doit être téléchargeable depuis l’interface de travail et présent dans le dépôt.
+
+⸻
+
+17. PLAN D’EXÉCUTION IMPOSÉ
+
+Exécute les lots suivants dans l’ordre, en adaptant leur contenu à l’état réel du dépôt.
+
+LOT 0 — État initial et protection
+
+* Inspecter Git.
+* Identifier la branche et le commit.
+* Repérer les modifications locales.
+* Identifier l’environnement Django et frontend.
+* Repérer les composants GET-INJS existants.
+* Préserver l’état initial.
+
+Critère de sortie : l’état du projet est compris et les risques de perte de travail sont maîtrisés.
+
+LOT 1 — Analyse des référentiels
+
+* Lire les huit documents.
+* Analyser le classeur Excel.
+* Identifier les règles de formation.
+* Identifier les ressources et infrastructures.
+* Établir la matrice de traçabilité.
+
+Critère de sortie : les données nécessaires à la conception sont identifiées et les lacunes sont documentées.
+
+LOT 2 — Architecture et modèle de données
+
+* Définir les composants manquants.
+* Réutiliser les composants existants.
+* Concevoir les modèles et services nécessaires.
+* Définir les contraintes de cohérence.
+* Définir les API et les permissions.
+* Préparer les tests.
+
+Critère de sortie : l’architecture est compatible avec le projet et permet les deux modes de génération.
+
+LOT 3 — Importation externe
+
+* Développer l’import CSV/XLSX.
+* Implémenter le mapping.
+* Ajouter la prévisualisation.
+* Ajouter la validation.
+* Gérer les doublons.
+* Produire le rapport d’anomalies.
+* Isoler les données importées.
+* Tester l’idempotence.
+
+Critère de sortie : un fichier externe peut alimenter le processus de génération sans imposer une inscription artificielle dans les tables officielles.
+
+LOT 4 — Moteur de génération
+
+* Exploiter les inscriptions existantes.
+* Exploiter les données importées.
+* Construire les groupes.
+* Préparer les séances.
+* Affecter les ressources.
+* Détecter les conflits.
+* Optimiser la planification.
+* Produire des résultats persistés.
+
+Critère de sortie : une génération fonctionnelle est démontrée sur des données réalistes et contrôlées.
+
+LOT 5 — Simulateur et campagnes
+
+* Développer la simulation.
+* Ajouter la sauvegarde.
+* Ajouter le suivi de progression.
+* Ajouter la gestion des erreurs.
+* Ajouter la validation.
+* Ajouter la publication versionnée.
+
+Critère de sortie : les simulations ne modifient pas les emplois du temps officiels et la publication est contrôlée.
+
+LOT 6 — Interface et API
+
+* Ajouter les écrans nécessaires.
+* Connecter les API.
+* Respecter les permissions.
+* Implémenter les filtres.
+* Ajouter les rapports et exports.
+* Vérifier la cohérence visuelle.
+
+Critère de sortie : les fonctionnalités sont utilisables dans l’interface réelle.
+
+LOT 7 — Tests de charge et optimisation
+
+* Tester 3 500 étudiants.
+* Tester 7 000 étudiants.
+* Tester 14 000 étudiants.
+* Mesurer les performances.
+* Identifier les goulots d’étranglement.
+* Corriger les problèmes.
+* Rejouer les tests.
+
+Critère de sortie : les résultats sont mesurés et les limites restantes sont documentées.
+
+LOT 8 — Non-régression générale
+
+* Contrôler Django.
+* Vérifier les migrations.
+* Exécuter les tests backend.
+* Exécuter les tests frontend.
+* Construire le frontend.
+* Corriger les défauts introduits.
+* Vérifier les permissions.
+* Vérifier les routes et l’intégration.
+
+Critère de sortie : les résultats de validation sont établis et les régressions introduites par le module sont corrigées.
+
+LOT 9 — Documentation et clôture
+
+* Compléter Conception-GET-INJS.txt.
+* Vérifier les fichiers du module.
+* Vérifier l’état Git.
+* Contrôler les migrations et les fichiers modifiés.
+* Préparer le rapport final.
+
+Critère de sortie : le livrable est identifiable, documenté, testable et prêt pour revue.
+
+⸻
+
+18. PROTOCOLE ANTI-BLOCAGE
+
+Tu dois poursuivre l’exécution malgré les difficultés techniques ordinaires.
+
+Si un fichier est introuvable
+
+* Recherche dans le dépôt.
+* Vérifie les branches accessibles.
+* Vérifie les chemins et noms exacts.
+* Vérifie les fichiers locaux disponibles.
+* Poursuis avec les informations récupérables.
+* Documente le manque si nécessaire.
+
+Si une dépendance manque
+
+* Vérifie si une solution équivalente est déjà installée.
+* Consulte la configuration du projet.
+* Privilégie une dépendance existante.
+* Installe une nouvelle dépendance uniquement si l’environnement l’autorise et si elle est nécessaire.
+* Documente toute dépendance ajoutée.
+
+Si une migration échoue
+
+* Lis l’erreur complète.
+* Identifie la cause.
+* Vérifie l’état des migrations.
+* Corrige la migration ou le modèle selon le problème.
+* Recommence sur une base de test propre ou restaurable.
+* Ne supprime pas les données existantes pour contourner l’erreur.
+
+Si un test échoue
+
+* Identifie le test exact.
+* Examine le traceback.
+* Détermine si le défaut est nouveau ou préexistant.
+* Corrige le code lorsque le défaut vient de l’implémentation.
+* Relance le test ciblé.
+* Relance ensuite la suite pertinente.
+
+Ne supprime pas le test et ne le désactive pas simplement pour obtenir un résultat vert.
+
+Si une commande prend trop de temps
+
+* Vérifie si le processus travaille toujours.
+* Consulte les journaux ou la progression.
+* Isole le sous-ensemble de tests ou de traitements concerné.
+* Utilise un délai raisonnable.
+* Évite de relancer plusieurs fois la même opération en parallèle.
+* Ne tue pas un traitement utile sans comprendre son état.
+
+Si une API ou un service externe est inaccessible
+
+* Vérifie la connectivité et la configuration.
+* Utilise les données locales disponibles pour poursuivre les tests.
+* Crée des doubles de test lorsque cela est approprié.
+* Ne prétends pas avoir validé l’intégration réelle si elle n’a pas pu être testée.
+
+Si une décision métier est ambiguë
+
+* Recherche d’abord dans les huit documents.
+* Compare les référentiels.
+* Examine les règles déjà appliquées dans le projet.
+* Privilégie les décisions réversibles et configurables.
+* Documente les hypothèses.
+* N’invente jamais silencieusement une règle officielle.
+
+Si un blocage persiste
+
+Après plusieurs tentatives infructueuses, change de stratégie technique.
+
+Ne répète pas indéfiniment la même commande ou la même approche.
+
+Identifie une solution alternative qui respecte la sécurité, les règles métier et l’architecture existante.
+
+L’objectif est de résoudre les difficultés, pas de produire un rapport expliquant pourquoi le travail n’a pas été effectué.
+
+⸻
+
+19. CONDITIONS DE RÉUSSITE
+
+La mission n’est considérée comme terminée que si les conditions suivantes sont vérifiées.
+
+Fonctionnalités
+
+* Le module est intégré à backend-injs2026.
+* Les étudiants inscrits dans l’application peuvent être pris en charge.
+* Les étudiants externes peuvent être importés sans inscription artificielle.
+* Les fichiers CSV et XLSX sont traités.
+* Les anomalies d’importation sont identifiables.
+* Les groupes et séances sont construits à partir de données explicites.
+* Les contraintes dures sont contrôlées.
+* Les conflits sont identifiables.
+* Les simulations sont isolées.
+* Les campagnes peuvent être suivies.
+* La validation et la publication sont contrôlées.
+* Les emplois du temps peuvent être consultés.
+* Les exports sont réellement fonctionnels.
+* Les autorisations sont appliquées côté serveur.
+
+Performance
+
+* Les tests couvrent les volumes de 3 500, 7 000 et 14 000 étudiants.
+* Les mesures sont réellement obtenues ou les limites de l’environnement sont explicitement établies.
+* Aucun chiffre de performance n’est inventé.
+* Les défauts de performance détectés sont corrigés ou documentés précisément.
+
+Intégration
+
+* Les migrations sont cohérentes.
+* Les routes sont opérationnelles.
+* Les modèles sont importables.
+* Les tests pertinents réussissent.
+* Les fonctionnalités existantes ne sont pas volontairement dégradées.
+* Le frontend compile lorsque son environnement le permet.
+* Aucune donnée de production n’a été modifiée.
+
+Livrables
+
+* Le dossier racine get-injs-app/ existe.
+* Le fichier get-injs-app/Conception-GET-INJS.txt existe.
+* Les tests du module sont présents.
+* Les instructions d’utilisation sont disponibles.
+* Le rapport final correspond aux résultats réels.
+
+Ne déclare pas la mission terminée si ces conditions ne sont pas remplies.
+
+Si une condition demeure impossible à satisfaire, termine les autres travaux, explique précisément le blocage et indique les preuves qui permettent de le constater.
+
+⸻
+
+20. RAPPORT FINAL OBLIGATOIRE
+
+À la fin de l’exécution, fournis un rapport synthétique et vérifiable comprenant :
+
+1. Le commit initial.
+2. Le commit final, si un commit a été créé.
+3. La branche utilisée.
+4. Les fonctionnalités implémentées.
+5. Les fonctionnalités réutilisées.
+6. Les nouveaux fichiers et leur emplacement.
+7. Les modèles et migrations ajoutés.
+8. Les API créées.
+9. Les écrans disponibles.
+10. Le fonctionnement de l’import externe.
+11. Le fonctionnement du moteur de génération.
+12. Les résultats des tests backend.
+13. Les résultats des tests frontend.
+14. Le résultat du build.
+15. Les mesures de performance obtenues.
+16. Les éventuels tests échoués ou non exécutés.
+17. Les risques et limites restants.
+18. Le chemin de Conception-GET-INJS.txt.
+19. Les commandes permettant de reproduire les tests.
+20. L’état Git final.
+
+Distingue clairement les éléments terminés, les éléments partiels et les éléments non réalisés.
+
+Ne déclare pas que le dépôt a été poussé sur GitHub si aucun push n’a effectivement été réalisé.
+
+Ne déclare pas que le déploiement en production est effectué si tu ne l’as pas exécuté avec l’autorisation requise.
+
+⸻
+
+ORDRE FINAL D’EXÉCUTION
+
+COMMENCE MAINTENANT.
+
+Inspecte le dépôt existant, récupère les huit documents, analyse les règles métier, puis réalise l’implémentation complète de GET INJS APP.
+
+Ne te contente pas de décrire ce que tu vas faire.
+
+Ne t’arrête pas à l’audit.
+
+Ne livre pas uniquement des maquettes.
+
+Ne remplace pas les fonctionnalités réelles par des simulations fictives.
+
+Exécute les commandes, modifie les fichiers, développe les fonctionnalités, ajoute les tests, corrige les erreurs, mesure les performances et rédige le document de conception.
+
+Préserve le travail existant et l’intégrité des données.
+
+Privilégie une solution simple, robuste, testable, sécurisée et compatible avec l’architecture réelle de backend-injs2026.
+
+Poursuis jusqu’à obtenir le meilleur résultat techniquement réalisable et vérifiable dans l’environnement disponible.
+
+Ta mission est de LIVRER GET INJS APP, et non de produire une proposition de réalisation.
