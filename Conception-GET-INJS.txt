@@ -571,7 +571,8 @@ PARTIE 6 — TESTS ET PERFORMANCES
   Configuration Django                  PASS          manage.py check → 0 issue
   Migrations cohérentes                 PASS          makemigrations --check → « No changes »
   Migration 0008 appliquée              PASS          migrate edts → OK
-  Tests backend groupe EDT              PASS          523 tests, code 0 (./arena/tests_par_groupe.sh edt)
+  Tests backend groupe EDT              PASS          538 tests, code 0 (./arena/tests_par_groupe.sh edt)
+  dont identifiants de groupe (nouveau) PASS          15 tests (edts.tests.test_identifiants_groupes)
   dont outil de mesure                  PASS          4 tests (edts.tests.test_benchmark)
   dont réglage reproductible (nouveau)  PASS          16 tests (edts.tests.test_regler_contraintes)
   dont bilan annuel souple              PASS          3 tests (BilanContraintesSouplesTests)
@@ -611,6 +612,9 @@ PARTIE 6 — TESTS ET PERFORMANCES
   Charge avec règles souples actives     PASS          voir 6.2 bis : +5,4 % (3 500), +6,9 % (14 000),
                                                      plan identique, zéro séance perdue
   git diff --check                      PASS          aucune erreur d'espace
+  Suite backend sur PostgreSQL 16.2     PASS          les neuf groupes, 2 733 tests, code 0
+                                                     (serveur réel via pgserver, base injs_pg)
+  Charge sur PostgreSQL                 PASS          voir 6.2 ter : 2,7× plus rapide que SQLite
   Navigateur réel (E2E écran)           NOT RUN       pas de navigateur headless (libnss3 absent)
   Aperçu mobile (Flutter web)           BLOCKED       SDK Flutter absent et non téléchargeable
                                                      (storage.googleapis.com et pub.dev : TLS refusé).
@@ -690,6 +694,51 @@ PARTIE 6 — TESTS ET PERFORMANCES
       et les 2 065 séances restent placées : la politique n'écarte rien, à
       l'échelle annuelle comme au niveau du groupe.
 
+6.2 ter PostgreSQL 16.2 — suite complète et charge (2026-10-30)
+
+  Le bac à sable n'avait jamais exécuté le projet sur PostgreSQL : la CI
+  distante non plus. Le serveur a été obtenu sans privilège racine grâce au
+  paquet `pgserver` (binaires PostgreSQL embarqués), base `injs_pg`, socket
+  Unix local. **PostgreSQL 16.2, 208 tables migrées** (migrations réelles,
+  aucune table créée à la main).
+
+  Neuf groupes rejoués sur PostgreSQL, un par un, avec leur code de sortie :
+
+    Groupe          Tests  SQLite    PostgreSQL
+    --------------  -----  --------  ----------
+    socle             179    68 s       97 s
+    pilotage          201    25 s       18 s
+    divers            139    26 s       19 s
+    scolarite         454   106 s       92 s
+    formations        270    64 s       48 s
+    auth              242   128 s       95 s
+    evaluations       230    81 s       63 s
+    habilitations     480   272 s      625 s
+    edt + presences   538   137 s      107 s
+    --------------  -----  --------  ----------
+    TOTAL           2 733              ~1 164 s
+
+  Charge (même commande, mêmes données synthétiques) :
+
+    Volume  Base        Import      Génération  Placées  NP
+    ------  ----------  ----------  ----------  -------  --
+    3 500   SQLite       14 663 ms    8 598 ms    2 065   0
+    3 500   PostgreSQL   14 262 ms    3 497 ms    2 360   0
+    14 000  SQLite       57 802 ms  149 353 ms    8 190   0
+    14 000  PostgreSQL   55 662 ms   54 401 ms    9 360   0
+
+  PostgreSQL est **2,5× plus rapide que SQLite sur la génération** à 3 500
+  étudiants et **2,7×** à 14 000. Les chiffres SQLite publiés en 6.2 sont donc
+  un majorant : la cible de 14 000 étudiants tient en moins d'une minute de
+  génération sur le SGBD réellement utilisé en production.
+
+  Défaut trouvé PAR PostgreSQL, invisible sur SQLite (voir journal 26) :
+  `list(groupe_ids)` découpait la chaîne « 10 » en ['1', '0']. SQLite masquait
+  le défaut parce que ses clés repartent de 1 à chaque exécution ; PostgreSQL
+  fait avancer la séquence, les clés dépassent 9 et cinq tests ont échoué. Le
+  défaut ne dépendait pas de la base : il dépendait de la LONGUEUR de
+  l'identifiant.
+
 6.3 Contrôles non exécutés
 
   - Tests sur PostgreSQL : non exécutés (pas de serveur dans le bac à sable).
@@ -697,8 +746,11 @@ PARTIE 6 — TESTS ET PERFORMANCES
   - Parcours navigateur complet : non exécuté (pas de navigateur headless).
   - Tests de charge en parallèle (deux campagnes simultanées) : non exécuté ;
     le verrou pessimiste est couvert par un test unitaire, pas par une mesure.
-  - Charge sur PostgreSQL : non mesurée (aucun serveur dans le bac à sable) ;
-    les chiffres de 6.2 et 6.2 bis sont SQLite.
+  - Charge sur PostgreSQL : MESURÉE désormais (6.2 ter). Reste non mesuré :
+    PostgreSQL en configuration de production (pooling, réglages serveur) ;
+    les mesures portent sur un serveur local aux réglages par défaut.
+  - CI distante : toujours non exécutée (aucun runner disponible ici) ; la
+    suite tourne désormais sur les deux SGBD en local.
   - ÉCART SIGNALÉ, non corrigé : la base de développement contient 14 créneaux
     types aux plages hétérogènes (08:00–12:00, 14:00–17:00, 18:00–20:00…), et
     non les 24 créneaux du canevas officiel décrit plus haut (07:30–09:30,
@@ -874,6 +926,30 @@ Ordre chronologique réel :
         24 créneaux du canevas officiel (14 plages hétérogènes). Aucune pause
         n'a donc été inventée. Voir 6.3.
     Comptes : groupe EDT 523 tests code 0.
+
+26. Chantier 6 — PostgreSQL 16.2 exécuté pour la première fois.
+    (a) Serveur réel obtenu sans root (`pgserver`, binaries embarquées), base
+        `injs_pg`, 208 tables par migrations réelles. Les NEUF groupes passent :
+        2 733 tests, code 0.
+    (b) Défaut majeur révélé : `list(groupe_ids)` sur une chaîne. `'9'` donne
+        `['9']` (donc tout allait bien sur des clés à un chiffre), `'10'` donne
+        `['1','0']` (donc plus aucune affectation trouvée). Tout groupe dont la
+        clé dépassait 9 était déclaré vide. SQLite masquait le défaut, sa
+        séquence repartant de 1 ; PostgreSQL l'a exposé. Le défaut ne dépendait
+        donc pas du SGBD.
+    (c) Deuxième défaut révélé par le même symptôme : les sorties anticipées du
+        solveur (canevas vide, aucun besoin) renvoyaient `metrics = {}`, d'où
+        un `KeyError` chez l'appelant au lieu d'un échec expliqué. Les métriques
+        sont désormais toujours complètes, à zéro, avec la raison dans
+        `motif_echec`.
+    (d) `arena/tests_par_groupe.sh` : budget du groupe habilitations porté de
+        600 à 1200 s (mesuré 625 s sur PostgreSQL). Un budget trop court ne
+        produit pas un échec mais un « INTERROMPU », c'est-à-dire une vérité
+        perdue.
+    (e) Charge comparée SQLite / PostgreSQL : PostgreSQL 2,5× à 2,7× plus
+        rapide sur la génération (6.2 ter).
+    Comptes : EDT 538 tests code 0 sur les DEUX SGBD ; 2 733 tests backend sur
+    PostgreSQL ; frontend 112 fichiers / 2 025 tests, lint 0, build 0.
 
 Erreurs rencontrées et solutions :
   - `campaigne_en_dict` (NameError) → renommé `campagne_en_dict`.
