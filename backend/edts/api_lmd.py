@@ -1027,21 +1027,15 @@ def _contexte_pedagogique(a):
     }
 
 
-@api_view(['GET'])
-@permission_classes([IsEdtReadOnlyOrPlanification])
-def result_api(request, pk):
-    """GET /api/edts/lmd/{id}/result/ — séances filtrables.
+def _seances_filtrees(request, edt):
+    """Séances actives d'un EDT, filtrées par la requête — source unique.
 
-    Filtres : groupe, enseignant, salle, formation, semaine, jour. Chaque ligne
-    reste traçable jusqu'à son ``AffectationPedagogique`` et donc jusqu'à la
-    chaîne Séance → Présence QR.
+    Utilisée par la restitution JSON (``result_api``) ET par l'export XLSX :
+    un export ne peut donc pas contenir autre chose que ce que l'écran affiche
+    pour les mêmes filtres.
     """
-    from edts.models import AffectationCreneau, EmploiDuTemps, JOUR_CHOICES
+    from edts.models import AffectationCreneau
 
-    edt = EmploiDuTemps.objects.filter(pk=pk).first()
-    if edt is None:
-        return Response({'detail': 'EDT introuvable'},
-                        status=status.HTTP_404_NOT_FOUND)
     qp = request.query_params
     qs = (AffectationCreneau.objects
           .filter(emploi_du_temps=edt, actif=True)
@@ -1059,10 +1053,30 @@ def result_api(request, pk):
     enseignant = _int(qp.get('enseignant_id'))
     if enseignant:
         qs = qs.filter(affectation_pedagogique__enseignant_id=enseignant)
+    return qs.order_by('creneau_template__jour',
+                       'creneau_template__heure_debut', 'semaine_debut',
+                       'intitule')
+
+
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def result_api(request, pk):
+    """GET /api/edts/lmd/{id}/result/ — séances filtrables.
+
+    Filtres : groupe, enseignant, salle, formation, semaine, jour. Chaque ligne
+    reste traçable jusqu'à son ``AffectationPedagogique`` et donc jusqu'à la
+    chaîne Séance → Présence QR.
+    """
+    from edts.models import AffectationCreneau, EmploiDuTemps, JOUR_CHOICES
+
+    edt = EmploiDuTemps.objects.filter(pk=pk).first()
+    if edt is None:
+        return Response({'detail': 'EDT introuvable'},
+                        status=status.HTTP_404_NOT_FOUND)
+    qs = _seances_filtrees(request, edt)
 
     seances = []
-    for a in qs.order_by('creneau_template__jour',
-                         'creneau_template__heure_debut', 'semaine_debut'):
+    for a in qs:
         ct = a.creneau_template
         ligne = {
             'id': a.pk,
@@ -1087,7 +1101,7 @@ def result_api(request, pk):
         'version': edt.version,
         'statut': edt.statut,
         'jours': [j for j, _ in JOUR_CHOICES],
-        'filtres': dict(qp),
+        'filtres': dict(request.query_params),
         'nb_seances': len(seances),
         'seances': seances,
     })
@@ -1124,6 +1138,125 @@ def grille_api(request, pk):
         'grille': grille_hebdomadaire(edt, semaine),
         'source': 'edts.services.grille_hebdomadaire (logique existante conservée)',
     })
+
+
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def export_xlsx_api(request, pk):
+    """GET /api/edts/lmd/{id}/export.xlsx/ — export tabulaire (Excel).
+
+    Même source de vérité que ``result_api`` (``_seances_filtrees``) : un
+    export ne peut pas montrer autre chose que l'écran pour les mêmes filtres
+    (``groupe_id``, ``salle_id``, ``formation_id``, ``enseignant_id``,
+    ``semaine``, ``jour``).
+
+    Deux feuilles sont produites :
+      - « Séances » : une ligne par séance active, en-têtes figés et filtres ;
+      - « Synthèse » : métadonnées de l'EDT et **décompte réel** des lignes.
+    Aucune ligne n'est ajoutée pour « remplir » un groupe absent, et un EDT
+    vide produit un classeur avec ses en-têtes et zéro ligne de données.
+    """
+    from io import BytesIO
+
+    from django.http import HttpResponse
+    from django.utils import timezone
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    from edts.models import EmploiDuTemps, JOUR_CHOICES
+
+    edt = EmploiDuTemps.objects.select_related('annee_academique').filter(pk=pk).first()
+    if edt is None:
+        return Response({'detail': 'EDT introuvable'},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    seances = list(_seances_filtrees(request, edt))
+    noms_jours = dict(JOUR_CHOICES)
+
+    classeur = Workbook()
+    feuille = classeur.active
+    feuille.title = 'Séances'
+
+    colonnes = [
+        ('Jour', 14), ('Début', 9), ('Fin', 9), ('Semaines', 11),
+        ('Nature', 12), ('Intitulé', 42), ('UE', 26), ('ECUE', 26),
+        ('Enseignant', 24), ('Groupe', 22), ('Parcours', 14),
+        ('Niveau', 10), ('Semestre', 12), ('Salle', 22),
+        ('Capacité', 10), ('Formation', 34), ('Statut', 10),
+    ]
+    entete_font = Font(bold=True, color='FFFFFF')
+    entete_fond = PatternFill('solid', fgColor='1F3B63')
+    for index, (libelle, largeur) in enumerate(colonnes, start=1):
+        cellule = feuille.cell(row=1, column=index, value=libelle)
+        cellule.font = entete_font
+        cellule.fill = entete_fond
+        cellule.alignment = Alignment(vertical='center', wrap_text=True)
+        feuille.column_dimensions[get_column_letter(index)].width = largeur
+    feuille.freeze_panes = 'A2'
+
+    for ligne, a in enumerate(seances, start=2):
+        ct = a.creneau_template
+        contexte = _contexte_pedagogique(a)
+        feuille.cell(row=ligne, column=1,
+                     value=noms_jours.get(ct.jour, ct.jour) if ct else '')
+        feuille.cell(row=ligne, column=2,
+                     value=ct.heure_debut.strftime('%H:%M') if ct else '')
+        feuille.cell(row=ligne, column=3,
+                     value=ct.heure_fin.strftime('%H:%M') if ct else '')
+        feuille.cell(row=ligne, column=4,
+                     value=f'S{a.semaine_debut}–S{a.semaine_fin}')
+        feuille.cell(row=ligne, column=5, value=a.get_nature_display())
+        feuille.cell(row=ligne, column=6, value=a.intitule)
+        feuille.cell(row=ligne, column=7, value=contexte['ue'])
+        feuille.cell(row=ligne, column=8, value=contexte['ecue'])
+        feuille.cell(row=ligne, column=9,
+                     value=a.enseignant_nom or contexte['enseignant'])
+        feuille.cell(row=ligne, column=10,
+                     value=a.groupe.nom if a.groupe_id else '')
+        feuille.cell(row=ligne, column=11, value=contexte['parcours'])
+        feuille.cell(row=ligne, column=12, value=contexte['niveau'])
+        feuille.cell(row=ligne, column=13, value=contexte['semestre'])
+        feuille.cell(row=ligne, column=14, value=a.salle_nom)
+        capacite = a.salle.capacite if a.salle_id else None
+        feuille.cell(row=ligne, column=15, value=capacite)  # NULL reste NULL
+        feuille.cell(row=ligne, column=16,
+                     value=a.formation.intitule if a.formation_id else '')
+        feuille.cell(row=ligne, column=17, value='ACTIVE' if a.actif else 'ANNULEE')
+
+    if seances:
+        feuille.auto_filter.ref = f'A1:{get_column_letter(len(colonnes))}{len(seances) + 1}'
+
+    synthese = classeur.create_sheet('Synthèse')
+    lignes_synthese = [
+        ('Emploi du temps', edt.titre or edt.population_label or f'EDT #{edt.pk}'),
+        ('Année académique', edt.annee_academique.libelle),
+        ('Version', f'V{edt.version}'),
+        ('Statut', edt.get_statut_display()),
+        ('Nombre de séances exportées', len(seances)),
+        ('Filtres appliqués', ' · '.join(
+            f'{cle}={valeur}' for cle, valeur in request.query_params.items()
+        ) or 'aucun'),
+        ('Exporté le', timezone.localtime().strftime('%d/%m/%Y à %H:%M')),
+        ('Source', 'GET /api/edts/lmd/<id>/export.xlsx/ — même filtre que /result/'),
+    ]
+    for ligne, (cle, valeur) in enumerate(lignes_synthese, start=1):
+        synthese.cell(row=ligne, column=1, value=cle).font = Font(bold=True)
+        synthese.cell(row=ligne, column=2, value=valeur)
+    synthese.column_dimensions['A'].width = 32
+    synthese.column_dimensions['B'].width = 64
+
+    flux = BytesIO()
+    classeur.save(flux)
+    contenu = flux.getvalue()
+    flux.close()
+
+    reponse = HttpResponse(
+        contenu,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    reponse['Content-Disposition'] = f'attachment; filename="edt-{edt.pk}-v{edt.version}.xlsx"'
+    reponse['Content-Length'] = str(len(contenu))
+    return reponse
 
 
 @api_view(['GET'])

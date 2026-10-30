@@ -420,7 +420,15 @@ PARTIE 5 — GUIDE UTILISATEUR
 5.11 Exporter
   Menu GET-INJS → « Export / Impression » (CSV : groupes, enseignements,
   étudiants, créneaux, affectations, indisponibilités) et export CSV / PDF
-  depuis l'écran de l'emploi du temps. Le PDF est une grille A4 paysage
+  depuis l'écran de l'emploi du temps (trois boutons : CSV, Excel, PDF).
+  Le classeur Excel contient une feuille « Séances » (jour, horaires, semaines,
+  nature, intitulé, UE, ECUE, enseignant, groupe, parcours, niveau, semestre,
+  salle, capacité, formation, statut) avec en-têtes figés et filtre
+  automatique, et une feuille « Synthèse » (métadonnées + décompte réel des
+  lignes + filtres appliqués). Les filtres de l'URL (`groupe_id`, `salle_id`,
+  `formation_id`, `enseignant_id`, `semaine`, `jour`) s'appliquent à l'export
+  comme à l'écran, via la même fonction `_seances_filtrees`.
+  Le PDF est une grille A4 paysage
   (colonnes = jours réellement occupés, lignes = plages réellement utilisées,
   cellules = intitulé, salle, enseignant, groupe), produite par le serveur à
   partir de la même grille que l'écran. Le paramètre `?semaine=N` filtre la
@@ -437,9 +445,12 @@ PARTIE 6 — TESTS ET PERFORMANCES
   Configuration Django                  PASS          manage.py check → 0 issue
   Migrations cohérentes                 PASS          makemigrations --check → « No changes »
   Migration 0008 appliquée              PASS          migrate edts → OK
-  Tests backend groupe EDT              PASS          449 tests, code 0 (./arena/tests_par_groupe.sh edt)
+  Tests backend groupe EDT              PASS          453 tests, code 0 (./arena/tests_par_groupe.sh edt)
   dont campagnes (nouveaux)             PASS          16 tests (edts.tests.test_campagnes)
   dont export PDF (nouveau)             PASS          4 tests (TestExportPdfEmploiDuTemps)
+  dont export XLSX (nouveau)            PASS          4 tests (TestExportXlsxEmploiDuTemps)
+  Export XLSX d'un EDT                  PASS          classeur 2 feuilles, 9 séances + en-têtes,
+                                                     17 colonnes, filtres serveur appliqués
   Export PDF d'un EDT                   PASS          application/pdf, 3 066 octets, grille réelle
                                                      (texte extrait et image de contrôle produite)
   Tests frontend                        PASS          110 fichiers / 2 012 tests, code 0

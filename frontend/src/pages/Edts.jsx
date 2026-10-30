@@ -288,44 +288,34 @@ export default function Edts() {
     }
   }
 
-  const exporterCsv = async () => {
-    try {
-      const { blob, fileName } = await api.getBlob(`/edts/emplois/${selectedId}/export.csv/`)
-      const url = URL.createObjectURL(blob)
-      const lien = document.createElement('a')
-      lien.href = url
-      lien.download = fileName || `edt-${selectedId}.csv`
-      document.body.appendChild(lien)
-      lien.click()
-      lien.remove()
-      URL.revokeObjectURL(url)
-      showToast('Export CSV téléchargé')
-    } catch (err) {
-      showToast(messageErreurApi(err, 'Export impossible'), 'error')
-    }
-  }
-
   /**
-   * Export PDF imprimable (LOT 9). Le document est produit par le serveur à
-   * partir de la même grille que l'écran ; l'interface ne le recompose pas,
-   * ce qui garantit que l'imprimé et l'affichage ne divergent jamais.
+   * Exports de l'emploi du temps (LOT 9) : CSV, XLSX, PDF.
+   *
+   * Les trois documents sont produits par le serveur à partir de la même
+   * donnée (séances actives, filtres courants) : l'interface ne recompose
+   * jamais le contenu, ce qui garantit que l'imprimé et l'écran ne divergent
+   * pas. Un refus serveur (404, 403) s'affiche comme une erreur, pas comme un
+   * fichier vide.
    */
-  const exporterPdf = async () => {
+  const exporter = async (format) => {
+    const suffixe = semaine ? `?semaine=${semaine}` : ''
+    const chemin = format === 'csv'
+      ? `/edts/emplois/${selectedId}/export.csv/`
+      : `/edts/lmd/${selectedId}/export.${format}/${suffixe}`
+    const libelle = { csv: 'CSV', xlsx: 'Excel', pdf: 'PDF' }[format]
     try {
-      const { blob, fileName } = await api.getBlob(
-        `/edts/lmd/${selectedId}/export.pdf/${semaine ? `?semaine=${semaine}` : ''}`,
-      )
+      const { blob, fileName } = await api.getBlob(chemin)
       const url = URL.createObjectURL(blob)
       const lien = document.createElement('a')
       lien.href = url
-      lien.download = fileName || `edt-${selectedId}.pdf`
+      lien.download = fileName || `edt-${selectedId}.${format}`
       document.body.appendChild(lien)
       lien.click()
       lien.remove()
       URL.revokeObjectURL(url)
-      showToast('Export PDF téléchargé')
+      showToast(`Export ${libelle} téléchargé`)
     } catch (err) {
-      showToast(messageErreurApi(err, 'Export PDF impossible'), 'error')
+      showToast(messageErreurApi(err, `Export ${libelle} impossible`), 'error')
     }
   }
 
@@ -470,10 +460,14 @@ export default function Edts() {
                         <i className="bi bi-plus-circle" /> Créneau
                       </Link>
                     )}
-                    <button className="btn btn-sm btn-outline-success" onClick={exporterCsv}>
+                    <button className="btn btn-sm btn-outline-success" onClick={() => exporter('csv')}>
                       <i className="bi bi-filetype-csv" /> Export
                     </button>
-                    <button className="btn btn-sm btn-outline-secondary" onClick={exporterPdf}
+                    <button className="btn btn-sm btn-outline-secondary" onClick={() => exporter('xlsx')}
+                            title="Tableau Excel des séances (mêmes filtres que l'écran)">
+                      <i className="bi bi-filetype-xlsx" /> Excel
+                    </button>
+                    <button className="btn btn-sm btn-outline-secondary" onClick={() => exporter('pdf')}
                             title="Grille imprimable (PDF) générée côté serveur">
                       <i className="bi bi-filetype-pdf" /> PDF
                     </button>

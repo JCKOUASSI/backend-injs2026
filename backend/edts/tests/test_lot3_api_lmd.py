@@ -669,3 +669,64 @@ class TestExportPdfEmploiDuTemps(BaseLMD):
         client = APIClient()
         r = client.get(f'/api/edts/lmd/{edt.pk}/export.pdf/')
         self.assertIn(r.status_code, (401, 403))
+
+
+class TestExportXlsxEmploiDuTemps(BaseLMD):
+    """`GET /api/edts/lmd/{id}/export.xlsx/` — classeur Excel réel.
+
+    Le classeur est produit depuis `_seances_filtrees`, la même source que la
+    restitution JSON : le fichier ne peut pas diverger de l'écran.
+    """
+
+    def _classeur(self, reponse):
+        from io import BytesIO
+
+        from openpyxl import load_workbook
+
+        return load_workbook(BytesIO(reponse.content))
+
+    def test_xlsx_contient_les_seances_reelles(self):
+        self.connecter('SECRETARIAT')
+        edt, _gen = self.generer_et_persister()
+        r = self.client_api.get(f'/api/edts/lmd/{edt.pk}/export.xlsx/')
+        self.assertEqual(r.status_code, 200, r.content[:200])
+        self.assertIn('spreadsheetml', r['Content-Type'])
+        self.assertIn(f'edt-{edt.pk}-v{edt.version}.xlsx', r['Content-Disposition'])
+
+        classeur = self._classeur(r)
+        self.assertEqual(classeur.sheetnames, ['Séances', 'Synthèse'])
+        feuille = classeur['Séances']
+        entetes = [c.value for c in feuille[1]]
+        self.assertEqual(entetes[0], 'Jour')
+        self.assertIn('Intitulé', entetes)
+        self.assertIn('Enseignant', entetes)
+
+        attendues = edt.affectations.filter(actif=True).count()
+        self.assertGreaterEqual(attendues, 1)
+        # 1 ligne d'en-tête + exactement autant de lignes que de séances actives.
+        self.assertEqual(feuille.max_row, attendues + 1)
+        self.assertEqual(classeur['Synthèse']['B5'].value, attendues)
+
+    def test_xlsx_respecte_les_filtres_et_ne_complete_rien(self):
+        self.connecter('SECRETARIAT')
+        edt, _gen = self.generer_et_persister()
+        r = self.client_api.get(
+            f'/api/edts/lmd/{edt.pk}/export.xlsx/?groupe_id=999999')
+        self.assertEqual(r.status_code, 200)
+        feuille = self._classeur(r)['Séances']
+        # En-têtes conservés, aucune ligne inventée pour un groupe inexistant.
+        self.assertEqual(feuille.max_row, 1)
+
+    def test_xlsx_edt_vide_et_introuvable(self):
+        self.connecter('SECRETARIAT')
+        vide = self.creer_edt(titre='EDT vide export')
+        r = self.client_api.get(f'/api/edts/lmd/{vide.pk}/export.xlsx/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(self._classeur(r)['Séances'].max_row, 1)
+        r2 = self.client_api.get('/api/edts/lmd/999999/export.xlsx/')
+        self.assertEqual(r2.status_code, 404)
+
+    def test_xlsx_refuse_sans_authentification(self):
+        edt = self.creer_edt()
+        r = APIClient().get(f'/api/edts/lmd/{edt.pk}/export.xlsx/')
+        self.assertIn(r.status_code, (401, 403))

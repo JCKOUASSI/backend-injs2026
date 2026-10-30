@@ -67,6 +67,8 @@ urlpatterns_lmd = [
     path('lmd/<int:pk>/grille/', lmd.grille_api, name='edt-lmd-grille'),
     path('lmd/<int:pk>/export.pdf/', lmd.export_pdf_api,
          name='edt-lmd-export-pdf'),
+    path('lmd/<int:pk>/export.xlsx/', lmd.export_xlsx_api,
+         name='edt-lmd-export-xlsx'),
 
     # ── LOT 2 — campagnes de génération (AJOUT) ─────────────────────────────
     # Routes nouvelles sous `campagnes/` : aucune route existante modifiée.
