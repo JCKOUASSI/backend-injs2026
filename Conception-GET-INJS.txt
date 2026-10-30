@@ -749,8 +749,21 @@ PARTIE 6 — TESTS ET PERFORMANCES
   - Charge sur PostgreSQL : MESURÉE désormais (6.2 ter). Reste non mesuré :
     PostgreSQL en configuration de production (pooling, réglages serveur) ;
     les mesures portent sur un serveur local aux réglages par défaut.
-  - CI distante : toujours non exécutée (aucun runner disponible ici) ; la
-    suite tourne désormais sur les deux SGBD en local.
+  - CI distante (GitHub Actions) : toujours NOT RUN pour la tête de branche.
+    Motifs vérifiés, pas supposés : (a) `gh workflow run` est refusé en 403
+    « Resource not accessible by integration » — le jeton disponible n'a pas
+    le droit *actions:write* ; (b) 44 exécutions sont enregistrées, la
+    dernière créée le 2026-10-30 à 13:15 UTC (commit 5399436, succès) et plus
+    aucune depuis, alors que la branche a reçu plusieurs poussées — cohérent
+    avec un quota Actions épuisé (plusieurs exécutions d'une heure).
+    À défaut, les étapes du workflow ont été REJOUÉES à l'identique en local
+    sur PostgreSQL 16.2 : `manage.py check` (0 problème),
+    `makemigrations --check` (aucune migration), `check_repo_hygiene`
+    (1924 fichiers, conforme), `collectstatic` (176 fichiers copiés,
+    830 post-traités). L'étape « Tests » du job backend est couverte par les
+    neuf groupes exécutés dans le même environnement (2 733 tests, code 0),
+    et le job frontend par `npm run lint` (0) et `npx vitest run`
+    (112 fichiers / 2 025 tests).
   - ÉCART SIGNALÉ, non corrigé : la base de développement contient 14 créneaux
     types aux plages hétérogènes (08:00–12:00, 14:00–17:00, 18:00–20:00…), et
     non les 24 créneaux du canevas officiel décrit plus haut (07:30–09:30,
@@ -950,6 +963,20 @@ Ordre chronologique réel :
         rapide sur la génération (6.2 ter).
     Comptes : EDT 538 tests code 0 sur les DEUX SGBD ; 2 733 tests backend sur
     PostgreSQL ; frontend 112 fichiers / 2 025 tests, lint 0, build 0.
+
+27. Chantier 7 — CI distante : tentative réelle, résultat honnête.
+    Le workflow `.github/workflows/ci.yml` existe déjà (backend PostgreSQL 16
+    + frontend Node 20) et a réellement tourné par le passé (44 exécutions,
+    dernière réussie à 13:15 UTC). Depuis, la branche pousse sans qu'aucun run
+    ne soit créé, et le déclenchement manuel est refusé en 403 : le jeton de ce
+    bac à sable n'a pas `actions:write`. Je ne peux donc pas prétendre à une
+    CI verte sur la tête de branche.
+    Ce qui a été fait à la place, sans maquiller l'écart : rejeu LOCAL des
+    quatre étapes non couvertes par les tests de groupes, avec les mêmes
+    variables d'environnement que le workflow (`DJANGO_DEBUG=0`,
+    `POSTGRES_*`), sur PostgreSQL 16.2. Toutes vertes. La couverture des tests
+    est identique (neuf groupes = même ensemble que le run monolithique), mais
+    elle n'est pas EXÉCUTÉE PAR GITHUB.
 
 Erreurs rencontrées et solutions :
   - `campaigne_en_dict` (NameError) → renommé `campagne_en_dict`.
