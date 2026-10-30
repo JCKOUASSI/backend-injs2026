@@ -4,7 +4,7 @@ Pour l’INJS, l’emploi du temps ne doit pas être construit comme une simple 
 
 Le principe directeur est :
 
-Formation → Parcours/Spécialité → Promotion → Groupe → Maquette → UE → ECUE → Affectation pédagogique → Créneaux → Salles → Séances → Emploi du temps → Publication → Présences
+Formation → Parcours/Spécialité → Promotion → Groupe → Maquette → UE → ECUE → Affectation pédagogique → Créneaux → Salles et Espaces → Séances → Emploi du temps → Publication → Présences
 
 ⸻
 
