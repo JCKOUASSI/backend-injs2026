@@ -614,12 +614,13 @@ PARTIE 6 — TESTS ET PERFORMANCES
   dont identifiants de groupe           PASS          15 tests (edts.tests.test_identifiants_groupes)
   dont canevas officiel                 PASS          19 tests (edts.tests.test_canevas_officiel)
   dont audit du canevas (nouveau)       PASS          3 tests (CANEVAS_HORS_REFERENTIEL/CHEVAUCHEMENT)
+  dont cohérence documentaire (nouveau) PASS          4 tests (core.tests.test_docs_coherence)
   dont outil de mesure                  PASS          4 tests (edts.tests.test_benchmark)
   dont réglage reproductible (nouveau)  PASS          16 tests (edts.tests.test_regler_contraintes)
   dont bilan annuel souple              PASS          3 tests (BilanContraintesSouplesTests)
   dont contraintes souples              PASS          20 tests (edts.tests.test_contraintes_souples)
   dont politique réglable (nouveau)     PASS          24 tests (edts.tests.test_politique_admin)
-  Tests backend groupe socle            PASS          179 tests, code 0
+  Tests backend groupe socle            PASS          183 tests, code 0
                                                      (./arena/tests_par_groupe.sh socle)
   dont campagnes (nouveaux)             PASS          16 tests (edts.tests.test_campagnes)
   dont export PDF (nouveau)             PASS          4 tests (TestExportPdfEmploiDuTemps)
@@ -1037,6 +1038,13 @@ Ordre chronologique réel :
         `verifier_canevas` déclare le canevas CONFORME. La politique a été
         réappliquée avec la pause déduite (même commande, rejouable).
     Comptes : groupe EDT 557 tests code 0.
+
+28 ter. Deux exemplaires du présent document avaient divergé (1 180 lignes à
+    la racine, 713 dans `docs/getinjs/`) : la copie servie par le site exposait
+    un état périmé du projet, avec des compteurs faux — plus trompeur qu'une
+    absence de document. Les deux sont désormais identiques (la racine fait
+    foi) et un test (`core.tests.test_docs_coherence`, 4 tests) échoue à la
+    moindre divergence, en indiquant la commande exacte à exécuter.
 
 28 bis. Le contrôle du canevas est rendu dans l'audit : deux avertissements
     (`CANEVAS_HORS_REFERENTIEL`, `CANEVAS_CHEVAUCHEMENT`) plutôt qu'un blocage,
