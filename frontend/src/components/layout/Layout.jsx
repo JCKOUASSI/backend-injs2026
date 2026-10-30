@@ -81,13 +81,18 @@ export default function Layout({ children, breadcrumb }) {
     && !hasAppRole(user, ['ARCHIVE'])
   const showAppNotifications = isDirection || canViewStatistiques || canViewFinanceNotifications
 
-  const userInitials = `${(user?.first_name || '')[0] || ''}${(user?.last_name || '')[0] || ''}`.toUpperCase() || 'MD'
-  
-  // Nom d'affichage aligné sur la maquette pour la Direction ou nom réel
+  // Nom réel de l'utilisateur connecté. Aucun nom de démonstration : la barre
+  // affichait « Dr. Mamadou Diallo » à la place de l'identité réelle dès que le
+  // compte n'avait pas de prénom — un nom qui n'existe pas dans l'établissement.
+  const initiales = `${(user?.first_name || '')[0] || ''}${(user?.last_name || '')[0] || ''}`.toUpperCase()
+  const userInitials = initiales
+    || (user?.username || '').slice(0, 2).toUpperCase()
+    || '?'
+
   const isUserDirection = user?.role === 'DIRECTION' || !user?.role
-  const displayName = isUserDirection && (!user?.first_name || user?.username === 'admin')
-    ? 'Dr. Mamadou Diallo'
-    : (user?.get_full_name ? user.get_full_name() : `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'Dr. Mamadou Diallo')
+  const displayName = (user?.get_full_name
+    ? user.get_full_name()
+    : `${user?.first_name || ''} ${user?.last_name || ''}`.trim()) || user?.username || 'Utilisateur'
 
   const roleLabel = getUserRoles(user)
     .map((r) => LIBELLES_ROLES[r] || r)

@@ -7,7 +7,10 @@ export default function KpiCard({
   subText,
   icon = 'bi-activity',
   trend,
-  trendLabel = `vs ${anneeAcademiquePrecedente(new Date(), true)}`,
+  // La comparaison « vs <année précédente> » n'a de sens que si une variation
+  // est réellement fournie : sinon on affichait une comparaison imaginaire
+  // sous des indicateurs qui n'en avaient aucune.
+  trendLabel,
   trendPositive = true,
   onClick,
 }) {
@@ -28,7 +31,11 @@ export default function KpiCard({
                 {trend}
               </span>
             )}
-            {trendLabel && <span className="trend-comparison">{trendLabel}</span>}
+            {trend && (
+              <span className="trend-comparison">
+                {trendLabel || `vs ${anneeAcademiquePrecedente(new Date(), true)}`}
+              </span>
+            )}
             {!trend && subText && <span className="trend-comparison">{subText}</span>}
           </div>
         )}

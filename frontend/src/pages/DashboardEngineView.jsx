@@ -55,7 +55,7 @@ export default function DashboardEngineView() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [lastSyncTime, setLastSyncTime] = useState('15/09/2026 10:42')
+  const [lastSyncTime, setLastSyncTime] = useState('')
 
   useEffect(() => {
     if (user?.role) {
@@ -152,17 +152,27 @@ export default function DashboardEngineView() {
 
   // Nom du directeur affiché dans le greeting
   const isUserDirection = role === 'DIRECTION' || !role || role === 'ADMIN'
-  const greetingName = isUserDirection && (!user?.first_name || user?.username === 'admin')
-    ? 'Dr. Mamadou Diallo'
-    : (user?.get_full_name ? user.get_full_name() : `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'Dr. Mamadou Diallo')
+  // Aucun nom inventé : à défaut d'identité connue, on n'affiche pas de nom.
+  const greetingName = (user?.get_full_name
+    ? user.get_full_name()
+    : `${user?.first_name || ''} ${user?.last_name || ''}`.trim()) || user?.username || 'Utilisateur'
+  void isUserDirection
 
-  // Valeurs de secours issues de la maquette de référence INJS
-  const inscritsVal = data?.kpis?.etudiants_inscrits ?? 1248
-  const candidatsVal = data?.kpis?.candidats ?? 2340
-  const enseignantsVal = data?.kpis?.enseignants ?? 186
-  // Un taux absent reste « non disponible » : ni 0 % ni pourcentage de repli.
+  // Aucune valeur de secours chiffrée : les replis « 1248 étudiants »,
+  // « 2340 candidats », « 186 enseignants » venaient d'une maquette et
+  // s'affichaient comme les effectifs réels de l'établissement. Un indicateur
+  // absent reste « — » (KpiCard) ou « Non disponible ».
+  const inscritsVal = data?.kpis?.etudiants_inscrits ?? null
+  const candidatsVal = data?.kpis?.candidats ?? null
+  const enseignantsVal = data?.kpis?.enseignants ?? null
   const presenceVal = data?.kpis?.taux_presence ?? 'Non disponible'
-  const diplomesVal = data?.kpis?.diplomes_delivres ?? 85
+  const diplomesVal = data?.kpis?.diplomes_delivres ?? null
+
+  // Répartitions réelles fournies par l'API (aucune série inventée).
+  const repartitionFormations = (data?.charts?.repartition_formations || [])
+    .filter((d) => Number(d.value) > 0)
+  const totalFormations = repartitionFormations.reduce((acc, d) => acc + Number(d.value), 0)
+  const palette = ['#1E40AF', '#1267D6', '#35BDF5', '#0D9488', '#8B5CF6', '#F59E0B']
 
   return (
     <div className="dash-engine-container">
@@ -246,28 +256,24 @@ export default function DashboardEngineView() {
                 <KpiCard
                   title="Étudiants Inscrits"
                   value={inscritsVal}
-                  trend="+12%"
                   trendLabel={`vs ${anneeAcademiquePrecedente(new Date(), true)}`}
                   icon="bi-people-fill"
                 />
                 <KpiCard
                   title="Candidats"
                   value={candidatsVal}
-                  trend="+18%"
                   trendLabel={`vs ${anneeAcademiquePrecedente(new Date(), true)}`}
                   icon="bi-person-badge-fill"
                 />
                 <KpiCard
                   title="Enseignants"
                   value={enseignantsVal}
-                  trend="+5%"
                   trendLabel={`vs ${anneeAcademiquePrecedente(new Date(), true)}`}
                   icon="bi-person-video3"
                 />
                 <KpiCard
                   title="Taux de présence"
                   value={presenceVal}
-                  trend="+3%"
                   trendLabel={`vs ${anneeAcademiquePrecedente(new Date(), true)}`}
                   icon="bi-clock-history"
                 />
@@ -294,43 +300,24 @@ export default function DashboardEngineView() {
                 <VectorDonutChart
                   title="Répartition des formations"
                   totalLabel="Étudiants"
-                  centerTotal={1248}
-                  data={[
-                    { label: 'Licence : 62%', value: 773, display: '773', color: '#1E40AF' },
-                    { label: 'Master : 28%', value: 349, display: '349', color: '#1267D6' },
-                    { label: 'Doctorat : 10%', value: 126, display: '126', color: '#35BDF5' },
-                  ]}
+                  centerTotal={totalFormations}
+                  data={repartitionFormations.map((d, i) => ({
+                    label: d.label,
+                    value: Number(d.value) || 0,
+                    display: String(d.value),
+                    color: palette[i % palette.length],
+                  }))}
                 />
 
                 {/* Gauge 1 : Taux de réussite */}
-                <RadialGaugeCard
-                  title="Taux de réussite"
-                  value={78}
-                  color="#16A36A"
-                  trend="+5%"
-                  trendComparison="✓ vs 2025"
-                  trendPositive={true}
-                />
+                {/* Taux non calculés par l'API : affichés « — », jamais inventés. */}
+                <RadialGaugeCard title="Taux de réussite" value={null} color="#16A36A" />
 
                 {/* Gauge 2 : Taux d'abandon */}
-                <RadialGaugeCard
-                  title="Taux d'abandon"
-                  value={6}
-                  color="#1267D6"
-                  trend="-2%"
-                  trendComparison="✓ vs 2025"
-                  trendPositive={true}
-                />
+                <RadialGaugeCard title="Taux d'abandon" value={null} color="#1267D6" />
 
                 {/* Gauge 3 : Taux de diplomation */}
-                <RadialGaugeCard
-                  title="Taux de diplomation"
-                  value={72}
-                  color="#16A36A"
-                  trend="+6%"
-                  trendComparison="✓ vs 2025"
-                  trendPositive={true}
-                />
+                <RadialGaugeCard title="Taux de diplomation" value={null} color="#16A36A" />
 
                 {/* Alertes institutionnelles */}
                 <AlertPanel alerts={data.alerts || []} />
@@ -340,25 +327,13 @@ export default function DashboardEngineView() {
               <div className="row-activity-finance">
                 <RecentActivityTimeline title="Activité récente" />
 
-                <VectorDonutChart
-                  title="Répartition par sexe"
-                  totalLabel="Étudiants"
-                  centerTotal={1248}
-                  data={[
-                    { label: 'Hommes 58%', value: 723, display: '723', color: '#1E40AF' },
-                    { label: 'Femmes 42%', value: 525, display: '525', color: '#35BDF5' },
-                  ]}
-                />
+                {/* Le sexe n'est pas qualifié dans les données : aucune part inventée. */}
+                <VectorDonutChart title="Répartition par sexe" totalLabel="Étudiants" data={[]} />
 
                 <TeachingLoadBarChart title="Charge d'enseignement" />
 
-                <FinancialSituationCard
-                  title="Situation financière"
-                  rate={87}
-                  recettes="248 500 000 FCFA"
-                  paiements="215 780 000 FCFA"
-                  impayes="32 720 000 FCFA"
-                />
+                {/* Aucun montant n'est fourni par l'API : ne rien afficher plutôt qu'inventer. */}
+                <FinancialSituationCard title="Situation financière" />
               </div>
 
               {/* ── Actions Rapides ── */}
@@ -405,21 +380,19 @@ export default function DashboardEngineView() {
                     title="Total Inscrits LMD"
                     value={data.kpis.total_inscrits}
                     icon="bi-mortarboard-fill"
-                    trend="+8%"
-                    trendLabel="validés"
+                      trendLabel="validés"
                   />
                   <KpiCard
                     title="Inscriptions Validées"
                     value={data.kpis.inscriptions_validees}
                     icon="bi-check2-circle"
-                    trend="100%"
-                    trendLabel="en règle"
+                      trendLabel="en règle"
                   />
                   <KpiCard
                     title="En Attente de Pièces"
                     value={data.kpis.en_attente_pieces}
                     icon="bi-hourglass-split"
-                    trend="Attention"
+                    subText="Attention"
                     trendLabel="pièces requises"
                     trendPositive={false}
                   />
@@ -427,21 +400,20 @@ export default function DashboardEngineView() {
                     title="Total Candidatures"
                     value={data.kpis.total_candidatures}
                     icon="bi-pencil-square"
-                    trend="+15%"
-                    trendLabel="campagne active"
+                      trendLabel="campagne active"
                   />
                   <KpiCard
                     title="Groupes Pédagogiques"
                     value={data.kpis.groupes_pedagogiques}
                     icon="bi-people"
-                    trend="Actifs"
+                    subText="Actifs"
                     trendLabel="sections"
                   />
                   <KpiCard
                     title="Maquettes Actives"
                     value={data.kpis.maquettes_actives}
                     icon="bi-journal-bookmark"
-                    trend="LMD"
+                    subText="LMD"
                     trendLabel="conformes"
                   />
                 </div>
@@ -499,26 +471,25 @@ export default function DashboardEngineView() {
                     title="Enseignants Actifs"
                     value={data.kpis.enseignants_actifs}
                     icon="bi-person-video3"
-                    trend="+5%"
-                    trendLabel="corps professoral"
+                      trendLabel="corps professoral"
                   />
                   <KpiCard
                     title="Unités d'Enseignement"
                     value={data.kpis.total_ue}
                     icon="bi-journal-bookmark"
-                    trend="Semestre 1 & 2"
+                    subText="Semestre 1 & 2"
                   />
                   <KpiCard
                     title="Éléments Constitutifs (ECUE)"
                     value={data.kpis.total_ecue}
                     icon="bi-book"
-                    trend="Actifs"
+                    subText="Actifs"
                   />
                   <KpiCard
                     title="Heures Planifiées"
                     value={data.kpis.volume_horaire_planifie}
                     icon="bi-clock-history"
-                    trend="CM / TD / TP"
+                    subText="CM / TD / TP"
                   />
                 </div>
               )}
@@ -569,28 +540,28 @@ export default function DashboardEngineView() {
                     title="Séances du Jour"
                     value={data.kpis.seances_jour}
                     icon="bi-calendar-event"
-                    trend="Marcory"
+                    subText="Marcory"
                     trendLabel="aujourd'hui"
                   />
                   <KpiCard
                     title="Pointages du Jour"
                     value={data.kpis.pointages_jour}
                     icon="bi-qr-code-scan"
-                    trend="Temps réel"
+                    subText="Temps réel"
                     trendLabel="scans"
                   />
                   <KpiCard
                     title="Présents en Salle"
                     value={data.kpis.presents_jour}
                     icon="bi-check-circle"
-                    trend="Actifs"
+                    subText="Actifs"
                     trendLabel="auditeurs"
                   />
                   <KpiCard
                     title="Retards & Justifications"
                     value={data.kpis.retards_jour ?? 0}
                     icon="bi-clock-history"
-                    trend="Contrôle"
+                    subText="Contrôle"
                     trendPositive={false}
                   />
                 </div>
@@ -601,7 +572,6 @@ export default function DashboardEngineView() {
                   title="Taux d'assiduité global"
                   value={94}
                   color="#16A36A"
-                  trend="+2%"
                   trendComparison="vs semaine passée"
                 />
                 <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -648,40 +618,34 @@ export default function DashboardEngineView() {
                     title="Total Facturé"
                     value={data.kpis.total_facture_xof}
                     icon="bi-receipt"
-                    trend="XOF"
+                    subText="XOF"
                     trendLabel="émis"
                   />
                   <KpiCard
                     title="Total Recouvré"
                     value={data.kpis.total_recouvre_xof}
                     icon="bi-cash-stack"
-                    trend="100%"
-                    trendLabel="encaissé"
+                      trendLabel="encaissé"
                   />
                   <KpiCard
                     title="Factures Soldées"
                     value={data.kpis.factures_soldes}
                     icon="bi-check2-all"
-                    trend="Soldé"
+                    subText="Soldé"
                     trendLabel="dossiers"
                   />
                   <KpiCard
                     title="Quittances Délivrées"
                     value={data.kpis.quittances_delivrees}
                     icon="bi-file-earmark-check"
-                    trend="Reçus officiels"
+                    subText="Reçus officiels"
                   />
                 </div>
               )}
 
               <div className="row-pipeline-growth mt-3">
-                <FinancialSituationCard
-                  title="Situation Financière Détaillée"
-                  rate={87}
-                  recettes="248 500 000 FCFA"
-                  paiements="215 780 000 FCFA"
-                  impayes="32 720 000 FCFA"
-                />
+                {/* Montants réels non fournis par cet onglet : rien n'est inventé. */}
+                <FinancialSituationCard title="Situation Financière Détaillée" />
                 <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
                     <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: '0 0 0.5rem 0' }}>
@@ -726,25 +690,25 @@ export default function DashboardEngineView() {
                     title="Sessions de Jury Ouvertes"
                     value={data.kpis.sessions_ouvertes || 1}
                     icon="bi-mortarboard-fill"
-                    trend="Semestrielles"
+                    subText="Semestrielles"
                   />
                   <KpiCard
                     title="Délibérations en Cours"
                     value={data.kpis.deliberations_en_cours || 1}
                     icon="bi-people"
-                    trend="En séance"
+                    subText="En séance"
                   />
                   <KpiCard
                     title="PV Scellés"
                     value={data.kpis.pv_scelles || 1}
                     icon="bi-file-earmark-lock"
-                    trend="Certifiés"
+                    subText="Certifiés"
                   />
                   <KpiCard
                     title="Diplômes Scellés"
                     value={data.kpis.diplomes_sha256 || data.kpis.diplomes_delivres || 6}
                     icon="bi-award-fill"
-                    trend="SHA-256"
+                    subText="SHA-256"
                     trendLabel="intégrité garantie"
                   />
                 </div>
@@ -755,7 +719,6 @@ export default function DashboardEngineView() {
                   title="Taux de validation de jurys"
                   value={100}
                   color="#16A36A"
-                  trend="100%"
                   trendComparison="PV clôturés"
                 />
                 <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -802,28 +765,28 @@ export default function DashboardEngineView() {
                     title="Équipements Inventoriés"
                     value={data.kpis.equipements_inventories}
                     icon="bi-boxes"
-                    trend="STAPS"
+                    subText="STAPS"
                     trendLabel="matériel de pointe"
                   />
                   <KpiCard
                     title="Maintenances en Cours"
                     value={data.kpis.maintenances_en_cours}
                     icon="bi-tools"
-                    trend="Préventif"
+                    subText="Préventif"
                     trendPositive={false}
                   />
                   <KpiCard
                     title="Conventions de Stages"
                     value={data.kpis.conventions_stage}
                     icon="bi-briefcase-fill"
-                    trend="Actives"
+                    subText="Actives"
                     trendLabel="partenaires"
                   />
                   <KpiCard
                     title="Organismes Partenaires"
                     value={data.kpis.organismes_partenaires}
                     icon="bi-building-check"
-                    trend="ONS, FIA"
+                    subText="ONS, FIA"
                   />
                 </div>
               )}
@@ -885,31 +848,31 @@ export default function DashboardEngineView() {
                     title="Crédits restants"
                     value={data.kpis.credits_restants ?? Math.max(0, (data.credits_requis || 60) - (data.credits_valides || 0))}
                     icon="bi-hourglass-split"
-                    trend="À valider"
+                    subText="À valider"
                   />
                   <KpiCard
                     title="Moyenne générale"
                     value={data.kpis.moyenne_generale ?? data.moyenne_generale ?? '—'}
                     icon="bi-graph-up"
-                    trend="Semestre"
+                    subText="Semestre"
                   />
                   <KpiCard
                     title="Assiduité"
                     value={data.kpis.assiduite ?? data.taux_presence ?? 'Non disponible'}
                     icon="bi-clock-history"
-                    trend="Présence"
+                    subText="Présence"
                   />
                   <KpiCard
                     title="UE validées"
                     value={data.kpis.ue_validees ?? 0}
                     icon="bi-journal-check"
-                    trend="LMD"
+                    subText="LMD"
                   />
                   <KpiCard
                     title="UE à valider"
                     value={data.kpis.ue_a_valider ?? 0}
                     icon="bi-journal"
-                    trend="Restantes"
+                    subText="Restantes"
                     trendPositive={false}
                   />
                 </div>
@@ -970,50 +933,50 @@ export default function DashboardEngineView() {
                     title="Cours affectés"
                     value={data.kpis.cours_assignes}
                     icon="bi-journal-bookmark"
-                    trend="Modules"
+                    subText="Modules"
                   />
                   <KpiCard
                     title="Groupes"
                     value={data.kpis.groupes}
                     icon="bi-people"
-                    trend="Pédagogiques"
+                    subText="Pédagogiques"
                   />
                   <KpiCard
                     title="Étudiants"
                     value={data.kpis.etudiants ?? '—'}
                     icon="bi-mortarboard"
-                    trend="Effectif"
+                    subText="Effectif"
                   />
                   <KpiCard
                     title="Volume horaire"
                     value={`${data.kpis.heures_realisees ?? 0} / ${data.kpis.heures_prevues ?? 0} h`}
                     icon="bi-clock-history"
-                    trend="Réalisé / prévu"
+                    subText="Réalisé / prévu"
                   />
                   <KpiCard
                     title="CM"
                     value={`${data.kpis.heures_cm ?? 0} h`}
                     icon="bi-easel"
-                    trend="Cours magistraux"
+                    subText="Cours magistraux"
                   />
                   <KpiCard
                     title="TD / TP"
                     value={`${data.kpis.heures_td ?? 0} / ${data.kpis.heures_tp ?? 0} h`}
                     icon="bi-pencil"
-                    trend="Travaux"
+                    subText="Travaux"
                   />
                   <KpiCard
                     title="Évaluations en attente"
                     value={data.kpis.evaluations_en_attente ?? 0}
                     icon="bi-file-earmark-text"
-                    trend="À saisir"
+                    subText="À saisir"
                     trendPositive={false}
                   />
                   <KpiCard
                     title="Absences à traiter"
                     value={data.kpis.absences_a_traiter ?? 0}
                     icon="bi-exclamation-triangle"
-                    trend="Justificatifs"
+                    subText="Justificatifs"
                     trendPositive={false}
                   />
                 </div>

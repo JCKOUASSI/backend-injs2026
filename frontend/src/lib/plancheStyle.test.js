@@ -1,3 +1,6 @@
+import fs from 'node:fs'
+import path from 'node:path'
+
 import { describe, it, expect } from 'vitest'
 import {
   CATEGORIES,
@@ -211,8 +214,6 @@ describe('lib/plancheStyle — repère responsive', () => {
  * un jeton invisible passer inaperçu.
  */
 describe('lib/plancheStyle — couverture du socle réel', () => {
-  const fs = require('node:fs')
-  const path = require('node:path')
   const cheminCss = path.resolve(process.cwd(), 'src/styles/designSystem.css')
   const css = fs.readFileSync(cheminCss, 'utf8')
   const nomsSocle = [...new Set([...css.matchAll(/(--injs-[a-z0-9-]+)\s*:/g)].map((m) => m[1]))]
@@ -251,8 +252,6 @@ describe('lib/plancheStyle — couverture du socle réel', () => {
  * défaut (classe utilisée sans définition).
  */
 describe('socle — utilitaire .visually-hidden', () => {
-  const fs = require('node:fs')
-  const path = require('node:path')
   const css = fs.readFileSync(path.resolve(process.cwd(), 'src/styles/designSystem.css'), 'utf8')
 
   it('est défini dans le socle', () => {

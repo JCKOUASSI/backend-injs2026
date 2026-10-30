@@ -1,5 +1,8 @@
+import fs from 'node:fs'
+import path from 'node:path'
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, within, act } from '@testing-library/react'
+import { screen, within, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import PlancheDeStyle from '@/pages/design/PlancheDeStyle'
 import { renderWithProviders } from '@/test/utils/renderWithProviders'
@@ -59,7 +62,7 @@ afterEach(() => {
  * personnalisées, ce qui permet de vérifier la chaîne complète
  * feuille de style → lecture → affichage, et non seulement la logique.
  */
-const CHEMIN_SOCLE = require('node:path').resolve(process.cwd(), 'src/styles/designSystem.css')
+const CHEMIN_SOCLE = path.resolve(process.cwd(), 'src/styles/designSystem.css')
 
 function rendre() {
   return renderWithProviders(<PlancheDeStyle />, {
@@ -234,7 +237,7 @@ describe('pages/design/PlancheDeStyle — avec le socle réel', () => {
     spyStyle.mockRestore()
     if (styleSheetsInitial) Object.defineProperty(document, 'styleSheets', styleSheetsInitial)
     else delete document.styleSheets
-    const cssReel = require('node:fs').readFileSync(CHEMIN_SOCLE, 'utf8')
+    const cssReel = fs.readFileSync(CHEMIN_SOCLE, 'utf8')
     baliseStyle = document.createElement('style')
     baliseStyle.textContent = cssReel
     document.head.appendChild(baliseStyle)
@@ -255,7 +258,7 @@ describe('pages/design/PlancheDeStyle — avec le socle réel', () => {
     rendre()
     await screen.findByText('--injs-navy')
 
-    const cssReel = require('node:fs').readFileSync(CHEMIN_SOCLE, 'utf8')
+    const cssReel = fs.readFileSync(CHEMIN_SOCLE, 'utf8')
     const attendus = [...new Set([...cssReel.matchAll(/(--injs-[a-z0-9-]+)\s*:/g)].map((m) => m[1]))]
     const rendus = screen.getAllByRole('rowheader').map((cellule) => cellule.textContent)
 
