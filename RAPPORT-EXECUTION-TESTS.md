@@ -552,3 +552,51 @@ La base de l'aperçu contient le **référentiel officiel** (323 UE, 397 ECUE, 1
 désormais cet état au lieu de le masquer. Charger un jeu de démonstration reste une **décision** :
 les commandes du dépôt (`seed_lot1_1_injs` → `seed_lot5_1_transverse`) créent des candidats et des
 étudiants **fictifs** ; les exécuter revient à peupler l'aperçu avec des personnes qui n'existent pas.
+
+---
+
+## 13. Les deux espaces personnels servaient les données d'une autre personne
+
+### 13.1 Faute la plus grave : fuite de dossier et d'identité
+
+`backend/dashboard/services.py` contenait, pour les deux onglets personnels, un repli silencieux :
+
+| Fonction | Code précédent | Conséquence |
+|---|---|---|
+| `get_etudiant_dashboard(user)` | `dossier = DossierEtudiant.objects.first()` si le compte n'avait pas de dossier | l'écran « Mon espace étudiant » affichait le **dossier d'un tiers** : nom, matricule, formation, crédits |
+| `get_enseignant_dashboard(user)` | `formateur = Formateur.objects.first()` si le compte n'avait pas de fiche | l'écran « Mon espace enseignant » affichait le **nom d'un autre enseignant** |
+
+C'est une atteinte à la confidentialité, pas un défaut d'affichage : un compte formateur, direction ou
+administratif ouvrant `/dashboard` recevait le dossier du premier étudiant de la base.
+Les deux replis sont supprimés ; sans dossier ou sans fiche, les champs valent `None` et l'interface affiche « — ».
+
+### 13.2 Valeurs constantes supprimées
+
+| Écran | Valeur inventée | Remplacée par |
+|---|---|---|
+| Étudiant | moyenne « 13.38 / 20 » | `DecisionJury.moyenne_generale` de l'intéressé, sinon « — » |
+| Étudiant | 30 crédits, 4 UE validées, 2 UE à valider | `DecisionJury.credits_acquis` ; le reste « — » |
+| Étudiant | assiduité « 96% », solde « 0 FCFA (À jour) » | « — » (aucune règle de calcul d'assiduité ni de solde n'est tranchée) |
+| Étudiant | pipeline « Inscrit », « 36 notes », « Admis S1 » | état réel : inscription, modules suivis, décision de jury, diplôme |
+| Enseignant | 120 h prévues, 85 h réalisées, 42/28/16 h CM/TD/TP, 3 groupes, 96 étudiants, 1 évaluation, 2 absences | modules réels (`Module.duree_prevue_heures`, groupe, `ModuleParticipant`), sinon « — » |
+| Enseignant | spécialité « STAPS » par défaut | `Formateur.specialite` ou « — » |
+| En-tête (`Layout`) | pastille « 2026 – 2027 » codée en dur | `/api/scolarite/annee-courante/`, sinon « — » |
+| Tableau de bord | replis `'2026-2027'` (6 occurrences côté serveur) et « 2026 – 2027 » (3 occurrences côté client) | année réellement enregistrée, sinon `null` / « — » |
+
+### 13.3 Vérifications
+
+| Contrôle | Résultat |
+|---|---|
+| Groupe backend `pilotage` (`statistiques config dashboard`) | **201 tests, code 0** (4 nouveaux) |
+| Nouveaux tests backend | étudiant sans dossier → aucune donnée ; enseignant → aucun module d'un autre formateur ; année absente → `null` (service **et** API) |
+| `npx vitest run` | **107 fichiers, 1 997 tests, code 0** (4 nouveaux) |
+| Nouveaux tests frontend | `Layout` : année lue depuis l'API, « — » sinon ; `DashboardEngineView` : aucune année inventée, année réelle affichée |
+| Preuve par régression | le test « aucune année inventée » **échoue** sur le code précédent (vérifié en restaurant l'ancien fichier) |
+| `npm run lint` / `npm run build` | **code 0** / **code 0** |
+| API en fonctionnement | `/api/dashboard/etudiant/` et `/enseignant/` renvoient `null` partout, l'interface affiche « — » |
+
+### 13.4 Ce qui reste volontairement à « — »
+
+Assiduité, solde financier, UE validées, heures réalisées : ces valeurs demandent une **règle de calcul**
+(absences justifiées exclues ? paiements en attente comptés ?) qui relève d'une décision métier.
+Afficher « — » est exact ; afficher 96 % ou « À jour » ne l'était pas.

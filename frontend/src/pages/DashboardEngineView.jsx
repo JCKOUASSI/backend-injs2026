@@ -184,7 +184,7 @@ export default function DashboardEngineView() {
             Bonjour, {greetingName}
           </h1>
           <p className="greeting-subtitle">
-            Voici un aperçu général de l'activité de l'INJS-LMD pour l'année académique {data?.annee_academique || '2026 – 2027'}
+            Voici un aperçu général de l'activité de l'INJS-LMD pour l'année académique {data?.annee_academique || '—'}
           </p>
         </div>
 
@@ -821,7 +821,7 @@ export default function DashboardEngineView() {
                       {data.niveau || '—'} · {data.formation || 'Formation INJS'} · Matricule {data.matricule || '—'}
                     </p>
                     <p style={{ margin: '0.25rem 0 0', color: '#64748B', fontSize: '0.85rem' }}>
-                      Année académique {data.annee_academique || '2026–2027'}
+                      Année académique {data.annee_academique || '—'}
                     </p>
                   </div>
                   <div style={{ textAlign: 'right' }}>
@@ -829,7 +829,7 @@ export default function DashboardEngineView() {
                       Situation financière
                     </div>
                     <div style={{ fontWeight: 800, color: '#16A36A', fontSize: '1.05rem' }}>
-                      {data.solde_finance || data.kpis?.solde_finance || 'À jour'}
+                      {data.solde_finance || data.kpis?.solde_finance || '—'}
                     </div>
                   </div>
                 </div>
@@ -923,7 +923,7 @@ export default function DashboardEngineView() {
                   {data.enseignant || greetingName}
                 </h2>
                 <p style={{ margin: '0.35rem 0 0', color: '#64748B', fontSize: '0.92rem' }}>
-                  Spécialité : {data.specialite || '—'} · Année {data.annee_academique || '2026–2027'}
+                  Spécialité : {data.specialite || '—'} · Année {data.annee_academique || '—'}
                 </p>
               </div>
 
@@ -949,32 +949,36 @@ export default function DashboardEngineView() {
                   />
                   <KpiCard
                     title="Volume horaire"
-                    value={`${data.kpis.heures_realisees ?? 0} / ${data.kpis.heures_prevues ?? 0} h`}
+                    value={(data.kpis.heures_realisees == null && data.kpis.heures_prevues == null)
+                      ? '—'
+                      : `${data.kpis.heures_realisees ?? '—'} / ${data.kpis.heures_prevues ?? '—'} h`}
                     icon="bi-clock-history"
                     subText="Réalisé / prévu"
                   />
                   <KpiCard
                     title="CM"
-                    value={`${data.kpis.heures_cm ?? 0} h`}
+                    value={data.kpis.heures_cm == null ? '—' : `${data.kpis.heures_cm} h`}
                     icon="bi-easel"
                     subText="Cours magistraux"
                   />
                   <KpiCard
                     title="TD / TP"
-                    value={`${data.kpis.heures_td ?? 0} / ${data.kpis.heures_tp ?? 0} h`}
+                    value={(data.kpis.heures_td == null && data.kpis.heures_tp == null)
+                      ? '—'
+                      : `${data.kpis.heures_td ?? '—'} / ${data.kpis.heures_tp ?? '—'} h`}
                     icon="bi-pencil"
                     subText="Travaux"
                   />
                   <KpiCard
                     title="Évaluations en attente"
-                    value={data.kpis.evaluations_en_attente ?? 0}
+                    value={data.kpis.evaluations_en_attente ?? '—'}
                     icon="bi-file-earmark-text"
                     subText="À saisir"
                     trendPositive={false}
                   />
                   <KpiCard
                     title="Absences à traiter"
-                    value={data.kpis.absences_a_traiter ?? 0}
+                    value={data.kpis.absences_a_traiter ?? '—'}
                     icon="bi-exclamation-triangle"
                     subText="Justificatifs"
                     trendPositive={false}

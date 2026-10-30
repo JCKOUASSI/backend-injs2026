@@ -60,4 +60,19 @@ describe('DashboardEngineView — chargement et panne de l’API', () => {
     expect(screen.queryByText('2 340')).not.toBeInTheDocument()
     expect(screen.queryByText('186')).not.toBeInTheDocument()
   })
+
+  it('n’affiche aucune année académique inventée quand l’API n’en fournit pas', async () => {
+    apiController.setRoute(/^\/dashboard\//, { annee_academique: null, kpis: {} })
+    renderWithProviders(<DashboardEngineView />, { authUser: admin })
+    await screen.findByText('Étudiants Inscrits')
+    // Le repli codé en dur « 2026 – 2027 » affichait une année qui pouvait
+    // ne pas exister dans le référentiel.
+    expect(screen.queryByText(/2026\s*[–-]\s*2027/)).not.toBeInTheDocument()
+  })
+
+  it('affiche l’année académique réellement renvoyée par l’API', async () => {
+    apiController.setRoute(/^\/dashboard\//, { annee_academique: '2024-2025', kpis: {} })
+    renderWithProviders(<DashboardEngineView />, { authUser: admin })
+    expect(await screen.findByText(/2024-2025/)).toBeInTheDocument()
+  })
 })

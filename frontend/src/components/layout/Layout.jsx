@@ -7,6 +7,7 @@ import AppNotificationsBell from '../AppNotificationsBell'
 import Sidebar from './Sidebar'
 import { FINANCE_MODULE_ROLES } from '../../utils/roles'
 import avatarDirector from '../../assets/avatar-director.jpg'
+import api from '../../services/api'
 
 /**
  * Coquille de l'application : barre latérale RBAC + barre supérieure Glassmorphism.
@@ -14,7 +15,7 @@ import avatarDirector from '../../assets/avatar-director.jpg'
  * Conforme au design institutionnel INJS Marcory :
  * - Gestion du masquage/déploiement de la sidebar (bureau et mobile/tablette)
  * - Barre de recherche globale (« Rechercher un étudiant, une formation, un cours... »)
- * - Sélecteur d'année académique (« 2026 – 2027 »)
+ * - Année académique courante, lue depuis `/api/scolarite/annee-courante/`
  * - Cloche de notification temps réel
  * - Plaquette utilisateur avec avatar exécutif, nom complet et badge de rôle
  */
@@ -27,6 +28,22 @@ export default function Layout({ children, breadcrumb }) {
     typeof window !== 'undefined' ? window.innerWidth <= 992 : false
   )
   const [searchTerm, setSearchTerm] = useState('')
+  // Année académique réellement configurée. L'en-tête affichait la constante
+  // « 2026 – 2027 », donc une année qui pouvait ne pas exister dans le
+  // référentiel ; sans année en base, on affiche « — ».
+  const [anneeAcademique, setAnneeAcademique] = useState(null)
+
+  useEffect(() => {
+    let annule = false
+    api.get('/scolarite/annee-courante/')
+      .then((res) => {
+        if (annule) return
+        const data = res?.data ?? res
+        setAnneeAcademique(data?.annee?.libelle || data?.libelle || null)
+      })
+      .catch(() => { if (!annule) setAnneeAcademique(null) })
+    return () => { annule = true }
+  }, [])
 
   // Fermeture du menu mobile à la touche Échap (convention clavier, WCAG 2.1.1)
   // et blocage du défilement de l'arrière-plan tant qu'il est ouvert, pour
@@ -251,7 +268,7 @@ export default function Layout({ children, breadcrumb }) {
               title="Année Académique Active"
             >
               <i className="bi bi-calendar3" style={{ color: '#1267D6' }} />
-              <span>2026 – 2027</span>
+              <span>{anneeAcademique || '—'}</span>
               <i className="bi bi-chevron-down" style={{ fontSize: '0.68rem', color: '#94A3B8' }} />
             </div>
 
