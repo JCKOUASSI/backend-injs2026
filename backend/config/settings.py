@@ -482,6 +482,17 @@ HABILITATIONS_APPLICATION = os.environ.get(
     'HABILITATIONS_APPLICATION', 'false'
 ).lower() in ('true', '1', 'yes')
 
+# ── GET-INJS : contraintes souples du générateur ────────────────────────────
+# Les documents de référence demandent d'éviter les trous, les séries de plus
+# de 4 h consécutives et les journées de plus de 8 h, sans fournir de
+# pondération officielle. Elles sont donc DÉSACTIVÉES par défaut : les activer
+# est une décision explicite de l'INJS, jamais un effet de bord d'une mise à
+# jour. Elles ne bloquent jamais un placement (pénalités seulement).
+# Exemple :
+#   EDTS_CONTRAINTES_SOUPLES = {'actives': True, 'max_heures_consecutives': 4,
+#                               'max_heures_par_jour': 8}
+EDTS_CONTRAINTES_SOUPLES = {}
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ── Email (SMTP) ──────────────────────────────────────────────────────────────

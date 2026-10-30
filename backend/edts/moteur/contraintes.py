@@ -90,6 +90,311 @@ class Penalite:
         return f'{self.code} (−{self.poids})'
 
 
+# ── Contraintes SOUPLES (étape K) — configurables, désactivées par défaut ────
+#
+# Les documents de référence (doc 2, §11 « K ») demandent d'éviter « plus de
+# 4 h consécutives », « les trous » et « plus de 8 h par jour », **sans fournir
+# de pondération officielle**. Décision prise et assumée ici :
+#
+#   * ces règles sont implémentées, mais DÉSACTIVÉES par défaut : sans valeur
+#     officielle, les activer d'office reviendrait à inventer une politique
+#     pédagogique et à modifier silencieusement les emplois du temps produits ;
+#   * elles s'activent explicitement, par réglage Django
+#     (``EDTS_CONTRAINTES_SOUPLES``) ou par paramètre de génération ;
+#   * elles ne sont JAMAIS bloquantes : elles produisent des ``Penalite`` dont
+#     le poids est visible, et le moteur peut toujours placer la séance ;
+#   * chaque borne et chaque poids sont explicites dans la politique effective,
+#     renvoyée par l'API (``/api/edts/lmd/constraints/``) pour que l'utilisateur
+#     sache exactement ce qui a été appliqué.
+
+#: Politique par défaut — tout est inactif sauf les seuils documentés.
+SOUPLES_DEFAUT = {
+    'actives': False,
+    'max_heures_consecutives': 4.0,
+    'max_heures_par_jour': 8.0,
+    #: Écart toléré entre deux séances pour les considérer comme consécutives
+    #: (une récréation de 15 min ne crée ni « trou » ni rupture de série).
+    'tolerance_minutes': 15,
+    'penaliser_trous': True,
+    #: Pause institutionnelle (déjeuner) qui ne compte pas comme un « trou ».
+    #: ``None`` = aucune exemption (comportement explicite, rien d'inventé) ;
+    #: sinon ``('12:00', '13:30')``. L'INJS n'ayant pas publié d'horaire de
+    #: pause, aucune valeur n'est imposée : elle se configure.
+    'pause_dejeuner': None,
+    'poids_trou': 1,
+    'poids_consecutif': 2,
+    'poids_surcharge': 3,
+}
+
+#: Clés admises et type attendu (validation stricte : une faute de frappe dans
+#: un réglage ne doit pas être ignorée en silence).
+_CHAMPS_SOUPLES = {
+    'actives': bool,
+    'max_heures_consecutives': (int, float),
+    'max_heures_par_jour': (int, float),
+    'tolerance_minutes': (int, float),
+    'pause_dejeuner': tuple,
+    'penaliser_trous': bool,
+    'poids_trou': (int, float),
+    'poids_consecutif': (int, float),
+    'poids_surcharge': (int, float),
+}
+
+
+def politique_souples(override=None):
+    """Politique effective des contraintes souples.
+
+    Ordre de priorité : ``SOUPLES_DEFAUT`` < réglage Django
+    ``EDTS_CONTRAINTES_SOUPLES`` < ``override`` (paramètre de génération).
+
+    Une clé inconnue ou une valeur de type invalide lève ``ValueError`` : un
+    réglage mal orthographié ne doit pas être ignoré sans bruit.
+    """
+    from django.conf import settings
+
+    politique = dict(SOUPLES_DEFAUT)
+    for source in (getattr(settings, 'EDTS_CONTRAINTES_SOUPLES', None), override):
+        if not source:
+            continue
+        if not isinstance(source, dict):
+            raise ValueError(
+                'EDTS_CONTRAINTES_SOUPLES doit être un dictionnaire '
+                f'(reçu : {type(source).__name__}).')
+        for cle, valeur in source.items():
+            if cle not in _CHAMPS_SOUPLES:
+                raise ValueError(
+                    f'Réglage de contrainte souple inconnu : « {cle} ». '
+                    f'Clés admises : {", ".join(sorted(_CHAMPS_SOUPLES))}.')
+            attendu = _CHAMPS_SOUPLES[cle]
+            if cle == 'pause_dejeuner':
+                politique[cle] = _valider_pause(valeur)
+                continue
+            # bool est une sous-classe d'int : on teste strictement.
+            if attendu is bool and not isinstance(valeur, bool):
+                raise ValueError(f'« {cle} » doit être un booléen (reçu : {valeur!r}).')
+            if attendu is not bool and (
+                    isinstance(valeur, bool)
+                    or not isinstance(valeur, attendu)):
+                raise ValueError(f'« {cle} » doit être un nombre (reçu : {valeur!r}).')
+            if attendu is not bool and valeur < 0:
+                raise ValueError(f'« {cle} » ne peut pas être négatif (reçu : {valeur!r}).')
+            politique[cle] = valeur
+    return politique
+
+
+def _minutes(heure):
+    """Minutes depuis minuit d'un ``time`` (ou d'un ``datetime``)."""
+    return heure.hour * 60 + heure.minute
+
+
+def _en_heures(minutes):
+    return round(minutes / 60.0, 2)
+
+
+def _minutes_depuis_texte(valeur):
+    """``'12:30'`` → 750 minutes. Format invalide ⇒ ValueError explicite."""
+    try:
+        heures, minutes = str(valeur).strip().split(':')
+        heures, minutes = int(heures), int(minutes)
+    except (ValueError, AttributeError):
+        raise ValueError(
+            f'Horaires attendus au format « HH:MM » (reçu : {valeur!r}).') from None
+    if not (0 <= heures <= 23 and 0 <= minutes <= 59):
+        raise ValueError(f'Horaire hors bornes : {valeur!r}.')
+    return heures * 60 + minutes
+
+
+def _valider_pause(valeur):
+    """Valide ``pause_dejeuner`` : ``None`` ou ``('HH:MM', 'HH:MM')``."""
+    if valeur is None:
+        return None
+    if not isinstance(valeur, (tuple, list)) or len(valeur) != 2:
+        raise ValueError(
+            'pause_dejeuner doit être None ou un couple ("HH:MM", "HH:MM") '
+            f'(reçu : {valeur!r}).')
+    debut = _minutes_depuis_texte(valeur[0])
+    fin = _minutes_depuis_texte(valeur[1])
+    if fin <= debut:
+        raise ValueError(
+            f'pause_dejeuner : la fin doit suivre le début (reçu : {valeur!r}).')
+    return (debut, fin)
+
+
+def plages_ressource(index, prefixe, ressource, jour):
+    """Plages ``(début, fin)`` déjà posées pour une ressource un jour donné.
+
+    Lit l'index d'occupations du solveur (``indexer_occupations``) : aucun accès
+    base, et le coût reste proportionnel aux séances du jour concerné.
+    """
+    if index is None or not ressource:
+        return []
+    return sorted(index.get((prefixe, ressource, jour), ()))
+
+
+def _series(plages, tolerance_minutes):
+    """Regroupe des plages en séries consécutives.
+
+    Deux plages appartiennent à la même série quand l'écart entre la fin de
+    l'une et le début de la suivante est **inférieur ou égal** à la tolérance.
+    Les chevauchements comptent comme contigus.
+    """
+    series = []
+    for debut, fin in sorted(plages, key=lambda p: (_minutes(p[0]), _minutes(p[1]))):
+        if series and _minutes(debut) - series[-1][1] <= tolerance_minutes:
+            series[-1][1] = max(series[-1][1], _minutes(fin))
+        else:
+            series.append([_minutes(debut), _minutes(fin)])
+    return series
+
+
+def _charge_serie(plages, debut_min, fin_min):
+    """Durée EFFECTIVE d'une série : somme des séances, pauses exclues.
+
+    Une série 07:30–09:30 + 09:45–11:45 vaut 4 h de cours (et non 4 h 15 de
+    temps passé) : c'est la charge pédagogique que la règle « pas plus de 4 h
+    consécutives » cherche à limiter.
+    """
+    return sum(
+        min(_minutes(fin), fin_min) - max(_minutes(debut), debut_min)
+        for debut, fin in plages
+        if _minutes(fin) > debut_min and _minutes(debut) < fin_min
+    )
+
+
+def _trous(plages, tolerance_minutes, pause=None):
+    """Trous d'une journée : écarts internes supérieurs à la tolérance.
+
+    ``plages`` est une liste ``(début, fin)`` triée de ``time``. Le temps libre
+    avant la première et après la dernière séance n'est pas un trou : c'est du
+    hors-présence, pas une attente entre deux cours.
+
+    ``pause`` (``(début, fin)`` en minutes, cf. ``pause_dejeuner``) est retirée
+    de chaque écart : une pause déjeuner institutionnelle n'est pas un trou
+    pédagogique. Sans pause configurée (``None``), l'écart est pris tel quel —
+    aucune exemption n'est supposée.
+    """
+    trous = []
+    for (debut_precedent, fin_precedente), (debut, _fin) in zip(plages, plages[1:]):
+        debut_min, fin_min = _minutes(fin_precedente), _minutes(debut)
+        ecart = fin_min - debut_min
+        if pause and ecart > 0:
+            chevauchement = max(0, min(fin_min, pause[1]) - max(debut_min, pause[0]))
+            ecart -= chevauchement
+        if ecart > tolerance_minutes:
+            trous.append(ecart)
+    return trous
+
+
+def penalites_souples(index, *, prefixe, ressource, jour,
+                      heure_debut, heure_fin, politique=None):
+    """Pénalités souples si l'on ajoute une séance à cette journée.
+
+    Retourne ``[]`` quand la politique est inactive — c'est le défaut, donc le
+    comportement du solveur reste strictement inchangé tant que personne n'a
+    explicitement demandé ces règles.
+
+    Les bornes sont évaluées **après** ajout de la séance candidate : c'est la
+    journée résultante qui est jugée, pas la journée actuelle.
+    """
+    politique = politique or politique_souples()
+    if not politique['actives'] or not ressource:
+        return []
+
+    plages = plages_ressource(index, prefixe, ressource, jour)
+    plages = sorted(
+        list(plages) + [(heure_debut, heure_fin)],
+        key=lambda p: (_minutes(p[0]), _minutes(p[1])),
+    )
+    tolerance = politique['tolerance_minutes']
+    penalites = []
+
+    pause = politique.get('pause_dejeuner')
+    trous = _trous(plages, tolerance, pause=pause)
+    if politique['penaliser_trous'] and trous:
+        penalites.append(Penalite(
+            'TROU_HORAIRE',
+            f'{len(trous)} trou(s) dans la journée '
+            f'(total {_en_heures(sum(trous))} h d’attente).',
+            poids=politique['poids_trou'] * min(len(trous), 3),
+        ))
+
+    series = _series(plages, tolerance)
+    plus_longue = max(
+        (_charge_serie(plages, debut, fin) for debut, fin in series), default=0)
+    seuil = int(round(politique['max_heures_consecutives'] * 60))
+    if plus_longue > seuil:
+        penalites.append(Penalite(
+            'PLUS_DE_X_HEURES_CONSECUTIVES',
+            f'{_en_heures(plus_longue)} h consécutives '
+            f'(maximum demandé : {politique["max_heures_consecutives"]} h).',
+            poids=politique['poids_consecutif'],
+        ))
+
+    total = sum(_minutes(fin) - _minutes(debut) for debut, fin in plages)
+    seuil_jour = int(round(politique['max_heures_par_jour'] * 60))
+    if total > seuil_jour:
+        penalites.append(Penalite(
+            'SURCHARGE_JOURNALIERE',
+            f'{_en_heures(total)} h dans la journée '
+            f'(maximum demandé : {politique["max_heures_par_jour"]} h).',
+            poids=politique['poids_surcharge'],
+        ))
+    return penalites
+
+
+def resume_souples(placements, politique=None):
+    """Bilan des contraintes souples sur un plan complet (lecture seule).
+
+    Sert au diagnostic : combien de séries trop longues, de trous et de
+    journées surchargées le plan contient, ressource par ressource.
+    """
+    politique = politique or politique_souples()
+    resume = {
+        'politique': politique,
+        'active': bool(politique['actives']),
+        'trous': 0,
+        'series_trop_longues': 0,
+        'journees_surchargees': 0,
+        'detail': [],
+    }
+    if not politique['actives']:
+        return resume
+
+    tolerance = politique['tolerance_minutes']
+    pause = politique.get('pause_dejeuner')
+    par_cle = {}
+    for place in placements:
+        jour = _valeur(place, 'jour')
+        groupe = _valeur(place, 'groupe_id')
+        if not groupe or not jour:
+            continue
+        par_cle.setdefault(('G', groupe, jour), []).append(
+            (_valeur(place, 'heure_debut'), _valeur(place, 'heure_fin')))
+
+    for (prefixe, ressource, jour), plages in sorted(par_cle.items()):
+        plages = sorted(plages, key=lambda p: (_minutes(p[0]), _minutes(p[1])))
+        trous = _trous(plages, tolerance, pause=pause)
+        series = _series(plages, tolerance)
+        plus_longue = max(
+            (_charge_serie(plages, debut, fin) for debut, fin in series), default=0)
+        total = sum(_minutes(fin) - _minutes(debut) for debut, fin in plages)
+        if trous:
+            resume['trous'] += len(trous)
+        if plus_longue > int(round(politique['max_heures_consecutives'] * 60)):
+            resume['series_trop_longues'] += 1
+        if total > int(round(politique['max_heures_par_jour'] * 60)):
+            resume['journees_surchargees'] += 1
+        if trous or plus_longue > int(round(politique['max_heures_consecutives'] * 60)) \
+                or total > int(round(politique['max_heures_par_jour'] * 60)):
+            resume['detail'].append({
+                'ressource': f'groupe {ressource}', 'jour': jour,
+                'trous': len(trous),
+                'heures_consecutives_max': _en_heures(plus_longue),
+                'heures_jour': _en_heures(total),
+            })
+    return resume
+
+
 # ── Compatibilité salle / nature de séance (C7) ──────────────────────────────
 
 def types_salle_compatibles(nature):

@@ -191,8 +191,18 @@ def _salles_compatibles(besoin, salles):
     return sorted(compatibles, key=lambda s: (s.capacite or 10 ** 6, s.pk))
 
 
-def _penalites(besoin, creneau, salle, annee_id, index=None):
-    """Contraintes SOUPLES (étape K) — jamais bloquantes."""
+def _penalites(besoin, creneau, salle, annee_id, index=None,
+               index_occupations=None, politique_souples=None):
+    """Contraintes SOUPLES (étape K) — jamais bloquantes.
+
+    Deux familles :
+      * historiques (préférence enseignant, salle surdimensionnée, contexte
+        incomplet) : toujours évaluées ;
+      * configurables (trous, séries trop longues, surcharge journalière) :
+        évaluées **uniquement** si la politique les active. Par défaut elles
+        sont inactives (``contraintes.SOUPLES_DEFAUT``), donc le plan produit
+        reste identique à ce qu'il était avant leur introduction.
+    """
     penalites = []
     if not C.preference_enseignant(
         besoin.enseignant_id, annee_id, creneau.jour,
@@ -216,6 +226,15 @@ def _penalites(besoin, creneau, salle, annee_id, index=None):
             'La séance n’est rattachée à aucun semestre.',
             poids=1,
         ))
+    # Contraintes souples configurables — la journée du GROUPE est jugée
+    # (c'est la cohorte qui subit les trous et les journées trop longues).
+    # Aucun effet si la politique est inactive : c'est le cas par défaut.
+    penalites.extend(C.penalites_souples(
+        index_occupations,
+        prefixe='G', ressource=besoin.groupe_id, jour=creneau.jour,
+        heure_debut=creneau.heure_debut, heure_fin=creneau.heure_fin,
+        politique=politique_souples,
+    ))
     return penalites
 
 
@@ -236,6 +255,7 @@ def candidats(besoin, contexte, occupations):
     creneaux_testes = salles_testes = 0
     index = contexte.get('index_disponibilites')
     index_occupations = contexte.get('index_occupations')
+    politique_souples = contexte.get('politique_souples')
     eligibles = _salles_compatibles(besoin, salles)
 
     for creneau in creneaux:
@@ -286,7 +306,11 @@ def candidats(besoin, contexte, occupations):
             if violations:
                 ecartees.append(violations)
                 continue
-            penalites = _penalites(besoin, creneau, salle, annee_id, index=index)
+            penalites = _penalites(
+                besoin, creneau, salle, annee_id, index=index,
+                index_occupations=index_occupations,
+                politique_souples=politique_souples,
+            )
             retenus.append(Placement(
                 besoin=besoin, creneau=creneau, salle=salle,
                 semaine_debut=semaines[0], semaine_fin=semaines[-1],
@@ -450,6 +474,10 @@ def _construire_resultat(resultat_besoins, besoins, placements, occupations,
             'budget_restant': budget_liste[0],
             'nb_placements_effectues': len(placements),
             'finalite': finalite,
+            # Contraintes souples : politique effective + bilan du plan.
+            # Inactives par défaut → le bilan est vide et rien ne change.
+            'contraintes_souples': C.resume_souples(
+                placements, contexte.get('politique_souples')),
         },
         motif_echec=None if placements or not non_places else (
             MOTIF_AUCUNE_SALLE_COMPATIBLE if not placements else None
@@ -475,6 +503,7 @@ def generate_schedule(
     perimetre_injs_seulement=True,
     occupations_initiales=None,
     besoins=None,
+    contraintes_souples=None,
 ):
     """Génère un plan d'emploi du temps (étape L) — **sans jamais publier**.
 
@@ -580,6 +609,9 @@ def generate_schedule(
     # 5. Résolution. L'état d'occupation initial (LOT 3) précède les placements
     #    de ce run : `_backtrack` n'en retire que ce qu'il ajoute lui-même.
     contexte = _construire_contexte(creneaux, salles, annee_academique_id, semaines)
+    # Politique des contraintes souples : défaut (inactives) sauf réglage
+    # Django ou paramètre explicite de l'appelant.
+    contexte['politique_souples'] = C.politique_souples(contraintes_souples)
     besoins = list(resultat_besoins.besoins)
     occupations = list(occupations_initiales or [])
     # Index incrémental des occupations : le solveur ne parcourt plus toute la

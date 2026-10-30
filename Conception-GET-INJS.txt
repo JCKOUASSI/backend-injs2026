@@ -102,10 +102,15 @@ APA », « 6. Groupes, Catég., Horaires » et « 13. Emploi du temps (modèle) 
       éviter > 4 h consécutives, éviter les trous, éviter 8 h/jour, respecter
       les préférences enseignants, équilibrer les matières, éviter les salles
       surdimensionnées.
-      → Partiellement implémenté : préférences enseignants (PREFERENCE) et
-        salle surdimensionnée sont pénalisées (poids 2 et 1). Les règles
-        « > 4 h consécutives », « trous », « 8 h/jour » ne sont PAS codées :
-        aucune pondération officielle n'est fournie par les documents.
+      → Implémenté en deux registres :
+        (1) toujours actives : préférences enseignants (poids 2) et salle
+            surdimensionnée (poids 1) ;
+        (2) configurables et INACTIVES PAR DÉFAUT : trous, séries de plus de
+            N heures consécutives, journées de plus de N heures. Aucune
+            pondération officielle n'étant fournie par les documents, ces
+            règles ne s'appliquent que sur décision explicite de l'INJS
+            (réglage Django `EDTS_CONTRAINTES_SOUPLES` → voir §5.7 bis).
+            Voir `edts/moteur/contraintes.py` (bloc « Contraintes SOUPLES »).
 
   (d) Canevas horaire officiel (Excel, feuille « 13. Emploi du temps (modèle) ») :
       6 jours (lundi → samedi) × 4 plages : 07h30–09h30, 09h45–11h45,
@@ -413,6 +418,51 @@ PARTIE 5 — GUIDE UTILISATEUR
   « Réactiver ». Sans motif : 400 MOTIF_ANNULATION_REQUIS. Sur un EDT publié
   ou archivé : 409 STATUT_EDT_INVALIDE.
 
+5.7 bis Contraintes souples (activables, jamais bloquantes)
+  Politique par défaut (`contraintes.SOUPLES_DEFAUT`), identique à un solveur
+  sans règles souples tant qu'elle n'est pas activée :
+
+    actives=False            aucune règle souple n'est évaluée
+    max_heures_consecutives=4.0
+    max_heures_par_jour=8.0
+    tolerance_minutes=15     une interruption ≤ 15 min n'est pas un trou
+    penaliser_trous=True     poids_trou=1
+    poids_consecutif=2       poids_surcharge=3
+    pause_dejeuner=None      aucune pause institutionnelle supposée
+
+  Priorité de configuration : défauts < réglage Django
+  `EDTS_CONTRAINTES_SOUSPLES` < paramètre explicite de `generate_schedule()`
+  (`contraintes_souples=`). Un réglage mal orthographié ou mal typé lève une
+  erreur explicite : un `ValueError` plutôt qu'une règle silencieusement
+  ignorée.
+
+  Codes produits (pénalités, jamais des refus) :
+    TROU_HORAIRE                     temps d'attente entre deux séances du
+                                     groupe, hors tolérance et hors pause ;
+    PLUS_DE_X_HEURES_CONSECUTIVES    série continue > max_heures_consecutives.
+                                     La charge retenue est la SOMME des durées
+                                     de cours de la série : une série
+                                     09:00–11:00 + 11:15–13:00 vaut 4 h de
+                                     cours et non 4 h 15 de présence ;
+    SURCHARGE_JOURNALIERE            total du jour > max_heures_par_jour.
+
+  Trois précisions de conception, assumées et testées :
+    - les bornes sont jugées par JOURNÉE DE GROUPE (une journée peut être
+      longue pour un enseignant sans l'être pour l'étudiant) ;
+    - les seuils sont des DÉPASSEMENTS STRICTS : 4 h = pas de pénalité ;
+    - `pause_dejeuner` vaut `None` par défaut. L'INJS n'ayant publié aucune
+      pause officielle, le moteur n'en invente pas : sans pause déclarée
+      (ex. `('12:15', '13:30')`), une coupure méridienne de 1 h 15 est
+      signalée comme trou. C'est explicite, réglable et vérifié par un test
+      dédié (avec et sans pause déclarée).
+
+  Visibilité : `GET /api/edts/lmd/constraints/` renvoie
+  `souples.politique`, `actives_par_defaut: false`, l'explication, le moyen
+  d'activation et les trois codes. Aucune règle ne s'applique sans être
+  affichée. Le bilan de génération expose `metrics.contraintes_souples`
+  (`active`, `trous`, `series_trop_longues`, `journees_surchargees`,
+  `detail`).
+
 5.8 Simuler une variante
   Générer avec « Enregistrer les EDT › décoché : le plan est produit et
   contrôlé sans être persisté ; les EDT officiels ne sont pas modifiés.
@@ -455,7 +505,8 @@ PARTIE 6 — TESTS ET PERFORMANCES
   Configuration Django                  PASS          manage.py check → 0 issue
   Migrations cohérentes                 PASS          makemigrations --check → « No changes »
   Migration 0008 appliquée              PASS          migrate edts → OK
-  Tests backend groupe EDT              PASS          456 tests, code 0 (./arena/tests_par_groupe.sh edt)
+  Tests backend groupe EDT              PASS          476 tests, code 0 (./arena/tests_par_groupe.sh edt)
+  dont contraintes souples (nouveau)    PASS          20 tests (edts.tests.test_contraintes_souples)
   dont campagnes (nouveaux)             PASS          16 tests (edts.tests.test_campagnes)
   dont export PDF (nouveau)             PASS          4 tests (TestExportPdfEmploiDuTemps)
   dont export XLSX (nouveau)            PASS          4 tests (TestExportXlsxEmploiDuTemps)
@@ -464,10 +515,15 @@ PARTIE 6 — TESTS ET PERFORMANCES
   Export PDF d'un EDT                   PASS          application/pdf, 3 066 octets, grille réelle
                                                      (texte extrait et image de contrôle produite)
   Tests frontend                        PASS          112 fichiers / 2 022 tests, code 0
+                                                     (rejoués après le chantier 2 : inchangés)
   dont campagnes / versions / audit     PASS          6 + 5 + 4 tests
   dont déplacement / annulation         PASS          6 + 4 tests (components/edt)
   Déplacement d'une séance (live)       PASS          GET 26 candidats (plan valide), POST 200 accepté,
                                                      annulation motivée 200 réversible, sans motif 400
+  Contraintes souples (live)            PASS          GET /api/edts/lmd/constraints/ → souples.politique,
+                                                     actives_par_defaut=false, 3 codes
+  Contraintes souples (solveur)         PASS          activation = mêmes séances placées + pénalités
+                                                     signalées ; aucun besoin écarté
   Lint frontend                         PASS          npm run lint → code 0
   Build frontend                        PASS          npm run build → code 0
   Import externe (CSV)                  PASS          test_import_inscrits + benchmark (100 → 14 000)
@@ -599,6 +655,32 @@ Ordre chronologique réel :
     bouton « PDF » ajouté à côté de l'export CSV dans l'écran EDT.
     Groupe EDT rejoué : 449 tests, code 0.
 
+22. Contraintes souples (chantier 2) — règles demandées par la documentation
+    mais sans pondération officielle. Décision : les CODER, les laisser
+    INACTIVES par défaut, les rendre activables par réglage, et ne jamais les
+    laisser bloquer un placement.
+    (a) `contraintes.py` : bloc « Contraintes SOUPLES » — politique validée
+        (clé inconnue ou type invalide ⇒ ValueError), trous, séries,
+        surcharges, résumé de plan.
+    (b) `generation.py` : `_penalites()` enrichi, `candidats()` lit
+        `contexte['politique_souples']`, `generate_schedule(...,
+        contraintes_souples=)`, `metrics['contraintes_souples']`.
+    (c) `api_lmd.py` : `GET /constraints/` expose `souples`.
+        `settings.py` : `EDTS_CONTRAINTES_SOUPLES = {}`.
+    (d) `test_contraintes_souples.py` : 20 tests (politique, pénalités,
+        résumé, et trois tests d'INTÉGRATION sur le solveur réel).
+    Deux défauts corrigés pendant l'écriture, pas contournés :
+    - `_trous()` soustrayait deux `datetime.time` (TypeError) : passage par
+      une conversion en minutes ;
+    - la charge d'une série comptait le TEMPS DE PRÉSENCE (pauses incluses),
+      ce qui déclarait « 4 h consécutives » une journée de 4 h de cours avec
+      une récréation. Elle compte désormais la SOMME DES DURÉES DE COURS.
+    Décision documentée : `pause_dejeuner=None` par défaut — aucune pause
+    officielle n'étant publiée, le moteur n'en invente pas ; un test vérifie
+    les deux comportements (pause déclarée / non déclarée).
+    Comptes : groupe EDT 476 tests code 0 (456 + 20) ; frontend inchangé
+    112 fichiers / 2 022 tests ; preuve HTTP réelle sur l'API 8000.
+
 Erreurs rencontrées et solutions :
   - `campaigne_en_dict` (NameError) → renommé `campagne_en_dict`.
   - Migration de statut de maquette refusée en test → scénario remplacé.
@@ -678,12 +760,15 @@ Déjà présent avant la mission (vérifié, non réécrit) :
 Non exécuté / non couvert :
   - au-delà de 14 000 étudiants : non mesuré ;
   - PostgreSQL, navigateur réel, CI distante ;
-  - contraintes souples non pondérées (> 4 h consécutives, trous, 8 h/jour).
+  - contraintes souples : codées mais INACTIVES par défaut (aucune
+    pondération officielle) ; leur activation n'a pas été mesurée sur un
+    volume réel de 3 500+ étudiants.
 
 Actions nécessitant une décision ou une habilitation :
   - saisie du patrimoine réel (salles, capacités) ;
   - calendrier académique officiel ;
-  - pondération des contraintes souples ;
+  - pondération officielle des contraintes souples et horaire de la pause
+    déjeuner (le moteur attend ces valeurs, il ne les invente pas) ;
   - commit / push / déploiement (non effectués par cette mission).
 
 --------------------------------------------------------------------------------

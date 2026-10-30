@@ -394,11 +394,33 @@ def slots_api(request):
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def contraintes_api(request):
-    """GET /api/edts/lmd/constraints/ — C1→C10, séparées des préférences."""
+    """GET /api/edts/lmd/constraints/ — C1→C10, souples et préférences.
+
+    Expose la **politique effective** des contraintes souples : l'utilisateur
+    voit si elles sont actives, avec quelles bornes et quels poids. Aucune
+    valeur n'est appliquée sans être affichée ici.
+    """
+    from edts.moteur import contraintes as C
+
     return Response({
         'dures': [{'code': code, 'libelle': libelle}
                   for code, libelle in LIBELLES_CONTRAINTES.items()],
         'avertissements': [LIBELLE_PREFERENCES],
+        'souples': {
+            'politique': C.politique_souples(),
+            'actives_par_defaut': C.SOUPLES_DEFAUT['actives'],
+            'explication': (
+                'Contraintes souples (trous, séries de plus de '
+                'max_heures_consecutives, journées de plus de '
+                'max_heures_par_jour). Désactivées par défaut : aucune '
+                'pondération officielle n’est fournie par le référentiel, donc '
+                'les activer revient à une décision explicite de l’INJS. '
+                'Elles ne bloquent jamais un placement : elles produisent des '
+                'pénalités visibles (score).'),
+            'activation': 'Réglage Django EDTS_CONTRAINTES_SOUPLES.',
+            'codes': ['TROU_HORAIRE', 'PLUS_DE_X_HEURES_CONSECUTIVES',
+                      'SURCHARGE_JOURNALIERE'],
+        },
         'capacite_inconnue': (
             'Une salle sans capacité renseignée (NULL) n’est jamais considérée '
             'comme « capacité suffisante » : C4 n’est pas vérifiable et le '
