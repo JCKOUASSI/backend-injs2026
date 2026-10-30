@@ -516,8 +516,10 @@ PARTIE 5 — GUIDE UTILISATEUR
     max_heures_consecutives = 4 h   (doc 2, §11 K)
     max_heures_par_jour = 8 h       (doc 2, §11 K)
     tolerance_minutes = 15
-    pause_dejeuner = aucune         (le canevas officiel n'est pas en base :
-                                     voir l'écart signalé en 6.3)
+    pause_dejeuner = 11:45 – 13:30  (déduite du canevas officiel : c'est le
+                                     SEUL long intervalle entre deux plages,
+                                     1 h 45, les autres valant 15 min ; cf.
+                                     `canevas_officiel.pause_deduite()`)
     poids = 1 / 2 / 3               (valeurs déjà retenues par le chantier 2)
 
   Mesure du même jour : sur les plans réellement produits (3 500 et 14 000
@@ -526,8 +528,37 @@ PARTIE 5 — GUIDE UTILISATEUR
   Coût mesuré : +5,4 % à 3 500, +6,9 % à 14 000 (6.2 bis).
 
   La décision est tracée en base : auteur `admin`, date, et motif complet
-  (bornes, mesure, absence de pause). Elle se révoque d'une commande
+  (bornes, mesure, origine de la pause). Elle se révoque d'une commande
   (`--desactiver`) sans rien perdre ni redéployer.
+
+  Le canevas officiel a été saisi dans la base de démonstration (24 créneaux)
+  par `manage.py verifier_canevas --creer-manquants`, puis vérifié conforme.
+
+5.7 quater Vérifier le canevas horaire
+  `manage.py verifier_canevas` compare les créneaux types réellement en base au
+  canevas officiel (6 jours × 4 plages de 2 h = 24 créneaux, source :
+  `edts/moteur/canevas_officiel.py`, feuille « 13. Emploi du temps (modèle) »).
+
+  Trois écarts sont distingués, parce qu'ils appellent des corrections
+  différentes :
+    - **manquants** — plages officielles absentes : capacité sous-utilisée ;
+    - **non prévus** — créneaux hors référentiel : ils seraient réellement
+      utilisés par le moteur, donc un horaire non validé entrerait dans les
+      plannings ;
+    - **chevauchements** — deux créneaux du même jour se recouvrent : C1/C2/C3
+      ne peuvent plus être garantis sur l'intervalle commun, le moteur pouvant
+      placer deux séances « compatibles » qui ont lieu en même temps.
+
+  `--creer-manquants` crée les créneaux officiels absents ; **rien n'est jamais
+  supprimé** (un créneau en base peut déjà porter des séances réelles) et rien
+  n'est modifié sans cette option. `--json` écrit le rapport.
+
+  La pause institutionnelle se déduit du même référentiel : `pause_deduite()`
+  renvoie le plus long intervalle entre deux plages (11:45–13:30, 1 h 45) et
+  ignore les coupures de 15 min. Sans cette déduction, une journée normale
+  07:30–11:45 + 13:30–17:45 serait signalée comme trouée — c'est-à-dire que la
+  règle souple punirait le fonctionnement normal de l'établissement. Un test
+  dédié vérifie les deux comportements.
 
 5.8 Simuler une variante
   Générer avec « Enregistrer les EDT › décoché : le plan est produit et
@@ -571,8 +602,9 @@ PARTIE 6 — TESTS ET PERFORMANCES
   Configuration Django                  PASS          manage.py check → 0 issue
   Migrations cohérentes                 PASS          makemigrations --check → « No changes »
   Migration 0008 appliquée              PASS          migrate edts → OK
-  Tests backend groupe EDT              PASS          538 tests, code 0 (./arena/tests_par_groupe.sh edt)
-  dont identifiants de groupe (nouveau) PASS          15 tests (edts.tests.test_identifiants_groupes)
+  Tests backend groupe EDT              PASS          557 tests, code 0 (./arena/tests_par_groupe.sh edt)
+  dont identifiants de groupe           PASS          15 tests (edts.tests.test_identifiants_groupes)
+  dont canevas officiel (nouveau)       PASS          19 tests (edts.tests.test_canevas_officiel)
   dont outil de mesure                  PASS          4 tests (edts.tests.test_benchmark)
   dont réglage reproductible (nouveau)  PASS          16 tests (edts.tests.test_regler_contraintes)
   dont bilan annuel souple              PASS          3 tests (BilanContraintesSouplesTests)
@@ -764,13 +796,15 @@ PARTIE 6 — TESTS ET PERFORMANCES
     neuf groupes exécutés dans le même environnement (2 733 tests, code 0),
     et le job frontend par `npm run lint` (0) et `npx vitest run`
     (112 fichiers / 2 025 tests).
-  - ÉCART SIGNALÉ, non corrigé : la base de développement contient 14 créneaux
-    types aux plages hétérogènes (08:00–12:00, 14:00–17:00, 18:00–20:00…), et
-    non les 24 créneaux du canevas officiel décrit plus haut (07:30–09:30,
-    09:45–11:45, 13:30–15:30, 15:45–17:45). Conséquence assumée : aucune pause
-    déjeuner n'est déclarée, car la déduire de ces créneaux reviendrait à
-    inventer un horaire. Le canevas officiel doit être saisi (ou la base
-    contrôlée) avant de fixer la pause.
+  - ÉCART CANEVAS : RÉSOLU. La base contenait 14 créneaux aux plages
+    hétérogènes et chevauchantes (08:00–12:00, 14:00–17:00, 18:00–20:00…) au
+    lieu des 24 créneaux officiels. Un contrôle dédié (`verifier_canevas`)
+    signale désormais manquants, non prévus et chevauchements ; les 24 créneaux
+    officiels ont été saisis dans la base de démonstration et le canevas est
+    déclaré CONFORME. La pause déjeuner (11:45–13:30) en découle et n'est donc
+    plus une supposition.
+    Reste à la main de l'INJS : valider que le canevas de production est bien
+    celui-là (le contrôle le dira en une commande).
 
 --------------------------------------------------------------------------------
 PARTIE 7 — JOURNAL D'IMPLÉMENTATION
@@ -977,6 +1011,23 @@ Ordre chronologique réel :
     `POSTGRES_*`), sur PostgreSQL 16.2. Toutes vertes. La couverture des tests
     est identique (neuf groupes = même ensemble que le run monolithique), mais
     elle n'est pas EXÉCUTÉE PAR GITHUB.
+
+28. Chantier 8 — le canevas horaire devient contrôlable, et la pause cesse
+    d'être une supposition.
+    (a) `edts/moteur/canevas_officiel.py` : source de vérité unique (6 jours ×
+        4 plages = 24 créneaux), détection des manquants, des non prévus et des
+        CHEVAUCHEMENTS (cas réel de la base : 08:00–12:00 contenant 08:00–10:00,
+        où C1/C2/C3 ne sont plus garantissables).
+    (b) `manage.py verifier_canevas` : rapport lisible, `--creer-manquants`
+        (création seule, aucune suppression), `--json`. 19 tests.
+    (c) La pause déjeuner se DÉDUIT du référentiel : `pause_deduite()` renvoie
+        11:45–13:30, seul intervalle long entre deux plages. Sans elle, une
+        journée normale 07:30–11:45 + 13:30–17:45 était pénalisée comme trouée.
+        Un test prouve les deux comportements sur le moteur réel.
+    (d) Les 24 créneaux officiels ont été saisis dans la base de démonstration ;
+        `verifier_canevas` déclare le canevas CONFORME. La politique a été
+        réappliquée avec la pause déduite (même commande, rejouable).
+    Comptes : groupe EDT 557 tests code 0.
 
 Erreurs rencontrées et solutions :
   - `campaigne_en_dict` (NameError) → renommé `campagne_en_dict`.
