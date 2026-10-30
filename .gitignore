@@ -97,3 +97,6 @@ backend/nohup.out
 /workspace/
 /arena/previews/
 *.prompt.md
+
+# Fichiers temporaires Office/Excel (~$*)
+~$*
