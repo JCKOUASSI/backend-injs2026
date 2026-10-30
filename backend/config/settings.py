@@ -332,6 +332,18 @@ STORAGES = {
         'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
     },
 }
+
+# Le stockage « manifeste » de WhiteNoise exige un `collectstatic` préalable :
+# sans le manifeste, toute page utilisant {% static %} lève une erreur 500.
+# Les tests ne doivent pas dépendre d'un artefact de build — ils échouaient en
+# masse après chaque réinitialisation du bac à sable (`staticfiles/` absent).
+# `arena/tests_par_groupe.sh` exporte STORAGES=STORAGE_DE_TEST depuis toujours,
+# mais la variable n'était LUE par personne : elle est désormais effective.
+# La production conserve le manifeste (variable absente).
+if os.environ.get('STORAGES') == 'STORAGE_DE_TEST':
+    STORAGES['staticfiles'] = {
+        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    }
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 

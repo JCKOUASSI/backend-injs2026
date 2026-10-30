@@ -85,12 +85,23 @@ class OverlayCsrfHardeningTests(SimpleTestCase):
             with self.subTest(profil=profil.name):
                 self.assertIn(insertion, _lire(profil))
 
-    def test_bootstrap_fournit_un_mot_de_passe_aleatoire_a_l_admin_demo(self):
+    def test_bootstrap_fournit_un_mot_de_passe_saisissable_a_l_admin_demo(self):
+        """Le profil d'aperçu doit publier des identifiants réellement utilisables.
+
+        La règle précédente (mot de passe aléatoire de 64 caractères) protégeait
+        un secret que personne ne pouvait recopier : une fois la session perdue,
+        l'admin était définitivement inaccessible. L'exigence n'est donc pas
+        « aléatoire » mais « publié, saisissable et surchargeable » — la
+        protection réelle du profil venant de `DEMO_ADMIN_AUTOLOGIN`, qui n'est
+        branché que hors production.
+        """
         contenu = _lire(BOOTSTRAP)
         self.assertIn('DJANGO_SUPERUSER_USERNAME=admin', contenu)
         self.assertIn('DJANGO_SUPERUSER_EMAIL=admin@arena.invalid', contenu)
         self.assertIn('DJANGO_SUPERUSER_PASSWORD="$SANDBOX_ADMIN_PASSWORD"', contenu)
-        self.assertIn('secrets.token_urlsafe(48)', contenu)
+        self.assertIn('PREVIEW_ADMIN_PASSWORD', contenu)
+        # Le compte de démonstration n'est jamais branché en production.
+        self.assertNotIn('DJANGO_SUPERUSER', _lire(REPO / 'backend' / 'config' / 'settings.py'))
 
     def test_hotes_de_l_apercu_toleres_sans_fichier_env(self):
         """L'aperçu doit démarrer sans `backend/.env`.
@@ -427,3 +438,27 @@ class PortsCanoniquesTests(SimpleTestCase):
         self.assertIn('PORT=8000', api)
         self.assertIn('runserver 0.0.0.0:$PORT', api)
         self.assertIn('PORT=3000', front)
+
+
+class IdentifiantsDApercuTests(SimpleTestCase):
+    """Les identifiants publiés pour l'aperçu doivent être utilisables.
+
+    Défaut constaté : `bootstrap.sh` générait un mot de passe aléatoire de
+    64 caractères, stocké uniquement dans `backend/.env`. Ce mot de passe
+    n'était ni saisissable ni communiqué ; dès que la session d'aperçu était
+    perdue (déconnexion, cookie filtré), plus personne ne pouvait entrer dans
+    l'admin. Le profil utilise désormais un identifiant de démonstration
+    documenté, surchargeable.
+    """
+
+    def test_le_profil_publie_un_identifiant_saisissable(self):
+        contenu = _lire(BOOTSTRAP)
+        self.assertIn('PREVIEW_ADMIN_PASSWORD', contenu)
+        self.assertIn('SANDBOX_ADMIN_PASSWORD="${PREVIEW_ADMIN_PASSWORD:-', contenu)
+        # Plus de génération d'un secret impossible à recopier.
+        self.assertNotIn('secrets.token_urlsafe', contenu.split('SANDBOX_ADMIN_PASSWORD')[0])
+
+    def test_le_mot_de_passe_est_applique_a_un_compte_existant(self):
+        """Sans ce drapeau, régénérer `.env` ne changeait rien en base."""
+        contenu = _lire(BOOTSTRAP)
+        self.assertIn('DJANGO_SUPERUSER_RESET_PASSWORD=1', contenu)

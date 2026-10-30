@@ -130,8 +130,20 @@ bash arena/bootstrap.sh          # (re)génère le profil d'aperçu + backend/.e
 ./arena/lancer-front.sh          # site Vite, port figé 3000 (proxy /api → 8000)
 ```
 
+**Identifiants de l'aperçu : `admin` / `admin123`.** Le profil ouvre l'admin
+sans mot de passe (auto-connexion) ; ce couple sert au retour manuel après une
+déconnexion, quand les cookies sont filtrés. Il est **réservé au profil
+d'aperçu** — jamais dans `config/settings.py`, jamais en production — et se
+surcharge pour un environnement partagé :
+
+```bash
+PREVIEW_ADMIN_PASSWORD='mot-de-passe-long' bash arena/bootstrap.sh --write-env
+```
+
 `bootstrap.sh` écrit `backend/.env` **s'il est absent** (jamais d'écrasement
-silencieux) ; `--write-env` force sa réécriture. Le profil d'aperçu tolère par
+silencieux) ; `--write-env` force sa réécriture. Le mot de passe déclaré y est
+appliqué au compte existant (drapeau `DJANGO_SUPERUSER_RESET_PASSWORD`), faute
+de quoi le fichier annonçait des identifiants qui échouaient à la connexion. Le profil d'aperçu tolère par
 lui-même l'hôte `*.e2b.app` (hôtes + origines CSRF), afin que l'aperçu démarre
 même après une réinitialisation du bac à sable. Ce profil n'est jamais chargé
 en production.

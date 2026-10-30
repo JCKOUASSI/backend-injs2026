@@ -39,3 +39,68 @@ class IsolationCompteDemoTests(TestCase):
             "Le compte de démonstration a été créé dans la base de test.",
         )
         self.assertEqual(User.objects.count(), avant)
+
+
+class RemiseANiveauMotDePasseDemoTests(TestCase):
+    """Le mot de passe publié dans `.env` doit correspondre au compte réel.
+
+    Défaut constaté : `DJANGO_SUPERUSER_PASSWORD` n'était appliqué qu'à la
+    CRÉATION du compte. Un `.env` régénéré (ou un mot de passe changé)
+    annonçait donc des identifiants qui échouaient à la connexion — l'admin
+    d'aperçu devenait inaccessible sans aucun moyen d'y revenir.
+    """
+
+    IDENTIFIANTS = {
+        'DJANGO_SUPERUSER_USERNAME': 'admin-demo',
+        'DJANGO_SUPERUSER_EMAIL': 'admin-demo@arena.invalid',
+        'DJANGO_SUPERUSER_PASSWORD': 'nouveau-mot-de-passe',
+    }
+
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+
+        self.User = get_user_model()
+        self.compte = self.User.objects.create_superuser(
+            username='admin-demo', email='admin-demo@arena.invalid',
+            password='ancien-mot-de-passe',
+        )
+        # `create_superuser_from_env` ne fait rien pendant la suite de tests :
+        # on neutralise uniquement cette garde, pas les autres.
+        patche = mock.patch(
+            'authentication.apps._suite_de_tests_en_cours', return_value=False,
+        )
+        patche.start()
+        self.addCleanup(patche.stop)
+
+    def test_mot_de_passe_non_remplace_sans_demande_explicite(self):
+        with mock.patch.dict(os.environ, self.IDENTIFIANTS, clear=False):
+            os.environ.pop('DJANGO_SUPERUSER_RESET_PASSWORD', None)
+            create_superuser_from_env()
+
+        self.compte.refresh_from_db()
+        self.assertTrue(self.compte.check_password('ancien-mot-de-passe'))
+        self.assertFalse(self.compte.check_password('nouveau-mot-de-passe'))
+
+    def test_mot_de_passe_remis_a_niveau_sur_demande(self):
+        with mock.patch.dict(os.environ, {
+            **self.IDENTIFIANTS, 'DJANGO_SUPERUSER_RESET_PASSWORD': '1',
+        }, clear=False):
+            create_superuser_from_env()
+
+        self.compte.refresh_from_db()
+        self.assertTrue(
+            self.compte.check_password('nouveau-mot-de-passe'),
+            "Le mot de passe annoncé par `.env` doit être celui du compte.",
+        )
+        self.assertFalse(self.compte.check_password('ancien-mot-de-passe'))
+
+    def test_compte_reactive_au_passage(self):
+        """Un compte désactivé redevient utilisable : sinon l'aperçu est bloqué."""
+        self.User.objects.filter(pk=self.compte.pk).update(is_active=False)
+        with mock.patch.dict(os.environ, {
+            **self.IDENTIFIANTS, 'DJANGO_SUPERUSER_RESET_PASSWORD': '1',
+        }, clear=False):
+            create_superuser_from_env()
+
+        self.compte.refresh_from_db()
+        self.assertTrue(self.compte.is_active)

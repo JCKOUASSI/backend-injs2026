@@ -46,7 +46,23 @@ def create_superuser_from_env():
         return
 
     User = get_user_model()
-    if User.objects.filter(username=username).exists():
+    existant = User.objects.filter(username=username).first()
+
+    if existant is not None:
+        # Défaut corrigé : le compte existant était laissé tel quel, si bien
+        # qu'un mot de passe régénéré dans `.env` ne s'appliquait JAMAIS — le
+        # fichier annonçait alors des identifiants qui échouaient à la
+        # connexion. La remise à niveau n'a lieu que sur demande explicite
+        # (`DJANGO_SUPERUSER_RESET_PASSWORD`), jamais sur un simple démarrage.
+        if os.environ.get('DJANGO_SUPERUSER_RESET_PASSWORD', '').lower() in ('1', 'true', 'yes'):
+            if existant.check_password(password):
+                logger.info("Super-utilisateur '%s' : mot de passe déjà à jour.", username)
+                return
+            existant.set_password(password)
+            existant.is_active = True
+            existant.save(update_fields=['password', 'is_active'])
+            logger.info("Super-utilisateur '%s' : mot de passe remis à niveau.", username)
+            return
         logger.info("Super-utilisateur '%s' existe déjà — ignoré.", username)
         return
 

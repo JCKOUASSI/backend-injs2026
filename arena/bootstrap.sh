@@ -22,9 +22,25 @@ ENV_FILE="$ROOT/backend/.env"
 
 log() { printf '\033[1;36m[bootstrap]\033[0m %s\n' "$*"; }
 
-# ── 1. Mot de passe aléatoire du compte de démonstration ─────────────────────
-SANDBOX_ADMIN_PASSWORD="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
-log "Mot de passe démo généré (${#SANDBOX_ADMIN_PASSWORD} caractères)."
+# ── 1. Mot de passe du compte de démonstration ───────────────────────────────
+# Un mot de passe aléatoire de 64 caractères n'était PAS saisissable : dès que
+# la session d'aperçu était perdue (déconnexion, cookie filtré), l'admin
+# devenait inaccessible et aucun identifiant connu ne permettait d'y revenir.
+# Le profil d'aperçu utilise donc un identifiant de DÉMONSTRATION, documenté,
+# et surchargeable pour un environnement partagé :
+#
+#     PREVIEW_ADMIN_PASSWORD='...' ./arena/bootstrap.sh --write-env
+#
+# Ce compte n'existe que dans le profil d'aperçu : `arena/settings_sandbox.py`
+# et `backend/.env`, jamais dans `config/settings.py` (production). Le profil
+# ouvre d'ailleurs déjà l'admin sans mot de passe (`DEMO_ADMIN_AUTOLOGIN=1`) :
+# ce mot de passe sert au retour manuel, pas de barrière de sécurité.
+SANDBOX_ADMIN_PASSWORD="${PREVIEW_ADMIN_PASSWORD:-admin123}"
+if [ "${#SANDBOX_ADMIN_PASSWORD}" -lt 8 ]; then
+  echo "[bootstrap] PREVIEW_ADMIN_PASSWORD trop court (8 caractères minimum)." >&2
+  exit 2
+fi
+log "Compte de démonstration : admin / ${SANDBOX_ADMIN_PASSWORD} (aperçu uniquement)"
 
 # ── 2. Régénération du profil d'aperçu ───────────────────────────────────────
 log "Génération de $PROFIL"
@@ -128,9 +144,13 @@ DEMO_ADMIN_AUTOLOGIN=1
 DJANGO_SUPERUSER_USERNAME=admin
 DJANGO_SUPERUSER_EMAIL=admin@arena.invalid
 DJANGO_SUPERUSER_PASSWORD="$SANDBOX_ADMIN_PASSWORD"
+# Autorise la remise à niveau du mot de passe d'un compte DÉJÀ existant :
+# sans ce drapeau, régénérer le .env ne changeait rien en base et l'identifiant
+# publié devenait faux.
+DJANGO_SUPERUSER_RESET_PASSWORD=1
 ENV
   chmod 600 "$ENV_FILE"
-  log "Compte de démonstration : admin / \$SANDBOX_ADMIN_PASSWORD (voir $ENV_FILE)"
+  log "Compte de démonstration : admin / $SANDBOX_ADMIN_PASSWORD (voir $ENV_FILE)"
 fi
 
 # ── 4. Rappel des exports à charger dans le shell ────────────────────────────
