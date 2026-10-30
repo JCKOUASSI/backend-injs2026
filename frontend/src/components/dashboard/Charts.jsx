@@ -1,38 +1,30 @@
 import React from 'react'
 
 /**
- * Graphique de lignes courbes lissées (Spline Area Chart)
- * pour « Évolution des effectifs » (6 ans : 2021 à 2026).
+ * Graphique de lignes courbes lissées (Spline Area Chart).
+ *
+ * Les séries proviennent de l'appelant. Ce composant affichait auparavant une
+ * « évolution des effectifs 2021-2026 » entièrement fabriquée (820 → 1248
+ * étudiants, etc.) : ces valeurs n'existaient nulle part en base et se
+ * présentaient pourtant comme l'historique réel de l'établissement.
  */
 export function VectorSplineAreaChart({
   title = 'Évolution des effectifs',
   period = '6 ans',
+  years = [],
+  series = [],
 }) {
-  const years = ['2021', '2022', '2023', '2024', '2025', '2026']
-  const series = [
-    {
-      name: 'Étudiants',
-      color: '#2F80ED',
-      data: [820, 950, 1040, 1120, 1180, 1248],
-    },
-    {
-      name: 'Candidats',
-      color: '#38BDF8',
-      data: [1450, 1680, 1890, 2050, 2200, 2340],
-    },
-    {
-      name: 'Enseignants',
-      color: '#06B6D4',
-      data: [142, 155, 164, 172, 179, 186],
-    },
-  ]
+  const aDesDonnees = years.length > 1 && series.some((s) => (s.data || []).length > 1)
 
   // Dimensions SVG
   const width = 480
   const height = 180
   const paddingX = 40
   const paddingY = 25
-  const maxY = 2500
+  const maxY = Math.max(
+    1,
+    ...series.flatMap((s) => (s.data || []).map((v) => Number(v) || 0)),
+  )
 
   const getCoordinates = (val, idx) => {
     const x = paddingX + idx * ((width - paddingX * 2) / (years.length - 1))
@@ -63,7 +55,7 @@ export function VectorSplineAreaChart({
     <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
         <div>
-          <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0B1F3A', margin: 0 }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#071B3A', margin: 0 }}>
             {title}
           </h3>
         </div>
@@ -84,13 +76,20 @@ export function VectorSplineAreaChart({
         </div>
       </div>
 
-      <div style={{ width: '100%', height: '140px' }}>
+      {!aDesDonnees && (
+        <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '0.5rem 0 0' }}>
+          Aucun historique d’effectifs n’est enregistré : aucune série n’est affichée.
+        </p>
+      )}
+
+      <div style={{ width: '100%', height: '140px', display: aDesDonnees ? 'block' : 'none' }}>
         <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: 'visible' }}>
-          {/* Lignes de grille horizontales */}
-          {[0, 500, 1000, 1500, 2000, 2500].map((gridVal) => {
+          {/* Lignes de grille horizontales, calculées sur les données réelles */}
+          {[0, 0.25, 0.5, 0.75, 1].map((fraction) => {
+            const gridVal = Math.round(maxY * fraction)
             const y = height - paddingY - (gridVal / maxY) * (height - paddingY * 2)
             return (
-              <g key={gridVal}>
+              <g key={fraction}>
                 <line x1={paddingX} y1={y} x2={width - paddingX} y2={y} stroke="#E2E8F0" strokeWidth="1" strokeDasharray="3 3" />
                 <text x={paddingX - 8} y={y + 3} textAnchor="end" fontSize="9" fill="#94A3B8" fontWeight="600">
                   {gridVal === 0 ? '0' : gridVal >= 1000 ? `${gridVal / 1000}k` : gridVal}
@@ -156,15 +155,22 @@ export function VectorDonutChart({
   totalLabel = 'Étudiants',
   centerTotal,
 }) {
-  const total = centerTotal ?? data.reduce((acc, d) => acc + d.value, 0)
+  const total = centerTotal ?? data.reduce((acc, d) => acc + (Number(d.value) || 0), 0)
+  const sansDonnees = !data.length || !total
   let cumulative = 0
 
   return (
     <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
       {title && (
-        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0B1F3A', margin: '0 0 0.75rem 0' }}>
+        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: '0 0 0.75rem 0' }}>
           {title}
         </h3>
+      )}
+
+      {sansDonnees && (
+        <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '0 0 0.5rem' }}>
+          Aucune donnée enregistrée pour cette répartition.
+        </p>
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flex: 1 }}>
@@ -184,7 +190,7 @@ export function VectorDonutChart({
                   cy="50"
                   r="38"
                   fill="transparent"
-                  stroke={slice.color || '#2F80ED'}
+                  stroke={slice.color || '#1267D6'}
                   strokeWidth="15"
                   strokeDasharray={strokeDasharray}
                   strokeDashoffset={strokeDashoffset}
@@ -193,7 +199,7 @@ export function VectorDonutChart({
                 />
               )
             })}
-            <text x="50" y="47" textAnchor="middle" fontSize="13" fontWeight="800" fill="#0B1F3A">
+            <text x="50" y="47" textAnchor="middle" fontSize="13" fontWeight="800" fill="#071B3A">
               {typeof total === 'number' ? total.toLocaleString('fr-FR') : total}
             </text>
             <text x="50" y="61" textAnchor="middle" fontSize="8" fill="#64748B" fontWeight="600">
@@ -211,7 +217,7 @@ export function VectorDonutChart({
                     width: 8,
                     height: 8,
                     borderRadius: '50%',
-                    backgroundColor: item.color || '#2F80ED',
+                    backgroundColor: item.color || '#1267D6',
                     flexShrink: 0,
                   }}
                 />
@@ -231,16 +237,21 @@ export function VectorDonutChart({
  */
 export function RadialGaugeCard({
   title,
-  value = 75,
-  color = '#10B981',
-  trend = '+5%',
-  trendComparison = 'vs 2025',
+  // Aucune valeur par défaut : ce composant affichait « 75 % », « +5 % » et
+  // « vs 2025 » quand on ne lui passait rien — des chiffres inventés.
+  value = null,
+  color = '#16A36A',
+  trend = null,
+  trendComparison = null,
   trendPositive = true,
 }) {
   const radius = 34
   const strokeWidth = 9
   const circumference = 2 * Math.PI * radius
-  const strokeDashoffset = circumference - (value / 100) * circumference
+  const taux = typeof value === 'number' && Number.isFinite(value) ? value : null
+  const strokeDashoffset = taux === null
+    ? circumference
+    : circumference - (taux / 100) * circumference
 
   return (
     <div className="glass-panel radial-gauge-card" style={{ height: '100%', justifyContent: 'space-between' }}>
@@ -270,15 +281,19 @@ export function RadialGaugeCard({
             style={{ transition: 'stroke-dashoffset 0.8s ease' }}
           />
         </svg>
-        <span className="gauge-pct-text">{value}%</span>
+        <span className="gauge-pct-text">{taux === null ? '—' : `${taux}%`}</span>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.72rem', marginTop: '0.25rem' }}>
-        <span className={`trend-pill ${trendPositive ? 'positive' : 'neutral'}`}>
-          <i className={`bi ${trendPositive ? 'bi-arrow-up-short' : 'bi-arrow-down-short'}`} />
-          {trend}
+        {trend && (
+          <span className={`trend-pill ${trendPositive ? 'positive' : 'neutral'}`}>
+            <i className={`bi ${trendPositive ? 'bi-arrow-up-short' : 'bi-arrow-down-short'}`} />
+            {trend}
+          </span>
+        )}
+        <span className="trend-comparison" style={{ color: '#64748B', fontWeight: 600 }}>
+          {trendComparison ? `✓ ${trendComparison}` : (taux === null ? 'non mesuré' : '')}
         </span>
-        <span className="trend-comparison" style={{ color: '#10B981', fontWeight: 600 }}>✓ {trendComparison}</span>
       </div>
     </div>
   )
@@ -289,19 +304,20 @@ export function RadialGaugeCard({
  */
 export function TeachingLoadBarChart({
   title = "Charge d'enseignement",
+  // Séries fournies par l'appelant : les volumes horaires affichés étaient
+  // auparavant codés en dur (340 h CM, 290 h TD, 220 h TP…).
+  categories = [],
+  series = [],
 }) {
-  const categories = ['Licence', 'Master', 'Doctorat']
-  const series = [
-    { name: 'CM', color: '#0B1F3A', values: [340, 210, 85] },
-    { name: 'TD', color: '#2F80ED', values: [290, 175, 45] },
-    { name: 'TP', color: '#38BDF8', values: [220, 130, 20] },
-  ]
-  const maxVal = 400
+  const maxVal = Math.max(
+    1,
+    ...series.flatMap((s) => (s.values || []).map((v) => Number(v) || 0)),
+  )
 
   return (
     <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0B1F3A', margin: 0 }}>
+        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: 0 }}>
           {title}
         </h3>
         <div style={{ display: 'flex', gap: '0.65rem', fontSize: '0.72rem', fontWeight: 600 }}>
@@ -314,13 +330,20 @@ export function TeachingLoadBarChart({
         </div>
       </div>
 
-      <div style={{ width: '100%', height: '120px' }}>
+      {(!categories.length || !series.length) && (
+        <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '0.25rem 0' }}>
+          Aucun volume horaire enregistré.
+        </p>
+      )}
+
+      <div style={{ width: '100%', height: '120px', display: (categories.length && series.length) ? 'block' : 'none' }}>
         <svg viewBox="0 0 320 120" width="100%" height="100%">
-          {/* Lignes horizontales */}
-          {[0, 100, 200, 300, 400].map((val) => {
-            const y = 95 - (val / maxVal) * 85
+          {/* Lignes horizontales, calculées sur les données réelles */}
+          {[0, 0.25, 0.5, 0.75, 1].map((fraction) => {
+            const val = Math.round(maxVal * fraction)
+            const y = 95 - (fraction) * 85
             return (
-              <g key={val}>
+              <g key={fraction}>
                 <line x1="30" y1={y} x2="310" y2={y} stroke="#F1F5F9" strokeWidth="1" />
                 <text x="24" y={y + 3} textAnchor="end" fontSize="8" fill="#94A3B8">
                   {val}
@@ -373,7 +396,7 @@ export function VectorBarChart({
   subtitle,
   data = [],
   height = 180,
-  barColor = '#2F80ED',
+  barColor = '#1267D6',
 }) {
   const maxVal = Math.max(...data.map((d) => d.value), 5)
 
@@ -381,7 +404,7 @@ export function VectorBarChart({
     <div className="glass-panel" style={{ height: '100%' }}>
       {title && (
         <div style={{ marginBottom: '0.75rem' }}>
-          <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0B1F3A', margin: 0 }}>
+          <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: 0 }}>
             {title}
           </h3>
           {subtitle && <span style={{ fontSize: '0.75rem', color: '#64748B' }}>{subtitle}</span>}
@@ -406,7 +429,7 @@ export function VectorBarChart({
                   fill={item.color || barColor}
                   rx="4"
                 />
-                <text x={x + barWidth / 2} y={Math.max(15, y - 6)} textAnchor="middle" fontSize="11" fontWeight="700" fill="#0B1F3A">
+                <text x={x + barWidth / 2} y={Math.max(15, y - 6)} textAnchor="middle" fontSize="11" fontWeight="700" fill="#071B3A">
                   {item.value}
                 </text>
                 <text x={x + barWidth / 2} y="160" textAnchor="middle" fontSize="11" fill="#64748B" fontWeight="600">

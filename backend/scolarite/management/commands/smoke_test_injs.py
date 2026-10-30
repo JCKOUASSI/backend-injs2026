@@ -496,13 +496,13 @@ class Command(BaseCommand):
     def _paiement(self):
         c = self.contexte
         ligne = c['echeancier'].lignes.order_by('date_echeance').first()
-        preuve = ContentFile(b'preuve-de-paiement-smoke', name='preuve-smoke.txt')
+        preuve = ContentFile(b'preuve-de-paiement-smoke', name='preuve-smoke.pdf')
         paiement, cree = enregistrer_paiement_idempotent(
             etudiant=c['etudiant'], nature=ligne.nature, montant=ligne.montant,
             devise='XOF', mode='CAISSE', transaction_externe='SMOKE-TX-0001',
             utilisateur=c['acteur'],
         )
-        paiement.preuve.save('preuve-smoke.txt', preuve, save=True)
+        paiement.preuve.save('preuve-smoke.pdf', preuve, save=True)
         # Idempotence : un second envoi avec la même référence renvoie le même paiement.
         _, cree_bis = enregistrer_paiement_idempotent(
             etudiant=c['etudiant'], nature=ligne.nature, montant=ligne.montant,

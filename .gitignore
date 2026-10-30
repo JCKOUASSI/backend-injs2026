@@ -97,3 +97,6 @@ backend/nohup.out
 /workspace/
 /arena/previews/
 *.prompt.md
+
+# SDK Flutter déposé localement (jamais versionné : ~1 Go)
+.sdk/

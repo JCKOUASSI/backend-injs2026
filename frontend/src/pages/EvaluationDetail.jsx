@@ -6,14 +6,14 @@ import { useReferentiels } from '../hooks/useReferentiels'
 
 const STATUT_LABELS  = { BROUILLON: 'Brouillon', PUBLIE: 'Publié', FERME: 'Fermé' }
 const STATUT_COLORS  = {
-  BROUILLON: { background: '#fff8e0', color: '#e69700' },
-  PUBLIE:    { background: '#e8eff5', color: '#125a99' },
+  BROUILLON: { background: '#fff8e0', color: '#D97706' },
+  PUBLIE:    { background: '#e8eff5', color: '#104A8E' },
   FERME:     { background: '#f5f5f5', color: '#616161' },
 }
 const SECTION_LABELS = { COURS: 'Module', FORMATEUR: 'Enseignant' }
 const SECTION_COLORS = {
-  COURS:     { bg: '#e3f2fd', color: '#1565c0', icon: 'bi-book' },
-  FORMATEUR: { bg: '#f3e5f5', color: '#6a1b9a', icon: 'bi-person-video3' },
+  COURS:     { bg: '#e3f2fd', color: '#104A8E', icon: 'bi-book' },
+  FORMATEUR: { bg: '#f3e5f5', color: '#805AD5', icon: 'bi-person-video3' },
 }
 const TYPE_LABELS    = { NOTE: 'Note (1 à 5)', CHOIX_UN: 'Choix unique', CHOIX_MUL: 'Choix multiple', TEXTE: 'Texte libre' }
 const TYPE_ICONS     = { NOTE: 'bi-star', CHOIX_UN: 'bi-ui-radios', CHOIX_MUL: 'bi-ui-checks', TEXTE: 'bi-chat-left-text' }
@@ -27,7 +27,7 @@ function StarBar({ moyenne, total }) {
       <div style={{ position: 'relative', width: '120px', height: '12px', borderRadius: '6px', background: '#e0e0e0', overflow: 'hidden' }}>
         <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg,#f9c925,#ffb100)', borderRadius: '6px', transition: 'width .4s' }} />
       </div>
-      <span style={{ fontWeight: 700, fontSize: '1.1rem', color: '#e69700' }}>{moyenne ?? '—'}<span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400 }}>/5</span></span>
+      <span style={{ fontWeight: 700, fontSize: '1.1rem', color: '#D97706' }}>{moyenne ?? '—'}<span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400 }}>/5</span></span>
       <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>({total} réponse{total !== 1 ? 's' : ''})</span>
     </div>
   )
@@ -267,14 +267,14 @@ export default function EvaluationDetail() {
               <span style={{ ...STATUT_COLORS[questionnaire.statut], fontSize: '0.72rem', fontWeight: 700, padding: '2px 10px', borderRadius: '20px', letterSpacing: '0.04em' }}>
                 {STATUT_LABELS[questionnaire.statut]}
               </span>
-              <span style={{ fontSize: '0.72rem', background: '#e8eff5', color: '#125a99', padding: '2px 10px', borderRadius: '20px', fontWeight: 600 }}>
+              <span style={{ fontSize: '0.72rem', background: '#e8eff5', color: '#104A8E', padding: '2px 10px', borderRadius: '20px', fontWeight: 600 }}>
                 <i className="bi bi-layers me-1"></i>2 sections : Module + Enseignant
               </span>
               {(questionnaire.categories || []).map(c => (
-                <span key={c} style={{ fontSize: '0.72rem', background: '#f3e5f5', color: '#6a1b9a', padding: '2px 10px', borderRadius: '20px', fontWeight: 600 }}>{c}</span>
+                <span key={c} style={{ fontSize: '0.72rem', background: '#f3e5f5', color: '#805AD5', padding: '2px 10px', borderRadius: '20px', fontWeight: 600 }}>{c}</span>
               ))}
               {(questionnaire.grades || []).map(g => (
-                <span key={g} style={{ fontSize: '0.72rem', background: '#e8eaf6', color: '#283593', padding: '2px 10px', borderRadius: '20px', fontWeight: 600 }}>{g}</span>
+                <span key={g} style={{ fontSize: '0.72rem', background: '#e8eaf6', color: '#283A87', padding: '2px 10px', borderRadius: '20px', fontWeight: 600 }}>{g}</span>
               ))}
             </div>
             <h2 style={{ margin: 0, fontWeight: 700 }}>{(questionnaire.titres || []).join(' · ')}</h2>
@@ -315,7 +315,7 @@ export default function EvaluationDetail() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap', marginBottom: editGroupes ? '0.75rem' : 0 }}>
           <div>
             <h6 style={{ margin: 0, fontWeight: 700 }}>
-              <i className="bi bi-people me-2" style={{ color: '#e69700' }}></i>
+              <i className="bi bi-people me-2" style={{ color: '#D97706' }}></i>
               Groupes ciblés
             </h6>
             <p style={{ margin: '0.25rem 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
@@ -338,7 +338,7 @@ export default function EvaluationDetail() {
         {editGroupes ? (
           <div style={{ maxHeight: '140px', overflowY: 'auto', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignContent: 'flex-start', padding: '0.25rem' }}>
             {refGroupes.map(g => (
-              <label key={g} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '4px 10px', borderRadius: '20px', cursor: 'pointer', border: '1.5px solid', borderColor: groupesDraft.includes(g) ? '#e69700' : 'var(--border)', background: groupesDraft.includes(g) ? '#fff8e0' : 'transparent', color: groupesDraft.includes(g) ? '#e69700' : 'inherit', fontSize: '0.85rem', fontWeight: groupesDraft.includes(g) ? 700 : 400 }}>
+              <label key={g} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '4px 10px', borderRadius: '20px', cursor: 'pointer', border: '1.5px solid', borderColor: groupesDraft.includes(g) ? '#D97706' : 'var(--border)', background: groupesDraft.includes(g) ? '#fff8e0' : 'transparent', color: groupesDraft.includes(g) ? '#D97706' : 'inherit', fontSize: '0.85rem', fontWeight: groupesDraft.includes(g) ? 700 : 400 }}>
                 <input type="checkbox" style={{ display: 'none' }} checked={groupesDraft.includes(g)} onChange={() => toggleGroupeDraft(g)} />
                 {g}
               </label>
@@ -353,7 +353,7 @@ export default function EvaluationDetail() {
               <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Tous les groupes (aucune restriction)</span>
             ) : (
               (questionnaire.groupes || []).map(g => (
-                <span key={g} style={{ fontSize: '0.82rem', background: '#fff8e0', color: '#e69700', padding: '4px 10px', borderRadius: '20px', fontWeight: 600 }}>{g}</span>
+                <span key={g} style={{ fontSize: '0.82rem', background: '#fff8e0', color: '#D97706', padding: '4px 10px', borderRadius: '20px', fontWeight: 600 }}>{g}</span>
               ))
             )}
           </div>
@@ -490,9 +490,9 @@ export default function EvaluationDetail() {
                         onClick={() => setFilterGroupeRes(g)}
                         style={{
                           padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: actif ? 700 : 500,
-                          border: actif ? '2px solid #e69700' : '1px solid var(--border)',
+                          border: actif ? '2px solid #D97706' : '1px solid var(--border)',
                           background: actif ? '#fff8e0' : 'transparent',
-                          color: actif ? '#e69700' : 'inherit',
+                          color: actif ? '#D97706' : 'inherit',
                         }}
                       >
                         {g}

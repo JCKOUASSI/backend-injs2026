@@ -4,8 +4,8 @@ import api from '../services/api'
 import { useToast } from '../context/ToastContext'
 
 const SECTION_CONFIG = {
-  COURS:     { label: 'Évaluation du module',      icon: 'bi-book',          bg: '#e3f2fd', color: '#1565c0' },
-  FORMATEUR: { label: "Évaluation de l'enseignant",  icon: 'bi-person-video3', bg: '#f3e5f5', color: '#6a1b9a' },
+  COURS:     { label: 'Évaluation du module',      icon: 'bi-book',          bg: '#e3f2fd', color: '#104A8E' },
+  FORMATEUR: { label: "Évaluation de l'enseignant",  icon: 'bi-person-video3', bg: '#f3e5f5', color: '#805AD5' },
 }
 
 function StarRating({ questionId, value, onChange }) {
@@ -205,7 +205,7 @@ export default function EvaluationTake() {
           <span>{answeredObligs}/{totalObligs} obligatoires</span>
         </div>
         <div style={{ height: '6px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${progress}%`, background: progress === 100 ? '#125a99' : 'var(--primary)', borderRadius: '3px', transition: 'width .3s' }} />
+          <div style={{ height: '100%', width: `${progress}%`, background: progress === 100 ? '#104A8E' : 'var(--primary)', borderRadius: '3px', transition: 'width .3s' }} />
         </div>
       </div>
 
@@ -245,7 +245,7 @@ export default function EvaluationTake() {
                           {q.obligatoire && <span style={{ color: 'red', marginLeft: '4px' }}>*</span>}
                         </p>
                         {isAnswered && (
-                          <i className="bi bi-check-circle-fill" style={{ color: '#125a99', fontSize: '1rem', flexShrink: 0 }}></i>
+                          <i className="bi bi-check-circle-fill" style={{ color: '#104A8E', fontSize: '1rem', flexShrink: 0 }}></i>
                         )}
                       </div>
                       <QuestionBlock question={q} answer={answers[q.id]} onChange={handleChange} />

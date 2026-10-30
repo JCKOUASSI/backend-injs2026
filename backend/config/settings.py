@@ -39,7 +39,9 @@ def _env_flag(*names, default=False):
 DEBUG = _env_flag('DJANGO_DEBUG', 'DEBUG', default=False)
 
 # Port HTTP du serveur Django en développement local (runserver / gunicorn dev)
-DEV_SERVER_PORT = os.environ.get('DJANGO_DEV_PORT', '8001')
+# Canonique : 8000 (le 3000 est réservé au frontend ; le proxy Vite,
+# scripts/start_dev.sh et arena/lancer-api.sh visent tous 8000).
+DEV_SERVER_PORT = os.environ.get('DJANGO_DEV_PORT', '8000')
 
 _SECRET_KEY_ENV = _env_first('DJANGO_SECRET_KEY', 'SECRET_KEY', default='')
 if not _SECRET_KEY_ENV:
@@ -69,11 +71,12 @@ if not ALLOWED_HOSTS:
     # fallback local dev (évite un arrêt complet si aucune env n'est fournie)
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-# En production (DEBUG=False), s'assurer que le domaine de production est accepté
-if not DEBUG:
-    _PROD_DOMAIN = 'injs.badge-qr-code.pro'
-    if _PROD_DOMAIN not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append(_PROD_DOMAIN)
+# Note : plus aucun hôte de production implicite. `ALLOWED_HOSTS` reflète
+# strictement l'environnement (README §5.1 : variable obligatoire en
+# production) et le `.env` de production déclare `injs.badge-qr-code.pro`.
+# L'ancien ajout codé en dur rendait la liste non prévisible — un hôte
+# « fantôme » restait autorisé même après l'avoir retiré de la configuration —
+# et contredisait les tests de résolution (config/tests/test_settings_hardening).
 
 # Base URL for QR codes (must be reachable by phones scanning the QR).
 # In production, set via env var. In dev, auto-detect LAN IP.
@@ -122,11 +125,9 @@ if DEBUG:
     if BADGE_BASE_URL and BADGE_BASE_URL not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(BADGE_BASE_URL)
 
-# En production (DEBUG=False), s'assurer que l'origine CSRF de production est acceptée
-if not DEBUG:
-    _PROD_ORIGIN = 'https://injs.badge-qr-code.pro'
-    if _PROD_ORIGIN not in CSRF_TRUSTED_ORIGINS:
-        CSRF_TRUSTED_ORIGINS.append(_PROD_ORIGIN)
+# Idem pour CSRF : la liste vient uniquement de `CSRF_TRUSTED_ORIGINS`
+# (déclarée dans le `.env` de production). Un domaine implicite codé en dur
+# faussait la résolution et ne pouvait pas être retiré par configuration.
 
 # Application definition
 INSTALLED_APPS = [
@@ -181,6 +182,29 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# ── Profil d'aperçu (iframe de la plateforme, hôte *.e2b.app) ────────────────
+# Ces deux middlewares ne sont branchés QUE hors production. Ils vivent dans
+# config/ (déjà utilisés par la démo) mais n'étaient plus référencés ici : sans
+# eux, /admin/ renvoie « X-Frame-Options: DENY » (page blanche dans l'iframe)
+# et la connexion échoue en 403 « vérification CSRF échouée » quand le
+# navigateur bloque les cookies tiers.
+#
+# Positions imposées par le cycle de vie Django :
+#  * DevPreviewFrameMiddleware AVANT XFrameOptionsMiddleware — le traitement
+#    des réponses étant remonté de l'intérieur vers l'extérieur, il doit être
+#    plus externe pour pouvoir retirer l'en-tête que XFrameOptions vient de poser.
+#  * DemoAdminAutoLoginMiddleware AVANT CsrfViewMiddleware — son process_view
+#    doit poser csrf_processing_done avant le contrôle CSRF par cookie.
+if DEBUG:
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index('django.middleware.clickjacking.XFrameOptionsMiddleware'),
+        'config.dev_middleware.DevPreviewFrameMiddleware',
+    )
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index('django.middleware.csrf.CsrfViewMiddleware'),
+        'config.demo_admin_middleware.DemoAdminAutoLoginMiddleware',
+    )
 
 ROOT_URLCONF = 'config.urls'
 
@@ -308,6 +332,18 @@ STORAGES = {
         'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
     },
 }
+
+# Le stockage « manifeste » de WhiteNoise exige un `collectstatic` préalable :
+# sans le manifeste, toute page utilisant {% static %} lève une erreur 500.
+# Les tests ne doivent pas dépendre d'un artefact de build — ils échouaient en
+# masse après chaque réinitialisation du bac à sable (`staticfiles/` absent).
+# `arena/tests_par_groupe.sh` exporte STORAGES=STORAGE_DE_TEST depuis toujours,
+# mais la variable n'était LUE par personne : elle est désormais effective.
+# La production conserve le manifeste (variable absente).
+if os.environ.get('STORAGES') == 'STORAGE_DE_TEST':
+    STORAGES['staticfiles'] = {
+        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    }
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -316,11 +352,17 @@ AUTH_USER_MODEL = 'authentication.User'
 
 # Django REST Framework
 REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    # Schéma OpenAPI : identifiants d'opération uniques (voir config/schema.py).
+    'DEFAULT_SCHEMA_CLASS': 'config.schema.INJSAutoSchema',
     # Format d'erreur harmonisé (payload DRF préservé + code machine en en-tête).
     'EXCEPTION_HANDLER': 'config.exceptions.unified_exception_handler',
+    # Authentification JWT : la classe flexible accepte l'en-tête standard
+    # « Authorization: Bearer … » ET l'en-tête de secours « X-JWT-Access »
+    # (que le frontend envoie systématiquement). Indispensable dans l'aperçu :
+    # la passerelle d'iframe supprime « Authorization », ce qui renvoyait tous
+    # les appels en 401 « Informations d'authentification non fournies ».
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'authentication.auth_classes.FlexibleJWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
@@ -356,6 +398,18 @@ PUBLIC_QR_SCAN_ENABLED = os.environ.get(
 
 # Délai avant marquage ABSENT_NON_BADGE (commande auto_close_pointages)
 AUTO_ABSENT_DELAI_MINUTES = int(os.environ.get('AUTO_ABSENT_DELAI_MINUTES', 60))
+
+# Chaîne admission → inscription administrative → parcours pédagogique.
+#
+# Désactivé par défaut : la règle métier en vigueur dans l'application est que
+# la génération des inscriptions pédagogiques reste une ACTION EXPLICITE du
+# service de scolarité (verrouillée par scolarite/tests/test_frontieres_metier.py).
+# L'activer enchaîne automatiquement la génération depuis la maquette ACTIVE à
+# la validation administrative. L'opération reste idempotente et n'échoue jamais
+# la validation : sans maquette active, elle est différée et journalisée.
+INJS_AUTO_INSCRIPTION_PEDAGOGIQUE = os.environ.get(
+    'INJS_AUTO_INSCRIPTION_PEDAGOGIQUE', 'False',
+).lower() in ('true', '1', 'yes')
 
 # Paramètres anti-fraude mobile (heartbeat + geofence)
 MOBILE_HEARTBEAT_DISABLED = os.environ.get(
@@ -404,6 +458,13 @@ if DEBUG:
         f'http://192.168.100.54:{DEV_SERVER_PORT}',
     ])
 CORS_ALLOWED_ORIGINS = list(dict.fromkeys(CORS_ALLOWED_ORIGINS))
+# Origines par expression régulière (ex. `^https://[a-z0-9-]+\.e2b\.app$` pour
+# l'aperçu). Documentées au README §5.1 mais jamais lues : la variable était
+# ignorée, ce qui faisait échouer toute requête cross-origin de l'aperçu.
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    motif for motif in os.environ.get('CORS_ALLOWED_ORIGIN_REGEXES', '').split(',')
+    if motif.strip()
+]
 CORS_EXPOSE_HEADERS = ['Content-Disposition', 'Content-Type']
 # Nécessaire au cookie HttpOnly du refresh JWT (credentials: 'include' côté React).
 # Les origines restent strictes (CORS_ALLOWED_ORIGINS ci-dessus, pas de allow-all).
@@ -438,7 +499,13 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '15'))
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@qrbadge.local')
 
-DATA_UPLOAD_MAX_NUMBER_FIELDS = None
+# Nombre maximal de champs d'un formulaire POST. La valeur était ``None``
+# (protection désactivée) : une requête multipart très large pouvait saturer
+# un worker. On borne à 5 000 champs, largement au-dessus des formulaires
+# métier (imports, saisies en masse) tout en gardant la protection.
+DATA_UPLOAD_MAX_NUMBER_FIELDS = int(
+    os.environ.get('DATA_UPLOAD_MAX_NUMBER_FIELDS', '5000')
+)
 
 # drf-spectacular
 SPECTACULAR_SETTINGS = {
@@ -450,6 +517,15 @@ SPECTACULAR_SETTINGS = {
 
 # URL publique de l'application web (lien « Dashboard web » dans l'admin).
 PUBLIC_APP_URL = os.environ.get('PUBLIC_APP_URL', 'https://injs.badge-qr-code.pro').rstrip('/')
+
+# ── Aperçu mono-origine (build React servi par Django) ───────────────────────
+# `config.urls` et `config.preview` lisent ces deux réglages ; ils étaient
+# documentés (README §5.1) et posés par `scripts/start_dev.sh` sans jamais être
+# définis ici : `PREVIEW_SPA=1` était donc sans effet (racine = API seule).
+PREVIEW_SPA = _env_flag('PREVIEW_SPA', default=False)
+FRONTEND_DIST = os.environ.get(
+    'FRONTEND_DIST', str(BASE_DIR.parent / 'frontend' / 'dist'),
+)
 
 # ── Production security (activé quand DEBUG=False) ──
 # NOTE: SECURE_SSL_REDIRECT est intentionnellement désactivé — la redirection

@@ -1,7 +1,8 @@
-{% load i18n %}
+{% load i18n l10n %}
 {% if chart %}
 <div class="dfrc-chart-donut">
-    <svg
+    {% localize off %}
+        <svg
         class="dfrc-chart-svg dfrc-chart-svg--donut"
         width="{{ chart.size }}"
         height="{{ chart.size }}"
@@ -19,6 +20,7 @@
         {% endfor %}
         <circle cx="{{ chart.cx }}" cy="{{ chart.cy }}" r="{{ chart.inner_r }}" fill="#fff" />
     </svg>
+        {% endlocalize %}
     <ul class="dfrc-chart-legend">
         {% for slice in chart.slices %}
         <li class="dfrc-chart-legend-item">

@@ -626,3 +626,46 @@ class TestRegressionGenerateurHistorique(BaseLMD):
         edt = self.creer_edt(statut='VALIDE')
         r = self.client_api.post(f'/api/edts/emplois/{edt.pk}/generer/')
         self.assertEqual(r.status_code, 409)
+
+
+class TestExportPdfEmploiDuTemps(BaseLMD):
+    """`GET /api/edts/lmd/{id}/export.pdf/` — document imprimable réel.
+
+    Le PDF est produit par ``reportlab`` (dépendance déjà présente) à partir de
+    ``grille_hebdomadaire`` : la même grille que l'écran et que l'API JSON.
+    Aucune séance n'est inventée, et un EDT vide le dit dans le document.
+    """
+
+    def test_pdf_genere_depuis_la_grille_reelle(self):
+        self.connecter('SECRETARIAT')
+        edt, _gen = self.generer_et_persister()
+        r = self.client_api.get(f'/api/edts/lmd/{edt.pk}/export.pdf/')
+        self.assertEqual(r.status_code, 200, r.content[:200])
+        self.assertEqual(r['Content-Type'], 'application/pdf')
+        self.assertIn('attachment', r['Content-Disposition'])
+        self.assertIn(f'edt-{edt.pk}-v{edt.version}.pdf', r['Content-Disposition'])
+        contenu = r.content
+        self.assertTrue(contenu.startswith(b'%PDF-'), 'signature PDF absente')
+        self.assertGreater(len(contenu), 1000)
+        # Le document contient bien la grille réelle (texte extrait du PDF).
+        self.assertIn(b'/Type /Page', contenu)
+
+    def test_pdf_d_un_edt_vide_ne_fabrique_aucune_seance(self):
+        self.connecter('SECRETARIAT')
+        edt = self.creer_edt(titre='EDT volontairement vide')
+        r = self.client_api.get(f'/api/edts/lmd/{edt.pk}/export.pdf/')
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.content.startswith(b'%PDF-'))
+        # Aucune affectation n'existe : la grille ne peut pas en contenir.
+        self.assertEqual(edt.affectations.count(), 0)
+
+    def test_pdf_edt_introuvable(self):
+        self.connecter('SECRETARIAT')
+        r = self.client_api.get('/api/edts/lmd/999999/export.pdf/')
+        self.assertEqual(r.status_code, 404)
+
+    def test_pdf_refuse_sans_authentification(self):
+        edt = self.creer_edt()
+        client = APIClient()
+        r = client.get(f'/api/edts/lmd/{edt.pk}/export.pdf/')
+        self.assertIn(r.status_code, (401, 403))

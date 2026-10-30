@@ -14,9 +14,9 @@ function formatDate(iso) {
 }
 
 const SOURCE_META = {
-  notes: { label: 'Notes', icon: 'bi-pencil-square', color: '#1565C0' },
-  rapports: { label: 'Rapports', icon: 'bi-file-earmark-text', color: '#125a99' },
-  finance: { label: 'Finance', icon: 'bi-cash-coin', color: '#F5B100' },
+  notes: { label: 'Notes', icon: 'bi-pencil-square', color: '#104A8E' },
+  rapports: { label: 'Rapports', icon: 'bi-file-earmark-text', color: '#104A8E' },
+  finance: { label: 'Finance', icon: 'bi-cash-coin', color: '#D97706' },
   presences: { label: 'Présences', icon: 'bi-calendar-x', color: '#C0392B' },
 }
 
@@ -143,6 +143,9 @@ export default function AppNotificationsBell({ showNotes, showRapports, showFina
         type="button"
         className="btn btn-sm btn-outline-secondary"
         title="Notifications"
+        aria-label={nonLues > 0 ? `Notifications, ${nonLues} non lue(s)` : 'Notifications'}
+        aria-expanded={open}
+        aria-haspopup="dialog"
         onClick={() => { setOpen(o => !o); if (!open) fetchNotifications() }}
         style={{ position: 'relative' }}
       >
@@ -150,7 +153,7 @@ export default function AppNotificationsBell({ showNotes, showRapports, showFina
         {nonLues > 0 && (
           <span style={{
             position: 'absolute', top: -4, right: -4,
-            background: '#c62828', color: '#fff', borderRadius: '999px',
+            background: 'var(--injs-danger)', color: '#fff', borderRadius: '999px',
             fontSize: '0.65rem', fontWeight: 700, minWidth: 16, height: 16,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: '0 4px',
@@ -162,15 +165,20 @@ export default function AppNotificationsBell({ showNotes, showRapports, showFina
 
       {open && (
         <div style={{
-          position: 'absolute', right: 0, top: 'calc(100% + 0.35rem)', width: 380,
-          maxHeight: 440, overflowY: 'auto', background: '#fff',
-          border: '1px solid var(--border, #e2e8f0)', borderRadius: 10,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 1000,
+          position: 'absolute', right: 0, top: 'calc(100% + 0.35rem)',
+          /* 380 px fixes débordaient d'un écran de 360 px. */
+          width: 'min(380px, calc(100vw - 1.5rem))',
+          maxHeight: 'min(440px, 70vh)', overflowY: 'auto',
+          background: 'var(--injs-surface)',
+          border: '1px solid var(--injs-border)',
+          borderRadius: 'var(--injs-radius-md)',
+          boxShadow: 'var(--injs-shadow-premium)', zIndex: 1000,
         }}>
           <div style={{
-            padding: '0.65rem 0.85rem', borderBottom: '1px solid #e2e8f0',
+            padding: '0.65rem 0.85rem',
+            borderBottom: '1px solid var(--injs-border)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: '#f8fafc',
+            background: 'var(--injs-surface-alt)',
           }}>
             <strong style={{ fontSize: '0.85rem' }}>Notifications</strong>
             {nonLues > 0 && (
@@ -181,9 +189,9 @@ export default function AppNotificationsBell({ showNotes, showRapports, showFina
           </div>
 
           {loading && items.length === 0 ? (
-            <div style={{ padding: '1rem', color: '#64748b', fontSize: '0.85rem' }}>Chargement…</div>
+            <div style={{ padding: '1rem', color: 'var(--injs-text-muted)', fontSize: '0.85rem' }}>Chargement…</div>
           ) : items.length === 0 ? (
-            <div style={{ padding: '1rem', color: '#64748b', fontSize: '0.85rem' }}>
+            <div style={{ padding: '1rem', color: 'var(--injs-text-muted)', fontSize: '0.85rem' }}>
               Aucune notification.
             </div>
           ) : (

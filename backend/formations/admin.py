@@ -892,7 +892,9 @@ class QRTokenAdmin(AdminScopeMixin, admin.ModelAdmin):
             label, bg, fg = 'Désactivé', '#fdecec', '#b42318'
         elif obj.is_expired:
             label, bg, fg = 'Expiré', '#fffae8', '#9a7a00'
-        elif obj.session.est_terminee:
+        elif obj.session is not None and obj.session.est_terminee:
+            # `session` est nullable : un jeton sans séance ne doit pas faire
+            # échouer la liste (AttributeError sur None).
             label, bg, fg = 'Séance terminée', '#fffae8', '#9a7a00'
         else:
             label, bg, fg = 'Valide', '#e8eef6', '#09306c'

@@ -370,6 +370,10 @@ describe('pages/Modules.jsx (LOT 39) — recherche, filtres et pagination', () =
   it('filtre par secrétariat, vague, grade et groupe', async () => {
     mountModulesRiche()
     await waitForList()
+    // Les référentiels riches arrivent par une requête distincte de la liste :
+    // sans cette attente, la barre de filtres peut ne pas être encore montée
+    // (course constatée en CI, où la liste répond plus vite qu'en local).
+    await screen.findByRole('option', { name: 'Tous les secrétariats' })
 
     fireEvent.change(filterSelect('Tous les secrétariats'), { target: { value: '5' } })
     await waitFor(() => expect(lastListParams().get('secretariat_type')).toBe('5'))

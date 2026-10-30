@@ -3,11 +3,28 @@ import os
 from django.apps import AppConfig
 
 
+def _suite_de_tests_en_cours():
+    """Vrai pendant `manage.py test` (et sous pytest).
+
+    Le compte de démonstration est un dispositif d'aperçu : le créer dans la
+    base de test ajoutait un administrateur fantôme qui faussait les tests
+    comptant les comptes (constaté : « 3 != 2 » dans
+    habilitations.tests.test_console_u4). Un `.env` de démonstration ne doit
+    pas changer le résultat de la suite.
+    """
+    import sys
+
+    return 'test' in sys.argv or os.environ.get('PYTEST_CURRENT_TEST') is not None
+
+
 def create_superuser_from_env():
     import logging
     from django.contrib.auth import get_user_model
 
     logger = logging.getLogger(__name__)
+
+    if _suite_de_tests_en_cours():
+        return
 
     username = os.environ.get('DJANGO_SUPERUSER_USERNAME')
     email = os.environ.get('DJANGO_SUPERUSER_EMAIL')
@@ -29,7 +46,23 @@ def create_superuser_from_env():
         return
 
     User = get_user_model()
-    if User.objects.filter(username=username).exists():
+    existant = User.objects.filter(username=username).first()
+
+    if existant is not None:
+        # Défaut corrigé : le compte existant était laissé tel quel, si bien
+        # qu'un mot de passe régénéré dans `.env` ne s'appliquait JAMAIS — le
+        # fichier annonçait alors des identifiants qui échouaient à la
+        # connexion. La remise à niveau n'a lieu que sur demande explicite
+        # (`DJANGO_SUPERUSER_RESET_PASSWORD`), jamais sur un simple démarrage.
+        if os.environ.get('DJANGO_SUPERUSER_RESET_PASSWORD', '').lower() in ('1', 'true', 'yes'):
+            if existant.check_password(password):
+                logger.info("Super-utilisateur '%s' : mot de passe déjà à jour.", username)
+                return
+            existant.set_password(password)
+            existant.is_active = True
+            existant.save(update_fields=['password', 'is_active'])
+            logger.info("Super-utilisateur '%s' : mot de passe remis à niveau.", username)
+            return
         logger.info("Super-utilisateur '%s' existe déjà — ignoré.", username)
         return
 

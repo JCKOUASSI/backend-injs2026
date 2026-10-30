@@ -77,16 +77,16 @@
   font-size: 1.4rem;
   font-weight: 700;
   line-height: 1;
-  background: linear-gradient(135deg, #2563eb 0%, #2a7fff 100%) !important;
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%) !important;
   border-color: transparent !important;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 14px rgba(18, 103, 214, 0.3);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .eq-add-btn:hover,
 .eq-add-btn:focus-visible {
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 8px 20px rgba(18, 103, 214, 0.35);
 }
 
 .eq-add-btn:disabled {
@@ -105,8 +105,8 @@
 
 .eq-select:focus,
 .eq-input:focus {
-  border-color: #2a7fff;
-  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
 }
 
 /* -- 5. TABLEAU DES DEMANDES -- */
@@ -137,8 +137,8 @@
 
 /* -- 6. PANNEAU DE DECISION (mis en avant) -- */
 .eq-decision-panel {
-  border: 1px solid #bfdbfe !important;
-  box-shadow: 0 12px 30px -6px rgba(37, 99, 235, 0.18);
+  border: 1px solid var(--injs-border-strong) !important;
+  box-shadow: 0 12px 30px -6px rgba(18, 103, 214, 0.18);
 }
 
 .eq-decision-panel .camp-panel-head {
@@ -146,7 +146,7 @@
 }
 
 .eq-decision-panel .camp-panel-title i {
-  color: #2563eb;
+  color: var(--injs-blue-royal);
 }
 
 .eq-decision-foot {

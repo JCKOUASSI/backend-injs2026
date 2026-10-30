@@ -23,7 +23,7 @@
 .maquettes-title {
   font-size: 1.6rem;
   font-weight: 800;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   margin: 0;
   letter-spacing: -0.02em;
   display: flex;
@@ -53,7 +53,7 @@
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 16px;
   padding: 1.15rem 1.25rem;
-  box-shadow: 0 4px 20px rgba(11, 31, 58, 0.05);
+  box-shadow: 0 4px 20px rgba(7, 27, 58, 0.05);
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -62,7 +62,7 @@
 
 .maquette-kpi-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(11, 31, 58, 0.08);
+  box-shadow: 0 8px 25px rgba(7, 27, 58, 0.08);
 }
 
 .maquette-kpi-card--primary {
@@ -111,7 +111,7 @@
 .maquette-kpi-value {
   font-size: 1.55rem;
   font-weight: 800;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   line-height: 1.1;
 }
 
@@ -123,7 +123,7 @@
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 18px;
   padding: 1.25rem 1.5rem;
-  box-shadow: 0 4px 24px rgba(11, 31, 58, 0.05);
+  box-shadow: 0 4px 24px rgba(7, 27, 58, 0.05);
   margin-bottom: 1.5rem;
 }
 
@@ -141,12 +141,12 @@
   background: #ffffff;
   border-radius: 18px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 0 4px 24px rgba(11, 31, 58, 0.05);
+  box-shadow: 0 4px 24px rgba(7, 27, 58, 0.05);
   overflow: hidden;
 }
 
 .maquettes-table-container thead th {
-  background: #0B1F3A !important;
+  background: var(--injs-navy) !important;
   color: #ffffff !important;
   font-weight: 700;
   font-size: 0.82rem;
@@ -203,7 +203,7 @@
 }
 
 .maquette-kpi-icon.is-green { background: #ecfdf5; color: #10b981; }
-.maquette-kpi-icon.is-blue { background: #ebf3ff; color: #2a7fff; }
+.maquette-kpi-icon.is-blue { background: #ebf3ff; color: var(--injs-blue-royal); }
 .maquette-kpi-icon.is-amber { background: #fffbeb; color: #d97706; }
 .maquette-kpi-icon.is-slate { background: #eef2f7; color: #475569; }
 
@@ -230,8 +230,8 @@
 
 .maq-select:focus,
 .maq-input:focus {
-  border-color: #2a7fff;
-  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
 }
 
 .maq-search .input-group-text {
@@ -248,8 +248,8 @@
 }
 
 .maq-search .form-control:focus {
-  border-color: #2a7fff;
-  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
 }
 
 .maq-search .btn-outline-secondary {

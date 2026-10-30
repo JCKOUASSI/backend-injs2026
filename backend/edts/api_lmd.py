@@ -1128,6 +1128,164 @@ def grille_api(request, pk):
 
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
+def export_pdf_api(request, pk):
+    """GET /api/edts/lmd/{id}/export.pdf/ — emploi du temps imprimable (PDF).
+
+    Réutilise ``edts.services.grille_hebdomadaire`` : la même logique de grille
+    que l'écran et l'API JSON, donc aucune divergence possible entre ce que
+    l'on voit et ce que l'on imprime.
+
+    Le PDF est une grille hebdomadaire : colonnes = jours réellement utilisés,
+    lignes = plages horaires réellement utilisées, cellules = séances. Un EDT
+    sans séance produit un document qui le dit (« aucune séance ») — aucune
+    ligne, aucun créneau et aucun enseignant ne sont inventés.
+    """
+    from io import BytesIO
+
+    from django.http import HttpResponse
+    from django.utils import timezone
+
+    from edts.models import EmploiDuTemps
+    from edts.services import grille_hebdomadaire
+
+    # reportlab est déjà une dépendance du dépôt (exports institutionnels).
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import cm
+    from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer,
+                                    Table, TableStyle)
+
+    edt = EmploiDuTemps.objects.select_related('annee_academique').filter(pk=pk).first()
+    if edt is None:
+        return Response({'detail': 'EDT introuvable'},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    semaine = _int(request.query_params.get('semaine'))
+    grille = grille_hebdomadaire(edt, semaine)
+
+    # ── Colonnes (jours) et lignes (plages horaires) réellement occupées ─────
+    jours, plages = [], []
+    for bloc in grille.get('jours', []):
+        for creneau in bloc.get('creneaux', []):
+            seances = creneau.get('affectations') or []
+            if not seances:
+                continue
+            if bloc['jour'] not in jours:
+                jours.append(bloc['jour'])
+            libelle_plage = f"{creneau['heure_debut'][:5]}–{creneau['heure_fin'][:5]}"
+            if libelle_plage not in plages:
+                plages.append(libelle_plage)
+    plages.sort()
+    # Libellés de jours : source unique = le modèle (JOUR_CHOICES).
+    from edts.models import JOUR_CHOICES
+    noms_jours = dict(JOUR_CHOICES)
+
+    # Index (jour, plage) -> liste de séances
+    index = {}
+    for bloc in grille.get('jours', []):
+        for creneau in bloc.get('creneaux', []):
+            plage = f"{creneau['heure_debut'][:5]}–{creneau['heure_fin'][:5]}"
+            for seance in creneau.get('affectations') or []:
+                index.setdefault((bloc['jour'], plage), []).append(seance)
+
+    # ── Styles ──────────────────────────────────────────────────────────────
+    styles = getSampleStyleSheet()
+    style_titre = ParagraphStyle(
+        'TitreEDT', parent=styles['Title'], fontSize=15, leading=18, spaceAfter=2)
+    style_sous_titre = ParagraphStyle(
+        'SousTitreEDT', parent=styles['Normal'], fontSize=9, leading=12,
+        textColor=colors.HexColor('#444444'))
+    style_entete = ParagraphStyle(
+        'Entete', parent=styles['Normal'], fontSize=8.5, leading=10,
+        fontName='Helvetica-Bold', textColor=colors.white)
+    style_cellule = ParagraphStyle(
+        'Cellule', parent=styles['Normal'], fontSize=7.4, leading=9)
+    style_vide = ParagraphStyle(
+        'Vide', parent=styles['Normal'], fontSize=7.4, leading=9,
+        textColor=colors.HexColor('#999999'))
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=landscape(A4),
+        leftMargin=1.2 * cm, rightMargin=1.2 * cm,
+        topMargin=1.1 * cm, bottomMargin=1.1 * cm,
+        title=f'Emploi du temps V{edt.version}',
+        author='INJS d’Abidjan — GET INJS APP',
+    )
+    flux = [
+        Paragraph('INJS d’Abidjan — Emploi du temps', style_titre),
+        Paragraph(edt.titre or edt.population_label or f'EDT #{edt.pk}', style_sous_titre),
+        Paragraph(
+            f'Année académique : {edt.annee_academique.libelle} · '
+            f'Version : V{edt.version} · Statut : {edt.get_statut_display()} · '
+            + (f'Semaine : {semaine} · ' if semaine else '')
+            + f'Édité le {timezone.localtime().strftime("%d/%m/%Y à %H:%M")}',
+            style_sous_titre),
+        Spacer(1, 8),
+    ]
+
+    if not index:
+        flux.append(Paragraph(
+            'Aucune séance active dans cet emploi du temps : '
+            'la grille est donc vide (aucune séance n’est ajoutée pour remplir le document).',
+            style_sous_titre))
+    else:
+        entete = [Paragraph('Horaire', style_entete)]
+        entete += [Paragraph(noms_jours.get(j, j), style_entete) for j in jours]
+        donnees = [entete]
+        for plage in plages:
+            ligne = [Paragraph(f'<b>{plage}</b>', style_cellule)]
+            for jour in jours:
+                seances = index.get((jour, plage), [])
+                if not seances:
+                    ligne.append(Paragraph('—', style_vide))
+                else:
+                    textes = []
+                    for s in seances:
+                        morceaux = [f"<b>{s['intitule']}</b>"]
+                        if s.get('salle_nom'):
+                            morceaux.append(s['salle_nom'])
+                        if s.get('enseignant_nom'):
+                            morceaux.append(s['enseignant_nom'])
+                        if s.get('groupe'):
+                            morceaux.append(f"Gr. {s['groupe']}")
+                        textes.append(' — '.join(morceaux))
+                    ligne.append(Paragraph('<br/>'.join(textes), style_cellule))
+            donnees.append(ligne)
+
+        largeur_utile = landscape(A4)[0] - 2.4 * cm
+        largeur_horaire = 2.6 * cm
+        largeur_jour = (largeur_utile - largeur_horaire) / max(len(jours), 1)
+        table = Table(
+            donnees, colWidths=[largeur_horaire] + [largeur_jour] * len(jours),
+            repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f3b63')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('GRID', (0, 0), (-1, -1), 0.4, colors.HexColor('#9aa7b8')),
+            ('BACKGROUND', (0, 1), (0, -1), colors.HexColor('#eef2f7')),
+            ('LEFTPADDING', (0, 0), (-1, -1), 3),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+            ('TOPPADDING', (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ]))
+        flux.append(table)
+
+    doc.build(flux)
+    contenu = buffer.getvalue()
+    buffer.close()
+
+    nom = f"edt-{edt.pk}-v{edt.version}.pdf"
+    reponse = HttpResponse(contenu, content_type='application/pdf')
+    reponse['Content-Disposition'] = f'attachment; filename="{nom}"'
+    reponse['Content-Length'] = str(len(contenu))
+    return reponse
+
+
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
 def edt_audit_api(request, pk):
     """GET /api/edts/lmd/{id}/audit/ — audit d'un EDT existant."""
     from edts.models import EmploiDuTemps
