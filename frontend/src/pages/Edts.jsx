@@ -305,6 +305,30 @@ export default function Edts() {
     }
   }
 
+  /**
+   * Export PDF imprimable (LOT 9). Le document est produit par le serveur à
+   * partir de la même grille que l'écran ; l'interface ne le recompose pas,
+   * ce qui garantit que l'imprimé et l'affichage ne divergent jamais.
+   */
+  const exporterPdf = async () => {
+    try {
+      const { blob, fileName } = await api.getBlob(
+        `/edts/lmd/${selectedId}/export.pdf/${semaine ? `?semaine=${semaine}` : ''}`,
+      )
+      const url = URL.createObjectURL(blob)
+      const lien = document.createElement('a')
+      lien.href = url
+      lien.download = fileName || `edt-${selectedId}.pdf`
+      document.body.appendChild(lien)
+      lien.click()
+      lien.remove()
+      URL.revokeObjectURL(url)
+      showToast('Export PDF téléchargé')
+    } catch (err) {
+      showToast(messageErreurApi(err, 'Export PDF impossible'), 'error')
+    }
+  }
+
   const basculerAffectation = async (aff) => {
     try {
       await api.patch(`/edts/affectations/${aff.id}/`, { actif: !aff.actif })
@@ -448,6 +472,10 @@ export default function Edts() {
                     )}
                     <button className="btn btn-sm btn-outline-success" onClick={exporterCsv}>
                       <i className="bi bi-filetype-csv" /> Export
+                    </button>
+                    <button className="btn btn-sm btn-outline-secondary" onClick={exporterPdf}
+                            title="Grille imprimable (PDF) générée côté serveur">
+                      <i className="bi bi-filetype-pdf" /> PDF
                     </button>
                   </div>
                 </div>

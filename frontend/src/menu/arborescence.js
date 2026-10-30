@@ -337,6 +337,48 @@ export const ARBORESCENCE = [
         },
       },
       {
+        // Demande 21 : entrée d'échelle annuelle — import du fichier des
+        // inscrits puis EDT de TOUTES les cohortes de l'année en une passe.
+        id: 'get_injs.generation_annuelle',
+        libelle: 'Génération annuelle & import',
+        chemin: '/edt/generation-annuelle',
+        droit: {
+          curp: ['edt.emploi_du_temps.generer'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        // LOT 2 — campagnes de génération : trace persistante (périmètre,
+        // bilan, anomalies, durée, historique) et publication contrôlée.
+        id: 'get_injs.campagnes',
+        libelle: 'Campagnes de génération',
+        chemin: '/edt/campagnes',
+        droit: {
+          curp: ['edt.emploi_du_temps.generer'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        // Écran « vérifier » : contrôle des données AVANT génération, et
+        // mémoire des versions avec les gestes valider / publier.
+        id: 'get_injs.audit',
+        libelle: 'Audit des données',
+        chemin: '/edt/audit',
+        droit: {
+          curp: ['edt.emploi_du_temps.generer', 'edt.contrainte.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        id: 'get_injs.versions',
+        libelle: 'Versions & publication',
+        chemin: '/edt/versions',
+        droit: {
+          curp: ['edt.emploi_du_temps.valider', 'edt.emploi_du_temps.publier'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
         id: 'get_injs.presences_seance',
         libelle: 'Présences de séance (QR & émargement)',
         chemin: '/edt/presences',
@@ -1454,6 +1496,19 @@ export const ARBORESCENCE = [
         chemin: '/parametres/flags',
         droit: {
           curp: ['parametres.parametre.administrer'],
+          legacy: [['web', 'operationnel']],
+          roles: ['ADMIN', 'CHEF_INJS_ADMIN', 'INJS_ADMIN'],
+        },
+      },
+      {
+        // Planche de style : documentation vivante du socle visuel, en lecture
+        // seule. Même garde que « Paramètres LMD » (trio d'administration) :
+        // l'écran ne modifie rien, mais il expose l'apparence de référence.
+        id: 'referentiels.planche_style',
+        libelle: 'Planche de style',
+        chemin: '/referentiels/planche-de-style',
+        droit: {
+          curp: ['parametres.parametre.consulter'],
           legacy: [['web', 'operationnel']],
           roles: ['ADMIN', 'CHEF_INJS_ADMIN', 'INJS_ADMIN'],
         },

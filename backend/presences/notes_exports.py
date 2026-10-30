@@ -35,6 +35,18 @@ MENTION_LABELS = {
 }
 
 
+def _seuil_affiche(valeur):
+    """Seuil de notation à afficher — jamais de valeur inventée.
+
+    Un seuil absent n'est pas remplacé par un nombre : il est signalé
+    explicitement, pour qu'aucun document ne laisse croire à une règle
+    institutionnelle qui n'a pas été paramétrée.
+    """
+    if valeur in (None, ''):
+        return 'non paramétré'
+    return f'{_fmt_num(valeur, "")}/20'.replace('/20/20', '/20').strip()
+
+
 def _fmt_num(val, suffix=''):
     if val is None or val == '':
         return '—'
@@ -182,11 +194,15 @@ def export_releve_notes_pdf(data):
         thp = formation.get('total_heures_presence')
         thpr = formation.get('total_heures_prevues')
         criteres = formation.get('criteres') or {}
-        seuil_note = criteres.get('seuil_admission', 12)
+        # Aucun seuil n'est supposé : un critère absent est affiché comme
+        # « non paramétré ». Le repli historique à 12/20 n'était adossé à
+        # aucune règle institutionnelle et divergeait du 10/20 du reste de
+        # l'application.
+        seuil_note = _seuil_affiche(criteres.get('seuil_admission'))
         seuil_taux = criteres.get('taux_presence_min', 80)
 
         synth_lines = [
-            f"<b>Moyenne générale :</b> {_fmt_num(mg, '/20')} (seuil : {seuil_note}/20)",
+            f"<b>Moyenne générale :</b> {_fmt_num(mg, '/20')} (seuil : {seuil_note})",
             f"<b>Temps de cours effectué :</b> {_fmt_num(tp, '%')}"
             + (
                 f" ({thp}h / {thpr}h)"
@@ -293,7 +309,7 @@ def export_releve_notes_excel(data):
         ws.cell(
             row=row_idx, column=1,
             value=(
-                f"Critères : moyenne ≥ {criteres.get('seuil_admission', 12)}/20"
+                f"Critères : moyenne ≥ {_seuil_affiche(criteres.get('seuil_admission'))}"
                 f" et temps effectué ≥ {criteres.get('taux_presence_min', 80)}%"
             ),
         )

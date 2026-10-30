@@ -4,11 +4,11 @@
  */
 
 const C = {
-  header: '#EDB131',
+  header: '#F59E0B',
   groupe: '#FBFDBB',
   total: '#F7FA82',
   sidebar: '#FFFF00',
-  absence: '#EDB131',
+  absence: '#F59E0B',
   absenceJour: '#BDD7EE',
   border: '#000',
 }
@@ -117,7 +117,7 @@ function BlocCreneau({ label, bloc, nGroups }) {
   )
 }
 
-export function PointJournalierTableauCPFAE({ tb }) {
+export function PointJournalierTableauINJS({ tb }) {
   if (!tb) return null
 
   const nGroups = Math.max(
@@ -211,4 +211,4 @@ export function PointJournalierTableauCPFAE({ tb }) {
   )
 }
 
-export default PointJournalierTableauCPFAE
+export default PointJournalierTableauINJS

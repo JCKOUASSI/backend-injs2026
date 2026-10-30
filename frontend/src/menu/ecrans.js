@@ -15,6 +15,22 @@
  * `ecran` dans `menu/arborescence.js` et d'ajouter sa route.
  */
 
+import {
+  anneeAcademiqueCourante,
+  anneeAcademiquePrecedente,
+} from '../utils/anneeAcademique'
+
+/**
+ * Options du filtre « Année » : année courante et précédente, calculées.
+ * Les valeurs restent des libellés `AAAA-AAAA` (format attendu par le filtre
+ * backend) — seule la génération change, pour ne plus devenir obsolète.
+ */
+export function anneesAcademiquesFiltre(date = new Date()) {
+  return [anneeAcademiqueCourante(date), anneeAcademiquePrecedente(date)].map(
+    (annee) => ({ valeur: annee, libelle: annee.replace('-', ' – ') }),
+  )
+}
+
 /** Ressources référentielles partagées (options de filtres et de documents). */
 export const RESSOURCES = {
   formations: {
@@ -161,10 +177,9 @@ export const ECRANS = {
       },
       {
         param: 'annee_academique_id', libelle: 'Année', type: 'select',
-        options: [
-          { valeur: '2026-2027', libelle: '2026 – 2027' },
-          { valeur: '2025-2026', libelle: '2025 – 2026' },
-        ],
+        // Généré (année courante + précédente) : une liste figée devenait
+        // obsolète au changement d'année académique.
+        options: anneesAcademiquesFiltre(),
       },
     ],
     colonnes: [

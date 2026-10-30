@@ -17,6 +17,17 @@ from django.db import models
 from authentication.role_groups import get_user_roles
 
 # Clés dont la modification exige une confirmation explicite (API + UI).
+#: Paramètres de notation du référentiel INJS.
+#: Le classeur officiel les publie (CC 0,4 / Examen 0,6 / seuil 10) en les
+#: présentant lui-même comme « à confirmer par le règlement des études ».
+#: Ils sont donc créés en statut PROVISOIRE et ne sont JAMAIS appliqués tant
+#: qu'une décision institutionnelle ne les a pas validés.
+CLES_NOTATION = {
+    'notation.poids_controle_continu': 'Poids du contrôle continu (0–1)',
+    'notation.poids_examen': 'Poids de l’examen final (0–1)',
+    'notation.seuil_validation_ue': 'Seuil de validation d’une UE (/20)',
+}
+
 CLES_CRITIQUES = frozenset({
     'duree_session_heures',
     'qr_token_lifetime_hours',
@@ -137,6 +148,21 @@ class Parametre(models.Model):
         help_text="Paramètre actif/inactif",
     )
 
+    class StatutValidation(models.TextChoices):
+        VALIDE = 'VALIDE', 'Validé (règle institutionnelle)'
+        PROVISOIRE = 'PROVISOIRE', 'Provisoire (à confirmer)'
+
+    statut_validation = models.CharField(
+        max_length=12,
+        choices=StatutValidation.choices,
+        default=StatutValidation.VALIDE,
+        db_index=True,
+        help_text=(
+            "Un paramètre PROVISOIRE est publié mais jamais appliqué par les "
+            "traitements : il documente une valeur en attente de décision."
+        ),
+    )
+
     # Audit
     cree_par = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -176,6 +202,23 @@ class Parametre(models.Model):
     @property
     def est_critique(self):
         return self.cle in CLES_CRITIQUES
+
+    @classmethod
+    def valeur_institutionnelle(cls, cle, defaut=None):
+        """Valeur d'un paramètre **validé** uniquement.
+
+        Un paramètre inexistant, inactif ou au statut PROVISOIRE ne renvoie
+        jamais sa valeur : les traitements reçoivent ``defaut`` et savent ainsi
+        qu'aucune règle institutionnelle n'est disponible, au lieu d'appliquer
+        silencieusement une valeur provisoire.
+        """
+        parametre = cls.objects.filter(cle=cle, actif=True).first()
+        if parametre is None:
+            return defaut
+        if parametre.statut_validation != cls.StatutValidation.VALIDE:
+            return defaut
+        valeur = parametre.get_valeur_typed()
+        return defaut if valeur is None else valeur
 
     def get_valeur_typed(self):
         """Retourne la valeur avec le bon type Python, ou None si vide/invalide."""

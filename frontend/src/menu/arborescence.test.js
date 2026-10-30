@@ -76,6 +76,27 @@ describe('couverture du modèle de menu', () => {
   })
 })
 
+describe('GET-INJS — génération annuelle (demande 21)', () => {
+  it('expose l’écran d’import et de génération annuelle', () => {
+    const entree = toutesEntrees.find(
+      (e) => e.chemin === '/edt/generation-annuelle',
+    )
+    expect(entree).toBeDefined()
+    expect(entree.libelle).toMatch(/Génération annuelle/i)
+    expect(entree.droit.curp).toContain('edt.emploi_du_temps.generer')
+    // L'écran est un composant dédié : pas de descripteur générique requis.
+    expect(entree.ecran).toBeUndefined()
+  })
+
+  it('déclare un code CURP réellement présent au catalogue', () => {
+    // Le catalogue est une fixture {codes: [...], modules: [...]} : un code
+    // inventé masquerait l'entrée pour tous les comptes gouvernés.
+    const entree = toutesEntrees.find((e) => e.chemin === '/edt/generation-annuelle')
+    const cites = entree.droit.curp.filter((code) => CATALOGUE.codes.includes(code))
+    expect(cites.length).toBeGreaterThan(0)
+  })
+})
+
 describe('contrat de droits : fermeture par défaut', () => {
   it('toute entrée déclare un droit (aucun écran offert à tous les comptes)', () => {
     const sansDroit = toutesEntrees.filter((entree) => !entree.droit).map((entree) => entree.id)

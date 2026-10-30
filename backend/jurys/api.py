@@ -207,7 +207,6 @@ def _has_role_complet(user):
 
 
 @extend_schema(
-    operation_id='jurys_session_list',
     summary='Sessions de délibération (paginées, filtrables)',
     description=(
         'GET : liste paginée des sessions de jury du périmètre autorisé. '
@@ -356,7 +355,6 @@ def session_action(request, pk):
 
 
 @extend_schema(
-    operation_id='jurys_session_membres',
     summary='Composition du jury (lecture) / ajout d’un membre (écriture)',
     description=(
         'GET : liste des membres de la session. '
@@ -487,7 +485,6 @@ def notifications_jury(request):
 
 
 @extend_schema(
-    operation_id='jurys_session_anomalies',
     summary='Anomalies de la session de délibération',
     description=(
         'Anomalies réellement contrôlées par le workflow Jury '
@@ -514,7 +511,6 @@ def session_anomalies(request, pk):
 
 
 @extend_schema(
-    operation_id='jurys_session_statistiques',
     summary='Statistiques agrégées de la session',
     description=(
         'Agrégats calculés à la demande depuis DecisionJury / '

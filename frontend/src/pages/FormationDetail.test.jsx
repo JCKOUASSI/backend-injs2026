@@ -246,6 +246,8 @@ describe('FormationDetail — onglet Séances (cycle de vie)', () => {
   it('crée une séance via le formulaire inline (POST new, numero et intitulé calculés)', async () => {
     fireEvent.click(screen.getByRole('button', { name: /ajouter une séance/i }))
     const form = screen.getByRole('button', { name: 'Créer' }).closest('form')
+    // Une séance appartient à un module : le formulaire exige ce choix.
+    fireEvent.change(form.querySelector('select'), { target: { value: '77' } })
     fireEvent.change(form.querySelector('input[type="date"]'), { target: { value: '2026-09-20' } })
     const times = form.querySelectorAll('input[type="time"]')
     fireEvent.change(times[0], { target: { value: '14:00' } })
@@ -255,8 +257,9 @@ describe('FormationDetail — onglet Séances (cycle de vie)', () => {
 
     expect(posts((p) => p.endsWith('/sessions/new/'))).toEqual([
       {
-        path: `/formations/${F}/sessions/new/`,
+        path: `/formations/${F}/modules/77/sessions/new/`,
         body: expect.objectContaining({
+          module_id: '77',
           date_journee: '2026-09-20',
           heure_debut_prevue: '14:00',
           heure_fin_prevue: '16:00',

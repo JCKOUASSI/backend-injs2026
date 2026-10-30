@@ -9,7 +9,7 @@ export default function MonEspace() {
   const [chargement, setChargement] = useState(true)
 
   useEffect(() => {
-    api.get('/scan/me/fiche/')
+    api.get('/me/fiche/')
       .then((res) => setFiche(res.data))
       .catch(() => toast.showToast('Fiche personnelle indisponible.', 'error'))
       .finally(() => setChargement(false))

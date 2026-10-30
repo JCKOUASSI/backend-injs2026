@@ -44,7 +44,7 @@ export default function FormationDetail() {
   const [selectedQrModule, setSelectedQrModule] = useState(null)
 
   // Session creation
-  const [newSession, setNewSession] = useState({ date_journee: '', numero: 1, heure_debut_prevue: '', heure_fin_prevue: '' })
+  const [newSession, setNewSession] = useState({ module_id: '', date_journee: '', numero: 1, heure_debut_prevue: '', heure_fin_prevue: '' })
   const [showNewSession, setShowNewSession] = useState(false)
 
   // Présences dashboard
@@ -487,15 +487,21 @@ export default function FormationDetail() {
   const handleCreateSession = async (e) => {
     e.preventDefault()
     try {
+      // Une séance appartient obligatoirement à un module : sans module, le
+      // backend ne peut pas déterminer à quel cours la rattacher.
+      if (!newSession.module_id) {
+        showToast('Choisissez le module concerné par la séance', 'error')
+        return
+      }
       const nextNumero = sessions.length + 1
       const payload = {
         ...newSession,
         numero: nextNumero,
         intitule: `Séance ${nextNumero}`,
       }
-      await api.post(`/formations/${id}/sessions/new/`, payload)
+      await api.post(`/formations/${id}/modules/${newSession.module_id}/sessions/new/`, payload)
       setShowNewSession(false)
-      setNewSession({ date_journee: '', heure_debut_prevue: '', heure_fin_prevue: '' })
+      setNewSession({ module_id: '', date_journee: '', heure_debut_prevue: '', heure_fin_prevue: '' })
       loadFormationData()
       showToast('Séance créée')
     } catch (err) { showToast(err.response?.data?.detail || 'Erreur lors de la création', 'error') }
@@ -714,7 +720,7 @@ export default function FormationDetail() {
                     {formation.formateurs?.length > 0
                       ? formation.formateurs.map(f => (
                           <span key={f.id} style={{
-                            background: '#f0f7ff', color: '#11407d',
+                            background: '#f0f7ff', color: '#0B2D5B',
                             border: '1px solid #c6ddf6', borderRadius: 6,
                             padding: '0.15rem 0.55rem', fontSize: '0.82rem', fontWeight: 500,
                           }}>
@@ -897,7 +903,7 @@ export default function FormationDetail() {
                       {[
                         { label: labelAttendus, sub: subAttendus, value: dashboard.total_attendus, color: '#64748b', icon: 'bi-people',        bg: '#f8fafc' },
                         { label: 'En salle',    sub: null, value: dashboard.en_salle?.length || 0,  color: '#2b6cb0', icon: 'bi-person-check',  bg: '#ebf8ff' },
-                        { label: 'Présents',    sub: null, value: dashboard.presents?.length || 0,  color: '#11407d', icon: 'bi-check-circle',  bg: '#f0f7ff' },
+                        { label: 'Présents',    sub: null, value: dashboard.presents?.length || 0,  color: '#0B2D5B', icon: 'bi-check-circle',  bg: '#f0f7ff' },
                         { label: 'Absents',     sub: null, value: dashboard.absents?.length || 0,   color: '#c53030', icon: 'bi-person-x',      bg: '#fff5f5' },
                         { label: 'Taux présence', sub: null, value: `${taux}%`,                     color: tauxColor,  icon: 'bi-graph-up',     bg: '#fefce8' },
                       ].map(({ label, sub, value, color, icon, bg }) => (
@@ -980,7 +986,7 @@ export default function FormationDetail() {
                 {presentsFiltres.length > 0 && (
                   <div className="card">
                     <div className="card-header-bar" style={{ background: '#f0f7ff' }}>
-                      <span style={{ color: '#11407d', fontWeight: 600 }}>
+                      <span style={{ color: '#0B2D5B', fontWeight: 600 }}>
                         <i className="bi bi-check-circle me-2"></i>Présents — sortis ({presentsFiltres.length}{presenceSearch ? ` / ${dashboard.presents.length}` : ''})
                       </span>
                     </div>
@@ -1014,7 +1020,7 @@ export default function FormationDetail() {
                                 <td style={{ fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{fmtTime(p.timestamp_entree)}</td>
                                 <td style={{ fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{fmtTime(p.timestamp_sortie)}</td>
                                 <td>
-                                  <span style={{ background: '#c6ddf6', color: '#11407d', borderRadius: 5, padding: '2px 8px', fontSize: '0.82rem', fontWeight: 600 }}>
+                                  <span style={{ background: '#c6ddf6', color: '#0B2D5B', borderRadius: 5, padding: '2px 8px', fontSize: '0.82rem', fontWeight: 600 }}>
                                     {fmtMin(p.duree_presence_minutes)}
                                   </span>
                                 </td>
@@ -1108,6 +1114,16 @@ export default function FormationDetail() {
               <div className="card-body">
                 {showNewSession ? (
                   <form onSubmit={handleCreateSession} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                    <div className="form-group" style={{ flex: '1 1 220px' }}>
+                      <label className="form-label">Module *</label>
+                      <select className="form-select form-select-sm" required value={newSession.module_id}
+                        onChange={e => setNewSession({...newSession, module_id: e.target.value})}>
+                        <option value="">— Choisir un module —</option>
+                        {formationModules.map(m => (
+                          <option key={m.id} value={m.id}>{m.intitule}</option>
+                        ))}
+                      </select>
+                    </div>
                     <div className="form-group" style={{ flex: '1 1 140px' }}>
                       <label className="form-label">Date *</label>
                       <input type="date" className="form-control form-control-sm" required value={newSession.date_journee}
@@ -1690,7 +1706,7 @@ export default function FormationDetail() {
                       : <>Badgeage forcé de l'entrée pour <strong>{forceMotifDialog.personne.nom} {forceMotifDialog.personne.prenom}</strong>.</>)
                     : <>Sortie forcée pour <strong>{forceMotifDialog.personne.nom} {forceMotifDialog.personne.prenom}</strong>.</>}
                   {jourPasse && (
-                    <span className="badge ms-2" style={{ background: '#FFF8E0', color: '#7B5500', border: '1px solid #F5B100', fontSize: '0.78rem' }}>
+                    <span className="badge ms-2" style={{ background: '#FFF8E0', color: '#7B5500', border: '1px solid #D97706', fontSize: '0.78rem' }}>
                       <i className="bi bi-clock-history me-1"></i>Jour passé — {dashboardDate}
                     </span>
                   )}

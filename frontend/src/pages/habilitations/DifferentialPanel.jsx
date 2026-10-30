@@ -37,7 +37,7 @@ export default function DifferentialPanel({
   const bloquant = differentialAvertissementBloquant(resume)
 
   return (
-    <div className="hab-carte" data-testid="differential-panel" style={{ borderColor: bloquant ? '#c62828' : undefined }}>
+    <div className="hab-carte" data-testid="differential-panel" style={{ borderColor: bloquant ? '#DC3545' : undefined }}>
       <h3><i className="bi bi-scales me-2" />Différentiel de droits</h3>
       {resume.vide ? (
         <p className="hab-muted mb-0">Aucun changement de permissions : les droits restent identiques.</p>

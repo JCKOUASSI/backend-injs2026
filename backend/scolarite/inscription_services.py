@@ -82,7 +82,49 @@ def appliquer_transition(inscription, nouveau_statut, acteur=None, commentaire='
         nouvelle_valeur=nouveau_statut,
         commentaire=commentaire,
     )
+
+    # ── Enchaînement : validation administrative → parcours pédagogique ─────
+    # Une inscription validée ouvre le parcours académique : les inscriptions
+    # pédagogiques sont générées depuis la maquette active. L'opération est
+    # idempotente (la génération ignore les ECUE déjà rattachées) et n'échoue
+    # JAMAIS la validation : si aucune maquette n'est active — cas normal en
+    # début d'année, les maquettes étant validées institutionnellement — la
+    # génération est DIFFÉRÉE et journalisée, pas contournée.
+    # NOTE — frontière métier : par défaut, la validation administrative ne crée
+    # AUCUNE inscription pédagogique (règle existante, verrouillée par
+    # scolarite/tests/test_frontieres_metier.py). L'enchaînement automatique
+    # n'est donc actif que si l'établissement l'active explicitement via
+    # INJS_AUTO_INSCRIPTION_PEDAGOGIQUE = True.
+    if nouveau_statut == S.VALIDEE and _auto_pedagogie_active():
+        _declencher_parcours_pedagogique(inscription, acteur)
     return inscription
+
+
+def _auto_pedagogie_active():
+    """L'enchaînement validation → pédagogie est-il activé par l'établissement ?"""
+    from django.conf import settings
+
+    return bool(getattr(settings, 'INJS_AUTO_INSCRIPTION_PEDAGOGIQUE', False))
+
+
+def _declencher_parcours_pedagogique(inscription, acteur=None):
+    """Génère les inscriptions pédagogiques après validation administrative.
+
+    Retourne la liste des lignes créées (vide si différée). Ne lève jamais :
+    l'absence de maquette active est un état normal, consigné au journal.
+    """
+    from .pedagogie_services import PedagogieImpossible, generer_inscriptions_pedagogiques
+
+    try:
+        return generer_inscriptions_pedagogiques(inscription, acteur=acteur)
+    except PedagogieImpossible as raison:
+        journaliser(
+            JournalScolarite.Action.INSCRIPTION_PEDAGOGIQUE_DIFFEREE,
+            objet=inscription,
+            acteur=acteur,
+            commentaire=str(raison),
+        )
+        return []
 
 
 # ── Lot L1/L3 — changement de parcours, radiation, clôture d'année ───────────
@@ -277,6 +319,30 @@ def convertir_admission_en_inscription(admission, acteur=None, matricule=None,
             f'Dossier de pièces incomplet : {validees}/{total} pièce(s) obligatoire(s) validée(s).'
         )
 
+    # Idempotence : une admission ne produit qu'une seule inscription vivante.
+    # Sans ce garde-fou, un double clic (ou un rejeu réseau) créait deux
+    # inscriptions administratives pour la même admission, avec deux entrées
+    # de journal et un risque de double validation.
+    existante = (
+        InscriptionAdministrative.objects
+        .filter(admission=admission)
+        .exclude(statut__in=(S.ANNULEE, S.REJETEE))
+        .order_by('pk')
+        .first()
+    )
+    if existante is not None:
+        # Un rejeu « avec validation » fait progresser le dossier jusqu'à
+        # VALIDEE, mais ne réactive jamais un dossier suspendu ou terminé.
+        if valider:
+            for cible in (S.EN_ATTENTE, S.A_VALIDER, S.VALIDEE):
+                if cible in TRANSITIONS.get(existante.statut, set()):
+                    appliquer_transition(
+                        existante, cible, acteur=acteur,
+                        commentaire='Rejeu idempotent de la conversion.',
+                    )
+        existante.rejeu_idempotent = True
+        return existante
+
     participant, participant_cree = creer_ou_retrouver_participant(
         admission.candidat, admission.annee_academique, acteur=acteur, matricule=matricule,
     )
@@ -300,6 +366,7 @@ def convertir_admission_en_inscription(admission, acteur=None, matricule=None,
     champs.update({cle: valeur for cle, valeur in surcharges.items() if valeur is not None})
 
     inscription = InscriptionAdministrative(**champs)
+    inscription.rejeu_idempotent = False
     inscription.full_clean(exclude=['date_validation'])
     inscription.save()
 

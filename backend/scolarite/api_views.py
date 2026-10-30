@@ -212,6 +212,8 @@ def _serialize_ue(ue):
         'credits': ue.credits,
         'caractere': ue.caractere,
         'ordre': ue.ordre,
+        'famille': ue.famille.libelle if ue.famille_id else None,
+        'famille_code': ue.famille.code if ue.famille_id else None,
         'semestre': {
             'id': ue.semestre_id,
             'numero': ue.semestre.numero,
@@ -231,9 +233,21 @@ def maquette_list(request):
         nb_ue=Count('unites_enseignement', distinct=True),
         total_credits=Sum('unites_enseignement__credits'),
     )
-    for champ in ('annee_academique_id', 'ref_formation_id', 'parcours_id', 'niveau_id', 'statut'):
-        if champ in request.query_params:
-            queryset = queryset.filter(**{champ: request.query_params[champ]})
+    # Un paramètre vide (« ?ref_formation_id= ») ne doit pas produire un 500 :
+    # on l'ignore, et une valeur non entière est refusée explicitement en 400.
+    numeriques = ('annee_academique_id', 'ref_formation_id', 'parcours_id', 'niveau_id')
+    for champ in numeriques:
+        valeur = (request.query_params.get(champ) or '').strip()
+        if not valeur:
+            continue
+        if not valeur.isdigit():
+            return Response(
+                {'error': f'{champ} doit être un identifiant numérique.'}, status=400,
+            )
+        queryset = queryset.filter(**{champ: int(valeur)})
+    statut = (request.query_params.get('statut') or '').strip()
+    if statut:
+        queryset = queryset.filter(statut=statut)
     return Response([
         {
             'id': maquette.id,
@@ -266,7 +280,7 @@ def maquette_detail(request, pk):
         return Response({'error': 'Introuvable'}, status=404)
     unites = (
         UE.objects.filter(maquette=maquette)
-        .select_related('semestre')
+        .select_related('semestre', 'famille')
         .prefetch_related('ecues')
     )
     return Response({
@@ -278,6 +292,10 @@ def maquette_detail(request, pk):
         'niveau': maquette.niveau.code,
         'version': maquette.version,
         'statut': maquette.statut,
+        # Complétude : crédits réellement documentés par semestre. Permet à
+        # l'interface de signaler une maquette incomplète (ex. MS S8 absent du
+        # référentiel) sans que l'absence soit confondue avec une erreur.
+        'completude': maquette.controler_completude(),
         'unites_enseignement': [_serialize_ue(ue) for ue in unites],
     })
 
@@ -331,6 +349,7 @@ def _serializer_maquette(maquette):
         'credits_total': maquette.credits_total,
         'volume_horaire_total': str(maquette.volume_horaire_total),
         'problemes_coherence': maquette.verifier_coherence(),
+        'completude': maquette.controler_completude(),
     }
 
 
@@ -486,13 +505,28 @@ def maquette_journal(request, pk):
     ])
 
 
-@api_view(['POST'])
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def maquette_ue_create(request, pk):
-    """Ajout d'une UE — maquette BROUILLON uniquement."""
+    """UE d'une maquette : lecture (GET) et ajout (POST, BROUILLON uniquement).
+
+    Le GET alimente l'écran « UE / ECUE » du frontend, qui interroge
+    ``/api/scolarite/maquettes/<id>/ues/``. Cette lecture manquait : la route
+    n'acceptait que POST et renvoyait 405 à l'interface.
+    """
     maquette = _get_maquette(pk)
     if maquette is None:
         return Response({'error': 'Introuvable'}, status=404)
+
+    if request.method == 'GET':
+        unites = (
+            UE.objects.filter(maquette=maquette)
+            .select_related('semestre', 'famille')
+            .prefetch_related('ecues')
+        )
+        if request.query_params.get('semestre_id', '').strip().isdigit():
+            unites = unites.filter(semestre_id=int(request.query_params['semestre_id']))
+        return Response([_serialize_ue(ue) for ue in unites])
     if maquette.statut != Maquette.Statut.BROUILLON:
         return Response({'error': f'Maquette {maquette.statut.lower()} immuable.'}, status=400)
     semestre_id = request.data.get('semestre_id')

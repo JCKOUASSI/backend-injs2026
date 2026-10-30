@@ -233,7 +233,10 @@ def registre_detail_api(request, pk):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrAbove])
 def modeles_list_api(request):
-    qs = ModeleDocument.objects.select_related('formation').order_by('type', 'formation__libelle')
+    # `RefFormation` nomme son champ `intitule` (il n'a jamais eu de
+    # `libelle`) : trier sur `formation__libelle` levait un FieldError → 500
+    # sur la liste des modèles de documents.
+    qs = ModeleDocument.objects.select_related('formation').order_by('type', 'formation__intitule')
     return Response({'results': [{
         'id': m.id, 'type': m.type, 'type_display': m.get_type_display(),
         'formation_id': m.formation_id, 'formation': str(m.formation) if m.formation_id else None,

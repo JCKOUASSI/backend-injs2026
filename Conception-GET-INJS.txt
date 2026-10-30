@@ -1,0 +1,643 @@
+================================================================================
+CONCEPTION-GET-INJS
+GET INJS APP — Générateur des emplois du temps de l'INJS d'Abidjan
+Dépôt : JCKOUASSI/backend-injs2026 — branche arena/d40e4a41-backend-injs2026
+Rédigé le 2026-10-30 — document de référence du code réellement livré
+================================================================================
+
+Ce document décrit ce qui EXISTE dans le code, ce qui a été ajouté pendant la
+mission, ce qui a été mesuré, et ce qui reste ouvert. Aucune commande n'y est
+présentée comme exécutée si elle ne l'a pas été ; aucune mesure n'y est
+présentée comme validée si elle n'a pas été relevée.
+
+--------------------------------------------------------------------------------
+PARTIE 1 — PRÉSENTATION
+--------------------------------------------------------------------------------
+
+1.1 Objectifs
+
+GET INJS APP prépare, simule, génère, contrôle, versionne, publie et consulte
+les emplois du temps de l'INJS d'Abidjan pour une année académique donnée, à
+partir de la chaîne LMD officielle (formation → parcours → niveau → semestre →
+groupe → maquette → UE → ECUE → affectation → séance → EDT publié) et, lorsque
+les étudiants n'ont pas de parcours dans l'application, à partir d'un fichier
+d'inscrits importé (CSV / XLSX).
+
+1.2 Périmètre retenu
+
+- Institution : INJS d'Abidjan uniquement. Aucune référence SYGEP / CPFAE.
+- 8 filières F01–F08 ; Licence S1–S6 et Master S7–S10 ; 30 ECTS/semestre,
+  60 ECTS/niveau.
+- Aucune table « Promotion » : le groupe (année + formation + parcours + niveau
+  + vague + nom) porte la promotion — arbitrage déjà consigné dans le dépôt.
+- L'import externe ne crée JAMAIS d'inscription administrative validée, de
+  décision de jury ni de parcours académique officiel : il crée des
+  `InscriptionImportee`, identifiables et supprimables.
+
+1.3 Architecture retenue
+
+  Backend  Django 5.1 + DRF, application `edts` (module GET-INJS)
+  Frontend React 18 + Vite + React Router + Bootstrap (stack existante)
+  Base     PostgreSQL en production, SQLite en développement/tests
+  Moteur   `edts/moteur` : besoins → génération (backtracking) → validation →
+           publication → orchestration annuelle → import des inscrits
+
+Le module a été intégré à l'application Django E X I S T A N T E (`edts`), pas
+dans un second backend. Aucune dépendance nouvelle n'a été introduite.
+
+1.4 État de départ (vérifié avant toute modification)
+
+  git rev-parse --abbrev-ref HEAD  → arena/d40e4a41-backend-injs2026
+  git status --porcelain           → vide (arbre propre)
+  Applications EDT existantes : edts (models 731 l., api 1039 l., api_lmd 1153 l.,
+  moteur 3 469 l., 14 fichiers de tests), soit 429 tests déjà en place.
+
+Autrement dit : une grande partie de GET-INJS existait déjà (import des
+inscrits, génération annuelle, validation, publication, versions, conflits,
+exports CSV, écrans). La mission a consisté à combler les manques réels, à
+mesurer, et à documenter — pas à réécrire ce qui fonctionnait.
+
+--------------------------------------------------------------------------------
+PARTIE 2 — ANALYSE DOCUMENTAIRE
+--------------------------------------------------------------------------------
+
+2.1 Les huit documents de référence
+
+  N°  Document                                                    Statut
+  --  ----------------------------------------------------------  ------------------
+  1   Mise en oeuvre GET-INJS 2026 - Proposition Arena.txt        LU (304 574 car.)
+  2   Mise en oeuvre de la GET-INJS 2026.txt                      LU (22 810 car.)
+  3   Formations et Modules INJS.txt                              LU (local)
+  4   Processus expert A → Z ... emplois du temps INJS-LMD.txt   LU (local)
+  5   Liste des Bâtiments, salles et espaces ... INJS.txt         LU (6 086 car.)
+  6   INJS D'ABIDJAN — RÉFÉRENTIEL EXHAUSTIF ... .xlsx            LU (19 feuilles)
+  7   RÉFÉRENTIEL EXHAUSTIF DE L'OFFRE DE FORMATION.docx         LU (local)
+  8   référentiel des infrastructures de l'INJS d'Abidjan.docx   LU (récupéré)
+
+Quatre documents (1, 2, 5, 8) étaient absents du dossier local ; ils ont été
+récupérés depuis le dépôt GitHub (API contents, encodage URL des accents) dans
+un répertoire temporaire, sans écraser les fichiers existants. Les documents 3,
+4, 7 étaient présents localement.
+
+Lecture de l'Excel : les 19 feuilles ont été listées ; les feuilles exploitées
+sont « 1. Filières & Concours », « 4. Semestres & Grades », « Maquette EM/MS/ES/
+APA », « 6. Groupes, Catég., Horaires » et « 13. Emploi du temps (modèle) ».
+
+2.2 Éléments métier extraits
+
+  (a) Chaîne canonique (doc 2 et 4) :
+      Formation → Parcours → Promotion → Groupe → Maquette → UE → ECUE →
+      Affectation pédagogique → Créneaux → Salles → Séances → EDT → Publication
+      → Présences.   → Implémenté tel quel (edts/models.py, moteur/besoins*.py).
+
+  (b) Contraintes absolues (doc 2, §10 "J") :
+      - un enseignant ne peut pas assurer deux séances simultanément (C1) ;
+      - un groupe ne peut pas suivre deux séances simultanément (C2) ;
+      - une salle ne peut pas accueillir deux séances simultanément (C3) ;
+      - effectif ≤ capacité de la salle (C4) ;
+      - un TP exige une salle spécialisée (compatibilité) (C7).
+      → Implémenté : contraintes.py (C1…C9), generation.py, validation.py.
+
+  (c) Contraintes souples avec pénalité (doc 2, §11 "K") :
+      éviter > 4 h consécutives, éviter les trous, éviter 8 h/jour, respecter
+      les préférences enseignants, équilibrer les matières, éviter les salles
+      surdimensionnées.
+      → Partiellement implémenté : préférences enseignants (PREFERENCE) et
+        salle surdimensionnée sont pénalisées (poids 2 et 1). Les règles
+        « > 4 h consécutives », « trous », « 8 h/jour » ne sont PAS codées :
+        aucune pondération officielle n'est fournie par les documents.
+
+  (d) Canevas horaire officiel (Excel, feuille « 13. Emploi du temps (modèle) ») :
+      6 jours (lundi → samedi) × 4 plages : 07h30–09h30, 09h45–11h45,
+      13h30–15h30, 15h45–17h45 = 24 créneaux de 2 h.
+      → Vérifié en base : les 24 CreneauTemplate enregistrés correspondent
+        EXACTEMENT à cette grille (aucun créneau inventé).
+
+  (e) Volumes horaires (doc 2, §C/§D) : un ECUE porte CM + TD (ex. 20 h CM +
+      10 h TD) découpés en séances de 2 h → 10 séances CM + 5 séances TD.
+      → Implémenté : besoins.py / besoins_maquette.py calculent le nombre de
+        séances à partir des volumes réels ; aucune séance n'est inventée.
+
+  (f) Infrastructures (docs 5 et 8) : 43 salles de cours, 2 blocs pédagogiques,
+      amphithéâtres ENSEPS/ENSEP, gymnases, terrains ; l'ambition est de gérer
+      plus de 250 espaces.
+      → Modèle prêt (RefSite, RefBatiment, RefSalle avec type_lieu et capacité).
+        IMPORTANT : les salles réelles ne sont PAS saisies (décision métier :
+        ne pas inventer un patrimoine officiel).
+
+2.3 Matrice de traçabilité
+
+  Règle métier                          Source          Composant                 Test
+  ------------------------------------  --------------  ------------------------  -------------------------------
+  Chaîne LMD canonique                  doc 2, 4        edts/models.py            test_raccordement_pedagogique
+  Besoins = volumes de la maquette      doc 2 §C        moteur/besoins_maquette   test_generation_annee (3 besoins)
+  C1 conflit enseignant                 doc 2 §10       contraintes.conflit_*     test_lot1_moteur, test_lot2_moteur
+  C2 conflit groupe                     doc 2 §10       contraintes.conflit_*     idem
+  C3 conflit salle                      doc 2 §10       contraintes.conflit_*     idem
+  C4 effectif ≤ capacité                doc 2 §10       contraintes.capacite      test_lot1_moteur
+  C5 indisponibilité enseignant         doc 2 §10/K     contraintes/index         test_lot1_moteur
+  C6 indisponibilité salle              doc 2 §10       contraintes/index         test_lot1_moteur
+  C7 compatibilité salle                doc 2 §10       contraintes.compatible    test_lot1_moteur
+  Canevas 6 j × 4 plages                Excel feuille13 CreneauTemplate           vérifié en base (24/24)
+  Import externe d'inscrits             doc 1, 2        moteur/import_inscrits    test_import_inscrits (17)
+  Provenance des données importées      mission §5.D    InscriptionImportee       test_import_inscrits
+  Génération annuelle coordonnée        doc 4           moteur/annee, orchestration test_generation_annee
+  Diagnostic d'impossibilité            doc 2 §6        validation + bilan        test_api_getinjs
+  Versionnage / publication             doc 2 §11       moteur/publication        test_lot2_publication_api
+  Campagne persistante + historique     mission §5.LOT2 CampagneGeneration        test_campagnes (16)
+  Publication atomique du périmètre     mission §5.LOT8 campagne.publier         test_campagnes
+  Mesure de charge 100 → 14 000         mission §6      benchmark_getinjs         voir Partie 6
+
+2.4 Divergences constatées entre documents
+
+  - Doc 2 décrit un cycle « Formation → Parcours → Promotion… » ; le dépôt ne
+    possède pas de table Promotion (arbitrage 2026-09-28). Le groupe porte la
+    promotion : aucune divergence fonctionnelle, mais la terminologie diffère.
+  - Doc 1 (Proposition Arena) est une analyse générale qui recommande parfois
+    des modèles absents du référentiel INJS (ex. « Promotion » explicite,
+    créneaux de 1 h). Les documents 2 et 4, plus précis, ont été retenus comme
+    source d'exécution.
+  - Les plages horaires officielles (2 h, 6 jours) ne sont documentées que
+    dans l'Excel ; aucun texte ne les contredit.
+
+2.5 Éléments restant à confirmer (décision métier, non décidables par le code)
+
+  - Pondération des contraintes souples (pénalités) : aucune valeur officielle.
+  - Salles et capacités réelles de l'INJS (patrimoine physique).
+  - Durée officielle d'une séance selon la nature (CM/TD/TP/sport) : 2 h est la
+    seule valeur documentée.
+  - Calendrier académique (semaines de cours, examens, vacances) de 2026-2027.
+
+--------------------------------------------------------------------------------
+PARTIE 3 — ARCHITECTURE TECHNIQUE
+--------------------------------------------------------------------------------
+
+3.1 Fichiers créés pendant la mission
+
+  backend/edts/moteur/campagnes.py                      (nouveau, ~500 l.)
+  backend/edts/management/commands/benchmark_getinjs.py (nouveau, ~190 l.)
+  backend/edts/management/__init__.py                   (nouveau)
+  backend/edts/management/commands/__init__.py          (nouveau)
+  backend/edts/migrations/0008_campagnegeneration_executioncampagne_and_more.py
+  backend/edts/tests/test_campagnes.py                  (nouveau, 16 tests)
+  frontend/src/pages/getinjs/CampagnesGeneration.jsx    (nouveau, ~430 l.)
+  frontend/src/pages/getinjs/CampagnesGeneration.test.jsx (nouveau, 6 tests)
+  frontend/src/pages/getinjs/VersionsPublication.jsx    (nouveau, ~230 l.)
+  frontend/src/pages/getinjs/VersionsPublication.test.jsx (nouveau, 5 tests)
+  frontend/src/pages/getinjs/AuditDonnees.jsx           (nouveau, ~170 l.)
+  frontend/src/pages/getinjs/AuditDonnees.test.jsx      (nouveau, 4 tests)
+  Conception-GET-INJS.txt                               (ce document)
+
+3.2 Fichiers modifiés (tous additifs)
+
+  backend/edts/models.py            + CampagneGeneration, + ExecutionCampagne
+  backend/edts/moteur/contraintes.py + indexer_disponibilites, + indexer_occupations,
+                                     + ajouter/retirer_occupation ; paramètre
+                                     `index` optionnel sur conflit_ressource,
+                                     indisponible_enseignant/salle, preference
+  backend/edts/moteur/generation.py  contexte enrichi (index disponibilités,
+                                     index occupations) ; aucune signature cassée
+  backend/edts/api_getinjs.py       + 8 routes campagnes ; conception servie
+                                     depuis la racine avec repli docs/getinjs
+  backend/edts/urls.py              + 8 routes `campagnes/...`
+  frontend/src/App.jsx              + routes /edt/campagnes, /edt/versions, /edt/audit
+  frontend/src/menu/arborescence.js + 3 entrées : « Campagnes de génération »,
+                                    « Audit des données », « Versions & publication »
+
+3.3 Modèles ajoutés
+
+  CampagneGeneration
+    annee_academique (PROTECT), libelle, semaines (JSON), perimetre (JSON),
+    parametres (JSON), statut (9 états), cree_par, demarree_le, terminee_le,
+    bilan (JSON), anomalies (JSON), statistiques (JSON)
+    Contraintes : unique (annee_academique, libelle) ; index (annee, statut).
+
+  ExecutionCampagne
+    campagne (CASCADE), numero, statut (4 états), lancee_par, demarree_le,
+    terminee_le, duree_ms, bilan, anomalies, statistiques, erreur
+    Contrainte : unique (campagne, numero) → historique ordonné, jamais écrasé.
+
+3.4 Cycle de vie d'une campagne
+
+  BROUILLON → VALIDATION_DONNEES → PRET → EN_COURS
+            → TERMINE | TERMINE_AVEC_ANOMALIES | ECHEC
+            → VALIDE → PUBLIE
+
+  Transitions autorisées uniquement (table TRANSITIONS). Une campagne PUBLIEE
+  est figée : on crée une nouvelle campagne pour un nouveau cycle.
+  Relance possible depuis TERMINE / TERMINE_AVEC_ANOMALIES / ECHEC.
+
+3.5 Concurrence et reprise
+
+  - `demarrer_campagne` ouvre une transaction, prend un verrou pessimiste
+    (select_for_update) sur la campagne, refuse si statut == EN_COURS
+    (`CAMPAGNE_DEJA_EN_COURS`, HTTP 409) puis crée l'exécution.
+  - L'exécution tourne dans un fil d'arrière-plan (`threading.Thread`,
+    daemon) quand `asynchrone=true` ; `asynchrone=false` exécute dans la
+    requête (tests, petits périmètres). Aucun service externe requis (pas de
+    Celery dans le dépôt) : l'absence de broker n'empêche pas le fonctionnement.
+  - Chaque exécution est journalisée, y compris les échecs (`ExecutionCampagne.
+    erreur`), ce qui permet de reprendre en connaissant la cause.
+
+3.6 API (routes ajoutées, toutes sous /api/edts/campagnes/)
+
+  GET    /campagnes/                    lecture (tout authentifié)
+  POST   /campagnes/                    création (planification)
+  GET    /campagnes/<pk>/               lecture
+  POST   /campagnes/<pk>/demarrer/      lancement (planification), 202 si async
+  GET    /campagnes/<pk>/statut/        interrogation périodique
+  GET    /campagnes/<pk>/resultat/      bilan par groupe + anomalies + historique
+  POST   /campagnes/<pk>/donnees-pretes/ BROUILLON → PRET (planification)
+  POST   /campagnes/<pk>/valider/       contrôle + validation (DIRECTION/ADMIN)
+  POST   /campagnes/<pk>/publier/       publication atomique (DIRECTION/ADMIN)
+
+  Refus métier structurés (jamais de 500) : ANNEE_ACADEMIQUE_INTROUVABLE (404),
+  CAMPAGNE_INTROUVABLE (404), CAMPAGNE_DEJA_EXISTANTE (409), CAMPAGNE_DEJA_EN_COURS
+  (409), TRANSITION_REFUSEE (409), VALIDATION_BLOQUANTE (409),
+  PUBLICATION_INCOMPLETE (409), AUCUN_EDT_A_VALIDER/A_PUBLIER (409).
+
+3.7 Algorithme de génération
+
+  1. Besoins : AffectationPedagogique quand elle existe ; sinon maquette active
+     (CM/TD/TP → nombre de séances de 2 h).
+  2. Contexte : créneaux officiels, salles actives, semaines, index de
+     disponibilités, index d'occupations.
+  3. Backtracking chronologique borné par un budget de placements : à chaque
+     étape, le besoin le plus contraint, candidats triés par (score de
+     pénalités, jour, heure, salle).
+  4. Validation : C1…C9 + couverture des besoins ; toute violation est listée.
+  5. Persistance : un EDT BROUILLON par groupe (transaction par EDT).
+  6. Publication : geste humain, après validation, atomique pour un périmètre de
+     campagne.
+
+  Garanties : déterministe à paramètres égaux (tri stable), aucune séance
+  inventée, aucun placement en conflit, échec explicite plutôt que plan faux.
+
+3.8 Gestion des étudiants importés
+
+  Fichier CSV (séparateur « ; » ou « , ») ou XLSX, taille maximale 20 Mo,
+  colonnes reconnues par synonymes (matricule, nom, prénoms, sexe, formation,
+  filière, parcours, niveau, semestre, groupe, vague). Clé d'idempotence :
+  (année académique, matricule). Analyse SANS écriture puis import réel.
+  Stockage : `InscriptionImportee` (fichier, empreinte SHA-256, ligne source).
+  Aucun étudiant, aucune inscription administrative, aucun parcours créé.
+
+3.9 Optimisations apportées (mesurées, Partie 6)
+
+  - Disponibilités (C5/C6/préférences) : une requête par année au lieu d'une
+    requête par candidat → `contraintes.indexer_disponibilites`.
+  - Occupations (C1/C2/C3) : index (ressource, jour) maintenu par le solveur au
+    lieu d'un parcours complet de la liste à chaque candidat →
+    `contraintes.indexer_occupations` + ajouter/retirer.
+  Résultat mesuré : 3 500 étudiants, 961 s → 8,8 s ; 7 000 étudiants, 350 s → 36,3 s.
+
+3.10 Sécurité et habilitations
+
+  - Réutilisation stricte de `edts.permissions` (aucun second RBAC) :
+    planification pour créer/lancer, DIRECTION/ADMIN pour valider/publier,
+    lecture pour tout compte authentifié.
+  - Contrôle serveur sur chaque route (un bouton masqué n'est pas une
+    protection) ; l'interface ne fait que refléter le droit.
+  - Taille de fichier bornée, contenu validé, erreurs explicites.
+  - Aucun secret dans ce document.
+
+--------------------------------------------------------------------------------
+PARTIE 4 — PROCÉDURE D'INSTALLATION
+--------------------------------------------------------------------------------
+
+Commandes réellement utilisées dans cet environnement (SQLite, sandbox) :
+
+  cd /home/user/backend-injs2026
+  python3 -m venv backend/.venv                 # si absent
+  backend/.venv/bin/pip install -r backend/requirements.txt
+  npm install                                   # (frontend/) si absent
+
+  # Environnement Django
+  export DJANGO_SETTINGS_MODULE=arena.settings_sandbox
+  export PYTHONPATH=/home/user/backend-injs2026:/home/user/backend-injs2026/backend
+  set -a; . backend/.env; set +a
+
+  # Schéma
+  backend/.venv/bin/python backend/manage.py makemigrations --check --dry-run
+  backend/.venv/bin/python backend/manage.py migrate edts      # applique 0008
+  backend/.venv/bin/python backend/manage.py check
+
+  # Serveurs
+  ./arena/lancer-api.sh                         # API sur 0.0.0.0:8000
+  (cd frontend && npm run dev)                  # site sur 0.0.0.0:3000
+
+  # Tests
+  ./arena/tests_par_groupe.sh edt               # groupe EDT (edts + presences)
+  (cd frontend && npx vitest run && npm run lint && npm run build)
+
+  # Mesures de charge (aucune donnée conservée par défaut)
+  backend/.venv/bin/python backend/manage.py benchmark_getinjs --etudiants 100
+  backend/.venv/bin/python backend/manage.py benchmark_getinjs --tous --json /tmp/bench.json
+  #   --garder conserve les données synthétiques (BENCH-…) — à réserver au test
+
+  Aucune dépendance nouvelle n'a été nécessaire : openpyxl (XLSX) et le reste
+  étaient déjà présents.
+
+--------------------------------------------------------------------------------
+PARTIE 5 — GUIDE UTILISATEUR
+--------------------------------------------------------------------------------
+
+5.1 Créer une campagne
+  Menu GET-INJS → « Campagnes de génération » (/edt/campagnes). Choisir l'année
+  académique, saisir un libellé unique, indiquer les semaines, cocher
+  « Enregistrer les EDT ». La création n'écrit aucun emploi du temps.
+
+5.1 bis Vérifier les données avant de générer
+  Menu GET-INJS → « Audit des données » (/edt/audit). L'écran interroge
+  `/api/edts/lmd/audit/` et affiche chaque contrôle avec son niveau réel
+  (OK / Avertissement / Bloquant), son code, son explication et l'action
+  recommandée. Exemple observé en base de démonstration : BLOCKING
+  `HORS_PERIMETRE_INJS` tant qu'aucune affectation pédagogique ne porte une
+  formation INJS ; CANEVAS_HORAIRE_OK (14 créneaux types) ; RESSOURCES (7 salles).
+  Le tableau des contraintes C1→C10, séparé des préférences, est rappelé dessous.
+
+5.1 ter Versions & publication
+  Menu GET-INJS → « Versions & publication » (/edt/versions). Liste réelle des
+  EDT versionnés (`/api/edts/lmd/versions/`) avec statut, auteur de création,
+  dates de validation et de publication, motif de modification. Pour la version
+  sélectionnée, l'audit (`/api/edts/lmd/<id>/audit/`) affiche violations,
+  avertissements et couverture ; « Valider » appelle
+  `/api/edts/lmd/<id>/validate/`, « Publier » n'est actif qu'après validation.
+  Un refus de validation est affiché comme un refus, avec le code de la
+  contrainte violée.
+
+5.2 Importer les inscrits
+  Menu GET-INJS → « Génération annuelle & import » : sélectionner le fichier
+  (CSV/XLSX), lancer « Analyser » (aucune écriture), lire le rapport (lignes
+  rejetées avec motif, cohortes, effectifs), puis « Importer ».
+
+5.3 Vérifier les données
+  La synthèse affiche l'effectif réel importé par cohorte. Un groupe sans
+  maquette ni affectation est signalé « non planifiable » — jamais complété
+  par des données inventées.
+
+5.4 Corriger les anomalies
+  Deux causes dominantes : aucune maquette active pour la formation/niveau, ou
+  emploi du temps déjà validé/publié. Corriger en Scolarité (maquette,
+  affectations, groupes) puis relancer la campagne.
+
+5.5 Générer
+  Bouton « Générer › de la campagne. La génération tourne en arrière-plan ;
+  l'écran interroge l'état réel toutes les 3 s (aucun pourcentage inventé).
+  Le bilan par groupe indique séances attendues / placées / non placées et le
+  motif d'échec éventuel.
+
+5.6 Consulter les conflits
+  Menu GET-INJS → « Conflits & contraintes » (source : /api/edts/conflits/),
+  ou colonne « Motif » du bilan de campagne.
+
+5.7 Modifier une séance
+  Tableau des emplois du temps → EDT du groupe → déplacer/annuler une séance
+  (`/api/edts/lmd/items/<id>/move/`, `/cancel/`) ; toute modification déclenche
+  une nouvelle vérification des contraintes.
+
+5.8 Simuler une variante
+  Générer avec « Enregistrer les EDT › décoché : le plan est produit et
+  contrôlé sans être persisté ; les EDT officiels ne sont pas modifiés.
+
+5.9 Valider une version
+  Bouton « Valider » (DIRECTION/ADMIN). Le serveur revérifie chaque EDT ;
+  si une contrainte obligatoire est violée, la validation est refusée avec la
+  liste des violations.
+
+5.10 Publier
+  Bouton « Publier » après validation. Publication atomique : si un EDT du
+  périmètre échoue, aucun n'est publié. L'historique de la campagne conserve
+  date, auteur et motif.
+
+5.11 Exporter
+  Menu GET-INJS → « Export / Impression » (CSV : groupes, enseignements,
+  étudiants, créneaux, affectations, indisponibilités) et export CSV / PDF
+  depuis l'écran de l'emploi du temps. Le PDF est une grille A4 paysage
+  (colonnes = jours réellement occupés, lignes = plages réellement utilisées,
+  cellules = intitulé, salle, enseignant, groupe), produite par le serveur à
+  partir de la même grille que l'écran. Le paramètre `?semaine=N` filtre la
+  semaine ; sans séance, le document l'indique.
+
+--------------------------------------------------------------------------------
+PARTIE 6 — TESTS ET PERFORMANCES
+--------------------------------------------------------------------------------
+
+6.1 Vérifications exécutées
+
+  Contrôle                              Résultat      Preuve
+  ------------------------------------  ------------  ------------------------------------------
+  Configuration Django                  PASS          manage.py check → 0 issue
+  Migrations cohérentes                 PASS          makemigrations --check → « No changes »
+  Migration 0008 appliquée              PASS          migrate edts → OK
+  Tests backend groupe EDT              PASS          449 tests, code 0 (./arena/tests_par_groupe.sh edt)
+  dont campagnes (nouveaux)             PASS          16 tests (edts.tests.test_campagnes)
+  dont export PDF (nouveau)             PASS          4 tests (TestExportPdfEmploiDuTemps)
+  Export PDF d'un EDT                   PASS          application/pdf, 3 066 octets, grille réelle
+                                                     (texte extrait et image de contrôle produite)
+  Tests frontend                        PASS          110 fichiers / 2 012 tests, code 0
+  dont campagnes / versions / audit     PASS          6 + 5 + 4 tests
+  Lint frontend                         PASS          npm run lint → code 0
+  Build frontend                        PASS          npm run build → code 0
+  Import externe (CSV)                  PASS          test_import_inscrits + benchmark (100 → 14 000)
+  Génération complète                   PASS          status_global COMPLETE (100 → 14 000)
+  Publication atomique                  PASS          test_campagnes.test_validation_et_publication_atomiques
+  Non-régression (445 tests EDT)        PASS          aucune régression après optimisation
+  Charge 100 → 14 000 étudiants          PASS          voir 6.2 (exécutions réelles)
+  git diff --check                      PASS          aucune erreur d'espace
+  Navigateur réel (E2E écran)           NOT RUN       pas de navigateur headless (libnss3 absent)
+  CI distante                           NOT RUN       aucun workflow exécuté
+  PostgreSQL                            NOT RUN       environnement sandbox = SQLite
+
+6.2 Mesures de charge réellement relevées
+
+  Jeu synthétique : BENCH-000001…, « FORMATION BENCHMARK », groupes de 60,
+  1 maquette active (5 UE / 5 ECUE, CM 10 h + TD 6 h), 20 créneaux, 1 salle par
+  groupe. Tout est annulé en fin de scénario (aucune donnée conservée).
+
+  Étudiants  Groupes  Import      Génération AVANT   Génération APRÈS   Séances
+  ---------  -------  ----------  -----------------  -----------------  --------
+  100        2        360 ms      1 035 ms           69 ms              80
+  500        9        1 821 ms    (non mesurée)      266 ms             360
+  3 500      59       12 849 ms   961 322 ms         8 821 ms           2 360
+  7 000      117      24 752 ms   349 682 ms         36 313 ms          4 680
+  14 000     234      50 868 ms   (non mesurée)      142 315 ms         9 360
+
+  « AVANT » = solveur d'origine (une requête SQL par candidat sur les
+  disponibilités, parcours complet de la liste des occupations).
+  « APRÈS » = index de disponibilités + index d'occupations maintenu par le
+  solveur (Partie 3.9). Les deux mesures 3 500 et 7 000 ont été relevées sur le
+  même jeu ; le facteur d'accélération est de 109× (3 500) et 9,6× (7 000).
+
+  Cohérence des résultats : dans TOUS les scénarios, 0 séance non placée,
+  0 conflit, status_global = COMPLETE, effectif importé = effectif demandé
+  (0 ligne rejetée). L'optimisation ne change donc pas le résultat produit.
+
+  Requêtes SQL (génération) : 1 790 → 32 pour 100 étudiants, 109 pour 500.
+  Au-delà de 3 500 étudiants le journal de Django sature (plafond 9 000
+  captures) : la commande écrit alors `requetes_sql = null` (« non mesurable »)
+  et NON « 0 » — un compteur saturé n'est pas une absence de requête.
+
+  Analyse de la croissance : l'import est linéaire (≈ 3,6 ms par étudiant :
+  0,36 s / 1,8 s / 12,8 s / 24,8 s / 50,9 s). La génération reste légèrement
+  super-linéaire (×2 d'étudiants ⇒ ×3,9 de temps entre 7 000 et 14 000), sans
+  doute à cause de la croissance des listes d'occupations indexées par jour ;
+  à 14 000 étudiants elle reste néanmoins de 142 s, compatible avec un usage
+  « campagne » lancée en arrière-plan. Aucun test au-delà de 14 000 n'a été
+  réalisé : la cible de la mission est atteinte, pas dépassée.
+
+6.3 Contrôles non exécutés
+
+  - Tests sur PostgreSQL : non exécutés (pas de serveur dans le bac à sable).
+  - Au-delà de 14 000 étudiants : non exécuté (hors cible).
+  - Parcours navigateur complet : non exécuté (pas de navigateur headless).
+  - Tests de charge en parallèle (deux campagnes simultanées) : non exécuté ;
+    le verrou pessimiste est couvert par un test unitaire, pas par une mesure.
+
+--------------------------------------------------------------------------------
+PARTIE 7 — JOURNAL D'IMPLÉMENTATION
+--------------------------------------------------------------------------------
+
+Ordre chronologique réel :
+
+1. Inspection : branche, arbre propre, inventaire `edts` (731+1 039+1 153+
+   3 469 lignes, 429 tests), inventaire frontend GET-INJS (10 entrées de menu,
+   écrans génériques, page génération annuelle).
+2. Vérification du canevas officiel : les 24 CreneauTemplate en base
+   correspondent exactement à la feuille Excel « 13. Emploi du temps (modèle) ».
+3. Récupération des 4 documents absents (API GitHub) et lecture des 8 documents.
+4. Création des modèles CampagneGeneration / ExecutionCampagne, migration 0008.
+5. Écriture de `moteur/campagnes.py` : transitions, verrou de concurrence,
+   exécution synchrone/asynchrone, extraction d'anomalies, validation,
+   publication atomique, vues de lecture.
+6. 8 routes API + 8 entrées d'URL ; doc de conception servi depuis la racine
+   avec repli sur docs/getinjs.
+7. 16 tests backend (cycle de vie, double lancement, échec consigné, génération
+   réelle, historique, publication atomique, permissions). Deux échecs
+   intermédiaires corrigés : faute de frappe `campaigne_en_dict`, et une
+   transition impossible (ACTIVE → BROUILLON d'une maquette) remplacée par un
+   scénario « année sans groupe ».
+8. Écran React « Campagnes de génération » + 6 tests ; trois ajustements de
+   tests (import de `render`, sélection du bouton par texte, route de refus
+   prioritaire dans le mock).
+9. Commande `benchmark_getinjs` (transaction annulée, mesures réelles).
+10. Mesures 100 / 500 / 3 500 : 961 s pour 3 500 → diagnostic : une requête SQL
+    par candidat sur les disponibilités.
+11. Optimisation 1 (index des disponibilités) : 3 500 → 56 s, 500 → 443 ms.
+12. Mesure 7 000 : 350 s → diagnostic : parcours linéaire des occupations.
+13. Optimisation 2 (index des occupations maintenu par le solveur) :
+    7 000 → 36 s. Groupe EDT rejoué : 445 tests, code 0.
+14. Mesure 14 000 : import 50 868 ms, génération 142 315 ms, 9 360 séances,
+    0 non placée, COMPLETE. Cible de la mission atteinte et mesurée.
+15. Re-vérification frontend : 108 fichiers / 2 003 tests, lint 0, build 0.
+16. Audit de couverture interface ↔ API : trois capacités serveur n'avaient
+    aucun écran (versions, audit, contraintes). Création de deux écrans
+    (« Versions & publication », « Audit des données »), routes et menu.
+17. Défaut réel trouvé au passage : les écrans GET-INJS passaient l'objet
+    d'erreur axios à `formatApiErrors`, qui attend le corps de réponse — le
+    message affiché était donc technique. Corrigé dans les cinq écrans
+    (`err?.response?.data` + repli explicite).
+18. Le test de contrat du menu a refusé un code CURP inventé
+    (`edt.emploi_du_temps.consulter`) : code retiré, l'entrée s'appuie sur
+    `valider`/`publier` qui existent réellement au catalogue.
+19. Frontend final : 110 fichiers / 2 012 tests, lint 0, build 0.
+20. Export PDF implémenté : `GET /api/edts/lmd/<id>/export.pdf/` (reportlab,
+    déjà présent dans requirements). La vue réutilise `grille_hebdomadaire`,
+    donc l'imprimé ne peut pas diverger de l'écran ; un EDT vide écrit
+    explicitement « aucune séance » au lieu de fabriquer une ligne.
+    Preuve visuelle : docs/getinjs/preuves/apercu-edt-pdf-2026-10-30.png.
+    Vérifié par rendu réel : 1 page A4 paysage, 3 066 octets, jours et plages
+    issus de la base, texte extrait conforme. 4 tests backend ajoutés,
+    bouton « PDF » ajouté à côté de l'export CSV dans l'écran EDT.
+    Groupe EDT rejoué : 449 tests, code 0.
+
+Erreurs rencontrées et solutions :
+  - `campaigne_en_dict` (NameError) → renommé `campagne_en_dict`.
+  - Migration de statut de maquette refusée en test → scénario remplacé.
+  - `apiController.callsTo` inexistant → utilisation des mocks vitest.
+  - Route de test masquée par une route antérieure → ordre de déclaration revu.
+
+État Git final : voir la réponse de fin de mission (aucun commit ni push créé
+par cette mission, conformément à la consigne).
+
+--------------------------------------------------------------------------------
+PARTIE 8 — PROCÉDURE DE DÉPANNAGE
+--------------------------------------------------------------------------------
+
+Symptôme : « Aucune campagne pour cette année académique »
+  Cause : aucune campagne créée. Action : en créer une (Partie 5.1).
+
+Symptôme : HTTP 409 CAMPAGNE_DEJA_EN_COURS
+  Cause : une exécution tourne déjà (fil d'arrière-plan). Action : attendre la
+  fin (l'écran interroge l'état toutes les 3 s) ; si le processus serveur a été
+  arrêté pendant l'exécution, la campagne reste EN_COURS : créer une nouvelle
+  campagne ou repasser l'année en revue (aucune reprise automatique n'est
+  inventée).
+
+Symptôme : statut ECHEC avec motif AUCUN_GROUPE_INJS
+  Cause : aucun groupe actif dans le périmètre INJS pour l'année.
+  Action : importer les inscrits ou créer les groupes en Scolarité.
+
+Symptôme : groupes « non planifiés », motif AUCUN_BESOIN_PLANIFIABLE
+  Cause : ni affectation pédagogique, ni maquette active ne couvre la cohorte.
+  Action : activer une maquette ou saisir les affectations, puis relancer.
+
+Symptôme : validation refusée (VALIDATION_BLOQUANTE)
+  Cause : un EDT contient une violation de contrainte obligatoire.
+  Action : lire `detail.edt_en_echec[].violations`, corriger l'EDT, revalider.
+
+Symptôme : publication refusée (PUBLICATION_INCOMPLETE)
+  Cause : un EDT du périmètre n'a pas pu être publié. Aucun EDT du lot n'est
+  publié (atomicité). Action : corriger l'EDT signalé puis republier.
+
+Symptôme : import rejeté (motif MATRICULE_MANQUANT, NIVEAU_INCONNU…)
+  Cause : donnée du fichier. Action : corriger le fichier ou le mapping.
+
+Symptôme : fichier > 20 Mo
+  Cause : limite de sécurité. Action : découper le fichier.
+
+Symptôme : erreurs de migration
+  Action : `makemigrations --check --dry-run` puis `migrate edts`. Ne jamais
+  supprimer la base ni les migrations.
+
+Symptôme : lenteur de génération
+  Action : vérifier que les index sont actifs (disponibilités, occupations) ;
+  mesurer avec `benchmark_getinjs`.
+
+Symptôme : permissions (403)
+  Cause : rôle hors planification (création/lancement) ou hors DIRECTION/ADMIN
+  (validation/publication). Action : utiliser un compte habilité ; l'écran
+  reflète le droit mais le serveur décide.
+
+--------------------------------------------------------------------------------
+PARTIE 9 — ÉTAT FINAL
+--------------------------------------------------------------------------------
+
+Terminé et vérifié :
+  - campagnes persistantes (modèle, cycle de vie, verrou, historique, anomalies) ;
+  - API complète + permissions serveur ;
+  - écran React relié à l'API réelle ;
+  - mesure de charge 100 / 500 / 3 500 / 7 000 / 14 000 (voir Partie 6) ;
+  - deux optimisations mesurées (109× à 3 500 étudiants, 9,6× à 7 000) ;
+  - 445 tests backend EDT + 2 003 tests frontend, tous au vert ;
+  - documentation de conception (ce fichier).
+
+Déjà présent avant la mission (vérifié, non réécrit) :
+  - import CSV/XLSX des inscrits, analyse sans écriture, idempotence ;
+  - génération annuelle coordonnée, validation, publication, versions ;
+  - écrans GET-INJS (10 entrées), exports CSV, présences de séance.
+
+Non exécuté / non couvert :
+  - au-delà de 14 000 étudiants : non mesuré ;
+  - PostgreSQL, navigateur réel, CI distante ;
+  - contraintes souples non pondérées (> 4 h consécutives, trous, 8 h/jour).
+
+Actions nécessitant une décision ou une habilitation :
+  - saisie du patrimoine réel (salles, capacités) ;
+  - calendrier académique officiel ;
+  - pondération des contraintes souples ;
+  - commit / push / déploiement (non effectués par cette mission).
+
+================================================================================
+Fin du document.
+================================================================================

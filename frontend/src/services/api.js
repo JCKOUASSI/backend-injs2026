@@ -1,12 +1,37 @@
 import { safeLocalStorage } from '../utils/safeStorage'
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
+/**
+ * L'administration Django ne doit jamais transiter par le port 3000
+ * (voir le plugin « injs-blocage-admin » de vite.config.js : /admin y
+ * répond 404). Un chemin relatif est donc réécrit vers l'API Django du
+ * même hôte sur le port 8000 — y compris derrière l'aperçu *.e2b.app,
+ * où le port est porté par le préfixe du nom d'hôte (3000-<id>.e2b.app).
+ *
+ * Fonction pure (emplacement passé en paramètre) pour rester testable.
+ */
+export function urlAdminAbsolue(url, emplacement) {
+  if (!url.startsWith('/')) return url
+  const { protocol, hostname, port } = emplacement || {}
+  if (!hostname) return url
+  const apercu = /^3000-(.+)\.e2b\.app$/i.exec(hostname)
+  if (apercu) return `${protocol}//8000-${apercu[1]}.e2b.app${url}`
+  if (port === '3000') return `${protocol}//${hostname}:8000${url}`
+  return url
+}
+
+const _urlAdminAbsolue = (url) =>
+  urlAdminAbsolue(
+    url,
+    typeof window === 'undefined' ? null : window.location,
+  )
+
 /** URL admin Django : VITE_ADMIN_URL ou dérivée de VITE_API_URL (…/api → …/admin/). */
 const ADMIN_URL = (() => {
   const explicit = (import.meta.env.VITE_ADMIN_URL || '').trim()
-  if (explicit) return explicit.replace(/\/?$/, '/')
+  if (explicit) return _urlAdminAbsolue(explicit.replace(/\/?$/, '/'))
   const base = (import.meta.env.VITE_API_URL || '/api').replace(/\/api\/?$/, '')
-  return `${base || ''}/admin/`
+  return _urlAdminAbsolue(`${base || ''}/admin/`)
 })()
 
 let _sessionExpiredCallback = null

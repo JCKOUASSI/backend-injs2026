@@ -9,7 +9,7 @@
  * - La barre de recherche globale
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
 
 vi.mock('@/services/api', async (importOriginal) => {
   const actual = await importOriginal()
@@ -136,5 +136,34 @@ describe('Layout — Fonctionnement du masquage de la barre latérale', () => {
 
     fireEvent.change(champRecherche, { target: { value: 'licence staps' } })
     fireEvent.submit(champRecherche.closest('form'))
+  })
+})
+
+describe('Layout — année académique affichée', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    window.innerWidth = 1200
+  })
+
+  afterEach(() => {
+    cleanup()
+    apiController.reset()
+  })
+
+  it('affiche l’année réellement configurée par l’API', async () => {
+    apiController.setRoute('/scolarite/annee-courante/', { annee: { id: 9, libelle: '2025-2026' }, libelle: '2025-2026' })
+    monterLayout()
+    expect(await screen.findByText('2025-2026')).toBeInTheDocument()
+    expect(screen.queryByText('2026 – 2027')).not.toBeInTheDocument()
+  })
+
+  it('affiche « — » quand aucune année n’est configurée (aucune année inventée)', async () => {
+    apiController.setRoute('/scolarite/annee-courante/', { annee: null, libelle: null })
+    monterLayout()
+    await screen.findByTestId('page-enfant')
+    await waitFor(() => {
+      expect(screen.queryByText('2026 – 2027')).not.toBeInTheDocument()
+    })
+    expect(screen.getByTitle('Année Académique Active')).toHaveTextContent('—')
   })
 })

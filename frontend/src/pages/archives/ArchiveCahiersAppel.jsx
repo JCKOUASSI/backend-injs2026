@@ -167,13 +167,13 @@ function CahierAppelDocument({ module, onBack }) {
                       return (
                         <td key={s.id} style={{ ...tdStyle, textAlign: 'center' }}>
                           {present
-                            ? <i className="bi bi-check-circle-fill" style={{ color: '#125a99' }} title="Présent"></i>
+                            ? <i className="bi bi-check-circle-fill" style={{ color: '#104A8E' }} title="Présent"></i>
                             : <span style={{ color: '#cfcfcf' }} title="Absent">—</span>}
                         </td>
                       )
                     })}
                     <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 600 }}>{nbPres}/{sessions.length}</td>
-                    <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 700, color: taux >= 80 ? '#125a99' : (taux >= 50 ? '#f5b417' : '#b71c1c') }}>{taux}%</td>
+                    <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 700, color: taux >= 80 ? '#104A8E' : (taux >= 50 ? '#f5b417' : '#A3222F') }}>{taux}%</td>
                   </tr>
                 )
               })}
