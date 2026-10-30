@@ -229,6 +229,31 @@ def audit_api(request):
         ajouter(OK, 'CANEVAS_HORAIRE_OK',
                 f'{nb_creneaux} créneau(x) type(s) — durée moyenne '
                 f'{duree_canevas_heures()} h.')
+        # Le canevas existe, mais est-il CELUI du référentiel ? Un canevas qui
+        # dérive produit des plannings plausibles et faux : le dire ici, c'est
+        # le dire là où l'utilisateur pose la question « puis-je générer ? ».
+        from edts.moteur import canevas_officiel as CO
+
+        comparaison = CO.comparer_canevas([
+            (c.jour, c.heure_debut, c.heure_fin)
+            for c in CreneauTemplate.objects.all()
+        ])
+        if comparaison['chevauchements']:
+            ajouter(WARNING, 'CANEVAS_CHEVAUCHEMENT',
+                    f'{len(comparaison["chevauchements"])} paire(s) de créneaux se '
+                    'recouvrent : les contrôles de conflit (C1/C2/C3) ne sont pas '
+                    'garantis sur les intervalles communs.',
+                    'Supprimer ou corriger les créneaux qui se chevauchent.',
+                    {'chevauchements': comparaison['chevauchements'][:10]})
+        if comparaison['manquants'] or comparaison['non_prevus']:
+            ajouter(WARNING, 'CANEVAS_HORS_REFERENTIEL',
+                    f'Le canevas diffère du référentiel officiel : '
+                    f'{len(comparaison["manquants"])} créneau(x) officiel(s) '
+                    f'manquant(s), {len(comparaison["non_prevus"])} non prévu(s).',
+                    'Aligner les créneaux sur le canevas officiel '
+                    '(manage.py verifier_canevas).',
+                    {'manquants': comparaison['manquants'][:10],
+                     'non_prevus': comparaison['non_prevus'][:10]})
 
     salles = list(RefSalle.objects.filter(actif=True))
     if not salles:

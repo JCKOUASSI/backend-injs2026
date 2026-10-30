@@ -553,6 +553,14 @@ PARTIE 5 — GUIDE UTILISATEUR
   supprimé** (un créneau en base peut déjà porter des séances réelles) et rien
   n'est modifié sans cette option. `--json` écrit le rapport.
 
+  Le même contrôle est rendu dans « Audit des données »
+  (`GET /api/edts/lmd/audit/`), là où l'utilisateur pose la question
+  « puis-je générer ? » : `CANEVAS_HORS_REFERENTIEL` (avertissement, avec la
+  liste des manquants et des non prévus) et `CANEVAS_CHEVAUCHEMENT`
+  (avertissement, avec les paires fautives). Ce sont des AVERTISSEMENTS et non
+  des blocages : un canevas différent du référentiel reste utilisable, il n'est
+  simplement pas celui que l'INJS a validé.
+
   La pause institutionnelle se déduit du même référentiel : `pause_deduite()`
   renvoie le plus long intervalle entre deux plages (11:45–13:30, 1 h 45) et
   ignore les coupures de 15 min. Sans cette déduction, une journée normale
@@ -602,9 +610,10 @@ PARTIE 6 — TESTS ET PERFORMANCES
   Configuration Django                  PASS          manage.py check → 0 issue
   Migrations cohérentes                 PASS          makemigrations --check → « No changes »
   Migration 0008 appliquée              PASS          migrate edts → OK
-  Tests backend groupe EDT              PASS          557 tests, code 0 (./arena/tests_par_groupe.sh edt)
+  Tests backend groupe EDT              PASS          560 tests, code 0 (./arena/tests_par_groupe.sh edt)
   dont identifiants de groupe           PASS          15 tests (edts.tests.test_identifiants_groupes)
-  dont canevas officiel (nouveau)       PASS          19 tests (edts.tests.test_canevas_officiel)
+  dont canevas officiel                 PASS          19 tests (edts.tests.test_canevas_officiel)
+  dont audit du canevas (nouveau)       PASS          3 tests (CANEVAS_HORS_REFERENTIEL/CHEVAUCHEMENT)
   dont outil de mesure                  PASS          4 tests (edts.tests.test_benchmark)
   dont réglage reproductible (nouveau)  PASS          16 tests (edts.tests.test_regler_contraintes)
   dont bilan annuel souple              PASS          3 tests (BilanContraintesSouplesTests)
@@ -1028,6 +1037,14 @@ Ordre chronologique réel :
         `verifier_canevas` déclare le canevas CONFORME. La politique a été
         réappliquée avec la pause déduite (même commande, rejouable).
     Comptes : groupe EDT 557 tests code 0.
+
+28 bis. Le contrôle du canevas est rendu dans l'audit : deux avertissements
+    (`CANEVAS_HORS_REFERENTIEL`, `CANEVAS_CHEVAUCHEMENT`) plutôt qu'un blocage,
+    avec la liste chiffrée des écarts. Sans cela, le contrôle n'aurait vécu que
+    dans une commande en ligne de commande — c'est-à-dire nulle part pour un
+    utilisateur du site. 3 tests d'API ajoutés ; vérifié en direct : l'API
+    répond CANEVAS_HORAIRE_OK sur les 24 créneaux officiels, sans avertissement
+    de conformité. Groupe EDT 560 tests, code 0.
 
 Erreurs rencontrées et solutions :
   - `campaigne_en_dict` (NameError) → renommé `campagne_en_dict`.

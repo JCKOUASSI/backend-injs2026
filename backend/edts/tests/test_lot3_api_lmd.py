@@ -262,6 +262,41 @@ class TestRessourcesLMD(BaseLMD):
         self.assertEqual(corps['nb_creneaux'], 2)
         self.assertEqual(corps['creneaux'][0]['jour_libelle'], 'Lundi')
 
+    def test_canevas_conforme_ne_produit_aucun_avertissement(self):
+        """Les 24 créneaux officiels : aucun écart signalé."""
+        from edts.moteur import canevas_officiel as CO
+
+        for jour, debut, fin in CO.grille_officielle():
+            CreneauTemplate.objects.create(jour=jour, heure_debut=debut,
+                                           heure_fin=fin)
+        corps = self.client_api.get('/api/edts/lmd/audit/').json()
+        codes = [c['code'] for c in corps['controles']]
+        self.assertIn('CANEVAS_HORAIRE_OK', codes)
+        self.assertNotIn('CANEVAS_HORS_REFERENTIEL', codes)
+        self.assertNotIn('CANEVAS_CHEVAUCHEMENT', codes)
+
+    def test_canevas_hors_referentiel_signale(self):
+        """Deux créneaux valides mais absents du référentiel : c'est un écart."""
+        self.f.creer_creneaux(jours=('LUNDI',), heures=((8, 10), (10, 12)))
+        corps = self.client_api.get('/api/edts/lmd/audit/').json()
+        controles = {c['code']: c for c in corps['controles']}
+        self.assertIn('CANEVAS_HORS_REFERENTIEL', controles)
+        self.assertEqual(controles['CANEVAS_HORS_REFERENTIEL']['niveau'], 'WARNING')
+        self.assertNotIn('CANEVAS_CHEVAUCHEMENT', controles)
+
+    def test_canevas_chevauche_signale(self):
+        """08:00–12:00 contient 08:00–10:00 : C1/C2/C3 ne sont plus garantis."""
+        CreneauTemplate.objects.create(jour='LUNDI', heure_debut=time(8, 0),
+                                       heure_fin=time(12, 0))
+        CreneauTemplate.objects.create(jour='LUNDI', heure_debut=time(8, 0),
+                                       heure_fin=time(10, 0))
+        corps = self.client_api.get('/api/edts/lmd/audit/').json()
+        controles = {c['code']: c for c in corps['controles']}
+        self.assertIn('CANEVAS_CHEVAUCHEMENT', controles)
+        self.assertEqual(controles['CANEVAS_CHEVAUCHEMENT']['niveau'], 'WARNING')
+        self.assertEqual(
+            len(controles['CANEVAS_CHEVAUCHEMENT']['detail']['chevauchements']), 1)
+
     def test_contraintes_separe_dures_et_preferences(self):
         """Les dures C1→C10 sont exposées ; une préférence n'est jamais dure."""
         corps = self.client_api.get('/api/edts/lmd/constraints/').json()
