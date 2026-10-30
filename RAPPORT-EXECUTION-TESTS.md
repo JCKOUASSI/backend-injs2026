@@ -497,3 +497,58 @@ Supprimer la dépendance au manifeste statique fait disparaître une panne récu
 `dashboard.tests.PublicBadgePage*` constatés après chaque recyclage du bac à sable **ne se reproduisent plus**,
 puisque les tests ne dépendent plus d'un `collectstatic` préalable (groupe `pilotage` exécuté avec
 `backend/staticfiles/` supprimé : **197 tests, code 0**).
+
+---
+
+## 12. Ce que voyait l'utilisateur : chiffres inventés restants et états de chargement
+
+### 12.1 Deux derniers jeux de données fabriquées
+
+L'audit du §10 avait manqué deux composants, découverts en testant le tableau de bord **sans données**
+(état réel d'une base fraîchement reconstruite) :
+
+| Composant | Ce qui s'affichait | Correction |
+|---|---|---|
+| `LmdPipeline.jsx` | 8 étapes avec des effectifs figés : **2 340** candidatures, **1 892** sélections, **1 562** admissions, **1 248** inscriptions, **1 186** en enseignement, **982** évaluations, **654** jurys, **482** diplômes | libellés et icônes conservés ; toute valeur vient de l'API, sinon **« — »** |
+| `AlertPanel.jsx` | 5 alertes inventées : « 4 jurys non finalisés », « 18 dossiers incomplets », « 7 groupes sans enseignant », « 12 cours sans volume horaire », « 94 % des dossiers validés » | seules les alertes de l'API s'affichent ; état vide « Aucune alerte en cours. » |
+
+Ces deux composants **remplaçaient les données réelles** dès que l'API ne renvoyait rien — ils masquaient
+donc l'état exact du système.
+
+### 12.2 Rendu pendant le chargement et en cas de panne
+
+Nouveau fichier `frontend/src/pages/DashboardEngineView.etats.test.jsx` (3 tests) :
+
+| Situation | Attendu |
+|---|---|
+| réponse API qui ne vient jamais | l'écran reste monté, aucune fausse erreur affichée |
+| panne réseau (`throw`) | message « Erreur lors du chargement des indicateurs. » |
+| API sans KPI | aucun effectif de maquette ne réapparaît (1 248 / 2 340 / 186) |
+
+### 12.3 Urls d'aperçu vérifiées à la main
+
+| Geste | Résultat |
+|---|---|
+| `GET /login` via l'hôte `3000-…e2b.app` | 200 |
+| `POST /api/auth/login/` avec `Origin: https://3000-…e2b.app` | 200, jeton reçu |
+| En-têtes renvoyés | `Access-Control-Allow-Origin` = origine appelante, `Allow-Credentials: true`, cookie `refresh_token; HttpOnly; SameSite=None; Secure` |
+| `GET /api/auth/me/` avec `X-JWT-Access` | 200 |
+| Admin via l'hôte `8000-…e2b.app` | 200, `Content-Security-Policy: frame-ancestors *`, pas de `X-Frame-Options` |
+| Site sur `:3000` | aucune restriction de cadre |
+
+### 12.4 Vérifications
+
+| Contrôle | Résultat |
+|---|---|
+| `npx vitest run` | **107 fichiers, 1 993 tests, code 0** |
+| `npm run lint` | **code 0**, 0 avertissement |
+| `npm run build` | **code 0** |
+| Tests ajoutés au total sur cette page | **11** (8 + 3) ; 2 échouent sur le code précédent pour le pipeline et les alertes |
+
+### 12.5 Nature de l'état actuel des données (pas un défaut)
+
+La base de l'aperçu contient le **référentiel officiel** (323 UE, 397 ECUE, 1 170 crédits, 12 familles) mais
+**aucun étudiant** : les KPI sont donc à 0, ce qui est l'état exact du système. Les écrans affichent
+désormais cet état au lieu de le masquer. Charger un jeu de démonstration reste une **décision** :
+les commandes du dépôt (`seed_lot1_1_injs` → `seed_lot5_1_transverse`) créent des candidats et des
+étudiants **fictifs** ; les exécuter revient à peupler l'aperçu avec des personnes qui n'existent pas.

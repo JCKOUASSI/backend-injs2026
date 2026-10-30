@@ -12,6 +12,8 @@ import {
   FinancialSituationCard,
   RecentActivityTimeline,
 } from '@/components/dashboard/ExecutiveWidgets'
+import AlertPanel from '@/components/dashboard/AlertPanel'
+import LmdPipeline from '@/components/dashboard/LmdPipeline'
 
 /**
  * Garde-fou « aucune donnée inventée ».
@@ -90,5 +92,41 @@ describe('dashboard/Charts — aucune valeur inventée par défaut', () => {
     expect(screen.getByText(/Aucune activité enregistrée/i)).toBeInTheDocument()
     expect(screen.queryByText(/M\. Sarr/)).not.toBeInTheDocument()
     expect(screen.queryByText(/A\. Traoré/)).not.toBeInTheDocument()
+  })
+})
+
+describe('dashboard — pipeline et alertes : aucune donnée inventée', () => {
+  it('le pipeline affiche « — » quand l’API ne fournit aucune cohorte', () => {
+    render(<LmdPipeline steps={[]} />)
+    // Les effectifs de la maquette (2 340, 1 892, 1 562, 1 248, 482…) sont bannis.
+    for (const valeur of ['2 340', '1 892', '1 562', '1 248', '1 186', '982', '654', '482']) {
+      expect(screen.queryByText(valeur)).not.toBeInTheDocument()
+    }
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(8)
+  })
+
+  it('le pipeline affiche les valeurs réellement transmises', () => {
+    render(
+      <LmdPipeline
+        steps={[
+          { id: 'candidatures', value: 12 },
+          { id: 'admission', value: 7 },
+        ]}
+      />,
+    )
+    expect(screen.getByText('12')).toBeInTheDocument()
+    expect(screen.getByText('7')).toBeInTheDocument()
+  })
+
+  it('le panneau d’alertes est vide par défaut, sans alerte fictive', () => {
+    render(
+      <MemoryRouter>
+        <AlertPanel alerts={[]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText(/Aucune alerte en cours/i)).toBeInTheDocument()
+    expect(screen.queryByText(/4 jurys non finalisés/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/18 dossiers incomplets/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/94\s*%/)).not.toBeInTheDocument()
   })
 })
