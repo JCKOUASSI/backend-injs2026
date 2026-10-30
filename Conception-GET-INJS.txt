@@ -488,12 +488,46 @@ PARTIE 5 — GUIDE UTILISATEUR
       refusés avec un message qui dit quoi corriger (un poids nul rendrait la
       pénalité invisible : pour ne pas appliquer une règle, on la désactive).
 
+  Décision transportable : `manage.py regler_contraintes_souples`. L'écran
+  d'administration règle l'environnement où il est ouvert ; il ne transporte
+  pas la décision vers la préproduction ou la production. Cette commande rejoue
+  la même politique avec son motif sur n'importe quelle base :
+
+      manage.py regler_contraintes_souples --verifier
+      manage.py regler_contraintes_souples --activer --max-consecutives 4 \
+          --max-jour 8 --sans-pause --auteur admin --motif "…"
+
+  Elle refuse d'écrire sans `--motif`, valide les bornes par le même
+  `full_clean()` que l'admin, est idempotente (rejouer la même politique ne
+  réécrit ni la date ni l'auteur) et sait effacer une pause (`--sans-pause`).
+
   Effet visible : l'écran « Audit des données » affiche la politique effective,
   son **origine** (« valeurs par défaut du code », « réglage de déploiement »,
   « réglage enregistré dans l'administration »), les bornes, la pause déclarée
   ou son absence, les poids, le motif et le dernier auteur. Un utilisateur peut
   donc toujours savoir qui a décidé quoi, et si la règle qu'il subit vient du
   code ou de son établissement.
+
+  DÉCISION APPLIQUÉE (2026-10-30, validée par le commanditaire)
+  -----------------------------------------------------------
+  Règles ACTIVES, bornes **celles du référentiel** — aucune valeur inventée :
+
+    actives = true
+    max_heures_consecutives = 4 h   (doc 2, §11 K)
+    max_heures_par_jour = 8 h       (doc 2, §11 K)
+    tolerance_minutes = 15
+    pause_dejeuner = aucune         (le canevas officiel n'est pas en base :
+                                     voir l'écart signalé en 6.3)
+    poids = 1 / 2 / 3               (valeurs déjà retenues par le chantier 2)
+
+  Mesure du même jour : sur les plans réellement produits (3 500 et 14 000
+  étudiants), ces bornes ne produisent AUCUNE pénalité — l'activation est donc
+  neutre sur les emplois du temps existants, et protectrice pour les suivants.
+  Coût mesuré : +5,4 % à 3 500, +6,9 % à 14 000 (6.2 bis).
+
+  La décision est tracée en base : auteur `admin`, date, et motif complet
+  (bornes, mesure, absence de pause). Elle se révoque d'une commande
+  (`--desactiver`) sans rien perdre ni redéployer.
 
 5.8 Simuler une variante
   Générer avec « Enregistrer les EDT › décoché : le plan est produit et
@@ -537,9 +571,10 @@ PARTIE 6 — TESTS ET PERFORMANCES
   Configuration Django                  PASS          manage.py check → 0 issue
   Migrations cohérentes                 PASS          makemigrations --check → « No changes »
   Migration 0008 appliquée              PASS          migrate edts → OK
-  Tests backend groupe EDT              PASS          506 tests, code 0 (./arena/tests_par_groupe.sh edt)
-  dont outil de mesure (nouveau)        PASS          3 tests (edts.tests.test_benchmark)
-  dont bilan annuel souple (nouveau)    PASS          3 tests (BilanContraintesSouplesTests)
+  Tests backend groupe EDT              PASS          523 tests, code 0 (./arena/tests_par_groupe.sh edt)
+  dont outil de mesure                  PASS          4 tests (edts.tests.test_benchmark)
+  dont réglage reproductible (nouveau)  PASS          16 tests (edts.tests.test_regler_contraintes)
+  dont bilan annuel souple              PASS          3 tests (BilanContraintesSouplesTests)
   dont contraintes souples              PASS          20 tests (edts.tests.test_contraintes_souples)
   dont politique réglable (nouveau)     PASS          24 tests (edts.tests.test_politique_admin)
   Tests backend groupe socle            PASS          179 tests, code 0
@@ -563,6 +598,9 @@ PARTIE 6 — TESTS ET PERFORMANCES
   Politique réglée par l'admin (live)   PASS          admin HTTP : liste 200, ajout 302, seconde
                                                      ligne 403 ; API origine=base, politique et
                                                      trace (motif, auteur, date) exposées
+  Décision appliquée (live)             PASS          actives=true, 4 h / 8 h, pause aucune,
+                                                     auteur admin, motif daté ; mesure 3 500 :
+                                                     0 pénalité, 2 065 séances placées
   Lint frontend                         PASS          npm run lint → code 0
   Build frontend                        PASS          npm run build → code 0
   Import externe (CSV)                  PASS          test_import_inscrits + benchmark (100 → 14 000)
@@ -661,6 +699,13 @@ PARTIE 6 — TESTS ET PERFORMANCES
     le verrou pessimiste est couvert par un test unitaire, pas par une mesure.
   - Charge sur PostgreSQL : non mesurée (aucun serveur dans le bac à sable) ;
     les chiffres de 6.2 et 6.2 bis sont SQLite.
+  - ÉCART SIGNALÉ, non corrigé : la base de développement contient 14 créneaux
+    types aux plages hétérogènes (08:00–12:00, 14:00–17:00, 18:00–20:00…), et
+    non les 24 créneaux du canevas officiel décrit plus haut (07:30–09:30,
+    09:45–11:45, 13:30–15:30, 15:45–17:45). Conséquence assumée : aucune pause
+    déjeuner n'est déclarée, car la déduire de ces créneaux reviendrait à
+    inventer un horaire. Le canevas officiel doit être saisi (ou la base
+    contrôlée) avant de fixer la pause.
 
 --------------------------------------------------------------------------------
 PARTIE 7 — JOURNAL D'IMPLÉMENTATION
@@ -806,6 +851,29 @@ Ordre chronologique réel :
     (d) Mesures réelles consignées en 6.2 bis (3 500 et 14 000 étudiants, deux
         régimes, quatre politiques de bornes).
     Comptes : groupe EDT 506 tests code 0 ; neuf groupes 2 695 tests code 0.
+
+25. Chantier 5 — la décision de politique est APPLIQUÉE et reproductible.
+    Le commanditaire a validé la proposition : activer les règles avec les
+    bornes documentées par le référentiel, tracer la décision dans l'admin.
+    (a) Nouvelle commande `regler_contraintes_souples` : motif obligatoire dès
+        qu'elle écrit, validation par le `full_clean()` du modèle, idempotence
+        (rejouer ne réécrit ni date ni auteur), `--verifier` sans écriture,
+        `--sans-pause` pour effacer une pause, `--auteur` pour porter la
+        décision. 16 tests.
+    (b) Décision appliquée en base : actives=true, 4 h / 8 h, tolérance 15,
+        aucune pause, auteur `admin`, motif daté (bornes, mesure, absence de
+        pause). API : origine=base, politique et trace complètes.
+    (c) Deux défauts corrigés dans la commande, trouvés en l'exécutant :
+        - la pause s'affichait « 735 – 810 » (minutes depuis minuit) ;
+        - il était impossible d'EFFACER une pause déjà enregistrée, donc de
+          revenir honnêtement à « aucune pause déclarée ».
+    (d) `benchmark_getinjs` mesure par défaut la politique réellement
+        enregistrée (`--souples defaut`) au lieu de forcer un régime : un outil
+        de mesure ne doit pas changer ce qu'il mesure.
+    (e) ÉCART trouvé et signalé : la base de développement ne contient pas les
+        24 créneaux du canevas officiel (14 plages hétérogènes). Aucune pause
+        n'a donc été inventée. Voir 6.3.
+    Comptes : groupe EDT 523 tests code 0.
 
 Erreurs rencontrées et solutions :
   - `campaigne_en_dict` (NameError) → renommé `campagne_en_dict`.

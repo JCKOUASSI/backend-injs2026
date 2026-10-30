@@ -60,6 +60,16 @@ class BenchmarkRejouableTests(TestCase):
         self.assertEqual(PolitiqueContraintesSouples.charger().motif,
                          'État initial.')
 
+    def test_regime_defaut_mesure_la_politique_enregistree(self):
+        """Sans option, la mesure reflète la décision en base, pas un forçage."""
+        PolitiqueContraintesSouples.objects.update_or_create(
+            pk=1, defaults={'actives': True, 'max_heures_par_jour': 8,
+                            'motif': 'Politique de référence.'})
+        sortie = self._lancer()
+        self.assertIn('contraintes souples : actives', sortie)
+        self.assertTrue(PolitiqueContraintesSouples.charger().actives,
+                        'La politique enregistrée ne doit pas être modifiée.')
+
     def test_rapport_sans_donnees_synthetiques_conservees(self):
         from scolarite.models import AnneeAcademique
 

@@ -65,11 +65,11 @@ class Command(BaseCommand):
                  '(défaut : valeur enregistrée dans l’administration).',
         )
         parser.add_argument(
-            '--souples', choices=('inactif', 'actif'), default='inactif',
-            help='Régime des contraintes souples pendant la mesure. Le réglage '
-                 'est appliqué dans la transaction annulée : la base n’est pas '
-                 'modifiée. « actif » permet de mesurer le coût réel de la '
-                 'politique (une lecture de réglage par génération de groupe).',
+            '--souples', choices=('defaut', 'inactif', 'actif'), default='defaut',
+            help='Régime des contraintes souples pendant la mesure. « defaut » '
+                 '(défaut) mesure la politique réellement enregistrée ; '
+                 '« inactif »/« actif » forcent un régime dans la transaction '
+                 'annulée, sans modifier la base.',
         )
 
     def handle(self, *args, **options):
@@ -224,14 +224,16 @@ class Command(BaseCommand):
             # (donc annulé avec elle) : la mesure ne laisse aucune trace.
             from edts.models import PolitiqueContraintesSouples
             from edts.moteur import contraintes as C
-            reglages = {'actives': self.souples == 'actif'}
-            if self.max_consecutives is not None:
-                reglages['max_heures_consecutives'] = self.max_consecutives
-            if self.max_jour is not None:
-                reglages['max_heures_par_jour'] = self.max_jour
-            PolitiqueContraintesSouples.objects.update_or_create(
-                pk=1, defaults=reglages,
-            )
+            # « defaut » = ne rien forcer : on mesure la politique enregistrée.
+            if self.souples != 'defaut':
+                reglages = {'actives': self.souples == 'actif'}
+                if self.max_consecutives is not None:
+                    reglages['max_heures_consecutives'] = self.max_consecutives
+                if self.max_jour is not None:
+                    reglages['max_heures_par_jour'] = self.max_jour
+                PolitiqueContraintesSouples.objects.update_or_create(
+                    pk=1, defaults=reglages,
+                )
             rapport['contraintes_souples_regime'] = self.souples
             rapport['contraintes_souples_politique'] = C.politique_lisible(
                 C.politique_souples())
