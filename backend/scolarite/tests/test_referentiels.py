@@ -228,6 +228,58 @@ class ReferentielAPITests(TestCase):
         }, format='json')
         self.assertEqual(creation.status_code, 403)
 
+    # --- modification et suppression (parcours CRUD des écrans de référentiel)
+
+    def test_modification_niveau(self):
+        response = self.client.patch(
+            f'/api/scolarite/ref/niveaux/{self.niveau.id}/',
+            {'libelle': 'Licence 1 (révisée)', 'credits_requis': 60},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.niveau.refresh_from_db()
+        self.assertEqual(self.niveau.libelle, 'Licence 1 (révisée)')
+        self.assertEqual(self.niveau.credits_requis, 60)
+
+    def test_modification_invalide_rejetee(self):
+        response = self.client.patch(
+            f'/api/scolarite/ref/niveaux/{self.niveau.id}/',
+            {'code': ''},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.niveau.refresh_from_db()
+        self.assertEqual(self.niveau.code, 'L1')
+
+    def test_suppression_element_isole(self):
+        niveau = Niveau.objects.create(code='M2', libelle='Master 2', ordre=5)
+        response = self.client.delete(f'/api/scolarite/ref/niveaux/{niveau.id}/')
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(Niveau.objects.filter(pk=niveau.pk).exists())
+
+    def test_suppression_refusee_si_cascade_detruirait_des_donnees(self):
+        """Un DELETE de niveau ne doit jamais emporter ses semestres en cascade."""
+        response = self.client.delete(f'/api/scolarite/ref/niveaux/{self.niveau.id}/')
+        self.assertEqual(response.status_code, 409)
+        self.assertTrue(Niveau.objects.filter(pk=self.niveau.pk).exists())
+        self.assertEqual(Semestre.objects.filter(niveau=self.niveau).count(), 2)
+        corps = response.json()
+        self.assertIn('dependances', corps)
+        self.assertTrue(any(d['nombre'] == 2 for d in corps['dependances']))
+
+    def test_creation_parcours_avec_formation(self):
+        formation = RefFormation.objects.create(intitule='LICENCE STAPS')
+        response = self.client.post('/api/scolarite/ref/parcours/', {
+            'ref_formation_id': formation.id,
+            'code': 'P-STAPS-1',
+            'intitule': 'Parcours STAPS général',
+            'actif': True,
+        }, format='json')
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(
+            Parcours.objects.filter(code='P-STAPS-1', ref_formation=formation).exists()
+        )
+
     def test_role_non_habilite_refuse(self):
         client = APIClient()
         client.force_authenticate(make_user('auditeur_lmd', role='AUDITEUR'))

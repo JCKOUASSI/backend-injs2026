@@ -4,6 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../services/api'
 import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../ConfirmModal'
+import FormulaireRessource from './FormulaireRessource'
+import { useAuth } from '../../context/AuthContext'
+import { ADMIN_LEVEL_ROLES } from '../../utils/roles'
 import { parsePaginatedResponse } from '../../utils/paginatedResponse'
 import { messageErreur } from '../../services/scolarite'
 import { useDebounce } from '../../hooks/useDebounce'
@@ -264,6 +267,32 @@ function Filtre({ filtre, valeur, onChange }) {
   )
 }
 
+/** Résout un chemin de formulaire déclaré comme chaîne ou comme fonction. */
+function cheminFormulaire(def, ligne) {
+  if (!def) return null
+  const chemin = typeof def === 'function' ? def(ligne) : (def.chemin || def)
+  return chemin || null
+}
+
+/** Action de suppression dérivée du descripteur `formulaire`. */
+function actionSuppression(formulaire, ligne) {
+  const chemin = cheminFormulaire(formulaire?.suppression, ligne)
+  if (!chemin) return null
+  return {
+    id: 'supprimer',
+    libelle: 'Supprimer',
+    icone: 'bi-trash',
+    apparence: 'btn-outline-danger',
+    methode: 'delete',
+    chemin,
+    confirmation: formulaire.messageSuppression
+      || 'Supprimer définitivement cet élément ? Les données qui en dépendent '
+        + 'peuvent s’y opposer : le serveur refusera alors la suppression.',
+    succes: 'Élément supprimé.',
+    erreur: 'Suppression refusée.',
+  }
+}
+
 /** Liste (ou onglets) générique — cœur du moteur d'écrans. */
 export function ListeGenerique({ ecran, cleBase }) {
   const { showToast } = useToast()
@@ -274,7 +303,13 @@ export function ListeGenerique({ ecran, cleBase }) {
   const [page, setPage] = useState(1)
   const [selection, setSelection] = useState(null)
   const [confirmation, setConfirmation] = useState(null)
+  const [edition, setEdition] = useState(null)
   const rechercheDebounced = useDebounce(recherche, 350)
+  const { user } = useAuth()
+  // Gestion (création, modification, suppression) : réservée aux rôles de
+  // direction, comme le serveur (`IsDFRC` sur /scolarite/ref/<ressource>/).
+  // Le bouton n'est qu'une aide : le refus réel vient toujours du serveur.
+  const peutGerer = ADMIN_LEVEL_ROLES.includes(user?.role)
 
   useEffect(() => { setPage(1) }, [rechercheDebounced, filtres, ecran.id])
 
@@ -326,6 +361,12 @@ export function ListeGenerique({ ecran, cleBase }) {
   })
 
   const lignes = useMemo(() => data?.results || [], [data])
+
+  // Formulaire déclaré par le descripteur (`ecran.formulaire`). Sans lui,
+  // l'écran reste strictement en lecture : on n'affiche jamais un bouton
+  // « Nouveau » qui n'aurait aucun point d'entrée d'écriture derrière.
+  const formulaireCreation = Boolean(ecran.formulaire && ecran.formulaire.creation)
+  const peutGererFormulaire = Boolean(ecran.formulaire) && peutGerer
   const colonnes = useMemo(() => colonnesPour(ecran, lignes), [ecran, lignes])
 
   const mutation = useMutation({
@@ -571,6 +612,17 @@ export function ListeGenerique({ ecran, cleBase }) {
             <span className="gen-count-pill">
               {isFetching ? 'Chargement…' : `${data?.count ?? lignes.length} élément(s)`}
             </span>
+            {formulaireCreation && peutGerer && (
+              <button
+                type="button"
+                className="btn btn-sm btn-primary"
+                onClick={() => setEdition({ ligne: null })}
+                data-testid="bouton-nouveau"
+              >
+                <i className="bi bi-plus-lg me-1"></i>
+                {ecran.formulaire.libelleCreation || 'Nouveau'}
+              </button>
+            )}
             {recharger}
           </div>
         </div>
@@ -583,7 +635,9 @@ export function ListeGenerique({ ecran, cleBase }) {
                     {c.libelle}
                   </th>
                 ))}
-                {(ecran.actions || []).length > 0 && <th scope="col" className="text-end">Actions</th>}
+                {((ecran.actions || []).length > 0 || peutGererFormulaire) && (
+                  <th scope="col" className="text-end">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -597,8 +651,31 @@ export function ListeGenerique({ ecran, cleBase }) {
                   {colonnes.map((c) => (
                     <td key={c.cle || c.libelle}><Cellule ligne={ligne} colonne={c} /></td>
                   ))}
-                  {(ecran.actions || []).length > 0 && (
+                  {((ecran.actions || []).length > 0 || peutGererFormulaire) && (
                     <td className="text-end" onClick={(e) => e.stopPropagation()}>
+                      {peutGererFormulaire && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-primary me-1"
+                          onClick={() => setEdition({ ligne })}
+                          title="Modifier"
+                          data-testid={`modifier-${ligne.id}`}
+                        >
+                          <i className="bi bi-pencil"></i>
+                        </button>
+                      )}
+                      {peutGererFormulaire && actionSuppression(ecran.formulaire, ligne) && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger me-1"
+                          onClick={() => demander(actionSuppression(ecran.formulaire, ligne), ligne)}
+                          disabled={mutation.isPending}
+                          title="Supprimer"
+                          data-testid={`supprimer-${ligne.id}`}
+                        >
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      )}
                       {(ecran.actions || []).map((action) => {
                         if (action.visible && !action.visible(ligne)) return null
                         const cible = action.vers ? action.vers(ligne) : null
@@ -669,6 +746,20 @@ export function ListeGenerique({ ecran, cleBase }) {
           ecran={ecran}
           ligne={selection}
           onFermer={() => setSelection(null)}
+        />
+      )}
+
+      {edition && ecran.formulaire && (
+        <FormulaireRessource
+          formulaire={ecran.formulaire}
+          ligne={edition.ligne}
+          ecran={ecran}
+          onFermer={() => setEdition(null)}
+          onEnregistre={(succes) => {
+            showToast(succes)
+            queryClient.invalidateQueries({ queryKey: cleBase })
+            setEdition(null)
+          }}
         />
       )}
 

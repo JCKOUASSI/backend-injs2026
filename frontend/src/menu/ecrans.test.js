@@ -207,3 +207,62 @@ describe('descripteurs : filtres et documents', () => {
     }
   })
 })
+
+describe('descripteurs : formulaires de gestion (CRUD)', () => {
+  const avecFormulaire = Object.entries(ECRANS).filter(([, e]) => e.formulaire)
+
+  it('les écrans de référentiel/formation déclarent un formulaire', () => {
+    const attendus = ['filieres', 'parcours', 'niveaux', 'semestres',
+      'ref_filieres', 'ref_niveaux', 'ref_semestres', 'ref_formations']
+    for (const id of attendus) {
+      expect(ECRANS[id]?.formulaire, `${id} : aucun formulaire déclaré`).toBeTruthy()
+    }
+    expect(avecFormulaire.length).toBeGreaterThanOrEqual(attendus.length)
+  })
+
+  it('chaque formulaire déclare des champs réels, un point de création et de modification', () => {
+    for (const [cle, ecran] of avecFormulaire) {
+      const f = ecran.formulaire
+      expect(Array.isArray(f.champs) && f.champs.length, `${cle} : aucun champ`).toBeTruthy()
+      for (const champ of f.champs) {
+        // Un champ sans clé serveur enverrait une valeur inventée.
+        expect(champ.cle, `${cle} : champ sans clé`).toBeTruthy()
+        expect(champ.libelle, `${cle} : ${champ.cle} sans libellé`).toBeTruthy()
+        if (champ.type === 'select' || champ.type === 'select-nombre') {
+          const aOptions = (champ.options || []).length > 0 || Boolean(champ.optionsEndpoint)
+          expect(aOptions, `${cle} : ${champ.cle} sans source d'options`).toBe(true)
+        }
+      }
+      // Chemin de création : soit une chaîne, soit un objet { chemin }.
+      const cheminCreation = typeof f.creation === 'string' ? f.creation : f.creation?.chemin
+      expect(cheminCreation, `${cle} : pas de chemin de création`).toMatch(/^\//)
+      const cheminModif = typeof f.modification === 'function'
+        ? f.modification({ id: 1 }) : f.modification
+      expect(cheminModif?.chemin || cheminModif, `${cle} : pas de chemin de modification`)
+        .toMatch(/\/1\/$/)
+    }
+  })
+
+  it('un formulaire ne cible que des endpoints d’écriture déjà existants', () => {
+    // Chemins d'écriture connus du backend (aucun endpoint inventé par l'UI).
+    const prefixesAutorises = [
+      '/scolarite/ref/', '/formations/ref/', '/referentiels/', '/admissions/ref/',
+      '/habilitations/',
+    ]
+    for (const [cle, ecran] of avecFormulaire) {
+      const f = ecran.formulaire
+      const chemin = typeof f.creation === 'string' ? f.creation : f.creation?.chemin
+      expect(
+        prefixesAutorises.some((p) => chemin.startsWith(p)),
+        `${cle} : endpoint d’écriture non reconnu (${chemin})`,
+      ).toBe(true)
+    }
+  })
+
+  it('les écrans sans endpoint d’écriture ne déclarent aucun formulaire', () => {
+    // Le journal d'audit et les écrans d'indicateurs restent en lecture seule.
+    for (const id of ['audit_journal']) {
+      expect(ECRANS[id]?.formulaire).toBeFalsy()
+    }
+  })
+})

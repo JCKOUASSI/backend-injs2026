@@ -117,6 +117,140 @@ const FILTRES_AUDIT = [
   { param: 'acteur_id', libelle: 'Auteur (id)', type: 'nombre' },
 ]
 
+/**
+ * Schémas de saisie des référentiels socle (CRUD des écrans « Référentiels »
+ * et « Formations », rendus par `components/generique/FormulaireRessource.jsx`).
+ *
+ * Chaque champ correspond à une colonne réellement acceptée par l'API
+ * (`/api/scolarite/ref/<ressource>/`) ; les listes de choix pointent vers un
+ * endpoint existant, jamais vers une liste codée en dur qui divergerait de la
+ * base. Un champ marqué `requis` est contrôlé deux fois : ici pour guider la
+ * saisie, et par le serveur, qui reste seul juge.
+ */
+export const FORMULAIRE_TYPES_FORMATION = {
+  libelleCreation: 'Nouvelle filière',
+  titreCreation: 'Créer un type de formation (filière)',
+  titreModification: 'Modifier le type de formation',
+  champs: [
+    { cle: 'code', libelle: 'Code', requis: true, maxLength: 20,
+      aide: 'Code court et stable (ex. F01). Il identifie la filière dans les maquettes.' },
+    { cle: 'libelle', libelle: 'Libellé', requis: true, maxLength: 200 },
+    { cle: 'actif', libelle: 'Actif', type: 'booleen', defaut: true },
+  ],
+  creation: { chemin: '/scolarite/ref/types-formation/' },
+  modification: (l) => ({ chemin: `/scolarite/ref/types-formation/${l.id}/` }),
+  suppression: (l) => `/scolarite/ref/types-formation/${l.id}/`,
+  messageSuppression: 'Supprimer ce type de formation ? Les parcours, groupes et '
+    + 'maquettes qui le référencent s’y opposeront : le serveur refusera alors.',
+};
+
+export const FORMULAIRE_PARCOURS = {
+  libelleCreation: 'Nouveau parcours',
+  titreCreation: 'Créer un parcours',
+  titreModification: 'Modifier le parcours',
+  champs: [
+    { cle: 'code', libelle: 'Code', requis: true, maxLength: 50 },
+    { cle: 'intitule', libelle: 'Intitulé', requis: true, maxLength: 255 },
+    { cle: 'ref_formation_id', libelle: 'Formation', type: 'select-nombre', requis: true,
+      optionsEndpoint: '/formations/ref/formations/', valeur: 'id', libelleOption: 'intitule',
+      vide: 'Choisir une formation' },
+    { cle: 'type_formation_id', libelle: 'Type de formation (filière)', type: 'select-nombre',
+      optionsEndpoint: '/scolarite/ref/types-formation/', valeur: 'id', libelleOption: 'libelle',
+      vide: 'Choisir une filière' },
+    { cle: 'actif', libelle: 'Actif', type: 'booleen', defaut: true },
+  ],
+  creation: { chemin: '/scolarite/ref/parcours/' },
+  modification: (l) => ({ chemin: `/scolarite/ref/parcours/${l.id}/` }),
+  suppression: (l) => `/scolarite/ref/parcours/${l.id}/`,
+  messageSuppression: 'Supprimer ce parcours ? Les groupes, maquettes et étudiants '
+    + 'rattachés s’y opposeront : le serveur refusera alors.',
+};
+
+export const FORMULAIRE_NIVEAUX = {
+  libelleCreation: 'Nouveau niveau',
+  titreCreation: 'Créer un niveau',
+  titreModification: 'Modifier le niveau',
+  champs: [
+    { cle: 'code', libelle: 'Code', requis: true, maxLength: 20, aide: 'Ex. L1, M2.' },
+    { cle: 'libelle', libelle: 'Libellé', requis: true, maxLength: 100 },
+    { cle: 'cycle', libelle: 'Cycle', type: 'select', requis: true,
+      options: [
+        { valeur: 'LICENCE', libelle: 'Licence' },
+        { valeur: 'MASTER', libelle: 'Master' },
+      ], vide: 'Choisir un cycle' },
+    { cle: 'ordre', libelle: 'Ordre', type: 'nombre', requis: true, min: 1,
+      aide: 'Position dans le cursus (1 = première année).' },
+    { cle: 'credits_requis', libelle: 'Crédits requis', type: 'nombre', min: 0,
+      aide: 'Total de crédits exigé pour valider ce niveau ; laisser vide si non fixé.' },
+    { cle: 'actif', libelle: 'Actif', type: 'booleen', defaut: true },
+  ],
+  creation: { chemin: '/scolarite/ref/niveaux/' },
+  modification: (l) => ({ chemin: `/scolarite/ref/niveaux/${l.id}/` }),
+  suppression: (l) => `/scolarite/ref/niveaux/${l.id}/`,
+  messageSuppression: 'Supprimer ce niveau ? Les semestres, groupes et maquettes '
+    + 'qui le référencent s’y opposeront : le serveur refusera alors.',
+};
+
+export const FORMULAIRE_SEMESTRES = {
+  libelleCreation: 'Nouveau semestre',
+  titreCreation: 'Créer un semestre',
+  titreModification: 'Modifier le semestre',
+  champs: [
+    { cle: 'niveau_id', libelle: 'Niveau', type: 'select-nombre', requis: true,
+      optionsEndpoint: '/scolarite/ref/niveaux/', valeur: 'id', libelleOption: 'libelle',
+      vide: 'Choisir un niveau' },
+    { cle: 'numero', libelle: 'Numéro', type: 'nombre', requis: true, min: 1,
+      aide: 'Numéro du semestre dans le niveau (1 ou 2).' },
+    { cle: 'libelle', libelle: 'Libellé', requis: true, maxLength: 100 },
+    { cle: 'actif', libelle: 'Actif', type: 'booleen', defaut: true },
+  ],
+  creation: { chemin: '/scolarite/ref/semestres/' },
+  modification: (l) => ({ chemin: `/scolarite/ref/semestres/${l.id}/` }),
+  suppression: (l) => `/scolarite/ref/semestres/${l.id}/`,
+  messageSuppression: 'Supprimer ce semestre ? Les UE et maquettes qui le '
+    + 'référencent s’y opposeront : le serveur refusera alors.',
+};
+
+/**
+ * Référentiel des **formations** (cycles LMD) : endpoint dédié
+ * `/api/formations/ref/formations/`, qui valide le code unique, l'intitulé
+ * obligatoire et la liste fermée des types de diplôme. La modification passe
+ * par `PUT` (l'API de ce référentiel ne sert pas PATCH) : le formulaire déclare
+ * donc sa méthode, il ne la devine pas.
+ */
+export const FORMULAIRE_FORMATIONS = {
+  libelleCreation: 'Nouvelle formation',
+  titreCreation: 'Créer un cycle de formation',
+  titreModification: 'Modifier le cycle de formation',
+  methodeModification: 'put',
+  champs: [
+    { cle: 'code', libelle: 'Code', maxLength: 50,
+      aide: 'Identifiant court du cycle (facultatif, mais unique s’il est renseigné).' },
+    { cle: 'intitule', libelle: 'Intitulé', requis: true, maxLength: 255 },
+    { cle: 'type_diplome', libelle: 'Type de diplôme', type: 'select', requis: true,
+      options: [
+        { valeur: 'LICENCE', libelle: 'Licence' },
+        { valeur: 'MASTER', libelle: 'Master' },
+        { valeur: 'DOCTORAT', libelle: 'Doctorat' },
+        { valeur: 'DUT', libelle: 'DUT / BTS' },
+        { valeur: 'PROFESSIONNALISANT', libelle: 'Cycle professionnalisant' },
+        { valeur: 'AUTRE', libelle: 'Autre' },
+      ], vide: 'Choisir un type de diplôme' },
+    { cle: 'domaine', libelle: 'Domaine', maxLength: 100 },
+    { cle: 'mention', libelle: 'Mention', maxLength: 100 },
+    { cle: 'duree_annees', libelle: 'Durée (années)', type: 'nombre', min: 1, max: 8 },
+    { cle: 'nb_semestres', libelle: 'Nombre de semestres', type: 'nombre', min: 1, max: 16 },
+    { cle: 'nb_credites', libelle: 'Crédits ECTS', type: 'nombre', min: 0,
+      aide: 'Laisser vide si la source officielle ne fixe pas le total : aucune valeur n’est inventée.' },
+    { cle: 'actif', libelle: 'Actif', type: 'booleen', defaut: true },
+  ],
+  creation: { chemin: '/formations/ref/formations/' },
+  modification: (l) => ({ chemin: `/formations/ref/formations/${l.id}/` }),
+  suppression: (l) => `/formations/ref/formations/${l.id}/`,
+  messageSuppression: 'Supprimer ce cycle ? Le serveur refuse si des sessions de '
+    + 'formation s’appuient dessus : désactivez-le plutôt que de le supprimer.',
+};
+
 export const ECRANS = {
 
   // ---------------------------------------------------------------- SCOLARITÉ
@@ -359,6 +493,7 @@ export const ECRANS = {
       { cle: 'actif', libelle: 'Actif', format: 'booleen', largeur: '150px' },
     ],
     note: 'Source : /api/scolarite/ref/types-formation/',
+    formulaire: FORMULAIRE_TYPES_FORMATION,
   },
 
   parcours: {
@@ -380,6 +515,7 @@ export const ECRANS = {
       { cle: 'actif', libelle: 'Actif', format: 'booleen' },
     ],
     note: 'Source : /api/scolarite/ref/parcours/',
+    formulaire: FORMULAIRE_PARCOURS,
   },
 
   niveaux: {
@@ -402,6 +538,7 @@ export const ECRANS = {
       { cle: 'actif', libelle: 'Actif', format: 'booleen' },
     ],
     note: 'Source : /api/scolarite/ref/niveaux/',
+    formulaire: FORMULAIRE_NIVEAUX,
   },
 
   semestres: {
@@ -419,6 +556,7 @@ export const ECRANS = {
       { cle: 'actif', libelle: 'Actif', format: 'booleen' },
     ],
     note: 'Source : /api/scolarite/ref/semestres/',
+    formulaire: FORMULAIRE_SEMESTRES,
   },
 
   ue_ecue: {
@@ -1560,6 +1698,7 @@ export const ECRANS = {
       { cle: 'actif', libelle: 'Actif', format: 'booleen' },
     ],
     note: 'Source : /api/formations/ref/formations/ — descripteur de cycle (modèle 04.4).',
+    formulaire: FORMULAIRE_FORMATIONS,
   },
 
   ref_filieres: {
@@ -1575,6 +1714,7 @@ export const ECRANS = {
       { cle: 'actif', libelle: 'Actif', format: 'booleen', largeur: '150px' },
     ],
     note: 'Source : /api/scolarite/ref/types-formation/',
+    formulaire: FORMULAIRE_TYPES_FORMATION,
   },
 
   ref_ue_ecue: {
@@ -1611,6 +1751,7 @@ export const ECRANS = {
       { cle: 'actif', libelle: 'Actif', format: 'booleen' },
     ],
     note: 'Source : /api/scolarite/ref/niveaux/',
+    formulaire: FORMULAIRE_NIVEAUX,
   },
 
   ref_semestres: {
@@ -1629,6 +1770,7 @@ export const ECRANS = {
       { cle: 'actif', libelle: 'Actif', format: 'booleen' },
     ],
     note: 'Source : /api/scolarite/ref/semestres/',
+    formulaire: FORMULAIRE_SEMESTRES,
   },
 
   ref_types_cours: {

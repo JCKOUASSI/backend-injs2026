@@ -52,8 +52,8 @@ class _Controle:
             'code': code, 'message': message, 'gravite': gravite, **extra,
         })
 
-    def constat(self, message, **extra):
-        self.constats.append({'message': message, **extra})
+    def constat(self, message, code='CONSTAT', **extra):
+        self.constats.append({'code': code, 'message': message, **extra})
 
 
 class Command(BaseCommand):
@@ -201,11 +201,22 @@ class Command(BaseCommand):
                 f'{len(sans_credits)} UE sans crédits : ' + ', '.join(sans_credits[:5]),
             )
 
-        # État en base.
-        ue_base = UE.objects.all()
+        # État en base — PÉRIMÈTRE OFFICIEL UNIQUEMENT.
+        # `UE.objects.all()` comptait aussi les maquettes hors référentiel
+        # (jeu de démonstration, corpus legacy) : le contrôle annonçait 326 UE
+        # pour 323, sans dire d'où venaient les trois de trop. Ces lignes ne
+        # sont ni ignorées ni supprimées : elles sont comptées à part, plus bas,
+        # et nommées. Un contrôle qui mélange les deux ne contrôle plus rien.
+        ue_base = self._ue_du_referentiel(donnees)
         resume['ue_base'] = ue_base.count()
-        resume['ecue_base'] = ECUE.objects.filter(archive=False).count()
-        resume['ecue_archivees'] = ECUE.objects.filter(archive=True).count()
+        resume['ue_hors_referentiel'] = UE.objects.exclude(
+            pk__in=ue_base.values('pk')).count()
+        resume['ecue_base'] = ECUE.objects.filter(
+            archive=False, ue__in=ue_base).count()
+        resume['ecue_archivees'] = ECUE.objects.filter(
+            archive=True, ue__in=ue_base).count()
+        resume['ecue_hors_referentiel'] = ECUE.objects.filter(
+            archive=False).exclude(ue__in=ue_base).count()
         resume['credits_base'] = ue_base.aggregate(t=Sum('credits'))['t'] or 0
 
         if resume['ue_base'] != resume['ue_source']:
@@ -244,6 +255,21 @@ class Command(BaseCommand):
             )
         resume['familles'] = FamilleModule.objects.count()
 
+        # Données présentes en base mais HORS référentiel officiel : nommées,
+        # jamais comptées avec le référentiel, jamais supprimées d'office.
+        if resume.get('ue_hors_referentiel'):
+            hors = (UE.objects.exclude(pk__in=ue_base.values('pk'))
+                    .select_related('maquette__ref_formation')
+                    .values_list('maquette__ref_formation__intitule', flat=True)
+                    .distinct())
+            controle.constat(
+                f'{resume["ue_hors_referentiel"]} UE et '
+                f'{resume.get("ecue_hors_referentiel", 0)} ECUE hors référentiel '
+                'officiel (exclues du contrôle) : '
+                + ', '.join(sorted(set(hors))[:5]),
+                gravite='INFORMATION',
+            )
+
         # UE rattachées à une maquette inexistante (intégrité référentielle).
         sans_maquette = ue_base.filter(maquette__isnull=True).count()
         if sans_maquette:
@@ -256,6 +282,19 @@ class Command(BaseCommand):
             controle.anomalie(
                 'ECUE_ORPHELINE', f'{ecue_orphelines} ECUE sans UE.',
             )
+
+    @staticmethod
+    def _ue_du_referentiel(donnees):
+        """UE des maquettes rattachées à une des filières F01–F08 de la source.
+
+        C'est le seul périmètre comparable à la source. Tout le reste (jeu de
+        démonstration, corpus importés d'ailleurs) vit dans la même base et ne
+        doit pas se mêler au contrôle du référentiel officiel.
+        """
+        codes = set((donnees.get('filieres') or {}).keys())
+        if not codes:
+            return UE.objects.all()
+        return UE.objects.filter(maquette__ref_formation__filiere_code__in=codes)
 
     def _controler_filieres(self, donnees, controle, resume):
         """Filières documentées, avec ou sans maquette."""
@@ -431,6 +470,15 @@ class Command(BaseCommand):
             f'{resume.get("credits_base", 0)} base'
         )
         self.stdout.write(f'  Familles   : {resume.get("familles", 0)}')
+        # Les données hors référentiel sont nommées ici : sans cette ligne,
+        # un lecteur ne pourrait pas savoir ce que « base » inclut ou exclut.
+        hors_ref_ue = resume.get('ue_hors_referentiel', 0)
+        hors_ref_ecue = resume.get('ecue_hors_referentiel', 0)
+        if hors_ref_ue or hors_ref_ecue:
+            self.stdout.write(
+                f'  Hors réf.  : {hors_ref_ue} UE / {hors_ref_ecue} ECUE '
+                'en base, exclues du contrôle (démonstration ou corpus étranger)'
+            )
         hors = resume.get('hors_lmd') or {}
         self.stdout.write(
             f'  Hors LMD   : {hors.get("concours", 0)} concours, '
@@ -490,3 +538,7 @@ class Command(BaseCommand):
             f'  {len(controle.anomalies)} anomalie(s), '
             f'{len(controle.constats)} constat(s).'
         )
+        # Les constats portent des informations qu'un « 0 anomalie » masquerait
+        # (semestre absent de la source, filière sans maquette, hors référentiel).
+        for constat in controle.constats:
+            self.stdout.write(f'  · [{constat["code"]}] {constat["message"]}')

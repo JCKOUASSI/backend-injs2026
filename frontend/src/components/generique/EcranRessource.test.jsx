@@ -74,8 +74,8 @@ const ECRAN = {
   note: 'Source : /api/test/lignes/',
 }
 
-function monter(ecran = ECRAN, { chemin = '/test' } = {}) {
-  const user = makeUser('ADMIN')
+function monter(ecran = ECRAN, { chemin = '/test', role = 'ADMIN' } = {}) {
+  const user = makeUser(role)
   apiController.setMe(user)
   apiController.setRoute('/auth/capabilities/', { capacites: { web: ['acceder'] } })
   apiController.setRoute('/habilitations/mes-acces/', { gouverne: false })
@@ -179,6 +179,118 @@ describe('recherche et filtres', () => {
     await screen.findByText('DOS-001')
     fireEvent.change(screen.getByLabelText('Statut'), { target: { value: 'SUSPENDU' } })
     await waitFor(() => expect(derniersParams()).toMatchObject({ statut: 'SUSPENDU', page: 1 }))
+  })
+})
+
+/**
+ * Descripteur avec `formulaire` : reproduit la forme réelle des écrans
+ * Référentiels/Formations (source : `src/menu/ecrans.js`, écran « niveaux »).
+ */
+const ECRAN_FORMULAIRE = {
+  id: 'test_formulaire',
+  titre: 'Niveaux',
+  endpoint: '/test/lignes/',
+  colonnes: [
+    { cle: 'numero', libelle: 'Code' },
+    { cle: 'statut', libelle: 'Statut' },
+  ],
+  formulaire: {
+    titreCreation: 'Créer un niveau',
+    champs: [
+      { cle: 'numero', libelle: 'Numéro', requis: true },
+      { cle: 'statut', libelle: 'Statut' },
+      { cle: 'actif', libelle: 'Actif', type: 'booleen', defaut: true },
+    ],
+    creation: { chemin: '/test/lignes/' },
+    modification: (l) => ({ chemin: `/test/lignes/${l.id}/` }),
+    suppression: (l) => `/test/lignes/${l.id}/`,
+  },
+}
+
+describe('gestion (CRUD) pilotée par le descripteur', () => {
+  it('sans `formulaire`, l’écran reste en lecture : aucun bouton de création', async () => {
+    monter()
+    await screen.findByText('DOS-001')
+    expect(screen.queryByTestId('bouton-nouveau')).toBeNull()
+    expect(screen.queryByTestId('modifier-1')).toBeNull()
+  })
+
+  it('avec `formulaire`, un administrateur peut créer, modifier et supprimer', async () => {
+    monter(ECRAN_FORMULAIRE)
+    await screen.findByText('DOS-001')
+    expect(screen.getByTestId('bouton-nouveau')).toBeTruthy()
+    expect(screen.getByTestId('modifier-1')).toBeTruthy()
+    expect(screen.getByTestId('supprimer-1')).toBeTruthy()
+  })
+
+  it('un profil en lecture seule ne voit aucun bouton de gestion', async () => {
+    monter(ECRAN_FORMULAIRE, { role: 'DIRECTION' })
+    await screen.findByText('DOS-001')
+    expect(screen.queryByTestId('bouton-nouveau')).toBeNull()
+    expect(screen.queryByTestId('modifier-1')).toBeNull()
+    expect(screen.queryByTestId('supprimer-1')).toBeNull()
+  })
+
+  it('« Nouveau » ouvre le formulaire et crée réellement la ligne', async () => {
+    monter(ECRAN_FORMULAIRE)
+    await screen.findByText('DOS-001')
+    fireEvent.click(screen.getByTestId('bouton-nouveau'))
+    expect(await screen.findByText('Créer un niveau')).toBeTruthy()
+    fireEvent.change(screen.getByTestId('champ-numero'), { target: { value: 'DOS-009' } })
+    fireEvent.change(screen.getByTestId('champ-statut'), { target: { value: 'ACTIF' } })
+    fireEvent.click(screen.getByTestId('form-enregistrer'))
+    await waitFor(() => {
+      const appel = apiController.findCall('post', '/test/lignes/')
+      expect(appel?.[1]).toMatchObject({ numero: 'DOS-009', statut: 'ACTIF', actif: true })
+    })
+    // Le dialogue se referme après le succès serveur.
+    await waitFor(() => expect(screen.queryByText('Créer un niveau')).toBeNull())
+  })
+
+  it('« Modifier » recharge la ligne et enregistre par PATCH', async () => {
+    monter(ECRAN_FORMULAIRE)
+    await screen.findByText('DOS-001')
+    fireEvent.click(screen.getByTestId('modifier-1'))
+    const champ = await screen.findByTestId('champ-numero')
+    expect(champ.value).toBe('DOS-001')
+    fireEvent.change(champ, { target: { value: 'DOS-001-b' } })
+    fireEvent.click(screen.getByTestId('form-enregistrer'))
+    await waitFor(() => {
+      const appel = apiController.findCall('patch', '/test/lignes/1/')
+      expect(appel?.[1]).toMatchObject({ numero: 'DOS-001-b' })
+    })
+  })
+
+  it('« Supprimer » demande confirmation avant d’appeler le serveur', async () => {
+    monter(ECRAN_FORMULAIRE)
+    await screen.findByText('DOS-001')
+    fireEvent.click(screen.getByTestId('supprimer-1'))
+    expect(await screen.findByText(/Supprimer définitivement cet élément/)).toBeTruthy()
+    expect(apiController.api.delete).not.toHaveBeenCalled()
+    const boite = screen.getByRole('dialog', { name: 'Confirmation' })
+    fireEvent.click(within(boite).getByRole('button', { name: 'Supprimer' }))
+    await waitFor(() => expect(apiController.findCall('delete', '/test/lignes/1/')).toBeTruthy())
+  })
+
+  it('un refus de dépendance (409) laisse la ligne en place et informe', async () => {
+    apiController.api.delete.mockRejectedValueOnce({
+      response: {
+        status: 409,
+        data: {
+          error: 'Suppression impossible : cet élément est référencé ailleurs.',
+          detail: 'La suppression détruirait aussi 2 semestres.',
+        },
+      },
+    })
+    monter(ECRAN_FORMULAIRE)
+    await screen.findByText('DOS-001')
+    fireEvent.click(screen.getByTestId('supprimer-1'))
+    const boite = await screen.findByRole('dialog', { name: 'Confirmation' })
+    fireEvent.click(within(boite).getByRole('button', { name: 'Supprimer' }))
+    await waitFor(() => expect(document.body.textContent)
+      .toMatch(/référencé ailleurs|Suppression refusée/))
+    // La liste n'est pas vidée localement : c'est le serveur qui fait foi.
+    expect(screen.getByText('DOS-001')).toBeTruthy()
   })
 })
 

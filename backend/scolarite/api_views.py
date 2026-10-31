@@ -5,6 +5,7 @@ explicites, filtrage manuel via ``request.query_params``.
 """
 
 from django.core.exceptions import ValidationError
+from django.db import models
 from django.db.models import Count, Sum
 from django.db.models.deletion import ProtectedError
 from django.utils import timezone
@@ -104,6 +105,31 @@ def _valider(obj):
     return None
 
 
+def _dependances_destructrices(obj):
+    """Lignes qu'une suppression emporterait ou rendrait orphelines.
+
+    Un référentiel est un socle : supprimer un niveau ne doit pas effacer ses
+    semestres, un ``CASCADE`` silencieux pris pour un simple rangement. On
+    refuse donc la suppression dès qu'une ligne vivante pointe vers l'objet,
+    quelle que soit la politique du modèle (``PROTECT`` comme ``CASCADE``) : le
+    refus est explicite, chiffré et actionnable, jamais un effacement de masse.
+
+    Seul ``SET_NULL`` est toléré : la ligne dépendante survit, simplement
+    détachée — la donnée métier n'est pas détruite.
+    """
+    dependances = []
+    for relation in obj._meta.related_objects:
+        if relation.on_delete is models.SET_NULL:
+            continue
+        nombre = relation.related_model.objects.filter(
+            **{relation.field.name: obj},
+        ).count()
+        if nombre:
+            libelle = str(relation.related_model._meta.verbose_name_plural)
+            dependances.append((libelle, nombre))
+    return dependances
+
+
 def _referentiel_list(request, ressource):
     model, fields = REFERENTIEL_FIELDS[ressource]
     if request.method == 'GET':
@@ -123,6 +149,22 @@ def _referentiel_detail(request, ressource, pk):
     if obj is None:
         return Response({'error': 'Introuvable'}, status=404)
     if request.method == 'DELETE':
+        dependances = _dependances_destructrices(obj)
+        if dependances:
+            return Response(
+                {
+                    'error': "Suppression impossible : cet élément est référencé ailleurs.",
+                    'detail': (
+                        'La suppression détruirait aussi '
+                        + ', '.join(f"{n} {libelle}" for libelle, n in dependances)
+                        + '. Retirez ou réaffectez ces éléments d’abord.'
+                    ),
+                    'dependances': [
+                        {'ressource': libelle, 'nombre': n} for libelle, n in dependances
+                    ],
+                },
+                status=409,
+            )
         try:
             obj.delete()
         except ProtectedError:

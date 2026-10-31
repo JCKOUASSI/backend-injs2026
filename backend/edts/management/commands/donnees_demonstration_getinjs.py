@@ -37,7 +37,6 @@ from edts.models import CreneauTemplate
 from formations.models import (
     Formateur, RefBatiment, RefFormation, RefSalle, RefSite,
 )
-from formations.referentiel_injs_l6 import SOURCE_A45
 from scolarite.models import (
     ECUE, AffectationPedagogique, AnneeAcademique, Groupe, Maquette, Niveau,
     Parcours, Semestre, UE,
@@ -45,6 +44,9 @@ from scolarite.models import (
 
 #: Marqueurs — c'est par eux que tout est retrouvé (et supprimé).
 PREFIXE_ANNEE = 'DEMO-'
+#: Source déclarée de la formation de démonstration : elle dit d'elle-même
+#: qu'elle n'appartient pas au référentiel officiel (aucune filière F01–F08).
+SOURCE_DEMONSTRATION = 'DÉMONSTRATION — hors référentiel officiel (manage.py donnees_demonstration_getinjs)'
 INTITULE_FORMATION = 'FORMATION DÉMONSTRATION GET-INJS'
 PREFIXE_PARCOURS = 'DEMO-P'
 PREFIXE_GROUPE = 'DEMO-G'
@@ -143,11 +145,22 @@ class Command(BaseCommand):
             annee.save(update_fields=['courante'])
         crees['annee'] = str(annee)
 
+        # Périmètre INJS (le moteur ne planifie que cette population), mais
+        # AUCUNE filière : cette formation de démonstration n'est pas
+        # « Éducation et Motricité » et ne doit pas se faire passer pour F01.
+        # Sans cela, elle polluait le contrôle du référentiel officiel
+        # (`controler_referentiel_injs` comptait 3 UE de plus en F01 L1 S1).
         formation, _ = RefFormation.objects.get_or_create(
             intitule=INTITULE_FORMATION,
-            defaults={'perimetre': 'INJS', 'filiere_code': 'F01',
-                      'source': SOURCE_A45},
+            defaults={'perimetre': 'INJS', 'filiere_code': '',
+                      'source': SOURCE_DEMONSTRATION},
         )
+        # Un jeu créé par une version antérieure revendiquait la filière F01 :
+        # on corrige la ligne existante (idempotence = même état final).
+        if formation.filiere_code or formation.source != SOURCE_DEMONSTRATION:
+            formation.filiere_code = ''
+            formation.source = SOURCE_DEMONSTRATION
+            formation.save(update_fields=['filiere_code', 'source'])
         crees['formation'] = formation.intitule
 
         niveau, _ = Niveau.objects.get_or_create(
