@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useToast } from '../../context/ToastContext'
+import CompletudeBar from '../../components/scolarite/CompletudeBar'
 import {
   getAnneeCourante,
   getEffectifsGroupes,
@@ -8,6 +9,7 @@ import {
   messageErreur,
   repartirGroupes,
 } from '../../services/scolarite'
+import '../../styles/candidatures.css'
 import '../../styles/groupes.css'
 
 export default function Groupes() {
@@ -92,92 +94,97 @@ export default function Groupes() {
     return { totalGroupes, actifs, tauxMoyen }
   }, [groupes])
 
+  /* Une répartition n'a de sens que sur un couple formation + niveau : le
+     bouton reste donc désactivé tant que les deux ne sont pas choisis. */
+  const peutRepartir = Boolean(filtres.ref_formation_id && filtres.niveau_id)
+  const filtreActif = Boolean(filtres.ref_formation_id || filtres.niveau_id)
+
   return (
-    <div className="container-fluid py-4 grp-page">
-      {/* ── Bandeau d'accueil (matière de la référence LMD2026) ── */}
-      <div className="grp-hero">
-        <div className="grp-hero-text">
-          <span className="grp-hero-badge">
-            <i className="bi bi-people-fill"></i>Scolarité — Groupes
-          </span>
-          <h1 className="grp-hero-title">
-            <i className="bi bi-diagram-3-fill"></i>
-            Groupes pédagogiques
-          </h1>
-          <p className="grp-hero-sub">
-            {annee ? `Année académique ${annee.libelle}` : 'Année courante non définie'}
-            {' · '}{totalEffectif} étudiant(s) affecté(s) aux sections TD/TP.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="grp-action"
-          disabled={action}
-          onClick={repartir}
-        >
-          {action ? (
-            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-          ) : (
+    <div className="cand-page">
+      {/* ── Bandeau d'accueil, même matière que les autres écrans Scolarité ── */}
+      <div className="cand-hero">
+        <div className="cand-hero-identite">
+          <span className="cand-hero-icone" aria-hidden="true">
             <i className="bi bi-diagram-3"></i>
-          )}
-          Répartir automatiquement
-        </button>
-      </div>
-
-      {/* ── Tuiles KPI ── */}
-      <div className="grp-kpi-row">
-        <div className="grp-kpi">
-          <div>
-            <span className="grp-kpi-label">Total Groupes</span>
-            <span className="grp-kpi-value">{stats.totalGroupes}</span>
+          </span>
+          <div className="cand-hero-text">
+            <span className="cand-hero-badge">Scolarité — Groupes</span>
+            <h1 className="cand-hero-title">Groupes pédagogiques</h1>
+            <p className="cand-hero-sub">
+              {annee ? `Année ${annee.libelle}` : 'Année courante non définie'}
+              {' · '}{totalEffectif} étudiant(s) affecté(s) aux sections TD/TP
+            </p>
           </div>
-          <div className="grp-kpi-icon is-blue"><i className="bi bi-grid-3x3-gap-fill"></i></div>
         </div>
-
-        <div className="grp-kpi">
-          <div>
-            <span className="grp-kpi-label">Étudiants Affectés</span>
-            <span className="grp-kpi-value">{totalEffectif}</span>
-          </div>
-          <div className="grp-kpi-icon is-green"><i className="bi bi-person-check-fill"></i></div>
-        </div>
-
-        <div className="grp-kpi">
-          <div>
-            <span className="grp-kpi-label">Taux Remplissage</span>
-            <span className={`grp-kpi-value${stats.tauxMoyen !== null ? ' is-green' : ''}`}>
-              {stats.tauxMoyen !== null ? `${stats.tauxMoyen}%` : '—'}
-            </span>
-          </div>
-          <div className="grp-kpi-icon is-amber"><i className="bi bi-pie-chart-fill"></i></div>
-        </div>
-
-        <div className="grp-kpi">
-          <div>
-            <span className="grp-kpi-label">Groupes Actifs</span>
-            <span className="grp-kpi-value">{stats.actifs}</span>
-          </div>
-          <div className="grp-kpi-icon is-slate"><i className="bi bi-check2-circle"></i></div>
+        <div className="grp-hero-actions">
+          <button
+            type="button"
+            className="btn-premium-primary"
+            disabled={action}
+            onClick={repartir}
+            title={peutRepartir
+              ? 'Répartir les étudiants de la formation et du niveau choisis'
+              : 'Choisissez une formation et un niveau dans les filtres'}
+          >
+            {action ? (
+              <span className="spinner-border" role="status" aria-hidden="true"></span>
+            ) : (
+              <i className="bi bi-diagram-3" aria-hidden="true"></i>
+            )}
+            Répartir automatiquement
+          </button>
         </div>
       </div>
 
-      {/* ── Filtres & Liste ── */}
-      <div className="card grp-panel">
-        <div className="grp-panel-head">
-          <h2 className="grp-panel-title">
-            <i className="bi bi-list-check"></i>Répartition par groupe
+      {/* ── Indicateurs ── */}
+      <div className="cand-kpi-row">
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-blue" aria-hidden="true"><i className="bi bi-grid-3x3-gap"></i></span>
+          <div className="cand-kpi-texte">
+            <span className="cand-kpi-value">{stats.totalGroupes}</span>
+            <span className="cand-kpi-label">Total groupes</span>
+          </div>
+        </div>
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-green" aria-hidden="true"><i className="bi bi-person-check"></i></span>
+          <div className="cand-kpi-texte">
+            <span className="cand-kpi-value">{totalEffectif}</span>
+            <span className="cand-kpi-label">Étudiants affectés</span>
+          </div>
+        </div>
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-amber" aria-hidden="true"><i className="bi bi-pie-chart"></i></span>
+          <div className="cand-kpi-texte">
+            <span className="cand-kpi-value">{stats.tauxMoyen !== null ? `${stats.tauxMoyen}%` : '—'}</span>
+            <span className="cand-kpi-label">Taux de remplissage</span>
+          </div>
+        </div>
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-slate" aria-hidden="true"><i className="bi bi-check2-circle"></i></span>
+          <div className="cand-kpi-texte">
+            <span className="cand-kpi-value">{stats.actifs}</span>
+            <span className="cand-kpi-label">Groupes actifs</span>
+          </div>
+        </div>
+      </div>
+
+      <section className="cand-panel" aria-labelledby="titre-repartition-groupes">
+        <header className="cand-panel-head">
+          <h2 className="cand-panel-title" id="titre-repartition-groupes">
+            <i className="bi bi-list-check" aria-hidden="true"></i>Répartition par groupe
           </h2>
-          <span className="grp-count-pill">
+          <span className="cand-count-pill">
             {groupes.length} groupe{groupes.length > 1 ? 's' : ''}
           </span>
-        </div>
-        <div className="grp-panel-body">
-          <div className="grp-filters">
-            <div className="grp-field">
-              <label className="grp-field-label" htmlFor="groupe-formation">Formation</label>
+        </header>
+
+        <div className="cand-panel-body">
+          <div className="cand-filters grp-filtres">
+            <div className="grp-filtre">
+              <label className="cand-etiquette" htmlFor="groupe-formation">Formation</label>
               <select
                 id="groupe-formation"
-                className="form-select"
+                className="cand-filter-select"
                 value={filtres.ref_formation_id}
                 onChange={(e) => setFiltres({ ...filtres, ref_formation_id: e.target.value })}
               >
@@ -185,11 +192,11 @@ export default function Groupes() {
                 {formations.map((f) => <option key={f.id} value={f.id}>{f.intitule}</option>)}
               </select>
             </div>
-            <div className="grp-field">
-              <label className="grp-field-label" htmlFor="groupe-niveau">Niveau</label>
+            <div className="grp-filtre">
+              <label className="cand-etiquette" htmlFor="groupe-niveau">Niveau</label>
               <select
                 id="groupe-niveau"
-                className="form-select"
+                className="cand-filter-select"
                 value={filtres.niveau_id}
                 onChange={(e) => setFiltres({ ...filtres, niveau_id: e.target.value })}
               >
@@ -197,96 +204,115 @@ export default function Groupes() {
                 {niveaux.map((n) => <option key={n.id} value={n.id}>{n.code}</option>)}
               </select>
             </div>
+            <p className="grp-aide">
+              <i className="bi bi-info-circle" aria-hidden="true"></i>
+              {peutRepartir
+                ? 'La répartition automatique utilise ces deux filtres.'
+                : 'Choisissez une formation et un niveau pour activer la répartition automatique.'}
+            </p>
           </div>
 
           {repartition?.echecs?.length > 0 && (
-            <div className="grp-alert" role="alert">
-              <i className="bi bi-exclamation-triangle-fill"></i>
+            <div className="cand-alerte cand-alerte--attention" role="alert">
+              <i className="bi bi-exclamation-triangle" aria-hidden="true"></i>
               <div>
                 <strong>{repartition.echecs.length} étudiant(s) non affecté(s)</strong>
-                <div className="grp-alert-detail">{repartition.echecs[0].motif}</div>
+                <div className="grp-alerte-detail">{repartition.echecs[0].motif}</div>
               </div>
             </div>
           )}
 
           {loading ? (
-            <div className="grp-loading">
+            <div className="cand-chargement">
               <span className="spinner-border" role="status" aria-hidden="true"></span>
-              <span>Chargement des groupes…</span>
+              Chargement des groupes…
             </div>
           ) : (
-            <div className="grp-table-wrap">
-              <table className="table table-hover align-middle grp-table">
-                <thead>
-                  <tr>
-                    <th>Groupe</th>
-                    <th>Formation</th>
-                    <th>Niveau</th>
-                    <th>Effectif</th>
-                    <th style={{ minWidth: '180px' }}>Remplissage</th>
-                    <th>État</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {groupes.map((g) => {
-                    const taux = g.capacite_max ? Math.round((g.effectif * 100) / g.capacite_max) : null
-                    return (
-                      <tr key={g.id}>
-                        <td>
-                          <span className="grp-nom">{g.nom}</span>
-                        </td>
-                        <td className="grp-formation">{g.ref_formation}</td>
-                        <td><span className="badge bg-light text-dark border">{g.niveau}</span></td>
-                        <td>
-                          <span className="grp-effectif">{g.effectif}</span>
-                          {g.capacite_max ? <span className="grp-effectif-cap"> / {g.capacite_max}</span> : ''}
-                        </td>
-                        <td>
-                          {taux === null ? (
-                            <span className="grp-sans-limite">Sans limite</span>
-                          ) : (
-                            <div className="grp-progress">
-                              <div className="grp-progress-meta">
-                                <span className={taux >= 100 ? 'is-over' : undefined}>{taux}%</span>
-                                <span>{g.effectif}/{g.capacite_max}</span>
-                              </div>
-                              <div className="progress">
-                                <div
-                                  className={`progress-bar bg-${taux >= 100 ? 'danger' : taux >= 80 ? 'warning' : 'success'}`}
-                                  style={{ width: `${Math.min(taux, 100)}%` }}
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          {g.actif ? (
-                            <span className="badge bg-success-subtle text-success border border-success-subtle">
-                              Actif
+            <>
+              <div className="cand-table-wrap">
+                <table className="cand-table cand-table--groupes">
+                  <thead>
+                    <tr>
+                      <th scope="col">Groupe</th>
+                      <th scope="col">Formation</th>
+                      <th scope="col">Niveau</th>
+                      <th scope="col">Effectif</th>
+                      <th scope="col">Remplissage</th>
+                      <th scope="col" className="cand-th-actions">État</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groupes.map((g) => {
+                      const taux = g.capacite_max
+                        ? Math.round((g.effectif * 100) / g.capacite_max)
+                        : null
+                      return (
+                        <tr key={g.id}>
+                          <td>
+                            <span className="grp-nom">
+                              <i className="bi bi-people" aria-hidden="true"></i>
+                              {g.nom}
                             </span>
-                          ) : (
-                            <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
-                              Inactif
+                          </td>
+                          <td className="cand-col-formation">
+                            <span className="cand-texte-formation" title={g.ref_formation}>
+                              {g.ref_formation}
                             </span>
-                          )}
+                          </td>
+                          <td><span className="cand-badge-neutre">{g.niveau}</span></td>
+                          <td className="cand-col-etroit">
+                            <span className="grp-effectif">{g.effectif}</span>
+                            {g.capacite_max ? (
+                              <span className="grp-effectif-cap"> / {g.capacite_max}</span>
+                            ) : null}
+                          </td>
+                          <td>
+                            {taux === null ? (
+                              <span className="cand-texte-doux">Sans limite</span>
+                            ) : (
+                              <CompletudeBar
+                                validees={g.effectif}
+                                total={g.capacite_max}
+                                taux={taux}
+                              />
+                            )}
+                          </td>
+                          <td className="cand-col-actions">
+                            <span className={`grp-etat grp-etat--${g.actif ? 'actif' : 'inactif'}`}>
+                              <i className={`bi ${g.actif ? 'bi-check2-circle' : 'bi-dash-circle'}`} aria-hidden="true"></i>
+                              {g.actif ? 'Actif' : 'Inactif'}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                    {groupes.length === 0 && (
+                      <tr>
+                        <td colSpan={6}>
+                          <div className="cand-vide">
+                            <span className="cand-vide-icone" aria-hidden="true">
+                              <i className="bi bi-diagram-3"></i>
+                            </span>
+                            <p className="cand-vide-titre">Aucun groupe</p>
+                            <p className="cand-vide-texte">
+                              Aucun groupe défini pour les filtres sélectionnés.
+                              {!filtreActif && ' Choisissez une formation et un niveau, puis lancez la répartition automatique.'}
+                            </p>
+                          </div>
                         </td>
                       </tr>
-                    )
-                  })}
-                  {groupes.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="grp-empty">
-                        <i className="bi bi-inbox"></i>
-                        Aucun groupe défini pour les filtres sélectionnés.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <p className="cand-defile" aria-hidden="true">
+                <i className="bi bi-arrow-left-right"></i>
+                Faites défiler le tableau horizontalement
+              </p>
+            </>
           )}
         </div>
-      </div>
+      </section>
     </div>
   )
 }
