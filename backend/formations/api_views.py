@@ -3087,8 +3087,21 @@ _REF_FORMATION_CHAMPS = ('code', 'type_diplome', 'domaine', 'mention', 'duree_an
 
 
 def _ref_formation_payload(obj):
+    """Cycle de formation tel que l'API le restitue.
+
+    Les champs de **qualification** (`filiere_code`, `perimetre`, `source`) sont
+    exposés en lecture : sans eux, un écran ne peut pas dire à quelle filière
+    officielle (F01–F08) un cycle appartient, ni s'il relève du référentiel INJS.
+    Ils ne sont volontairement PAS dans `_REF_FORMATION_CHAMPS` : ils ne
+    s'écrivent pas depuis cet endpoint. La qualification est décidée par la
+    commande `qualifier_referentiel_injs_l6` (source officielle), pas par une
+    saisie d'écran — c'est ce qui empêche un second système de qualification.
+    """
     return {'id': obj.id, 'intitule': obj.intitule, 'actif': obj.actif,
             'prix_heure_realisee': obj.prix_heure_realisee,
+            'filiere_code': obj.filiere_code,
+            'perimetre': obj.perimetre,
+            'source': obj.source,
             **{c: getattr(obj, c) for c in _REF_FORMATION_CHAMPS}}
 
 

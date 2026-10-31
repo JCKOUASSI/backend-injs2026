@@ -229,7 +229,7 @@ export const ARBORESCENCE = [
       },
       {
         id: 'formations.filieres',
-        libelle: 'Filières',
+        libelle: 'Types de formation',
         chemin: '/formations/filieres',
         ecran: 'filieres',
         droit: {
@@ -1432,7 +1432,7 @@ export const ARBORESCENCE = [
       },
       {
         id: 'referentiels.filieres',
-        libelle: 'Filières',
+        libelle: 'Types de formation',
         chemin: '/referentiels/filieres',
         ecran: 'ref_filieres',
         droit: {

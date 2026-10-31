@@ -6,6 +6,7 @@ from rest_framework.test import APIClient
 from authentication.models import User
 from formations.models import (
     Formation,
+    RefFormation,
     Module,
     Participant,
     Formateur,
@@ -268,6 +269,34 @@ class ReferentielAPIAccessTests(TestCase):
         self.client.force_authenticate(auditeur)
         res = self.client.get('/api/formations/referentiels/')
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_ref_formations_expose_la_qualification_en_lecture(self):
+        """L'écran doit pouvoir dire à quelle filière officielle un cycle appartient."""
+        RefFormation.objects.create(
+            intitule='ÉDUCATION ET MOTRICITÉ — LICENCE', perimetre='INJS',
+            filiere_code='F01', source='A-4.5 §2',
+        )
+        admin = make_user('admin_ref_qual', role='INJS_ADMIN')
+        self.client.force_authenticate(admin)
+        res = self.client.get('/api/formations/ref/formations/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        ligne = next(l for l in res.json() if l['intitule'].startswith('ÉDUCATION'))
+        self.assertEqual(ligne['filiere_code'], 'F01')
+        self.assertEqual(ligne['perimetre'], 'INJS')
+        self.assertEqual(ligne['source'], 'A-4.5 §2')
+
+    def test_la_qualification_ne_s_ecrit_pas_depuis_cet_endpoint(self):
+        """La qualification reste décidée par la source, pas par une saisie d'écran."""
+        admin = make_user('admin_ref_qual2', role='INJS_ADMIN')
+        self.client.force_authenticate(admin)
+        res = self.client.post('/api/formations/ref/formations/', {
+            'intitule': 'CYCLE SANS QUALIFICATION', 'type_diplome': 'LICENCE',
+            'filiere_code': 'F01', 'perimetre': 'INJS', 'source': 'auto-proclamée',
+        }, format='json')
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        obj = RefFormation.objects.get(intitule='CYCLE SANS QUALIFICATION')
+        self.assertEqual(obj.filiere_code, '')
+        self.assertEqual(obj.source, '')
 
     def test_cpfae_can_access_ref_formations(self):
         admin = make_user('admin_ref', role='INJS_ADMIN')

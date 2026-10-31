@@ -145,22 +145,36 @@ class Command(BaseCommand):
             annee.save(update_fields=['courante'])
         crees['annee'] = str(annee)
 
-        # Périmètre INJS (le moteur ne planifie que cette population), mais
-        # AUCUNE filière : cette formation de démonstration n'est pas
-        # « Éducation et Motricité » et ne doit pas se faire passer pour F01.
-        # Sans cela, elle polluait le contrôle du référentiel officiel
-        # (`controler_referentiel_injs` comptait 3 UE de plus en F01 L1 S1).
+        # Deux contraintes opposées, toutes deux réelles :
+        #  1. le moteur d'emploi du temps refuse une population hors périmètre
+        #     INJS (`HORS_PERIMETRE_INJS`) : la démonstration doit rester INJS
+        #     pour être planifiable, sinon elle ne démontre rien ;
+        #  2. un support de démonstration n'est PAS un cycle du référentiel
+        #     officiel : il ne doit jamais être compté comme tel.
+        # D'où : périmètre INJS (contrainte 1) et AUCUNE filière F01–F08 +
+        # marqueur de source explicite, la ligne étant écartée du corpus
+        # officiel par `formations_injs()` (contrainte 2, défense en
+        # profondeur sur l'intitulé).
         formation, _ = RefFormation.objects.get_or_create(
             intitule=INTITULE_FORMATION,
-            defaults={'perimetre': 'INJS', 'filiere_code': '',
-                      'source': SOURCE_DEMONSTRATION},
+            defaults={'perimetre': RefFormation.Perimetre.INJS,
+                      'filiere_code': '', 'source': SOURCE_DEMONSTRATION},
         )
-        # Un jeu créé par une version antérieure revendiquait la filière F01 :
-        # on corrige la ligne existante (idempotence = même état final).
-        if formation.filiere_code or formation.source != SOURCE_DEMONSTRATION:
+        # Un jeu créé par une version antérieure revendiquait la filière F01
+        # et le périmètre INJS : on corrige la ligne existante (idempotence =
+        # même état final, quel que soit l'état de départ).
+        corriges = []
+        if formation.filiere_code:
             formation.filiere_code = ''
+            corriges.append('filiere_code')
+        if formation.perimetre != RefFormation.Perimetre.INJS:
+            formation.perimetre = RefFormation.Perimetre.INJS
+            corriges.append('perimetre')
+        if formation.source != SOURCE_DEMONSTRATION:
             formation.source = SOURCE_DEMONSTRATION
-            formation.save(update_fields=['filiere_code', 'source'])
+            corriges.append('source')
+        if corriges:
+            formation.save(update_fields=corriges)
         crees['formation'] = formation.intitule
 
         niveau, _ = Niveau.objects.get_or_create(

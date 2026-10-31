@@ -1,0 +1,56 @@
+[
+  {
+    "nom": "01-niveaux-liste",
+    "description": "Liste réelle des niveaux avec le bouton « Nouveau niveau »",
+    "octets": 287254,
+    "url": "http://127.0.0.1:3000/referentiels/niveaux"
+  },
+  {
+    "nom": "02-niveaux-formulaire",
+    "description": "Formulaire de création ouvert, champs réels du référentiel",
+    "octets": 187461,
+    "url": "http://127.0.0.1:3000/referentiels/niveaux"
+  },
+  {
+    "nom": "03-niveaux-cree",
+    "description": "Après création : la ligne E2E-L9 vient de l’API",
+    "octets": 297743,
+    "url": "http://127.0.0.1:3000/referentiels/niveaux"
+  },
+  {
+    "nom": "04-niveaux-modification",
+    "description": "Formulaire prérempli depuis la ligne existante",
+    "octets": 209837,
+    "url": "http://127.0.0.1:3000/referentiels/niveaux"
+  },
+  {
+    "nom": "05-niveaux-modifie",
+    "description": "Après modification : le libellé vient du serveur",
+    "octets": 301061,
+    "url": "http://127.0.0.1:3000/referentiels/niveaux"
+  },
+  {
+    "nom": "06-suppression-confirmation",
+    "description": "La suppression demande une confirmation explicite",
+    "octets": 218669,
+    "url": "http://127.0.0.1:3000/referentiels/niveaux"
+  },
+  {
+    "nom": "07-suppression-refusee",
+    "description": "Refus serveur 409 : le niveau L1 porte des semestres, rien n’est détruit",
+    "octets": 308115,
+    "url": "http://127.0.0.1:3000/referentiels/niveaux"
+  },
+  {
+    "nom": "08-niveaux-nettoye",
+    "description": "La ligne de test a été supprimée par l’interface",
+    "octets": 300773,
+    "url": "http://127.0.0.1:3000/referentiels/niveaux"
+  },
+  {
+    "nom": "09-formations-formulaire",
+    "description": "Création d’un cycle de formation (référentiel Formations)",
+    "octets": 424404,
+    "url": "http://127.0.0.1:3000/referentiels/formations"
+  }
+]

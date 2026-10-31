@@ -77,6 +77,31 @@ class JeuDemonstrationTests(TestCase):
                                  'Une salle de démonstration sans capacité rendrait '
                                  'C4 invérifiable.')
 
+    def test_formation_de_demonstration_sans_filiere_officielle(self):
+        """La démonstration reste planifiable, mais ne revendique aucune filière.
+
+        Le moteur d'EDT ne planifie que le périmètre INJS (`formations_injs()`) :
+        la démonstration doit donc y figurer, sinon elle ne démontre rien. Ce qui
+        la distingue d'un cycle réel, c'est l'absence de filière F01–F08 et une
+        source qui dit explicitement « hors référentiel officiel ». Le contrôle
+        du référentiel, lui, compte par filière : il ignore donc cette ligne.
+        """
+        _appeler()
+        demo = RefFormation.objects.get(intitule__startswith='FORMATION DÉMONSTRATION')
+        self.assertEqual(demo.filiere_code, '')
+        self.assertIn('DÉMONSTRATION', demo.source)
+
+    def test_corrige_un_jeu_anterieur_rattache_a_une_filiere(self):
+        """Idempotence : un jeu F01 laissé par une version antérieure est corrigé."""
+        RefFormation.objects.create(
+            intitule='FORMATION DÉMONSTRATION GET-INJS', perimetre='INJS',
+            filiere_code='F01', source='A45',
+        )
+        _appeler()
+        demo = RefFormation.objects.get(intitule__startswith='FORMATION DÉMONSTRATION')
+        self.assertEqual(demo.filiere_code, '')
+        self.assertIn('DÉMONSTRATION', demo.source)
+
     def test_nombre_de_groupes_parametrable(self):
         _appeler('--groupes', '2')
         self.assertEqual(Groupe.objects.filter(nom__startswith='DEMO-G').count(), 2)

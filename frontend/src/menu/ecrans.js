@@ -482,10 +482,12 @@ export const ECRANS = {
   // --------------------------------------------------------------- FORMATIONS
   filieres: {
     id: 'filieres',
-    titre: 'Filières',
+    titre: 'Types de formation',
     fil: 'Formations',
     icone: 'bi-signpost-split',
-    introduction: 'Types de formation (filières) du référentiel LMD.',
+    introduction: 'Cycles de formation du référentiel LMD (licence, master, '
+      + 'formation initiale ou continue). Les 8 filières métier F01–F08 sont '
+      + 'portées par les cycles, sur l’écran « Formations » (colonne Filière).',
     endpoint: '/scolarite/ref/types-formation/',
     colonnes: [
       { cle: 'code', libelle: 'Code', largeur: '26%' },
@@ -1687,9 +1689,12 @@ export const ECRANS = {
     introduction: 'Référentiel des formations LMD.',
     endpoint: '/formations/ref/formations/',
     colonnes: [
-      { cle: 'id', libelle: 'ID' },
       { cle: 'code', libelle: 'Code' },
       { cle: 'intitule', libelle: 'Intitulé' },
+      // Qualification officielle : elle vient de la source métier, en lecture
+      // seule (elle ne s'édite pas depuis l'écran).
+      { cle: 'filiere_code', libelle: 'Filière' },
+      { cle: 'perimetre', libelle: 'Périmètre' },
       { cle: 'type_diplome', libelle: 'Diplôme' },
       { cle: 'domaine', libelle: 'Domaine' },
       { cle: 'mention', libelle: 'Mention' },
@@ -1703,10 +1708,13 @@ export const ECRANS = {
 
   ref_filieres: {
     id: 'ref_filieres',
-    titre: 'Filières (référentiel)',
+    titre: 'Types de formation (référentiel)',
     fil: 'Référentiels',
     icone: 'bi-signpost-split',
-    introduction: 'Types de formation du référentiel.',
+    introduction: 'Cycles du référentiel LMD (licence, master, formation '
+      + 'initiale ou continue). Les filières métier F01–F08 ne sont pas des '
+      + 'types de formation : elles qualifient les cycles, cf. écran '
+      + '« Formations ».',
     endpoint: '/scolarite/ref/types-formation/',
     colonnes: [
       { cle: 'code', libelle: 'Code', largeur: '26%' },
