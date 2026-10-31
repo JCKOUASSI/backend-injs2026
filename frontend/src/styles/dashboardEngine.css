@@ -395,7 +395,13 @@
 /* ── Ligne 2 : Grille Pipeline + Chart Évolution ── */
 .row-pipeline-growth {
   display: grid;
-  grid-template-columns: 1.35fr 1fr;
+  /* `minmax(0, …)` est indispensable : avec un simple `1.35fr`, le minimum
+     automatique d'une piste `fr` vaut le `min-content` du contenu. Le stepper
+     du pipeline (8 nœuds de 80 px) impose alors ~980 px à la première piste,
+     et la seconde déborde de la page (mesuré : scrollWidth 1 492 px pour une
+     mise en page de 1 440 px). Les pistes peuvent désormais se réduire ;
+     `.pipeline-stepper-track` gère déjà son propre défilement horizontal. */
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
   gap: 1.25rem;
   margin-bottom: 1.5rem;
 }
@@ -711,37 +717,52 @@
   content: "\f292" !important;
 }
 
-/* Grilles Responsive */
+/* Grilles Responsive
+ *
+ * Toutes les pistes utilisent `minmax(0, …)` : le minimum automatique d'une
+ * piste `fr` vaut le `min-content` de son contenu, si bien que le stepper du
+ * pipeline (8 nœuds de 80 px ≈ 980 px) empêchait la grille de se réduire et
+ * débordait de la page sur téléphone (mesuré : contenu de 1 010 px pour un
+ * écran de 360 px). Avec `minmax(0, …)`, les pistes se réduisent et les
+ * composants gèrent leur propre défilement interne.
+ */
 @media (max-width: 1280px) {
   .top-kpis-row {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .row-pipeline-growth {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .row-indicators-alerts {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
   .row-activity-finance {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 
 @media (max-width: 768px) {
   .top-kpis-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .row-indicators-alerts {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .row-activity-finance {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .dashboard-greeting-row {
     flex-direction: column;
   }
+  /* En colonne, les bases `flex-basis` de 500 px / 380 px des deux blocs
+     continuaient d'imposer leur largeur intrinsèque : les enfants mesuraient
+     351 px pour un parent de 304 px et débordaient de 19 px sur un écran de
+     360 px. `width: 100%` + `min-width: 0` les alignent sur le parent. */
+  .greeting-text-block,
   .campus-hero-card {
-    flex: 1 1 100%;
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
   }
 }
 

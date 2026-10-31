@@ -198,6 +198,31 @@ a.top-bar-user:hover .user-avatar { filter: brightness(1.05); }
   box-shadow: 0 2px 6px rgba(11, 31, 58, 0.15);
 }
 
+/* ═══ Utilitaires d'affichage réellement utilisés ═══
+ *
+ * Le projet n'embarque PAS la feuille Bootstrap : ses classes utilitaires
+ * (.d-none, .d-md-flex, .d-xl-block…) n'avaient donc aucun effet. Conséquence
+ * mesurée sur un viewport de 390 px : la barre supérieure ne masquait pas la
+ * pilule d'année académique et débordait de 56 px (défilement horizontal de
+ * toute la page), tandis qu'un <input type="file"> marqué « d-none » restait
+ * visible dans l'écran Référentiels.
+ *
+ * On n'implémente ici que les trois classes effectivement présentes dans le
+ * code, avec la sémantique Bootstrap (points de rupture 768 px et 1200 px).
+ * Toute autre classe utilitaire reste hors périmètre : rien n'est ajouté au
+ * hasard, et l'ordre des règles reproduit celui de Bootstrap (les règles
+ * média, plus bas dans la feuille, l'emportent sur .d-none).
+ */
+.d-none { display: none !important; }
+
+@media (min-width: 768px) {
+  .d-md-flex { display: flex !important; }
+}
+
+@media (min-width: 1200px) {
+  .d-xl-block { display: block !important; }
+}
+
 .page-content {
   padding: 1.5rem 1.75rem 2.5rem;
 }
