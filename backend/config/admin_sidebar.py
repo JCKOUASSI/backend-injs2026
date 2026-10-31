@@ -110,7 +110,7 @@ def get_admin_sidebar_navigation():
         },
         {
           'title': _('Liaisons appareils'),
-          'icon': 'phonelink',
+          'icon': 'devices',
           'link': reverse_lazy('admin:presences_devicebinding_changelist'),
         },
       ],
@@ -169,7 +169,7 @@ def get_admin_sidebar_navigation():
         },
         {
           'title': _('Sites et locaux'),
-          'icon': 'location_on',
+          'icon': 'place',
           'link': reverse_lazy('admin:formations_refsite_changelist'),
         },
       ],

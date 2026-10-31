@@ -185,14 +185,52 @@
   border-color: #FECACA;
 }
 
-/* ── 4. LISTE DES EMPLOIS DU TEMPS ── */
+/* ── 4. LISTE DES EMPLOIS DU TEMPS ──
+   Bootstrap n'est pas installé dans ce projet : les utilitaires utilisés par
+   la liste (`.d-flex`, `.justify-content-between`, `.align-items-center`,
+   `.text-truncate`, `.text-muted`, `.d-block`) n'ont aucun effet. Constaté sur
+   capture réelle : le titre et la ligne secondaire se collaient
+   (« … DEMO-G4DEMO-2026-2027 ») et le badge de statut n'était pas aligné à
+   droite. On rétablit ici, sous `.edt-page` uniquement, ce que la liste exige. */
 .edt-page .edt-list .edt-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
   border: 0;
   border-bottom: 1px solid #F1F5F9;
   border-radius: 0;
   padding: 0.85rem 1.25rem;
   background: #FFFFFF;
   transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Le bloc titre/secondaire peut se réduire : sans `min-width: 0` un enfant
+   flex refuse de rétrécir et l'ellipse de `.text-truncate` ne s'applique pas. */
+.edt-page .edt-list .edt-item > span:first-child {
+  min-width: 0;
+}
+
+.edt-page .edt-list .edt-item .text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edt-page .edt-list .edt-item .d-block {
+  display: block;
+}
+
+.edt-page .edt-list .edt-item .text-muted {
+  color: var(--injs-text-muted, #64748B);
+}
+
+/* Sur la ligne sélectionnée (fond bleu), le gris de la ligne secondaire
+   devient illisible : on l'éclaircit au lieu de le laisser tel quel. */
+.edt-page .edt-list .edt-item.active .text-muted {
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .edt-page .edt-list .edt-item:hover {

@@ -6,11 +6,14 @@
 <meta name="color-scheme" content="light">
 <title>{% block title %}{% endblock %}</title>
 
-<!-- Fonts & Icons -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<!-- Fonts & Icons — servis LOCALEMENT (static/admin/fonts) : l'admin ne doit
+     dépendre d'aucun réseau externe. Les mêmes fichiers sont déclarés en
+     @font-face dans static/admin/custom_admin.css ; ces <link> ne servent
+     qu'à amorcer le téléchargement au plus tôt. Voir static/admin/fonts/README.txt. -->
+<link rel="preload" as="font" type="font/woff2" crossorigin
+      href="{% static 'admin/fonts/inter-latin-wght.woff2' %}">
+<link rel="preload" as="font" type="font/woff2" crossorigin
+      href="{% static 'admin/fonts/material-symbols-outlined-subset.woff2' %}">
 
 <!-- Base Django Styles -->
 <link rel="stylesheet" href="{% block stylesheet %}{% static "admin/css/base.css" %}{% endblock %}">

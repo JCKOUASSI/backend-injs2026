@@ -407,7 +407,10 @@ export default function Edts() {
                         onClick={() => selectionner(edt.id)}>
                   <span className="text-truncate text-start">
                     <span className="d-block fw-semibold">{edt.titre || edt.population_label}</span>
-                    <small className={selectedId === edt.id ? 'opacity-75' : 'text-muted d-block'}>
+                    {/* `d-block` doit rester dans les deux branches : sans lui, la
+                        ligne sélectionnée collait l'année au titre (« … DEMO-G4DEMO-2026-2027 »),
+                        défaut constaté à la capture d'écran réelle. */}
+                    <small className={selectedId === edt.id ? 'd-block opacity-75' : 'text-muted d-block'}>
                       {edt.annee_academique} · s{edt.semaine_debut}–s{edt.semaine_fin} · {edt.affectations_count ?? '—'} créneaux
                     </small>
                   </span>

@@ -1,6 +1,29 @@
 /* INJS-LMD — Admin Django (vert navigation / orange actions / blanc) */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+/* Polices EMBARQUÉES. L'admin chargeait auparavant Inter et la police
+   d'icônes « Material Symbols » depuis fonts.googleapis.com : sans réseau,
+   le navigateur affichait le nom littéral des icônes (« chevron_right »,
+   « open_in_new »…) et perdait la typographie (constaté sur capture réelle).
+   Les deux fichiers sont désormais versionnés dans static/admin/fonts/
+   (licences OFL et Apache 2.0 jointes, recette de sous-ensemble décrite
+   dans static/admin/fonts/README.txt). */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 100 900;           /* police variable : un seul fichier */
+    font-display: swap;
+    src: url('fonts/inter-latin-wght.woff2') format('woff2-variations'),
+         url('fonts/inter-latin-wght.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Material Symbols Outlined';
+    font-style: normal;
+    font-weight: 400;
+    font-display: block;            /* pas de « chevron_right » en clair si le fichier est lent */
+    src: url('fonts/material-symbols-outlined-subset.woff2') format('woff2-variations'),
+         url('fonts/material-symbols-outlined-subset.woff2') format('woff2');
+}
 
 :root {
     color-scheme: light !important;
@@ -82,8 +105,20 @@ body.injs-admin .breadcrumbs {
 }
 
 .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined', 'Material Symbols Outlined Fallback';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    font-feature-settings: 'liga';
 }
 
 /* ── Layout ──────────────────────────────────────────────────────────────── */
