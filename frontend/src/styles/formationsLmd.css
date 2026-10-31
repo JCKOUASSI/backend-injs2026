@@ -1,131 +1,213 @@
-/* ==========================================================================
-   STYLE DEDIE : REFERENTIEL FORMATIONS LMD (INJS-LMD 2026)
-   Rendu premium aligne sur campagnes.css / equivalences.css : bandeau blanc,
-   tuiles de synthese, panneaux epures, chips, blocs de cycle.
-   Tout est prefixe `.formations-lmd-container` / `.flmd-*` : aucun effet de
-   bord sur les autres ecrans et aucune modification de logique metier.
-   ========================================================================== */
+/* STYLE DÉDIÉ : FORMATIONS LMD — référentiel officiel.
+ *
+ * La page s'appuie sur le design system Scolarité (`.cand-*` : bandeau,
+ * tuiles KPI, panneaux, champs, état vide, chargement, alertes). Ne restent
+ * ici que les pièces propres au référentiel : pastilles du bandeau, filtre,
+ * fiche de filière, carte de cycle, blocs (parcours / niveaux / maquettes),
+ * lignes d'UE et puces de métadonnées.
+ *
+ * Toutes les classes sont préfixées `.flmd-` : aucun effet de bord ailleurs.
+ */
 
-/* La colonne et l'espacement viennent de `.camp-page` (campagnes.css). */
-.formations-lmd-container {
-  min-width: 0;
+.flmd-page { min-width: 0; }
+
+/* ── 1. BANDEAU ── */
+.flmd-hero-pastilles {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
-.formations-lmd-container .camp-panel {
-  margin-bottom: 0 !important;
+.flmd-pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.75rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.2;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
 }
 
-/* -- 1. BANDEAU -- */
-.formations-lmd-container .camp-hero-sub {
-  max-width: 78ch;
-  font-variant-numeric: tabular-nums;
+.flmd-pastille i { font-size: 0.85rem; }
+
+.flmd-pastille--primary {
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border-color: #BFDCF5;
 }
 
-/* -- 2. TUILES DE SYNTHESE -- */
-.flmd-kpi .camp-kpi-value {
-  font-variant-numeric: tabular-nums;
+.flmd-pastille--neutre {
+  color: #475569;
+  background: #F1F5F9;
+  border-color: #E2E8F0;
 }
 
+/* L'étiquette du bandeau porte une icône : `cand-hero-badge` la laisse en
+   ligne simple, ce qui suffit ici. */
+.flmd-page .cand-hero-badge i { font-size: 0.78rem; }
+
+/* Sous-valeur d'une tuile KPI (« N UE au total »). */
 .flmd-kpi-sub {
   display: block;
   margin-top: 0.15rem;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 600;
+  color: #8C9AAD;
+}
+
+/* ── 2. FILTRE ── */
+.flmd-filtre {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem 1.4rem;
+  flex-wrap: wrap;
+}
+
+.flmd-champ-recherche { flex: 0 1 360px; max-width: 360px; }
+
+.flmd-recherche { max-width: none; width: 100%; flex: 1 1 auto; }
+
+.flmd-recherche .cand-input { padding-right: 2.4rem; }
+
+/* Croix d'effacement posée dans le champ de recherche. */
+.flmd-effacer {
+  position: absolute;
+  right: 0.45rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  font-size: 0.7rem;
+  color: #64748B;
+  background: #EEF2F7;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.flmd-effacer:hover { background: #E2E8F0; color: var(--injs-navy); }
+.flmd-effacer:focus-visible { outline: 2px solid var(--injs-blue-royal); outline-offset: 2px; }
+
+.flmd-aide {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  flex: 1 1 320px;
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
   color: #64748B;
 }
 
-/* -- 3. FILTRE DU REFERENTIEL -- */
-.flmd-search .input-group-text {
-  background: #fff;
-  border-color: #e2e8f0;
-  border-right: 0;
-  border-radius: 10px 0 0 10px;
-  color: #94a3b8;
-}
+.flmd-aide i { color: var(--injs-blue-royal); font-size: 0.85rem; margin-top: 0.15rem; }
 
-.flmd-search .form-control {
-  border-radius: 0 10px 10px 0;
-  border-left: 0;
-}
-
-.flmd-search .form-control:focus {
-  border-color: var(--injs-blue-royal);
-  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
-}
-
-.flmd-search .btn {
-  border-radius: 0 10px 10px 0;
-}
-
-/* -- 4. EN-TETE DE FILIERE -- */
+/* ── 3. FICHE D'UNE FILIÈRE ── */
 .flmd-filiere-head {
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+
+.flmd-filiere-identite {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  align-items: center;
+  gap: 0.75rem;
   min-width: 0;
 }
 
-.flmd-filiere-sub {
-  margin: 0;
+.flmd-filiere-code {
+  display: inline-grid;
+  place-items: center;
+  min-width: 46px;
+  height: 34px;
+  padding: 0 0.55rem;
   font-size: 0.8rem;
-  font-weight: 500;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--injs-blue-royal);
+  background: #EEF4FF;
+  border: 1px solid #C7D9FB;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.flmd-filiere-texte { min-width: 0; }
+
+.flmd-filiere-sub {
+  margin: 0.28rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
   color: #64748B;
 }
 
 .flmd-chips {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.4rem;
   flex-wrap: wrap;
 }
 
+.flmd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.35;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.flmd-chip i { font-size: 0.78rem; }
+
+.flmd-chip--sigle {
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border-color: #BFDCF5;
+  letter-spacing: 0.04em;
+}
+
+.flmd-chip--neutre { color: #475569; background: #F1F5F9; border-color: #E2E8F0; }
+
+.flmd-chip--attention {
+  color: #8A5A00;
+  background: #FFF8E8;
+  border-color: #F5DFAE;
+}
+
+.flmd-chip--type { color: #475569; background: #F1F5F9; border-color: #E2E8F0; font-weight: 700; }
+
+/* ── 4. CARTES DE CYCLE ── */
 .flmd-body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-/* -- 5. CHIPS -- */
-.flmd-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.22rem 0.6rem;
-  border-radius: 9999px;
-  background: #F1F5F9;
-  border: 1px solid #E2E8F0;
-  color: #475569;
-  font-size: 0.72rem;
-  font-weight: 700;
-  line-height: 1.25;
-  white-space: nowrap;
-}
-
-.flmd-chip--ghost {
-  background: #FFFFFF;
-}
-
-.flmd-chip--blue {
-  background: #EBF3FF;
-  border-color: var(--injs-border-strong);
-  color: var(--injs-blue-royal);
-}
-
-/* -- 6. BLOC CYCLE -- */
 .flmd-cycle {
-  padding: 0.95rem 1.1rem 1.05rem;
-  background: #FCFDFF;
-  border: 1px solid #EDF1F6;
+  padding: 1rem 1.1rem 1.15rem;
+  background: #FBFCFE;
+  border: 1px solid #E9ECF2;
   border-radius: 14px;
 }
 
 .flmd-cycle-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.6rem 1rem;
   flex-wrap: wrap;
-  margin-bottom: 0.7rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px dashed #E4EAF1;
 }
 
 .flmd-cycle-title {
@@ -134,166 +216,364 @@
   gap: 0.5rem;
   flex-wrap: wrap;
   margin: 0;
-  font-size: 0.98rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 800;
   color: var(--injs-navy);
-  letter-spacing: -0.01em;
+}
+
+/* L'intitulé reste à côté de la pastille d'icône : sans conteneur propre, il
+   passait seul à la ligne suivante dès qu'il était long. */
+.flmd-cycle-intitule { flex: 1 1 160px; min-width: 0; }
+
+.flmd-cycle-puce {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  font-size: 0.82rem;
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border: 1px solid #D7E8F8;
+  border-radius: 9px;
 }
 
 .flmd-cycle-meta {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.4rem;
   flex-wrap: wrap;
 }
 
+/* ── 5. PUCES DE MÉTADONNÉES ── */
+.flmd-puce {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.71rem;
+  font-weight: 600;
+  color: #475569;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+
+.flmd-puce i { font-size: 0.75rem; color: #94A3B8; }
+
+.flmd-puce--ects {
+  color: #0E7A4F;
+  background: #F1FBF6;
+  border-color: #B7E7CE;
+  font-weight: 700;
+}
+
+.flmd-puce--ects i { color: #16A34A; }
+
+.flmd-puce--ghost {
+  color: #64748B;
+  background: #F8FAFC;
+  border-style: dashed;
+}
+
+.flmd-puces {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+/* Statut d'une maquette : les classes `text-bg-*` restent présentes pour la
+   traçabilité, l'apparence vient d'ici (Bootstrap n'est pas embarqué). */
+.flmd-statut {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #475569;
+  background: #F1F5F9;
+  border: 1px solid #DCE3EC;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.flmd-statut--active { color: #0E7A4F; background: #F1FBF6; border-color: #B7E7CE; }
+
+/* ── 6. BLOCS (parcours, niveaux, maquettes) ── */
 .flmd-blocs {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr);
   gap: 0.9rem;
+  margin-top: 0.9rem;
 }
 
 .flmd-bloc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
   min-width: 0;
-  padding: 0.75rem 0.9rem 0.85rem;
-  border: 1px dashed #E2E8F0;
+  padding: 0.85rem 0.9rem;
+  background: #FFFFFF;
+  border: 1px solid #EDF1F6;
   border-radius: 12px;
 }
 
-.flmd-bloc--large {
-  grid-column: 1 / -1;
-}
+.flmd-bloc--large { grid-column: auto; }
 
 .flmd-bloc-title {
-  display: block;
-  margin-bottom: 0.45rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.68rem;
   font-weight: 800;
-  text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--injs-blue-royal);
+  text-transform: uppercase;
+  color: #64748B;
 }
 
-.flmd-vide {
-  margin: 0;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: #94A3B8;
-}
+.flmd-bloc-title i { color: var(--injs-blue-royal); font-size: 0.82rem; }
 
-/* -- 7. PARCOURS & NIVEAUX -- */
+/* Parcours */
 .flmd-parcours {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  padding: 0;
+  flex-direction: column;
+  gap: 0.35rem;
   margin: 0;
+  padding: 0;
   list-style: none;
 }
 
+.flmd-parcours-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1F2937;
+  background: #F8FAFC;
+  border: 1px solid #EDF1F6;
+  border-radius: 8px;
+}
+
+.flmd-parcours-code {
+  padding: 0.1rem 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border: 1px solid #D7E8F8;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+/* Niveaux & semestres */
 .flmd-niveaux {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
 }
 
 .flmd-niveau {
-  padding: 0.6rem 0.75rem;
-  background: #FFFFFF;
-  border: 1px solid #E9ECF2;
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  padding: 0.5rem 0.6rem;
+  background: #F8FAFC;
+  border: 1px solid #EDF1F6;
+  border-radius: 9px;
 }
 
 .flmd-niveau-head {
-  font-size: 0.88rem;
-  color: #0F172A;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  min-width: 0;
 }
 
-.flmd-niveau-head strong {
+.flmd-niveau-code {
+  padding: 0.05rem 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 800;
   color: var(--injs-navy);
+  background: #FFFFFF;
+  border: 1px solid #DCE3EC;
+  border-radius: 5px;
+}
+
+.flmd-niveau-libelle {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1F2937;
 }
 
 .flmd-niveau-meta {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #64748B;
-  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.3rem;
 }
 
-/* -- 8. MAQUETTES / UE / ECUE -- */
+.flmd-niveau-semestres {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748B;
+}
+
+/* Maquettes · UE · ECUE */
 .flmd-maquettes {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 0;
+  gap: 0.55rem;
   margin: 0;
+  padding: 0;
   list-style: none;
 }
 
 .flmd-maquette {
-  padding-left: 0.85rem;
-  border-left: 3px solid var(--injs-border-strong);
+  padding: 0.6rem 0.7rem;
+  background: #F8FAFC;
+  border: 1px solid #EDF1F6;
+  border-radius: 10px;
 }
 
 .flmd-maquette-head {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
   flex-wrap: wrap;
 }
 
 .flmd-maquette-lib {
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-size: 0.8rem;
+  font-weight: 800;
   color: var(--injs-navy);
 }
 
 .flmd-ues {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
+  margin: 0.55rem 0 0;
   padding: 0;
-  margin: 0.5rem 0 0;
   list-style: none;
 }
 
 .flmd-ue {
+  padding: 0.4rem 0.5rem;
+  background: #FFFFFF;
+  border: 1px solid #EDF1F6;
+  border-radius: 8px;
+}
+
+.flmd-ue-ligne {
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  align-items: baseline;
+  gap: 0.45rem;
   flex-wrap: wrap;
-  font-size: 0.82rem;
-  color: #334155;
 }
 
 .flmd-ue-code {
+  padding: 0.05rem 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border: 1px solid #D7E8F8;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+.flmd-ue-intitule {
+  flex: 1 1 160px;
+  min-width: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.flmd-ue-credits {
+  font-size: 0.72rem;
   font-weight: 700;
-  color: var(--injs-navy);
+  font-variant-numeric: tabular-nums;
+  color: #0E7A4F;
+  white-space: nowrap;
 }
 
 .flmd-ecues {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.3rem;
   flex-wrap: wrap;
+  margin-top: 0.35rem;
+  padding-left: 0.1rem;
 }
 
 .flmd-ecues-label {
-  font-size: 0.66rem;
+  font-size: 0.64rem;
   font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: #94A3B8;
 }
 
-/* -- 9. ALERTE D'INTEGRITE -- */
-.formations-lmd-container .alert {
-  border-radius: 14px;
+/* ── 7. ÉTATS VIDES ── */
+.flmd-vide {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #8C9AAD;
 }
 
-@media (max-width: 992px) {
-  .flmd-blocs {
-    grid-template-columns: minmax(0, 1fr);
+.flmd-vide i { font-size: 0.82rem; margin-top: 0.12rem; color: #B6C2D1; }
+
+.flmd-vide--serre { margin-top: 0.45rem; }
+
+.flmd-vide--centre {
+  align-items: center;
+  justify-content: center;
+  padding: 1.4rem 1rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.flmd-vide--centre i { font-size: 1.1rem; margin-top: 0; }
+
+/* ── 8. RESPONSIVE ── */
+@media (max-width: 1180px) {
+  .flmd-blocs { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .flmd-bloc--large { grid-column: 1 / -1; }
+}
+
+@media (max-width: 760px) {
+  .flmd-hero-pastilles { width: 100%; }
+  .flmd-champ-recherche { flex: 1 1 100%; max-width: none; }
+  .flmd-blocs { grid-template-columns: minmax(0, 1fr); }
+  .flmd-filiere-head { flex-direction: column; align-items: stretch; }
+  .flmd-cycle-head { flex-direction: column; align-items: stretch; }
+  /* En colonne, le titre se réduisait à la largeur de son contenu : l'icône
+     occupait alors une ligne à elle seule. */
+  .flmd-cycle-title { width: 100%; }
+}
+
+@media (max-width: 560px) {
+  .flmd-cycle { padding: 0.75rem 0.7rem 0.85rem; }
+  .flmd-cycle-head { gap: 0.5rem; padding-bottom: 0.7rem; }
+  .flmd-blocs { gap: 0.6rem; margin-top: 0.7rem; }
+
+  .flmd-page .cand-hero-badge {
+    white-space: normal;
+    font-size: 0.64rem;
+    letter-spacing: 0.04em;
+    line-height: 1.45;
   }
+
+  .flmd-filiere-identite { align-items: flex-start; }
+  .flmd-cycle { padding: 0.8rem 0.75rem 0.9rem; }
+  .flmd-bloc { padding: 0.7rem 0.65rem; }
+  .flmd-maquette-head { flex-direction: column; align-items: flex-start; }
 }
