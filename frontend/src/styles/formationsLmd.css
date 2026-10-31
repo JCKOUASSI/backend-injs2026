@@ -580,6 +580,11 @@
     line-height: 1.45;
   }
 
+  /* En mobile, le bandeau s'empile : l'icône doit s'aligner sur la première
+     ligne de texte et non se centrer sur un bloc de plusieurs lignes. */
+  .flmd-page .cand-hero-identite { align-items: flex-start; }
+  .flmd-page .cand-hero-title { font-size: 1.28rem; }
+
   .flmd-filiere-identite { align-items: flex-start; }
   .flmd-cycle { padding: 0.8rem 0.75rem 0.9rem; }
   .flmd-bloc { padding: 0.7rem 0.65rem; }
