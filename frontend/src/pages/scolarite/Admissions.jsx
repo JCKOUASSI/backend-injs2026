@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useToast } from '../../context/ToastContext'
 import ConfirmModal from '../../components/ConfirmModal'
 import StatutBadge from '../../components/scolarite/StatutBadge'
+import '../../styles/candidatures.css'
+import '../../styles/modale-premium.css'
 import '../../styles/campagnes.css'
 import {
   annulerAdmission,
@@ -24,7 +26,15 @@ const DECISIONS = [
   ['ANNULEE', 'Annulée'],
 ]
 
-/** Formulaire de décision : référence, date limite d'inscription, catégorie et grade. */
+/**
+ * Panneau de décision : profil administratif (catégorie / grade) puis décision
+ * (référence, date limite, observations).
+ *
+ * Le balisage reposait sur la grille Bootstrap (`row g-3`, `col-md-*`,
+ * `form-select`, `btn-close`) absente du bundle : champs natifs empilés sans
+ * gouttière et bouton de fermeture invisible. Il suit désormais le même
+ * canevas que le panneau « Dossier » des Candidatures.
+ */
 function DecisionPanel({ admission, categories, grades, onClose, onChange }) {
   const { showToast } = useToast()
   const [form, setForm] = useState({
@@ -75,53 +85,66 @@ function DecisionPanel({ admission, categories, grades, onClose, onChange }) {
   }
 
   return (
-    <div className="card mb-3 border-primary">
-      <div className="card-header d-flex justify-content-between align-items-center">
+    <section className="cand-panel cand-dossier card" aria-labelledby="titre-decision-admission">
+      <header className="cand-dossier-entete">
         <div>
-          <strong>{admission.candidat}</strong>
-          <span className="ms-2 text-muted small">{admission.candidature_numero}</span>
-          <span className="ms-2"><StatutBadge statut={admission.decision} libelle={admission.decision_libelle} /></span>
+          <span className="cand-dossier-numero">{admission.candidature_numero}</span>
+          <span className="cand-dossier-nom" id="titre-decision-admission">{admission.candidat}</span>
+          <span className="cand-dossier-sous">Décision d’admission</span>
         </div>
-        <button className="btn-close" onClick={onClose} aria-label="Fermer"></button>
-      </div>
-      <div className="card-body">
-        {erreur && <div className="alert alert-danger" style={{ whiteSpace: 'pre-line' }}>{erreur}</div>}
+        <div className="camp-entete-fin">
+          <StatutBadge statut={admission.decision} libelle={admission.decision_libelle} />
+          <button type="button" className="mp-fermer" onClick={onClose} aria-label="Fermer">
+            <i className="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </div>
+      </header>
 
-        <h6>Profil administratif</h6>
-        <div className="row g-3 align-items-end mb-4">
-          <div className="col-md-4">
-            <label className="form-label">Catégorie</label>
+      <div className="cand-panel-body">
+        {erreur && (
+          <div className="cand-alerte" role="alert" style={{ whiteSpace: 'pre-line' }}>{erreur}</div>
+        )}
+
+        <h3 className="cand-section-titre">
+          <i className="bi bi-person-vcard" aria-hidden="true"></i>Profil administratif
+        </h3>
+        <div className="cand-grille-form camp-grille-profil">
+          <div className="cand-champ">
+            <label className="cand-etiquette" htmlFor="adm-categorie">Catégorie</label>
             <select
-              className="form-select" value={profil.categorie_id}
+              id="adm-categorie" className="cand-saisie" value={profil.categorie_id}
               onChange={(e) => setProfil({ categorie_id: e.target.value, grade_id: '' })}
             >
               <option value="">—</option>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.libelle}</option>)}
             </select>
           </div>
-          <div className="col-md-4">
-            <label className="form-label">Grade</label>
+          <div className="cand-champ">
+            <label className="cand-etiquette" htmlFor="adm-grade">Grade</label>
             <select
-              className="form-select" value={profil.grade_id}
+              id="adm-grade" className="cand-saisie" value={profil.grade_id}
               onChange={(e) => setProfil({ ...profil, grade_id: e.target.value })}
             >
               <option value="">—</option>
               {gradesFiltres.map((g) => <option key={g.id} value={g.id}>{g.libelle}</option>)}
             </select>
           </div>
-          <div className="col-md-4">
-            <button className="btn btn-outline-secondary" disabled={envoi} onClick={enregistrerProfil}>
+          <div className="cand-champ camp-champ--action">
+            <button type="button" className="cand-btn-fantome" disabled={envoi} onClick={enregistrerProfil}>
+              <i className="bi bi-save2" aria-hidden="true"></i>
               Enregistrer le profil
             </button>
           </div>
         </div>
 
-        <h6>Décision</h6>
-        <div className="row g-3">
-          <div className="col-md-3">
-            <label className="form-label">Décision</label>
+        <h3 className="cand-section-titre">
+          <i className="bi bi-check2-square" aria-hidden="true"></i>Décision
+        </h3>
+        <div className="cand-grille-form">
+          <div className="cand-champ">
+            <label className="cand-etiquette" htmlFor="adm-decision">Décision</label>
             <select
-              className="form-select" value={form.decision}
+              id="adm-decision" className="cand-saisie" value={form.decision}
               onChange={(e) => setForm({ ...form, decision: e.target.value })}
             >
               {DECISIONS.map(([valeur, libelle]) => (
@@ -129,37 +152,42 @@ function DecisionPanel({ admission, categories, grades, onClose, onChange }) {
               ))}
             </select>
           </div>
-          <div className="col-md-3">
-            <label className="form-label">Référence</label>
+          <div className="cand-champ">
+            <label className="cand-etiquette" htmlFor="adm-reference">Référence</label>
             <input
-              className="form-control" placeholder="DEC-2026-001"
+              id="adm-reference" className="cand-saisie" placeholder="DEC-2026-001"
               value={form.reference_decision}
               onChange={(e) => setForm({ ...form, reference_decision: e.target.value })}
             />
           </div>
-          <div className="col-md-3">
-            <label className="form-label">Date limite d’inscription</label>
+          <div className="cand-champ">
+            <label className="cand-etiquette" htmlFor="adm-limite">Date limite d’inscription</label>
             <input
-              type="date" className="form-control" value={form.date_limite_inscription || ''}
+              id="adm-limite" type="date" className="cand-saisie"
+              value={form.date_limite_inscription || ''}
               onChange={(e) => setForm({ ...form, date_limite_inscription: e.target.value })}
             />
           </div>
-          <div className="col-md-3 d-flex align-items-end">
-            <button className="btn btn-primary w-100" disabled={envoi} onClick={prononcer}>
-              {envoi && <span className="spinner-border spinner-border-sm me-1"></span>}
-              Prononcer
-            </button>
-          </div>
-          <div className="col-12">
-            <label className="form-label">Observations</label>
+          <div className="cand-champ cand-champ--4">
+            <label className="cand-etiquette" htmlFor="adm-observations">Observations</label>
             <textarea
-              className="form-control" rows={2} value={form.observations}
+              id="adm-observations" className="cand-saisie cand-zone-texte" rows={2}
+              value={form.observations}
               onChange={(e) => setForm({ ...form, observations: e.target.value })}
             />
           </div>
         </div>
+
+        <div className="cand-form-actions">
+          <button type="button" className="cand-btn-principal" disabled={envoi} onClick={prononcer}>
+            {envoi
+              ? <span className="spinner-border" aria-hidden="true"></span>
+              : <i className="bi bi-check2-circle" aria-hidden="true"></i>}
+            Prononcer
+          </button>
+        </div>
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -245,34 +273,63 @@ export default function Admissions() {
   }), [admissions])
 
   return (
-    <div className="camp-page">
-      <div className="camp-hero">
-        <div className="camp-hero-text">
-          <h1 className="camp-hero-title"><i className="bi bi-patch-check"></i>Admissions</h1>
-          <p className="camp-hero-sub">{annee ? `Année ${annee.libelle}` : 'Année courante non définie'} · Décisions prononcées puis inscription des admis.</p>
+    <div className="cand-page">
+      {/* ── Bandeau d'accueil, même matière que Candidatures / Campagnes ── */}
+      <div className="cand-hero">
+        <div className="cand-hero-identite">
+          <span className="cand-hero-icone" aria-hidden="true">
+            <i className="bi bi-patch-check"></i>
+          </span>
+          <div className="cand-hero-text">
+            <span className="cand-hero-badge">Scolarité — Admissions</span>
+            <h1 className="cand-hero-title">Admissions</h1>
+            <p className="cand-hero-sub">
+              {annee ? `Année ${annee.libelle}` : 'Année courante non définie'}
+              {' · '}Décisions prononcées puis inscription des admis
+            </p>
+          </div>
         </div>
-        <div className="camp-hero-side">
-          <span className="plaquette plaquette-primary"><i className="bi bi-mortarboard"></i>{annee?.libelle || 'Année en cours'}</span>
-          <span className="plaquette plaquette-soft"><i className="bi bi-people"></i>{admissions.length} admission{admissions.length > 1 ? 's' : ''}</span>
+        <div className="camp-pastilles">
+          <span className="cand-count-pill">
+            <i className="bi bi-mortarboard" aria-hidden="true"></i>
+            {annee?.libelle || 'Année en cours'}
+          </span>
+          <span className="cand-count-pill">
+            <i className="bi bi-people" aria-hidden="true"></i>
+            {admissions.length} admission{admissions.length > 1 ? 's' : ''}
+          </span>
         </div>
       </div>
 
-      <div className="camp-kpi-row">
-        <div className="camp-kpi">
-          <div><span className="camp-kpi-label">Décisions</span><span className="camp-kpi-value">{kpis.total}</span></div>
-          <span className="camp-kpi-icon is-blue"><i className="bi bi-clipboard-check"></i></span>
+      {/* ── Indicateurs ── */}
+      <div className="cand-kpi-row">
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-blue" aria-hidden="true"><i className="bi bi-clipboard-check"></i></span>
+          <div className="cand-kpi-texte">
+            <span className="cand-kpi-value">{kpis.total}</span>
+            <span className="cand-kpi-label">Décisions</span>
+          </div>
         </div>
-        <div className="camp-kpi">
-          <div><span className="camp-kpi-label">Admis</span><span className="camp-kpi-value">{kpis.admis}</span></div>
-          <span className="camp-kpi-icon is-green"><i className="bi bi-award"></i></span>
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-green" aria-hidden="true"><i className="bi bi-award"></i></span>
+          <div className="cand-kpi-texte">
+            <span className="cand-kpi-value">{kpis.admis}</span>
+            <span className="cand-kpi-label">Admis</span>
+          </div>
         </div>
-        <div className="camp-kpi">
-          <div><span className="camp-kpi-label">En attente</span><span className="camp-kpi-value">{kpis.attente}</span></div>
-          <span className="camp-kpi-icon is-amber"><i className="bi bi-hourglass-split"></i></span>
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-amber" aria-hidden="true"><i className="bi bi-hourglass-split"></i></span>
+          <div className="cand-kpi-texte">
+            <span className="cand-kpi-value">{kpis.attente}</span>
+            <span className="cand-kpi-label">En attente</span>
+          </div>
         </div>
-        <div className="camp-kpi">
-          <div><span className="camp-kpi-label">À inscrire</span><span className="camp-kpi-value">{kpis.aInscrire}</span></div>
-          <span className="camp-kpi-icon is-slate"><i className="bi bi-person-plus"></i></span>
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-slate" aria-hidden="true"><i className="bi bi-person-plus"></i></span>
+          <div className="cand-kpi-texte">
+            <span className="cand-kpi-value">{kpis.aInscrire}</span>
+            <span className="cand-kpi-label">À inscrire</span>
+          </div>
         </div>
       </div>
 
@@ -286,12 +343,20 @@ export default function Admissions() {
         />
       )}
 
-      <div className="camp-panel card">
-        <div className="camp-panel-head">
-          <h2 className="camp-panel-title"><i className="bi bi-list-check"></i>Décisions d&apos;admission</h2>
-          <div className="camp-filters">
+      <section className="cand-panel" aria-labelledby="titre-decisions-admission">
+        <header className="cand-panel-head">
+          <h2 className="cand-panel-title" id="titre-decisions-admission">
+            <i className="bi bi-list-check" aria-hidden="true"></i>Décisions d&apos;admission
+          </h2>
+          <span className="cand-count-pill">
+            {admissions.length} dossier{admissions.length > 1 ? 's' : ''}
+          </span>
+        </header>
+
+        <div className="cand-panel-body">
+          <div className="cand-filters">
             <select
-              className="form-select form-select-sm camp-filter-select" aria-label="Filtrer par décision"
+              className="cand-filter-select" aria-label="Filtrer par décision"
               value={filtreDecision} onChange={(e) => setFiltreDecision(e.target.value)}
             >
               <option value="">Toutes les décisions</option>
@@ -299,71 +364,113 @@ export default function Admissions() {
                 <option key={valeur} value={valeur}>{libelle}</option>
               ))}
             </select>
-            <span className="camp-count-pill">{admissions.length} dossier{admissions.length > 1 ? 's' : ''}</span>
           </div>
-        </div>
-        <div className="camp-panel-body">
+
           {loading ? (
-            <div className="text-center py-4"><div className="spinner-border"></div></div>
-          ) : (
-            <div className="table-responsive">
-              <table className="table table-hover align-middle mb-0 camp-table">
-                <thead className="table-light">
-                  <tr>
-                    <th>Candidat</th><th>Formation</th><th>Niveau</th><th>Décision</th>
-                    <th>Référence</th><th>Limite</th><th className="text-end">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {admissions.map((a) => (
-                    <tr key={a.id}>
-                      <td>
-                        <span className="camp-link">{a.candidat}</span>
-                        <span className="camp-sub">{a.candidature_numero}</span>
-                      </td>
-                      <td>{a.ref_formation}</td>
-                      <td>{a.niveau}</td>
-                      <td>
-                        <StatutBadge statut={a.decision} libelle={a.decision_libelle} />
-                        {a.est_expiree && <span className="badge bg-danger ms-1">Expirée</span>}
-                      </td>
-                      <td>{a.reference_decision || <span className="text-muted">—</span>}</td>
-                      <td className="text-nowrap">{a.date_limite_inscription || <span className="text-muted">—</span>}</td>
-                      <td className="text-end">
-                        <div className="btn-group btn-group-sm">
-                          <button className="btn btn-outline-primary camp-action-btn" onClick={() => setSelection(a)}>
-                            <i className="bi bi-gavel me-1"></i>Décision
-                          </button>
-                          <button
-                            className="btn btn-outline-success camp-action-btn"
-                            disabled={!a.permet_inscription}
-                            title={a.permet_inscription ? 'Créer le dossier étudiant' : "L'admission ne permet pas l'inscription"}
-                            onClick={() => inscrire(a)}
-                          >
-                            <i className="bi bi-person-plus me-1"></i>Inscrire
-                          </button>
-                          <button
-                            className="btn btn-outline-danger camp-action-btn"
-                            disabled={a.decision === 'ANNULEE'}
-                            onClick={() => annuler(a)}
-                          >
-                            <i className="bi bi-x-circle me-1"></i>Annuler
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {admissions.length === 0 && (
-                    <tr><td colSpan={7}>
-                      <div className="camp-empty"><i className="bi bi-inbox"></i>Aucune admission pour ces critères. Les décisions prononcées apparaîtront ici.</div>
-                    </td></tr>
-                  )}
-                </tbody>
-              </table>
+            <div className="cand-chargement">
+              <span className="spinner-border" aria-hidden="true"></span>Chargement des admissions…
             </div>
+          ) : (
+            <>
+              <div className="cand-table-wrap">
+                <table className="cand-table cand-table--admissions">
+                  <thead>
+                    <tr>
+                      <th scope="col">Candidat</th>
+                      <th scope="col">Formation</th>
+                      <th scope="col">Niveau</th>
+                      <th scope="col">Décision</th>
+                      <th scope="col">Référence</th>
+                      <th scope="col">Limite</th>
+                      <th scope="col" className="cand-th-actions">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {admissions.map((a) => (
+                      <tr key={a.id}>
+                        <td>
+                          <span className="cand-etudiant">{a.candidat}</span>
+                          <span className="cand-numero camp-numero">{a.candidature_numero}</span>
+                        </td>
+                        <td className="cand-col-formation">
+                          <span className="cand-texte-formation" title={a.ref_formation}>{a.ref_formation}</span>
+                        </td>
+                        <td><span className="cand-badge-neutre">{a.niveau}</span></td>
+                        <td>
+                          <div className="camp-decision">
+                            <StatutBadge statut={a.decision} libelle={a.decision_libelle} />
+                            {a.est_expiree && <span className="cand-puce-alerte">Expirée</span>}
+                          </div>
+                        </td>
+                        <td>
+                          {a.reference_decision
+                            ? <span className="camp-reference">{a.reference_decision}</span>
+                            : <span className="cand-texte-doux">—</span>}
+                        </td>
+                        <td className="cand-col-etroit">
+                          {a.date_limite_inscription || <span className="cand-texte-doux">—</span>}
+                        </td>
+                        <td className="cand-col-actions">
+                          <div className="cand-actions">
+                            <button
+                              type="button"
+                              className="cand-action cand-action--ouvrir"
+                              onClick={() => setSelection(a)}
+                              aria-label="Décision"
+                              title="Prononcer ou modifier la décision"
+                            >
+                              <i className="bi bi-clipboard-check" aria-hidden="true"></i>
+                            </button>
+                            <button
+                              type="button"
+                              className="cand-action cand-action--succes"
+                              disabled={!a.permet_inscription}
+                              title={a.permet_inscription ? 'Créer le dossier étudiant' : "L'admission ne permet pas l'inscription"}
+                              aria-label="Inscrire"
+                              onClick={() => inscrire(a)}
+                            >
+                              <i className="bi bi-person-plus" aria-hidden="true"></i>
+                            </button>
+                            <button
+                              type="button"
+                              className="cand-action cand-action--danger"
+                              disabled={a.decision === 'ANNULEE'}
+                              title="Annuler l’admission"
+                              aria-label="Annuler"
+                              onClick={() => annuler(a)}
+                            >
+                              <i className="bi bi-x-circle" aria-hidden="true"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {admissions.length === 0 && (
+                      <tr>
+                        <td colSpan={7}>
+                          <div className="cand-vide">
+                            <span className="cand-vide-icone" aria-hidden="true">
+                              <i className="bi bi-patch-check"></i>
+                            </span>
+                            <p className="cand-vide-titre">Aucune admission</p>
+                            <p className="cand-vide-texte">
+                              Aucune admission pour ces critères. Les décisions prononcées apparaîtront ici.
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <p className="cand-defile" aria-hidden="true">
+                <i className="bi bi-arrow-left-right"></i>
+                Faites défiler le tableau horizontalement
+              </p>
+            </>
           )}
         </div>
-      </div>
+      </section>
 
       {confirmation && (
         <ConfirmModal

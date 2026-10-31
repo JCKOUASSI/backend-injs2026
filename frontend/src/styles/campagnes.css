@@ -100,7 +100,7 @@
 
 .camp-pastilles .cand-count-pill { margin-left: 0; }
 
-.camp-page .cand-count-pill i {
+.camp-pastilles .cand-count-pill i {
   color: var(--injs-blue-royal);
   font-size: 0.82rem;
   margin-right: 0.3rem;
@@ -310,3 +310,65 @@
 @media (max-width: 640px) {
   .camp-actions { justify-content: flex-start; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ÉCRAN ADMISSIONS — pièces propres au panneau de décision et au tableau.
+   Le reste vient du design system Scolarité (`.cand-*`).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* En-tête du panneau de décision : statut + fermeture, poussés à droite. */
+.camp-entete-fin {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+/* Profil administratif : catégorie, grade, puis le bouton d'enregistrement. */
+.cand-grille-form.camp-grille-profil {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+}
+
+.camp-champ--action { justify-content: flex-end; }
+
+.camp-champ--action .cand-btn-fantome { width: 100%; justify-content: center; }
+
+/* Zone de texte libre (observations) : même habillage que .cand-saisie. */
+.cand-zone-texte {
+  min-height: 62px;
+  padding: 0.6rem 0.9rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+/* Numéro de candidature sous le nom du candidat, dans la colonne « Candidat ». */
+.camp-numero {
+  display: inline-block;
+  margin-top: 0.22rem;
+  font-size: 0.7rem;
+}
+
+/* Décision : pastille de statut et marqueur d'expiration sur une ligne. */
+.camp-decision {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.camp-reference {
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+/* ── Tableau des admissions ── */
+.cand-table--admissions { min-width: 1140px; }
+.cand-table--admissions th:nth-child(1), .cand-table--admissions td:nth-child(1) { width: 190px; }
+.cand-table--admissions th:nth-child(3), .cand-table--admissions td:nth-child(3) { width: 78px; }
+.cand-table--admissions th:nth-child(4), .cand-table--admissions td:nth-child(4) { width: 190px; }
+.cand-table--admissions th:nth-child(5), .cand-table--admissions td:nth-child(5) { width: 132px; }
+.cand-table--admissions th:nth-child(6), .cand-table--admissions td:nth-child(6) { width: 116px; }
+.cand-table--admissions th:nth-child(7), .cand-table--admissions td:nth-child(7) { width: 142px; }
