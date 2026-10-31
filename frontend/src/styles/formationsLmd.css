@@ -73,6 +73,14 @@
 
 .flmd-recherche .cand-input { padding-right: 2.4rem; }
 
+/* Le navigateur ajoute sa propre croix aux champs `search` : elle faisait
+   doublon avec le bouton d'effacement de la page. */
+.flmd-recherche input[type='search']::-webkit-search-cancel-button,
+.flmd-recherche input[type='search']::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 /* Croix d'effacement posée dans le champ de recherche. */
 .flmd-effacer {
   position: absolute;
