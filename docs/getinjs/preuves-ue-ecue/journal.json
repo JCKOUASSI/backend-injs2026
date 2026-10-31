@@ -100,5 +100,17 @@
     "description": "Maquette Active : bandeau de gel affiché, aucun bouton d'écriture proposé",
     "octets": 137874,
     "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "18-role-secretariat-formulaire",
+    "description": "Formulaire de création ouvert depuis le compte secrétariat (preuve du droit d'écriture)",
+    "octets": 58361,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "18-role-secretariat",
+    "description": "Même écran avec un compte SECRETARIAT : les 21 maquettes sont listées, le bouton « Nouvelle UE » est présent et la création aboutit en base",
+    "octets": 160912,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
   }
 ]

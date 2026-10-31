@@ -286,9 +286,17 @@ def famille_list(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated, IsDFRC])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def maquette_list(request):
-    """Liste des maquettes, avec le nombre d'UE et le total de crédits."""
+    """Liste des maquettes, avec le nombre d'UE et le total de crédits.
+
+    Même portée que le contenu : qui peut lire ou écrire les UE/ECUE d'une
+    maquette doit pouvoir la lister, sinon l'écran de gestion reste vide pour
+    un secrétariat pourtant autorisé à y créer des unités. Aucun droit n'est
+    élargi au-delà de ce que ``IsSecretariatOrDFRC`` accorde déjà aux endpoints
+    de contenu (``/maquettes/<id>/ues/``, ``/ues/<id>/``…) : c'est une lecture
+    du contenant alignée sur celle du contenu.
+    """
     queryset = Maquette.objects.select_related(
         'annee_academique', 'ref_formation', 'parcours', 'niveau',
     ).annotate(
@@ -332,7 +340,7 @@ def maquette_list(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated, IsDFRC])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def maquette_detail(request, pk):
     """Détail d'une maquette : UE groupées par semestre, avec leurs ECUE."""
     maquette = Maquette.objects.select_related(

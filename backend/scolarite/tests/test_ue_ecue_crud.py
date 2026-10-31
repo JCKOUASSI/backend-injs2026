@@ -298,11 +298,25 @@ class PermissionsTests(UEECUEBase):
         )
         self.assertEqual(client.get(f'/api/scolarite/maquettes/{self.maquette.id}/ues/').status_code, 401)
 
+    def test_secretariat_peut_lister_les_maquettes_qu_il_administre(self):
+        """Un secrétariat autorisé à créer des UE doit pouvoir choisir la maquette.
+
+        Sans cette lecture, l'écran UE/ECUE restait vide pour lui alors que ses
+        droits d'écriture sont réels : un écran mort derrière une permission
+        plus étroite que le contenu qu'il pilote.
+        """
+        self.assertEqual(self.client.get('/api/scolarite/maquettes/').status_code, 200)
+        self.assertEqual(
+            self.client.get(f'/api/scolarite/maquettes/{self.maquette.id}/').status_code, 200,
+        )
+
     def test_role_non_habilite_refuse(self):
         ue_id = self._creer_ue()
         client = APIClient()
         client.force_authenticate(make_user('auditeur_crud', 'AUDITEUR'))
         self.assertEqual(client.get(f'/api/scolarite/maquettes/{self.maquette.id}/ues/').status_code, 403)
+        # La liste des maquettes reste fermée à un rôle sans droit sur le contenu.
+        self.assertEqual(client.get('/api/scolarite/maquettes/').status_code, 403)
         self.assertEqual(
             client.post(f'/api/scolarite/ues/{ue_id}/statut/', {'statut': 'ACTIVE'},
                         format='json').status_code, 403,

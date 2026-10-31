@@ -135,6 +135,30 @@ describe('affichage et lecture', () => {
   })
 })
 
+describe('lecture impossible ou vide', () => {
+  it('affiche le refus du serveur au lieu d’un écran vide', async () => {
+    apiController.setMe({ ...ADMIN, is_active: true })
+    apiController.setRoute('/scolarite/maquettes/', () => Promise.reject({
+      response: {
+        status: 403,
+        data: { detail: "Vous n'avez pas la permission d'effectuer cette action." },
+      },
+    }))
+    render(<EcranUeEcue />, {
+      wrapper: ({ children }) => <AllProviders authUser={ADMIN}>{children}</AllProviders>,
+    })
+    const alerte = await screen.findByTestId('erreur-maquettes')
+    expect(alerte).toHaveTextContent("Vous n'avez pas la permission d'effectuer cette action.")
+    // Rien n'est proposé puisque rien n'est lisible : pas de bouton mort.
+    expect(screen.queryByTestId('nouvelle-ue')).toBeNull()
+  })
+
+  it('explique l’absence de maquette plutôt que de rester muet', async () => {
+    monter({ maquettes: [] })
+    expect(await screen.findByTestId('aucune-maquette')).toHaveTextContent(/Aucune maquette/)
+  })
+})
+
 describe('création', () => {
   it('crée une UE et envoie un corps typé à l’API', async () => {
     monter()
@@ -189,6 +213,31 @@ describe('création', () => {
       .toHaveTextContent('existe déjà dans cette maquette')
     // La saisie est conservée : rien n'est perdu à cause d'un refus.
     expect(screen.getByTestId('element-intitule')).toHaveValue('Doublon')
+  })
+})
+
+describe('sélection d’une UE', () => {
+  it('ouvre les ECUE de l’UE choisie au clavier, via un bouton nommé', async () => {
+    monter({
+      ues: [
+        UE,
+        {
+          ...UE,
+          id: 11,
+          code: 'EM-S1-UE02',
+          intitule: 'Sciences humaines',
+          ecues: [{ ...UE.ecues[0], id: 200, code: 'EM-S1-UE02-EC01', intitule: 'Psychologie' }],
+        },
+      ],
+    })
+    await attendreEcran()
+    // Par défaut, la première UE est ouverte.
+    expect(await screen.findByTestId('ligne-ecue-100')).toBeInTheDocument()
+    const choix = screen.getByRole('button', { name: /Afficher les ECUE de l’UE EM-S1-UE02/ })
+    expect(choix).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(choix)
+    expect(await screen.findByTestId('ligne-ecue-200')).toBeInTheDocument()
+    expect(screen.queryByTestId('ligne-ecue-100')).toBeNull()
   })
 })
 

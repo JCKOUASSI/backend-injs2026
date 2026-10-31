@@ -402,6 +402,9 @@ export default function EcranUeEcue() {
     if (donnees?.error) {
       return Array.isArray(donnees.error) ? donnees.error.join(' ') : String(donnees.error)
     }
+    // DRF répond « {"detail": …} » pour un refus de permission : sans ce cas,
+    // l'utilisateur lirait « detail : Vous n'avez pas la permission… ».
+    if (typeof donnees?.detail === 'string') return donnees.detail
     return messageErreur(erreur, defaut)
   }
 
@@ -524,6 +527,19 @@ export default function EcranUeEcue() {
         )}
       </div>
 
+      {maquettesQuery.isError && (
+        <div className="alert alert-danger py-2" role="alert" data-testid="erreur-maquettes">
+          Impossible de charger les maquettes : {erreurLisible(maquettesQuery.error, 'accès refusé.')}
+        </div>
+      )}
+
+      {maquettesQuery.isSuccess && maquettes.length === 0 && (
+        <div className="alert alert-info py-2" role="status" data-testid="aucune-maquette">
+          Aucune maquette n’est encore définie : les UE et ECUE se rattachent à une
+          maquette, il faut d’abord en créer une.
+        </div>
+      )}
+
       {maquette && !maquetteEditable && (
         <div className="alert alert-warning py-2" role="status" data-testid="maquette-verrouillee">
           Cette maquette est <strong>{STATUT_MAQUETTE[maquette.statut]?.toLowerCase()}</strong> :
@@ -579,7 +595,20 @@ export default function EcranUeEcue() {
                       style={{ cursor: 'pointer' }}
                       data-testid={`ligne-ue-${ligne.id}`}
                     >
-                      <td><span className="gen-code-chip">{ligne.code}</span></td>
+                      <td>
+                        {/* Seul contrôle focusable de la ligne : au clavier,
+                            c'est le code qui « ouvre » l'UE. */}
+                        <button
+                          type="button"
+                          className="ue-ecue-choix"
+                          onClick={(e) => { e.stopPropagation(); setUeId(ligne.id) }}
+                          aria-pressed={Number(ligne.id) === Number(ueId)}
+                          aria-label={`Afficher les ECUE de l’UE ${ligne.code}`}
+                          data-testid={`selectionner-ue-${ligne.id}`}
+                        >
+                          <span className="gen-code-chip">{ligne.code}</span>
+                        </button>
+                      </td>
                       <td>{ligne.intitule}</td>
                       <td>{ligne.semestre?.libelle || '—'}</td>
                       <td>{afficherValeur(ligne.credits)}</td>

@@ -1,5 +1,5 @@
 {
-  "execute_le": "2026-10-31T15:49:13.072Z",
+  "execute_le": "2026-10-31T16:15:13.789Z",
   "maquette_id": "1",
   "verification": [
     {
@@ -15,7 +15,7 @@
     {
       "nom": "UE créée en base (API)",
       "ok": true,
-      "detail": "id=331 crédits=3 statut=BROUILLON"
+      "detail": "id=337 crédits=3 statut=BROUILLON"
     },
     {
       "nom": "statut initial = BROUILLON",
@@ -35,7 +35,7 @@
     {
       "nom": "ECUE créé sous l’UE (API)",
       "ok": true,
-      "detail": "id=405 statut=BROUILLON CM=20"
+      "detail": "id=409 statut=BROUILLON CM=20"
     },
     {
       "nom": "activation ECUE sous UE brouillon refusée",
@@ -100,7 +100,7 @@
     {
       "nom": "maquette gelée : bandeau de verrouillage affiché",
       "ok": true,
-      "detail": "undefined — ACTIVE"
+      "detail": "FORMATION DÉMONSTRATION GET-INJS / L1 – DEMO-2026-2027 (v1) — ACTIVE"
     },
     {
       "nom": "maquette gelée : aucun bouton de création",

@@ -82,6 +82,20 @@
 }
 
 
+/* Code d'UE : bouton de sélection, au rendu identique au code affiché. */
+.ue-ecue-choix {
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  border-radius: 6px;
+}
+
+.ue-ecue-choix:focus-visible {
+  outline: 2px solid var(--injs-blue-royal, #283a87);
+  outline-offset: 2px;
+}
+
 /* Colonnes d'actions compactes : trois boutons icône tiennent dans une
    largeur étroite, ce qui évite de pousser le tableau hors du panneau. */
 .ue-ecue-panneau .gen-table th:last-child,
