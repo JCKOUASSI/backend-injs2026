@@ -296,9 +296,16 @@ def grille_hebdomadaire(emploi_du_temps, semaine=None):
     """
     from .models import JOUR_CHOICES
 
+    # `groupe` et `formation` sont rendus par leur __str__, qui lit
+    # `annee_academique` : sans les jointures ci-dessous, la grille émettait
+    # UNE requête `scolarite_anneeacademique` PAR SÉANCE (N+1 mesuré : 4 requêtes
+    # pour 2 séances, 24 pour 22 — voir `manage.py compteur_sql_getinjs`).
     queryset = (
         AffectationCreneau.objects.filter(emploi_du_temps=emploi_du_temps, actif=True)
-        .select_related('creneau_template', 'formateur', 'groupe', 'formation')
+        .select_related(
+            'creneau_template', 'formateur', 'groupe', 'formation',
+            'groupe__annee_academique',
+        )
     )
     if semaine:
         queryset = queryset.filter(semaine_debut__lte=semaine, semaine_fin__gte=semaine)

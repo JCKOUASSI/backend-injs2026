@@ -1129,10 +1129,22 @@ def _seances_filtrees(request, edt):
     from edts.models import AffectationCreneau
 
     qp = request.query_params
+    # Toutes les relations lues à l'affichage sont jointes ici : sans elles,
+    # `_contexte_pedagogique` (parcours, niveau, semestre, UE, ECUE, enseignant)
+    # émettait SIX requêtes par séance dans l'export XLSX (mesuré : 14 requêtes
+    # pour 2 séances, 134 pour 22 — `manage.py compteur_sql_getinjs`).
     qs = (AffectationCreneau.objects
           .filter(emploi_du_temps=edt, actif=True)
-          .select_related('creneau_template', 'salle', 'groupe', 'formation',
-                          'affectation_pedagogique'))
+          .select_related(
+              'creneau_template', 'salle', 'groupe', 'formation',
+              'groupe__annee_academique', 'affectation_pedagogique',
+              'affectation_pedagogique__parcours',
+              'affectation_pedagogique__niveau',
+              'affectation_pedagogique__semestre',
+              'affectation_pedagogique__ue',
+              'affectation_pedagogique__ecue',
+              'affectation_pedagogique__enseignant',
+          ))
     for champ in ('groupe_id', 'salle_id', 'formation_id'):
         valeur = _int(qp.get(champ))
         if valeur:
