@@ -79,11 +79,22 @@ const mount = () => {
     initialEntries: ['/scolarite/candidatures'],
   })
 }
+/* Panneau de dépôt ouvert : le titre porte le formulaire et sert d'ancre. */
+const formOuvert = () => {
+  const titre = screen.getByRole('heading', { level: 2, name: /nouvelle candidature/i })
+  return titre.closest('.cand-panel')
+}
 const settle = async (n = 5) => {
   await act(async () => { await flushPromises(n) })
 }
 
 const rowOf = (numero) => screen.getByText(numero).closest('tr')
+/* Le panneau « Dossier » s'ouvre par le bouton d'action de la ligne ; son
+   libellé accessible nomme le dossier concerné. */
+const ouvrirDossier = (numero) => {
+  const bouton = within(rowOf(numero)).getByRole('button', { name: /ouvrir le dossier/i })
+  fireEvent.click(bouton)
+}
 
 beforeEach(() => {
   apiController.reset()
@@ -119,7 +130,7 @@ describe('pages/scolarite/Candidatures — panneau Dossier (écritures)', () => 
   it('applique une transition de statut puis recharge et notifie', async () => {
     mount()
     await screen.findByText('C-005')
-    fireEvent.click(within(rowOf('C-005')).getByRole('button', { name: 'Ouvrir' }))
+    ouvrirDossier('C-005')
 
     const panel = await screen.findByText('Pièces justificatives')
     expect(panel).toBeInTheDocument()
@@ -137,11 +148,11 @@ describe('pages/scolarite/Candidatures — panneau Dossier (écritures)', () => 
   it('valide une pièce fournie (POST verifier) ; le bouton reste désactivé sans fichier', async () => {
     mount()
     await screen.findByText('C-005')
-    fireEvent.click(within(rowOf('C-005')).getByRole('button', { name: 'Ouvrir' }))
+    ouvrirDossier('C-005')
     await screen.findByText('CNI')
 
     const pieceRow = screen.getByText('CNI').closest('tr')
-    fireEvent.click(within(pieceRow).getByRole('button', { name: 'Valider' }))
+    fireEvent.click(within(pieceRow).getByRole('button', { name: 'Valider la pièce' }))
     await settle()
 
     const v = posts((p) => p.includes('/verifier/'))
@@ -151,14 +162,14 @@ describe('pages/scolarite/Candidatures — panneau Dossier (écritures)', () => 
 
     // La pièce sans fichier (Diplôme) ne peut pas être validée.
     const missingRow = screen.getByText('Diplôme').closest('tr')
-    expect(within(missingRow).getByRole('button', { name: 'Valider' })).toBeDisabled()
-    expect(within(missingRow).getByRole('button', { name: 'Refuser' })).toBeDisabled()
+    expect(within(missingRow).getByRole('button', { name: 'Valider la pièce' })).toBeDisabled()
+    expect(within(missingRow).getByRole('button', { name: 'Refuser la pièce' })).toBeDisabled()
   })
 
   it('ouvre une admission pour une candidature admissible', async () => {
     mount()
     await screen.findByText('C-006')
-    fireEvent.click(within(rowOf('C-006')).getByRole('button', { name: 'Ouvrir' }))
+    ouvrirDossier('C-006')
     await screen.findByText('Suite du parcours')
 
     fireEvent.click(screen.getByRole('button', { name: /ouvrir une admission/i }))
@@ -177,7 +188,7 @@ describe('pages/scolarite/Candidatures — panneau Dossier (écritures)', () => 
     })
     mount()
     await screen.findByText('C-005')
-    fireEvent.click(within(rowOf('C-005')).getByRole('button', { name: 'Ouvrir' }))
+    ouvrirDossier('C-005')
     await screen.findByText('Pièces justificatives')
 
     fireEvent.click(screen.getByRole('button', { name: 'En attente de vérification' }))
@@ -189,7 +200,7 @@ describe('pages/scolarite/Candidatures — panneau Dossier (écritures)', () => 
   it('dépose un fichier pour une pièce (POST FormData multipart)', async () => {
     mount()
     await screen.findByText('C-005')
-    fireEvent.click(within(rowOf('C-005')).getByRole('button', { name: 'Ouvrir' }))
+    ouvrirDossier('C-005')
     await screen.findByText('CNI')
 
     const input = screen
@@ -216,19 +227,14 @@ describe('pages/scolarite/Candidatures — création', () => {
     await screen.findByText('C-005')
 
     fireEvent.click(screen.getByRole('button', { name: /nouvelle candidature/i }))
-    const cardTitle = screen.getByText(
-      (_c, el) => el.tagName === 'STRONG' && el.textContent === 'Nouvelle candidature',
-    )
-    const card = cardTitle.closest('.card')
+    const card = formOuvert()
 
-    const inputs = within(card).getAllByRole('textbox').filter((el) => el.tagName === 'INPUT')
-    fireEvent.change(inputs[0], { target: { value: 'Traoré' } }) // nom
-    fireEvent.change(inputs[1], { target: { value: 'Mariam' } }) // prénoms
-    const combos = within(card).getAllByRole('combobox')
-    fireEvent.change(combos[1], { target: { value: '10' } }) // formation
-    fireEvent.change(combos[2], { target: { value: '2' } }) // niveau
+    fireEvent.change(within(card).getByLabelText('Nom'), { target: { value: 'Traoré' } })
+    fireEvent.change(within(card).getByLabelText('Prénoms'), { target: { value: 'Mariam' } })
+    fireEvent.change(within(card).getByLabelText('Formation demandée'), { target: { value: '10' } })
+    fireEvent.change(within(card).getByLabelText('Niveau demandé'), { target: { value: '2' } })
 
-    const enregistrer = within(card).getByRole('button', { name: 'Enregistrer' })
+    const enregistrer = within(card).getByRole('button', { name: /enregistrer la candidature/i })
     await waitFor(() => expect(enregistrer).not.toBeDisabled())
     fireEvent.click(enregistrer)
     await settle()
@@ -261,18 +267,13 @@ describe('pages/scolarite/Candidatures — création', () => {
     await screen.findByText('C-005')
 
     fireEvent.click(screen.getByRole('button', { name: /nouvelle candidature/i }))
-    const cardTitle = screen.getByText(
-      (_c, el) => el.tagName === 'STRONG' && el.textContent === 'Nouvelle candidature',
-    )
-    const card = cardTitle.closest('.card')
+    const card = formOuvert()
 
-    const inputs = within(card).getAllByRole('textbox').filter((el) => el.tagName === 'INPUT')
-    fireEvent.change(inputs[0], { target: { value: 'Traoré' } })
-    fireEvent.change(inputs[1], { target: { value: 'Mariam' } })
-    const combos = within(card).getAllByRole('combobox')
-    fireEvent.change(combos[1], { target: { value: '10' } })
-    fireEvent.change(combos[2], { target: { value: '2' } })
-    fireEvent.click(within(card).getByRole('button', { name: 'Enregistrer' }))
+    fireEvent.change(within(card).getByLabelText('Nom'), { target: { value: 'Traoré' } })
+    fireEvent.change(within(card).getByLabelText('Prénoms'), { target: { value: 'Mariam' } })
+    fireEvent.change(within(card).getByLabelText('Formation demandée'), { target: { value: '10' } })
+    fireEvent.change(within(card).getByLabelText('Niveau demandé'), { target: { value: '2' } })
+    fireEvent.click(within(card).getByRole('button', { name: /enregistrer la candidature/i }))
     await settle()
 
     expect(await within(card).findByText(/nom : ce champ est obligatoire/i)).toBeInTheDocument()

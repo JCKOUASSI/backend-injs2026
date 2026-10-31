@@ -18,6 +18,7 @@ import {
   verifierPiece,
 } from '../../services/scolarite'
 import '../../styles/candidatures.css'
+import '../../styles/modale-premium.css'
 
 const STATUTS = [
   ['BROUILLON', 'Brouillon'],
@@ -123,41 +124,58 @@ function DossierPanel({ candidature, onClose, onChange }) {
   const peutOuvrirAdmission = ['EN_ETUDE', 'ADMISSIBLE', 'LISTE_ATTENTE'].includes(detail.statut)
 
   return (
-    <div className="card cand-panel cand-dossier mb-3">
-      <div className="card-header d-flex justify-content-between align-items-center">
+    <section className="cand-panel cand-dossier" aria-labelledby="titre-dossier-candidature">
+      <header className="cand-dossier-entete">
         <div>
-          <strong className="cand-info-value">{detail.numero}</strong>
-          <span className="ms-2">{detail.candidat}</span>
-          <span className="ms-2"><StatutBadge statut={detail.statut} libelle={detail.statut_libelle} /></span>
+          <span className="cand-dossier-numero">{detail.numero}</span>
+          <span className="cand-dossier-nom" id="titre-dossier-candidature">{detail.candidat}</span>
+          <span className="cand-dossier-sous">Dossier de candidature</span>
         </div>
-        <button className="btn-close" onClick={onClose} aria-label="Fermer"></button>
-      </div>
-      <div className="card-body">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginLeft: 'auto' }}>
+          <StatutBadge statut={detail.statut} libelle={detail.statut_libelle} />
+          <button type="button" className="mp-fermer" onClick={onClose} aria-label="Fermer le dossier">
+            <i className="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </div>
+      </header>
+
+      <div className="cand-panel-body">
         {chargement ? (
-          <div className="text-center py-3"><div className="spinner-border spinner-border-sm"></div></div>
+          <div className="cand-chargement">
+            <span className="spinner-border" aria-hidden="true"></span>Chargement du dossier…
+          </div>
         ) : (
           <>
-            <div className="row g-3 mb-3">
-              <div className="col-md-4">
-                <span className="cand-info-label">Formation</span>
-                <span className="cand-info-value">{detail.ref_formation}</span>
+            <div className="mp-fiche">
+              <div className="mp-fiche-item">
+                <span className="mp-fiche-cle">Formation</span>
+                <span className="mp-fiche-valeur">{detail.ref_formation || '—'}</span>
               </div>
-              <div className="col-md-4">
-                <span className="cand-info-label">Niveau</span>
-                <span className="cand-info-value">{detail.niveau}</span>
+              <div className="mp-fiche-item">
+                <span className="mp-fiche-cle">Niveau</span>
+                <span className="mp-fiche-valeur">{detail.niveau || '—'}</span>
               </div>
-              <div className="col-md-4">
-                <span className="cand-info-label">Année</span>
-                <span className="cand-info-value">{detail.annee_academique}</span>
+              <div className="mp-fiche-item">
+                <span className="mp-fiche-cle">Année académique</span>
+                <span className="mp-fiche-valeur">{detail.annee_academique || '—'}</span>
+              </div>
+              <div className="mp-fiche-item">
+                <span className="mp-fiche-cle">Pièces attendues</span>
+                <span className="mp-fiche-valeur">{detail.pieces_obligatoires ?? 0}</span>
               </div>
             </div>
 
-            <h6 className="cand-section-title">Pièces justificatives</h6>
-            <div className="table-responsive mb-3">
-              <table className="table table-sm align-middle">
+            <h3 className="cand-section-titre">
+              <i className="bi bi-paperclip" aria-hidden="true"></i>Pièces justificatives
+            </h3>
+            <div className="cand-table-wrap">
+              <table className="cand-table cand-table--simple">
                 <thead>
                   <tr>
-                    <th>Pièce</th><th>Statut</th><th>Fichier</th><th className="text-end">Vérification</th>
+                    <th scope="col">Pièce</th>
+                    <th scope="col">Statut</th>
+                    <th scope="col">Fichier</th>
+                    <th scope="col" className="cand-col-actions">Vérification</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -165,48 +183,59 @@ function DossierPanel({ candidature, onClose, onChange }) {
                     <tr key={piece.id}>
                       <td>
                         {piece.type_piece}
-                        {piece.obligatoire && <span className="text-danger ms-1" title="Obligatoire">*</span>}
-                        {piece.est_expiree && <span className="badge bg-danger ms-2">Expirée</span>}
+                        {piece.obligatoire && <span className="mp-requis" title="Obligatoire">*</span>}
+                        {piece.est_expiree && <span className="cand-puce-alerte">Expirée</span>}
                       </td>
                       <td><StatutBadge statut={piece.statut} libelle={piece.statut_libelle} /></td>
                       <td>
-                        <input
-                          type="file"
-                          className="form-control form-control-sm"
-                          style={{ maxWidth: '220px' }}
-                          onChange={(e) => televerser(piece, e.target.files?.[0])}
-                        />
+                        <label className="cand-televerser">
+                          <input
+                            type="file"
+                            className="cand-televerser-input"
+                            aria-label={`Téléverser la pièce ${piece.type_piece}`}
+                            onChange={(e) => televerser(piece, e.target.files?.[0])}
+                          />
+                          <i className="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                          <span>{piece.a_fichier ? 'Remplacer' : 'Téléverser'}</span>
+                        </label>
                       </td>
-                      <td className="text-end">
-                        <div className="btn-group btn-group-sm">
+                      <td className="cand-col-actions">
+                        <div className="cand-actions">
                           <button
-                            className="btn btn-outline-success"
-                            disabled={!piece.a_fichier}
+                            className="cand-action cand-action--succes"
+                            disabled={action !== null || !piece.a_fichier}
                             onClick={() => statuerPiece(piece, 'VALIDEE')}
+                            aria-label="Valider la pièce"
+                            title="Valider la pièce"
                           >
-                            Valider
+                            <i className="bi bi-check2" aria-hidden="true"></i>
                           </button>
                           <button
-                            className="btn btn-outline-danger"
-                            disabled={!piece.a_fichier}
+                            className="cand-action cand-action--danger"
+                            disabled={action !== null || !piece.a_fichier}
                             onClick={() => statuerPiece(piece, 'REFUSEE')}
+                            aria-label="Refuser la pièce"
+                            title="Rejeter la pièce"
                           >
-                            Refuser
+                            <i className="bi bi-x-lg" aria-hidden="true"></i>
                           </button>
                         </div>
                       </td>
                     </tr>
                   ))}
                   {pieces.length === 0 && (
-                    <tr><td colSpan={4} className="text-muted">Aucune pièce attendue.</td></tr>
+                    <tr><td colSpan={4}><span className="cand-texte-doux">Aucune pièce attendue.</span></td></tr>
                   )}
                 </tbody>
               </table>
             </div>
 
-            <div className="d-flex align-items-center gap-3 mb-3">
-              <span className="text-muted small">Complétude du dossier</span>
-              <div style={{ maxWidth: '260px', width: '100%' }}>
+            <h3 className="cand-section-titre">
+              <i className="bi bi-graph-up" aria-hidden="true"></i>Complétude du dossier
+            </h3>
+            <div className="cand-completude">
+              <span className="cand-completude-label">Pièces obligatoires validées</span>
+              <div className="cand-completude-jauge">
                 <CompletudeBar
                   validees={detail.pieces_validees}
                   total={detail.pieces_obligatoires}
@@ -215,36 +244,39 @@ function DossierPanel({ candidature, onClose, onChange }) {
               </div>
             </div>
 
-            <h6 className="cand-section-title">Suite du parcours</h6>
-            <div className="d-flex flex-wrap gap-2">
+            <h3 className="cand-section-titre">
+              <i className="bi bi-signpost-split" aria-hidden="true"></i>Suite du parcours
+            </h3>
+            <div className="cand-transitions">
               {transitions.map((statut) => (
                 <button
                   key={statut}
-                  className={`btn btn-sm btn-outline-${statut === 'ANNULE' ? 'danger' : 'primary'}`}
+                  className={`cand-btn-fantome${statut === 'ANNULE' ? ' cand-btn-fantome--danger' : ''}`}
                   disabled={action !== null}
                   onClick={() => appliquerTransition(statut)}
                 >
-                  {action === statut && <span className="spinner-border spinner-border-sm me-1"></span>}
+                  {action === statut && <span className="spinner-border" aria-hidden="true"></span>}
                   {LIBELLES_STATUT[statut] || statut}
                 </button>
               ))}
               {transitions.length === 0 && (
-                <span className="text-muted small">Aucune transition possible depuis ce statut.</span>
+                <span className="cand-texte-doux">Aucune transition possible depuis ce statut.</span>
               )}
               {peutOuvrirAdmission && (
                 <button
-                  className="btn btn-sm btn-success"
+                  className="cand-btn-principal"
                   disabled={action !== null}
                   onClick={ouvrirAdmission}
                 >
-                  <i className="bi bi-arrow-right-circle me-1"></i>Ouvrir une admission
+                  <i className="bi bi-arrow-right-circle" aria-hidden="true"></i>
+                  Ouvrir une admission
                 </button>
               )}
             </div>
           </>
         )}
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -278,29 +310,39 @@ function NouvelleCandidature({ annee, formations, niveaux, onCree, onAnnuler }) 
   }
 
   return (
-    <div className="card cand-panel cand-form mb-3">
-      <div className="card-header"><strong>Nouvelle candidature</strong></div>
-      <form className="card-body" onSubmit={soumettre}>
-        {erreur && <div className="alert alert-danger" style={{ whiteSpace: 'pre-line' }}>{erreur}</div>}
-        <div className="row g-3">
-          <div className="col-md-3">
-            <label className="form-label">Nom</label>
+    <section className="cand-panel cand-form" aria-labelledby="titre-nouvelle-candidature">
+      <header className="cand-panel-head">
+        <h2 className="cand-panel-title" id="titre-nouvelle-candidature">
+          <i className="bi bi-person-plus" aria-hidden="true"></i>Nouvelle candidature
+        </h2>
+        <button type="button" className="mp-fermer" onClick={onAnnuler} aria-label="Fermer le formulaire">
+          <i className="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <form className="cand-panel-body" onSubmit={soumettre}>
+        {erreur && <div className="cand-alerte" role="alert">{erreur}</div>}
+
+        <div className="cand-grille-form">
+          <div className="cand-champ cand-champ--2">
+            <label className="cand-etiquette" htmlFor="cand-nom">Nom</label>
             <input
-              className="form-control" required value={candidat.nom}
+              id="cand-nom" className="cand-saisie" required value={candidat.nom}
               onChange={(e) => setCandidat({ ...candidat, nom: e.target.value })}
             />
           </div>
-          <div className="col-md-3">
-            <label className="form-label">Prénoms</label>
+          <div className="cand-champ cand-champ--2">
+            <label className="cand-etiquette" htmlFor="cand-prenom">Prénoms</label>
             <input
-              className="form-control" required value={candidat.prenom}
+              id="cand-prenom" className="cand-saisie" required value={candidat.prenom}
               onChange={(e) => setCandidat({ ...candidat, prenom: e.target.value })}
             />
           </div>
-          <div className="col-md-2">
-            <label className="form-label">Sexe</label>
+
+          <div className="cand-champ">
+            <label className="cand-etiquette" htmlFor="cand-sexe">Sexe</label>
             <select
-              className="form-select" value={candidat.sexe}
+              id="cand-sexe" className="cand-saisie" value={candidat.sexe}
               onChange={(e) => setCandidat({ ...candidat, sexe: e.target.value })}
             >
               <option value="">—</option>
@@ -308,63 +350,70 @@ function NouvelleCandidature({ annee, formations, niveaux, onCree, onAnnuler }) 
               <option value="F">Féminin</option>
             </select>
           </div>
-          <div className="col-md-2">
-            <label className="form-label">Date de naissance</label>
+          <div className="cand-champ">
+            <label className="cand-etiquette" htmlFor="cand-naissance">Date de naissance</label>
             <input
-              type="date" className="form-control" value={candidat.date_naissance}
+              id="cand-naissance" type="date" className="cand-saisie" value={candidat.date_naissance}
               onChange={(e) => setCandidat({ ...candidat, date_naissance: e.target.value })}
             />
           </div>
-          <div className="col-md-2">
-            <label className="form-label">Téléphone</label>
+          <div className="cand-champ cand-champ--2">
+            <label className="cand-etiquette" htmlFor="cand-telephone">Téléphone</label>
             <input
-              className="form-control" value={candidat.telephone}
+              id="cand-telephone" className="cand-saisie" value={candidat.telephone}
               onChange={(e) => setCandidat({ ...candidat, telephone: e.target.value })}
             />
           </div>
-          <div className="col-md-4">
-            <label className="form-label">Email</label>
+
+          <div className="cand-champ cand-champ--2">
+            <label className="cand-etiquette" htmlFor="cand-email">Email</label>
             <input
-              type="email" className="form-control" value={candidat.email}
+              id="cand-email" type="email" className="cand-saisie" value={candidat.email}
               onChange={(e) => setCandidat({ ...candidat, email: e.target.value })}
             />
           </div>
-          <div className="col-md-4">
-            <label className="form-label">Formation demandée</label>
+          <div className="cand-champ cand-champ--2">
+            <label className="cand-etiquette" htmlFor="cand-formation">Formation demandée</label>
             <select
-              className="form-select" required value={dossier.ref_formation_id}
+              id="cand-formation" className="cand-saisie" required value={dossier.ref_formation_id}
               onChange={(e) => setDossier({ ...dossier, ref_formation_id: e.target.value })}
             >
-              <option value="">Choisir…</option>
+              <option value="">Choisir une formation…</option>
               {formations.map((f) => <option key={f.id} value={f.id}>{f.intitule}</option>)}
             </select>
           </div>
-          <div className="col-md-4">
-            <label className="form-label">Niveau demandé</label>
+
+          <div className="cand-champ cand-champ--2">
+            <label className="cand-etiquette" htmlFor="cand-niveau">Niveau demandé</label>
             <select
-              className="form-select" required value={dossier.niveau_id}
+              id="cand-niveau" className="cand-saisie" required value={dossier.niveau_id}
               onChange={(e) => setDossier({ ...dossier, niveau_id: e.target.value })}
             >
-              <option value="">Choisir…</option>
+              <option value="">Choisir un niveau…</option>
               {niveaux.map((n) => <option key={n.id} value={n.id}>{n.code} — {n.libelle}</option>)}
             </select>
           </div>
         </div>
-        <div className="mt-3 d-flex gap-2">
-          <button className="btn btn-primary" disabled={envoi || !annee}>
-            {envoi && <span className="spinner-border spinner-border-sm me-1"></span>}
-            Enregistrer
-          </button>
-          <button type="button" className="btn btn-outline-secondary" onClick={onAnnuler}>Annuler</button>
-        </div>
+
         {!annee && (
-          <div className="alert alert-warning mt-3 mb-0">
+          <div className="cand-alerte cand-alerte--attention" role="status">
             Aucune année académique courante n’est définie. Créez-la dans l’administration
             avant d’enregistrer une candidature.
           </div>
         )}
+
+        <div className="cand-form-actions">
+          <button type="button" className="cand-btn-fantome" onClick={onAnnuler}>
+            Annuler
+          </button>
+          <button className="cand-btn-principal" disabled={envoi || !annee}>
+            {envoi && <span className="spinner-border" aria-hidden="true"></span>}
+            <i className="bi bi-check2" aria-hidden="true"></i>
+            Enregistrer la candidature
+          </button>
+        </div>
       </form>
-    </div>
+    </section>
   )
 }
 
@@ -432,15 +481,18 @@ export default function Candidatures() {
     <div className="cand-page">
       {/* ── Bandeau d'accueil (matière de la référence LMD2026) ── */}
       <div className="cand-hero">
-        <div className="cand-hero-text">
-          <span className="plaquette plaquette-primary cand-hero-badge">
-            <i className="bi bi-mortarboard"></i>Scolarité — Admissions
+        <div className="cand-hero-identite">
+          <span className="cand-hero-icone" aria-hidden="true">
+            <i className="bi bi-mortarboard"></i>
           </span>
-          <h1 className="cand-hero-title">Candidatures</h1>
-          <p className="cand-hero-sub">
-            {annee ? `Année ${annee.libelle}` : 'Année courante non définie'}
-            {' · '}Dossiers d'admission et pièces justificatives
-          </p>
+          <div className="cand-hero-text">
+            <span className="cand-hero-badge">Scolarité — Admissions</span>
+            <h1 className="cand-hero-title">Candidatures</h1>
+            <p className="cand-hero-sub">
+              {annee ? `Année ${annee.libelle}` : 'Année courante non définie'}
+              {' · '}Dossiers d’admission et pièces justificatives
+            </p>
+          </div>
         </div>
         <button className="btn-premium-primary" onClick={() => setCreation((c) => !c)}>
           <i className="bi bi-plus-lg"></i>
@@ -451,32 +503,32 @@ export default function Candidatures() {
       {/* ── Tuiles KPI ── */}
       <div className="cand-kpi-row">
         <div className="cand-kpi">
-          <div>
-            <span className="cand-kpi-label">Dossiers reçus</span>
+          <span className="cand-kpi-icon is-blue" aria-hidden="true"><i className="bi bi-folder2-open"></i></span>
+          <div className="cand-kpi-texte">
             <span className="cand-kpi-value">{indicateurs.total}</span>
+            <span className="cand-kpi-label">Dossiers reçus</span>
           </div>
-          <div className="cand-kpi-icon is-blue"><i className="bi bi-file-earmark-text-fill"></i></div>
         </div>
         <div className="cand-kpi">
-          <div>
-            <span className="cand-kpi-label">Dossiers complets</span>
+          <span className="cand-kpi-icon is-green" aria-hidden="true"><i className="bi bi-check2-circle"></i></span>
+          <div className="cand-kpi-texte">
             <span className="cand-kpi-value">{indicateurs.complets}</span>
+            <span className="cand-kpi-label">Dossiers complets</span>
           </div>
-          <div className="cand-kpi-icon is-green"><i className="bi bi-check2-circle"></i></div>
         </div>
         <div className="cand-kpi">
-          <div>
-            <span className="cand-kpi-label">En cours de traitement</span>
+          <span className="cand-kpi-icon is-amber" aria-hidden="true"><i className="bi bi-hourglass-split"></i></span>
+          <div className="cand-kpi-texte">
             <span className="cand-kpi-value">{indicateurs.enCours}</span>
+            <span className="cand-kpi-label">En cours de traitement</span>
           </div>
-          <div className="cand-kpi-icon is-amber"><i className="bi bi-hourglass-split"></i></div>
         </div>
         <div className="cand-kpi">
-          <div>
-            <span className="cand-kpi-label">Admis</span>
+          <span className="cand-kpi-icon is-slate" aria-hidden="true"><i className="bi bi-award"></i></span>
+          <div className="cand-kpi-texte">
             <span className="cand-kpi-value">{indicateurs.admis}</span>
+            <span className="cand-kpi-label">Admis</span>
           </div>
-          <div className="cand-kpi-icon is-slate"><i className="bi bi-award"></i></div>
         </div>
       </div>
 
@@ -513,7 +565,8 @@ export default function Candidatures() {
             <div className="cand-search">
               <i className="bi bi-search"></i>
               <input
-                className="form-control form-control-sm"
+                className="cand-input"
+                type="search"
                 placeholder="Rechercher un numéro, un nom…"
                 aria-label="Rechercher une candidature"
                 value={filtres.q}
@@ -521,7 +574,7 @@ export default function Candidatures() {
               />
             </div>
             <select
-              className="form-select form-select-sm cand-filter-select"
+              className="cand-filter-select"
               aria-label="Filtrer par statut"
               value={filtres.statut}
               onChange={(e) => setFiltres({ ...filtres, statut: e.target.value })}
@@ -534,23 +587,26 @@ export default function Candidatures() {
           </div>
 
           {loading ? (
-            <div className="text-center py-4"><div className="spinner-border"></div></div>
+            <div className="cand-chargement"><span className="spinner-border" aria-hidden="true"></span>Chargement des candidatures…</div>
           ) : (
-            <div className="table-responsive cand-table-wrap">
-              <table className="table table-hover align-middle cand-table">
+            <>
+              <div className="cand-table-wrap">
+              <table className="cand-table cand-table--candidatures">
                 <thead>
                   <tr>
                     <th>N°</th><th>Candidat</th><th>Formation</th><th>Niveau</th>
-                    <th>Statut</th><th>Dossier</th><th></th>
+                    <th>Statut</th><th>Dossier</th><th className="cand-th-actions"><span className="cand-sr-only">Actions</span></th>
                   </tr>
                 </thead>
                 <tbody>
                   {candidatures.map((c) => (
                     <tr key={c.id}>
-                      <td className="text-nowrap"><span className="cand-numero">{c.numero}</span></td>
-                      <td className="cand-candidat">{c.candidat}</td>
-                      <td className="cand-formation">{c.ref_formation}</td>
-                      <td>{c.niveau}</td>
+                      <td className="cand-col-etroit"><span className="cand-numero">{c.numero}</span></td>
+                      <td><span className="cand-etudiant">{c.candidat}</span></td>
+                      <td className="cand-col-formation">
+                        <span className="cand-texte-formation" title={c.ref_formation}>{c.ref_formation}</span>
+                      </td>
+                      <td><span className="cand-badge-neutre">{c.niveau}</span></td>
                       <td><StatutBadge statut={c.statut} libelle={c.statut_libelle} /></td>
                       <td className="cand-progress">
                         <CompletudeBar
@@ -559,22 +615,38 @@ export default function Candidatures() {
                           taux={c.taux_completude}
                         />
                       </td>
-                      <td className="text-end">
-                        <button
-                          className="btn btn-sm cand-open-btn"
-                          onClick={() => setSelection(c)}
-                        >
-                          <i className="bi bi-folder2-open me-1"></i>Ouvrir
-                        </button>
+                      <td className="cand-col-actions">
+                        <div className="cand-actions">
+                          <button
+                            className="cand-action cand-action--ouvrir"
+                            onClick={() => setSelection(c)}
+                            aria-label={`Ouvrir le dossier ${c.numero}`}
+                            title="Ouvrir le dossier"
+                          >
+                            <i className="bi bi-folder2-open" aria-hidden="true"></i>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                   {candidatures.length === 0 && (
                     <tr>
                       <td colSpan={7}>
-                        <div className="cand-empty">
-                          <i className="bi bi-inbox"></i>
-                          Aucune candidature.
+                        <div className="cand-vide">
+                          <span className="cand-vide-icone" aria-hidden="true">
+                            <i className="bi bi-inbox"></i>
+                          </span>
+                          <p className="cand-vide-titre">Aucune candidature</p>
+                          <p className="cand-vide-texte">
+                            Aucun dossier ne correspond à la recherche ou au statut sélectionné.
+                            Vous pouvez déposer une nouvelle candidature.
+                          </p>
+                          <div className="cand-vide-actions">
+                            <button className="cand-btn-principal" onClick={() => setCreation(true)}>
+                              <i className="bi bi-plus-lg" aria-hidden="true"></i>
+                              Nouvelle candidature
+                            </button>
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -582,6 +654,11 @@ export default function Candidatures() {
                 </tbody>
               </table>
             </div>
+            <p className="cand-defile" aria-hidden="true">
+              <i className="bi bi-arrow-left-right"></i>
+              Faites défiler le tableau horizontalement
+            </p>
+            </>
           )}
         </div>
       </div>

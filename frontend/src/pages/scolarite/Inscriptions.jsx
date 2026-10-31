@@ -188,7 +188,7 @@ export default function Inscriptions() {
           <div className="cand-chargement"><span className="spinner-border" aria-hidden="true"></span>Chargement des dossiers…</div>
         ) : (
           <div className="cand-table-wrap">
-            <table className="cand-table">
+            <table className="cand-table cand-table--inscriptions">
               <thead>
                 <tr>
                   <th scope="col">Matricule</th>

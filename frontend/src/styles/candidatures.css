@@ -284,19 +284,38 @@
 .cand-table {
   margin: 0;
   width: 100%;
-  min-width: 1 080px;
+  min-width: 1080px;
   table-layout: fixed;
 }
 
 /* Répartition des colonnes : les intitulés de formation sont longs, ils
-   méritent l'essentiel de la largeur ; les colonnes de codes restent fixes. */
-.cand-table th:nth-child(1), .cand-table td:nth-child(1) { width: 120px; }
-.cand-table th:nth-child(2), .cand-table td:nth-child(2) { width: 152px; }
-.cand-table th:nth-child(4), .cand-table td:nth-child(4) { width: 70px; }
-.cand-table th:nth-child(5), .cand-table td:nth-child(5) { width: 124px; }
-.cand-table th:nth-child(6), .cand-table td:nth-child(6) { width: 100px; }
-.cand-table th:nth-child(7), .cand-table td:nth-child(7) { width: 118px; }
-.cand-table th:nth-child(8), .cand-table td:nth-child(8) { width: 146px; }
+   méritent l'essentiel de la largeur ; les colonnes de codes restent fixes.
+   Chaque écran a sa propre grille — les largeurs sont donc portées par une
+   classe dédiée et non par le `nth-child` générique, qui décalait les colonnes
+   de Candidatures (7 colonnes au lieu de 8). */
+.cand-table--inscriptions th:nth-child(1), .cand-table--inscriptions td:nth-child(1) { width: 120px; }
+.cand-table--inscriptions th:nth-child(2), .cand-table--inscriptions td:nth-child(2) { width: 152px; }
+.cand-table--inscriptions th:nth-child(4), .cand-table--inscriptions td:nth-child(4) { width: 70px; }
+.cand-table--inscriptions th:nth-child(5), .cand-table--inscriptions td:nth-child(5) { width: 124px; }
+.cand-table--inscriptions th:nth-child(6), .cand-table--inscriptions td:nth-child(6) { width: 100px; }
+.cand-table--inscriptions th:nth-child(7), .cand-table--inscriptions td:nth-child(7) { width: 118px; }
+.cand-table--inscriptions th:nth-child(8), .cand-table--inscriptions td:nth-child(8) { width: 146px; }
+
+/* Candidatures : N°, candidat, formation (large), niveau, statut, complétude,
+   action. */
+.cand-table--candidatures { min-width: 1080px; }
+.cand-table--candidatures th:nth-child(1), .cand-table--candidatures td:nth-child(1) { width: 132px; }
+.cand-table--candidatures th:nth-child(2), .cand-table--candidatures td:nth-child(2) { width: 176px; }
+.cand-table--candidatures th:nth-child(4), .cand-table--candidatures td:nth-child(4) { width: 78px; }
+.cand-table--candidatures th:nth-child(5), .cand-table--candidatures td:nth-child(5) { width: 172px; }
+.cand-table--candidatures th:nth-child(6), .cand-table--candidatures td:nth-child(6) { width: 176px; }
+.cand-table--candidatures th:nth-child(7), .cand-table--candidatures td:nth-child(7) { width: 84px; }
+
+/* Tableaux secondaires (pièces d'un dossier) : pas de largeur imposée. */
+.cand-table--simple {
+  min-width: 0;
+  table-layout: auto;
+}
 
 /* Une formation tient sur deux lignes au plus : la hauteur des lignes reste
    régulière, et l'intitulé complet demeure accessible par l'infobulle. */
@@ -311,6 +330,21 @@
 }
 
 .cand-table .badge { white-space: nowrap; }
+
+/* Intitulé d'une colonne sans libellé visible (colonne d'actions). */
+.cand-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cand-table th.cand-th-actions { text-align: right; }
 
 .cand-table thead th {
   position: sticky;
@@ -375,14 +409,48 @@
   letter-spacing: 0.01em;
 }
 
+/* Cellule « Dossier » : la jauge garde une largeur utile sans écraser la
+   colonne voisine, et son compteur reste aligné à droite. */
 .cand-progress {
-  min-width: 150px;
+  min-width: 0;
 }
 
-.cand-progress .progress {
-  height: 0.45rem;
+/* ── Jauge de complétude (composant autonome, sans Bootstrap) ── */
+.cand-jauge {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+}
+
+.cand-jauge-piste {
+  position: relative;
+  flex: 1 1 auto;
+  height: 6px;
+  min-width: 54px;
   border-radius: 9999px;
-  background: #EEF2F7;
+  background: #EDF1F6;
+  overflow: hidden;
+}
+
+.cand-jauge-part {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.35s ease;
+}
+
+.cand-jauge-part--succes { background: linear-gradient(90deg, #22C55E, #16A34A); }
+.cand-jauge-part--attention { background: linear-gradient(90deg, #FBBF24, #F59E0B); }
+.cand-jauge-part--faible { background: linear-gradient(90deg, #FB7185, #E11D48); }
+
+.cand-jauge-valeur {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #64748B;
+  white-space: nowrap;
 }
 
 /* ── 6. PANNEAU DOSSIER ── */
@@ -524,12 +592,6 @@
   .cand-count-pill {
     margin-left: 0;
   }
-}
-
-.cand-progress small {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #64748B;
 }
 
 .cand-open-btn {
@@ -677,6 +739,23 @@
 .cand-btn-principal:hover {
   transform: translateY(-1px);
   box-shadow: 0 14px 26px -12px rgba(18, 103, 214, 0.95);
+  color: #FFFFFF;
+}
+
+/* Bouton d'action principal neutralisé (année non définie, envoi en cours) :
+   sans cet état, il gardait son dégradé vif et paraissait cliquable. */
+.cand-btn-principal:disabled,
+.cand-page .btn-premium-primary:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cand-btn-principal:disabled:hover,
+.cand-page .btn-premium-primary:disabled:hover {
+  transform: none;
+  box-shadow: none;
   color: #FFFFFF;
 }
 
@@ -854,8 +933,315 @@
   .cand-hero-actions .cand-btn-fantome { width: 100%; white-space: nowrap; }
 }
 
+/* Le tableau garde ses colonnes ; sur écran étroit un indice explicite
+   remplace l'absence de barre de défilement visible. */
+.cand-defile {
+  display: none;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.55rem 0 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #7C8CA1;
+}
+
+.cand-defile i { color: var(--injs-blue-royal); }
+
+@media (max-width: 900px) {
+  .cand-defile { display: flex; }
+}
+
 @media (max-width: 640px) {
   .cand-search { flex: 1 1 100%; max-width: none; }
   .cand-filter-select { flex: 1 1 100%; }
   .cand-btn-recherche { flex: 1 1 100%; justify-content: center; }
+}
+
+/* ── 10. FORMULAIRES ET FICHES DÉTAILLÉES (Candidatures) ───────────────────
+   Le formulaire de dépôt et le panneau « Dossier » reposaient sur la grille
+   Bootstrap (`row g-3`, `col-md-3`) et sur `form-control`/`form-select` :
+   aucune de ces classes n'existe ici, d'où des champs natifs de 19 px empilés
+   sans gouttière. Les règles ci-dessous fournissent le strict équivalent,
+   dans la palette du design system. */
+
+.cand-grille-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem 1.1rem;
+}
+
+.cand-champ {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.cand-champ--2 { grid-column: span 2; }
+.cand-champ--4 { grid-column: 1 / -1; }
+
+.cand-etiquette {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748B;
+}
+
+.cand-saisie {
+  width: 100%;
+  min-height: 42px;
+  padding: 0.55rem 0.85rem;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #0F172A;
+  background: #FBFCFE;
+  border: 1px solid #E2E8F0;
+  border-radius: 11px;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cand-saisie::placeholder { color: #A9B6C7; }
+
+.cand-saisie:hover:not(:focus) { border-color: #CBD5E1; }
+
+.cand-saisie:focus {
+  outline: none;
+  background: #FFFFFF;
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
+}
+
+select.cand-saisie {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.3rem;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2364748B' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M3.5 6l4.5 4.5L12.5 6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+}
+
+/* Champ de téléversement : le bouton natif est mis à l'échelle du formulaire. */
+.cand-saisie[type='file'] {
+  padding: 0.4rem 0.5rem;
+  font-size: 0.78rem;
+  color: #475569;
+}
+
+.cand-saisie[type='file']::file-selector-button {
+  margin-right: 0.6rem;
+  padding: 0.35rem 0.7rem;
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border: 1px solid #BFDCF5;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Bloc d'alerte du formulaire */
+.cand-alerte {
+  margin-bottom: 1rem;
+  padding: 0.8rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #A3222F;
+  background: var(--injs-danger-soft);
+  border: 1px solid #F5C2C7;
+  border-radius: 12px;
+  white-space: pre-line;
+}
+
+.cand-alerte--attention {
+  color: #8A5A00;
+  background: var(--injs-warning-soft);
+  border-color: #F3D49A;
+}
+
+/* Bandeau d'identité du dossier ouvert */
+.cand-dossier-entete {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid #EDF1F6;
+  background: linear-gradient(180deg, #F7FAFF 0%, #FFFFFF 100%);
+}
+
+.cand-dossier-numero {
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border: 1px solid #BFDCF5;
+  border-radius: 7px;
+  padding: 0.18rem 0.5rem;
+}
+
+.cand-dossier-nom {
+  display: block;
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+  line-height: 1.3;
+}
+
+.cand-dossier-sous {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #64748B;
+}
+
+.cand-section-titre {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 1.35rem 0 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #64748B;
+}
+
+.cand-section-titre i { color: var(--injs-blue-royal); font-size: 0.9rem; }
+
+.cand-completude {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 1.35rem;
+}
+
+.cand-completude-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #64748B;
+  white-space: nowrap;
+}
+
+.cand-completude-jauge { flex: 0 1 460px; min-width: 200px; }
+
+/* Dans la fiche, la jauge est un repère de lecture : un peu plus haute qu'en
+   tableau, sans devenir un trait pleine largeur. */
+.cand-completude .cand-jauge-piste { height: 8px; }
+.cand-completude .cand-jauge-valeur { font-size: 0.78rem; }
+
+.cand-transitions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cand-vide-actions { margin-top: 0.35rem; }
+
+/* Téléversement d'une pièce : le champ natif affichait « Choose File » en
+   anglais et cassait la hauteur des lignes ; l'entrée reste dans le libellé,
+   donc accessible au clavier, mais c'est le bouton de la charte qui se voit. */
+.cand-televerser {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.7rem;
+  border: 1px solid var(--injs-border-strong);
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: var(--injs-blue-royal);
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.cand-televerser:hover { background: var(--injs-blue-pale); border-color: var(--injs-blue-royal); }
+.cand-televerser:focus-within { outline: 2px solid var(--injs-blue-royal); outline-offset: 2px; }
+.cand-televerser i { font-size: 0.85rem; }
+
+.cand-televerser-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Pastille « Expirée » d'une pièce (remplace le badge Bootstrap). */
+.cand-puce-alerte {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 9999px;
+  border: 1px solid #FBD5D5;
+  background: #FEF2F2;
+  color: #B91C1C;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+}
+
+@media (max-width: 900px) {
+  .cand-grille-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cand-champ--2 { grid-column: 1 / -1; }
+}
+
+@media (max-width: 560px) {
+  .cand-grille-form { grid-template-columns: minmax(0, 1fr); }
+  .cand-dossier-entete { flex-wrap: wrap; }
+}
+
+@media (max-width: 560px) {
+  /* Tuile en colonne : sur 163 px de large, l'icône à gauche ne laissait que
+     ~87 px à l'intitulé, qui se coupait mot par mot (« DOSSIERS / REÇUS »). */
+  .cand-kpi { flex-direction: column; align-items: flex-start; gap: 0.5rem; padding: 0.8rem 0.85rem; }
+  .cand-kpi .cand-kpi-icon { width: 30px; height: 30px; font-size: 0.9rem; border-radius: 9px; }
+  .cand-kpi .cand-kpi-value { font-size: 1.3rem; }
+  .cand-kpi .cand-kpi-label { font-size: 0.6rem; line-height: 1.35; letter-spacing: 0.03em; margin: 0.15rem 0 0; }
+}
+/* Pastille « Scolarité — Admissions » du bandeau : simple étiquette, elle
+   s'étirait sur toute la largeur du bandeau et ressemblait à un champ vide. */
+.cand-hero-badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.22rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border: 1px solid #BFDCF5;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+/* Action « Ouvrir » du tableau des candidatures */
+.cand-action--ouvrir { color: var(--injs-blue-royal); }
+
+/* Barre d'actions du formulaire de dépôt */
+.cand-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid #EDF1F6;
+}
+
+.cand-btn-fantome--danger:hover {
+  background: var(--injs-danger-soft);
+  border-color: #F5C2C7;
+  color: #A3222F;
 }
