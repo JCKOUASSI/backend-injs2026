@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useToast } from '../../context/ToastContext'
 import StatutBadge from '../../components/scolarite/StatutBadge'
 import '../../styles/candidatures.css'
+import '../../styles/modale-premium.css'
 import {
   createInscription, deleteInscription, getAnneeCourante, getInscription,
   getRefFormations, getRefScolarite, listEtudiants, listInscriptions,
@@ -228,43 +229,137 @@ function DossierInscription({ id, onClose, onRefresh, onModifier }) {
   if (!data) return null
 
   return (
-    <div className="cand-panel cand-form" style={{ position: 'fixed', inset: 0, zIndex: 1050, background: 'rgba(0,0,0,0.45)' }}>
-      <div className="cand-panel cand-form" style={{ position: 'absolute', top: 60, left: '50%', transform: 'translateX(-50%)', width: 'min(700px, 92vw)', background: '#fff', maxHeight: '90vh', overflowY: 'auto' }}>
-        <div className="cand-panel-header">
-          <h3 className="cand-panel-title"><i className="bi bi-file-earmark-person me-1"></i>Dossier d'inscription</h3>
-          <button className="btn btn-close" onClick={onClose}></button>
-        </div>
-        <div className="cand-panel-body">
-          <div className="row g-3">
-            <div className="col-md-6"><strong>Étudiant :</strong> {data.etudiant}</div>
-            <div className="col-md-6"><strong>Matricule :</strong> <code>{data.matricule}</code></div>
-            <div className="col-md-6"><strong>Formation :</strong> {data.ref_formation}</div>
-            <div className="col-md-6"><strong>Niveau :</strong> {data.niveau}</div>
-            <div className="col-md-6"><strong>Année :</strong> {data.annee_academique}</div>
-            <div className="col-md-6"><strong>Type :</strong> {data.type_inscription_libelle}</div>
-            <div className="col-md-6"><strong>Statut :</strong> <StatutBadge statut={data.statut} libelle={data.statut_libelle} /></div>
-            <div className="col-md-6"><strong>Date :</strong> {data.date_inscription}</div>
-            {data.admission_id && <div className="col-12"><strong>Admission d'origine :</strong> {data.admission_id}</div>}
-            {data.observations && <div className="col-12"><strong>Observations :</strong> {data.observations}</div>}
-          </div>
-        </div>
-        <div className="cand-panel-footer">
+    <FenetreModale
+      idTitre="titre-dossier-inscription"
+      titre="Dossier d’inscription"
+      sousTitre="Synthèse administrative et cycle de vie du dossier."
+      icone="bi bi-file-earmark-person"
+      onClose={onClose}
+      pied={(
+        <>
           {CHEMIN_VALIDATION[data.statut] && (
-            <button className="btn btn-success cand-btn-pill" disabled={enCours === id} onClick={valider}>
-              {enCours === id && <span className="spinner-border spinner-border-sm me-1"></span>}
-              <i className="bi bi-check2-circle me-1"></i>Valider
+            <button
+              type="button"
+              className="mp-bouton mp-bouton--succes"
+              disabled={enCours === id}
+              onClick={valider}
+            >
+              {enCours === id && <span className="spinner-border" aria-hidden="true"></span>}
+              <i className="bi bi-check2-circle" aria-hidden="true"></i>
+              Valider
             </button>
           )}
-          <button className="btn btn-warning cand-btn-pill" onClick={() => { onClose(); onModifier(id); }}>
-            <i className="bi bi-pencil-square me-1"></i>Modifier
+          <button
+            type="button"
+            className="mp-bouton mp-bouton--fantome"
+            onClick={() => { onClose(); onModifier(id) }}
+          >
+            <i className="bi bi-pencil-square" aria-hidden="true"></i>
+            Modifier
           </button>
-          <button className="btn btn-danger cand-btn-pill" onClick={supprimer}>
-            <i className="bi bi-trash3 me-1"></i>Supprimer
+          <button
+            type="button"
+            className="mp-bouton mp-bouton--danger"
+            onClick={supprimer}
+          >
+            <i className="bi bi-trash3" aria-hidden="true"></i>
+            Supprimer
           </button>
-          <button className="btn btn-secondary cand-btn-pill" onClick={onClose}>
-            <i className="bi bi-x-lg me-1"></i>Fermer
+          <button type="button" className="mp-bouton mp-bouton--fantome" onClick={onClose}>
+            Fermer
           </button>
+        </>
+      )}
+    >
+      <div className="mp-corps">
+        <div className="mp-identite">
+          <span className="mp-identite-avatar" aria-hidden="true">{String(data.etudiant || '?').trim().split(/\s+/).slice(0, 2).map((m) => m[0]).join('').toUpperCase()}</span>
+          <div>
+            <div className="mp-identite-nom">{data.etudiant}</div>
+            <div className="mp-identite-detail">Matricule {data.matricule}</div>
+          </div>
+          <div style={{ marginLeft: 'auto' }}>
+            <StatutBadge statut={data.statut} libelle={data.statut_libelle} />
+          </div>
         </div>
+
+        <div className="mp-fiche">
+          <div className="mp-fiche-item">
+            <span className="mp-fiche-cle">Formation</span>
+            <span className="mp-fiche-valeur">{data.ref_formation || '—'}</span>
+          </div>
+          <div className="mp-fiche-item">
+            <span className="mp-fiche-cle">Niveau</span>
+            <span className="mp-fiche-valeur">{data.niveau || '—'}</span>
+          </div>
+          <div className="mp-fiche-item">
+            <span className="mp-fiche-cle">Année académique</span>
+            <span className="mp-fiche-valeur">{data.annee_academique || '—'}</span>
+          </div>
+          <div className="mp-fiche-item">
+            <span className="mp-fiche-cle">Type d’inscription</span>
+            <span className="mp-fiche-valeur">{data.type_inscription_libelle || '—'}</span>
+          </div>
+          <div className="mp-fiche-item">
+            <span className="mp-fiche-cle">Date d’inscription</span>
+            <span className="mp-fiche-valeur">{data.date_inscription || '—'}</span>
+          </div>
+          <div className="mp-fiche-item">
+            <span className="mp-fiche-cle">Parcours</span>
+            <span className="mp-fiche-valeur">{data.parcours || '—'}</span>
+          </div>
+          {data.admission_id && (
+            <div className="mp-fiche-item mp-fiche-item--pleine">
+              <span className="mp-fiche-cle">Admission d’origine</span>
+              <span className="mp-fiche-valeur">{data.admission_id}</span>
+            </div>
+          )}
+          {data.observations && (
+            <div className="mp-fiche-item mp-fiche-item--pleine">
+              <span className="mp-fiche-cle">Observations</span>
+              <span className="mp-fiche-valeur">{data.observations}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </FenetreModale>
+  )
+}
+
+/**
+ * Fenêtre modale réutilisable (voile flouté, carte premium, en-tête à icône,
+ * pied d'actions aligné à droite).
+ *
+ * Comportements attendus d'une fenêtre : fermeture par la touche Échap et par
+ * un clic sur le voile, rôle `dialog` annoncé aux lecteurs d'écran, titre
+ * associé par `aria-labelledby`. Le corps (`children`) accueille le formulaire,
+ * qui doit porter son propre `onSubmit`.
+ */
+function FenetreModale({ idTitre, titre, sousTitre, icone, onClose, children, pied }) {
+  useEffect(() => {
+    const surTouche = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', surTouche)
+    return () => document.removeEventListener('keydown', surTouche)
+  }, [onClose])
+
+  return (
+    <div
+      className="mp-overlay"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="mp-modal" role="dialog" aria-modal="true" aria-labelledby={idTitre}>
+        <header className="mp-entete">
+          <span className="mp-entete-icone" aria-hidden="true"><i className={icone}></i></span>
+          <div className="mp-entete-textes">
+            <h3 className="mp-titre" id={idTitre}>{titre}</h3>
+            {sousTitre && <p className="mp-sous-titre">{sousTitre}</p>}
+          </div>
+          <button type="button" className="mp-fermer" onClick={onClose} aria-label="Fermer la fenêtre">
+            <i className="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </header>
+        {children}
+        <footer className="mp-pied">{pied}</footer>
       </div>
     </div>
   )
@@ -319,76 +414,153 @@ function NouvelleInscription({ onClose, onSuccess }) {
 
 
   return (
-    <div className="cand-panel cand-form" style={{ position: 'fixed', inset: 0, zIndex: 1050, background: 'rgba(0,0,0,0.45)' }}>
-      <div className="cand-panel cand-form" style={{ position: 'absolute', top: 60, left: '50%', transform: 'translateX(-50%)', width: 'min(700px, 92vw)', background: '#fff', maxHeight: '90vh', overflowY: 'auto' }}>
-        <div className="cand-panel-header">
-          <h3 className="cand-panel-title"><i className="bi bi-person-plus me-1"></i>Nouvelle inscription administrative</h3>
-          <button className="btn btn-close" onClick={onClose}></button>
-        </div>
-        <form onSubmit={soumettre} className="cand-panel-body">
-          <div className="row g-3">
-            <div className="col-md-6">
-              <label className="cand-form-label">Étudiant <span className="text-danger">*</span></label>
-              <select className="cand-form-select" value={form.etudiant_id} onChange={(e) => changer('etudiant_id', e.target.value)} required>
-                <option value="">Sélectionner un étudiant</option>
-                {etudiants.map((et) => (<option key={et.id} value={et.id}>{et.matricule} – {et.nom_complet}</option>))}
-              </select>
-            </div>
-            <div className="col-md-6">
-              <label className="cand-form-label">Année académique</label>
-              <select className="cand-form-select" value={form.annee_academique_id} onChange={(e) => changer('annee_academique_id', e.target.value)}>
-                <option value="">Année courante</option>
-                <option value={annee?.id} selected={!form.annee_academique_id}>{annee?.libelle}</option>
-              </select>
-            </div>
-            <div className="col-md-6">
-              <label className="cand-form-label">Formation <span className="text-danger">*</span></label>
-              <select className="cand-form-select" value={form.ref_formation_id} onChange={(e) => changer('ref_formation_id', e.target.value)} required>
-                <option value="">Sélectionner une formation</option>
-                {formations.map((f) => (<option key={f.id} value={f.id}>{f.intitule}</option>))}
-              </select>
-            </div>
-            <div className="col-md-6">
-              <label className="cand-form-label">Niveau <span className="text-danger">*</span></label>
-              <select className="cand-form-select" value={form.niveau_id} onChange={(e) => changer('niveau_id', e.target.value)} required>
-                <option value="">Sélectionner un niveau</option>
-                {niveaux.map((n) => (<option key={n.id} value={n.id}>{n.code}</option>))}
-              </select>
-            </div>
-            <div className="col-md-6">
-              <label className="cand-form-label">Parcours</label>
-              <select className="cand-form-select" value={form.parcours_id} onChange={(e) => changer('parcours_id', e.target.value)}>
-                <option value="">Aucun</option>
-                {parcours.map((p) => (<option key={p.id} value={p.id}>{p.intitule}</option>))}
-              </select>
-            </div>
-            <div className="col-md-6">
-              <label className="cand-form-label">Type d'inscription</label>
-              <select className="cand-form-select" value={form.type_inscription} onChange={(e) => changer('type_inscription', e.target.value)}>
-                {TYPES_INSCRIPTION.map(([valeur, libelle]) => (
-                  <option key={valeur} value={valeur}>{libelle}</option>
-                ))}
-              </select>
-            </div>
-            <div className="col-md-6">
-              <label className="cand-form-label">Date d'inscription</label>
-              <input className="cand-form-input" type="date" value={form.date_inscription} onChange={(e) => changer('date_inscription', e.target.value)} />
-            </div>
-            <div className="col-12">
-              <label className="cand-form-label">Observations</label>
-              <textarea className="cand-form-input" value={form.observations} onChange={(e) => changer('observations', e.target.value)} rows="2"></textarea>
-            </div>
-          </div>
-        </form>
-        <div className="cand-panel-footer">
-          <button className="btn btn-secondary cand-btn-pill" onClick={onClose}>Annuler</button>
-          <button className="btn btn-primary cand-btn-pill" disabled={enCours || !valide} onClick={soumettre}>
-            {enCours && <span className="spinner-border spinner-border-sm me-1"></span>}
-            <i className="bi bi-save me-1"></i>Créer
+    <FenetreModale
+      idTitre="titre-nouvelle-inscription"
+      titre="Nouvelle inscription administrative"
+      sousTitre="Les champs marqués d’un astérisque sont obligatoires."
+      icone="bi bi-person-plus"
+      onClose={onClose}
+      pied={(
+        <>
+          <button type="button" className="mp-bouton mp-bouton--fantome" onClick={onClose}>
+            Annuler
           </button>
+          <button
+            type="submit"
+            form="form-nouvelle-inscription"
+            className="mp-bouton mp-bouton--principal"
+            disabled={enCours || !valide}
+          >
+            {enCours && <span className="spinner-border" aria-hidden="true"></span>}
+            <i className="bi bi-check2" aria-hidden="true"></i>
+            Créer l’inscription
+          </button>
+        </>
+      )}
+    >
+      <form id="form-nouvelle-inscription" className="mp-corps" onSubmit={soumettre}>
+        <div className="mp-grille">
+          <div className="mp-champ mp-champ--pleine">
+            <label className="mp-etiquette" htmlFor="ins-etudiant">
+              Étudiant <span className="mp-requis" aria-hidden="true">*</span>
+            </label>
+            <select
+              id="ins-etudiant"
+              className="mp-controle"
+              value={form.etudiant_id}
+              onChange={(e) => changer('etudiant_id', e.target.value)}
+              required
+              aria-required="true"
+            >
+              <option value="">Sélectionner un étudiant…</option>
+              {etudiants.map((et) => (<option key={et.id} value={et.id}>{et.matricule} – {et.nom_complet}</option>))}
+            </select>
+          </div>
+
+          <div className="mp-champ">
+            <label className="mp-etiquette" htmlFor="ins-formation">
+              Formation <span className="mp-requis" aria-hidden="true">*</span>
+            </label>
+            <select
+              id="ins-formation"
+              className="mp-controle"
+              value={form.ref_formation_id}
+              onChange={(e) => changer('ref_formation_id', e.target.value)}
+              required
+              aria-required="true"
+            >
+              <option value="">Sélectionner une formation…</option>
+              {formations.map((f) => (<option key={f.id} value={f.id}>{f.intitule}</option>))}
+            </select>
+          </div>
+
+          <div className="mp-champ">
+            <label className="mp-etiquette" htmlFor="ins-niveau">
+              Niveau <span className="mp-requis" aria-hidden="true">*</span>
+            </label>
+            <select
+              id="ins-niveau"
+              className="mp-controle"
+              value={form.niveau_id}
+              onChange={(e) => changer('niveau_id', e.target.value)}
+              required
+              aria-required="true"
+            >
+              <option value="">Sélectionner un niveau…</option>
+              {niveaux.map((n) => (<option key={n.id} value={n.id}>{n.code}</option>))}
+            </select>
+          </div>
+
+          <div className="mp-champ">
+            <label className="mp-etiquette" htmlFor="ins-annee">Année académique</label>
+            <select
+              id="ins-annee"
+              className="mp-controle"
+              value={form.annee_academique_id}
+              onChange={(e) => changer('annee_academique_id', e.target.value)}
+            >
+              <option value="">Année courante{annee?.libelle ? ` — ${annee.libelle}` : ''}</option>
+              {annee?.id && <option value={annee.id}>{annee.libelle}</option>}
+            </select>
+            <span className="mp-aide">Laisser sur « année courante » pour utiliser l’année active.</span>
+          </div>
+
+          <div className="mp-champ">
+            <label className="mp-etiquette" htmlFor="ins-type">Type d’inscription</label>
+            <select
+              id="ins-type"
+              className="mp-controle"
+              value={form.type_inscription}
+              onChange={(e) => changer('type_inscription', e.target.value)}
+            >
+              {TYPES_INSCRIPTION.map(([valeur, libelle]) => (
+                <option key={valeur} value={valeur}>{libelle}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mp-champ">
+            <label className="mp-etiquette" htmlFor="ins-parcours">Parcours</label>
+            <select
+              id="ins-parcours"
+              className="mp-controle"
+              value={form.parcours_id}
+              onChange={(e) => changer('parcours_id', e.target.value)}
+            >
+              <option value="">Aucun parcours</option>
+              {parcours.map((p) => (<option key={p.id} value={p.id}>{p.intitule}</option>))}
+            </select>
+          </div>
+
+          <div className="mp-champ">
+            <label className="mp-etiquette" htmlFor="ins-date">
+              Date d’inscription <span className="mp-requis" aria-hidden="true">*</span>
+            </label>
+            <input
+              id="ins-date"
+              className="mp-controle"
+              type="date"
+              value={form.date_inscription}
+              onChange={(e) => changer('date_inscription', e.target.value)}
+              required
+              aria-required="true"
+            />
+          </div>
+
+          <div className="mp-champ mp-champ--pleine">
+            <label className="mp-etiquette" htmlFor="ins-observations">Observations</label>
+            <textarea
+              id="ins-observations"
+              className="mp-controle"
+              value={form.observations}
+              onChange={(e) => changer('observations', e.target.value)}
+              rows="3"
+              placeholder="Précisions administratives éventuelles…"
+            ></textarea>
+          </div>
         </div>
-      </div>
-    </div>
+      </form>
+    </FenetreModale>
   )
 }
 
@@ -448,58 +620,106 @@ function ModifierInscription({ id, onClose, onSuccess }) {
   if (!data) return <div className="cand-panel cand-form"><div className="text-center py-4"><div className="spinner-border"></div></div></div>
 
   return (
-    <div className="cand-panel cand-form" style={{ position: 'fixed', inset: 0, zIndex: 1050, background: 'rgba(0,0,0,0.45)' }}>
-      <div className="cand-panel cand-form" style={{ position: 'absolute', top: 60, left: '50%', transform: 'translateX(-50%)', width: 'min(700px, 92vw)', background: '#fff', maxHeight: '90vh', overflowY: 'auto' }}>
-        <div className="cand-panel-header">
-          <h3 className="cand-panel-title"><i className="bi bi-pencil-square me-1"></i>Modifier l'inscription</h3>
-          <button className="btn btn-close" onClick={onClose}></button>
-        </div>
-        <form onSubmit={soumettre} className="cand-panel-body">
-          <div className="row g-3">
-            <div className="col-12"><strong className="cand-form-label">{data.etudiant}</strong> <span className="text-muted">({data.matricule})</span></div>
-            <div className="col-md-6">
-              <label className="cand-form-label">Formation</label>
-              <select className="cand-form-select" value={form.ref_formation_id} onChange={(e) => changer('ref_formation_id', e.target.value)}>
-                <option value="">Aucune</option>
-                {formations.map((f) => (<option key={f.id} value={f.id}>{f.intitule}</option>))}
-              </select>
-            </div>
-            <div className="col-md-6">
-              <label className="cand-form-label">Niveau</label>
-              <select className="cand-form-select" value={form.niveau_id} onChange={(e) => changer('niveau_id', e.target.value)}>
-                <option value="">Aucun</option>
-                {niveaux.map((n) => (<option key={n.id} value={n.id}>{n.code}</option>))}
-              </select>
-            </div>
-            <div className="col-md-6">
-              <label className="cand-form-label">Parcours</label>
-              <select className="cand-form-select" value={form.parcours_id} onChange={(e) => changer('parcours_id', e.target.value)}>
-                <option value="">Aucun</option>
-                {parcours.map((p) => (<option key={p.id} value={p.id}>{p.intitule}</option>))}
-              </select>
-            </div>
-            <div className="col-md-6">
-              <label className="cand-form-label">Type d'inscription</label>
-              <select className="cand-form-select" value={form.type_inscription} onChange={(e) => changer('type_inscription', e.target.value)}>
-                {TYPES_INSCRIPTION.map(([valeur, libelle]) => (
-                  <option key={valeur} value={valeur}>{libelle}</option>
-                ))}
-              </select>
-            </div>
-            <div className="col-12">
-              <label className="cand-form-label">Observations</label>
-              <textarea className="cand-form-input" value={form.observations} onChange={(e) => changer('observations', e.target.value)} rows="2"></textarea>
-            </div>
-          </div>
-        </form>
-        <div className="cand-panel-footer">
-          <button className="btn btn-secondary cand-btn-pill" onClick={onClose}>Annuler</button>
-          <button className="btn btn-primary cand-btn-pill" disabled={enCours} onClick={soumettre}>
-            {enCours && <span className="spinner-border spinner-border-sm me-1"></span>}
-            <i className="bi bi-save me-1"></i>Enregistrer
+    <FenetreModale
+      idTitre="titre-modifier-inscription"
+      titre="Modifier l’inscription"
+      sousTitre="Le rattachement pédagogique peut être ajusté sans perdre le dossier ni son historique."
+      icone="bi bi-pencil-square"
+      onClose={onClose}
+      pied={(
+        <>
+          <button type="button" className="mp-bouton mp-bouton--fantome" onClick={onClose}>
+            Annuler
           </button>
+          <button
+            type="submit"
+            form="form-modifier-inscription"
+            className="mp-bouton mp-bouton--principal"
+            disabled={enCours}
+          >
+            {enCours && <span className="spinner-border" aria-hidden="true"></span>}
+            <i className="bi bi-check2-circle" aria-hidden="true"></i>
+            Enregistrer
+          </button>
+        </>
+      )}
+    >
+      <form id="form-modifier-inscription" className="mp-corps" onSubmit={soumettre}>
+        <div className="mp-identite">
+          <span className="mp-identite-avatar" aria-hidden="true">{String(data.etudiant || '?').trim().split(/\s+/).slice(0, 2).map((m) => m[0]).join('').toUpperCase()}</span>
+          <div>
+            <div className="mp-identite-nom">{data.etudiant}</div>
+            <div className="mp-identite-detail">Matricule {data.matricule}</div>
+          </div>
         </div>
-      </div>
-    </div>
+
+        <div className="mp-grille">
+          <div className="mp-champ">
+            <label className="mp-etiquette" htmlFor="mod-formation">Formation</label>
+            <select
+              id="mod-formation"
+              className="mp-controle"
+              value={form.ref_formation_id}
+              onChange={(e) => changer('ref_formation_id', e.target.value)}
+            >
+              <option value="">Aucune formation</option>
+              {formations.map((f) => (<option key={f.id} value={f.id}>{f.intitule}</option>))}
+            </select>
+          </div>
+
+          <div className="mp-champ">
+            <label className="mp-etiquette" htmlFor="mod-niveau">Niveau</label>
+            <select
+              id="mod-niveau"
+              className="mp-controle"
+              value={form.niveau_id}
+              onChange={(e) => changer('niveau_id', e.target.value)}
+            >
+              <option value="">Aucun niveau</option>
+              {niveaux.map((n) => (<option key={n.id} value={n.id}>{n.code}</option>))}
+            </select>
+          </div>
+
+          <div className="mp-champ">
+            <label className="mp-etiquette" htmlFor="mod-parcours">Parcours</label>
+            <select
+              id="mod-parcours"
+              className="mp-controle"
+              value={form.parcours_id}
+              onChange={(e) => changer('parcours_id', e.target.value)}
+            >
+              <option value="">Aucun parcours</option>
+              {parcours.map((p) => (<option key={p.id} value={p.id}>{p.intitule}</option>))}
+            </select>
+          </div>
+
+          <div className="mp-champ">
+            <label className="mp-etiquette" htmlFor="mod-type">Type d’inscription</label>
+            <select
+              id="mod-type"
+              className="mp-controle"
+              value={form.type_inscription}
+              onChange={(e) => changer('type_inscription', e.target.value)}
+            >
+              {TYPES_INSCRIPTION.map(([valeur, libelle]) => (
+                <option key={valeur} value={valeur}>{libelle}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mp-champ mp-champ--pleine">
+            <label className="mp-etiquette" htmlFor="mod-observations">Observations</label>
+            <textarea
+              id="mod-observations"
+              className="mp-controle"
+              value={form.observations}
+              onChange={(e) => changer('observations', e.target.value)}
+              rows="3"
+              placeholder="Précisions administratives éventuelles…"
+            ></textarea>
+          </div>
+        </div>
+      </form>
+    </FenetreModale>
   )
 }

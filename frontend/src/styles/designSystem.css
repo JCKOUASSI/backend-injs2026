@@ -704,6 +704,19 @@ label.required::after {
   border-color: var(--injs-border);
 }
 
+/* Variantes de couleur réellement émises par <StatutBadge> : le composant
+   construit la classe `badge bg-<variante>` (héritage des noms Bootstrap),
+   or seules les classes `.badge-*` étaient stylées : les pastilles de statut
+   s'affichaient donc sans fond ni couleur sur toute l'application.
+   Double classe volontaire (`.badge.bg-…`) : les `.bg-*` posées sur d'autres
+   éléments restent intactes. */
+.badge.bg-success { background: var(--injs-success-soft); color: #0E7A4F; border-color: #B7E7CE; }
+.badge.bg-warning { background: var(--injs-warning-soft); color: #8A5A00; border-color: #F3D49A; }
+.badge.bg-danger  { background: var(--injs-danger-soft);  color: #A3222F; border-color: #F5C2C7; }
+.badge.bg-info    { background: var(--injs-blue-pale);    color: var(--injs-blue); border-color: #BFDCF5; }
+.badge.bg-primary { background: var(--injs-blue-pale);    color: var(--injs-blue-royal); border-color: #BFDCF5; }
+.badge.bg-secondary { background: var(--injs-surface-alt); color: var(--injs-text-soft); border-color: var(--injs-border); }
+
 /* ── 9. FENÊTRES MODALES ──────────────────────────────────────────────────
    Verre renforcé : fond quasi opaque pour que la lecture reste confortable,
    ombre profonde pour détacher la fenêtre, focus piégé côté composant. */
