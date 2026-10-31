@@ -1,0 +1,111 @@
+{
+  "execute_le": "2026-10-31T15:49:13.072Z",
+  "maquette_id": "1",
+  "verification": [
+    {
+      "nom": "maquette sélectionnée",
+      "ok": true,
+      "detail": "id=1"
+    },
+    {
+      "nom": "base de départ sans reste E2E",
+      "ok": true,
+      "detail": "18 UE au départ"
+    },
+    {
+      "nom": "UE créée en base (API)",
+      "ok": true,
+      "detail": "id=331 crédits=3 statut=BROUILLON"
+    },
+    {
+      "nom": "statut initial = BROUILLON",
+      "ok": true,
+      "detail": "BROUILLON"
+    },
+    {
+      "nom": "UE affichée à l’écran",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "modification persistée (API)",
+      "ok": true,
+      "detail": "UE de test E2E — intitulé modifié"
+    },
+    {
+      "nom": "ECUE créé sous l’UE (API)",
+      "ok": true,
+      "detail": "id=405 statut=BROUILLON CM=20"
+    },
+    {
+      "nom": "activation ECUE sous UE brouillon refusée",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "UE activée (API)",
+      "ok": true,
+      "detail": "ACTIVE"
+    },
+    {
+      "nom": "UE activée : plus de bouton Supprimer",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "ECUE activé sous une UE active (API)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "UE désactivée (API)",
+      "ok": true,
+      "detail": "DESACTIVEE"
+    },
+    {
+      "nom": "ECUE désactivé avec son UE (API)",
+      "ok": true,
+      "detail": "DESACTIVEE"
+    },
+    {
+      "nom": "retour en brouillon (API)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "suppression UE refusée car elle porte un ECUE",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "ECUE désactivé : pas de bouton Supprimer",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "ECUE repassé en brouillon (API)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "ECUE supprimé (API)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "UE supprimée (API) : base laissée propre",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "maquette gelée : bandeau de verrouillage affiché",
+      "ok": true,
+      "detail": "undefined — ACTIVE"
+    },
+    {
+      "nom": "maquette gelée : aucun bouton de création",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

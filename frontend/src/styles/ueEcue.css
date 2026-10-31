@@ -1,0 +1,142 @@
+/* Écran UE / ECUE — mise en page autonome.
+ *
+ * Le projet n'embarque pas la grille Bootstrap (seuls des composants du socle
+ * sont définis) : les classes `row` / `col-lg-6` n'y produisent aucune colonne.
+ * On pose donc ici une grille explicite, à deux panneaux côte à côte sur grand
+ * écran et empilés en dessous : c'est la structure voulue (maquette → UE →
+ * ECUE), pas un effet de style.
+ */
+
+.ue-ecue-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.9rem 1.25rem;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 1rem;
+  border-radius: var(--injs-radius-lg, 14px);
+  background: var(--injs-surface, #fff);
+  border: 1px solid var(--injs-glass-3-border, rgba(15, 40, 90, 0.08));
+}
+
+.ue-ecue-toolbar .ue-ecue-champ {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ue-ecue-toolbar .ue-ecue-champ--large {
+  flex: 1 1 320px;
+  min-width: 280px;
+}
+
+.ue-ecue-toolbar .ue-ecue-champ label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--injs-muted, #5d6b85);
+}
+
+.ue-ecue-toolbar .ue-ecue-etat {
+  margin-left: auto;
+  align-self: center;
+}
+
+.ue-ecue-colonnes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 1200px) {
+  .ue-ecue-colonnes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ue-ecue-panneau {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ue-ecue-panneau .gen-table-wrap {
+  max-height: 62vh;
+  overflow: auto;
+}
+
+/* Le socle impose `min-width: 720px` aux tableaux génériques : dans un panneau
+   à moitié de largeur, la dernière colonne sortait du cadre. Ici les deux
+   tableaux sont des listes de travail, lisibles dès 420 px : on lève la
+   contrainte pour ce contexte précis, sans toucher au socle partagé. */
+.ue-ecue-panneau .gen-table {
+  min-width: 0;
+  width: 100%;
+}
+
+.ue-ecue-panneau .gen-table thead th,
+.ue-ecue-panneau .gen-table tbody td {
+  padding: 0.5rem 0.45rem;
+}
+
+
+/* Colonnes d'actions compactes : trois boutons icône tiennent dans une
+   largeur étroite, ce qui évite de pousser le tableau hors du panneau. */
+.ue-ecue-panneau .gen-table th:last-child,
+.ue-ecue-panneau .gen-table td:last-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.ue-ecue-legende {
+  font-size: 0.78rem;
+  color: var(--injs-muted, #5d6b85);
+  line-height: 1.35;
+}
+
+.ue-ecue-actions {
+  display: flex;
+  gap: 0.15rem;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+}
+
+/* Les codes officiels d'ECUE sont longs (« EM-S1-UE01-EC01 ») : on réduit leur
+   chasse dans ce contexte pour que le tableau tienne dans son panneau, sans
+   jamais tronquer le code (il reste lisible en entier). */
+.ue-ecue-panneau .gen-code-chip {
+  font-size: 0.71rem;
+  letter-spacing: -0.01em;
+}
+
+.ue-ecue-panneau .gen-table .badge {
+  font-size: 0.72rem;
+  padding: 0.28rem 0.45rem;
+}
+
+/* Boutons icône compacts : trois actions doivent tenir dans la colonne sans
+   repousser le tableau hors du panneau. Le libellé reste accessible par
+   `aria-label` et l'infobulle. */
+.ue-ecue-actions .btn {
+  padding: 0.18rem 0.34rem;
+  line-height: 1;
+  font-size: 0.8rem;
+}
+
+.ue-ecue-formulaire {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.9rem 1rem;
+}
+
+.ue-ecue-formulaire .ue-ecue-pleine-largeur {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 720px) {
+  .ue-ecue-formulaire {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

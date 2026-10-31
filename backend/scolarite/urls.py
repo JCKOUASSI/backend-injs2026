@@ -67,6 +67,7 @@ urlpatterns = [
     path('edt/affectations/',                     edt_export.affectations,           name='scolarite-edt-affectations'),
     path('edt/espaces/<int:salle_id>/occupation/', edt_export.espaces_occupation,    name='scolarite-edt-espaces-occupation'),
 
+    path('familles/',                            api_views.famille_list,            name='scolarite-famille-list'),
     path('maquettes/',                            api_views.maquette_list,           name='scolarite-maquette-list'),
     path('maquettes/<int:pk>/',                   api_views.maquette_detail,         name='scolarite-maquette-detail'),
     path('maquettes/<int:pk>/semestres/<int:semestre_id>/ecues/',
@@ -81,8 +82,10 @@ urlpatterns = [
     path('maquettes/<int:pk>/journal/',           api_views.maquette_journal,        name='scolarite-maquette-journal'),
     path('maquettes/<int:pk>/ues/',               api_views.maquette_ue_create,      name='scolarite-maquette-ue-create'),
     path('ues/<int:pk>/',                         api_views.ue_detail,               name='scolarite-ue-detail'),
+    path('ues/<int:pk>/statut/',                  api_views.ue_statut,               name='scolarite-ue-statut'),
     path('ues/<int:pk>/ecues/',                   api_views.ue_ecue_create,          name='scolarite-ue-ecue-create'),
     path('ecues/<int:pk>/',                       api_views.ecue_detail,             name='scolarite-ecue-detail'),
+    path('ecues/<int:pk>/statut/',                api_views.ecue_statut,             name='scolarite-ecue-statut'),
 
     # Lot B refonte — vue « Cours / Enseignements » LMD (affectations × EDT).
     path('pedagogie/cours/',                      cours_lmd_api.cours_list,          name='scolarite-pedagogie-cours'),

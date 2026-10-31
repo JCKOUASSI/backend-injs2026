@@ -1073,6 +1073,23 @@ class UE(models.Model):
         OPTIONNELLE = 'OPTIONNELLE', 'Optionnelle'
         LIBRE = 'LIBRE', 'Libre'
 
+    class Statut(models.TextChoices):
+        """Cycle de vie de l'élément pédagogique lui-même.
+
+        Distinct du statut de la **maquette** (qui gèle l'ensemble) : ici, on
+        dit si *cette* unité est en cours de rédaction, publiée, ou retirée.
+
+        - ``BROUILLON``  : modifiable et supprimable ;
+        - ``ACTIVE``     : publiée — plus modifiable, il faut repasser par un
+          brouillon (la donnée pédagogique publiée ne se réécrit pas en place) ;
+        - ``DESACTIVEE`` : retirée de l'usage courant, conservée pour l'historique
+          (notes, jurys, archives) — jamais effacée.
+        """
+
+        BROUILLON = 'BROUILLON', 'Brouillon'
+        ACTIVE = 'ACTIVE', 'Activé'
+        DESACTIVEE = 'DESACTIVEE', 'Désactivé'
+
     maquette = models.ForeignKey(
         Maquette, on_delete=models.CASCADE, related_name='unites_enseignement',
     )
@@ -1082,6 +1099,10 @@ class UE(models.Model):
     credits = models.PositiveSmallIntegerField(default=0, verbose_name='Crédits ECTS')
     caractere = models.CharField(max_length=20, choices=Caractere.choices, default=Caractere.OBLIGATOIRE)
     ordre = models.PositiveSmallIntegerField(default=1)
+    statut = models.CharField(
+        max_length=20, choices=Statut.choices, default=Statut.BROUILLON,
+        db_index=True,
+    )
     famille = models.ForeignKey(
         FamilleModule, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='unites_enseignement',
@@ -1112,13 +1133,47 @@ class UE(models.Model):
         self._verifier_maquette_modifiable()
         super().save(*args, **kwargs)
 
+    def ecues_non_supprimables(self):
+        """ECUE qui empêcheraient la suppression de cette UE."""
+        return self.ecues.exclude(statut=self.Statut.BROUILLON)
+
     def delete(self, *args, **kwargs):
+        """Suppression réservée au brouillon, et sans cascade silencieuse.
+
+        Supprimer une UE emporte ses ECUE par ``CASCADE`` : c'est exactement le
+        genre d'effacement de masse qu'un référentiel ne doit jamais faire par
+        mégarde. On refuse donc tant que l'UE n'est pas en brouillon ou qu'elle
+        porte encore des ECUE, et on dit combien — la suppression reste possible,
+        mais elle se fait en connaissance de cause, ligne par ligne.
+        """
         self._verifier_maquette_modifiable()
+        if self.statut != self.Statut.BROUILLON:
+            raise ValidationError(
+                f"L'UE {self.code} est {self.get_statut_display().lower()} : "
+                "repassez-la en brouillon avant de la supprimer."
+            )
+        nombre = self.ecues.count()
+        if nombre:
+            raise ValidationError(
+                f"L'UE {self.code} porte {nombre} ECUE : supprimez-les d'abord "
+                "(aucune suppression en cascade n'est autorisée)."
+            )
         return super().delete(*args, **kwargs)
 
 
 class ECUE(models.Model):
     """Élément constitutif d'une UE. Passerelle possible vers un RefModule opérationnel."""
+
+    class Statut(models.TextChoices):
+        """Même cycle de vie que l'UE (brouillon / activé / désactivé).
+
+        ``archive`` reste un drapeau distinct et plus fort : une ECUE archivée
+        ne peut entrer dans aucune nouvelle version de maquette.
+        """
+
+        BROUILLON = 'BROUILLON', 'Brouillon'
+        ACTIVE = 'ACTIVE', 'Activé'
+        DESACTIVEE = 'DESACTIVEE', 'Désactivé'
 
     ue = models.ForeignKey(UE, on_delete=models.CASCADE, related_name='ecues')
     code = models.CharField(max_length=30)
@@ -1142,6 +1197,10 @@ class ECUE(models.Model):
     # Lot L1 — une ECUE archivée ne peut pas entrer dans une nouvelle maquette
     archive = models.BooleanField(default=False, db_index=True)
     ordre = models.PositiveSmallIntegerField(default=1)
+    statut = models.CharField(
+        max_length=20, choices=Statut.choices, default=Statut.BROUILLON,
+        db_index=True,
+    )
 
     class Meta:
         ordering = ['ordre', 'code']
@@ -1172,7 +1231,13 @@ class ECUE(models.Model):
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
+        """Même règle que l'UE : on ne supprime qu'un brouillon."""
         self._verifier_maquette_modifiable()
+        if self.statut != self.Statut.BROUILLON:
+            raise ValidationError(
+                f"L'ECUE {self.code} est {self.get_statut_display().lower()} : "
+                "repassez-la en brouillon avant de la supprimer."
+            )
         return super().delete(*args, **kwargs)
 
 

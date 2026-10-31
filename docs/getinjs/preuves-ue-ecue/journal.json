@@ -1,0 +1,104 @@
+[
+  {
+    "nom": "01-liste-ue-ecue",
+    "description": "Écran UE / ECUE : maquette sélectionnée, 18 UE, panneau ECUE de l'UE sélectionnée",
+    "octets": 158644,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "02-formulaire-nouvelle-ue",
+    "description": "Formulaire « Créer une unité d'enseignement » (code, intitulé, crédits, ordre, semestre, caractère, famille)",
+    "octets": 53858,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "03-ue-creee",
+    "description": "UE E2E-UE01 créée et listée en statut Brouillon (vérifié par appel direct à l'API)",
+    "octets": 160377,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "04-formulaire-modification-ue",
+    "description": "Formulaire de modification pré-rempli avec les valeurs de l'UE",
+    "octets": 63678,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "05-ue-modifiee",
+    "description": "Intitulé modifié et persisté après PATCH",
+    "octets": 161174,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "06-formulaire-nouvel-ecue",
+    "description": "Formulaire « Créer un ECUE » sous l'UE sélectionnée",
+    "octets": 49727,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "07-ecue-cree",
+    "description": "ECUE E2E-ECUE01 listé sous son UE, en Brouillon",
+    "octets": 153709,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "08-ecue-activation-refusee",
+    "description": "Activation d'ECUE refusée : l'UE est encore en Brouillon (409 expliqué)",
+    "octets": 157435,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "09-ue-activee",
+    "description": "UE passée en Activé ; les actions de modification et de suppression ne sont plus proposées",
+    "octets": 158683,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "10-ecue-active",
+    "description": "ECUE passé en Activé sous une UE active (vérifié en base)",
+    "octets": 154836,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "11-ue-desactivee",
+    "description": "UE passée en Désactivé : ses ECUE actives ont suivi, et le message le dit",
+    "octets": 160679,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "12-retour-brouillon",
+    "description": "Retour en brouillon depuis Désactivé (transition autorisée)",
+    "octets": 160301,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "13-confirmation-suppression-ue",
+    "description": "Confirmation explicite avant toute suppression",
+    "octets": 55042,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "14-suppression-ue-refusee",
+    "description": "Suppression refusée par le serveur : l'UE porte un ECUE (aucune cascade)",
+    "octets": 161917,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "15-ecue-retour-brouillon",
+    "description": "ECUE désactivé remis en brouillon, condition pour pouvoir le supprimer",
+    "octets": 163275,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "16-base-nettoyee",
+    "description": "ECUE puis UE supprimés : la base est laissée dans son état initial",
+    "octets": 164405,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  },
+  {
+    "nom": "17-maquette-verrouillee",
+    "description": "Maquette Active : bandeau de gel affiché, aucun bouton d'écriture proposé",
+    "octets": 137874,
+    "url": "http://127.0.0.1:3000/referentiels/ue-ecue"
+  }
+]

@@ -7,6 +7,7 @@ explicites, filtrage manuel via ``request.query_params``.
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Count, Sum
+from django.db import IntegrityError
 from django.db.models.deletion import ProtectedError
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -18,6 +19,7 @@ from authentication.permissions import IsDFRC, IsSecretariatOrDFRC
 from .models import (
     AnneeAcademique,
     ECUE,
+    FamilleModule,
     Groupe,
     Maquette,
     MaquetteJournal,
@@ -243,6 +245,8 @@ def _serialize_ecue(ecue):
         'volume_total': ecue.volume_total,
         'ref_module_id': ecue.ref_module_id,
         'ordre': ecue.ordre,
+        'archive': ecue.archive,
+        'statut': ecue.statut,
     }
 
 
@@ -253,6 +257,7 @@ def _serialize_ue(ue):
         'intitule': ue.intitule,
         'credits': ue.credits,
         'caractere': ue.caractere,
+        'statut': ue.statut,
         'ordre': ue.ordre,
         'famille': ue.famille.libelle if ue.famille_id else None,
         'famille_code': ue.famille.code if ue.famille_id else None,
@@ -263,6 +268,21 @@ def _serialize_ue(ue):
         },
         'ecues': [_serialize_ecue(ecue) for ecue in ue.ecues.all()],
     }
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def famille_list(request):
+    """Familles de modules du référentiel officiel (lecture seule).
+
+    Utilisées par le formulaire d'UE : la famille est un axe d'analyse des
+    crédits, elle ne s'invente pas. L'écriture reste hors API — les familles
+    viennent de la source officielle (`configurer_referentiel_injs`).
+    """
+    return Response([
+        {'id': famille.id, 'code': famille.code, 'libelle': famille.libelle}
+        for famille in FamilleModule.objects.order_by('libelle')
+    ])
 
 
 @api_view(['GET'])
@@ -577,21 +597,37 @@ def maquette_ue_create(request, pk):
         return Response({'error': 'semestre_id et code sont requis.'}, status=400)
     if not Semestre.objects.filter(pk=semestre_id).exists():
         return Response({'error': 'Semestre introuvable'}, status=400)
+    famille = None
+    if request.data.get('famille_id'):
+        famille = FamilleModule.objects.filter(pk=request.data['famille_id']).first()
+        if famille is None:
+            return Response({'error': 'Famille de modules introuvable.'}, status=400)
     try:
         ue = UE.objects.create(
             maquette=maquette,
             semestre_id=semestre_id,
             code=code,
-            intitule=request.data.get('intitule', ''),
+            intitule=(request.data.get('intitule') or '').strip(),
             credits=int(request.data.get('credits', 0) or 0),
             caractere=request.data.get('caractere', UE.Caractere.OBLIGATOIRE),
             ordre=int(request.data.get('ordre', maquette.unites_enseignement.count() + 1) or 1),
+            famille=famille,
+            # Une UE naît toujours en brouillon : l'activation est un acte
+            # explicite, jamais un effet de bord de la création.
+            statut=UE.Statut.BROUILLON,
         )
     except ValidationError as exc:
         return Response({'error': exc.messages}, status=400)
+    except IntegrityError:
+        # Contrainte d'unicité (code d'UE insensible à la casse dans la
+        # maquette) : sans ce filet, la base répondrait 500 là où l'utilisateur
+        # attend une explication.
+        return Response(
+            {'error': f"Le code « {code} » existe déjà dans cette maquette."}, status=400,
+        )
     _journaliser_maquette(maquette, MaquetteJournal.Action.MODIFICATION, request.user,
                           {'ajout_ue': ue.code})
-    return Response({'id': ue.id, 'code': ue.code}, status=201)
+    return Response(_serialize_ue(ue), status=201)
 
 
 @api_view(['PATCH', 'DELETE'])
@@ -604,17 +640,146 @@ def ue_detail(request, pk):
     try:
         if request.method == 'DELETE':
             code = ue.code
+            maquette = ue.maquette
             ue.delete()
-            _journaliser_maquette(ue.maquette, MaquetteJournal.Action.MODIFICATION,
+            _journaliser_maquette(maquette, MaquetteJournal.Action.MODIFICATION,
                                   request.user, {'suppression_ue': code})
             return Response(status=204)
+        if ue.statut != UE.Statut.BROUILLON:
+            return Response({
+                'error': (
+                    f"L'UE est {ue.get_statut_display().lower()} : repassez-la en "
+                    "brouillon pour la modifier."
+                ),
+                'statut': ue.statut,
+            }, status=409)
         for champ in ('intitule', 'credits', 'caractere', 'ordre', 'semestre_id'):
             if champ in request.data:
                 setattr(ue, champ, request.data[champ])
+        if 'famille_id' in request.data:
+            ue.famille_id = request.data['famille_id'] or None
+        if 'code' in request.data and (request.data['code'] or '').strip():
+            ue.code = request.data['code'].strip()
         ue.save()
+    except IntegrityError:
+        return Response(
+            {'error': "Ce code d'UE existe déjà dans la maquette."}, status=400,
+        )
     except ValidationError as exc:
         return Response({'error': exc.messages}, status=400)
-    return Response({'id': ue.id, 'code': ue.code, 'credits': ue.credits})
+    _journaliser_maquette(ue.maquette, MaquetteJournal.Action.MODIFICATION, request.user,
+                          {'modification_ue': ue.code})
+    ue.refresh_from_db()
+    return Response(_serialize_ue(ue))
+
+
+# Transitions autorisées du cycle de vie d'une UE ou d'une ECUE.
+# Raison d'être : sans matrice explicite, n'importe quel statut pourrait être
+# posé par un appel direct, y compris « Activé » sur une ECUE dont l'UE est
+# encore un brouillon — une incohérence pédagogique silencieuse.
+TRANSITIONS_STATUT = {
+    'BROUILLON': {'ACTIVE'},
+    'ACTIVE': {'DESACTIVEE'},
+    'DESACTIVEE': {'ACTIVE', 'BROUILLON'},
+}
+
+
+def _changer_statut(element, statut_demande, request, journal_detail):
+    """Applique une transition de statut contrôlée et journalise le changement.
+
+    Retourne ``(payload, code_http)`` : le succès renvoie l'élément sérialisé,
+    le refus explique pourquoi — jamais un 200 muet.
+    """
+    statut_demande = (statut_demande or '').strip().upper()
+    if statut_demande not in dict(element.Statut.choices):
+        return {
+            'error': 'Statut inconnu.',
+            'statuts_possibles': [c[0] for c in element.Statut.choices],
+        }, 400
+    if statut_demande == element.statut:
+        return {'error': f"L'élément est déjà {element.get_statut_display().lower()}."}, 400
+    autorises = TRANSITIONS_STATUT.get(element.statut, set())
+    if statut_demande not in autorises:
+        return {
+            'error': (
+                f"Transition {element.statut} → {statut_demande} refusée. "
+                f"Depuis « {element.get_statut_display()} », les seules issues sont : "
+                + ', '.join(sorted(autorises)) + '.'
+            ),
+            'transitions_autorisees': sorted(autorises),
+        }, 409
+
+    desactivees = []
+    try:
+        if statut_demande == 'ACTIVE' and isinstance(element, ECUE):
+            # Une ECUE ne s'active pas dans une UE encore en brouillon : le
+            # contenu d'une UE non publiée ne peut pas être publié.
+            if element.ue.statut != UE.Statut.ACTIVE:
+                return {
+                    'error': (
+                        f"L'UE {element.ue.code} est "
+                        f"{element.ue.get_statut_display().lower()} : activez d'abord l'UE."
+                    ),
+                }, 409
+        if statut_demande == 'DESACTIVEE' and isinstance(element, UE):
+            # Désactiver une UE retire aussi ses ECUE actives : les laisser
+            # actives sous une UE retirée produirait un référentiel incohérent.
+            desactivees = list(
+                element.ecues.filter(statut=ECUE.Statut.ACTIVE).values_list('code', flat=True)
+            )
+            if desactivees:
+                element.ecues.filter(statut=ECUE.Statut.ACTIVE).update(
+                    statut=ECUE.Statut.DESACTIVEE,
+                )
+        element.statut = statut_demande
+        element.save()
+    except ValidationError as exc:
+        return {'error': exc.messages}, 400
+
+    maquette = element.maquette if isinstance(element, UE) else element.ue.maquette
+    journal = {**journal_detail, 'statut': statut_demande}
+    if desactivees:
+        journal['ecues_desactivees'] = desactivees
+    _journaliser_maquette(maquette, MaquetteJournal.Action.MODIFICATION, request.user, journal)
+
+    element.refresh_from_db()
+    payload = _serialize_ue(element) if isinstance(element, UE) else _serialize_ecue(element)
+    if desactivees:
+        # La réponse dit ce que la cascade a changé : aucune conséquence muette.
+        payload['ecues_desactivees'] = desactivees
+    return payload, 200
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def ue_statut(request, pk):
+    """Change le statut d'une UE : brouillon → activé → désactivé (réversible)."""
+    ue = UE.objects.select_related('maquette').filter(pk=pk).first()
+    if ue is None:
+        return Response({'error': 'Introuvable'}, status=404)
+    if ue.maquette.statut != Maquette.Statut.BROUILLON:
+        return Response({'error': f'Maquette {ue.maquette.statut.lower()} immuable.'}, status=400)
+    payload, code = _changer_statut(
+        ue, request.data.get('statut'), request, {'changement_statut_ue': ue.code},
+    )
+    return Response(payload, status=code)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def ecue_statut(request, pk):
+    """Change le statut d'une ECUE, sous réserve de cohérence avec son UE."""
+    ecue = ECUE.objects.select_related('ue__maquette').filter(pk=pk).first()
+    if ecue is None:
+        return Response({'error': 'Introuvable'}, status=404)
+    if ecue.ue.maquette.statut != Maquette.Statut.BROUILLON:
+        return Response(
+            {'error': f'Maquette {ecue.ue.maquette.statut.lower()} immuable.'}, status=400,
+        )
+    payload, code = _changer_statut(
+        ecue, request.data.get('statut'), request, {'changement_statut_ecue': ecue.code},
+    )
+    return Response(payload, status=code)
 
 
 @api_view(['POST'])
@@ -638,7 +803,7 @@ def ue_ecue_create(request, pk):
         ecue = ECUE.objects.create(
             ue=ue,
             code=code,
-            intitule=request.data.get('intitule', ''),
+            intitule=(request.data.get('intitule') or '').strip(),
             credits=int(request.data.get('credits', 0) or 0),
             coefficient=request.data.get('coefficient', 1),
             volume_cm=request.data.get('volume_cm', 0),
@@ -646,10 +811,17 @@ def ue_ecue_create(request, pk):
             volume_tp=request.data.get('volume_tp', 0),
             ref_module=ref_module,
             ordre=int(request.data.get('ordre', ue.ecues.count() + 1) or 1),
+            statut=ECUE.Statut.BROUILLON,
         )
     except ValidationError as exc:
         return Response({'error': exc.messages}, status=400)
-    return Response({'id': ecue.id, 'code': ecue.code}, status=201)
+    except IntegrityError:
+        return Response(
+            {'error': f"Le code « {code} » existe déjà sous cette UE."}, status=400,
+        )
+    _journaliser_maquette(ue.maquette, MaquetteJournal.Action.MODIFICATION, request.user,
+                          {'ajout_ecue': ecue.code, 'ue': ue.code})
+    return Response(_serialize_ecue(ecue), status=201)
 
 
 @api_view(['PATCH', 'DELETE'])
@@ -671,14 +843,31 @@ def ecue_detail(request, pk):
                 return Response({'detail': 'ECUE archivée.', 'archive': True})
             ecue.delete()
             return Response(status=204)
+        if ecue.statut != ECUE.Statut.BROUILLON and 'archive' not in request.data:
+            return Response({
+                'error': (
+                    f"L'ECUE est {ecue.get_statut_display().lower()} : repassez-la "
+                    "en brouillon pour la modifier."
+                ),
+                'statut': ecue.statut,
+            }, status=409)
         for champ in ('intitule', 'credits', 'coefficient', 'volume_cm', 'volume_td', 'volume_tp', 'ordre'):
             if champ in request.data:
                 setattr(ecue, champ, request.data[champ])
+        if 'code' in request.data and (request.data['code'] or '').strip():
+            ecue.code = request.data['code'].strip()
         if 'archive' in request.data:
             ecue.archive = bool(request.data['archive'])
         if 'ref_module_id' in request.data:
             ecue.ref_module_id = request.data['ref_module_id'] or None
         ecue.save()
+    except IntegrityError:
+        return Response(
+            {'error': "Ce code d'ECUE existe déjà sous cette UE."}, status=400,
+        )
     except ValidationError as exc:
         return Response({'error': exc.messages}, status=400)
-    return Response({'id': ecue.id, 'code': ecue.code, 'credits': ecue.credits, 'archive': ecue.archive})
+    _journaliser_maquette(ecue.ue.maquette, MaquetteJournal.Action.MODIFICATION,
+                          request.user, {'modification_ecue': ecue.code})
+    ecue.refresh_from_db()
+    return Response(_serialize_ecue(ecue))

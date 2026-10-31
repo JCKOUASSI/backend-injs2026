@@ -563,12 +563,14 @@ export const ECRANS = {
 
   ue_ecue: {
     id: 'ue_ecue',
+    type: 'ue_ecue',
     titre: 'UE / ECUE',
     fil: 'Formations',
     icone: 'bi-collection',
-    introduction: "Unités d'enseignement et éléments constitutifs, lus depuis "
-      + 'les maquettes LMD validées. Sélectionner une maquette pour dérouler '
-      + 'ses UE, puis une UE pour ses ECUE.',
+    introduction: "Unités d'enseignement et éléments constitutifs des maquettes "
+      + 'LMD : sélectionner une maquette, puis une UE. Chaque élément se crée, '
+      + 'se modifie et se supprime en brouillon, et suit le cycle '
+      + 'Brouillon → Activé → Désactivé.',
     endpoint: '/scolarite/maquettes/',
     priorite: ['code', 'intitule', 'statut', 'annee_academique', 'niveau', 'version'],
     detail: {
@@ -1727,10 +1729,13 @@ export const ECRANS = {
 
   ref_ue_ecue: {
     id: 'ref_ue_ecue',
+    type: 'ue_ecue',
     titre: 'UE / ECUE (référentiel)',
     fil: 'Référentiels',
     icone: 'bi-collection',
-    introduction: "Unités d'enseignement et ECUE portés par les maquettes LMD.",
+    introduction: "Unités d'enseignement et ECUE des maquettes LMD, avec "
+      + 'création, modification, suppression et cycle de vie '
+      + 'Brouillon → Activé → Désactivé.',
     endpoint: '/scolarite/maquettes/',
     priorite: ['code', 'intitule', 'statut', 'niveau', 'annee_academique'],
     detail: {
