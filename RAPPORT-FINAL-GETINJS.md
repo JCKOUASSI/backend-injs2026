@@ -1,7 +1,7 @@
 # Rapport final — GET INJS APP
 
 **INJS d'Abidjan — Marcory, Côte d'Ivoire**
-**Date :** 30 octobre 2026 · **Branche :** `arena/d40e4a41-backend-injs2026` · **HEAD :** `44a0484`
+**Date :** 31 octobre 2026 · **Branche :** `arena/d40e4a41-backend-injs2026` · **HEAD :** `518d0ac`
 **Objet :** état réel du générateur d'emplois du temps, preuves à l'appui.
 **Document de conception détaillé :** `Conception-GET-INJS.txt` (identique dans `docs/getinjs/`).
 
@@ -38,6 +38,7 @@ environnement, avec le motif), **FAIL** (exécuté, en échec).
 | 7 | CI distante : tentative réelle, écart consigné | `327d746` | étapes du workflow rejouées en local |
 | 8 | Canevas officiel contrôlable + pause déduite, pas inventée | `a33da2b`, `d26fc6c` | 19 tests + 3 avertissements d'audit |
 | 9 | Jeu de démonstration identifiable (aperçu réellement utilisable) | `44a0484` | 10 tests, parcours complet vérifié en direct |
+| 10 | **Preuves visuelles réelles** (navigateur), 3 défauts d'affichage corrigés | `518d0ac` | 9 captures `docs/getinjs/preuves/`, 0 requête externe, +7 tests |
 
 ## 3. Preuves d'exécution (30 octobre 2026)
 
@@ -52,9 +53,9 @@ environnement, avec le motif), **FAIL** (exécuté, en échec).
 | **edt + presences** | **570** | PASS (120 s) | PASS (112 s) |
 | evaluations | 230 | PASS | PASS |
 | pilotage | 201 | PASS | PASS |
-| socle | 183 | PASS (48 s) | PASS (97 s) |
+| socle | 188 | PASS (68 s) | PASS (97 s) |
 | divers | 139 | PASS | PASS |
-| **Total** | **2 769** | **PASS** | **PASS** |
+| **Total** | **2 774** | **PASS** | **PASS** |
 
 PostgreSQL 16.2 obtenu sans privilège racine (`pgserver`), base `injs_pg`,
 **208 tables créées par les migrations réelles** — aucun schéma fabriqué à la main.
@@ -63,7 +64,7 @@ PostgreSQL 16.2 obtenu sans privilège racine (`pgserver`), base `injs_pg`,
 
 | Contrôle | Résultat |
 |---|---|
-| `npx vitest run` | **112 fichiers / 2 025 tests**, code 0 |
+| `npx vitest run` | **113 fichiers / 2 027 tests**, code 0 (134 s) |
 | `npm run lint` | 0 erreur |
 | `npm run build` | OK (3,2 s) |
 
@@ -102,6 +103,64 @@ Chaîne entière exercée par l'API réelle, sans passer par le shell :
 | Site GET-INJS `:3000` | RUNNING (200) |
 | Flutter web `:3001` | **BLOCKED** — SDK absent ; `storage.googleapis.com` et `pub.dev` répondent `SSL_ERROR_SYSCALL` (revérifié le 30/10 à 21 h) |
 
+### Preuves visuelles (31 octobre 2026) — navigateur réel
+
+Chromium 153 exécuté **dans le bac à sable, sans privilège root** (`@sparticuz/chromium`
++ `puppeteer-core`, bibliothèques NSS/NSPR compilées depuis les sources), piloté en
+`fr-FR` sur 1360×900. Connexion réelle par le formulaire (`admin` / mot de passe de
+démonstration), **pas** d'appel API direct.
+
+| Capture (`docs/getinjs/preuves/`) | Ce qu'elle établit |
+|---|---|
+| `01-connexion.jpg` | écran de connexion, marque INJS, comptes de démonstration |
+| `02-audit-donnees.jpg` | audit « puis-je générer ? » : **3 OK / 0 avertissement / 0 bloquant**, 12 besoins, 48 h, 24 créneaux, 4 salles |
+| `03-edt-grille-semaine.jpg` | EDT DEMO-G4, semaine 1, 3 séances placées, **0 conflit actif** |
+| `04-edt-vue-tableau.jpg` | même EDT en vue tableau : créneau, semaine, contenu, salle, actions |
+| `05-generation-annuelle.jpg` | écran de génération annuelle (année DEMO-2026-2027 sélectionnée) |
+| `06-admin-affectations-generees.jpg` | admin Django : **12 affectations créées par le moteur**, 4 groupes |
+| `07-admin-edt.jpg` | admin : les 4 emplois du temps persistés |
+| `08-admin-politique-contraintes.jpg` | politique active : 4 h / 8 h / 15 min, auteur et date |
+| `09-admin-tableau-de-bord.jpg` | tableau de bord admin, icônes et typographie rendues |
+| `10-admin-craneaux.jpg` | créneaux types du canevas officiel |
+| `apercu-edt-pdf-2026-10-30.png` | aperçu du PDF d'emploi du temps |
+
+**Trois défauts révélés par ces captures, et corrigés** (aucun test ne pouvait les voir) :
+
+1. **Liste des emplois du temps** — Bootstrap n'étant pas installé, `.d-flex`,
+   `.text-truncate` et `.d-block` n'avaient aucun effet : l'année se collait au titre
+   (« … DEMO-G4DEMO-2026-2027 ») et le badge de statut n'était plus aligné ;
+   la classe manquait aussi dans la branche « sélectionné ». Corrigé en CSS sous
+   `.edt-page` + test `frontend/src/pages/Edts.test.jsx` (2 tests ; retirer le
+   correctif fait échouer le test).
+2. **Cases à cocher** — `.form-check` n'avait aucune règle : la case native
+   s'affichait collée au libellé (« Enregistrer les brouillons »), sur 38 usages.
+   Règle ajoutée dans `designSystem.css`.
+3. **Administration** — Inter et la police d'icônes venaient de
+   `fonts.googleapis.com` : sans réseau, les icônes s'affichaient **en toutes
+   lettres** (« chevron_right », « open_in_new », « filter_list »…). Les deux
+   polices sont désormais **embarquées** (`backend/static/admin/fonts/`,
+   sous-ensemble de 38 icônes : 35 Ko au lieu de 3,9 Mo, licences OFL et Apache 2.0
+   jointes). Trois noms d'icônes inexistants corrigés : `smartphone`→`mobile`,
+   `phonelink`→`devices`, `location_on`→`place`. Mesure après correction :
+   **0 requête réseau externe** sur les pages d'admin.
+   Cinq tests protègent l'invariant (`core.tests.test_admin_ressources_locales`) —
+   dont un qui échoue si une icône est utilisée sans être dans le sous-ensemble.
+
+Recette de la capture (rejouable ; `chromium` et les bibliothèques sont hors dépôt) :
+
+```bash
+# 1. binaire + bibliothèques (sans root)
+npm i --prefix /tmp/shots puppeteer-core @sparticuz/chromium
+LD_LIBRARY_PATH=/tmp/chlibs /tmp/chromium --version   # Chromium 153.0.8010.0
+# 2. captures (script fourni dans l'historique de la branche, cf. docs/getinjs/preuves/)
+LD_LIBRARY_PATH=/tmp/chlibs node /tmp/shots/run.mjs
+```
+
+Les bibliothèques NSS/NSPR absentes du bac à sable ont été **compilées depuis les
+sources** (`sailfishos-mirror/nspr` 4.41, `mozilla/nss` en gyp+ninja) — c'est ce
+qui débloque Chromium sans root. Cette recette est consignée parce qu'elle a coûté
+plusieurs tentatives ; elle n'est pas nécessaire en production.
+
 ---
 
 ## 4. Décisions appliquées (et comment les révoquer)
@@ -136,7 +195,7 @@ python manage.py regler_contraintes_souples --desactiver --motif "…"
 |---|---|---|
 | CI GitHub Actions sur la tête de branche | **NOT RUN** | `gh workflow run` refusé en 403 (jeton sans `actions:write`) ; aucun run créé depuis 13:15 UTC malgré les poussées (44 exécutions enregistrées, quota probablement épuisé). Les 4 étapes non couvertes par les groupes (check, makemigrations, hygiène, collectstatic) ont été **rejouées en local sur PostgreSQL : vertes**. |
 | Flutter web | **BLOCKED** | SDK absent du bac à sable ; `storage.googleapis.com` et `pub.dev` inaccessibles (seuls GitHub/npm/PyPI sortent). |
-| Navigateur réel / capture d'écran | **NOT RUN** | Chromium non exécutable (`libnss3` absent, pas de root). Les preuves d'interface sont HTTP (codes + JSON), pas visuelles. |
+| Navigateur réel / capture d'écran | **PASS** (31/10) | Chromium 153 exécuté sans root après compilation de NSS/NSPR ; 11 captures dans `docs/getinjs/preuves/`, 0 requête externe. |
 | Au-delà de 14 000 étudiants | **NOT RUN** | hors cible ; aucune extrapolation publiée. |
 | PostgreSQL en configuration de production | **NOT RUN** | mesures sur serveur local, réglages par défaut, sans pooling. |
 
