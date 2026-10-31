@@ -88,90 +88,193 @@ export default function Inscriptions() {
 
   return (
     <div className="cand-page">
-      <div className="camp-hero">
-        <div className="camp-hero-text">
-          <h1 className="camp-hero-title"><i className="bi bi-person-badge"></i>Inscriptions administratives</h1>
-          <p className="camp-hero-sub">Créer, modifier, supprimer et suivre les inscriptions administratives des étudiants.</p>
+      <div className="cand-hero">
+        <div className="cand-hero-identite">
+          <span className="cand-hero-icone" aria-hidden="true">
+            <i className="bi bi-person-badge"></i>
+          </span>
+          <div className="cand-hero-text">
+            <h1 className="cand-hero-title">Inscriptions administratives</h1>
+            <p className="cand-hero-sub">
+              Créer, modifier, supprimer et suivre les inscriptions administratives des étudiants.
+            </p>
+          </div>
         </div>
-        <div className="camp-hero-actions">
-          <button className="btn btn-primary cand-btn-pill" onClick={() => setCreation(true)}>
-            <i className="bi bi-plus-lg me-1"></i>Nouvelle inscription
+        <div className="cand-hero-actions">
+          <Link className="cand-btn-fantome" to="/scolarite/admissions">
+            <i className="bi bi-person-plus" aria-hidden="true"></i>
+            Inscrire un admis
+          </Link>
+          <button className="cand-btn-principal" onClick={() => setCreation(true)}>
+            <i className="bi bi-plus-lg" aria-hidden="true"></i>
+            Nouvelle inscription
           </button>
-          <a className="btn btn-outline-primary cand-btn-pill" href="/scolarite/admissions">
-            <i className="bi bi-person-plus me-1"></i>Inscrire un admis
-          </a>
         </div>
       </div>
 
-      <div className="cand-kpi">
-        <div className="cand-kpi-card"><div className="cand-kpi-value">{kpis.total}</div><div className="cand-kpi-label">Dossiers</div></div>
-        <div className="cand-kpi-card"><div className="cand-kpi-value">{kpis.validees}</div><div className="cand-kpi-label">Validées</div></div>
-        <div className="cand-kpi-card"><div className="cand-kpi-value">{kpis.attente}</div><div className="cand-kpi-label">En attente</div></div>
-        <div className="cand-kpi-card"><div className="cand-kpi-value">{kpis.rejectees}</div><div className="cand-kpi-label">Rejetées</div></div>
+      <div className="cand-kpi-row">
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-blue" aria-hidden="true"><i className="bi bi-folder2-open"></i></span>
+          <div>
+            <span className="cand-kpi-value">{kpis.total}</span>
+            <span className="cand-kpi-label">Dossiers</span>
+          </div>
+        </div>
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-green" aria-hidden="true"><i className="bi bi-check2-circle"></i></span>
+          <div>
+            <span className="cand-kpi-value">{kpis.validees}</span>
+            <span className="cand-kpi-label">Validées</span>
+          </div>
+        </div>
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-amber" aria-hidden="true"><i className="bi bi-hourglass-split"></i></span>
+          <div>
+            <span className="cand-kpi-value">{kpis.attente}</span>
+            <span className="cand-kpi-label">En attente</span>
+          </div>
+        </div>
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-red" aria-hidden="true"><i className="bi bi-x-circle"></i></span>
+          <div>
+            <span className="cand-kpi-value">{kpis.rejectees}</span>
+            <span className="cand-kpi-label">Rejetées</span>
+          </div>
+        </div>
       </div>
 
       <div className="cand-panel">
+        <div className="cand-panel-head">
+          <h2 className="cand-panel-title">
+            <i className="bi bi-journal-text" aria-hidden="true"></i>
+            Dossiers d’inscription
+          </h2>
+          <span className="cand-count-pill">
+            {inscriptions.length} dossier{inscriptions.length > 1 ? 's' : ''}
+          </span>
+        </div>
         <div className="cand-panel-body">
           <div className="cand-filters">
-            <input className="cand-filter-input" placeholder="Rechercher un étudiant…" value={filtres.q}
-              onChange={(e) => setFiltres({ ...filtres, q: e.target.value })} />
-            <select className="cand-filter-select" aria-label="Filtrer par statut" value={filtres.statut}
-              onChange={(e) => setFiltres({ ...filtres, statut: e.target.value })}>
+            <div className="cand-search">
+              <i className="bi bi-search" aria-hidden="true"></i>
+              <input
+                className="cand-input"
+                type="search"
+                aria-label="Rechercher un étudiant"
+                placeholder="Rechercher un étudiant…"
+                value={filtres.q}
+                onChange={(e) => setFiltres({ ...filtres, q: e.target.value })}
+              />
+            </div>
+            <select
+              className="cand-filter-select"
+              aria-label="Filtrer par statut"
+              value={filtres.statut}
+              onChange={(e) => setFiltres({ ...filtres, statut: e.target.value })}
+            >
               <option value="">Tous les statuts</option>
               {STATUTS.map(([value, libelle]) => (
                 <option key={value} value={value}>{libelle}</option>
               ))}
             </select>
-            <button className="btn btn-outline-secondary btn-sm cand-btn-pill" onClick={charger}>
-              <i className="bi bi-search me-1"></i>Rechercher
+            <button className="cand-btn-recherche" onClick={charger}>
+              <i className="bi bi-search" aria-hidden="true"></i>
+              Rechercher
             </button>
           </div>
         </div>
 
         {loading ? (
-          <div className="text-center py-4"><div className="spinner-border"></div></div>
+          <div className="cand-chargement"><span className="spinner-border" aria-hidden="true"></span>Chargement des dossiers…</div>
         ) : (
-          <div className="table-responsive">
-            <table className="table table-hover align-middle mb-0 cand-table">
-              <thead className="table-light">
-                <tr><th>Matricule</th><th>Étudiant</th><th>Formation</th><th>Niveau</th><th>Type</th><th>Année</th><th>Statut</th><th className="text-end">Actions</th></tr>
+          <div className="cand-table-wrap">
+            <table className="cand-table">
+              <thead>
+                <tr>
+                  <th scope="col">Matricule</th>
+                  <th scope="col">Étudiant</th>
+                  <th scope="col">Formation</th>
+                  <th scope="col">Niveau</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Année</th>
+                  <th scope="col">Statut</th>
+                  <th scope="col" className="cand-col-actions">Actions</th>
+                </tr>
               </thead>
               <tbody>
                 {inscriptions.map((i) => (
                   <tr key={i.id}>
-                    <td><code className="cand-candidatures">{i.matricule}</code></td>
-                    <td><span className="cand-link">{i.etudiant}</span></td>
-                    <td>{i.ref_formation}</td><td>{i.niveau}</td>
-                    <td><small className="text-muted">{i.type_inscription_libelle}</small></td>
-                    <td>{i.annee_academique}</td>
+                    <td className="cand-col-etroit"><code className="cand-numero">{i.matricule}</code></td>
+                    <td><span className="cand-etudiant">{i.etudiant}</span></td>
+                    <td className="cand-col-formation">
+                      <span className="cand-texte-formation" title={i.ref_formation}>
+                        {i.ref_formation}
+                      </span>
+                    </td>
+                    <td><span className="cand-badge-neutre">{i.niveau}</span></td>
+                    <td><span className="cand-texte-doux">{i.type_inscription_libelle}</span></td>
+                    <td className="cand-col-etroit">{i.annee_academique}</td>
                     <td><StatutBadge statut={i.statut} libelle={i.statut_libelle} /></td>
-                    <td className="text-end">
-                      <div className="btn-group btn-group-sm">
+                    <td className="cand-col-actions">
+                      <div className="cand-actions">
                         {CHEMIN_VALIDATION[i.statut] && (
-                          <button className="btn btn-outline-success cand-btn-pill" disabled={enCours === i.id} onClick={() => valider(i)}>
-                            {enCours === i.id && <span className="spinner-border spinner-border-sm me-1"></span>}
-                            <i className="bi bi-check2-circle me-1"></i>Valider
+                          <button
+                            className="cand-action cand-action--succes"
+                            disabled={enCours === i.id}
+                            onClick={() => valider(i)}
+                            aria-label="Valider"
+                            title="Valider l’inscription"
+                          >
+                            {enCours === i.id
+                              ? <span className="spinner-border" aria-hidden="true"></span>
+                              : <i className="bi bi-check2-circle" aria-hidden="true"></i>}
                           </button>
                         )}
-                        <Link className="btn btn-outline-primary cand-btn-pill" to={`/scolarite/etudiants/${i.etudiant_id}`}>
-                          <i className="bi bi-person-lines-fill me-1"></i>Fiche
+                        <Link
+                          className="cand-action"
+                          to={`/scolarite/etudiants/${i.etudiant_id}`}
+                          aria-label="Fiche étudiant"
+                          title="Ouvrir la fiche de l’étudiant"
+                        >
+                          <i className="bi bi-person-lines-fill" aria-hidden="true"></i>
                         </Link>
-                        <button className="btn btn-outline-warning cand-btn-pill" disabled={enCours === i.id}
-                          onClick={() => { setDossier(i.id); setModification(null); }}>
-                          <i className="bi bi-pencil-square me-1"></i>Modifier
+                        <button
+                          className="cand-action"
+                          disabled={enCours === i.id}
+                          onClick={() => { setDossier(i.id); setModification(null) }}
+                          aria-label="Modifier"
+                          title="Ouvrir le dossier d’inscription"
+                        >
+                          <i className="bi bi-pencil-square" aria-hidden="true"></i>
                         </button>
-                        <button className="btn btn-outline-danger cand-btn-pill" disabled={enCours === i.id} onClick={() => supprimer(i.id)}>
-                          <i className="bi bi-trash3 me-1"></i>Supprimer
+                        <button
+                          className="cand-action cand-action--danger"
+                          disabled={enCours === i.id}
+                          onClick={() => supprimer(i.id)}
+                          aria-label="Supprimer"
+                          title="Supprimer l’inscription"
+                        >
+                          <i className="bi bi-trash3" aria-hidden="true"></i>
                         </button>
                       </div>
                     </td>
                   </tr>
                 ))}
-                {inscriptions.length === 0 && (
-                  <tr><td colSpan={7}><div className="camp-empty"><i className="bi bi-inbox"></i>Aucune inscription pour ces critères.</div></td></tr>
-                )}
               </tbody>
             </table>
+            {inscriptions.length === 0 && (
+              <div className="cand-vide">
+                <span className="cand-vide-icone" aria-hidden="true"><i className="bi bi-inbox"></i></span>
+                <p className="cand-vide-titre">Aucune inscription pour ces critères</p>
+                <p className="cand-vide-texte">
+                  Ajustez la recherche ou le statut, ou créez une nouvelle inscription administrative.
+                </p>
+                <button className="cand-btn-principal" onClick={() => setCreation(true)}>
+                  <i className="bi bi-plus-lg" aria-hidden="true"></i>
+                  Nouvelle inscription
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

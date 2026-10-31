@@ -174,31 +174,92 @@
   pointer-events: none;
 }
 
-.cand-search .form-control {
-  padding-left: 2.1rem;
-  border-radius: 9999px;
-  border-color: #E2E8F0;
+/* Champ de saisie autonome : le projet n'embarque pas Bootstrap, donc
+   `.form-control` et `.form-select` n'ont aucun effet. Les contrôles de cet
+   écran trouvent ici leur apparence complète (hauteur, padding, focus). */
+.cand-input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0.55rem 0.9rem;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #0F172A;
   background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.cand-search .form-control:focus {
+.cand-input::placeholder { color: #A9B6C7; }
+
+.cand-input:hover:not(:focus) { border-color: #CBD5E1; }
+
+.cand-input:focus {
+  outline: none;
   background: #FFFFFF;
   border-color: var(--injs-blue-royal);
   box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
 }
 
+.cand-search .cand-input { padding-left: 2.35rem; }
+
 .cand-filter-select {
   flex: 0 1 240px;
-  border-radius: 9999px;
-  border-color: #E2E8F0;
-  background-color: #F8FAFC;
+  min-height: 42px;
+  padding: 0.55rem 2.4rem 0.55rem 1rem;
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  font-size: 0.88rem;
   font-weight: 600;
-  color: var(--injs-text-secondary, #475569);
+  color: #475569;
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2364748B' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M3.5 6l4.5 4.5L12.5 6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.cand-filter-select:hover { border-color: #CBD5E1; }
+
 .cand-filter-select:focus {
+  outline: none;
+  background-color: #FFFFFF;
   border-color: var(--injs-blue-royal);
   box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
+}
+
+/* Bouton d'action de la barre de filtres : même hauteur que les contrôles. */
+.cand-btn-recherche {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 42px;
+  padding: 0 1.25rem;
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  background: var(--injs-gradient-primary);
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 10px 22px -12px rgba(18, 103, 214, 0.9);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cand-btn-recherche:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px -12px rgba(18, 103, 214, 0.95);
+}
+
+.cand-btn-recherche:focus-visible {
+  outline: 2px solid var(--injs-blue-royal);
+  outline-offset: 2px;
 }
 
 .cand-count-pill {
@@ -222,8 +283,34 @@
 
 .cand-table {
   margin: 0;
-  min-width: 860px;
+  width: 100%;
+  min-width: 1 080px;
+  table-layout: fixed;
 }
+
+/* Répartition des colonnes : les intitulés de formation sont longs, ils
+   méritent l'essentiel de la largeur ; les colonnes de codes restent fixes. */
+.cand-table th:nth-child(1), .cand-table td:nth-child(1) { width: 120px; }
+.cand-table th:nth-child(2), .cand-table td:nth-child(2) { width: 152px; }
+.cand-table th:nth-child(4), .cand-table td:nth-child(4) { width: 70px; }
+.cand-table th:nth-child(5), .cand-table td:nth-child(5) { width: 124px; }
+.cand-table th:nth-child(6), .cand-table td:nth-child(6) { width: 100px; }
+.cand-table th:nth-child(7), .cand-table td:nth-child(7) { width: 118px; }
+.cand-table th:nth-child(8), .cand-table td:nth-child(8) { width: 146px; }
+
+/* Une formation tient sur deux lignes au plus : la hauteur des lignes reste
+   régulière, et l'intitulé complet demeure accessible par l'infobulle. */
+/* Le clamp s'applique à un <span> interne : porté par le <td>, il cassait la
+   hauteur de la cellule et le texte tronqué débordait sur la ligne suivante. */
+.cand-texte-formation {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.35;
+}
+
+.cand-table .badge { white-space: nowrap; }
 
 .cand-table thead th {
   position: sticky;
@@ -296,6 +383,7 @@
   height: 0.45rem;
   border-radius: 9999px;
   background: #EEF2F7;
+}
 
 /* ── 6. PANNEAU DOSSIER ── */
 .cand-dossier {
@@ -420,17 +508,22 @@
 }
 
 @media (max-width: 640px) {
+  /* Deux tuiles par ligne : une seule colonne étirait chaque chiffre sur
+     toute la largeur et allongeait inutilement la page. */
   .cand-kpi-row {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
   }
-  .cand-hero {
-    align-items: flex-start;
-  }
+  .cand-kpi { padding: 0.8rem 0.9rem; gap: 0.65rem; }
+  .cand-kpi-icon { width: 36px; height: 36px; font-size: 1rem; }
+  .cand-kpi .cand-kpi-value { font-size: 1.25rem; }
+  .cand-kpi .cand-kpi-label { font-size: 0.62rem; }
+  .cand-hero { align-items: flex-start; }
+  .cand-hero-icone { width: 40px; height: 40px; flex-basis: 40px; font-size: 1.1rem; }
+  .cand-hero-title { font-size: 1.2rem; }
   .cand-count-pill {
     margin-left: 0;
   }
-}
-
 }
 
 .cand-progress small {
@@ -474,6 +567,7 @@
 .cand-kpi-icon.is-green { background: #ECFDF5; color: #10B981; }
 .cand-kpi-icon.is-amber { background: #FFFBEB; color: #F59E0B; }
 .cand-kpi-icon.is-slate { background: #EEF2F7; color: #475569; }
+.cand-kpi-icon.is-red   { background: var(--injs-danger-soft); color: #C2263A; }
 
 /* ── 3. PANNEAU VERRE PARTAGÉ (tableau, formulaire, dossier) ── */
 .cand-panel {
@@ -513,4 +607,255 @@
 
 .cand-panel-body {
   padding: 1.15rem 1.4rem 1.4rem;
+}
+
+/* ── 9. EN-TÊTE, TUILES, FILTRES ET TABLEAU (niveau « premium ») ───────────
+   Ces règles complètent la section 1 (le bandeau existait mais sans pastille
+   d'icône ni actions stylées) et donnent au tableau ses actions compactes et
+   son état vide. Même palette que le reste de l'application. */
+
+.cand-hero {
+  flex-wrap: nowrap;
+}
+
+.cand-hero-identite {
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Cellules à valeur courte (matricule, année) : jamais coupées en deux. */
+.cand-table td.cand-col-etroit { white-space: nowrap; }
+
+.cand-hero-icone {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 15px;
+  background: var(--injs-gradient-primary);
+  color: #FFFFFF;
+  font-size: 1.3rem;
+  box-shadow: 0 10px 22px -10px rgba(18, 103, 214, 0.8);
+}
+
+.cand-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+}
+
+.cand-btn-principal,
+.cand-btn-fantome {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 42px;
+  padding: 0 1.2rem;
+  font-family: inherit;
+  font-size: 0.87rem;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+              background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.cand-btn-principal {
+  background: var(--injs-gradient-primary);
+  color: #FFFFFF;
+  box-shadow: 0 10px 22px -12px rgba(18, 103, 214, 0.95);
+}
+
+.cand-btn-principal:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px -12px rgba(18, 103, 214, 0.95);
+  color: #FFFFFF;
+}
+
+.cand-btn-fantome {
+  background: #FFFFFF;
+  border-color: #E2E8F0;
+  color: #475569;
+}
+
+.cand-btn-fantome:hover {
+  background: #F5F9FF;
+  border-color: var(--injs-blue-royal);
+  color: var(--injs-blue-royal);
+}
+
+.cand-btn-principal:focus-visible,
+.cand-btn-fantome:focus-visible,
+.cand-action:focus-visible {
+  outline: 2px solid var(--injs-blue-royal);
+  outline-offset: 2px;
+}
+
+/* Tuiles KPI : icône colorée à gauche, valeur et libellé à droite. */
+.cand-kpi {
+  justify-content: flex-start;
+  gap: 0.9rem;
+}
+
+.cand-kpi .cand-kpi-value { font-size: 1.5rem; }
+.cand-kpi .cand-kpi-label { margin: 0.15rem 0 0; }
+
+/* Actions du tableau : boutons compacts, lisibles, sans dépendance Bootstrap. */
+.cand-col-actions { text-align: right; }
+
+.cand-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  flex-wrap: nowrap;
+}
+
+/* Quatre actions par ligne : en libellés, elles débordaient sur trois lignes
+   et écrasaient les colonnes voisines. Forme compacte (32 px), le libellé
+   restant accessible via `aria-label` et l'infobulle `title`. */
+.cand-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: #475569;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 9px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.cand-action:hover:not(:disabled) {
+  background: #F5F9FF;
+  border-color: var(--injs-blue-royal);
+  color: var(--injs-blue-royal);
+}
+
+.cand-action--succes { color: #0E7A4F; }
+
+.cand-action--danger { color: #B4232F; }
+
+.cand-action--succes:hover:not(:disabled) {
+  background: var(--injs-success-soft);
+  border-color: #B7E7CE;
+  color: #0E7A4F;
+}
+
+.cand-action--danger:hover:not(:disabled) {
+  background: var(--injs-danger-soft);
+  border-color: #F5C2C7;
+  color: #A3222F;
+}
+
+.cand-action:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.cand-action .spinner-border {
+  width: 12px;
+  height: 12px;
+  border-width: 2px;
+}
+
+.cand-etudiant { font-weight: 600; color: #0F172A; white-space: nowrap; }
+
+.cand-texte-doux { color: #64748B; font-size: 0.82rem; }
+
+.cand-badge-neutre {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #475569;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+}
+
+/* Chargement et état vide */
+.cand-chargement {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 2.5rem 1rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #64748B;
+}
+
+.cand-chargement .spinner-border { width: 18px; height: 18px; border-width: 2px; }
+
+.cand-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 2.75rem 1.5rem 3rem;
+  text-align: center;
+  border-top: 1px solid #F1F5F9;
+}
+
+.cand-vide-icone {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 0.4rem;
+  border-radius: 18px;
+  background: #F1F6FD;
+  color: #9FB4CE;
+  font-size: 1.5rem;
+}
+
+.cand-vide-titre {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+}
+
+.cand-vide-texte {
+  margin: 0 0 0.75rem;
+  max-width: 46ch;
+  font-size: 0.84rem;
+  color: #64748B;
+}
+
+@media (max-width: 900px) {
+  .cand-hero { flex-wrap: wrap; flex-direction: column; align-items: flex-start; }
+  .cand-hero-actions { width: 100%; }
+  .cand-hero-actions .cand-btn-principal,
+  .cand-hero-actions .cand-btn-fantome { flex: 1 1 auto; justify-content: center; }
+}
+
+/* Sur téléphone les deux actions s'empilent en pleine largeur : côte à côte,
+   « Inscrire un admis » se coupait sur trois lignes. */
+@media (max-width: 560px) {
+  .cand-hero-actions { flex-direction: column; align-items: stretch; }
+  .cand-hero-actions .cand-btn-principal,
+  .cand-hero-actions .cand-btn-fantome { width: 100%; white-space: nowrap; }
+}
+
+@media (max-width: 640px) {
+  .cand-search { flex: 1 1 100%; max-width: none; }
+  .cand-filter-select { flex: 1 1 100%; }
+  .cand-btn-recherche { flex: 1 1 100%; justify-content: center; }
 }
