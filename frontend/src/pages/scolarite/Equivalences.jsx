@@ -3,7 +3,7 @@ import api from '../../services/api'
 import { canActScolarite } from '../../utils/roles'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
-import '../../styles/campagnes.css'
+import '../../styles/candidatures.css'
 import '../../styles/equivalences.css'
 
 const BADGE_STATUT = {
@@ -140,31 +140,29 @@ export default function Equivalences() {
     abouties: demandes.filter((d) => STATUTS_ABOUTIES.includes(d.statut)).length,
     credits: demandes.reduce((somme, d) => somme + (Number(d.credits_reconnus) || 0), 0),
   }), [demandes])
-
   return (
-    <div className="container-fluid py-4 camp-page equivalences-lmd-container">
-      {/* ── En-tête de page ── */}
-      <div className="camp-hero">
-        <div className="camp-hero-text">
-          <span className="eq-hero-flag">
-            <i className="bi bi-diagram-3" aria-hidden="true"></i>
-            Passerelles et continuité de parcours
+    <div className="cand-page eq-page">
+      {/* ── Bandeau d'accueil ── */}
+      <div className="cand-hero">
+        <div className="cand-hero-identite">
+          <span className="cand-hero-icone" aria-hidden="true">
+            <i className="bi bi-award"></i>
           </span>
-          <h1 className="h4 mb-0 camp-hero-title">
-            <i className="bi bi-award" aria-hidden="true"></i>
-            Équivalences et dispenses
-          </h1>
-          <p className="mb-0 camp-hero-sub">
-            Reconnaissance des acquis antérieurs : instruction, avis pédagogique,
-            décision motivée puis application au dossier de l'étudiant.
-          </p>
+          <div className="cand-hero-text">
+            <span className="cand-hero-badge">Passerelles et continuité de parcours</span>
+            <h1 className="cand-hero-title">Équivalences et dispenses</h1>
+            <p className="cand-hero-sub">
+              Reconnaissance des acquis antérieurs : instruction, avis pédagogique,
+              décision motivée puis application au dossier de l&apos;étudiant.
+            </p>
+          </div>
         </div>
-        <div className="camp-hero-side">
-          <span className="plaquette plaquette-primary">
+        <div className="eq-hero-pastilles">
+          <span className="eq-pastille eq-pastille--primary">
             <i className="bi bi-collection" aria-hidden="true"></i>
             {demandes.length} demande{demandes.length > 1 ? 's' : ''}
           </span>
-          <span className="plaquette plaquette-soft">
+          <span className="eq-pastille eq-pastille--neutre">
             <i className="bi bi-shield-check" aria-hidden="true"></i>
             Application sous confirmation
           </span>
@@ -172,190 +170,243 @@ export default function Equivalences() {
       </div>
 
       {/* ── Indicateurs du cycle de vie ── */}
-      <div className="camp-kpi-row">
-        <div className="camp-kpi eq-kpi">
-          <div>
-            <span className="camp-kpi-label">Demandes</span>
-            <span className="camp-kpi-value">{stats.total}</span>
-          </div>
-          <div className="camp-kpi-icon is-blue">
-            <i className="bi bi-collection-fill" aria-hidden="true"></i>
+      <div className="cand-kpi-row">
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-blue" aria-hidden="true"><i className="bi bi-collection"></i></span>
+          <div className="cand-kpi-texte">
+            <span className="cand-kpi-value">{stats.total}</span>
+            <span className="cand-kpi-label">Demandes</span>
           </div>
         </div>
-        <div className="camp-kpi eq-kpi">
-          <div>
-            <span className="camp-kpi-label">En cours d'instruction</span>
-            <span className="camp-kpi-value">{stats.enCours}</span>
-          </div>
-          <div className="camp-kpi-icon is-amber">
-            <i className="bi bi-hourglass-split" aria-hidden="true"></i>
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-amber" aria-hidden="true"><i className="bi bi-hourglass-split"></i></span>
+          <div className="cand-kpi-texte">
+            <span className="cand-kpi-value">{stats.enCours}</span>
+            <span className="cand-kpi-label">En cours d&apos;instruction</span>
           </div>
         </div>
-        <div className="camp-kpi eq-kpi">
-          <div>
-            <span className="camp-kpi-label">Validées / appliquées</span>
-            <span className="camp-kpi-value">{stats.abouties}</span>
-          </div>
-          <div className="camp-kpi-icon is-green">
-            <i className="bi bi-patch-check-fill" aria-hidden="true"></i>
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-green" aria-hidden="true"><i className="bi bi-patch-check"></i></span>
+          <div className="cand-kpi-texte">
+            <span className="cand-kpi-value">{stats.abouties}</span>
+            <span className="cand-kpi-label">Validées / appliquées</span>
           </div>
         </div>
-        <div className="camp-kpi eq-kpi">
-          <div>
-            <span className="camp-kpi-label">Crédits reconnus</span>
-            <span className="camp-kpi-value">{stats.credits}</span>
-          </div>
-          <div className="camp-kpi-icon is-slate">
-            <i className="bi bi-123" aria-hidden="true"></i>
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-slate" aria-hidden="true"><i className="bi bi-award"></i></span>
+          <div className="cand-kpi-texte">
+            <span className="cand-kpi-value">{stats.credits}</span>
+            <span className="cand-kpi-label">Crédits reconnus</span>
           </div>
         </div>
       </div>
 
       {/* ── Création d'une demande ── */}
       {peutAgir && (
-        <div className="card camp-panel">
-          <div className="camp-panel-head">
-            <h2 className="camp-panel-title">
+        <section className="cand-panel card eq-panneau" aria-labelledby="titre-nouvelle-demande">
+          <header className="cand-panel-head">
+            <h2 className="cand-panel-title" id="titre-nouvelle-demande">
               <i className="bi bi-plus-circle" aria-hidden="true"></i>
               Nouvelle demande
             </h2>
-            <span className="camp-count-pill">Statut initial : brouillon</span>
-          </div>
-          <div className="card-body camp-panel-body">
-            <form className="row g-3 align-items-end camp-form" onSubmit={creer}>
-              <div className="col-md-6 col-xl-2">
-                <label className="form-label" htmlFor="eq-type">Type de demande</label>
-                <select id="eq-type" className="form-select eq-select" value={form.type_demande}
-                        onChange={(e) => setForm({ ...form, type_demande: e.target.value })}>
+            <span className="cand-count-pill">Statut initial : brouillon</span>
+          </header>
+          <div className="cand-panel-body">
+            <form className="cand-grille-form eq-form" onSubmit={creer}>
+              <div className="cand-champ">
+                <label className="cand-etiquette" htmlFor="eq-type">Type de demande</label>
+                <select
+                  id="eq-type" className="cand-saisie" value={form.type_demande}
+                  onChange={(e) => setForm({ ...form, type_demande: e.target.value })}>
                   <option value="DISPENSE">Dispense</option>
                   <option value="EQUIVALENCE">Équivalence</option>
                 </select>
               </div>
-              <div className="col-md-6 col-xl-3">
-                <label className="form-label" htmlFor="eq-etudiant">Étudiant *</label>
-                <select id="eq-etudiant" className="form-select eq-select" required value={form.etudiant_id}
-                        onChange={(e) => setForm({ ...form, etudiant_id: e.target.value })}>
+              <div className="cand-champ">
+                <label className="cand-etiquette" htmlFor="eq-etudiant">Étudiant *</label>
+                <select
+                  id="eq-etudiant" className="cand-saisie" required value={form.etudiant_id}
+                  onChange={(e) => setForm({ ...form, etudiant_id: e.target.value })}>
                   <option value="">Étudiant…</option>
                   {options.etudiants.map((e) => (
                     <option key={e.id} value={e.id}>{e.matricule} — {e.nom_complet}</option>
                   ))}
                 </select>
               </div>
-              <div className="col-md-6 col-xl-2">
-                <label className="form-label" htmlFor="eq-annee">Année académique *</label>
-                <select id="eq-annee" className="form-select eq-select" required value={form.annee_academique_id}
-                        onChange={(e) => setForm({ ...form, annee_academique_id: e.target.value })}>
+              <div className="cand-champ">
+                <label className="cand-etiquette" htmlFor="eq-annee">Année académique *</label>
+                <select
+                  id="eq-annee" className="cand-saisie" required value={form.annee_academique_id}
+                  onChange={(e) => setForm({ ...form, annee_academique_id: e.target.value })}>
                   <option value="">Année…</option>
                   {options.annees.map((a) => <option key={a.id} value={a.id}>{a.libelle}</option>)}
                 </select>
               </div>
-              <div className="col-md-6 col-xl-3">
-                <label className="form-label" htmlFor="eq-formation">Formation *</label>
-                <select id="eq-formation" className="form-select eq-select" required value={form.ref_formation_id}
-                        onChange={(e) => setForm({ ...form, ref_formation_id: e.target.value })}>
+              <div className="cand-champ">
+                <label className="cand-etiquette" htmlFor="eq-formation">Formation *</label>
+                <select
+                  id="eq-formation" className="cand-saisie" required value={form.ref_formation_id}
+                  onChange={(e) => setForm({ ...form, ref_formation_id: e.target.value })}>
                   <option value="">Formation…</option>
                   {options.formations.map((f) => <option key={f.id} value={f.id}>{f.intitule}</option>)}
                 </select>
               </div>
-              <div className="col-md-6 col-xl-2">
-                <label className="form-label" htmlFor="eq-niveau">Niveau *</label>
-                <select id="eq-niveau" className="form-select eq-select" required value={form.niveau_id}
-                        onChange={(e) => setForm({ ...form, niveau_id: e.target.value })}>
+              <div className="cand-champ">
+                <label className="cand-etiquette" htmlFor="eq-niveau">Niveau *</label>
+                <select
+                  id="eq-niveau" className="cand-saisie" required value={form.niveau_id}
+                  onChange={(e) => setForm({ ...form, niveau_id: e.target.value })}>
                   <option value="">Niveau…</option>
                   {options.niveaux.map((n) => <option key={n.id} value={n.id}>{n.code}</option>)}
                 </select>
               </div>
-              <div className="col-12 eq-form-actions">
-                <p className="form-text eq-hint mb-0">
+              <div className="eq-form-pied">
+                <p className="eq-hint">
+                  <i className="bi bi-info-circle" aria-hidden="true"></i>
                   La demande est ouverte au statut brouillon puis instruite tout au long du
                   cycle : soumission, instruction, avis pédagogique, décision, application.
                 </p>
-                <button type="submit" className="btn btn-primary eq-add-btn"
-                        title="Ajouter la demande" disabled={enCours}>+</button>
+                <button
+                  type="submit" className="eq-add-btn" aria-label="+"
+                  title="Ajouter la demande" disabled={enCours}>
+                  <i className="bi bi-plus-lg" aria-hidden="true"></i>
+                </button>
               </div>
             </form>
           </div>
-        </div>
+        </section>
       )}
 
-
       {/* ── Demandes : cycle de vie complet ── */}
-      <div className="card camp-panel">
-        <div className="camp-panel-head">
-          <h2 className="camp-panel-title">
+      <section className="cand-panel" aria-labelledby="titre-demandes">
+        <header className="cand-panel-head">
+          <h2 className="cand-panel-title" id="titre-demandes">
             <i className="bi bi-table" aria-hidden="true"></i>
             Demandes
           </h2>
-          <span className="camp-count-pill">
+          <span className="cand-count-pill">
             {demandes.length} demande{demandes.length > 1 ? 's' : ''}
           </span>
-        </div>
-        <div className="table-responsive">
-          <table className="table table-hover align-middle mb-0 camp-table eq-table">
+        </header>
+
+        <div className="cand-table-wrap">
+          <table className="cand-table eq-table">
             <thead>
               <tr>
-                <th>Type</th><th>Matricule</th><th>Formation</th><th>Décision</th>
-                <th>Statut</th><th>Crédits</th>
-                {peutAgir && <th className="text-end">Actions</th>}
+                <th scope="col">Type</th>
+                <th scope="col">Matricule</th>
+                <th scope="col">Formation</th>
+                <th scope="col">Décision</th>
+                <th scope="col">Statut</th>
+                <th scope="col">Crédits</th>
+                {peutAgir && <th scope="col" className="cand-th-actions">Actions</th>}
               </tr>
             </thead>
             <tbody>
               {chargement ? (
-                <tr><td colSpan={7} className="text-center py-4"><div className="spinner-border spinner-border-sm text-primary" /></td></tr>
+                <tr>
+                  <td colSpan={peutAgir ? 7 : 6}>
+                    <div className="cand-chargement">
+                      <span className="spinner-border" role="status" aria-hidden="true"></span>
+                      Chargement des demandes…
+                    </div>
+                  </td>
+                </tr>
               ) : demandes.length === 0 ? (
-                <tr><td colSpan={7}>
-                  <div className="camp-empty">
-                    <i className="bi bi-inbox" aria-hidden="true"></i>
-                    Aucune demande.
-                  </div>
-                </td></tr>
+                <tr>
+                  <td colSpan={peutAgir ? 7 : 6}>
+                    <div className="cand-vide">
+                      <span className="cand-vide-icone" aria-hidden="true">
+                        <i className="bi bi-inbox"></i>
+                      </span>
+                      <p className="cand-vide-titre">Aucune demande.</p>
+                      <p className="cand-vide-texte">
+                        Ouvrez une première demande de dispense ou d&apos;équivalence :
+                        elle suivra le cycle d&apos;instruction jusqu&apos;à l&apos;application.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
               ) : demandes.map((d) => (
                 <tr key={d.id}>
-                  <td><span className="badge bg-light text-dark border eq-chip">{d.type_demande}</span></td>
-                  <td><span className="fw-semibold">{d.matricule}</span></td>
-                  <td>{d.ref_formation}</td>
+                  <td>
+                    <span className={`eq-type eq-type--${d.type_demande === 'EQUIVALENCE' ? 'equivalence' : 'dispense'}`}>
+                      <i
+                        className={`bi ${d.type_demande === 'EQUIVALENCE' ? 'bi-arrow-left-right' : 'bi-slash-circle'}`}
+                        aria-hidden="true"
+                      ></i>
+                      {d.type_demande}
+                    </span>
+                  </td>
+                  <td><span className="eq-matricule">{d.matricule}</span></td>
+                  <td>
+                    <span className="eq-formation" title={d.ref_formation}>{d.ref_formation}</span>
+                  </td>
                   <td>
                     {d.decision ? (
-                      <span className={`badge eq-chip ${BADGE_DECISION[d.decision] || 'bg-light text-dark border'}`}>
+                      <span className={`eq-decision ${BADGE_DECISION[d.decision] || 'text-bg-secondary'}`}>
                         {d.decision}
                       </span>
                     ) : (
-                      <span className="text-muted">—</span>
+                      <span className="cand-texte-doux">—</span>
                     )}
                   </td>
-                  <td><span className={`badge text-bg-${BADGE_STATUT[d.statut] || 'secondary'} eq-chip`}>{d.statut}</span></td>
-                  <td><span className="camp-candidatures">{d.credits_reconnus ?? '—'}</span></td>
+                  <td>
+                    <span className={`eq-statut text-bg-${BADGE_STATUT[d.statut] || 'secondary'}`}>
+                      {d.statut}
+                    </span>
+                  </td>
+                  <td className="cand-col-etroit">
+                    {d.credits_reconnus === null || d.credits_reconnus === undefined ? (
+                      <span className="cand-texte-doux">—</span>
+                    ) : (
+                      <>
+                        <span className="eq-credits">{d.credits_reconnus}</span>
+                        <span className="eq-unite"> cr.</span>
+                      </>
+                    )}
+                  </td>
                   {peutAgir && (
-                    <td className="text-end">
-                      <div className="d-inline-flex gap-2 flex-wrap justify-content-end">
+                    <td className="cand-col-actions">
+                      <div className="cand-actions eq-actions">
                         {d.statut === 'BROUILLON' && (
-                          <button className="btn btn-outline-info eq-action-btn" disabled={enCours}
-                                  onClick={() => transition(d, 'SOUMISE')}>
-                            <i className="bi bi-send me-1" aria-hidden="true"></i>Soumettre
+                          <button
+                            type="button" className="eq-action eq-action--soumettre" disabled={enCours}
+                            title="Soumettre la demande à l'instruction"
+                            onClick={() => transition(d, 'SOUMISE')}>
+                            <i className="bi bi-send" aria-hidden="true"></i>Soumettre
                           </button>
                         )}
                         {d.statut === 'SOUMISE' && (
-                          <button className="btn btn-outline-info eq-action-btn" disabled={enCours}
-                                  onClick={() => transition(d, 'EN_INSTRUCTION')}>
-                            <i className="bi bi-clipboard-check me-1" aria-hidden="true"></i>Instruire
+                          <button
+                            type="button" className="eq-action eq-action--instruire" disabled={enCours}
+                            title="Passer la demande en instruction"
+                            onClick={() => transition(d, 'EN_INSTRUCTION')}>
+                            <i className="bi bi-clipboard-check" aria-hidden="true"></i>Instruire
                           </button>
                         )}
                         {d.statut === 'EN_INSTRUCTION' && (
-                          <button className="btn btn-outline-primary eq-action-btn" disabled={enCours}
-                                  onClick={() => transition(d, 'AVIS_PEDAGOGIQUE')}>
-                            <i className="bi bi-mortarboard me-1" aria-hidden="true"></i>Avis pédagogique
+                          <button
+                            type="button" className="eq-action eq-action--avis" disabled={enCours}
+                            title="Saisir l'avis pédagogique"
+                            onClick={() => transition(d, 'AVIS_PEDAGOGIQUE')}>
+                            <i className="bi bi-mortarboard" aria-hidden="true"></i>Avis pédagogique
                           </button>
                         )}
                         {(d.statut === 'AVIS_PEDAGOGIQUE' || d.statut === 'DECISION') && (
-                          <button className="btn btn-outline-primary eq-action-btn"
-                                  onClick={() => setSelection(d)}>
-                            <i className="bi bi-check2-square me-1" aria-hidden="true"></i>Décider
+                          <button
+                            type="button" className="eq-action eq-action--decider"
+                            title="Rendre la décision pédagogique"
+                            onClick={() => setSelection(d)}>
+                            <i className="bi bi-check2-square" aria-hidden="true"></i>Décider
                           </button>
                         )}
                         {d.statut === 'VALIDEE' && (
-                          <button className="btn btn-outline-success eq-action-btn" disabled={enCours}
-                                  onClick={() => appliquer(d)}>
-                            <i className="bi bi-lightning-charge me-1" aria-hidden="true"></i>Appliquer
+                          <button
+                            type="button" className="eq-action eq-action--appliquer" disabled={enCours}
+                            title="Appliquer la dispense ou l'équivalence au dossier"
+                            onClick={() => appliquer(d)}>
+                            <i className="bi bi-lightning-charge" aria-hidden="true"></i>Appliquer
                           </button>
                         )}
                       </div>
@@ -366,62 +417,77 @@ export default function Equivalences() {
             </tbody>
           </table>
         </div>
-      </div>
-
+        <p className="cand-defile" aria-hidden="true">
+          <i className="bi bi-arrow-left-right"></i>
+          Faites défiler le tableau horizontalement
+        </p>
+      </section>
 
       {/* ── Décision pédagogique ── */}
       {selection && (
-        <div className="card camp-panel eq-decision-panel">
-          <div className="camp-panel-head">
-            <h2 className="camp-panel-title">
+        <section className="cand-panel card eq-panneau eq-panneau--decision" aria-labelledby="titre-decision">
+          <header className="cand-panel-head">
+            <h2 className="cand-panel-title" id="titre-decision">
               <i className="bi bi-clipboard2-check" aria-hidden="true"></i>
               Décision — demande #{selection.id}
             </h2>
-            <span className="camp-count-pill">{selection.ref_formation}</span>
-          </div>
-          <div className="card-body camp-panel-body">
-            <form className="row g-3 align-items-end camp-form" onSubmit={(e) => { e.preventDefault(); decider(selection) }}>
-              <div className="col-md-3">
-                <label className="form-label" htmlFor="eq-decision">Décision</label>
-                <select id="eq-decision" className="form-select eq-select" value={formDecision.decision}
-                        onChange={(e) => setFormDecision({ ...formDecision, decision: e.target.value })}>
+            <span className="cand-count-pill">{selection.ref_formation}</span>
+          </header>
+          <div className="cand-panel-body">
+            <form className="cand-grille-form eq-form eq-form--decision" onSubmit={(e) => { e.preventDefault(); decider(selection) }}>
+              <div className="cand-champ">
+                <label className="cand-etiquette" htmlFor="eq-decision">Décision</label>
+                <select
+                  id="eq-decision" className="cand-saisie" value={formDecision.decision}
+                  onChange={(e) => setFormDecision({ ...formDecision, decision: e.target.value })}>
                   <option value="FAVORABLE">Favorable</option>
                   <option value="DEFAVORABLE">Défavorable</option>
                 </select>
               </div>
-              <div className="col-md-2">
-                <label className="form-label" htmlFor="eq-credits">Crédits reconnus</label>
-                <input id="eq-credits" type="number" min="0" className="form-control eq-input" placeholder="Crédits reconnus"
-                       value={formDecision.credits_reconnus}
-                       onChange={(e) => setFormDecision({ ...formDecision, credits_reconnus: e.target.value })} />
+              <div className="cand-champ">
+                <label className="cand-etiquette" htmlFor="eq-credits">Crédits reconnus</label>
+                <input
+                  id="eq-credits" type="number" min="0" className="cand-saisie" placeholder="Crédits reconnus"
+                  value={formDecision.credits_reconnus}
+                  onChange={(e) => setFormDecision({ ...formDecision, credits_reconnus: e.target.value })}
+                />
               </div>
-              <div className="col-md-2">
-                <label className="form-label" htmlFor="eq-note">Note transférée</label>
-                <input id="eq-note" type="number" step="0.25" min="0" max="20" className="form-control eq-input"
-                       placeholder="Note transférée" value={formDecision.note_transferee}
-                       onChange={(e) => setFormDecision({ ...formDecision, note_transferee: e.target.value })} />
+              <div className="cand-champ">
+                <label className="cand-etiquette" htmlFor="eq-note">Note transférée</label>
+                <input
+                  id="eq-note" type="number" step="0.25" min="0" max="20" className="cand-saisie"
+                  placeholder="Note transférée" value={formDecision.note_transferee}
+                  onChange={(e) => setFormDecision({ ...formDecision, note_transferee: e.target.value })}
+                />
               </div>
-              <div className="col-md-3">
-                <label className="form-label" htmlFor="eq-autorite">Autorité de validation</label>
-                <input id="eq-autorite" className="form-control eq-input" placeholder="Autorité de validation"
-                       value={formDecision.autorite_validation}
-                       onChange={(e) => setFormDecision({ ...formDecision, autorite_validation: e.target.value })} />
+              <div className="cand-champ">
+                <label className="cand-etiquette" htmlFor="eq-autorite">Autorité de validation</label>
+                <input
+                  id="eq-autorite" className="cand-saisie" placeholder="Autorité de validation"
+                  value={formDecision.autorite_validation}
+                  onChange={(e) => setFormDecision({ ...formDecision, autorite_validation: e.target.value })}
+                />
               </div>
-              <div className="col-md-2">
-                <button className="btn btn-primary w-100 camp-submit-btn" disabled={enCours}>Enregistrer</button>
+              <div className="eq-form-pied">
+                <p className="eq-hint">
+                  <i className="bi bi-info-circle" aria-hidden="true"></i>
+                  La décision est horodatée et rattachée à la demande ; l&apos;application au dossier
+                  reste soumise à confirmation.
+                </p>
+                <div className="eq-form-boutons">
+                  <button
+                    type="button" className="cand-btn-fantome" disabled={enCours}
+                    onClick={() => setSelection(null)}>
+                    Annuler
+                  </button>
+                  <button type="submit" className="cand-btn-principal" disabled={enCours}>
+                    <i className="bi bi-check2-circle" aria-hidden="true"></i>Enregistrer
+                  </button>
+                </div>
               </div>
             </form>
-            <div className="eq-decision-foot">
-              <p className="form-text eq-hint mb-0">
-                La décision est horodatée et rattachée à la demande ; l'application au dossier
-                reste soumise à confirmation.
-              </p>
-              <button className="btn btn-outline-secondary eq-action-btn" onClick={() => setSelection(null)}>
-                Annuler
-              </button>
-            </div>
           </div>
-        </div>
+        </section>
       )}
     </div>
   )
