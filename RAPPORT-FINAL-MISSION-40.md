@@ -217,8 +217,8 @@ connecté en `admin`. Captures : `docs/getinjs/preuves-crud/`.
 |---|---|
 | Branche | `arena/d40e4a41-backend-injs2026` (aucune autre branche touchée) |
 | Point de départ | `5ae9fe2` |
-| Commits de la mission | `f9bdff2` CRUD + suppression protégée · `db2a8b4` qualification lisible + écrans renommés · `11c2536` inventaire classé + preuves JPEG |
-| Volume | 29 fichiers, +1 418 / −20 lignes (hors preuves) |
+| Commits de la mission | `f9bdff2` CRUD + suppression protégée · `db2a8b4` qualification lisible + écrans renommés · `11c2536` inventaire classé + preuves JPEG · `3da80e8` rapport final |
+| Volume | 30 fichiers, +1 655 / −20 lignes (dont 17 fichiers de code et documentation : +1 599) |
 | PR | **#1** (ouverte, **non fusionnée** volontairement) |
 | Historique | Aucun `reset --hard`, aucun `push --force`, aucune migration supprimée |
 
