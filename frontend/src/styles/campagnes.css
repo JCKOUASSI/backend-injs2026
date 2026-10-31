@@ -372,3 +372,142 @@
 .cand-table--admissions th:nth-child(5), .cand-table--admissions td:nth-child(5) { width: 132px; }
 .cand-table--admissions th:nth-child(6), .cand-table--admissions td:nth-child(6) { width: 116px; }
 .cand-table--admissions th:nth-child(7), .cand-table--admissions td:nth-child(7) { width: 142px; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ÉCRAN ÉTUDIANTS — pièces propres au registre et à la fiche de création.
+   Le reste vient du design system Scolarité (`.cand-*`).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Recherche et filtres : la recherche prend la première ligne, les listes
+   déroulantes se répartissent la suivante, sans passer à la ligne isolément. */
+.etud-filtres { align-items: center; }
+.etud-filtres .cand-search.etud-recherche { flex: 1 1 340px; max-width: 520px; }
+.etud-filtre { flex: 1 1 180px; min-width: 0; max-width: 260px; }
+.etud-filtre .cand-filter-select { width: 100%; }
+
+/* Barre d'actions : création à gauche, exports à droite, même hauteur. */
+.etud-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #EDF1F6;
+}
+
+.etud-actions .cand-btn-principal,
+.etud-actions .cand-btn-fantome {
+  min-height: 38px;
+  padding: 0 1rem;
+  font-size: 0.82rem;
+}
+
+.etud-btn-export { border: 1px solid #E2E8F0; background: #FFFFFF; }
+.etud-btn-export--pdf { color: #B42318; border-color: #FBD5D5; }
+.etud-btn-export--pdf:hover { background: #FEF2F2; border-color: #F3B4B4; }
+.etud-btn-export--excel { color: #0E7A4F; border-color: #B7E7CE; }
+.etud-btn-export--excel:hover { background: #F1FBF6; border-color: #7ED0A6; }
+
+/* ── Registre ── */
+.cand-table--etudiants { min-width: 940px; }
+.cand-table--etudiants th:nth-child(1), .cand-table--etudiants td:nth-child(1) { width: 148px; }
+.cand-table--etudiants th:nth-child(3), .cand-table--etudiants td:nth-child(3) { width: 128px; }
+.cand-table--etudiants th:nth-child(4), .cand-table--etudiants td:nth-child(4) { width: 92px; }
+.cand-table--etudiants th:nth-child(5), .cand-table--etudiants td:nth-child(5) { width: 154px; }
+.cand-table--etudiants th:nth-child(6), .cand-table--etudiants td:nth-child(6) { width: 146px; }
+
+.etud-col-identite { min-width: 0; }
+
+.etud-sous {
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  margin-top: 0.18rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #64748B;
+}
+
+.etud-sous i { font-size: 0.78rem; }
+
+/* Sexe : pastille teintée avec pictogramme, plutôt qu'un badge de couleur
+   isolé sans sémantique. */
+.etud-sexe {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.etud-sexe i { font-size: 0.82rem; }
+.etud-sexe--f { background: #FDF2F8; border-color: #F6D0E4; color: #A21C6B; }
+.etud-sexe--m { background: #EFF6FF; border-color: #CFE0FB; color: #1D4ED8; }
+
+.etud-tel {
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+}
+
+/* ── Fiche de création / modification ── */
+.etud-modale-titre {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+}
+
+.etud-modale-titre i { color: var(--injs-blue-royal); font-size: 1rem; }
+
+/* Fermeture de la fiche : le glyphe « × » reste le repère attendu par les
+   utilisateurs (et les tests), mis à l'échelle du bouton rond. */
+.etud-fermer-glyphe {
+  font-size: 1.35rem;
+  font-weight: 400;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.etud-modale-corps { padding: 1.15rem 1.4rem 0.4rem; }
+
+.etud-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem 0.9rem;
+}
+
+.etud-plein { grid-column: 1 / -1; }
+
+.etud-modale-pied {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 0.9rem 1.4rem 1.1rem;
+  border-top: 1px solid #EDF1F6;
+}
+
+.etud-modale-pied .cand-btn-principal,
+.etud-modale-pied .cand-btn-fantome { min-height: 40px; padding: 0 1.2rem; }
+
+@media (max-width: 900px) {
+  .etud-filtre { flex: 1 1 45%; max-width: none; }
+}
+
+@media (max-width: 640px) {
+  .etud-filtres .cand-search.etud-recherche { flex: 1 1 100%; max-width: none; }
+  .etud-filtre { flex: 1 1 100%; }
+  .etud-actions .cand-btn-principal,
+  .etud-actions .cand-btn-fantome { flex: 1 1 100%; justify-content: center; }
+  .etud-form { grid-template-columns: minmax(0, 1fr); }
+}
