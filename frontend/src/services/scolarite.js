@@ -141,6 +141,11 @@ export const STATUT_VARIANTS = {
   REFUSEE_PIECE: 'danger',
   EXPIREE: 'danger',
   PREVUE: 'secondary',
+  // Campagnes d'admission : statuts propres à la fenêtre de candidature.
+  PLANIFIEE: 'info',
+  OUVERTE: 'success',
+  CLOTUREE: 'dark',
+  ARCHIVEE: 'dark',
 }
 
 export function statutVariant(statut) {

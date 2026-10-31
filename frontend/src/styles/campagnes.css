@@ -56,3 +56,257 @@
 .parti-filter .camp-filter-select { font-size: 0.78rem; padding: 0.35rem 2rem 0.35rem 0.8rem; }
 @media (max-width: 1100px) { .camp-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .camp-kpi-row { grid-template-columns: minmax(0, 1fr); } .camp-hero { align-items: flex-start; } .camp-search { max-width: none; } }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ÉCRAN CAMPAGNES D'ADMISSION — habillage premium
+   La page s'appuie sur le design system des écrans Scolarité (`.cand-*` :
+   bandeau, tuiles, panneaux, filtres, champs, tableau, état vide, chargement).
+   Ne restent ici que les pièces propres aux campagnes : pastilles du bandeau,
+   groupes « Période / Quotas », dates, quotas et boutons de transition.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Cycle de vie d'une campagne : frise compacte sous le sous-titre du bandeau.
+   Elle remplace une phrase à rallonge qui occupait quatre lignes sur téléphone. */
+.camp-cycle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  margin-top: 0.15rem;
+}
+
+.camp-cycle-etape {
+  padding: 0.12rem 0.45rem;
+  border: 1px solid #E6EDF5;
+  border-radius: 9999px;
+  background: #F4F8FC;
+  color: #64748B;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.camp-cycle i { color: #B7C4D4; font-size: 0.6rem; }
+
+/* Pastilles d'information du bandeau (année, nombre de campagnes). */
+.camp-pastilles {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.camp-pastilles .cand-count-pill { margin-left: 0; }
+
+.camp-page .cand-count-pill i {
+  color: var(--injs-blue-royal);
+  font-size: 0.82rem;
+  margin-right: 0.3rem;
+}
+
+/* Formulaire de création : deux groupes encadrés sous la ligne d'identité. */
+.camp-form-panel .cand-panel-body { padding-top: 1.15rem; }
+
+.cand-champ.camp-groupe {
+  /* fieldset : on rend la main au rendu natif de <legend>. */
+  display: block;
+  min-width: 0;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid #E9ECF2;
+  border-radius: 14px;
+  background: #FBFDFF;
+}
+
+.camp-groupe-titre {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  float: none;
+  width: auto;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--injs-blue-royal);
+}
+
+.camp-groupe-titre i { font-size: 0.85rem; }
+
+.camp-duo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem 0.9rem;
+}
+
+.camp-form-note { padding-top: 0; }
+
+.camp-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.76rem;
+  color: #64748B;
+}
+
+.camp-note i { color: var(--injs-blue-royal); font-size: 0.85rem; margin-top: 0.1rem; }
+
+/* ── Tableau des campagnes ── */
+.cand-table--campagnes { min-width: 1120px; }
+.cand-table--campagnes th:nth-child(2), .cand-table--campagnes td:nth-child(2) { width: 228px; }
+.cand-table--campagnes th:nth-child(3), .cand-table--campagnes td:nth-child(3) { width: 160px; }
+.cand-table--campagnes th:nth-child(4), .cand-table--campagnes td:nth-child(4) { width: 116px; }
+.cand-table--campagnes th:nth-child(5), .cand-table--campagnes td:nth-child(5) { width: 120px; }
+.cand-table--campagnes th:nth-child(6), .cand-table--campagnes td:nth-child(6) { width: 176px; }
+
+.camp-col-formation { min-width: 0; }
+
+/* Une formation tient sur trois lignes : la hauteur des lignes reste
+   régulière et l'intitulé complet demeure accessible par l'infobulle. */
+.camp-link {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-weight: 800;
+  color: var(--injs-navy);
+  text-decoration: none;
+  line-height: 1.3;
+  transition: color 0.16s ease;
+}
+
+.camp-link:hover { color: var(--injs-blue-royal); text-decoration: underline; text-underline-offset: 3px; }
+
+.camp-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  margin-top: 0.18rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748B;
+}
+
+.camp-sub i { font-size: 0.78rem; }
+
+.camp-sub.warn { color: #B45309; font-weight: 700; }
+
+/* Période : chaque borne dans une puce, la flèche matérialise l'intervalle. */
+.camp-periode {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.camp-periode i { color: #94A3B8; font-size: 0.72rem; }
+
+.camp-date {
+  padding: 0.14rem 0.45rem;
+  border: 1px solid #E6EDF5;
+  border-radius: 8px;
+  background: #F4F8FC;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* Quotas : deux compteurs étiquetés, lisibles sans texte courant. */
+.camp-quotas { display: inline-flex; gap: 0.45rem; }
+
+.camp-quota {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  padding: 0.22rem 0.55rem;
+  border: 1px solid #E9ECF2;
+  border-radius: 10px;
+  background: #FBFDFF;
+}
+
+.camp-quota-cle {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #7C8CA1;
+}
+
+.camp-quota-valeur {
+  font-size: 0.86rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--injs-navy);
+  line-height: 1.1;
+}
+
+.camp-candidatures {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  border: 1px solid #E2E8F0;
+  background: #F1F5F9;
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--injs-navy);
+}
+
+.camp-candidatures i { color: #64748B; font-size: 0.82rem; }
+
+/* ── Boutons de transition (libellés courts, icône décorative) ── */
+.camp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.camp-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  background: #FFFFFF;
+  color: #475569;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.camp-action i { font-size: 0.8rem; }
+
+.camp-action:hover:not(:disabled) { background: #F8FAFC; border-color: #CBD5E1; }
+.camp-action:focus-visible { outline: 2px solid var(--injs-blue-royal); outline-offset: 2px; }
+.camp-action:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.camp-action--info { color: var(--injs-blue-royal); border-color: #BFDCF5; background: #F3F8FF; }
+.camp-action--info:hover:not(:disabled) { background: #E6F1FF; border-color: var(--injs-blue-royal); }
+
+.camp-action--succes { color: #0E7A4F; border-color: #B7E7CE; background: #F1FBF6; }
+.camp-action--succes:hover:not(:disabled) { background: #E3F7EC; border-color: #7ED0A6; }
+
+.camp-action--attention { color: #8A5A00; border-color: #F3D49A; background: #FFFBF0; }
+.camp-action--attention:hover:not(:disabled) { background: #FEF3DA; border-color: #E9BE6C; }
+
+.camp-action--neutre { color: #475569; }
+
+@media (max-width: 900px) {
+  .camp-pastilles { width: 100%; }
+  .camp-duo { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .camp-actions { justify-content: flex-start; }
+}

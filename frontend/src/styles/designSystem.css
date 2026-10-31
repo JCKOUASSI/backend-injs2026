@@ -716,6 +716,9 @@ label.required::after {
 .badge.bg-info    { background: var(--injs-blue-pale);    color: var(--injs-blue); border-color: #BFDCF5; }
 .badge.bg-primary { background: var(--injs-blue-pale);    color: var(--injs-blue-royal); border-color: #BFDCF5; }
 .badge.bg-secondary { background: var(--injs-surface-alt); color: var(--injs-text-soft); border-color: var(--injs-border); }
+/* Statuts « clos » (campagne clôturée / archivée, dossier annulé) : variante
+   sombre, jusqu'ici jamais stylée, qui la distinguait mal des brouillons. */
+.badge.bg-dark    { background: #EEF2F7; color: #334155; border-color: #D7DFE9; }
 
 /* ── 9. FENÊTRES MODALES ──────────────────────────────────────────────────
    Verre renforcé : fond quasi opaque pour que la lecture reste confortable,

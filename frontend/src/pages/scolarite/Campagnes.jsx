@@ -4,22 +4,34 @@ import api from '../../services/api'
 import { canActScolarite } from '../../utils/roles'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import StatutBadge from '../../components/scolarite/StatutBadge'
+import '../../styles/candidatures.css'
 import '../../styles/campagnes.css'
-
-const BADGE_STATUT = {
-  BROUILLON: 'secondary', PLANIFIEE: 'info', OUVERTE: 'success',
-  SUSPENDUE: 'warning', CLOTUREE: 'dark', ANNULEE: 'danger', ARCHIVEE: 'dark',
-}
 
 const LIBELLES_STATUT = {
   BROUILLON: 'Brouillon', PLANIFIEE: 'Planifiée', OUVERTE: 'Ouverte',
   SUSPENDUE: 'Suspendue', CLOTUREE: 'Clôturée', ANNULEE: 'Annulée', ARCHIVEE: 'Archivée',
 }
 
+/* Une transition = un bouton : libellé court, icône décorative et variante de
+   couleur cohérente avec le statut visé. */
+const ACTIONS = {
+  PLANIFIEE: { libelle: 'Planifier', icone: 'bi-calendar-check', variante: 'info' },
+  OUVERTE: { libelle: 'Ouvrir', icone: 'bi-door-open', variante: 'succes' },
+  SUSPENDUE: { libelle: 'Suspendre', icone: 'bi-pause-circle', variante: 'attention' },
+  CLOTUREE: { libelle: 'Clôturer', icone: 'bi-lock', variante: 'neutre' },
+  ARCHIVEE: { libelle: 'Archiver', icone: 'bi-archive', variante: 'neutre' },
+}
+
 const formaterDate = (iso) => {
   if (!iso) return null
   const [a, m, j] = String(iso).split('-')
   return (a && m && j) ? `${j}/${m}/${a}` : iso
+}
+
+const formVide = {
+  libelle: '', annee_academique_id: '', ref_formation_id: '',
+  date_ouverture: '', date_fermeture: '', quota_admissibles: '', quota_admis: '',
 }
 
 export default function Campagnes() {
@@ -30,10 +42,7 @@ export default function Campagnes() {
   const [campagnes, setCampagnes] = useState([])
   const [chargement, setChargement] = useState(true)
   const [enCours, setEnCours] = useState(false)
-  const [form, setForm] = useState({
-    libelle: '', annee_academique_id: '', ref_formation_id: '',
-    date_ouverture: '', date_fermeture: '', quota_admissibles: '', quota_admis: '',
-  })
+  const [form, setForm] = useState({ ...formVide })
   const [options, setOptions] = useState({ annees: [], formations: [] })
   const [filtres, setFiltres] = useState({ q: '', statut: '', formation: '' })
 
@@ -73,7 +82,7 @@ export default function Campagnes() {
         quota_admis: Number(form.quota_admis) || undefined,
       })
       toast.showToast('Campagne créée en brouillon.')
-      setForm({ libelle: '', annee_academique_id: '', ref_formation_id: '', date_ouverture: '', date_fermeture: '', quota_admissibles: '', quota_admis: '' })
+      setForm({ ...formVide })
       charger()
     } catch (err) {
       toast.showToast(err.response?.data?.error || 'Création impossible.', 'error')
@@ -121,220 +130,381 @@ export default function Campagnes() {
     candidatures: campagnes.reduce((s, c) => s + (Number(c.nb_candidatures) || 0), 0),
   }), [campagnes])
 
+  const anneeCourante = options.annees[0]?.libelle
+
+  /* Actions possibles depuis chaque statut (miroir des transitions serveur). */
+  const transitionsDe = (c) => {
+    if (c.statut === 'BROUILLON') return [{ statut: 'PLANIFIEE' }]
+    if (c.statut === 'PLANIFIEE') {
+      return [{ statut: 'OUVERTE', confirmation: 'Ouvrir la campagne aux candidatures ?' }]
+    }
+    if (c.statut === 'OUVERTE') {
+      return [
+        { statut: 'SUSPENDUE' },
+        { statut: 'CLOTUREE', confirmation: 'Clôturer ? Plus aucune candidature ne sera acceptée.' },
+      ]
+    }
+    // Une campagne suspendue se rouvre : le libellé le dit explicitement.
+    if (c.statut === 'SUSPENDUE') return [{ statut: 'OUVERTE', libelle: 'Réouvrir' }]
+    if (c.statut === 'CLOTUREE') return [{ statut: 'ARCHIVEE' }]
+    return []
+  }
+
   return (
-    <div className="camp-page">
-      <div className="camp-hero">
-        <div className="camp-hero-text">
-          <h1 className="camp-hero-title"><i className="bi bi-megaphone"></i>Campagnes d&apos;admission</h1>
-          <p className="camp-hero-sub">Fenêtres de candidature par formation — Brouillon → Planifiée → Ouverte → Clôturée → Archivée.</p>
+    <div className="cand-page camp-page">
+      {/* ── Bandeau d'accueil, même matière que Candidatures / Inscriptions ── */}
+      <div className="cand-hero">
+        <div className="cand-hero-identite">
+          <span className="cand-hero-icone" aria-hidden="true">
+            <i className="bi bi-megaphone"></i>
+          </span>
+          <div className="cand-hero-text">
+            <span className="cand-hero-badge">Scolarité — Admissions</span>
+            <h1 className="cand-hero-title">Campagnes d&apos;admission</h1>
+            <p className="cand-hero-sub">Fenêtres de candidature par formation</p>
+            <span className="camp-cycle">
+              {['Brouillon', 'Planifiée', 'Ouverte', 'Clôturée', 'Archivée'].map((etape, i) => (
+                <React.Fragment key={etape}>
+                  {i > 0 && <i className="bi bi-chevron-right" aria-hidden="true"></i>}
+                  <span className="camp-cycle-etape">{etape}</span>
+                </React.Fragment>
+              ))}
+            </span>
+          </div>
         </div>
-        <div className="camp-hero-side">
-          <span className="plaquette plaquette-primary"><i className="bi bi-mortarboard"></i>{options.annees[0]?.libelle || 'Année en cours'}</span>
-          <span className="plaquette plaquette-soft"><i className="bi bi-diagram-3"></i>{kpis.total} campagne{kpis.total > 1 ? 's' : ''}</span>
+        <div className="camp-pastilles">
+          <span className="cand-count-pill">
+            <i className="bi bi-mortarboard" aria-hidden="true"></i>
+            {anneeCourante || 'Année en cours'}
+          </span>
+          <span className="cand-count-pill">
+            <i className="bi bi-diagram-3" aria-hidden="true"></i>
+            {kpis.total} campagne{kpis.total > 1 ? 's' : ''}
+          </span>
         </div>
       </div>
 
-      <div className="camp-kpi-row">
-        <div className="camp-kpi">
-          <div><span className="camp-kpi-label">Campagnes</span><span className="camp-kpi-value">{kpis.total}</span></div>
-          <span className="camp-kpi-icon is-blue"><i className="bi bi-megaphone"></i></span>
+      {/* ── Indicateurs ── */}
+      <div className="cand-kpi-row">
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-blue" aria-hidden="true"><i className="bi bi-megaphone"></i></span>
+          <div className="cand-kpi-texte">
+            <span className="cand-kpi-value">{kpis.total}</span>
+            <span className="cand-kpi-label">Campagnes</span>
+          </div>
         </div>
-        <div className="camp-kpi">
-          <div><span className="camp-kpi-label">En brouillon</span><span className="camp-kpi-value">{kpis.brouillons}</span></div>
-          <span className="camp-kpi-icon is-slate"><i className="bi bi-pencil-square"></i></span>
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-slate" aria-hidden="true"><i className="bi bi-pencil-square"></i></span>
+          <div className="cand-kpi-texte">
+            <span className="cand-kpi-value">{kpis.brouillons}</span>
+            <span className="cand-kpi-label">En brouillon</span>
+          </div>
         </div>
-        <div className="camp-kpi">
-          <div><span className="camp-kpi-label">Actives / planifiées</span><span className="camp-kpi-value">{kpis.ouvertes}</span></div>
-          <span className="camp-kpi-icon is-green"><i className="bi bi-door-open"></i></span>
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-green" aria-hidden="true"><i className="bi bi-door-open"></i></span>
+          <div className="cand-kpi-texte">
+            <span className="cand-kpi-value">{kpis.ouvertes}</span>
+            <span className="cand-kpi-label">Actives / planifiées</span>
+          </div>
         </div>
-        <div className="camp-kpi">
-          <div><span className="camp-kpi-label">Candidatures</span><span className="camp-kpi-value">{kpis.candidatures}</span></div>
-          <span className="camp-kpi-icon is-amber"><i className="bi bi-people"></i></span>
+        <div className="cand-kpi">
+          <span className="cand-kpi-icon is-amber" aria-hidden="true"><i className="bi bi-people"></i></span>
+          <div className="cand-kpi-texte">
+            <span className="cand-kpi-value">{kpis.candidatures}</span>
+            <span className="cand-kpi-label">Candidatures</span>
+          </div>
         </div>
       </div>
 
       {peutAgir && (
-        <div className="camp-panel card">
-          <div className="camp-panel-head">
-            <h2 className="camp-panel-title"><i className="bi bi-plus-circle"></i>Nouvelle campagne</h2>
-            <span className="camp-count-pill">Créée en brouillon</span>
-          </div>
-          <div className="camp-panel-body">
-            <form className="camp-form" onSubmit={creer}>
-              <div className="row g-3">
-                <div className="col-md-4">
-                  <label className="form-label" htmlFor="camp-libelle">Libellé *</label>
-                  <input id="camp-libelle" className="form-control" placeholder="Libellé" required value={form.libelle}
-                         onChange={(e) => setForm({ ...form, libelle: e.target.value })} />
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label" htmlFor="camp-annee">Année académique *</label>
-                  <select id="camp-annee" className="form-select" required value={form.annee_academique_id}
-                          onChange={(e) => setForm({ ...form, annee_academique_id: e.target.value })}>
-                    <option value="">Année…</option>
-                    {options.annees.map((a) => <option key={a.id} value={a.id}>{a.libelle}</option>)}
-                  </select>
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label" htmlFor="camp-formation">Formation *</label>
-                  <select id="camp-formation" className="form-select" required value={form.ref_formation_id}
-                          onChange={(e) => setForm({ ...form, ref_formation_id: e.target.value })}>
-                    <option value="">Formation…</option>
-                    {options.formations.map((f) => <option key={f.id} value={f.id}>{f.intitule}</option>)}
-                  </select>
-                </div>
+        <section className="cand-panel card camp-form-panel" aria-labelledby="titre-nouvelle-campagne">
+          <header className="cand-panel-head">
+            <h2 className="cand-panel-title" id="titre-nouvelle-campagne">
+              <i className="bi bi-plus-circle" aria-hidden="true"></i>Nouvelle campagne
+            </h2>
+            <span className="cand-count-pill">
+              <i className="bi bi-pencil-square" aria-hidden="true"></i>Créée en brouillon
+            </span>
+          </header>
+
+          <form className="cand-panel-body" onSubmit={creer}>
+            <div className="cand-grille-form">
+              <div className="cand-champ cand-champ--2">
+                <label className="cand-etiquette" htmlFor="camp-libelle">Libellé *</label>
+                <input
+                  id="camp-libelle" className="cand-saisie" placeholder="Libellé" required
+                  value={form.libelle}
+                  onChange={(e) => setForm({ ...form, libelle: e.target.value })}
+                />
               </div>
-              <div className="row g-3 mt-1 align-items-stretch">
-                <div className="col-lg-5">
-                  <fieldset className="camp-fieldset">
-                    <legend>Période de candidature</legend>
-                    <div className="row g-2">
-                      <div className="col-6">
-                        <label className="form-label" htmlFor="camp-ouv">Ouverture</label>
-                        <input id="camp-ouv" type="date" className="form-control" value={form.date_ouverture}
-                               onChange={(e) => setForm({ ...form, date_ouverture: e.target.value })} />
-                      </div>
-                      <div className="col-6">
-                        <label className="form-label" htmlFor="camp-ferm">Fermeture</label>
-                        <input id="camp-ferm" type="date" className="form-control" value={form.date_fermeture}
-                               min={form.date_ouverture || undefined}
-                               onChange={(e) => setForm({ ...form, date_fermeture: e.target.value })} />
-                      </div>
-                    </div>
-                  </fieldset>
-                </div>
-                <div className="col-lg-5">
-                  <fieldset className="camp-fieldset">
-                    <legend>Quotas (optionnel)</legend>
-                    <div className="row g-2">
-                      <div className="col-6">
-                        <label className="form-label" htmlFor="camp-qa">Admissibles</label>
-                        <input id="camp-qa" type="number" min="0" className="form-control" placeholder="Quota admiss."
-                               title="Quota d'admissibles (optionnel)" value={form.quota_admissibles}
-                               onChange={(e) => setForm({ ...form, quota_admissibles: e.target.value })} />
-                      </div>
-                      <div className="col-6">
-                        <label className="form-label" htmlFor="camp-qad">Admis</label>
-                        <input id="camp-qad" type="number" min="0" className="form-control" placeholder="Quota admis"
-                               title="Quota d'admis (optionnel)" value={form.quota_admis}
-                               onChange={(e) => setForm({ ...form, quota_admis: e.target.value })} />
-                      </div>
-                    </div>
-                    <div className="form-text mt-1">Admissibles = classement · Admis = admis final. Vide = sans quota.</div>
-                  </fieldset>
-                </div>
-                <div className="col-lg-2 d-flex align-items-end justify-content-lg-end">
-                  <button className="btn btn-primary camp-submit-btn w-100" disabled={enCours}>
-                    <i className="bi bi-check2-circle me-1"></i>Créer
-                  </button>
-                </div>
+              <div className="cand-champ">
+                <label className="cand-etiquette" htmlFor="camp-annee">Année académique *</label>
+                <select
+                  id="camp-annee" className="cand-saisie" required
+                  value={form.annee_academique_id}
+                  onChange={(e) => setForm({ ...form, annee_academique_id: e.target.value })}
+                >
+                  <option value="">Année…</option>
+                  {options.annees.map((a) => <option key={a.id} value={a.id}>{a.libelle}</option>)}
+                </select>
               </div>
-            </form>
-          </div>
-        </div>
+              <div className="cand-champ">
+                <label className="cand-etiquette" htmlFor="camp-formation">Formation *</label>
+                <select
+                  id="camp-formation" className="cand-saisie" required
+                  value={form.ref_formation_id}
+                  onChange={(e) => setForm({ ...form, ref_formation_id: e.target.value })}
+                >
+                  <option value="">Formation…</option>
+                  {options.formations.map((f) => <option key={f.id} value={f.id}>{f.intitule}</option>)}
+                </select>
+              </div>
+
+              <fieldset className="cand-champ cand-champ--2 camp-groupe">
+                <legend className="camp-groupe-titre">
+                  <i className="bi bi-calendar3" aria-hidden="true"></i>
+                  Période de candidature
+                </legend>
+                <div className="camp-duo">
+                  <div className="cand-champ">
+                    <label className="cand-etiquette" htmlFor="camp-ouv">Ouverture</label>
+                    <input
+                      id="camp-ouv" type="date" className="cand-saisie"
+                      value={form.date_ouverture}
+                      onChange={(e) => setForm({ ...form, date_ouverture: e.target.value })}
+                    />
+                  </div>
+                  <div className="cand-champ">
+                    <label className="cand-etiquette" htmlFor="camp-ferm">Fermeture</label>
+                    <input
+                      id="camp-ferm" type="date" className="cand-saisie"
+                      min={form.date_ouverture || undefined}
+                      value={form.date_fermeture}
+                      onChange={(e) => setForm({ ...form, date_fermeture: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </fieldset>
+
+              <fieldset className="cand-champ cand-champ--2 camp-groupe">
+                <legend className="camp-groupe-titre">
+                  <i className="bi bi-sliders2" aria-hidden="true"></i>
+                  Quotas (optionnel)
+                </legend>
+                <div className="camp-duo">
+                  <div className="cand-champ">
+                    <label className="cand-etiquette" htmlFor="camp-qa">Admissibles</label>
+                    <input
+                      id="camp-qa" type="number" min="0" className="cand-saisie" placeholder="Quota admiss."
+                      title="Quota d'admissibles (optionnel)" value={form.quota_admissibles}
+                      onChange={(e) => setForm({ ...form, quota_admissibles: e.target.value })}
+                    />
+                  </div>
+                  <div className="cand-champ">
+                    <label className="cand-etiquette" htmlFor="camp-qad">Admis</label>
+                    <input
+                      id="camp-qad" type="number" min="0" className="cand-saisie" placeholder="Quota admis"
+                      title="Quota d'admis (optionnel)" value={form.quota_admis}
+                      onChange={(e) => setForm({ ...form, quota_admis: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </fieldset>
+
+              <div className="cand-champ cand-champ--4 camp-form-note">
+                <p className="camp-note">
+                  <i className="bi bi-info-circle" aria-hidden="true"></i>
+                  Admissibles = classement · Admis = admis final. Laissez vide pour une campagne sans quota.
+                </p>
+              </div>
+            </div>
+
+            <div className="cand-form-actions">
+              <button type="submit" className="cand-btn-principal" disabled={enCours}>
+                {enCours
+                  ? <span className="spinner-border" aria-hidden="true"></span>
+                  : <i className="bi bi-check2-circle" aria-hidden="true"></i>}
+                Créer
+              </button>
+            </div>
+          </form>
+        </section>
       )}
 
-      <div className="camp-panel card">
-        <div className="camp-panel-head">
-          <h2 className="camp-panel-title"><i className="bi bi-list-check"></i>Dossiers de campagne</h2>
-          <span className="camp-count-pill">{campagnesFiltrees.length} dossier{campagnesFiltrees.length > 1 ? 's' : ''}</span>
-        </div>
-        <div className="camp-panel-body">
-          <div className="camp-filters mb-3">
-            <div className="camp-search">
+      <section className="cand-panel" aria-labelledby="titre-dossiers-campagne">
+        <header className="cand-panel-head">
+          <h2 className="cand-panel-title" id="titre-dossiers-campagne">
+            <i className="bi bi-list-check" aria-hidden="true"></i>Dossiers de campagne
+          </h2>
+          <span className="cand-count-pill">
+            {campagnesFiltrees.length} dossier{campagnesFiltrees.length > 1 ? 's' : ''}
+          </span>
+        </header>
+
+        <div className="cand-panel-body">
+          <div className="cand-filters">
+            <div className="cand-search">
               <i className="bi bi-search"></i>
-              <input className="form-control form-control-sm" placeholder="Rechercher un libellé, une formation…"
-                     aria-label="Rechercher une campagne" value={filtres.q}
-                     onChange={(e) => setFiltres({ ...filtres, q: e.target.value })} />
+              <input
+                className="cand-input" type="search"
+                placeholder="Rechercher un libellé, une formation…"
+                aria-label="Rechercher une campagne" value={filtres.q}
+                onChange={(e) => setFiltres({ ...filtres, q: e.target.value })}
+              />
             </div>
-            <select className="form-select form-select-sm camp-filter-select" aria-label="Filtrer par statut"
-                    value={filtres.statut} onChange={(e) => setFiltres({ ...filtres, statut: e.target.value })}>
+            <select
+              className="cand-filter-select" aria-label="Filtrer par statut"
+              value={filtres.statut}
+              onChange={(e) => setFiltres({ ...filtres, statut: e.target.value })}
+            >
               <option value="">Tous les statuts</option>
               {Object.entries(LIBELLES_STATUT).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
-            <select className="form-select form-select-sm camp-filter-select" aria-label="Filtrer par formation"
-                    value={filtres.formation} onChange={(e) => setFiltres({ ...filtres, formation: e.target.value })}>
+            <select
+              className="cand-filter-select" aria-label="Filtrer par formation"
+              value={filtres.formation}
+              onChange={(e) => setFiltres({ ...filtres, formation: e.target.value })}
+            >
               <option value="">Toutes les formations</option>
               {options.formations.map((f) => <option key={f.id} value={f.id}>{f.intitule}</option>)}
             </select>
           </div>
-          <div className="table-responsive">
-            <table className="table table-hover align-middle mb-0 camp-table">
-              <thead className="table-light">
-                <tr>
-                  <th>Formation</th><th>Période</th><th>Quotas</th><th>Statut</th><th>Candidatures</th>
-                  {peutAgir && <th className="text-end">Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {chargement ? (
-                  <tr><td colSpan={peutAgir ? 6 : 5} className="text-center py-4"><div className="spinner-border spinner-border-sm" /></td></tr>
-                ) : campagnesFiltrees.length === 0 ? (
-                  <tr><td colSpan={peutAgir ? 6 : 5}>
-                    <div className="camp-empty"><i className="bi bi-inbox"></i>
-                      {campagnes.length === 0 ? 'Aucune campagne. Créez votre première campagne ci-dessus.' : 'Aucun résultat pour ces filtres.'}
-                    </div>
-                  </td></tr>
-                ) : campagnesFiltrees.map((c) => {
-                  const ouv = formaterDate(c.date_ouverture)
-                  const ferm = formaterDate(c.date_fermeture)
-                  return (
-                    <tr key={c.id}>
-                      <td>
-                        <Link className="camp-link" to={`/scolarite/campagnes/${c.id}`}>{intituleFormation(c)}</Link>
-                        <span className="visually-hidden">{c.libelle}</span>
-                        <span className="camp-sub">{libelleAnnee(c)}</span>
-                      </td>
-                      <td className="text-nowrap">
-                        {ouv || ferm ? <>{ouv || '…'} <span className="text-muted">→</span> {ferm || '…'}</> : <span className="text-muted">—</span>}
-                        {c.statut === 'BROUILLON' && !ouv && !ferm && <span className="camp-sub warn">Dates à compléter avant planification</span>}
-                      </td>
-                      <td className="text-nowrap">
-                        {(c.quota_admissibles ?? c.quota_admis) != null
-                          ? <><i className="bi bi-people me-1 text-muted"></i>Adm. {c.quota_admissibles ?? '—'} / Admis {c.quota_admis ?? '—'}</>
-                          : <span className="text-muted">—</span>}
-                      </td>
-                      <td><span className={`badge text-bg-${BADGE_STATUT[c.statut] || 'secondary'}`}>{LIBELLES_STATUT[c.statut] || c.statut}</span></td>
-                      <td><span className="camp-candidatures">{c.nb_candidatures ?? 0}</span></td>
-                      {peutAgir && (
-                        <td className="text-end">
-                          <div className="btn-group btn-group-sm">
-                            {c.statut === 'BROUILLON' && (
-                              <button className="btn btn-outline-info camp-action-btn" disabled={enCours}
-                                      title="Passer en planifiée"
-                                      onClick={() => transition(c, 'PLANIFIEE')}><i className="bi bi-calendar-check me-1"></i>Planifier</button>
+
+          {chargement ? (
+            <div className="cand-chargement">
+              <span className="spinner-border" aria-hidden="true"></span>Chargement des campagnes…
+            </div>
+          ) : (
+            <>
+              <div className="cand-table-wrap">
+                <table className="cand-table cand-table--campagnes">
+                  <thead>
+                    <tr>
+                      <th scope="col">Formation</th>
+                      <th scope="col">Période de candidature</th>
+                      <th scope="col">Quotas</th>
+                      <th scope="col">Statut</th>
+                      <th scope="col">Candidatures</th>
+                      {peutAgir && <th scope="col" className="cand-th-actions">Transitions</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {campagnesFiltrees.map((c) => {
+                      const ouv = formaterDate(c.date_ouverture)
+                      const ferm = formaterDate(c.date_fermeture)
+                      const actions = peutAgir ? transitionsDe(c) : []
+                      return (
+                        <tr key={c.id}>
+                          <td className="camp-col-formation">
+                            <Link
+                              className="camp-link"
+                              to={`/scolarite/campagnes/${c.id}`}
+                              title={intituleFormation(c)}
+                            >
+                              {intituleFormation(c)}
+                            </Link>
+                            <span className="cand-sr-only">{c.libelle}</span>
+                            <span className="camp-sub">
+                              <i className="bi bi-mortarboard" aria-hidden="true"></i>{libelleAnnee(c)}
+                            </span>
+                          </td>
+                          <td>
+                            {ouv || ferm ? (
+                              <span className="camp-periode">
+                                <span className="camp-date">{ouv || '…'}</span>
+                                <i className="bi bi-arrow-right" aria-hidden="true"></i>
+                                <span className="camp-date">{ferm || '…'}</span>
+                              </span>
+                            ) : null}
+                            {!ouv && !ferm && (
+                              c.statut === 'BROUILLON' ? (
+                                <span className="camp-sub warn">
+                                  <i className="bi bi-exclamation-circle" aria-hidden="true"></i>
+                                  Dates à compléter avant planification
+                                </span>
+                              ) : <span className="cand-texte-doux">—</span>
                             )}
-                            {c.statut === 'PLANIFIEE' && (
-                              <button className="btn btn-outline-success camp-action-btn" disabled={enCours}
-                                      onClick={() => transition(c, 'OUVERTE', 'Ouvrir la campagne aux candidatures ?')}><i className="bi bi-door-open me-1"></i>Ouvrir</button>
-                            )}
-                            {c.statut === 'OUVERTE' && (
-                              <>
-                                <button className="btn btn-outline-warning camp-action-btn" disabled={enCours}
-                                        onClick={() => transition(c, 'SUSPENDUE')}><i className="bi bi-pause-circle me-1"></i>Suspendre</button>
-                                <button className="btn btn-outline-dark camp-action-btn" disabled={enCours}
-                                        onClick={() => transition(c, 'CLOTUREE', 'Clôturer ? Plus aucune candidature ne sera acceptée.')}><i className="bi bi-lock me-1"></i>Clôturer</button>
-                              </>
-                            )}
-                            {c.statut === 'SUSPENDUE' && (
-                              <button className="btn btn-outline-success camp-action-btn" disabled={enCours}
-                                      onClick={() => transition(c, 'OUVERTE')}><i className="bi bi-arrow-counterclockwise me-1"></i>Réouvrir</button>
-                            )}
-                            {c.statut === 'CLOTUREE' && (
-                              <button className="btn btn-outline-secondary camp-action-btn" disabled={enCours}
-                                      onClick={() => transition(c, 'ARCHIVEE')}><i className="bi bi-archive me-1"></i>Archiver</button>
-                            )}
+                          </td>
+                          <td>
+                            {(c.quota_admissibles ?? c.quota_admis) != null ? (
+                              <span className="camp-quotas">
+                                <span className="camp-quota">
+                                  <span className="camp-quota-cle">Admissibles</span>
+                                  <span className="camp-quota-valeur">{c.quota_admissibles ?? '—'}</span>
+                                </span>
+                                <span className="camp-quota">
+                                  <span className="camp-quota-cle">Admis</span>
+                                  <span className="camp-quota-valeur">{c.quota_admis ?? '—'}</span>
+                                </span>
+                              </span>
+                            ) : <span className="cand-texte-doux">Sans quota</span>}
+                          </td>
+                          <td>
+                            <StatutBadge statut={c.statut} libelle={LIBELLES_STATUT[c.statut] || c.statut} />
+                          </td>
+                          <td>
+                            <span className="camp-candidatures">
+                              <i className="bi bi-people" aria-hidden="true"></i>
+                              {c.nb_candidatures ?? 0}
+                            </span>
+                          </td>
+                          {peutAgir && (
+                            <td className="cand-col-actions">
+                              <div className="camp-actions">
+                                {actions.map(({ statut, confirmation, libelle }) => {
+                                  const a = ACTIONS[statut]
+                                  return (
+                                    <button
+                                      key={statut}
+                                      type="button"
+                                      className={`camp-action camp-action--${a.variante}`}
+                                      disabled={enCours}
+                                      onClick={() => transition(c, statut, confirmation)}
+                                    >
+                                      <i className={`bi ${a.icone}`} aria-hidden="true"></i>
+                                      {libelle || a.libelle}
+                                    </button>
+                                  )
+                                })}
+                                {actions.length === 0 && (
+                                  <span className="cand-texte-doux">Aucune transition</span>
+                                )}
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      )
+                    })}
+                    {campagnesFiltrees.length === 0 && (
+                      <tr>
+                        <td colSpan={peutAgir ? 6 : 5}>
+                          <div className="cand-vide">
+                            <span className="cand-vide-icone" aria-hidden="true">
+                              <i className="bi bi-megaphone"></i>
+                            </span>
+                            <p className="cand-vide-titre">
+                              {campagnes.length === 0 ? 'Aucune campagne' : 'Aucun résultat'}
+                            </p>
+                            <p className="cand-vide-texte">
+                              {campagnes.length === 0
+                                ? 'Créez votre première campagne avec le formulaire ci-dessus : elle démarre en brouillon.'
+                                : 'Aucune campagne ne correspond à la recherche ou aux filtres sélectionnés.'}
+                            </p>
                           </div>
                         </td>
-                      )}
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <p className="cand-defile" aria-hidden="true">
+                <i className="bi bi-arrow-left-right"></i>
+                Faites défiler le tableau horizontalement
+              </p>
+            </>
+          )}
         </div>
-      </div>
+      </section>
     </div>
   )
 }

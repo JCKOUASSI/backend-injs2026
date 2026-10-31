@@ -224,6 +224,11 @@
   transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+/* Un <select> prend par défaut la largeur de son option la plus longue :
+   avec des intitulés de formation complets, il débordait de sa colonne et
+   passait seul à la ligne. On le laisse se contraindre à sa base flexible. */
+.cand-filters .cand-filter-select { min-width: 0; }
+
 .cand-filter-select:hover { border-color: #CBD5E1; }
 
 .cand-filter-select:focus {
