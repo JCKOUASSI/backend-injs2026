@@ -1,0 +1,218 @@
+{
+  "_meta": {
+    "objet": "Nomenclatures pédagogiques du module Référentiels : types d'évaluation, types de décision de jury, types d'espace sportif.",
+    "regle": "Aucune valeur n'est inventée : chaque bloc reproduit la nomenclature de sa source et porte son degré de fiabilité. Le fichier « NOMENCLATURES MÉTIER ET ACADÉMIQUES.pdf » annoncé par le commanditaire n'a pas été reçu dans l'espace de travail : les sources retenues sont les documents et le code de l'application elle-même (voir chaque bloc).",
+    "arbitrages": [
+      "Types de décision : nomenclature restreinte aux décisions de jury de délibération (module Jurys) ; les décisions d'admission au concours (module Admissions) relèvent d'un autre processus et ne sont pas reprises ici.",
+      "Types d'espace sportif : seuls les espaces à vocation sportive de l'inventaire sont retenus ; les types génériques de salles de l'ancien seed de démonstration (amphithéâtre, salle de TD, salle informatique, salle de réunion) restent couverts par les types de lieu des salles et ne sont pas dupliqués. Aucune salle existante n'est reclassée automatiquement."
+    ]
+  },
+  "types_evaluation": {
+    "source_document": "Refonte du Module Évaluations — nomenclature des types d'évaluation",
+    "fiabilite": "CADRAGE",
+    "valeurs": [
+      {
+        "code": "INTERROGATION",
+        "libelle": "Interrogation",
+        "description": "Courte épreuve écrite ou orale, souvent inopinée, vérifiant l'acquisition ponctuelle d'une notion au fil du semestre."
+      },
+      {
+        "code": "DEVOIR_SURVEILLE",
+        "libelle": "Devoir surveillé",
+        "description": "Épreuve écrite réalisée en classe, en temps limité et sous surveillance, sur une partie du programme de l'ECUE."
+      },
+      {
+        "code": "DEVOIR_MAISON",
+        "libelle": "Devoir maison",
+        "description": "Travail écrit réalisé hors classe et remis à échéance (dissertation, synthèse, résolution de problèmes)."
+      },
+      {
+        "code": "CC",
+        "libelle": "Contrôle continu",
+        "description": "Évaluation progressive tout au long du semestre (interrogations, devoirs, participation) ; composant « CC » du moteur de calcul des notes, pondéré avec l'examen selon le paramétrage de l'ECUE."
+      },
+      {
+        "code": "TD",
+        "libelle": "Évaluation de travaux dirigés",
+        "description": "Note sanctionnant les travaux dirigés : exercices encadrés, applications et études de cas réalisées en groupe restreint."
+      },
+      {
+        "code": "TP",
+        "libelle": "Évaluation de travaux pratiques",
+        "description": "Note sanctionnant les travaux pratiques encadrés (laboratoire, atelier, plateau sportif), hors épreuve pratique terminale."
+      },
+      {
+        "code": "COMPTE_RENDU_TP",
+        "libelle": "Compte rendu de TP",
+        "description": "Rapport écrit restituant une séance de travaux pratiques : protocole, observations, résultats et interprétation."
+      },
+      {
+        "code": "EXPOSE",
+        "libelle": "Exposé",
+        "description": "Présentation orale, individuelle ou en groupe, d'un thème de l'ECUE, évaluée sur le fond et la qualité de la restitution."
+      },
+      {
+        "code": "PROJET",
+        "libelle": "Projet",
+        "description": "Travail de conception ou de réalisation mené sur plusieurs semaines (projet pédagogique, sportif, d'animation ou de recherche appliquée)."
+      },
+      {
+        "code": "ETUDE_DE_CAS",
+        "libelle": "Étude de cas",
+        "description": "Analyse argumentée d'une situation réelle ou simulée (entraînement, enseignement, management sportif) mobilisant les acquis de l'ECUE."
+      },
+      {
+        "code": "ORAL",
+        "libelle": "Oral",
+        "description": "Épreuve orale devant un enseignant ou un jury, avec ou sans temps de préparation."
+      },
+      {
+        "code": "PRATIQUE",
+        "libelle": "Évaluation pratique (continue)",
+        "description": "Évaluation des habiletés et performances physiques et sportives observées en situation de pratique pendant le semestre (technique, tactique, sécurité)."
+      },
+      {
+        "code": "EXAMEN_TERMINAL",
+        "libelle": "Examen terminal",
+        "description": "Épreuve de fin de semestre organisée en session normale d'examens ; composant d'examen du moteur de calcul des notes, pondéré avec le contrôle continu selon le paramétrage de l'ECUE."
+      },
+      {
+        "code": "EXAMEN_ECRIT",
+        "libelle": "Examen écrit",
+        "description": "Examen terminal sous forme écrite et anonyme, en salle d'examen et en temps limité."
+      },
+      {
+        "code": "EXAMEN_PRATIQUE",
+        "libelle": "Examen pratique",
+        "description": "Examen terminal sous forme de performance ou de démonstration physique et sportive évaluée sur grille (barème de performance, correction technique, sécurité)."
+      },
+      {
+        "code": "SOUTENANCE",
+        "libelle": "Soutenance",
+        "description": "Défense orale devant jury d'un mémoire, d'un rapport de stage ou d'un projet de fin de cycle."
+      },
+      {
+        "code": "STAGE",
+        "libelle": "Évaluation de stage",
+        "description": "Évaluation de la période de stage : appréciation du maître de stage, visites d'encadrement et rapport de stage, selon la maquette."
+      },
+      {
+        "code": "MEMOIRE",
+        "libelle": "Mémoire",
+        "description": "Document de recherche ou d'étude professionnelle rédigé en fin de cycle (notamment Master) et évalué avant soutenance."
+      },
+      {
+        "code": "RATTRAPAGE",
+        "libelle": "Rattrapage",
+        "description": "Épreuve de seconde session réservée aux UE/ECUE non validées en session normale ; la règle de substitution ou de conservation de la note est paramétrée dans le moteur de calcul."
+      },
+      {
+        "code": "AUTRE",
+        "libelle": "Autre évaluation",
+        "description": "Modalité d'évaluation particulière définie librement par l'équipe pédagogique pour une ECUE (à préciser dans le paramétrage de l'évaluation)."
+      }
+    ]
+  },
+  "types_decision": {
+    "source_document": "Jurys de délibération INJS — décisions officielles (module Jurys)",
+    "fiabilite": "OFFICIEL",
+    "valeurs": [
+      {
+        "code": "ADMIS",
+        "libelle": "Admis",
+        "description": "Le jury prononce l'admission : le semestre (ou le niveau) est validé, les crédits ECTS acquis sont capitalisés et l'étudiant poursuit son parcours au semestre suivant."
+      },
+      {
+        "code": "ADMIS_RESERVES",
+        "libelle": "Admis avec réserves",
+        "description": "Admission prononcée par le jury avec une ou plusieurs réserves inscrites au procès-verbal de délibération, à régulariser selon les modalités fixées par le jury."
+      },
+      {
+        "code": "AJOURNE",
+        "libelle": "Ajourné",
+        "description": "Le jury prononce l'ajournement : le semestre n'est pas validé. Conformément au système LMD, les crédits des UE acquises restent capitalisés et seules les UE/ECUE non validées sont reprises."
+      },
+      {
+        "code": "EXCLUSION",
+        "libelle": "Exclusion",
+        "description": "Décision officielle INJS produite lorsque la moyenne d'une UE passe sous le seuil éliminatoire paramétré dans les règles de validation LMD ; elle n'est jamais convertie en simple ajournement."
+      }
+    ]
+  },
+  "types_espace_sportif": {
+    "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+    "fiabilite": "MODELISE",
+    "valeurs": [
+      {
+        "code": "GYMNASE",
+        "libelle": "Gymnase",
+        "description": "Plateau sportif couvert omnisports (gymnases 1 et 2 de l'inventaire) accueillant les sports collectifs en salle, la gymnastique et les évaluations pratiques couvertes."
+      },
+      {
+        "code": "PISCINE",
+        "libelle": "Piscine",
+        "description": "Bassin de natation sportif (piscine olympique de l'inventaire) pour l'enseignement de la natation, du sauvetage et des activités aquatiques."
+      },
+      {
+        "code": "BASSIN_APPRENTISSAGE",
+        "libelle": "Bassin d'apprentissage",
+        "description": "Petit bassin peu profond dédié à l'apprentissage de la natation et à l'aisance aquatique des débutants."
+      },
+      {
+        "code": "TERRAIN",
+        "libelle": "Terrain de sport collectif",
+        "description": "Terrain extérieur de grand jeu (terrain principal, terrain synthétique et terrain d'entraînement de l'inventaire) : football, rugby et grands jeux collectifs."
+      },
+      {
+        "code": "PLATEAU_SPORTIF",
+        "libelle": "Plateau sportif extérieur",
+        "description": "Plateau extérieur aménagé pour les sports collectifs de petit terrain (basketball, handball et volleyball extérieurs de l'inventaire)."
+      },
+      {
+        "code": "COURT_TENNIS",
+        "libelle": "Court de tennis",
+        "description": "Court de tennis extérieur pour l'enseignement et la pratique des sports de raquette."
+      },
+      {
+        "code": "PISTE_ATHLETISME",
+        "libelle": "Piste d'athlétisme",
+        "description": "Piste d'athlétisme de 400 m pour les courses, les tests de performance et l'enseignement de l'athlétisme."
+      },
+      {
+        "code": "AIRE_SAUTS_LANCERS",
+        "libelle": "Aire de sauts et lancers",
+        "description": "Aires spécialisées d'athlétisme (sauts et lancers de l'inventaire) : fosses de réception, aires de lancer du poids, du javelot et du disque."
+      },
+      {
+        "code": "DOJO",
+        "libelle": "Dojo / salle d'arts martiaux",
+        "description": "Salle à tatamis pour les arts martiaux et sports de combat au sol (dojo, salles de judo, de karaté et de taekwondo de l'inventaire)."
+      },
+      {
+        "code": "SALLE_BOXE",
+        "libelle": "Salle de boxe",
+        "description": "Salle équipée pour la boxe et les sports de percussion (ring, sacs de frappe)."
+      },
+      {
+        "code": "SALLE_MUSCULATION",
+        "libelle": "Salle de musculation",
+        "description": "Salle de musculation et de renforcement musculaire (salle de musculation principale et salle du CNSHN de l'inventaire)."
+      },
+      {
+        "code": "SALLE_HALTEROPHILIE",
+        "libelle": "Salle d'haltérophilie",
+        "description": "Salle dédiée à l'haltérophilie et à la force athlétique (plateaux de lever, barres et disques)."
+      },
+      {
+        "code": "SALLE_PREPARATION_PHYSIQUE",
+        "libelle": "Salle de préparation physique",
+        "description": "Salle de préparation physique générale et spécifique, notamment celle du Centre National du Sport de Haut Niveau (CNSHN) de l'inventaire."
+      },
+      {
+        "code": "PARCOURS_SPORTIF",
+        "libelle": "Parcours sportif extérieur",
+        "description": "Parcours sportif et aire de fitness en plein air (agrès extérieurs, parcours de santé) pour le renforcement et l'entretien physique."
+      }
+    ]
+  }
+}

@@ -222,6 +222,7 @@
       "libelle": "Cours magistral",
       "abrege": "CM",
       "est_stage": false,
+      "description": "Enseignement théorique dispensé en grand groupe (amphithéâtre ou salle de cours) : il transmet les fondements des UE et ECUE des maquettes LMD.",
       "source_document": "Modéliser les volumes horaires — §1",
       "fiabilite": "OFFICIEL"
     },
@@ -230,6 +231,7 @@
       "libelle": "Travaux dirigés",
       "abrege": "TD",
       "est_stage": false,
+      "description": "Séance encadrée en groupe restreint consacrée aux exercices, études de cas et applications du cours magistral.",
       "source_document": "Modéliser les volumes horaires — §1",
       "fiabilite": "OFFICIEL"
     },
@@ -238,6 +240,7 @@
       "libelle": "Travaux pratiques",
       "abrege": "TP",
       "est_stage": false,
+      "description": "Pratique encadrée en laboratoire, en atelier ou sur les installations sportives de l'INJS : à l'INJS, elle couvre l'essentiel des pratiques physiques et sportives des maquettes.",
       "source_document": "Modéliser les volumes horaires — §1",
       "fiabilite": "OFFICIEL"
     },
@@ -246,6 +249,7 @@
       "libelle": "Stage / pratique professionnelle",
       "abrege": "STAGE",
       "est_stage": true,
+      "description": "Immersion professionnelle en structure d'accueil (établissement scolaire, club, fédération, collectivité, entreprise) encadrée par une convention et évaluée selon la maquette (rapport, soutenance).",
       "source_document": "Modéliser les volumes horaires — §1",
       "fiabilite": "OFFICIEL"
     }

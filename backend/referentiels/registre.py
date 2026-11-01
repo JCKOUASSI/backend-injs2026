@@ -195,21 +195,35 @@ REGISTRE = {
         description='Examen, contrôle continu, rattrapage…',
         categorie=Categorie.PEDAGOGIQUE, modele=RefTypeEvaluation,
         route_api='/referentiels/types-evaluation/',
-        icone='bi-clipboard-check', source='Socle referentiels (lot L0/L7)',
+        icone='bi-clipboard-check',
+        source='Refonte du Module Évaluations — nomenclature des types d’évaluation',
+        avertissement=(
+            'Nomenclature issue du cadrage du module Évaluations : les '
+            'pondérations (contrôle continu / examen) restent paramétrées '
+            'par ECUE et ne sont pas figées par ce référentiel.'
+        ),
     ),
     'types-decision': entree(
         slug='types-decision', libelle='Types de décision',
         description='Décisions pédagogiques et de jury.',
         categorie=Categorie.PEDAGOGIQUE, modele=RefTypeDecision,
         route_api='/referentiels/types-decision/',
-        icone='bi-hammer', source='Socle referentiels (lot L0/L7)',
+        icone='bi-hammer',
+        source='Jurys de délibération INJS — décisions officielles (module Jurys)',
     ),
     'types-espace-sportif': entree(
         slug='types-espace-sportif', libelle="Types d'espace sportif",
         description='Gymnase, piscine, terrain, dojo…',
         categorie=Categorie.PEDAGOGIQUE, modele=RefTypeEspaceSportif,
         route_api='/referentiels/types-espace-sportif/',
-        icone='bi-bounding-box', source='Socle referentiels (lot L0/L7)',
+        icone='bi-bounding-box',
+        source="Liste des Bâtiments, salles et espaces de formation de l'INJS",
+        avertissement=(
+            'Catégories issues de l’inventaire des installations (source '
+            'déclarée modélisée) : le rattachement de chaque salle à son '
+            'type reste à opérer dans l’écran des salles, sans reclassement '
+            'automatique.'
+        ),
     ),
     'grades-enseignant': entree(
         slug='grades-enseignant', libelle='Grades enseignants',

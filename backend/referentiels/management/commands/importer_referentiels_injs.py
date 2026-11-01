@@ -19,6 +19,11 @@ Blocs importés
    cadrage, déclarée par sa source comme **proposition** : importée en
    MODELISE et limitée aux quatre cursus INJS (les cycles « professorat » et
    « maître d'EPS » relèvent du corpus CPFAE, exclu du périmètre).
+5. `nomenclatures_pedagogiques.json` — types d'évaluation (nomenclature du
+   document « Refonte du Module Évaluations », fiabilité CADRAGE), types de
+   décision (décisions officielles des jurys de délibération, OFFICIEL) et
+   types d'espace sportif (catégories de l'inventaire des installations,
+   MODELISE comme sa source). Voir les arbitrages dans le bloc `_meta`.
 
 Usage
 -----
@@ -41,7 +46,10 @@ from referentiels.models import (
     RefModuleOfficiel,
     RefStatutVague,
     RefTypeCursus,
+    RefTypeDecision,
     RefTypeEnseignement,
+    RefTypeEspaceSportif,
+    RefTypeEvaluation,
     RefVolumeHoraireFormation,
 )
 
@@ -198,6 +206,7 @@ class Command(BaseCommand):
         for item in data['types_enseignement']:
             obj, c = self._upsert(RefTypeEnseignement, {'code': item['code']}, {
                 'libelle': item['libelle'],
+                'description': item.get('description', ''),
                 'abrege': item.get('abrege', ''),
                 'est_stage': item.get('est_stage', False),
                 'source_document': item.get('source_document', ''),
@@ -448,6 +457,40 @@ class Command(BaseCommand):
         bilan['TOTAL'] = self._compter(total_cree, total_maj)
         return bilan
 
+    # ── Bloc 5 : nomenclatures pédagogiques ───────────────────────────────
+    def _importer_pedagogiques(self):
+        """Types d'évaluation, de décision de jury et d'espace sportif.
+
+        Chaque bloc du fichier porte sa propre source et sa propre
+        fiabilité : elles sont recopiées sur chaque valeur, jamais
+        homogénéisées (la nomenclature des évaluations relève du cadrage,
+        celle des jurys est la nomenclature officielle en vigueur).
+        """
+        data = json.loads(
+            (DONNEES / 'nomenclatures_pedagogiques.json').read_text(encoding='utf-8')
+        )
+        plan = (
+            ('types_evaluation', RefTypeEvaluation),
+            ('types_decision', RefTypeDecision),
+            ('types_espace_sportif', RefTypeEspaceSportif),
+        )
+        bilan = {}
+        for cle_bloc, modele in plan:
+            bloc = data[cle_bloc]
+            cree = maj = 0
+            for item in bloc['valeurs']:
+                obj, c = self._upsert(modele, {'code': item['code']}, {
+                    'libelle': item['libelle'],
+                    'description': item.get('description', ''),
+                    'source_document': bloc.get('source_document', ''),
+                    'fiabilite': bloc.get('fiabilite', 'A_RENSEIGNER'),
+                })
+                obj.save()
+                cree += c
+                maj += not c
+            bilan[cle_bloc] = self._compter(cree, maj)
+        return bilan
+
     # ── Orchestration ─────────────────────────────────────────────────────
     def handle(self, *args, **options):
         dry_run = options['dry_run']
@@ -463,6 +506,7 @@ class Command(BaseCommand):
             bilan_modules = self._importer_modules()
             bilan_lieux = {} if options['sans_lieux'] else self._importer_lieux()
             bilan_volumes = self._importer_volumes()
+            bilan_pedagogiques = self._importer_pedagogiques()
 
             if dry_run:
                 transaction.set_rollback(True)
@@ -473,6 +517,7 @@ class Command(BaseCommand):
             ('3. Modules officiels des maquettes', bilan_modules),
             ('4. Bâtiments et espaces de formation', bilan_lieux),
             ('5. Volumes horaires (proposition de la source)', bilan_volumes),
+            ('6. Nomenclatures pédagogiques (évaluations, jurys, espaces sportifs)', bilan_pedagogiques),
         ):
             self.stdout.write(self.style.HTTP_INFO(f'\n{titre}'))
             for cle, valeur in bilan.items():
