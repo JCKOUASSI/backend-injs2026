@@ -51,26 +51,26 @@ def staff_required(view_func):
 
 
 def dfrc_required(view_func):
-    """Décorateur : accès réservé aux profils CPFAE/Secrétariat (mutations)."""
+    """Décorateur : accès réservé aux profils d'administration et au Secrétariat (mutations)."""
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect('web-login')
         if request.user.role not in ('INJS_ADMIN', 'CHEF_INJS_ADMIN', 'SECRETARIAT', 'CHEF_SECRETARIAT'):
-            messages.error(request, "Accès réservé aux profils CPFAE/Secrétariat.")
+            messages.error(request, "Accès réservé aux profils d'administration et au Secrétariat.")
             return redirect('web-dashboard')
         return view_func(request, *args, **kwargs)
     return wrapper
 
 
 def admin_view_required(view_func):
-    """Décorateur : accès en lecture pour Direction/CPFAE/Secrétariat."""
+    """Décorateur : accès en lecture pour Direction, administration et Secrétariat."""
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect('web-login')
         if request.user.role not in ('DIRECTION', 'CHEF_INJS_ADMIN', 'INJS_ADMIN', 'SECRETARIAT', 'CHEF_SECRETARIAT'):
-            messages.error(request, "Accès réservé à la Direction, CPFAE (référence historique) et Secrétariat.")
+            messages.error(request, "Accès réservé à la Direction, à l'administration et au Secrétariat.")
             return redirect('web-dashboard')
         return view_func(request, *args, **kwargs)
     return wrapper
@@ -135,7 +135,7 @@ def login_view(request):
             return redirect('web-dashboard')
         elif user:
             return render(request, 'dashboard/login.html', {
-                'error': 'Accès réservé à la Direction, CPFAE (ancien périmètre, hors INJS actuel), Secrétariat et Encadrants.'
+                'error': 'Accès réservé à la Direction, à l\'administration, au Secrétariat et aux Encadrants.'
             })
         else:
             return render(request, 'dashboard/login.html', {

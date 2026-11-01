@@ -6,6 +6,7 @@ from datetime import datetime
 
 from django.db.models import Q
 
+from core import institution
 from formations.models import Participant
 
 try:
@@ -28,12 +29,10 @@ except Exception:
     OPENPYXL_AVAILABLE = False
 
 
-_HEADER_LINES = [
-    "RÉPUBLIQUE DE CÔTE D'IVOIRE",
-    "Ministère de la Fonction Publique et de la Modernisation de l'Administration",
-    "Direction de la Formation et du Renforcement des Capacités (DFRC)",
-    "Centre de Perfectionnement des Fonctionnaires et Agents de l'État — CPFAE",
-]
+# En-tête institutionnel INJS (source unique : `core.institution`). L'export
+# imprimait auparavant l'en-tête du CPFAE, établissement étranger au périmètre
+# de l'application.
+_HEADER_LINES = institution.lignes_entete(avec_ufr=True)
 
 _TABLE_HEADERS = ['N°', 'Matricule', 'Nom', 'Prénom', 'Sexe', 'Grade', 'Téléphone', 'Type concours', 'Moyenne', 'Crédits ECTS', 'Décision officielle']
 

@@ -1,5 +1,10 @@
 """
-Point journalier — format CPFAE (format de rapport historique CPFAE conservé) (fichiers « POINT JOURNALIER CAT … »).
+Point journalier — format de rapport historique conservé (fichiers « POINT JOURNALIER CAT … »).
+
+Les intitulés imprimés portent l'identité de l'INJS : ils reprenaient
+auparavant le sigle de l'établissement précédent (``…_POINT DES PRÉSENCES_CPFAE``),
+visible sur chaque feuille exportée.
+
 
 Optimisé : pré-chargement bulk des séances, inscriptions et pointages
 pour éviter les requêtes N+1 sur les filtres larges (année entière, etc.).
@@ -28,12 +33,12 @@ MOIS_FR = [
 ]
 
 MAX_GROUP_COLS = 17
-ORGANISME_DEFAULT = 'CPFAE'
+ORGANISME_DEFAULT = 'INJS'
 DEFAULT_HORAIRES = {'MATIN': '08H00-12H00', 'SOIR': '13H00-17H00'}
 
 
 def _organisme_label(categorie, grade=None):
-    """Libellé ligne DATE — ex. CATÉGORIE A_GRADE A3 (modèle CPFAE (format de rapport historique CPFAE conservé))."""
+    """Libellé ligne DATE — ex. CATÉGORIE A_GRADE A3 (format de rapport historique conservé)."""
     cat = (categorie or '').strip()
     gr = (grade or '').strip()
     if cat and gr:
@@ -103,17 +108,17 @@ def _salle_label(module):
 
 
 def _titre_ligne1(formation, categorie=None):
-    """Ligne 1 du modèle CPFAE (format de rapport historique CPFAE conservé) (ex. FAC CAT A)."""
+    """Ligne 1 du modèle historique conservé (ex. FAC CAT A)."""
     name = (formation.formation or '').strip().upper()
     cat = (categorie or '').strip().upper()
     if cat == '—':
         cat = ''
     if 'FAC' in name or ('ACCOMPAGNEMENT' in name and 'CARRIER' in name):
         cat_part = f' CAT {cat}' if cat else ''
-        return f"FORMATION D'ACCOMPAGNEMENT DE CARRIER{cat_part} _POINT DES PRÉSENCES_CPFAE"
+        return f"FORMATION D'ACCOMPAGNEMENT DE CARRIER{cat_part} _POINT DES PRÉSENCES_INJS"
     if 'ADMINISTRATION DE BASE' in name or 'FAB' in name:
-        return 'FORMATION EN ADMINISTRATION DE BASE_POINT DES PRÉSENCES_CPFAE'
-    return f"{name}_POINT DES PRÉSENCES_CPFAE"
+        return 'FORMATION EN ADMINISTRATION DE BASE_POINT DES PRÉSENCES_INJS'
+    return f"{name}_POINT DES PRÉSENCES_INJS"
 
 
 def _sessions_pj_queryset(
@@ -127,7 +132,7 @@ def _sessions_pj_queryset(
     jours=None,
 ):
     """
-    Séances éligibles au point journalier CPFAE.
+    Séances éligibles au point journalier.
 
     Utilise ``filter_sessions`` (même règle que assiduité / bilans / KPI).
     Les présences restent calculées à partir des pointages (0 si aucun badge).

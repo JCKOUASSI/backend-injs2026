@@ -1,4 +1,4 @@
-"""Tests point journalier — format CPFAE (modèle FAC)."""
+"""Tests point journalier — format de rapport historique (modèle FAC)."""
 from datetime import date, time
 
 from django.test import SimpleTestCase, TestCase
@@ -19,13 +19,13 @@ class PointJournalierFormatUnitTest(SimpleTestCase):
         formation = SimpleNamespace(formation='Formation en Accompagnement de Carrières (FAC)')
         titre = _titre_ligne1(formation, 'A')
         self.assertIn("FORMATION D'ACCOMPAGNEMENT DE CARRIER CAT A", titre)
-        self.assertIn('POINT DES PRÉSENCES_CPFAE', titre)
+        self.assertIn('POINT DES PRÉSENCES_INJS', titre)
 
     def test_titre_ligne1_fab(self):
         formation = SimpleNamespace(formation='Formation en Administration de Base')
         self.assertEqual(
             _titre_ligne1(formation),
-            'FORMATION EN ADMINISTRATION DE BASE_POINT DES PRÉSENCES_CPFAE',
+            'FORMATION EN ADMINISTRATION DE BASE_POINT DES PRÉSENCES_INJS',
         )
 
     def test_organisme_label_includes_grade(self):

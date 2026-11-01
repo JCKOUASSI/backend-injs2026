@@ -75,13 +75,15 @@ _FINANCE_PAIE_CONTACTS = [
     "KEITA née SERIFOU Aicha Danielle tel 0707478812 / 0505378392",
     "Mme SIHOULOI née DJIKE Valérie tel 0707124247 / 0504422220",
 ]
-_FINANCE_PAIE_PIED_ADRESSE = (
-    "MINISTERE D'ETAT, MINISTERE DE LA FONCTION PUBLIQUE ET DE LA MODERNISATION DE L'ADMINISTRATION "
-    "– DIRECTION GENERALE DE LA FONCTION PUBLIQUE – DIRECTION DE LA FORMATION ET DU RENFORCEMENT "
-    "DES CAPACITES – CENTRE DE PERFECTIONNEMENT DES FONCTIONNAIRES ET AGENTS DE L'ETAT "
-    "« AMADOU GON COULIBALY » Bouaké I.BP.V.20. Tel 20 21 34 08 / Abidjan : 10, Avenue ANGOUVANT "
-    "– Porte 2078 Croisement des Rues du Commerce et du Grand Marché – 05 B.P.784. Tel : 27.20.25.90.13"
-)
+# Pied de page officiel des documents financiers. La chaîne historique reprenait
+# l'intitulé et l'adresse postale du CPFAE (Bouaké / Avenue Angouvant) : elle est
+# remplacée par l'identité INJS, configurable via `INJS_ADRESSE_OFFICIELLE`.
+def _pied_adresse_injs():
+    from core.institution import pied_de_page
+    return pied_de_page()
+
+
+_FINANCE_PAIE_PIED_ADRESSE = _pied_adresse_injs()
 _FINANCE_PAIE_GENERIC_TITRES = {
     'FICHE DE PAIE DÉTAILLÉE',
     'ÉTAT FINANCIER FORMATEUR',
@@ -185,7 +187,7 @@ def _finance_paie_pied_texte(export_opts):
 
 
 def _finance_paie_pied_de_page(export_opts):
-    """Pied de page officiel : mention confidentielle + coordonnées CPFAE."""
+    """Pied de page officiel : coordonnées de l'INJS (établissement émetteur)."""
     return _finance_paie_pied_titre(export_opts), _finance_paie_pied_texte(export_opts)
 
 

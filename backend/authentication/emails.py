@@ -166,7 +166,7 @@ Voici vos identifiants de connexion :
 Pour des raisons de sécurité, veuillez changer votre mot de passe dès votre première connexion.
 
 Cordialement,
-L'équipe DFRC — INJS
+L'équipe INJS — Direction des études
 """
 
     inner = f"""
@@ -200,12 +200,12 @@ L'équipe DFRC — INJS
 
     <p style="margin-top:28px; color:{_TEXT_SECONDARY}; font-size:0.9rem; line-height:1.5;">
       Cordialement,<br>
-      <strong style="color:{_TEXT_PRIMARY};">L'équipe DFRC — INJS</strong>
+      <strong style="color:{_TEXT_PRIMARY};">L'équipe INJS — Direction des études</strong>
     </p>
     """
 
     html_message = _html_email_shell(
-        title='INJS — DFRC',
+        title='INJS — Communication institutionnelle',
         subtitle='Institut National de la Jeunesse et des Sports',
         inner=inner,
     )
@@ -251,7 +251,7 @@ Son statut est passé à « Hors ligne — suspect ». Veuillez vérifier sa pr�
 {"Tableau de bord : " + app_url if app_url else ""}
 
 Cordialement,
-L'équipe DFRC — INJS
+L'équipe INJS — Direction des études
 """
 
     cta = _html_cta_button(app_url, 'Accéder au tableau de bord') if app_url else ''
@@ -295,12 +295,12 @@ L'équipe DFRC — INJS
 
     <p style="margin-top:28px; color:{_TEXT_SECONDARY}; font-size:0.9rem; line-height:1.5;">
       Cordialement,<br>
-      <strong style="color:{_TEXT_PRIMARY};">L'équipe DFRC — INJS</strong>
+      <strong style="color:{_TEXT_PRIMARY};">L'équipe INJS — Direction des études</strong>
     </p>
     """
 
     html_message = _html_email_shell(
-        title='INJS — DFRC',
+        title='INJS — Communication institutionnelle',
         subtitle='Alerte de présence',
         inner=inner,
     )

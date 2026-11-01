@@ -1,5 +1,5 @@
 """
-Exports Bilans & Rapports — Excel / PDF / Word (modèles CPFAE).
+Exports Bilans & Rapports — Excel / PDF / Word (modèles historiques).
 """
 import io
 import re
@@ -14,7 +14,7 @@ from .bilans import (
     compute_bilan_periode_formation,
 )
 
-# Couleurs CPFAE (aRGB openpyxl)
+# Couleurs institutionnelles (aRGB openpyxl)
 C_HEADER = 'FFFCE7B4'
 C_HEADER_DARK = 'FFF4CF84'
 C_GRAY = 'FFD9D9D9'

@@ -1,7 +1,7 @@
 """
 Bilans & Rapports — index par Module, Catégorie ou Formation.
 
-Structure préparée pour accueillir les tableaux CPFAE fournis progressivement.
+Structure préparée pour accueillir les tableaux historiques fournis progressivement.
 """
 from datetime import date
 
@@ -139,7 +139,7 @@ def compute_bilan_effectifs_module(
     periode=None,
 ):
     """
-    Tableau CPFAE « Bilan des effectifs module » :
+    Tableau historique « Bilan des effectifs module » :
     auditeurs, présents, répartition H/F, absents + pourcentages.
     """
     try:
@@ -181,7 +181,7 @@ def compute_bilan_effectifs_categorie(
     module_ids=None,
 ):
     """
-    Tableau CPFAE « Bilan des effectifs catégorie » :
+    Tableau historique « Bilan des effectifs catégorie » :
     auditeurs, présents, répartition H/F, absents + pourcentages.
     """
     if not categorie or categorie == '—':
@@ -375,7 +375,7 @@ def compute_bilan_periode_formation(
     categorie_filter=None,
     module_ids=None,
 ):
-    """Tableau CPFAE « Bilan période » par formation (catégories A–D)."""
+    """Tableau historique « Bilan période » par formation (catégories A–D)."""
     try:
         formation = Formation.objects.get(pk=formation_id)
     except Formation.DoesNotExist:
@@ -485,7 +485,7 @@ def compute_bilan_effectifs_matiere(
     module_ids=None,
 ):
     """
-    Tableau CPFAE « Bilan des effectifs matière » :
+    Tableau historique « Bilan des effectifs matière » :
     agrégation tous groupes pour une même matière (ref_module ou intitulé).
     """
     if not formation_id:
@@ -753,7 +753,7 @@ def compute_bilans(
 
 def _tableau_pour_bilan(bilan, categorie=None, annee=None, mois=None, calendrier=None,
                         periode=None, formation_id=None, secretariat_id=None, module_ids=None):
-    """Construit le tableau CPFAE détaillé pour une entrée de la liste bilans."""
+    """Construit le tableau détaillé pour une entrée de la liste bilans."""
     dim = bilan.get('dimension')
     cat = bilan.get('categorie')
     if cat in (None, '', '—'):
@@ -819,7 +819,7 @@ def compute_bilans_avec_tableaux(
     dimension='formation',
     ref_module_id=None,
 ):
-    """Index bilans + tous les tableaux CPFAE correspondants (vue d'ensemble)."""
+    """Index bilans + tous les tableaux historiques correspondants (vue d'ensemble)."""
     data = compute_bilans(
         annee=annee,
         mois=mois,

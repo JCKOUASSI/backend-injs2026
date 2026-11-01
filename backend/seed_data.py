@@ -48,7 +48,7 @@ admin_user = reset_demo_user(
     role=User.Role.ADMIN, is_staff=True, is_superuser=True,
 )
 dfrc_user = reset_demo_user(
-    'dfrc', 'dfrc123', email='dfrc@injs.ci', first_name='Responsable', last_name='CPFAE',
+    'dfrc', 'dfrc123', email='dfrc@injs.ci', first_name='Responsable', last_name='INJS',
     role=User.Role.INJS_ADMIN, is_staff=True, is_superuser=False,
 )
 jck = reset_demo_user(
