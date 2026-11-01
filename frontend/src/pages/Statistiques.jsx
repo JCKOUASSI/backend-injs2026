@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import FinancePeriodFilter from '../components/FinancePeriodFilter'
 import { fmtHeures } from '../components/FinanceStatsGrid'
 import {
@@ -26,7 +27,7 @@ import RapportsWorkflowPanel from '../components/RapportsWorkflowPanel'
 const C = ['#283A87','#1267D6','#35BDF5','#0D9488','#16A36A','#D97706','#805AD5','#DC3545','#104A8E','#64748B']
 
 const STATUT_LABELS = {
-  TERMINE:'Terminé', EN_COURS:'En cours', FORCE_DFRC:'Forcé DFRC',
+  TERMINE:'Terminé', EN_COURS:'En cours', FORCE_DFRC:'Forcé par l\'administration',
   ABSENT_NON_BADGE:'Absent non badgé', HORS_LIGNE_SUSPECT:'Hors ligne suspect',
   SORTIE_AUTO:'Sortie automatique',
 }
@@ -1089,6 +1090,7 @@ function Card({ title, icon, children, col }) {
 // ── Composant principal ────────────────────────────────────────────────────────
 export default function Statistiques() {
   const { user } = useAuth()
+  const toast = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const isSecretariatScoped = isSecretariatScopedRole(user?.role)
   const isEncadrantScoped = user?.role === 'ENCADRANT'
@@ -1342,7 +1344,10 @@ export default function Statistiques() {
       await fetchSeuils()
       fetchData()
     } catch (e) {
-      alert(e.response?.data?.detail || 'Erreur lors de l\'initialisation des seuils.')
+      toast.showToast(
+        e.response?.data?.detail || 'Erreur lors de l\'initialisation des seuils.',
+        'error',
+      )
     } finally {
       setInitSeuilsLoading(false)
     }
@@ -1433,7 +1438,7 @@ export default function Statistiques() {
       URL.revokeObjectURL(url)
     } catch (e) {
       const detail = e.response?.data?.detail
-      alert(detail || e.message || 'Erreur lors du téléchargement.')
+      toast.showToast(detail || e.message || 'Erreur lors du téléchargement.', 'error')
     } finally {
       setExportingPj(null)
     }
@@ -1647,7 +1652,7 @@ export default function Statistiques() {
       URL.revokeObjectURL(url)
     } catch (e) {
       const detail = e.response?.data?.detail
-      alert(detail || e.message || 'Erreur lors du téléchargement.')
+      toast.showToast(detail || e.message || 'Erreur lors du téléchargement.', 'error')
     } finally {
       setExportingRb(null)
     }
@@ -1690,7 +1695,7 @@ export default function Statistiques() {
       URL.revokeObjectURL(url)
     } catch (e) {
       const detail = e.response?.data?.detail
-      alert(detail || e.message || 'Erreur lors du téléchargement.')
+      toast.showToast(detail || e.message || 'Erreur lors du téléchargement.', 'error')
     } finally {
       setExportingFac(null)
     }
@@ -1825,7 +1830,7 @@ export default function Statistiques() {
       await fetchSeuils()
       fetchData()
     } catch(e) {
-      alert(e.response?.data?.detail || 'Erreur lors de la sauvegarde.')
+      toast.showToast(e.response?.data?.detail || 'Erreur lors de la sauvegarde.', 'error')
     }
   }
 

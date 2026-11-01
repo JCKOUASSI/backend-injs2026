@@ -74,8 +74,23 @@ export default function FinancesEtudiantes() {
     }
   }
 
-  const NATURES = ['DOSSIER', 'INSCRIPTION', 'SCOLARITE', 'EXAMEN', 'DOCUMENT']
-  const MODES = ['CAISSE', 'VIREMENT', 'ELEPHANT_MONEY', 'MTN_MONEY', 'MOOV_MONEY', 'CARTE_BANCAIRE']
+  // Libellés alignés sur les choix du modèle Django (`finances_etudiantes.MODE_PAIEMENT`) :
+  // l'écran affichait auparavant les codes bruts (« ELEPHANT_MONEY »), illisibles au guichet.
+  const NATURES = [
+    { code: 'DOSSIER', libelle: 'Frais de dossier' },
+    { code: 'INSCRIPTION', libelle: "Frais d'inscription" },
+    { code: 'SCOLARITE', libelle: 'Scolarité' },
+    { code: 'EXAMEN', libelle: "Frais d'examen" },
+    { code: 'DOCUMENT', libelle: 'Frais de document' },
+  ]
+  const MODES = [
+    { code: 'CAISSE', libelle: 'Caisse' },
+    { code: 'VIREMENT', libelle: 'Virement' },
+    { code: 'ELEPHANT_MONEY', libelle: 'Orange Money' },
+    { code: 'MTN_MONEY', libelle: 'MTN Mobile Money' },
+    { code: 'MOOV_MONEY', libelle: 'Moov Money' },
+    { code: 'CARTE_BANCAIRE', libelle: 'Carte bancaire' },
+  ]
 
   return (
     <div className="container-fluid py-4">
@@ -143,7 +158,7 @@ export default function FinancesEtudiantes() {
                     <label className="form-label small">Nature</label>
                     <select className="form-select form-select-sm" value={formPaiement.nature}
                             onChange={(e) => setFormPaiement(f => ({ ...f, nature: e.target.value }))}>
-                      {NATURES.map(n => <option key={n} value={n}>{n}</option>)}
+                      {NATURES.map(n => <option key={n.code} value={n.code}>{n.libelle}</option>)}
                     </select>
                   </div>
                   <div className="col-md-2">
@@ -161,7 +176,7 @@ export default function FinancesEtudiantes() {
                     <label className="form-label small">Mode</label>
                     <select className="form-select form-select-sm" value={formPaiement.mode}
                             onChange={(e) => setFormPaiement(f => ({ ...f, mode: e.target.value }))}>
-                      {MODES.map(m => <option key={m} value={m}>{m}</option>)}
+                      {MODES.map(m => <option key={m.code} value={m.code}>{m.libelle}</option>)}
                     </select>
                   </div>
                   <div className="col-md-2">
@@ -197,10 +212,10 @@ export default function FinancesEtudiantes() {
                     <tr key={p.id}>
                       <td>{p.id}</td>
                       <td>{p.etudiant_id ? `Étudiant #${p.etudiant_id}` : (p.candidat_id ? `Candidat #${p.candidat_id}` : '—')}</td>
-                      <td>{p.nature}</td>
+                      <td>{p.nature_libelle || p.nature}</td>
                       <td>{p.montant} {p.devise}</td>
-                      <td>{p.mode}</td>
-                      <td><span className={`badge text-bg-${BADGE_STATUT_PA[p.statut] || 'secondary'}`}>{p.statut}</span></td>
+                      <td>{p.mode_libelle || p.mode}</td>
+                      <td><span className={`badge text-bg-${BADGE_STATUT_PA[p.statut] || 'secondary'}`}>{p.statut_libelle || p.statut}</span></td>
                       <td>{new Date(p.date).toLocaleString()}</td>
                       <td><small className="text-muted">{p.transaction_externe || '—'}</small></td>
                       {peutConfirmer && (

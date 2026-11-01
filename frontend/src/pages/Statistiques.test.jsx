@@ -1037,9 +1037,8 @@ describe('Statistiques (LOT 38a) — alertes et configuration des seuils', () =>
     expect(body[0].seuil_avertissement).toBe(75)
   })
 
-  it('signale un échec d’initialisation des seuils via window.alert', async () => {
+  it('signale un échec d’initialisation des seuils par une notification', async () => {
     installSeuilsRoutes({ initialized: false })
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
     mountStats(adminMe())
     await screen.findByText('4 sections')
     fireEvent.click(tabButton('Alertes'))
@@ -1047,12 +1046,13 @@ describe('Statistiques (LOT 38a) — alertes et configuration des seuils', () =>
 
     apiMock.post.mockRejectedValueOnce({ response: { data: { detail: 'Init impossible' } } })
     fireEvent.click(cta.closest('button'))
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Init impossible'))
+    // L'échec doit être porté par le système de notifications de l'application
+    // (les window.alert bloquantes ont été retirées de cet écran).
+    expect(await screen.findByText('Init impossible')).toBeInTheDocument()
   })
 
-  it('signale un échec de sauvegarde des seuils via window.alert', async () => {
+  it('signale un échec de sauvegarde des seuils par une notification', async () => {
     installSeuilsRoutes({ initialized: true })
-    vi.spyOn(window, 'alert').mockImplementation(() => {})
     mountStats(adminMe())
     await screen.findByText('4 sections')
     fireEvent.click(tabButton('Alertes'))
@@ -1061,7 +1061,7 @@ describe('Statistiques (LOT 38a) — alertes et configuration des seuils', () =>
     fireEvent.click(await screen.findByRole('button', { name: /^Modifier$/ }))
     apiMock.put.mockRejectedValueOnce({ response: { data: { detail: 'Sauvegarde KO' } } })
     fireEvent.click(screen.getByRole('button', { name: /Enregistrer/ }))
-    await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Sauvegarde KO'))
+    expect(await screen.findByText('Sauvegarde KO')).toBeInTheDocument()
   })
 })
 
@@ -1146,17 +1146,16 @@ describe('Statistiques (LOT 38a) — exports Point Journalier et Bilans', () => 
     expect(q.get('categorie')).toBe('A')
   })
 
-  it('Point Journalier : un échec d’export déclenche window.alert sans planter', async () => {
+  it('Point Journalier : un échec d’export notifie l’utilisateur sans planter', async () => {
     apiController.reset()
     installStdRoutes({ pj: () => pjPayload() })
     apiMock.getBlob.mockRejectedValue({ response: { data: { detail: 'Génération Excel KO' } } })
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
     mountStats(adminMe())
     await screen.findByText('4 sections')
     fireEvent.click(tabButton('Point Journalier'))
 
     fireEvent.click(await screen.findByRole('button', { name: 'Word' }))
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Génération Excel KO'))
+    expect(await screen.findByText('Génération Excel KO')).toBeInTheDocument()
     // Les boutons sont de nouveau utilisables (état exporting remis à null).
     expect(screen.getByRole('button', { name: 'Excel' })).not.toBeDisabled()
   })
@@ -1189,7 +1188,7 @@ describe('Statistiques (LOT 38a) — exports Point Journalier et Bilans', () => 
     expect(q.get('annee')).toBe(String(CURRENT_YEAR))
   })
 
-  it('Bilans : un échec d’export déclenche window.alert', async () => {
+  it('Bilans : un échec d’export notifie l’utilisateur', async () => {
     apiController.reset()
     installStdRoutes({ bilans: () => ({
       total_bilans: 1,
@@ -1197,14 +1196,12 @@ describe('Statistiques (LOT 38a) — exports Point Journalier et Bilans', () => 
       tableaux_complets: [],
     }) })
     apiMock.getBlob.mockRejectedValue(new Error('réseau'))
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
     mountStats(adminMe())
     await screen.findByText('4 sections')
     fireEvent.click(tabButton('Rapports & Bilans'))
 
     fireEvent.click(await screen.findByRole('button', { name: 'PDF' }))
-    await waitFor(() => expect(alertSpy).toHaveBeenCalled())
-    expect(alertSpy.mock.calls[0][0]).toMatch(/réseau|téléchargement/i)
+    expect(await screen.findByText(/réseau|téléchargement/i)).toBeInTheDocument()
   })
 
   it('reflète l’état d’export (spinner) pendant le téléchargement puis réactive les boutons', async () => {
@@ -1854,15 +1851,14 @@ describe('Statistiques (LOT 38b) — Bilans INJS : exports filtrés', () => {
     expect(anchors.at(-1).download).toBe(`BILANS_${CURRENT_YEAR}.xlsx`)
   })
 
-  it('un échec d’export bilans signale une alerte sans bloquer les boutons', async () => {
+  it('un échec d’export bilans notifie l’utilisateur sans bloquer les boutons', async () => {
     installStdRoutes({ bilans: rbRoute() })
     apiMock.getBlob.mockRejectedValue({ response: { data: { detail: 'Export bilans indisponible' } } })
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
     await openRapports()
     await screen.findByRole('button', { name: /Module Alpha/ })
 
     fireEvent.click(rbExportButton('PDF'))
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Export bilans indisponible'))
+    expect(await screen.findByText('Export bilans indisponible')).toBeInTheDocument()
     expect(rbExportButton('Excel')).not.toBeDisabled()
   })
 })
@@ -2394,14 +2390,12 @@ describe('Statistiques (LOT 38b) — Bilan FAC : génération, sous-onglets et e
     expect(anchors.at(-1).download).toBe(`BILAN_FAC_${CURRENT_YEAR}.pdf`)
   })
 
-  it('un échec d’export FAC déclenche window.alert sans planter', async () => {
+  it('un échec d’export FAC notifie l’utilisateur sans planter', async () => {
     apiMock.getBlob.mockRejectedValue(new Error('export fac KO'))
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
     await genererFac()
 
     fireEvent.click(facExportButton('Word'))
-    await waitFor(() => expect(alertSpy).toHaveBeenCalled())
-    expect(alertSpy.mock.calls[0][0]).toMatch(/export fac KO|téléchargement/i)
+    expect(await screen.findByText(/export fac KO|téléchargement/i)).toBeInTheDocument()
   })
 })
 

@@ -428,3 +428,55 @@ describe('pages/scolarite/FinancesEtudiantes.jsx — habilitations (LOT 26)', ()
     expect(within(rowFor(5001)).getByText('CAISSE-1')).toBeInTheDocument()
   })
 })
+
+/* ------------------------------------------------------------------ */
+/* Libellés lisibles des codes métier                                  */
+/* ------------------------------------------------------------------ */
+
+describe('pages/scolarite/FinancesEtudiantes.jsx — libellés des codes métier', () => {
+  // Défaut réel : l'écran affichait les codes du modèle Django tels quels
+  // (« ELEPHANT_MONEY », « CARTE_BANCAIRE », « DOSSIER »), y compris dans le
+  // formulaire de saisie au guichet. L'API expose désormais les libellés.
+  const paiementsAvecLibelles = [
+    {
+      id: 7001, etudiant_id: 201, nature: 'DOSSIER', nature_libelle: 'Frais de dossier',
+      montant: 5000, devise: 'XOF', mode: 'ELEPHANT_MONEY', mode_libelle: 'Orange Money',
+      statut: 'CONFIRME', statut_libelle: 'Confirmé',
+      date: '2026-09-10T10:00:00', transaction_externe: 'OM-7001',
+    },
+  ]
+
+  beforeEach(() => {
+    apiController.reset()
+    window.localStorage.clear()
+    apiController.setRoute(ECH_PATH, () => ({ results: [] }))
+    apiController.setRoute(PA_PATH, () => paiementsAvecLibelles)
+  })
+
+  it('affiche les libellés et jamais les codes bruts dans le tableau', async () => {
+    mount()
+    await settle()
+    goPaiements()
+
+    const ligne = rowFor(7001)
+    expect(within(ligne).getByText('Orange Money')).toBeInTheDocument()
+    expect(within(ligne).getByText('Frais de dossier')).toBeInTheDocument()
+    expect(within(ligne).getByText('Confirmé')).toBeInTheDocument()
+    expect(within(ligne).queryByText('ELEPHANT_MONEY')).not.toBeInTheDocument()
+    expect(within(ligne).queryByText('DOSSIER')).not.toBeInTheDocument()
+  })
+
+  it('propose des libellés lisibles dans les listes déroulantes de saisie', async () => {
+    mount()
+    await settle()
+    goPaiements()
+
+    const mode = formField(/^Mode$/i)
+    expect(within(mode).getByRole('option', { name: 'Orange Money' }).value).toBe('ELEPHANT_MONEY')
+    expect(within(mode).getByRole('option', { name: 'Caisse' }).value).toBe('CAISSE')
+    expect(within(mode).queryByRole('option', { name: 'ELEPHANT_MONEY' })).not.toBeInTheDocument()
+
+    const nature = formField(/^Nature$/i)
+    expect(within(nature).getByRole('option', { name: 'Frais de dossier' }).value).toBe('DOSSIER')
+  })
+})
