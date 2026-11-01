@@ -93,8 +93,17 @@ class ImportNomenclaturesPedagogiquesTests(TestCase):
         self.assertTrue({'GYMNASE', 'PISCINE', 'TERRAIN', 'DOJO'} <= attendu)
         # L'arbitrage documenté : pas de types génériques de salles ici.
         self.assertFalse(attendu & {'AMPHI', 'SALLE_TD', 'SALLE_INFO', 'SALLE_REUNION'})
+        # Chaque valeur porte la provenance de SON document : l'inventaire
+        # des installations (MODELISE) ou le PDF d'organisation (CADRAGE).
+        par_code = {i['code']: i for i in bloc['valeurs']}
         for ligne in RefTypeEspaceSportif.objects.all():
-            self.assertEqual(ligne.fiabilite, 'MODELISE')
+            item = par_code[ligne.code]
+            self.assertEqual(
+                ligne.source_document,
+                item.get('source_document', bloc['source_document']),
+            )
+            self.assertEqual(
+                ligne.fiabilite, item.get('fiabilite', bloc['fiabilite']))
 
     def test_grades_enseignant_deux_familles_sans_confusion_de_plan(self):
         bloc = _charger('nomenclatures_pedagogiques.json')['grades_enseignant']

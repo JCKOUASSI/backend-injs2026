@@ -187,7 +187,13 @@ REGISTRE = {
         modele=RefStatutVague,
         champs=['est_ouvert'],
         icone='bi-signpost',
-        source='Vagues INJS 2026',
+        source='Vagues INJS 2026 ; Organisation pédagogique (PDF) — §2 et §3',
+        avertissement=(
+            'Ne pas confondre les trois couches : statut de vague (5 états '
+            'de cycle de vie), statut de campagne d’admission (7) et statut '
+            'de candidature (12). L’état d’usage actif/inactif/archivé est '
+            'porté par les indicateurs actif/archive, pas par ce statut.'
+        ),
     ),
     # ── Référentiels du socle déjà existants (API dédiée, CRUD générique) ──
     'types-evaluation': entree(
@@ -349,7 +355,13 @@ REGISTRE = {
         categorie=Categorie.ORGANISATION, modele='formations.RefSite',
         editable=False, route_api='/formations/ref/sites/',
         route_ui='/referentiels/edition', icone='bi-geo-alt-fill',
-        source='Liste des bâtiments, salles et espaces',
+        source='Liste des bâtiments, salles et espaces ; Organisation pédagogique (PDF) — §5',
+        avertissement=(
+            'Seul le campus INJS Marcory est inventorié, avec son point de '
+            'géorepérage validé pour le badgeage mobile (rayon 200 m). Les '
+            'autres types de sites (annexe, CNSHN, CNMS, centres d’examen, '
+            'partenaires de stage) sont à arrêter site par site avec la DIEM.'
+        ),
     ),
     'batiments': entree(
         slug='batiments', libelle='Bâtiments',
@@ -365,7 +377,14 @@ REGISTRE = {
         categorie=Categorie.ORGANISATION, modele='formations.RefSalle',
         editable=False, route_api='/formations/ref/salles/',
         route_ui='/referentiels/edition', icone='bi-door-open',
-        source='Liste des bâtiments, salles et espaces',
+        source='Liste des bâtiments, salles et espaces ; Organisation pédagogique (PDF) — §7 et §8',
+        avertissement=(
+            'Inventaire déclaré partiellement modélisé par sa source : les '
+            'capacités et équipements salle par salle relèvent de '
+            'l’inventaire de la DIEM et ne sont pas déduits. Les espaces '
+            'sportifs nommés par l’inventaire sont rattachés à leur type ; '
+            'la requalification des salles génériques reste un chantier DIEM.'
+        ),
     ),
     'vagues': entree(
         slug='vagues', libelle='Vagues',
@@ -373,7 +392,12 @@ REGISTRE = {
         categorie=Categorie.ORGANISATION, modele='formations.RefVague',
         editable=False, route_api='/formations/ref/vagues/',
         route_ui='/referentiels/edition', icone='bi-layers-half',
-        source='Vagues INJS 2026',
+        source='Vagues INJS 2026 ; Organisation pédagogique (PDF) — §4',
+        avertissement=(
+            'Les trois vagues de recrutement du référentiel sont des '
+            'valeurs génériques : formation, statut, périodes et effectifs '
+            'se renseignent campagne par campagne, jamais par anticipation.'
+        ),
     ),
     'modules-officiels': entree(
         slug='modules-officiels', libelle='Modules officiels',

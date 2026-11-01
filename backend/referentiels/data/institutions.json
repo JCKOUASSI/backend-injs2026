@@ -179,40 +179,40 @@
       "code": "PREVISIONNELLE",
       "libelle": "Prévisionnelle",
       "est_ouvert": false,
-      "description": "Vague planifiée, non encore annoncée.",
-      "source_document": "Vagues INJS 2026",
+      "description": "Vague planifiée, non encore annoncée : elle couvre les étapes 1 (prévision et cadrage) et 2 (publication de l'avis) du cycle de vie en 12 étapes. Aucune candidature n'est encore recevable.",
+      "source_document": "Vagues INJS 2026 ; Organisation pédagogique (PDF) — §3",
       "fiabilite": "OFFICIEL"
     },
     {
       "code": "OUVERTE",
       "libelle": "Ouverte",
       "est_ouvert": true,
-      "description": "Vague ouverte aux candidatures.",
-      "source_document": "Vagues INJS 2026",
+      "description": "Vague ouverte aux candidatures (étape 3 du cycle de vie) puis, une fois les admissions prononcées, aux inscriptions (étape 9, vague « chargée »). Seul statut qui autorise les candidatures (est_ouvert).",
+      "source_document": "Vagues INJS 2026 ; Organisation pédagogique (PDF) — §3",
       "fiabilite": "OFFICIEL"
     },
     {
       "code": "EN_COURS",
       "libelle": "En cours",
       "est_ouvert": false,
-      "description": "Formation démarrée.",
-      "source_document": "Vagues INJS 2026",
+      "description": "Formation démarrée : rentrée effectuée et déroulement de la formation (étape 10 du cycle de vie) — enseignements, évaluations et jurys de semestre.",
+      "source_document": "Vagues INJS 2026 ; Organisation pédagogique (PDF) — §3",
       "fiabilite": "OFFICIEL"
     },
     {
       "code": "TERMINEE",
       "libelle": "Terminée",
       "est_ouvert": false,
-      "description": "Formation achevée, résultats prononcés.",
-      "source_document": "Vagues INJS 2026",
+      "description": "Formation achevée, résultats prononcés : jury terminal passé (étape 11 du cycle de vie), diplômes en cours de délivrance.",
+      "source_document": "Vagues INJS 2026 ; Organisation pédagogique (PDF) — §3",
       "fiabilite": "OFFICIEL"
     },
     {
       "code": "CLOTUREE",
       "libelle": "Clôturée",
       "est_ouvert": false,
-      "description": "Vague archivée administrativement.",
-      "source_document": "Vagues INJS 2026",
+      "description": "Vague archivée administrativement (étape 12 du cycle de vie) : historique intégralement conservé (dossiers, notes, PV, diplômes), aucune nouvelle candidature ni inscription — jamais de suppression physique.",
+      "source_document": "Vagues INJS 2026 ; Organisation pédagogique (PDF) — §3",
       "fiabilite": "OFFICIEL"
     }
   ],
@@ -251,6 +251,29 @@
       "est_stage": true,
       "description": "Immersion professionnelle en structure d'accueil (établissement scolaire, club, fédération, collectivité, entreprise) encadrée par une convention et évaluée selon la maquette (rapport, soutenance).",
       "source_document": "Modéliser les volumes horaires — §1",
+      "fiabilite": "OFFICIEL"
+    }
+  ],
+  "vagues": [
+    {
+      "code": "VAGUE_1",
+      "libelle": "PREMIERE VAGUE",
+      "ordre": 1,
+      "source_document": "Vagues INJS 2026 ; Organisation pédagogique (PDF) — §4",
+      "fiabilite": "OFFICIEL"
+    },
+    {
+      "code": "VAGUE_2",
+      "libelle": "DEUXIEME VAGUE",
+      "ordre": 2,
+      "source_document": "Vagues INJS 2026 ; Organisation pédagogique (PDF) — §4",
+      "fiabilite": "OFFICIEL"
+    },
+    {
+      "code": "VAGUE_3",
+      "libelle": "TROISIEME VAGUE",
+      "ordre": 3,
+      "source_document": "Vagues INJS 2026 ; Organisation pédagogique (PDF) — §4",
       "fiabilite": "OFFICIEL"
     }
   ]

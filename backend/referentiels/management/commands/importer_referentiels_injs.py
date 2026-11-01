@@ -33,12 +33,13 @@ Usage
 
 import json
 import re
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from formations.models import RefBatiment, RefFormation, RefSalle, RefSite
+from formations.models import RefBatiment, RefFormation, RefSalle, RefSite, RefVague
 from referentiels.models import (
     RefEcole,
     RefFiliere,
@@ -202,6 +203,24 @@ class Command(BaseCommand):
             cree += c
             maj += not c
         bilan['statuts_vague'] = self._compter(cree, maj)
+
+        # Vagues de recrutement du référentiel : seule la provenance et les
+        # champs d'identité (code, ordre) sont posés ici. Les rattachements
+        # (formation, catégorie, grade, site, statut), périodes et effectifs
+        # relèvent de chaque campagne concrète — jamais inventés.
+        cree = maj = 0
+        for item in data.get('vagues', []):
+            obj, c = self._upsert(RefVague, {'libelle': item['libelle']}, {
+                'code': item.get('code', ''),
+                'ordre': item.get('ordre', 1),
+                'actif': True,
+                'source_document': item.get('source_document', ''),
+                'fiabilite': item.get('fiabilite', 'A_RENSEIGNER'),
+            })
+            obj.save()
+            cree += c
+            maj += not c
+        bilan['vagues'] = self._compter(cree, maj)
 
         cree = maj = 0
         for item in data['types_enseignement']:
@@ -372,17 +391,37 @@ class Command(BaseCommand):
         return bilan
 
     # ── Bloc 3 : bâtiments et espaces ─────────────────────────────────────
+    @staticmethod
+    def _decimal_ou_none(valeur):
+        try:
+            return Decimal(str(valeur)) if valeur not in (None, '') else None
+        except InvalidOperation:
+            return None
+
     def _importer_lieux(self):
         data = json.loads((DONNEES / 'lieux.json').read_text(encoding='utf-8'))
         bilan = {}
         site_data = data['site']
+        # Géorepérage du badgeage mobile : coordonnées officielles de l'INJS
+        # Marcory validées par le commanditaire (26/09/2026). Le PDF
+        # « Organisation pédagogique » cite 5,301 / -3,986 à titre
+        # d'EXEMPLE : il ne remplace pas les coordonnées validées.
         site, c = self._upsert(RefSite, {'nom': site_data['nom']}, {
             'actif': True,
             'source_document': site_data.get('source_document', ''),
             'fiabilite': site_data.get('fiabilite', 'A_RENSEIGNER'),
+            'geofence_latitude': self._decimal_ou_none(
+                site_data.get('geofence_latitude')),
+            'geofence_longitude': self._decimal_ou_none(
+                site_data.get('geofence_longitude')),
+            'geofence_rayon_m': site_data.get('geofence_rayon_m', 200),
         })
         site.save()
         bilan['site'] = '1 créé' if c else '1 mis à jour'
+        types_espaces = {
+            t.code: t for t in RefTypeEspaceSportif.objects.all()
+        }
+        espaces_types = 0
 
         total_bat = total_salles = 0
         crees = majs = 0
@@ -401,15 +440,27 @@ class Command(BaseCommand):
                 compteur_par_type[type_lieu] = compteur_par_type.get(type_lieu, 0) + 1
                 prefixe = PREFIXES_CODES.get(type_lieu, 'SAL')
                 code = f'{prefixe}-{compteur_par_type[type_lieu]:03d}'
+                # Type d'espace sportif : uniquement lorsque l'inventaire
+                # nomme explicitement l'installation (piscine olympique,
+                # dojo, piste 400 m…). Les espaces extérieurs non sportifs
+                # (parkings, esplanade…) restent sans type : aucune
+                # requalification n'est déduite, elle relève de la DIEM.
+                type_espace = types_espaces.get(espace.get('type_espace'))
+                valeurs_salle = {
+                    'code': code,
+                    'type_lieu': type_lieu,
+                    'capacite': espace.get('capacite'),
+                    'source_document': SOURCE_LIEUX,
+                    'fiabilite': 'MODELISE',
+                    'actif': True,
+                }
+                if type_espace is not None:
+                    valeurs_salle['type_espace'] = type_espace
+                    espaces_types += 1
                 salle, cree = self._upsert(
                     RefSalle,
                     {'site': site, 'batiment': batiment, 'nom': espace['nom']},
-                    {'code': code,
-                     'type_lieu': type_lieu,
-                     'capacite': espace.get('capacite'),
-                     'source_document': SOURCE_LIEUX,
-                     'fiabilite': 'MODELISE',
-                     'actif': True},
+                    valeurs_salle,
                 )
                 salle.save()
                 total_salles += 1
@@ -417,6 +468,7 @@ class Command(BaseCommand):
                 majs += not cree
         bilan['batiments'] = f'{total_bat} traité(s)'
         bilan['salles'] = f'{total_salles} traité(s) — {self._compter(crees, majs)}'
+        bilan['espaces_sportifs_types'] = f'{espaces_types} rattaché(s)'
         return bilan
 
     # ── Bloc 4 : volumes horaires (proposition de la source) ──────────────
@@ -484,8 +536,13 @@ class Command(BaseCommand):
                 obj, c = self._upsert(modele, {'code': item['code']}, {
                     'libelle': item['libelle'],
                     'description': item.get('description', ''),
-                    'source_document': bloc.get('source_document', ''),
-                    'fiabilite': bloc.get('fiabilite', 'A_RENSEIGNER'),
+                    # Une valeur peut porter sa propre provenance (ex. types
+                    # d'espace sportif complétés par un second document) :
+                    # celle du bloc ne vaut alors que par défaut.
+                    'source_document': item.get(
+                        'source_document', bloc.get('source_document', '')),
+                    'fiabilite': item.get(
+                        'fiabilite', bloc.get('fiabilite', 'A_RENSEIGNER')),
                 })
                 obj.save()
                 cree += c
@@ -506,9 +563,12 @@ class Command(BaseCommand):
                 {} if options['sans_cycles'] else self._creer_cycles_lmd()
             )
             bilan_modules = self._importer_modules()
+            # Les nomenclatures pédagogiques précèdent les lieux : le
+            # rattachement des espaces sportifs exige que les types
+            # d'espace existent déjà en base.
+            bilan_pedagogiques = self._importer_pedagogiques()
             bilan_lieux = {} if options['sans_lieux'] else self._importer_lieux()
             bilan_volumes = self._importer_volumes()
-            bilan_pedagogiques = self._importer_pedagogiques()
 
             if dry_run:
                 transaction.set_rollback(True)

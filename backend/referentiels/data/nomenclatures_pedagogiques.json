@@ -5,7 +5,8 @@
     "arbitrages": [
       "Types de décision : nomenclature restreinte aux décisions de jury de délibération (module Jurys) ; les décisions d'admission au concours (module Admissions) relèvent d'un autre processus et ne sont pas reprises ici.",
       "Types d'espace sportif : seuls les espaces à vocation sportive de l'inventaire sont retenus ; les types génériques de salles de l'ancien seed de démonstration (amphithéâtre, salle de TD, salle informatique, salle de réunion) restent couverts par les types de lieu des salles et ne sont pas dupliqués. Aucune salle existante n'est reclassée automatiquement.",
-      "Grades enseignants : seuls les grades (plan 1 du PDF « GRADES ET STATUTS DES ENSEIGNANTS-INJS ») entrent dans ce référentiel — les statuts d'exercice, fonctions de direction, habilitations, rôles applicatifs et permissions du même document relèvent d'autres plans et sont restitués dans le classeur généré, jamais mélangés aux grades. Les lignes composites du PDF sont éclatées en grades atomiques (assistant/maître de conférences associé ; chargé/maître/directeur de recherche ; PC-EP/PC-EP-ENT ; conseillers, inspecteurs, professorats et agrégations EPS/EP ; médecin/cadre paramédical) : 12 grades CAMES + 16 corps = 28 lignes pour les 9 + 11 lignes de tableaux du PDF. La ligne « Cadres administratifs et de direction » du §3 est exclue (corps administratifs, non enseignants)."
+      "Grades enseignants : seuls les grades (plan 1 du PDF « GRADES ET STATUTS DES ENSEIGNANTS-INJS ») entrent dans ce référentiel — les statuts d'exercice, fonctions de direction, habilitations, rôles applicatifs et permissions du même document relèvent d'autres plans et sont restitués dans le classeur généré, jamais mélangés aux grades. Les lignes composites du PDF sont éclatées en grades atomiques (assistant/maître de conférences associé ; chargé/maître/directeur de recherche ; PC-EP/PC-EP-ENT ; conseillers, inspecteurs, professorats et agrégations EPS/EP ; médecin/cadre paramédical) : 12 grades CAMES + 16 corps = 28 lignes pour les 9 + 11 lignes de tableaux du PDF. La ligne « Cadres administratifs et de direction » du §3 est exclue (corps administratifs, non enseignants).",
+      "Types d'espace sportif complétés par le PDF « Organisation pédagogique » §8 : quatre types sportifs absents de l'inventaire sont ajoutés en fiabilité CADRAGE avec source propre (salle d'expression corporelle, salle d'APA, stade, terrain de sable). Ses types pédagogiques, de support et externe (amphithéâtre, salle de cours, vestiaires, site externe…) restent couverts par les 11 types de lieu des salles et ne sont pas dupliqués ; ses terrains par discipline (football/handball/basket/volley) restent regroupés sous Terrain de sport collectif et Plateau sportif extérieur, conformes à l'inventaire nominatif."
     ]
   },
   "types_evaluation": {
@@ -213,6 +214,34 @@
         "code": "PARCOURS_SPORTIF",
         "libelle": "Parcours sportif extérieur",
         "description": "Parcours sportif et aire de fitness en plein air (agrès extérieurs, parcours de santé) pour le renforcement et l'entretien physique."
+      },
+      {
+        "code": "SALLE_EXPRESSION",
+        "libelle": "Salle d'expression corporelle / de danse",
+        "description": "Salle au sol souple (parquet ou praticable, miroirs, barres, sonorisation) pour la gymnastique douce, l'expression corporelle, la danse, la relaxation et l'animation socio-éducative STASE. Code « DANSE » du document source ; chaussons ou pieds nus.",
+        "source_document": "Organisation pédagogique (PDF) — §8",
+        "fiabilite": "CADRAGE"
+      },
+      {
+        "code": "SALLE_APA",
+        "libelle": "Salle d'APA / de rééducation fonctionnelle",
+        "description": "Salle spécialisée des activités physiques adaptées et de la rééducation fonctionnelle (barres parallèles, espaliers, matériel adapté, accès PMR) pour les populations spéciales : handicap, seniors, maladies chroniques. Encadrement spécialisé et protocole individualisé.",
+        "source_document": "Organisation pédagogique (PDF) — §8",
+        "fiabilite": "CADRAGE"
+      },
+      {
+        "code": "STADE",
+        "libelle": "Stade / complexe sportif",
+        "description": "Complexe extérieur de grande capacité (terrain, piste, tribunes, vestiaires, infirmerie, éclairage) pour les compétitions, les évaluations de masse et les cérémonies sportives. Réservation institutionnelle et jauge de sécurité.",
+        "source_document": "Organisation pédagogique (PDF) — §8",
+        "fiabilite": "CADRAGE"
+      },
+      {
+        "code": "TERRAIN_SABLE",
+        "libelle": "Terrain de sable / beach-volley",
+        "description": "Terrain de sable pour le beach-volley, le beach-handball, la préparation physique et les activités de loisir. Entretien et drainage du sable à planifier.",
+        "source_document": "Organisation pédagogique (PDF) — §8",
+        "fiabilite": "CADRAGE"
       }
     ]
   },
