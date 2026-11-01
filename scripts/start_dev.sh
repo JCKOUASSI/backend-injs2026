@@ -69,6 +69,19 @@ ENV
     log "Chargement des données de démonstration (une seule fois)…"
     (cd "$BACKEND" && USE_SQLITE=1 "$VENV/bin/python" seed_data.py) && touch "$BACKEND/.seed_ok"
   fi
+  # Référentiels officiels INJS (écoles, mentions, 8 filières, cycles LMD,
+  # modules officiels, lieux, volumes) : import idempotent depuis les JSON
+  # versionnés de backend/referentiels/data/. Sans cette étape, une base
+  # reconstruite après réinitialisation du bac à sable restait vide côté
+  # référentiels (écran « Filières : 0 valeur »). Le marqueur est invalidé
+  # dès qu'un fichier de données change.
+  local marqueur_ref="$BACKEND/.referentiels_ok"
+  if [ ! -f "$marqueur_ref" ] \
+     || [ -n "$(find "$BACKEND/referentiels/data" -name '*.json' -newer "$marqueur_ref" -print -quit 2>/dev/null)" ]; then
+    log "Import des référentiels officiels INJS (idempotent)…"
+    (cd "$BACKEND" && USE_SQLITE=1 "$VENV/bin/python" manage.py importer_referentiels_injs) \
+      && touch "$marqueur_ref"
+  fi
 }
 
 ensure_frontend() {
