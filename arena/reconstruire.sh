@@ -104,10 +104,12 @@ log "Référentiels officiels INJS (import idempotent)…"
   && touch "$BACKEND/.referentiels_ok"
 
 # Système LMD : niveaux/semestres, puis maquettes/UE/ECUE officielles
-# (323 UE, 397 ECUE). Idempotent ; les maquettes restent en BROUILLON.
+# (323 UE, 397 ECUE), puis compléments du PDF de référence (doctorat,
+# cycles ENSEP, 16 parcours, maquette MS-S8). Idempotent ; maquettes BROUILLON.
 log "Référentiels LMD et maquettes officielles (idempotent)…"
 (cd "$BACKEND" && "$VENV/bin/python" manage.py init_referentiels_lmd \
-  && "$VENV/bin/python" manage.py configurer_referentiel_injs) \
+  && "$VENV/bin/python" manage.py configurer_referentiel_injs \
+  && "$VENV/bin/python" manage.py completer_referentiel_lmd) \
   && touch "$BACKEND/.lmd_ok"
 
 # ── 6. Site web ──────────────────────────────────────────────────────────────

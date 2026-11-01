@@ -250,7 +250,7 @@ REGISTRE = {
     ),
     'niveaux': entree(
         slug='niveaux', libelle='Niveaux',
-        description='L1 à M2 — 60 ECTS par niveau annuel.',
+        description='L1 à D3 — 60 ECTS par niveau annuel (Licence, Master, Doctorat).',
         categorie=Categorie.SYSTEME_LMD, modele='scolarite.Niveau',
         editable=False, route_api='/scolarite/ref/niveaux/',
         route_ui=None, icone='bi-bar-chart-steps',
@@ -258,7 +258,7 @@ REGISTRE = {
     ),
     'semestres': entree(
         slug='semestres', libelle='Semestres',
-        description='S1 à S10 — 30 ECTS par semestre.',
+        description='S1 à S16 — 30 ECTS par semestre (S11–S16 : doctorat).',
         categorie=Categorie.SYSTEME_LMD, modele='scolarite.Semestre',
         editable=False, route_api='/scolarite/ref/semestres/',
         route_ui=None, icone='bi-calendar3',

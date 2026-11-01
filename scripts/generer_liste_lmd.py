@@ -71,7 +71,9 @@ LIBELLES_SEMESTRES = {
 SOURCE_CLASSEUR = (
     "Classeur « INJS D'ABIDJAN — RÉFÉRENTIEL EXHAUSTIF DE L'OFFRE DE FORMATION » "
     "(compilation du site officiel www.injsabidjan.ci), "
-    "jeu de données backend/scolarite/data/referentiel_offre_formation.json"
+    "jeu de données backend/scolarite/data/referentiel_offre_formation.json ; "
+    "complété par le « RÉFÉRENTIEL COMPLET DU SYSTÈME LMD » (PDF du 01/11/2026, "
+    "dossier_trvx/) pour le doctorat, les parcours, les cycles STASE et MS-S8"
 )
 
 
@@ -151,21 +153,24 @@ def feuille_niveaux(wb, jeu):
     sanctions = {p['palier']: p['sanction'] for p in jeu['paliers']}
     correspondances = {'L1': 'Licence 1', 'L2': 'Licence 2', 'L3': 'Licence 3',
                        'M1': 'Master 1', 'M2': 'Master 2'}
+    # Le doctorat (D1–D3, créé par completer_referentiel_lmd) n'a qu'une ligne
+    # de sanction au référentiel : le grade est délivré en fin de D3.
+    sanctions_doctorat = {
+        'D1': '— (palier intermédiaire)', 'D2': '— (palier intermédiaire)',
+        'D3': sanctions.get('Doctorat 1-3', 'Doctorat (BAC+8)'),
+    }
     lignes, reserves = [], []
     cumul = {}
     for n in Niveau.objects.order_by('ordre'):
         sems = sorted(n.semestres.values_list('numero', flat=True))
         cumul[n.cycle] = cumul.get(n.cycle, 0) + n.credits_requis
+        sanction = sanctions_doctorat.get(
+            n.code, sanctions.get(correspondances.get(n.code, ''), '—'))
         lignes.append([
             n.code, n.libelle, n.get_cycle_display(), n.ordre,
             ' + '.join(f'S{s}' for s in sems), n.credits_requis, cumul[n.cycle],
-            sanctions.get(correspondances.get(n.code, ''), '—'), 'En base (actif)' if n.actif else 'En base',
+            sanction, 'En base (actif)' if n.actif else 'En base',
         ])
-    reserves.append(len(lignes))
-    lignes.append(['D1–D3', 'Doctorat (années 1 à 3)', 'Doctorat', '6–8',
-                   'S11 à S16', '180 (cycle)', 180,
-                   sanctions.get('Doctorat 1-3', 'Doctorat (BAC+8)'),
-                   'Mentionné par le référentiel — non modélisé dans l’application'])
     for palier, code, libelle in (
         ('Cycle professionnel', 'PRO', 'Cycle professionnel (2 ans)'),
         ('Professorat de collège (concours)', 'PC', 'Professorat de collège (concours, 3 ans)'),
@@ -193,14 +198,13 @@ def feuille_semestres(wb, jeu):
     for s in Semestre.objects.select_related('niveau').order_by('numero'):
         cumul += 30
         rang = 1 if s.numero % 2 == 1 else 2
-        lignes.append([s.numero, s.libelle, LIBELLES_SEMESTRES.get(s.numero, s.libelle),
+        libelle_ref = LIBELLES_SEMESTRES.get(
+            s.numero, f'Semestre {s.numero} (Doctorat)' if s.numero > 10 else s.libelle)
+        lignes.append([s.numero, s.libelle, libelle_ref,
                        s.niveau.code, s.niveau.get_cycle_display(), rang, 30, cumul,
                        'En base (actif)' if s.actif else 'En base'])
-    for numero in range(11, 17):
-        reserves.append(len(lignes))
-        lignes.append([numero, f'S{numero}', f'Semestre {numero} (Doctorat)',
-                       f'D{(numero - 9) // 2}', 'Doctorat', 1 if numero % 2 else 2,
-                       '—', '—', 'Mentionné par le référentiel — non modélisé'])
+    # S11–S16 (doctorat) viennent de la base comme les autres semestres :
+    # ils sont créés par completer_referentiel_lmd (PDF §4–§5).
     _table(ws, colonnes, lignes, [11, 9, 26, 10, 12, 17, 12, 15, 42], reserves)
     return len(lignes)
 
@@ -209,11 +213,11 @@ def feuille_parcours(wb, jeu):
     ws = wb.create_sheet('3_Parcours')
     ws.sheet_properties.tabColor = BLEU
     _titre(ws, 'PARCOURS — INJS d’Abidjan',
-           'Trois blocs à ne pas confondre : A) parcours diplômants LMD (Licence/Master de '
-           'chaque filière, grille du classeur §1.2) ; B) parcours historiques codés dans '
-           'l’application (à confirmer par la scolarité) ; C) sports de spécialité (APS de '
-           'spécialité des maquettes). Aucun parcours n’est créé en base : le référentiel '
-           'décrit des filières, pas des parcours distincts (cf. configurer_referentiel_injs).', 11)
+           'Trois blocs à ne pas confondre : A) les 8 parcours (spécialisations) du PDF §6, '
+           'déclinés en Licence et Master — créés en base par completer_referentiel_lmd '
+           '(16 parcours, un par cycle) ; B) parcours historiques codés dans l’application '
+           '(à confirmer par la scolarité, non créés) ; C) sports de spécialité (APS de '
+           'spécialité des maquettes).', 11)
     colonnes = ['Bloc', 'Code', 'Intitulé du parcours', 'Filière / cycle de rattachement',
                 'École', 'Mention', 'Diplôme délivré', 'Durée', 'Crédits',
                 'Maquette publiée', 'État / source']
@@ -230,8 +234,8 @@ def feuille_parcours(wb, jeu):
                 f"{diplome} professionnelle {f['mention']} — {f['libelle']} ({f['sigle']})",
                 f"{code} {f['sigle']} — {f['libelle']}", ecole, f['mention'],
                 f"{diplome} pro {f['mention']}", duree, credits, publiee,
-                'Structure attestée (classeur §1.2)' + ('' if publiee.startswith('Oui')
-                 else ' — contenu à obtenir auprès de la scolarité DENSEP'),
+                'En base (parcours du cycle, PDF §6)' + ('' if publiee.startswith('Oui')
+                 else ' — maquette à obtenir auprès de la scolarité DENSEP'),
             ])
     # Bloc B — parcours historiques de l'application
     for code_p, intitule in (
@@ -263,8 +267,9 @@ def feuille_maquettes(wb, jeu):
     _titre(ws, 'MAQUETTES PÉDAGOGIQUES — INJS d’Abidjan',
            'Une maquette = un niveau d’une formation (cycle) pour une année académique. '
            '20 maquettes en base (statut BROUILLON : validation/activation = décision '
-           'institutionnelle), soit 39 programmes semestriels documentés. Les maquettes '
-           'STASE (F05–F08) ne sont pas publiées par le référentiel.', 13)
+           'institutionnelle), soit 40 programmes semestriels (39 du classeur publié + '
+           'MS-S8 complété depuis le PDF de référence, à confirmer). Les cycles STASE '
+           '(F05–F08) existent en base sans maquette : non publiées par le référentiel.', 13)
     colonnes = ['Filière (dossier)', 'Sigle', 'Formation (cycle)', 'Niveau',
                 'Libellé de la maquette', 'Année académique', 'Version', 'Statut',
                 'Semestres couverts', 'Nb UE', 'Nb ECUE', 'Crédits (cible 60)', 'État / source']
@@ -294,7 +299,9 @@ def feuille_maquettes(wb, jeu):
             m.annee_academique.libelle, m.version, m.get_statut_display(),
             ', '.join(f'S{s}' for s in semestres), m.nb_ue, m.nb_ecue, credits,
             'En base — maquette publiée (site INJS)'
-            + (' ; INCOMPLÈTE : un semestre est absent du référentiel (cf. MS S8)' if incomplet else ''),
+            + (' ; INCOMPLÈTE : un semestre est absent du référentiel' if incomplet else '')
+            + (' ; S8 complété depuis le PDF de référence (à confirmer DENSEPS)'
+               if filiere and filiere.code == 'MS' and m.niveau.code == 'M1' else ''),
         ])
     for code in ('F05', 'F06', 'F07', 'F08'):
         f = jeu['filieres'][code]
@@ -313,9 +320,10 @@ def feuille_ue(wb, cles):
     ws = wb.create_sheet('5_UE')
     ws.sheet_properties.tabColor = BLEU
     _titre(ws, 'UNITÉS D’ENSEIGNEMENT (UE) — INJS d’Abidjan',
-           'Les 323 UE des 4 maquettes publiées (EM, MS, ES, APA). Les codes sont '
-           'TECHNIQUES (dérivés du rang) : le référentiel ne publie aucun code officiel. '
-           'La « clé source » est la clé métier du classeur (Filière|Semestre|UE).', 13)
+           'Les 331 UE en base : 323 des 4 maquettes publiées du classeur (EM, MS, ES, APA) '
+           '+ 8 UE MS-S8 du PDF de référence (§8.3, à confirmer — sans clé source du classeur). '
+           'Les codes sont TECHNIQUES (dérivés du rang) : le référentiel ne publie aucun code '
+           'officiel. La « clé source » est la clé métier du classeur (Filière|Semestre|UE).', 13)
     colonnes = ['Filière', 'Formation (cycle)', 'Niveau', 'Semestre (n°)',
                 'Semestre (référentiel)', 'Rang', 'Code technique', 'Intitulé de l’UE',
                 'Famille de modules', 'Crédits ECTS', 'Caractère', 'Nb ECUE', 'Clé source']
@@ -336,7 +344,8 @@ def feuille_ue(wb, cles):
             ue.ordre, ue.code, ue.intitule,
             ue.famille.libelle if ue.famille else '—', ue.credits,
             ue.get_caractere_display(), ue.nb_ecue,
-            cles.get((sigle, ue.semestre.numero, ue.ordre), ''),
+            cles.get((sigle, ue.semestre.numero, ue.ordre))
+            or 'PDF de référence §8.3 — maquette MS-S8 (hors classeur, à confirmer)',
         ])
     _table(ws, colonnes, lignes, [13, 40, 9, 12, 21, 7, 15, 52, 28, 11, 12, 9, 46])
     return len(lignes)
@@ -346,7 +355,7 @@ def feuille_ecue(wb):
     ws = wb.create_sheet('6_ECUE')
     ws.sheet_properties.tabColor = BLEU
     _titre(ws, 'ÉLÉMENTS CONSTITUTIFS D’UE (ECUE) — INJS d’Abidjan',
-           'Les 397 ECUE des 323 UE. Crédits ECUE et volumes CM/TD/TP : non publiés '
+           'Les 407 ECUE des 331 UE (397 du classeur + 10 MS-S8 du PDF). Crédits ECUE et volumes CM/TD/TP : non publiés '
            'par le référentiel (les crédits sont portés par l’UE) — valeurs à 0, '
            'jamais estimées. Codes techniques dérivés du rang.', 10)
     colonnes = ['Code UE', 'Intitulé de l’UE', 'Rang', 'Code technique ECUE',
@@ -370,7 +379,9 @@ def feuille_controles(wb):
            'controler_referentiel_injs. Les réserves sont documentaires '
            '(elles viennent de la source), aucune donnée n’a été inventée pour les combler.', 4)
     colonnes = ['Contrôle', 'Attendu (source)', 'Obtenu (base)', 'Résultat / réserve']
-    attendus = {'EM': (86, 100, 300), 'MS': (73, 94, 270), 'ES': (81, 99, 300), 'APA': (83, 104, 300)}
+    # Attendus = classeur officiel publié (323/397/1170) + complément PDF
+    # MS-S8 (+8 UE, +10 ECUE, +30 crédits), cf. completer_referentiel_lmd.
+    attendus = {'EM': (86, 100, 300), 'MS': (81, 104, 300), 'ES': (81, 99, 300), 'APA': (83, 104, 300)}
     lignes, reserves = [], []
     for sigle, (ue_a, ecue_a, cr_a) in attendus.items():
         ue_o = UE.objects.filter(code__startswith=f'{sigle}-').count()
@@ -383,30 +394,37 @@ def feuille_controles(wb):
                        f'{ue_o} / {ecue_o} / {cr_o}', 'Conforme' if ok else 'Écart à analyser'])
     tot_ue, tot_ecue = UE.objects.count(), ECUE.objects.count()
     tot_cr = UE.objects.aggregate(s=Sum('credits'))['s'] or 0
-    lignes.append(['TOTAL UE / ECUE / crédits', '323 / 397 / 1170',
+    lignes.append(['TOTAL UE / ECUE / crédits (classeur 323/397/1170 + MS-S8 PDF)',
+                   '331 / 407 / 1200',
                    f'{tot_ue} / {tot_ecue} / {tot_cr}',
-                   'Conforme' if (tot_ue, tot_ecue, tot_cr) == (323, 397, 1170) else 'Écart'])
+                   'Conforme' if (tot_ue, tot_ecue, tot_cr) == (331, 407, 1200) else 'Écart'])
     ecarts = []
     for r in (UE.objects.values('maquette__ref_formation__filiere__code', 'semestre__numero')
               .annotate(s=Sum('credits')).order_by('semestre__numero')):
         if r['s'] != 30:
             ecarts.append(f"{r['maquette__ref_formation__filiere__code']} S{r['semestre__numero']}={r['s']}")
-    lignes.append(['Semestres à 30 ECTS (39 programmes semestriels documentés)',
-                   '39/39 à 30', '39/39 à 30' if not ecarts else ' ; '.join(ecarts),
+    lignes.append(['Semestres à 30 ECTS (40 programmes semestriels)',
+                   '40/40 à 30', '40/40 à 30' if not ecarts else ' ; '.join(ecarts),
                    'Conforme' if not ecarts else 'Écart'])
     for reserve, detail in (
-        ('MS S8 absent', 'Le référentiel ne contient aucune UE pour Management du Sport / M1 S8 : '
-         'Master MS = 270 crédits au lieu de 300. Décision institutionnelle requise.'),
-        ('F05–F08 sans maquette', 'Andragogie, Loisir, ECJP, Gérontologie : filières décrites, '
-         'aucun tableau UE/ECUE publié (scolarité DENSEP). 0 UE créée.'),
+        ('MS S8 complété depuis le PDF', 'Absent du classeur officiel publié (en-tête vide, '
+         'Master MS à 90 crédits) : les 8 UE / 10 ECUE du PDF de référence (§8.3) sont en base '
+         'comme RECONSTITUTION à confirmer par la DENSEPS. controler_referentiel_injs les '
+         'signale donc comme hors classeur (331 en base / 323 au classeur) : écart tracé, '
+         'jamais masqué.'),
+        ('ECUE sports de combat (S3)', 'Le PDF compte 415 ECUE en dédoublant « Judo ; Lutte » '
+         'et « Boxe ; Taekwondo » ; la base normalisée du classeur compte un intitulé combiné '
+         'par UE (407 ECUE en base). Écart éditorial documenté, non appliqué.'),
+        ('F05–F08 sans maquette', 'Andragogie, Loisir, ECJP, Gérontologie : cycles et parcours '
+         'créés (structure officielle), aucun tableau UE/ECUE publié (scolarité DENSEP). '
+         '0 UE créée pour ces filières.'),
         ('Codes UE/ECUE', 'Aucun code officiel publié : codes techniques dérivés du rang '
          '(EM-S1-UE01, EM-S1-UE01-EC01) — ne jamais les présenter comme officiels.'),
         ('Crédits ECUE / volumes horaires', 'Non publiés : crédits portés par l’UE ; '
          'CM/TD/TP à 0 dans l’application, en attendant les maquettes horaires.'),
         ('Maquettes en BROUILLON', 'Aucune maquette n’est activée automatiquement : '
-         'validation puis activation dans l’application (processus métier).'),
-        ('Parcours en base : 0', 'Le référentiel décrit des filières, pas des parcours '
-         'distincts ; aucun parcours inventé (voir feuille 3_Parcours).'),
+         'validation puis activation dans l’application (processus métier). Les maquettes '
+         'ne sont pas liées aux parcours (configurer_referentiel_injs exige parcours null).'),
     ):
         reserves.append(len(lignes))
         lignes.append([f'Réserve — {reserve}', '—', '—', detail])
@@ -433,29 +451,32 @@ def feuille_lisez_moi(wb, compteurs, date_gen):
                                'officiel www.injsabidjan.ci (maquettes publiées EM/MS/ES/APA).'),
         ('Chaîne métier', 'ÉCOLE → MENTION → FILIÈRE → FORMATION (cycle Licence/Master) → '
                           'PARCOURS → NIVEAU → SEMESTRE → UE → ECUE.'),
-        ('1_Niveaux', f"{compteurs['niveaux']} lignes : L1, L2, L3, M1, M2 (60 ECTS/an) "
-                      '+ Doctorat et paliers hors LMD mentionnés par le référentiel.'),
-        ('2_Semestres', f"{compteurs['semestres']} lignes : S1 à S10 (30 ECTS) + S11 à S16 (Doctorat, mention)."),
-        ('3_Parcours', f"{compteurs['parcours']} lignes en 3 blocs : 16 parcours diplômants "
-                       'LMD (8 filières × Licence/Master), 6 parcours historiques de '
-                       'l’application (à confirmer), 13 sports de spécialité. En base : '
-                       f"{compteurs['parcours_base']} parcours créé (aucun parcours inventé)."),
+        ('1_Niveaux', f"{compteurs['niveaux']} lignes : L1 à D3 en base (60 ECTS/an) "
+                      '+ paliers hors LMD mentionnés par le référentiel.'),
+        ('2_Semestres', f"{compteurs['semestres']} semestres en base : S1 à S16 (30 ECTS ; "
+                        'S11–S16 = doctorat).'),
+        ('3_Parcours', f"{compteurs['parcours']} lignes en 3 blocs : les 8 parcours du PDF "
+                       '(§6) déclinés en Licence/Master — 16 parcours en base, un par '
+                       'cycle —, 6 parcours historiques de l’application (à confirmer), '
+                       f"13 sports de spécialité. En base : {compteurs['parcours_base']} parcours."),
         ('4_Maquettes', f"{compteurs['maquettes']} lignes : 20 maquettes en base (une par "
-                        'niveau, statut BROUILLON, année 2026-2027) couvrant 39 programmes '
-                        'semestriels + 8 cycles STASE dont la maquette n’est pas publiée.'),
+                        'niveau, statut BROUILLON, année 2026-2027) couvrant 40 programmes '
+                        'semestriels (39 du classeur + MS-S8 du PDF) ; cycles STASE créés '
+                        'sans maquette (non publiée).'),
         ('5_UE', f"{compteurs['ue']} UE avec crédits ECTS, famille de modules et clé source."),
         ('6_ECUE', f"{compteurs['ecue']} ECUE (crédits par ECUE et volumes horaires non "
                    'publiés par le référentiel : 0, jamais estimés).'),
-        ('7_Controles', 'Contrôles recalculés (323 UE / 397 ECUE / 1 170 crédits, semestres '
-                        'à 30 ECTS) et réserves documentaires (MS S8, F05–F08, codes techniques).'),
+        ('7_Controles', 'Contrôles recalculés (331 UE / 407 ECUE / 1 200 crédits = classeur '
+                        '323/397/1 170 + complément PDF MS-S8) et réserves documentaires.'),
         ('Codes UE/ECUE', 'Codes TECHNIQUES de l’application, dérivés du rang '
                           '(EM-S1-UE01, EM-S1-UE01-EC01). Le référentiel ne publie '
                           'aucune codification officielle.'),
         ('Lignes sur fond jaune', 'Réserves documentaires : éléments mentionnés ou attendus '
                                   'mais non publiés/non modélisés — aucune valeur inventée.'),
         ('Régénération', 'backend/.venv/bin/python scripts/generer_liste_lmd.py '
-                         '(après init_referentiels_lmd + configurer_referentiel_injs). '
-                         'Le classeur .xlsx est ignoré par Git ; le script est la source durable.'),
+                         '(après init_referentiels_lmd + configurer_referentiel_injs + '
+                         'completer_referentiel_lmd). Le classeur .xlsx est ignoré par '
+                         'Git ; le script est la source durable.'),
     ]
     for i, (cle, valeur) in enumerate(lignes, 3):
         a = ws.cell(row=i, column=1, value=cle)

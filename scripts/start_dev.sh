@@ -89,10 +89,12 @@ ENV
   # cartes « Système LMD » restaient à 0 sur une base reconstruite.
   local marqueur_lmd="$BACKEND/.lmd_ok"
   if [ ! -f "$marqueur_lmd" ] \
-     || [ "$BACKEND/scolarite/data/referentiel_offre_formation.json" -nt "$marqueur_lmd" ]; then
+     || [ "$BACKEND/scolarite/data/referentiel_offre_formation.json" -nt "$marqueur_lmd" ] \
+     || [ "$BACKEND/scolarite/data/complement_referentiel_lmd_pdf.json" -nt "$marqueur_lmd" ]; then
     log "Référentiels LMD et maquettes officielles (idempotent)…"
     (cd "$BACKEND" && USE_SQLITE=1 "$VENV/bin/python" manage.py init_referentiels_lmd \
-      && USE_SQLITE=1 "$VENV/bin/python" manage.py configurer_referentiel_injs) \
+      && USE_SQLITE=1 "$VENV/bin/python" manage.py configurer_referentiel_injs \
+      && USE_SQLITE=1 "$VENV/bin/python" manage.py completer_referentiel_lmd) \
       && touch "$marqueur_lmd"
   fi
 }

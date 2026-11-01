@@ -1,0 +1,82 @@
+{
+  "_meta": {
+    "titre": "Compléments LMD issus du « RÉFÉRENTIEL COMPLET DU SYSTÈME LMD » (PDF)",
+    "source_fichier": "dossier_trvx/RÉFÉRENTIEL COMPLET DU SYSTÈME LMD.pdf",
+    "source_date": "1er novembre 2026 (document fourni par le projet)",
+    "regle": "Ce fichier ne contient que ce que le jeu de données du classeur officiel (referentiel_offre_formation.json) ne couvre pas : niveaux/semestres de doctorat, cycles ENSEP (coquilles sans maquette), parcours des 16 cycles, et la maquette MS-S8 du PDF. Chaque bloc porte sa section source.",
+    "reserve_ms_s8": "La maquette MS-S8 figure dans le PDF (§8.3) mais PAS dans le classeur officiel publié : la feuille « Maquette MS » y présente l'en-tête « Semestre 2 (M1/S8) » sans aucune UE (total Master MS = 90 crédits). Elle est donc importée comme RECONSTITUTION À CONFIRMER par la DENSEPS, jamais comme donnée publiée.",
+    "reserve_ecue_combats": "Le PDF compte les sports de combat du S3 comme 2 ECUE par UE (Judo, Lutte / Boxe, Taekwondo) là où la base normalisée du classeur en compte 1 (intitulé combiné). Écart documenté, non appliqué : 415 ECUE (PDF) contre 407 en base après complément MS-S8."
+  },
+  "niveaux_doctorat": [
+    {"code": "D1", "libelle": "Doctorat 1", "ordre": 6, "credits_requis": 60, "semestres": [11, 12], "source": "PDF §4 — Doctorat 1 (S11 + S12)"},
+    {"code": "D2", "libelle": "Doctorat 2", "ordre": 7, "credits_requis": 60, "semestres": [13, 14], "source": "PDF §4 — Doctorat 2 (S13 + S14)"},
+    {"code": "D3", "libelle": "Doctorat 3", "ordre": 8, "credits_requis": 60, "semestres": [15, 16], "source": "PDF §4 — Doctorat 3 (S15 + S16), grade Doctorat (BAC+8)"}
+  ],
+  "cycles_sans_maquette_publiee": {
+    "codes_dossier": ["F05", "F06", "F07", "F08"],
+    "diplomes": ["LICENCE", "MASTER"],
+    "source": "PDF §6 et §12 — parcours STASE officiellement ouverts en Licence + Master LMD, tableaux UE/ECUE non publiés (documents internes DENSEP)."
+  },
+  "parcours": {
+    "regle": "Un parcours par cycle (RefFormation) : code = sigle de la filière (EM, MS, ES, APA, AND, LOI, ECJP, GER), intitulé = libellé de la filière, type de formation = diplôme du cycle. Le PDF compte 8 parcours (les spécialisations) ; l'application rattache un parcours à un cycle, d'où 16 lignes (8 spécialisations × Licence/Master).",
+    "source": "PDF §6 — Tous les parcours (8)"
+  },
+  "ms_s8": {
+    "filiere": "MS",
+    "semestre_numero": 8,
+    "source": "PDF §8.3 — maquette MS-S8 (8 UE, 10 ECUE, 30 CECT) ; absente du classeur officiel publié, à confirmer par la DENSEPS",
+    "ues": [
+      {
+        "intitule": "Professionnalisation",
+        "credits": 5,
+        "famille_code": "PROFESSIONNALISATION-STAGES",
+        "ecues": ["Stage professionnel dans une structure du Ministère des Sports : conduite d'un projet"]
+      },
+      {
+        "intitule": "Théorie de la méthodologie de la recherche",
+        "credits": 3,
+        "famille_code": "RECHERCHE-METHODOLOGIE",
+        "ecues": ["Méthodologie de la recherche scientifique 2 : conception des instruments de collecte de données"]
+      },
+      {
+        "intitule": "Formation à la recherche",
+        "credits": 4,
+        "famille_code": "RECHERCHE-METHODOLOGIE",
+        "ecues": ["Séminaire de recherche en management du sport"]
+      },
+      {
+        "intitule": "Technique d'expression écrite et orale",
+        "credits": 2,
+        "famille_code": "LANGUES-COMMUNICATION",
+        "ecues": ["Anglais professionnel"]
+      },
+      {
+        "intitule": "Formation administrative",
+        "credits": 4,
+        "famille_code": "TRANSVERSAL-CIVIQUE-SECOURISME",
+        "ecues": ["Droits et devoirs du fonctionnaire", "Rédaction administrative"]
+      },
+      {
+        "intitule": "Spécialisation théorique et pratique dans une APS",
+        "credits": 3,
+        "famille_code": "PRATIQUES-SPORTIVES-APS",
+        "ecues": ["APS de spécialité"]
+      },
+      {
+        "intitule": "Analyse stratégique",
+        "credits": 5,
+        "famille_code": "MANAGEMENT-DROIT-ECONOMIE",
+        "ecues": [
+          "Étude de cas marketing : marché des produits et services de sport",
+          "Étude de cas : gestion de projet sportif"
+        ]
+      },
+      {
+        "intitule": "Gestion publique",
+        "credits": 4,
+        "famille_code": "MANAGEMENT-DROIT-ECONOMIE",
+        "ecues": ["Techniques de conduite de réunion et communication institutionnelle"]
+      }
+    ]
+  }
+}
