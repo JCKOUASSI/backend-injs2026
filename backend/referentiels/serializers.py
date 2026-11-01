@@ -44,7 +44,7 @@ class RefSocleSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Le code métier est fourni à la création puis immuable.
-        if self.instance is not None:
+        if self.instance is not None and 'code' in self.fields:
             self.fields['code'].read_only = True
 
     def validate_code(self, value):
@@ -132,26 +132,81 @@ CHAMPS_SOCLE = [
 _CACHE_SERIALISEURS = {}
 
 
+def _libelle_de_la_cible(obj, fk):
+    """Intitulé d'affichage d'une clé étrangère, quel que soit son modèle.
+
+    Les modèles du socle exposent ``libelle`` ; les modèles hérités
+    (formations.RefFormation, scolarité…) exposent ``intitule`` ou ``nom``.
+    """
+    cible = getattr(obj, fk, None)
+    if cible is None:
+        return None
+    for attribut in ('libelle', 'intitule', 'nom'):
+        valeur = getattr(cible, attribut, None)
+        if valeur:
+            return valeur
+    return str(cible)
+
+
 def serializer_pour_ref(slug):
-    """Construit (et mémorise) le sérialiseur d'une entrée du registre."""
+    """Construit (et mémorise) le sérialiseur d'une entrée du registre.
+
+    Le contrat d'API est unifié (``code`` / ``libelle``) même pour les
+    modèles hors socle : l'entrée de registre déclare les champs réels
+    (``champ_code`` / ``champ_libelle``) et le sérialiseur les aliasse, de
+    sorte que l'écran générique n'a aucune correspondance de noms à coder.
+    Les champs du socle absents du modèle (provenance, archivage…) sont
+    simplement omis.
+    """
     if slug in _CACHE_SERIALISEURS:
         return _CACHE_SERIALISEURS[slug]
     entree = REGISTRE[slug]
     modele = modele_de(entree)
-
-    champs = list(CHAMPS_SOCLE) + list(entree['champs'])
-    for fk in entree['selecteurs']:
-        champs.extend([fk, f'{fk}_libelle'])
+    champ_libelle = entree.get('champ_libelle', 'libelle')
+    champ_code = entree.get('champ_code', 'code')
+    concrets = {f.name for f in modele._meta.concrete_fields}
 
     attributs = {}
-    for fk in entree['selecteurs']:
-        attributs[f'{fk}_libelle'] = serializers.CharField(
-            source=f'{fk}.libelle', read_only=True, default=None,
+    champs = ['id']
+    # Code : champ distinct éditable à la création, ou alias en lecture
+    # seule quand le modèle n'a pas de colonne code (le libellé en tient
+    # lieu — ex. scolarite.Semestre).
+    if champ_code in concrets and champ_code != champ_libelle:
+        champs.append('code')
+        if champ_code != 'code':
+            attributs['code'] = serializers.CharField(source=champ_code)
+    elif champ_libelle in concrets:
+        champs.append('code')
+        attributs['code'] = serializers.CharField(
+            source=champ_libelle, read_only=True,
         )
+    # Libellé : aliasé vers le champ d'intitulé réel (ex. ``intitule``).
+    champs.append('libelle')
+    if champ_libelle != 'libelle':
+        attributs['libelle'] = serializers.CharField(source=champ_libelle)
+    champs.extend(
+        nom for nom in CHAMPS_SOCLE
+        if nom not in ('id', 'code', 'libelle') and nom in concrets
+    )
+    champs.extend(nom for nom in entree['champs'] if nom in concrets)
+    for fk in entree['selecteurs']:
+        champs.extend([fk, f'{fk}_libelle'])
+        nom_getter = f'get_{fk}_libelle'
+        attributs[f'{fk}_libelle'] = serializers.SerializerMethodField(
+            method_name=nom_getter,
+        )
+        attributs[nom_getter] = (
+            lambda self, obj, _fk=fk: _libelle_de_la_cible(obj, _fk)
+        )
+
     attributs['Meta'] = type('Meta', (), {
         'model': modele,
         'fields': champs,
-        'read_only_fields': ['archive', 'date_activation', 'date_desactivation'],
+        'read_only_fields': [
+            nom
+            for nom in ('archive', 'date_activation', 'date_desactivation')
+            if nom in champs
+        ],
     })
     serie = type(
         f'{modele.__name__}Serializer',

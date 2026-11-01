@@ -32,6 +32,12 @@ const LIBELLES_CHAMPS = {
   type_cursus: 'Nature de cursus',
   code_dossier: 'Code dossier',
   etat_ventilation: 'État de ventilation',
+  cycle: 'Cycle',
+  credits_requis: 'Crédits ECTS requis',
+  numero: 'Numéro global',
+  niveau: 'Niveau',
+  ref_formation: 'Cycle de formation',
+  type_formation: 'Type de formation',
 }
 
 /** Ordre de lecture imposé aux tables importées, du plus signifiant au détail. */
@@ -132,6 +138,24 @@ export default function ReferentielGenerique() {
   const [envoi, setEnvoi] = useState(false)
   const [confirmation, setConfirmation] = useState(null)
   const [lectureSeule, setLectureSeule] = useState(false)
+
+  // Capacités réelles du modèle, annoncées par le registre backend : les
+  // référentiels hors socle (scolarité LMD) n'ont ni provenance ni
+  // archivage, et le semestre n'a pas de colonne code distincte.
+  const provenanceSuivie = entree ? entree.provenance_suivie !== false : true
+  const archivageSupporte = entree ? entree.archivage_supporte !== false : true
+  const aUnCode = entree ? entree.a_un_code !== false : true
+  const champsChoix = entree?.champs_choix || {}
+  const champsNumeriques = entree?.champs_numeriques || []
+
+  const afficherCellule = (ligne, cle) => {
+    const choix = champsChoix[cle]
+    if (choix && ligne[cle] !== null && ligne[cle] !== undefined) {
+      const retenue = choix.find((o) => o.value === String(ligne[cle]))
+      if (retenue) return retenue.label
+    }
+    return formaterValeur(ligne[cle]) ?? '—'
+  }
 
   const chargerCatalogue = useCallback(async () => {
     const res = await api.get('/referentiels/tableau-de-bord/')
@@ -264,7 +288,7 @@ export default function ReferentielGenerique() {
     evenement.preventDefault()
     const erreurs = {}
     if (!String(form.libelle || '').trim()) erreurs.libelle = 'Le libellé est obligatoire.'
-    if (modal.mode === 'creation' && !String(form.code || '').trim()) {
+    if (aUnCode && modal.mode === 'creation' && !String(form.code || '').trim()) {
       erreurs.code = 'Le code métier est obligatoire.'
     }
     if (Object.keys(erreurs).length) {
@@ -274,8 +298,24 @@ export default function ReferentielGenerique() {
     setEnvoi(true)
     setErreursForm({})
     const corps = { ...form }
-    ;(entree?.selecteurs || []).forEach((fk) => {
+    if (!aUnCode) delete corps.code
+    if (!provenanceSuivie) {
+      delete corps.fiabilite
+      delete corps.source_document
+      delete corps.description
+    }
+    (entree?.selecteurs || []).forEach((fk) => {
       corps[fk] = corps[fk] === '' ? null : Number(corps[fk])
+    })
+    Object.keys(champsChoix).forEach((champ) => {
+      if (corps[champ] === '') delete corps[champ]
+    })
+    champsNumeriques.forEach((champ) => {
+      if (corps[champ] === '' || corps[champ] === null || corps[champ] === undefined) {
+        delete corps[champ]
+      } else {
+        corps[champ] = Number(corps[champ])
+      }
     })
     if (corps.ordre !== undefined && corps.ordre !== '') corps.ordre = Number(corps.ordre)
     try {
@@ -372,9 +412,9 @@ export default function ReferentielGenerique() {
         .filter((c) => c !== 'actif' && c !== 'description' && c !== 'source_document')
         .map((c) => ({ cle: c, libelle: LIBELLES_CHAMPS[c] || c })),
       ...(entree.selecteurs || []).map((fk) => ({ cle: `${fk}_libelle`, libelle: LIBELLES_CHAMPS[fk] || fk })),
-      { cle: 'fiabilite', libelle: 'Fiabilité' },
+      ...(provenanceSuivie ? [{ cle: 'fiabilite', libelle: 'Fiabilité' }] : []),
     ]
-  }, [entree, lectureSeule, lignes])
+  }, [entree, lectureSeule, lignes, provenanceSuivie])
 
   const optionsPour = (fk) => {
     const dependDe = DEPENDANCES[fk]
@@ -507,7 +547,7 @@ export default function ReferentielGenerique() {
               >
                 <option value="actifs">Actifs</option>
                 <option value="inactifs">Inactifs</option>
-                <option value="archives">Archivés</option>
+                {archivageSupporte && <option value="archives">Archivés</option>}
                 <option value="tous">Tous</option>
               </select>
             </div>
@@ -558,7 +598,7 @@ export default function ReferentielGenerique() {
                         ) : typeof ligne[c.cle] === 'boolean' ? (
                           ligne[c.cle] ? <i className="bi bi-check2" aria-label="Oui"></i> : '—'
                         ) : (
-                          formaterValeur(ligne[c.cle]) ?? '—'
+                          afficherCellule(ligne, c.cle)
                         )}
                       </td>
                     ))}
@@ -583,7 +623,7 @@ export default function ReferentielGenerique() {
                         >
                           <i className={`bi ${ligne.actif ? 'bi-toggle-on' : 'bi-toggle-off'}`} aria-hidden="true"></i>
                         </button>
-                        {ligne.archive ? (
+                        {archivageSupporte && (ligne.archive ? (
                           <button
                             type="button"
                             className="ref-action ref-action--reactiver"
@@ -603,7 +643,7 @@ export default function ReferentielGenerique() {
                           >
                             <i className="bi bi-archive" aria-hidden="true"></i>
                           </button>
-                        )}
+                        ))}
                       </div>
                     </td>
                     )}
@@ -640,6 +680,7 @@ export default function ReferentielGenerique() {
             </header>
             <form onSubmit={enregistrer} className="ref-form">
               <div className="cand-grille-form">
+                {aUnCode && (
                 <div className="cand-champ">
                   <label className="cand-etiquette" htmlFor="ref-code">
                     Code métier <span className="ref-requis" aria-hidden="true">*</span>
@@ -656,6 +697,7 @@ export default function ReferentielGenerique() {
                   <span className="ref-aide">Fourni à la création, immuable ensuite.</span>
                   {erreursForm.code && <span className="ref-erreur">{erreursForm.code}</span>}
                 </div>
+                )}
                 <div className="cand-champ">
                   <label className="cand-etiquette" htmlFor="ref-libelle">
                     Libellé officiel <span className="ref-requis" aria-hidden="true">*</span>
@@ -686,10 +728,22 @@ export default function ReferentielGenerique() {
                         />
                         Oui
                       </label>
+                    ) : champsChoix[champ] ? (
+                      <select
+                        id={`ref-${champ}`}
+                        className="cand-saisie"
+                        value={form[champ] ?? ''}
+                        onChange={(e) => setForm({ ...form, [champ]: e.target.value })}
+                      >
+                        <option value="">— Choisir —</option>
+                        {champsChoix[champ].map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
                     ) : (
                       <input
                         id={`ref-${champ}`}
-                        type={champ === 'ordre' ? 'number' : 'text'}
+                        type={champsNumeriques.includes(champ) || champ === 'ordre' ? 'number' : 'text'}
                         className="cand-saisie"
                         value={form[champ] ?? ''}
                         onChange={(e) => setForm({ ...form, [champ]: e.target.value })}
@@ -711,12 +765,16 @@ export default function ReferentielGenerique() {
                     >
                       <option value="">— Aucun —</option>
                       {optionsPour(fk).map((option) => (
-                        <option key={option.id} value={option.id}>{option.libelle}</option>
+                        <option key={option.id} value={option.id}>
+                          {option.libelle || option.intitule || option.nom || `#${option.id}`}
+                        </option>
                       ))}
                     </select>
                   </div>
                 ))}
 
+                {provenanceSuivie && (
+                <>
                 <div className="cand-champ">
                   <label className="cand-etiquette" htmlFor="ref-fiabilite">Fiabilité</label>
                   <select
@@ -750,6 +808,8 @@ export default function ReferentielGenerique() {
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                   />
                 </div>
+                </>
+                )}
               </div>
 
               {erreursForm.general && (

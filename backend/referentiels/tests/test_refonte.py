@@ -67,7 +67,10 @@ class RegistreTests(TestCase):
 
     def test_route_ui_ne_pointe_que_vers_des_ecrans_existants(self):
         """Écrans réellement déclarés dans le routeur React (App.jsx)."""
-        ecrans = {'/referentiels', '/referentiels/edition', '/formations'}
+        ecrans = {
+            '/referentiels', '/referentiels/edition', '/formations',
+            '/scolarite/maquettes',
+        }
         for slug, entree in REGISTRE.items():
             with self.subTest(slug=slug):
                 if entree['editable']:

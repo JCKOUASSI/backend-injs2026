@@ -106,6 +106,14 @@ def entree(**kwargs):
     # vers une route qui n'existe pas.
     kwargs.setdefault('route_ui', f"/referentiels/gestion/{kwargs['slug']}")
     kwargs.setdefault('avertissement', '')
+    # Adaptateurs pour modèles hors socle (scolarité) : nom réel du champ
+    # d'intitulé et du champ de code. ``champ_code`` égal au champ d'intitulé
+    # = pas de colonne code distincte (ex. Semestre : « S1 » fait les deux).
+    kwargs.setdefault('champ_libelle', 'libelle')
+    kwargs.setdefault('champ_code', 'code')
+    # Libellé du bouton d'accès sur la carte du tableau de bord (défaut
+    # front : « Gérer » si éditable, « Consulter » sinon).
+    kwargs.setdefault('libelle_bouton', '')
     return kwargs
 
 
@@ -252,30 +260,57 @@ REGISTRE = {
         slug='niveaux', libelle='Niveaux',
         description='L1 à D3 — 60 ECTS par niveau annuel (Licence, Master, Doctorat).',
         categorie=Categorie.SYSTEME_LMD, modele='scolarite.Niveau',
-        editable=False, route_api='/scolarite/ref/niveaux/',
-        route_ui=None, icone='bi-bar-chart-steps',
+        champs=['cycle', 'ordre', 'credits_requis'],
+        icone='bi-bar-chart-steps',
         source='Architecture LMD (30 ECTS/semestre)',
+        avertissement=(
+            'Structure LMD : chaque niveau porte 60 crédits ECTS et deux '
+            'semestres. Modifier un niveau ouvert impacte les semestres et '
+            'les maquettes qui s’appuient dessus.'
+        ),
     ),
     'semestres': entree(
         slug='semestres', libelle='Semestres',
         description='S1 à S16 — 30 ECTS par semestre (S11–S16 : doctorat).',
         categorie=Categorie.SYSTEME_LMD, modele='scolarite.Semestre',
-        editable=False, route_api='/scolarite/ref/semestres/',
-        route_ui=None, icone='bi-calendar3',
+        champ_code='libelle',
+        champs=['numero'],
+        selecteurs=['niveau'],
+        icone='bi-calendar3',
         source='Architecture LMD (30 ECTS/semestre)',
+        avertissement=(
+            'Le libellé du semestre (S1, S2…) fait aussi office de code. '
+            'Le numéro global suit l’ordre du cursus (S1 = 1, S2 = 2…).'
+        ),
     ),
     'parcours': entree(
         slug='parcours', libelle='Parcours',
-        description='Spécialisations internes à un cycle.',
+        description='Spécialisations internes à un cycle (8 filières × Licence/Master).',
         categorie=Categorie.SYSTEME_LMD, modele='scolarite.Parcours',
-        editable=False, route_api='/scolarite/ref/parcours/',
-        route_ui=None, icone='bi-signpost-split',
+        champ_libelle='intitule',
+        selecteurs=['ref_formation', 'type_formation'],
+        icone='bi-signpost-split',
+        source='RÉFÉRENTIEL COMPLET DU SYSTÈME LMD (PDF) — §6',
+    ),
+    'types-formation': entree(
+        slug='types-formation', libelle='Types de formation',
+        description=(
+            'Nature du cycle rattaché aux parcours (Licence, Master…). '
+            'Référentiel hérité de la scolarité, distinct des natures de cursus.'
+        ),
+        categorie=Categorie.SYSTEME_LMD, modele='scolarite.TypeFormation',
+        icone='bi-diagram-2',
+        source='Scolarité (init_referentiels_lmd)',
     ),
     'ue-ecue': entree(
         slug='ue-ecue', libelle='UE / ECUE',
-        description='Unités d’enseignement et éléments constitutifs des maquettes.',
+        description=(
+            'Unités d’enseignement et éléments constitutifs des maquettes — '
+            'gérés dans le module Maquettes LMD (cycle de vie par maquette).'
+        ),
         categorie=Categorie.SYSTEME_LMD, modele='scolarite.UE',
-        editable=False, route_ui=None, icone='bi-layers',
+        editable=False, route_ui='/scolarite/maquettes', icone='bi-layers',
+        libelle_bouton='Gérer',
         source='Maquettes officielles INJS',
     ),
     'annees': entree(

@@ -61,14 +61,43 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = self.queryset
+        modele = qs.model
         # Règle 5 : les valeurs archivées sont masquées par défaut ; un
-        # gestionnaire peut les consulter avec ?archives=1.
-        if self.request.query_params.get('archives') not in ('1', 'true'):
+        # gestionnaire peut les consulter avec ?archives=1. Les modèles
+        # hors socle sans colonne d'archivage (scolarité LMD) sont
+        # simplement retournés tels quels.
+        if _a_le_champ(modele, 'archive') \
+                and self.request.query_params.get('archives') not in ('1', 'true'):
             qs = qs.filter(archive=False)
         actif = self.request.query_params.get('actif')
-        if actif is not None:
+        if actif is not None and _a_le_champ(modele, 'actif'):
             qs = qs.filter(actif=actif.lower() in ('true', '1', 'yes'))
         return qs
+
+    def _champ_libelle(self):
+        """Champ d'intitulé réel du modèle servi (registre, défaut socle)."""
+        if hasattr(self, '_entree'):
+            return self._entree().get('champ_libelle', 'libelle')
+        return 'libelle'
+
+    def _journaliser(self, obj, action, detail=None):
+        """Règle 6 : trace l'action, méthode du socle si le modèle en a une.
+
+        Les modèles hors socle (scolarité) ne portent pas ``journaliser`` :
+        l'entrée de journal est alors écrite directement via ContentType,
+        de façon strictement équivalente.
+        """
+        if hasattr(obj, 'journaliser'):
+            obj.journaliser(action, self.request.user, detail)
+            return
+        user = self.request.user
+        ReferentielJournal.objects.create(
+            content_type=ContentType.objects.get_for_model(obj),
+            object_id=obj.pk,
+            action=action,
+            utilisateur=user if (user and user.is_authenticated) else None,
+            detail=detail or {},
+        )
 
     def _save_or_400(self, serializer):
         try:
@@ -85,27 +114,36 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
         # comparaison normalisée (casse + accents) est portable sur
         # SQLite/PostgreSQL, là où la contrainte Lower() de base ne l'est
         # pas. La contrainte DB reste en garde-fou.
-        if libelle and libelle_en_doublon(self.queryset.model, libelle, pk_exclu):
+        modele = self.queryset.model
+        champ = self._champ_libelle()
+        if libelle and _a_le_champ(modele, champ) and libelle_en_doublon(
+                modele, libelle, pk_exclu, champ=champ):
             raise ValidationError(
                 {'detail': 'Cette valeur existe déjà (code ou libellé en doublon).'}
             )
 
     def perform_create(self, serializer):
         self._controler_doublon_libelle(
-            serializer.validated_data.get('libelle'))
+            serializer.validated_data.get(self._champ_libelle()))
         obj = self._save_or_400(serializer)
-        obj.journaliser(ReferentielJournal.Action.CREATION, self.request.user)
+        self._journaliser(obj, ReferentielJournal.Action.CREATION)
 
     def perform_update(self, serializer):
         self._controler_doublon_libelle(
-            serializer.validated_data.get('libelle'),
+            serializer.validated_data.get(self._champ_libelle()),
             pk_exclu=serializer.instance.pk,
         )
-        before = {f: getattr(serializer.instance, f) for f in ('code', 'libelle', 'description', 'actif')}
+        concrets = {f.name for f in serializer.instance._meta.concrete_fields}
+        suivis = [
+            nom
+            for nom in ('code', self._champ_libelle(), 'libelle', 'description', 'actif')
+            if nom in concrets
+        ]
+        before = {f: getattr(serializer.instance, f) for f in suivis}
         obj = self._save_or_400(serializer)
         after = {f: getattr(obj, f) for f in before}
         changes = {k: {'avant': before[k], 'apres': after[k]} for k in before if before[k] != after[k]}
-        obj.journaliser(ReferentielJournal.Action.MODIFICATION, self.request.user, changes or None)
+        self._journaliser(obj, ReferentielJournal.Action.MODIFICATION, changes or None)
 
     def _get_any_object(self, pk):
         """Récupère une valeur même archivée (pour archiver/reactiver)."""
@@ -115,6 +153,14 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def archiver(self, request, pk=None):
         obj = self._get_any_object(pk)
+        if not hasattr(obj, 'archive'):
+            return Response(
+                {'detail': (
+                    'Ce référentiel ne gère pas l’archivage : '
+                    'utilisez l’activation/désactivation.'
+                )},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if obj.archive:
             return Response({'detail': 'Valeur déjà archivée.'}, status=status.HTTP_400_BAD_REQUEST)
         obj.archiver(request.user, motif=request.data.get('motif', ''))
@@ -123,6 +169,14 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def reactiver(self, request, pk=None):
         obj = self._get_any_object(pk)
+        if not hasattr(obj, 'archive'):
+            return Response(
+                {'detail': (
+                    'Ce référentiel ne gère pas l’archivage : '
+                    'utilisez l’activation/désactivation.'
+                )},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if not obj.archive:
             return Response({'detail': 'Valeur non archivée.'}, status=status.HTTP_400_BAD_REQUEST)
         obj.reactiver(request.user, motif=request.data.get('motif', ''))
@@ -290,6 +344,16 @@ class TableauDeBordReferentielsView(APIView):
                     'a_renseigner': a_renseigner,
                     'sans_source': sans_source,
                     'provenance_suivie': _a_le_champ(modele, 'source_document'),
+                    # Capacités réelles du modèle, pour que l'écran générique
+                    # adapte son formulaire sans rien coder en dur.
+                    'archivage_supporte': _a_le_champ(modele, 'archive'),
+                    'a_un_code': (
+                        _a_le_champ(modele, entree.get('champ_code', 'code'))
+                        and entree.get('champ_code', 'code')
+                        != entree.get('champ_libelle', 'libelle')
+                    ),
+                    'champs_choix': _champs_choix(modele, entree),
+                    'champs_numeriques': _champs_numeriques(modele, entree),
                     'route_api': entree.get('route_api') or f'/referentiels/{entree["slug"]}/',
                     'selecteurs_routes': _routes_selecteurs(entree),
                 })
@@ -371,7 +435,11 @@ def _routes_selecteurs(entree):
         if slug:
             routes[fk] = {
                 'slug': slug,
-                'route': f'/referentiels/{slug}/',
+                # La cible peut être servie par son API historique
+                # (route_api déclarée) plutôt que par le CRUD générique.
+                'route': (
+                    REGISTRE[slug].get('route_api') or f'/referentiels/{slug}/'
+                ),
                 'editable': bool(REGISTRE[slug]['editable']),
             }
     return routes
@@ -379,3 +447,35 @@ def _routes_selecteurs(entree):
 
 def _a_le_champ(modele, nom):
     return any(f.name == nom for f in modele._meta.get_fields())
+
+
+def _champs_choix(modele, entree):
+    """Listes de valeurs des champs métier à choix (ex. `cycle` du niveau)."""
+    resultat = {}
+    for nom in entree.get('champs', []):
+        if not _a_le_champ(modele, nom):
+            continue
+        choix = modele._meta.get_field(nom).choices
+        if choix:
+            resultat[nom] = [
+                {'value': str(valeur), 'label': str(libelle)}
+                for valeur, libelle in choix
+            ]
+    return resultat
+
+
+def _champs_numeriques(modele, entree):
+    """Champs métier numériques (entiers/décimaux) déclarés par l'entrée."""
+    from django.db import models as db_models
+
+    types = (
+        db_models.IntegerField, db_models.PositiveIntegerField,
+        db_models.PositiveSmallIntegerField, db_models.SmallIntegerField,
+        db_models.BigIntegerField, db_models.DecimalField,
+        db_models.FloatField,
+    )
+    return [
+        nom for nom in entree.get('champs', [])
+        if _a_le_champ(modele, nom)
+        and isinstance(modele._meta.get_field(nom), types)
+    ]

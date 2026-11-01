@@ -26,12 +26,15 @@ def normaliser_libelle(valeur):
     return sans_diacritiques.casefold().strip()
 
 
-def libelle_en_doublon(modele, libelle, pk_exclu=None):
+def libelle_en_doublon(modele, libelle, pk_exclu=None, champ='libelle'):
     """Vrai si une autre ligne du modèle porte la même forme normalisée.
 
     Comparaison au niveau application (portable) ; les tables de
     référentiels sont petites, le scan Python est négligeable et évite tout
     dépendance au comportement du moteur.
+
+    ``champ`` permet de cibler le champ d'intitulé réel des modèles hors
+    socle (ex. ``intitule`` sur scolarite.Parcours).
     """
     if not libelle:
         return False
@@ -41,7 +44,7 @@ def libelle_en_doublon(modele, libelle, pk_exclu=None):
     queryset = modele._default_manager.all()
     if pk_exclu is not None:
         queryset = queryset.exclude(pk=pk_exclu)
-    for existant in queryset.values_list('libelle', flat=True):
+    for existant in queryset.values_list(champ, flat=True):
         if normaliser_libelle(existant) == forme:
             return True
     return False

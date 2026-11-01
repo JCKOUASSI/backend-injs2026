@@ -306,12 +306,15 @@ export default function TableauDeBordReferentiels() {
                     </span>
                     {entree.editable ? (
                       <Link className="ref-lien" to={`/referentiels/gestion/${entree.slug}`}>
-                        Gérer
+                        {entree.libelle_bouton || 'Gérer'}
                         <i className="bi bi-arrow-right" aria-hidden="true"></i>
                       </Link>
                     ) : entree.route_ui ? (
-                      <Link className="ref-lien ref-lien--douce" to={entree.route_ui}>
-                        Consulter
+                      <Link
+                        className={`ref-lien${entree.libelle_bouton ? '' : ' ref-lien--douce'}`}
+                        to={entree.route_ui}
+                      >
+                        {entree.libelle_bouton || 'Consulter'}
                         <i className="bi bi-arrow-right" aria-hidden="true"></i>
                       </Link>
                     ) : (
