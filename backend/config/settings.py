@@ -340,7 +340,16 @@ STORAGES = {
 # `arena/tests_par_groupe.sh` exporte STORAGES=STORAGE_DE_TEST depuis toujours,
 # mais la variable n'était LUE par personne : elle est désormais effective.
 # La production conserve le manifeste (variable absente).
-if os.environ.get('STORAGES') == 'STORAGE_DE_TEST':
+#
+# Correctif : la bascule est aussi appliquée automatiquement pendant la suite
+# de tests (`_RUNNING_TESTS`), et non plus seulement quand l'appelant pense à
+# exporter la variable. Sans cela, `manage.py test` lancé dans un dépôt frais
+# (manifeste absent) produisait des erreurs `Missing staticfiles manifest
+# entry`, et sous `--parallel` un plantage complet du lanceur
+# (« cannot pickle 'traceback' object ») : la suite était rouge pour une cause
+# d'environnement, jamais pour un défaut de code. Le manifeste reste validé là
+# où il compte : CI (étape `collectstatic`) et image de production.
+if _RUNNING_TESTS or os.environ.get('STORAGES') == 'STORAGE_DE_TEST':
     STORAGES['staticfiles'] = {
         'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
     }
@@ -410,6 +419,16 @@ AUTO_ABSENT_DELAI_MINUTES = int(os.environ.get('AUTO_ABSENT_DELAI_MINUTES', 60))
 INJS_AUTO_INSCRIPTION_PEDAGOGIQUE = os.environ.get(
     'INJS_AUTO_INSCRIPTION_PEDAGOGIQUE', 'False',
 ).lower() in ('true', '1', 'yes')
+
+# ── Identité institutionnelle imprimée sur les documents officiels ───────────
+# `core/institution.py` documentait ces deux variables comme le moyen de
+# renseigner l'en-tête sans toucher au code — mais aucun réglage ne les lisait :
+# la variable d'environnement restait donc sans effet. Elles sont désormais
+# exposées par la configuration.
+# L'adresse postale reste VIDE par défaut : aucune adresse n'est inventée tant
+# que le commanditaire n'a pas fourni l'adresse officielle à imprimer.
+INJS_NOM_OFFICIEL = os.environ.get('INJS_NOM_OFFICIEL', '').strip()
+INJS_ADRESSE_OFFICIELLE = os.environ.get('INJS_ADRESSE_OFFICIELLE', '').strip()
 
 # Paramètres anti-fraude mobile (heartbeat + geofence)
 MOBILE_HEARTBEAT_DISABLED = os.environ.get(
