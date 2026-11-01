@@ -4,12 +4,14 @@ Pattern @api_view (cohérent avec graduation/jurys/equivalences). Permissions :
 lecture pour authentifié gestion (IsAuthenticated) ; opérations sensibles
 (confirmer paiement, remboursement, rapprochement) réservées à FINANCE/DIRECTION.
 """
+from decimal import InvalidOperation
+
+from django.core.exceptions import ValidationError
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from authentication.permissions import IsDFRC
 from habilitations.permissions import ExigePermission
 from scolarite.models import DossierEtudiant
 from admissions.models import Candidat
@@ -18,8 +20,15 @@ from .models import (
     Echeancier, Facture, LigneEcheancier, Paiement,
     Quittance, RapprochementComptable, Relance, Remboursement, Tarification,
 )
+from .permissions import (
+    IsFinancesLectureOuGestion,
+    IsFinancesLectureOuValidation,
+    IsFinancesReadOnly,
+    IsGestionFinanciere,
+    IsValidationFinanciere,
+)
 from .services import (
-    confirmer_paiement, enregistrer_paiement_idempotent,
+    confirmer_paiement, creer_remboursement, enregistrer_paiement_idempotent,
     generer_echeancier_pour_etudiant,
     generer_facture, valider_paiement_par_transaction,
 )
@@ -30,21 +39,35 @@ def _serialize_paiement(p):
         'id': p.id, 'etudiant_id': p.etudiant_id, 'candidat_id': p.candidat_id,
         'nature': p.nature, 'montant': str(p.montant), 'devise': p.devise,
         'mode': p.mode, 'statut': p.statut, 'date': p.date.isoformat(),
+        # Libellés lisibles : l'interface affichait jusqu'ici les codes bruts
+        # (« ELEPHANT_MONEY », « CARTE_BANCAIRE ») au guichet et dans le
+        # formulaire de saisie. Les codes restent exposés, inchangés, pour les
+        # clients qui s'appuient dessus.
+        'mode_libelle': p.get_mode_display(),
+        'nature_libelle': p.get_nature_display(),
+        'statut_libelle': p.get_statut_display(),
         'transaction_externe': p.transaction_externe or '',
         'preuve_url': p.preuve.url if p.preuve else None,
     }
 
 
 @api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsFinancesLectureOuGestion])
 def echeanciers_list_api(request):
     """Liste des échéanciers (GET) ; génération pour etudiant_id + annee_id (POST)."""
     if request.method == 'GET':
-        qs = Echeancier.objects.select_related('etudiant', 'annee_academique').all()
+        # `prefetch_related` : la version précédente déclenchait deux requêtes
+        # par échéancier (comptage des lignes + statut global).
+        qs = (
+            Echeancier.objects.select_related('etudiant', 'annee_academique')
+            .prefetch_related('lignes')
+            .all()
+        )
         return Response({'results': [{
             'id': e.id, 'etudiant_id': e.etudiant_id,
             'annee_academique': str(e.annee_academique),
-            'statut_global': e.statut_global, 'lignes_count': e.lignes.count(),
+            'statut_global': e.statut_global,
+            'lignes_count': len(list(e.lignes.all())),
         } for e in qs]})
     etudiant_id = request.data.get('etudiant_id')
     annee_id = request.data.get('annee_academique_id')
@@ -72,7 +95,7 @@ def echeanciers_list_api(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsFinancesReadOnly])
 def echeancier_detail_api(request, pk):
     try:
         e = Echeancier.objects.get(pk=pk)
@@ -92,7 +115,7 @@ def echeancier_detail_api(request, pk):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsFinancesReadOnly])
 def lignes_echeancier_api(request, pk):
     try:
         e = Echeancier.objects.get(pk=pk)
@@ -105,7 +128,7 @@ def lignes_echeancier_api(request, pk):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsGestionFinanciere])
 def facture_generer_api(request, pk):
     """Génère une facture pour l'échéancier <pk>."""
     try:
@@ -123,7 +146,7 @@ def facture_generer_api(request, pk):
 
 
 @api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsFinancesLectureOuGestion])
 def paiements_list_api(request):
     """Liste des paiements (GET) ; enregistrement idempotent (POST)."""
     if request.method == 'GET':
@@ -153,7 +176,7 @@ def paiements_list_api(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsFinancesReadOnly])
 def paiement_detail_api(request, pk):
     try:
         p = Paiement.objects.get(pk=pk)
@@ -163,7 +186,7 @@ def paiement_detail_api(request, pk):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated, IsDFRC,
+@permission_classes([IsAuthenticated, IsValidationFinanciere,
                      ExigePermission.pour('finances_etud.paiement.valider')])
 def paiement_confirmer_api(request, pk):
     """Confirme un paiement (exige une preuve) — réservé à FINANCE/DIRECTION.
@@ -186,7 +209,7 @@ def paiement_confirmer_api(request, pk):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsFinancesReadOnly])
 def quittances_list_api(request):
     qs = Quittance.objects.select_related('paiement').all()
     return Response({'results': [{
@@ -196,7 +219,7 @@ def quittances_list_api(request):
 
 
 @api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated, IsDFRC])
+@permission_classes([IsAuthenticated, IsFinancesLectureOuValidation])
 def remboursements_list_api(request):
     """Liste des remboursements (GET) ; création (POST) — réservé FINANCE/DIRECTION."""
     if request.method == 'GET':
@@ -211,29 +234,35 @@ def remboursements_list_api(request):
     except (KeyError, Paiement.DoesNotExist):
         return Response({'error': "paiement_original_id invalide."}, status=400)
     try:
-        r = Remboursement.objects.create(
+        # Contrôles de cohérence portés par le service (statut du paiement,
+        # montant remboursable, idempotence) — la création directe laissait
+        # rembourser plus que le montant encaissé.
+        r, cree = creer_remboursement(
             paiement_original=paiement,
             montant=request.data['montant'],
-            devise=request.data.get('devise', 'XOF'),
-            motif=request.data['motif'],
+            motif=request.data.get('motif'),
+            devise=request.data.get('devise'),
             utilisateur=request.user,
+            transaction_externe=request.data.get('transaction_externe'),
         )
     except KeyError as exc:
         return Response({'error': f"Champ obligatoire manquant : {exc.args[0]}."}, status=400)
-    except Exception as exc:
-        return Response({'error': str(exc)}, status=400)
-    return Response({'id': r.id, 'statut': r.statut}, status=201)
+    except ValidationError as exc:
+        return Response({'error': ' '.join(exc.messages)}, status=400)
+    except (InvalidOperation, TypeError, ValueError):
+        return Response({'error': "Le montant du remboursement est invalide."}, status=400)
+    return Response({'id': r.id, 'statut': r.statut}, status=201 if cree else 200)
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated, IsDFRC])
+@permission_classes([IsAuthenticated, IsValidationFinanciere])
 def remboursement_creer_api(request):
     """Alias POST create (renvoie vers la liste POST)."""
     return remboursements_list_api(request)
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsFinancesReadOnly])
 def relances_list_api(request):
     qs = Relance.objects.select_related('echeancier').all()
     return Response({'results': [{
@@ -244,7 +273,7 @@ def relances_list_api(request):
 
 
 @api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated, IsDFRC])
+@permission_classes([IsAuthenticated, IsFinancesLectureOuValidation])
 def rapprochements_list_api(request):
     """Liste des rapprochements (GET) ; création (POST) — réservé FINANCE/DIRECTION."""
     if request.method == 'GET':
@@ -275,7 +304,7 @@ def _rapprochement_creer(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated, IsDFRC])
+@permission_classes([IsAuthenticated, IsValidationFinanciere])
 def rapprochement_creer_api(request):
     """Crée un rapprochement comptable (FINANCE/DIRECTION)."""
     return _rapprochement_creer(request)

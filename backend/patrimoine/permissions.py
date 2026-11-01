@@ -1,16 +1,16 @@
 """Permissions du lot L7 — Patrimoine.
 
 Gestion (équipements, maintenances, réservations) : Secrétariat, Chef
-Secrétariat, DFRC, DIRECTION, ADMIN. Validation des réservations :
-DIRECTION/ADMIN (ou DFRC). Lecture : tout utilisateur authentifié.
+Secrétariat, INJS_ADMIN, DIRECTION, ADMIN. Validation des réservations :
+DIRECTION / INJS_ADMIN / ADMIN. Lecture : tout utilisateur authentifié.
 """
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 from authentication.role_groups import user_in_roles
 
 
-GESTION_ROLES = ('SECRETARIAT', 'CHEF_SECRETARIAT', 'DFRC', 'DIRECTION', 'ADMIN')
-VALIDATION_ROLES = ('DFRC', 'DIRECTION', 'ADMIN')
+GESTION_ROLES = ('SECRETARIAT', 'CHEF_SECRETARIAT', 'CHEF_INJS_ADMIN', 'INJS_ADMIN', 'DIRECTION', 'ADMIN')
+VALIDATION_ROLES = ('CHEF_INJS_ADMIN', 'INJS_ADMIN', 'DIRECTION', 'ADMIN')
 
 
 class IsGestionPatrimoine(BasePermission):

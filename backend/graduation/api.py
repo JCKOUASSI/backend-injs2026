@@ -4,6 +4,7 @@ Pattern @api_view (cohérent avec jurys/api, equivalences/api, scolarite/api_vie
 Permissions via ``graduation.permissions`` et ``authentication.role_groups``.
 Lecture publique limitée au portail de vérification (AllowAny + token).
 """
+from django.db.models import Count
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -47,18 +48,27 @@ def _serialize_diplome(diplome):
         ),
         'cree_par': str(diplome.cree_par) if diplome.cree_par_id else None,
         'valide_par': str(diplome.valide_par) if diplome.valide_par_id else None,
-        'reeditions_count': diplome.reeditions.count(),
+        # Compteur annoté par la liste (`_qs_diplomes`) : sans lui, chaque ligne
+        # déclenchait une requête supplémentaire (N+1 sur les listes longues).
+        'reeditions_count': getattr(diplome, 'nb_reeditions', None)
+        if getattr(diplome, 'nb_reeditions', None) is not None
+        else diplome.reeditions.count(),
     }
+
+
+def _qs_diplomes():
+    """Queryset de lecture des diplômes, relations et compteurs préchargés."""
+    return Diplome.objects.select_related(
+        'etudiant__participant', 'ref_formation', 'niveau', 'parcours',
+        'annee_academique', 'session_jury', 'decision_jury',
+    ).annotate(nb_reeditions=Count('reeditions', distinct=True)).order_by('-date_creation')
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrAbove])
 def diplomes_list_api(request):
     """Liste filtrée des diplômes (filtres : annee, formation, statut)."""
-    qs = Diplome.objects.select_related(
-        'etudiant__participant', 'ref_formation', 'niveau', 'parcours',
-        'annee_academique', 'session_jury', 'decision_jury',
-    ).order_by('-date_creation')
+    qs = _qs_diplomes()
     annee = request.GET.get('annee_academique_id')
     if annee:
         qs = qs.filter(annee_academique_id=annee)

@@ -1,6 +1,6 @@
 """Permissions du lot L7 — Ressources Humaines.
 
-Consultation : Secrétariat, Chef Secrétariat, DFRC, DIRECTION, ADMIN.
+Consultation : Secrétariat, Chef Secrétariat, INJS_ADMIN, DIRECTION, ADMIN.
 Gestion (agents, affectations, documents) : rôles de gestion.
 Opérations RH sensibles : DIRECTION/ADMIN.
 """
@@ -9,8 +9,8 @@ from rest_framework.permissions import BasePermission, SAFE_METHODS
 from authentication.role_groups import user_in_roles
 
 
-CONSULTATION_ROLES = ('SECRETARIAT', 'CHEF_SECRETARIAT', 'DFRC', 'DIRECTION', 'ADMIN')
-GESTION_ROLES = ('CHEF_SECRETARIAT', 'DFRC', 'DIRECTION', 'ADMIN')
+CONSULTATION_ROLES = ('SECRETARIAT', 'CHEF_SECRETARIAT', 'CHEF_INJS_ADMIN', 'INJS_ADMIN', 'DIRECTION', 'ADMIN')
+GESTION_ROLES = ('CHEF_SECRETARIAT', 'CHEF_INJS_ADMIN', 'INJS_ADMIN', 'DIRECTION', 'ADMIN')
 
 
 class IsConsultationRH(BasePermission):

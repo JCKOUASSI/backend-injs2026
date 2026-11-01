@@ -92,18 +92,20 @@ class Echeancier(models.Model):
 
     @property
     def statut_global(self):
-        """Statut global de l'échéancier."""
-        total = sum(l.montant for l in self.lignes.all())
-        paye = sum(l.montant for l in self.lignes.filter(statut='PAYE'))
-        if total == 0:
+        """Statut global de l'échéancier.
+
+        Une seule lecture des lignes : la version précédente interrogeait deux
+        fois la base par échéancier (une fois pour le total, une fois pour le
+        montant payé), ce qui multipliait les requêtes sur les listes.
+        """
+        lignes = list(self.lignes.all())
+        total = sum(l.montant for l in lignes)
+        if not total:
             return 'COMPLETE'
-        taux = (paye / total) * 100
-        if taux == 0:
+        paye = sum(l.montant for l in lignes if l.statut == 'PAYE')
+        if not paye:
             return 'IMPAYE'
-        elif taux < 100:
-            return 'PARTIELLEMENT_PAYE'
-        else:
-            return 'COMPLETE'
+        return 'COMPLETE' if paye >= total else 'PARTIELLEMENT_PAYE'
 
     def __str__(self):
         return f"Échéancier {self.etudiant.id} - {self.annee_academique}"

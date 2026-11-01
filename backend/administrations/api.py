@@ -8,7 +8,12 @@ from rest_framework.response import Response
 
 from . import services
 from .models import Courrier, DocumentOfficiel, Mission, ReunionCommission
-from .permissions import IsGestionOrReadOnly, IsGestionAdministration, IsDirectionOrAdminAdministration
+from .permissions import (
+    IsConsultationAdministration,
+    IsDirectionOrAdminAdministration,
+    IsGestionAdministration,
+    IsGestionOrReadOnly,
+)
 
 
 def _serialize_courrier(c):
@@ -43,7 +48,7 @@ def _serialize_document(d):
 # ---------- Courriers ----------
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsConsultationAdministration])
 def courriers_list_api(request):
     qs = Courrier.objects.all().select_related('cree_par').order_by('-created_at')
     sens = request.GET.get('sens')
@@ -95,7 +100,7 @@ def courrier_transition_api(request, pk):
 # ---------- Documents officiels ----------
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsConsultationAdministration])
 def documents_list_api(request):
     qs = DocumentOfficiel.objects.all().select_related('signe_par', 'cree_par').order_by('-created_at')
     statut = request.GET.get('statut')

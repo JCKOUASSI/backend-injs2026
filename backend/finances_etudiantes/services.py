@@ -48,6 +48,14 @@ def generer_echeancier_pour_etudiant(etudiant, annee_academique):
     if not tarifs.exists():
         return None
 
+    # Idempotence : une seconde génération (double clic, réessai réseau) ne doit
+    # pas créer un second échéancier qui doublerait la facturation de l'étudiant.
+    echeancier_existant = Echeancier.objects.filter(
+        etudiant=etudiant, annee_academique=annee_academique,
+    ).order_by('id').first()
+    if echeancier_existant is not None:
+        return echeancier_existant
+
     echeancier = Echeancier.objects.create(etudiant=etudiant, annee_academique=annee_academique)
     echeance = date.today() + timedelta(days=30)
     lignes = []
@@ -108,7 +116,10 @@ def confirmer_paiement(paiement, utilisateur, date_echeance=None):
     """
     if paiement.statut == 'CONFIRME':
         return paiement
-    if paiement.statut in ('ANNULE', 'ECHOUE', 'REMBOLSE'):
+    # « REMBOLSE » (faute de frappe historique) ne correspondait à aucun statut :
+    # un paiement REMBOURSE pouvait donc être confirmé une seconde fois et
+    # produire une quittance sur un remboursement déjà effectué.
+    if paiement.statut in ('ANNULE', 'ECHOUE', 'REMBOURSE'):
         raise ValidationError(f"Paiement {paiement.statut} ne peut être confirmé.")
     if not paiement.preuve:
         raise ValidationError(
@@ -138,10 +149,80 @@ def generer_facture(echeancier, utilisateur=None):
     if not lignes:
         raise ValidationError("L'échéancier ne contient aucune ligne à facturer.")
     total = sum(ligne.montant for ligne in lignes)
-    numero = f'FAC-{echeancier.id}-{date.today():%Y%m%d}'
+    base = f'FAC-{echeancier.id}-{date.today():%Y%m%d}'
+    # Idempotence : régénérer la facture du jour renvoie celle déjà émise au lieu
+    # de lever une erreur d'unicité (`numero` est unique) côté serveur.
+    existante = Facture.objects.filter(echeancier=echeancier, numero__startswith=base).first()
+    if existante is not None:
+        return existante
+    numero = base
+    suffixe = 1
+    while Facture.objects.filter(numero=numero).exists():
+        suffixe += 1
+        numero = f'{base}-{suffixe}'
     facture = Facture.objects.create(
         echeancier=echeancier, numero=numero, total=total, statut='EMISE',
     )
     facture.lignes.set(lignes)
     return facture
 
+
+
+@transaction.atomic
+def creer_remboursement(
+    *, paiement_original, montant, motif, devise=None, utilisateur=None,
+    transaction_externe=None,
+):
+    """Crée un remboursement en contrôlant le montant remboursable.
+
+    Règles (aucune n'était vérifiée avant : l'API créait la ligne directement) :
+
+    * le paiement d'origine doit être **CONFIRME** — on ne rembourse pas un
+      paiement qui n'a jamais été encaissé ;
+    * le montant doit être strictement positif ;
+    * le cumul des remboursements non annulés ne peut pas dépasser le montant
+      encaissé ;
+    * une ``transaction_externe`` déjà utilisée renvoie le remboursement
+      existant (idempotence, comme pour les paiements).
+
+    Le paiement d'origine est verrouillé (``select_for_update``) : deux
+    remboursements simultanés ne peuvent pas dépasser ensemble le montant
+    encaissé sur PostgreSQL, le moteur de production.
+    """
+    montant = Decimal(str(montant))
+    if montant <= 0:
+        raise ValidationError("Le montant du remboursement doit être strictement positif.")
+    if not motif:
+        raise ValidationError("Un remboursement doit être motivé.")
+
+    if transaction_externe:
+        existant = Remboursement.objects.filter(transaction_externe=transaction_externe).first()
+        if existant is not None:
+            return existant, False
+
+    paiement = Paiement.objects.select_for_update().get(pk=paiement_original.pk)
+    if paiement.statut != 'CONFIRME':
+        raise ValidationError(
+            "Seul un paiement confirmé peut être remboursé "
+            f"(statut actuel : {paiement.get_statut_display()})."
+        )
+    deja_rembourse = sum(
+        r.montant for r in Remboursement.objects.filter(
+            paiement_original=paiement,
+        ).exclude(statut__in=('ANNULE', 'ECHOUE'))
+    )
+    remboursable = paiement.montant - deja_rembourse
+    if montant > remboursable:
+        raise ValidationError(
+            f"Montant supérieur au solde remboursable ({remboursable} {paiement.devise})."
+        )
+
+    remboursement = Remboursement.objects.create(
+        paiement_original=paiement,
+        montant=montant,
+        devise=devise or paiement.devise,
+        motif=motif,
+        utilisateur=utilisateur,
+        transaction_externe=transaction_externe or None,
+    )
+    return remboursement, True
