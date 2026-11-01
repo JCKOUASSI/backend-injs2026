@@ -23,6 +23,8 @@ import ImportExcel from './pages/ImportExcel'
 import Secretariats from './pages/Secretariats'
 import Organigramme from './pages/Organigramme'
 import Referentiels from './pages/Referentiels'
+import TableauDeBordReferentiels from './pages/referentiels/TableauDeBordReferentiels'
+import ReferentielGenerique from './pages/referentiels/ReferentielGenerique'
 import Parametres from './pages/Parametres'
 import FeatureFlags from './pages/FeatureFlags'
 // Planche de style : documentation vivante du socle visuel (lecture seule).
@@ -611,7 +613,21 @@ function App() {
           <Route path="/referentiels" element={
             <ProtectedRoute allowedRoles={ADMIN_LEVEL_ROLES}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Référentiels</li></>}>
+                <TableauDeBordReferentiels />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/referentiels/edition" element={
+            <ProtectedRoute allowedRoles={ADMIN_LEVEL_ROLES}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/referentiels">Référentiels</Link></li><li className="separator">/</li><li>Édition des tables</li></>}>
                 <Referentiels />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/referentiels/gestion/:slug" element={
+            <ProtectedRoute allowedRoles={ADMIN_LEVEL_ROLES}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/referentiels">Référentiels</Link></li><li className="separator">/</li><li>Gestion</li></>}>
+                <ReferentielGenerique />
               </Layout>
             </ProtectedRoute>
           } />

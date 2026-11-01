@@ -140,15 +140,75 @@ class RefGrade(models.Model):
 
 
 class RefVague(models.Model):
-    """Vagues prédéfinies (ex: PREMIERE VAGUE, DEUXIEME VAGUE…)."""
+    """Vague de recrutement ou de formation.
+
+    Une vague regroupe les étudiants admis au même moment pour une même
+    séquence de formation. Elle se distingue de la **formation** (ce que
+    l'étudiant étudie), de la **catégorie** (corps d'appartenance) et du
+    **grade** (grade préparé) — document « Vagues INJS 2026 ».
+
+    Les champs historiques (libelle, ordre, actif) sont conservés : les
+    admissions, l'EDT et les inscriptions les consomment.
+    """
+
+    code = models.CharField(
+        max_length=50, blank=True, default='', db_index=True,
+        help_text='Code métier de la vague (ex. VAG-2026-01).',
+    )
     libelle = models.CharField(max_length=100, unique=True)
     ordre = models.PositiveSmallIntegerField(default=1, help_text="Ordre d'affichage")
     actif = models.BooleanField(default=True)
+
+    # ── Rattachements métier ──
+    formation = models.ForeignKey(
+        'RefFormation', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='vagues',
+    )
+    categorie = models.ForeignKey(
+        'RefCategorie', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='vagues',
+    )
+    grade = models.ForeignKey(
+        'RefGrade', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='vagues',
+    )
+    site = models.ForeignKey(
+        'RefSite', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='vagues',
+    )
+    statut = models.ForeignKey(
+        'referentiels.RefStatutVague', on_delete=models.PROTECT,
+        null=True, blank=True, related_name='vagues',
+    )
+
+    # ── Période et effectifs ──
+    periode_debut = models.DateField(null=True, blank=True)
+    periode_fin = models.DateField(null=True, blank=True)
+    effectif_prevu = models.PositiveIntegerField(null=True, blank=True)
+    effectif_reel = models.PositiveIntegerField(null=True, blank=True)
+
+    # ── Traçabilité ──
+    source_document = models.CharField(max_length=255, blank=True, default='')
+    fiabilite = models.CharField(
+        max_length=20, choices=[
+            ('OFFICIEL', 'Officiel (attesté par la source)'),
+            ('MODELISE', 'Modélisé dans la source (proposition)'),
+            ('CADRAGE', 'Cadrage fonctionnel (à valider par l’INJS)'),
+            ('A_RENSEIGNER', 'À renseigner'),
+        ],
+        default='A_RENSEIGNER', db_index=True,
+    )
 
     class Meta:
         ordering = ['ordre', 'libelle']
         verbose_name = 'Référentiel – Vague'
         verbose_name_plural = 'Référentiel – Vagues'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['code'], condition=~models.Q(code=''),
+                name='uniq_refvague_code_non_vide',
+            ),
+        ]
 
     def __str__(self):
         return self.libelle
@@ -213,6 +273,16 @@ class RefFormation(models.Model):
     nb_credites = models.PositiveSmallIntegerField(null=True, blank=True,
                                                    verbose_name='Crédits ECTS visés')
     description = models.TextField(blank=True, default='')
+    # Refonte Référentiels — la filière devient une entité métier à part
+    # entière (école + mention + cursus). ``filiere_code`` reste alimenté pour
+    # la compatibilité ascendante des API existantes : il reflète le code de la
+    # filière rattachée.
+    filiere = models.ForeignKey(
+        'referentiels.RefFiliere', on_delete=models.PROTECT,
+        null=True, blank=True, related_name='formations',
+        verbose_name='Filière',
+        help_text='Filière officielle de rattachement (ENSEPS / ENSEP).',
+    )
     prix_heure_realisee = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -368,10 +438,22 @@ class RefModuleVolumeHoraire(models.Model):
         )
 
 
+FIABILITES_LIEUX = [
+    ('OFFICIEL', 'Officiel (attesté par la source)'),
+    ('MODELISE', 'Modélisé dans la source (proposition)'),
+    ('CADRAGE', 'Cadrage fonctionnel (à valider par l’INJS)'),
+    ('A_RENSEIGNER', 'À renseigner'),
+]
+
+
 class RefSite(models.Model):
     """Sites/centres de formation prédéfinis."""
     nom = models.CharField(max_length=255, unique=True)
     actif = models.BooleanField(default=True)
+    source_document = models.CharField(max_length=255, blank=True, default='')
+    fiabilite = models.CharField(
+        max_length=20, choices=FIABILITES_LIEUX, default='A_RENSEIGNER', db_index=True,
+    )
     geofence_latitude = models.DecimalField(
         max_digits=9,
         decimal_places=6,
@@ -405,6 +487,10 @@ class RefBatiment(models.Model):
     site = models.ForeignKey(RefSite, on_delete=models.CASCADE, related_name='batiments')
     nom = models.CharField(max_length=255)
     actif = models.BooleanField(default=True)
+    source_document = models.CharField(max_length=255, blank=True, default='')
+    fiabilite = models.CharField(
+        max_length=20, choices=FIABILITES_LIEUX, default='A_RENSEIGNER', db_index=True,
+    )
 
     class Meta:
         ordering = ['nom']
@@ -438,6 +524,10 @@ class RefSalle(models.Model):
 
     site = models.ForeignKey(RefSite, on_delete=models.CASCADE, related_name='salles')
     batiment = models.ForeignKey(RefBatiment, on_delete=models.SET_NULL, null=True, blank=True, related_name='salles')
+    code = models.CharField(
+        max_length=30, blank=True, default='', db_index=True,
+        help_text='Code de l’espace selon la nomenclature du document source.',
+    )
     nom = models.CharField(max_length=100)
     type_lieu = models.CharField(max_length=20, choices=TypeLieu.choices, default=TypeLieu.SALLE)
     capacite = models.PositiveIntegerField(null=True, blank=True)
@@ -451,6 +541,10 @@ class RefSalle(models.Model):
     indisponible_du = models.DateField(null=True, blank=True)
     indisponible_au = models.DateField(null=True, blank=True)
     actif = models.BooleanField(default=True)
+    source_document = models.CharField(max_length=255, blank=True, default='')
+    fiabilite = models.CharField(
+        max_length=20, choices=FIABILITES_LIEUX, default='A_RENSEIGNER', db_index=True,
+    )
 
     class Meta:
         ordering = ['nom']

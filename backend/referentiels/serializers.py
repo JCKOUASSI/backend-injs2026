@@ -9,6 +9,8 @@ from rest_framework import serializers
 
 from .models import (
     ReferentielJournal,
+    RefModuleOfficiel,
+    RefVolumeHoraireFormation,
     RefGradeEnseignant,
     RefModePaiement,
     RefTypeDecision,
@@ -103,3 +105,81 @@ class ReferentielJournalSerializer(serializers.ModelSerializer):
         model = ReferentielJournal
         fields = ['id', 'action', 'object_id', 'horodatage', 'detail', 'utilisateur']
         read_only_fields = fields
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Refonte « Référentiels » — sérialiseurs générés depuis le registre.
+#
+# Un seul sérialiseur paramétré sert tous les référentiels déclarés au
+# registre : champs du socle + champs métier propres au référentiel + libellés
+# des clés étrangères (pour que le front n'ait jamais à recoder une liste).
+# ═══════════════════════════════════════════════════════════════════════════
+from .registre import REGISTRE, modele_de  # noqa: E402  (après le socle)
+
+CHAMPS_SOCLE = [
+    'id', 'code', 'libelle', 'description',
+    'actif', 'date_activation', 'date_desactivation',
+    'archive', 'annee_academique',
+    'source_document', 'fiabilite',
+    'cree_le', 'modifie_le',
+]
+
+_CACHE_SERIALISEURS = {}
+
+
+def serializer_pour_ref(slug):
+    """Construit (et mémorise) le sérialiseur d'une entrée du registre."""
+    if slug in _CACHE_SERIALISEURS:
+        return _CACHE_SERIALISEURS[slug]
+    entree = REGISTRE[slug]
+    modele = modele_de(entree)
+
+    champs = list(CHAMPS_SOCLE) + list(entree['champs'])
+    for fk in entree['selecteurs']:
+        champs.extend([fk, f'{fk}_libelle'])
+
+    attributs = {}
+    for fk in entree['selecteurs']:
+        attributs[f'{fk}_libelle'] = serializers.CharField(
+            source=f'{fk}.libelle', read_only=True, default=None,
+        )
+    attributs['Meta'] = type('Meta', (), {
+        'model': modele,
+        'fields': champs,
+        'read_only_fields': ['archive', 'date_activation', 'date_desactivation'],
+    })
+    serie = type(
+        f'{modele.__name__}Serializer',
+        (RefSocleSerializer,),
+        attributs,
+    )
+    _CACHE_SERIALISEURS[slug] = serie
+    return serie
+
+
+class RefModuleOfficielSerializer(serializers.ModelSerializer):
+    """Modules officiels des maquettes (lecture seule : issus de l'import)."""
+
+    formation_intitule = serializers.CharField(source='formation.intitule', read_only=True)
+
+    class Meta:
+        model = RefModuleOfficiel
+        fields = [
+            'id', 'formation', 'formation_intitule', 'filiere_code',
+            'semestre', 'libelle', 'ordre', 'etat_ventilation',
+            'source_document', 'fiabilite',
+        ]
+
+
+class RefVolumeHoraireFormationSerializer(serializers.ModelSerializer):
+    """Volumes horaires de modélisation (lecture seule)."""
+
+    formation_intitule = serializers.CharField(source='formation.intitule', read_only=True)
+
+    class Meta:
+        model = RefVolumeHoraireFormation
+        fields = [
+            'id', 'formation', 'formation_intitule', 'intitule_module',
+            'heures_cm', 'heures_td', 'heures_tp', 'heures_stage', 'heures_total',
+            'source_document', 'fiabilite',
+        ]

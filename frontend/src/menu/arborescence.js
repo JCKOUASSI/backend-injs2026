@@ -1392,8 +1392,18 @@ export const ARBORESCENCE = [
     enfants: [
       {
         id: 'referentiels.tous',
-        libelle: 'Tous les référentiels',
+        libelle: 'Tableau de bord',
         chemin: '/referentiels',
+        droit: {
+          curp: ['referentiels.referentiel.consulter'],
+          legacy: [['web', 'operationnel']],
+          roles: ['ADMIN', 'CHEF_INJS_ADMIN', 'INJS_ADMIN'],
+        },
+      },
+      {
+        id: 'referentiels.edition',
+        libelle: 'Édition des tables',
+        chemin: '/referentiels/edition',
         droit: {
           curp: ['referentiels.referentiel.consulter'],
           legacy: [['web', 'operationnel']],

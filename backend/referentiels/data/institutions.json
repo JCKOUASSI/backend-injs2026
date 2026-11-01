@@ -1,0 +1,249 @@
+{
+  "_meta": {
+    "source_principale": "Formations et Modules INJS — §1 (les 8 formations universitaires)",
+    "regle": "Aucune valeur n'est inventée : chaque bloc porte le document qui l'atteste et son degré de fiabilité."
+  },
+  "ecoles": [
+    {
+      "code": "ENSEPS",
+      "libelle": "ENSEPS",
+      "nom_complet": "École Normale Supérieure de l'Éducation Physique et des Sports",
+      "description": "École supérieure portant les quatre filières STAPS.",
+      "source_document": "Formations et Modules INJS — §1 ; Liste des bâtiments — §1.A",
+      "fiabilite": "OFFICIEL"
+    },
+    {
+      "code": "ENSEP",
+      "libelle": "ENSEP",
+      "nom_complet": "École Normale Supérieure de l'Éducation Permanente",
+      "description": "École supérieure portant les quatre filières STASE.",
+      "source_document": "Formations et Modules INJS — §1 ; Liste des bâtiments — §1.B",
+      "fiabilite": "OFFICIEL"
+    }
+  ],
+  "mentions": [
+    {
+      "code": "STAPS",
+      "libelle": "STAPS",
+      "nom_complet": "Sciences et Techniques des Activités Physiques et Sportives",
+      "ecole": "ENSEPS",
+      "source_document": "Formations et Modules INJS — §A",
+      "fiabilite": "OFFICIEL"
+    },
+    {
+      "code": "STASE",
+      "libelle": "STASE",
+      "nom_complet": "Sciences et Techniques de l'Animation Socio-Éducative",
+      "ecole": "ENSEP",
+      "source_document": "Formations et Modules INJS — §B",
+      "fiabilite": "OFFICIEL"
+    }
+  ],
+  "types_cursus": [
+    {
+      "code": "LMD",
+      "libelle": "Cursus LMD (Licence-Master)",
+      "description": "Cursus universitaire : Licence professionnelle en 3 ans, Master en 5 ans.",
+      "source_document": "Formations et Modules INJS — §1",
+      "fiabilite": "OFFICIEL"
+    },
+    {
+      "code": "PROFESSIONNEL",
+      "libelle": "Formation professionnelle",
+      "description": "Cycles professionnalisants non universitaires.",
+      "source_document": "Cadrage mission — §5.B (catégories à ne pas confondre avec le LMD)",
+      "fiabilite": "CADRAGE"
+    },
+    {
+      "code": "CONTINU",
+      "libelle": "Formation continue",
+      "description": "Formations continues pour professionnels en exercice.",
+      "source_document": "Cadrage mission — §5.B",
+      "fiabilite": "CADRAGE"
+    },
+    {
+      "code": "A_LA_CARTE",
+      "libelle": "Cycle à la carte",
+      "description": "Modules ou cycles composés à la demande.",
+      "source_document": "Cadrage mission — §5.B",
+      "fiabilite": "CADRAGE"
+    },
+    {
+      "code": "CONCOURS",
+      "libelle": "Préparation aux concours",
+      "description": "Cycles de préparation aux concours administratifs ou sportifs.",
+      "source_document": "Cadrage mission — §5.B",
+      "fiabilite": "CADRAGE"
+    }
+  ],
+  "filieres": [
+    {
+      "code": "EM",
+      "libelle": "Éducation et Motricité",
+      "ecole": "ENSEPS",
+      "mention": "STAPS",
+      "type_cursus": "LMD",
+      "ordre": 1,
+      "source_document": "Formations et Modules INJS — §1",
+      "fiabilite": "OFFICIEL",
+      "code_dossier": "F01"
+    },
+    {
+      "code": "ES",
+      "libelle": "Entraînement Sportif",
+      "ecole": "ENSEPS",
+      "mention": "STAPS",
+      "type_cursus": "LMD",
+      "ordre": 2,
+      "source_document": "Formations et Modules INJS — §1",
+      "fiabilite": "OFFICIEL",
+      "code_dossier": "F03"
+    },
+    {
+      "code": "MS",
+      "libelle": "Management du Sport",
+      "ecole": "ENSEPS",
+      "mention": "STAPS",
+      "type_cursus": "LMD",
+      "ordre": 3,
+      "source_document": "Formations et Modules INJS — §1",
+      "fiabilite": "OFFICIEL",
+      "code_dossier": "F04"
+    },
+    {
+      "code": "APA",
+      "libelle": "Activités Physiques Adaptées",
+      "ecole": "ENSEPS",
+      "mention": "STAPS",
+      "type_cursus": "LMD",
+      "ordre": 4,
+      "source_document": "Formations et Modules INJS — §1",
+      "fiabilite": "OFFICIEL",
+      "code_dossier": "F02"
+    },
+    {
+      "code": "AND",
+      "libelle": "Andragogie",
+      "ecole": "ENSEP",
+      "mention": "STASE",
+      "type_cursus": "LMD",
+      "ordre": 5,
+      "description": "Éducation et formation des adultes.",
+      "source_document": "Formations et Modules INJS — §6",
+      "fiabilite": "OFFICIEL",
+      "code_dossier": "F05"
+    },
+    {
+      "code": "LOI",
+      "libelle": "Loisir",
+      "ecole": "ENSEP",
+      "mention": "STASE",
+      "type_cursus": "LMD",
+      "ordre": 6,
+      "description": "Animation, loisirs et développement des publics.",
+      "source_document": "Formations et Modules INJS — §7",
+      "fiabilite": "OFFICIEL",
+      "code_dossier": "F06"
+    },
+    {
+      "code": "ECJP",
+      "libelle": "Entrepreneuriat Jeunesse et Conduite de Projets",
+      "ecole": "ENSEP",
+      "mention": "STASE",
+      "type_cursus": "LMD",
+      "ordre": 7,
+      "description": "Entrepreneuriat, jeunesse, développement communautaire et conduite de projets.",
+      "source_document": "Formations et Modules INJS — §8",
+      "fiabilite": "OFFICIEL",
+      "code_dossier": "F07"
+    },
+    {
+      "code": "GER",
+      "libelle": "Gérontologie",
+      "ecole": "ENSEP",
+      "mention": "STASE",
+      "type_cursus": "LMD",
+      "ordre": 8,
+      "description": "Vieillissement, autonomie et intervention socio-éducative auprès des seniors.",
+      "source_document": "Formations et Modules INJS — §9",
+      "fiabilite": "OFFICIEL",
+      "code_dossier": "F08"
+    }
+  ],
+  "statuts_vague": [
+    {
+      "code": "PREVISIONNELLE",
+      "libelle": "Prévisionnelle",
+      "est_ouvert": false,
+      "description": "Vague planifiée, non encore annoncée.",
+      "source_document": "Vagues INJS 2026",
+      "fiabilite": "OFFICIEL"
+    },
+    {
+      "code": "OUVERTE",
+      "libelle": "Ouverte",
+      "est_ouvert": true,
+      "description": "Vague ouverte aux candidatures.",
+      "source_document": "Vagues INJS 2026",
+      "fiabilite": "OFFICIEL"
+    },
+    {
+      "code": "EN_COURS",
+      "libelle": "En cours",
+      "est_ouvert": false,
+      "description": "Formation démarrée.",
+      "source_document": "Vagues INJS 2026",
+      "fiabilite": "OFFICIEL"
+    },
+    {
+      "code": "TERMINEE",
+      "libelle": "Terminée",
+      "est_ouvert": false,
+      "description": "Formation achevée, résultats prononcés.",
+      "source_document": "Vagues INJS 2026",
+      "fiabilite": "OFFICIEL"
+    },
+    {
+      "code": "CLOTUREE",
+      "libelle": "Clôturée",
+      "est_ouvert": false,
+      "description": "Vague archivée administrativement.",
+      "source_document": "Vagues INJS 2026",
+      "fiabilite": "OFFICIEL"
+    }
+  ],
+  "types_enseignement": [
+    {
+      "code": "CM",
+      "libelle": "Cours magistral",
+      "abrege": "CM",
+      "est_stage": false,
+      "source_document": "Modéliser les volumes horaires — §1",
+      "fiabilite": "OFFICIEL"
+    },
+    {
+      "code": "TD",
+      "libelle": "Travaux dirigés",
+      "abrege": "TD",
+      "est_stage": false,
+      "source_document": "Modéliser les volumes horaires — §1",
+      "fiabilite": "OFFICIEL"
+    },
+    {
+      "code": "TP",
+      "libelle": "Travaux pratiques",
+      "abrege": "TP",
+      "est_stage": false,
+      "source_document": "Modéliser les volumes horaires — §1",
+      "fiabilite": "OFFICIEL"
+    },
+    {
+      "code": "STAGE",
+      "libelle": "Stage / pratique professionnelle",
+      "abrege": "STAGE",
+      "est_stage": true,
+      "source_document": "Modéliser les volumes horaires — §1",
+      "fiabilite": "OFFICIEL"
+    }
+  ]
+}
