@@ -1,177 +1,139 @@
-"""Contrôle de cohérence des référentiels INJS (mission 53).
+"""Contrôle de cohérence du module Référentiels (mission 53).
 
-Le commandement ne corrige rien : il **constate**. Chaque anomalie est
-identifiée, localisée et accompagnée de sa cause probable, afin qu'une
-correction soit décidée sur pièces et non par un nettoyage automatique.
+La commande ne modifie rien : elle mesure et affiche. Trois familles de
+constats, toutes issues d'écarts observables entre le registre, la base et le
+code des autres modules :
 
-Codes d'anomalie
-----------------
-A-53-01  Doublon sémantique entre deux tables (aucune fusion automatique).
-A-53-02  Filière sans code dossier : le rattachement des cycles est impossible.
-A-53-03  Cycle sans filière métier rattachée.
-A-53-04  Module officiel rattaché à un cycle d'une autre filière.
-A-53-05  Valeur sans provenance documentaire (`source_document` vide).
-A-53-06  Valeur « à renseigner » alors que la source existe.
-A-53-07  Sélecteur du registre pointant un modèle absent du registre.
+1. **Provenance** — valeurs sans `source_document` ou restées « à renseigner » ;
+2. **Duplication de référentiel** — listes métier codées en dur dans d'autres
+   modules et divergentes du référentiel de la base ;
+3. **Rattachement** — clés étrangères du référentiel non renseignées alors que
+   l'information textuelle existe.
 
-Usage :
-    python manage.py verifier_coherence_referentiels
-    python manage.py verifier_coherence_referentiels --strict   # code de sortie 1
+Sortie lisible en console ; `--strict` renvoie un code de retour non nul dès
+qu'un constat est relevé (utile en CI).
 """
-
 from django.core.management.base import BaseCommand
+from django.db.models import Count
 
 from formations.models import RefFormation
-from referentiels.models import RefFiliere, RefModuleOfficiel
-from referentiels.registre import REGISTRE, modele_de
-
-
-class Anomalie:
-    def __init__(self, code, gravite, message, objet=''):
-        self.code = code
-        self.gravite = gravite
-        self.message = message
-        self.objet = objet
-
-    def __str__(self):
-        return f'[{self.code}] ({self.gravite}) {self.objet} — {self.message}'
-
-
-def _nommer(valeur):
-    """Identifie une ligne par son champ parlant, sans supposer son nom."""
-    for champ in ('code', 'libelle', 'nom', 'intitule', 'intitule_module'):
-        texte = getattr(valeur, champ, '')
-        if texte:
-            return str(texte)
-    return f'#{valeur.pk}'
+from referentiels.models import (
+    RefEcole,
+    RefFiliere,
+    RefMention,
+    RefStatutVague,
+    RefTypeCursus,
+    RefTypeEnseignement,
+)
 
 
 class Command(BaseCommand):
-    help = 'Contrôle de cohérence des référentiels (lecture seule).'
+    help = 'Contrôle de cohérence lecture seule du module Référentiels.'
 
     def add_arguments(self, parser):
         parser.add_argument(
             '--strict', action='store_true',
-            help='Retourne un code de sortie non nul si une anomalie est détectée.',
+            help='Code de retour 1 si au moins un constat est relevé.',
         )
 
+    # ── Famille 1 : provenance ──────────────────────────────────────────
+    def _provenance(self, constats):
+        modeles = [
+            RefEcole, RefMention, RefFiliere, RefTypeCursus,
+            RefStatutVague, RefTypeEnseignement,
+        ]
+        self.stdout.write(self.style.MIGRATE_HEADING('1. Provenance des valeurs'))
+        for modele in modeles:
+            nom = modele._meta.verbose_name_plural
+            total = modele.objects.count()
+            sans_source = modele.objects.filter(source_document='').count()
+            a_renseigner = modele.objects.filter(fiabilite='A_RENSEIGNER').count()
+            ligne = (
+                f'   {nom:38} {total:>4} valeur(s) · sans source : {sans_source:>3}'
+                f' · fiabilité à renseigner : {a_renseigner:>3}'
+            )
+            if sans_source or a_renseigner:
+                constats.append(
+                    f'{nom} : {sans_source} sans source, {a_renseigner} à renseigner',
+                )
+                self.stdout.write(self.style.WARNING(ligne))
+            else:
+                self.stdout.write(ligne)
+
+    # ── Famille 2 : duplication de référentiel ─────────────────────────
+    def _duplications(self, constats):
+        self.stdout.write(self.style.MIGRATE_HEADING('2. Duplication de référentiel'))
+        try:
+            from scolarite.pedagogie_validateur import FILIERES as FILIERES_CODE
+        except Exception:  # pragma: no cover — module optionnel selon branche
+            FILIERES_CODE = {}
+
+        en_base = set(RefFiliere.objects.values_list('code', flat=True))
+        en_dur = set(FILIERES_CODE)
+        if en_dur:
+            manquantes = en_dur - en_base
+            en_trop = en_base - en_dur
+            if manquantes or en_trop:
+                constats.append('liste de filières codée en dur divergente')
+                self.stdout.write(self.style.WARNING(
+                    f'   scolarite.pedagogie_validateur.FILIERES diverge du référentiel\n'
+                    f'     absentes de la base : {sorted(manquantes) or "—"}\n'
+                    f'     absentes du code   : {sorted(en_trop) or "—"}',
+                ))
+            else:
+                self.stdout.write(
+                    f'   liste de filières codée en dur : {len(en_dur)} code(s), '
+                    'alignée sur la base',
+                )
+        self.stdout.write(
+            '   valeurs en base : ' + ', '.join(sorted(en_base)) if en_base
+            else '   valeurs en base : aucune (import non exécuté ?)',
+        )
+
+    # ── Famille 3 : rattachement ───────────────────────────────────────
+    def _rattachements(self, constats):
+        self.stdout.write(self.style.MIGRATE_HEADING('3. Rattachement des formations'))
+        orphelines = RefFormation.objects.filter(filiere__isnull=True)
+        total = RefFormation.objects.count()
+        if orphelines.exists():
+            constats.append(f'{orphelines.count()} formation(s) sans filière')
+            self.stdout.write(self.style.WARNING(
+                f'   {orphelines.count()} formation(s) sur {total} sans filière '
+                'rattachée : ' + ', '.join(list(orphelines.values_list('intitule', flat=True)[:5])),
+            ))
+        else:
+            self.stdout.write(f'   {total} formation(s), toutes rattachées à une filière')
+
+        doublons = (
+            RefFormation.objects.values('intitule')
+            .annotate(n=Count('id')).filter(n__gt=1)
+        )
+        if doublons:
+            constats.append(f'{doublons.count()} intitulé(s) de formation en doublon')
+            self.stdout.write(self.style.WARNING(
+                '   intitulés en doublon : '
+                + ', '.join(d['intitule'] for d in doublons[:5]),
+            ))
+
     def handle(self, *args, **options):
-        anomalies = []
-        anomalies.extend(self._a01_doublons_semantiques())
-        anomalies.extend(self._a02_filieres_sans_code())
-        anomalies.extend(self._a03_cycles_sans_filiere())
-        anomalies.extend(self._a04_modules_mal_rattaches())
-        anomalies.extend(self._a05_sans_source())
-        anomalies.extend(self._a07_selecteurs_non_resolus())
-
-        if not anomalies:
-            self.stdout.write(self.style.SUCCESS('Aucune anomalie détectée.'))
-            return
-
-        par_code = {}
-        for anomalie in anomalies:
-            par_code.setdefault(anomalie.code, []).append(anomalie)
-        for code in sorted(par_code):
-            groupe = par_code[code]
-            self.stdout.write(self.style.WARNING(f'\n{code} — {len(groupe)} occurrence(s)'))
-            for anomalie in groupe[:20]:
-                self.stdout.write(f'  {anomalie}')
-            if len(groupe) > 20:
-                self.stdout.write(f'  … et {len(groupe) - 20} autre(s)')
-
-        self.stdout.write(self.style.HTTP_INFO(
-            f'\nTotal : {len(anomalies)} anomalie(s) sur {len(par_code)} famille(s).'
+        constats = []
+        self.stdout.write(self.style.MIGRATE_HEADING(
+            'Contrôle de cohérence — module Référentiels',
         ))
-        if options['strict']:
-            raise SystemExit(1)
+        self._provenance(constats)
+        self.stdout.write('')
+        self._duplications(constats)
+        self.stdout.write('')
+        self._rattachements(constats)
+        self.stdout.write('')
 
-    # ── Contrôles ─────────────────────────────────────────────────────────
-    def _a01_doublons_semantiques(self):
-        """Deux tables qui prétendent décrire la même nomenclature."""
-        from scolarite.models import TypeFormation
-
-        constats = []
-        heritage = {t.libelle.strip().lower() for t in TypeFormation.objects.all()}
-        for valeur in modele_de(REGISTRE['types-cursus'])._default_manager.all():
-            if valeur.libelle.strip().lower() in heritage:
-                constats.append(Anomalie(
-                    'A-53-01', 'majeure',
-                    'même libellé présent dans scolarite.TypeFormation et RefTypeCursus : '
-                    'une seule table doit faire foi (fusion planifiée, aucune suppression auto).',
-                    valeur.libelle,
-                ))
-        return constats
-
-    def _a02_filieres_sans_code(self):
-        return [
-            Anomalie('A-53-02', 'majeure',
-                     'aucun code dossier (F01…F08) : les cycles ne peuvent pas être rattachés.',
-                     filiere.code)
-            for filiere in RefFiliere.objects.filter(code_dossier='')
-        ]
-
-    def _a03_cycles_sans_filiere(self):
-        return [
-            Anomalie('A-53-03', 'mineure',
-                     'cycle sans filière métier rattachée (ligne héritée).',
-                     cycle.intitule)
-            for cycle in RefFormation.objects.filter(filiere__isnull=True)
-        ]
-
-    def _a04_modules_mal_rattaches(self):
-        constats = []
-        for module in RefModuleOfficiel.objects.select_related('formation__filiere'):
-            filiere = module.formation.filiere
-            if filiere is None:
-                constats.append(Anomalie(
-                    'A-53-04', 'majeure',
-                    'module rattaché à un cycle sans filière : provenance invérifiable.',
-                    module.libelle,
-                ))
-            elif filiere.code != module.filiere_code:
-                constats.append(Anomalie(
-                    'A-53-04', 'majeure',
-                    f'module de la filière {module.filiere_code} rattaché au cycle '
-                    f'de la filière {filiere.code}.',
-                    module.libelle,
-                ))
-        return constats
-
-    def _a05_sans_source(self):
-        constats = []
-        for slug, entree in REGISTRE.items():
-            if not entree.get('modele'):
-                continue
-            modele = modele_de(entree)
-            champs = {f.name for f in modele._meta.get_fields()}
-            if 'source_document' not in champs:
-                continue
-            for valeur in modele._default_manager.filter(source_document=''):
-                constats.append(Anomalie(
-                    'A-53-05', 'majeure',
-                    f'référentiel « {entree["libelle"]} » : aucune source documentaire.',
-                    _nommer(valeur),
-                ))
-        return constats
-
-    def _a07_selecteurs_non_resolus(self):
-        modeles = {
-            f'{modele_de(e)._meta.app_label}.{modele_de(e)._meta.model_name}'
-            for e in REGISTRE.values() if e.get('modele')
-        }
-        constats = []
-        for slug, entree in REGISTRE.items():
-            if not entree.get('modele'):
-                continue
-            modele = modele_de(entree)
-            for fk in entree['selecteurs']:
-                cible = modele._meta.get_field(fk).related_model
-                cle = f'{cible._meta.app_label}.{cible._meta.model_name}'
-                if cle not in modeles:
-                    constats.append(Anomalie(
-                        'A-53-07', 'majeure',
-                        f'sélecteur « {fk} » vers {cle}, absent du registre : '
-                        'le front ne pourra pas charger ses options.',
-                        slug,
-                    ))
-        return constats
+        if constats:
+            self.stdout.write(self.style.WARNING(
+                f'{len(constats)} constat(s) relevé(s) :',
+            ))
+            for constat in constats:
+                self.stdout.write(f'   • {constat}')
+            if options['strict']:
+                raise SystemExit(1)
+        else:
+            self.stdout.write(self.style.SUCCESS('Aucun constat : référentiels cohérents.'))

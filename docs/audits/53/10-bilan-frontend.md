@@ -1,56 +1,83 @@
-# Livrable 10 — Bilan frontend
+# Livrable 10 — Bilan frontend du module Référentiels
 
-## 10.1 Écrans livrés
+## 10.1 Ce qui existait
 
-| Écran | Route | Composant | Rôle |
-|---|---|---|---|
-| Tableau de bord des référentiels | `/referentiels` | `pages/referentiels/TableauDeBordReferentiels.jsx` | Cartographie par catégorie, recherche transverse, filtres par catégorie, KPI de synthèse, cartes de complétude |
-| Gestion d'un référentiel | `/referentiels/gestion/:slug` | `pages/referentiels/ReferentielGenerique.jsx` | CRUD complet, recherche, filtres d'état, archivage, formulaire modal, mode lecture seule |
-| Édition des tables (hérité) | `/referentiels/edition` | `pages/Referentiels.jsx` (inchangé) | Gestion des tables historiques (catégories, types de secrétariat, vagues, sites, bâtiments, salles) |
-
-Les écrans métier existants (`/referentiels/niveaux`, `/semestres`, `/formations`, `/ue-ecue`, `/annees`, `/etablissements`, `/types-cours`, `/parametres`, `/parametres/flags`, `/referentiels/planche-de-style`, `/import`) sont **conservés à l'identique**.
-
-## 10.2 Tableau de bord
-
-- **En-tête** : nombre de valeurs du catalogue, nombre de référentiels.
-- **KPI** : référentiels suivis, valeurs référencées, valeurs à renseigner, taux de traçabilité (calculé serveur, jamais recalculé côté client).
-- **Recherche** : filtre instantané sur libellé, description et slug.
-- **Puces de catégories** : 7 catégories + « Toutes » ; état actif visible.
-- **Cartes** : icône, libellé, description métier, compteur de valeurs, compteur « à renseigner », état de complétude (Complet / Partiel / Vide), action *Gérer* (éditable) ou *Consulter* (historique), badge de provenance.
-- **Légende de fiabilité** : Officiel / Modélisé / Cadrage / À renseigner, affichée en pied de page.
-
-## 10.3 Écran de gestion générique
-
-| Fonction | Détail |
+| Écran | État avant la mission |
 |---|---|
-| Recherche | Code, libellé, description et libellés des sélecteurs |
-| Filtres d'état | Actifs / Inactifs / Archivés / Tous — masqué en lecture seule |
-| Tableau | Colonnes déduites du registre (champs métier + sélecteurs + fiabilité), troncature avec infobulle, état archivé grisé |
-| Création | Formulaire modal : code (immuable ensuite), libellé, champs métier, sélecteurs, fiabilité, source documentaire, description, état actif |
-| Sélecteurs dépendants | `école → mention`, `école → filière` : la mention est filtrée par l'école choisie ; la route de chaque liste vient du registre (`selecteurs_routes`), jamais d'une table de correspondance côté client |
-| Modification | Même formulaire, code verrouillé, `PATCH` partiel |
-| Activation / désactivation | Bouton bascule dans la ligne, sans confirmation (réversible) |
-| Archivage | Confirmation explicite rappelant que **rien n'est supprimé** et que l'action est réversible |
-| Réactivation | Bouton dédié sur les lignes archivées |
-| Erreurs | Messages champ par champ (libellé/code obligatoires) et message serveur remonté tel quel (doublon, permission) |
-| Lecture seule | Bandeau de provenance, badge « Lecture seule », aucune action d'écriture, colonnes déduites des données servies |
+| `pages/Referentiels.jsx` (~1 000 lignes) | Un écran unique à onglets (Formations, Modules, Catégories, Grades, Vagues, Sites, Bâtiments, Salles, Types de secrétariat) mêlant référentiels institutionnels, offre de formation, lieux et nomenclatures |
+| `pages/EcranGenerique.jsx` + `config/ecrans.js` | Écrans de liste pilotés par configuration (`ref_formations`, `ref_filieres`, `ref_niveaux`, `ref_semestres`, `ref_ue_ecue`, `ref_annees`, `ref_etablissements`, `ref_types_cours`) |
+| Menu `menu/arborescence.js` | Entrées historiques sous « Référentiels » (9 sous-entrées) |
 
-## 10.4 Design system respecté
+Constat : aucun de ces écrans ne disait **quelle** donnée officielle était
+absente, ni d'où venait une valeur. Rien ne distinguait une valeur attestée par
+un document d'une valeur modélisée ou laissée « à renseigner ».
 
-Aucun composant de bibliothèque externe n'a été introduit. L'écran réutilise les classes existantes `.cand-*` (hero, KPI, panneau, tableau, état vide, champs, boutons) et ajoute un fichier dédié `styles/referentiels.css` **uniquement** pour les pièces propres au module (badges de fiabilité, pastilles, cartes, modale, tableau importé). Toutes les classes ajoutées sont préfixées `.ref-`.
+## 10.2 Ce qui a été construit
 
-## 10.5 Responsive
+### Tableau de bord (`pages/referentiels/TableauDeBordReferentiels.jsx`)
 
-| Largeur | Vérification |
+- **Indicateurs** : 26 référentiels, 547 valeurs référencées, 20 valeurs à
+  renseigner, 96 % de traçabilité — tous calculés par l'API, jamais saisis.
+- **Recherche** plein texte sur le catalogue (libellé, description, source).
+- **Filtres par catégorie** (7), rendus depuis le registre backend.
+- **Cartes de référentiel** : description, volumétrie, taux de complétude,
+  provenance suivie ou non, lien d'action contextuel :
+  - référentiel éditable → « Gérer » vers `/referentiels/gestion/{slug}` ;
+  - référentiel consultable ailleurs → « Consulter » vers l'écran réel ;
+  - référentiel sans écran → mention « Sans écran dédié », **jamais** un lien
+    mort ;
+  - avertissement documentaire affiché tel quel quand la source en porte un
+    (volumes horaires = proposition).
+
+### Écran de gestion générique (`pages/referentiels/ReferentielGenerique.jsx`)
+
+Un seul écran sert les 14 référentiels éditables, quel que soit leur modèle :
+
+| Fonction | Comportement |
 |---|---|
-| Bureau 1440 × 960 | Captures 01 → 08 (voir `captures/`) |
-| Tablette / mobile | Règles CSS à 760 px et 560 px (grille en une colonne, filtres pleine largeur, modale en colonne, en-tête sur deux lignes) — **non vérifié par capture** dans cette mission (voir livrable 12, « non exécuté ») |
+| Lecture | Lignes chargées depuis la route API déclarée par le registre |
+| Recherche | Code, libellé, description, libellés des sélecteurs |
+| Filtre d'état | Actifs / inactifs / archivés / tous (masqué en lecture seule) |
+| Création | Modale, code obligatoire, fiabilité et source documentaire |
+| Modification | Code affiché en lecture seule (immuable côté serveur) |
+| Activation | Bascule `actif` avec confirmation implicite par le bouton |
+| Archivage | Confirmation explicite (modale dédiée), réversible |
+| Réactivation | Remet la valeur en service et la rend de nouveau sélectionnable |
+| Sélecteurs dépendants | Mention filtrée par école, etc. (`DEPENDANCES`) |
+| Lecture seule | Bandeau de provenance, actions d'écriture absentes, pas de bouton « Ajouter » |
+| Retour utilisateur | Toast de succès, erreurs de champ rendues telles que renvoyées par l'API |
+| Rechargement | Silencieux après écriture (pastille « Actualisation… »), le tableau ne disparaît pas |
 
-## 10.6 Vérifications automatisées
+### Habillage (`styles/referentiels.css`)
+
+Styles `.ref-*` strictement additifs, appuyés sur le socle `.cand-*` existant
+(cartes, pastilles, tableaux, champs). Aucun framework ajouté, aucune classe
+existante modifiée.
+
+## 10.3 Routes
+
+| Route | Écran |
+|---|---|
+| `/referentiels` | Tableau de bord (nouveau) |
+| `/referentiels/edition` | Éditeur historique (conservé : il reste la seule saisie des lieux et catégories) |
+| `/referentiels/gestion/:slug` | Gestion générique d'un référentiel du registre |
+
+## 10.4 Ce qui n'a pas été fait, et pourquoi
+
+| Élément | Décision |
+|---|---|
+| Suppression de `Referentiels.jsx` | **Non** : l'écran reste la seule saisie de certaines tables (catégories, grades, vagues, sites) ; sa suppression aurait ouvert un trou fonctionnel. Il perd son statut de point d'entrée. |
+| Réécriture de `EcranGenerique` | **Non** : les écrans `ref_*` restent valides pour les données hébergées par d'autres apps ; le tableau de bord y renvoie. |
+| Édition inline | **Non** : toute écriture passe par la modale, pour garder une seule validation (côté serveur) et un seul journal. |
+| Nouveau composant de tableau | **Non** : réutilisation des classes `.cand-table`, pour ne pas créer un second langage visuel. |
+
+## 10.5 Contrôles
 
 | Contrôle | Résultat |
 |---|---|
-| `eslint src --ext js,jsx` | 0 erreur, 0 avertissement |
-| `vite build` | Succès (bundle produit) |
-| `vitest run` (suite complète) | **115 fichiers, 2073 tests — 100 % réussis** |
-| Captures réelles via Chromium headless | 8 captures, **0 erreur console** |
+| `npx vitest run` | 115 fichiers, **2 073 tests**, 0 échec |
+| `npx eslint src` | 0 problème |
+| `npx vite build` | ✓ built (avertissement de taille de chunk, antérieur) |
+| Erreurs console pendant la recette | 0 |
+| Captures bureau 1440 × 960 | 8 + 3 de recette |
+| Captures en émulation mobile 390 × 844 | 8 — **émulation**, pas un appareil réel |

@@ -32,6 +32,7 @@ Preuves visuelles : [`captures/`](captures) (bureau 1440 × 960), [`captures/mob
 - **227 modules officiels**, **51 volumes horaires**, **1 site / 16 bâtiments / 166 espaces**, **8 filières**, **8 cycles LMD** : tous issus des documents, avec provenance.
 - **2 838 tests backend** et **2 073 tests frontend** exécutés, **0 échec**.
 - **22 constats de cohérence** (3 familles) documentés, aucun corrigé par supposition.
+- **Suite complète** : 2 838 tests backend (0 échec, 9 ignorés) + 2 073 tests frontend (0 échec).
 - **Recette agie** dans l'interface réelle : création, modification, archivage, réactivation, journal, lecture seule — 17 appels API, 0 erreur console (livrable 16).
 
 ## Reproduire
@@ -43,6 +44,7 @@ USE_SQLITE=1 SECRET_KEY=x DEBUG=1 .venv/bin/python manage.py migrate
 USE_SQLITE=1 SECRET_KEY=x DEBUG=1 .venv/bin/python manage.py importer_referentiels_injs --dry-run
 USE_SQLITE=1 SECRET_KEY=x DEBUG=1 .venv/bin/python manage.py importer_referentiels_injs
 USE_SQLITE=1 SECRET_KEY=x DEBUG=1 .venv/bin/python manage.py verifier_coherence_referentiels
+USE_SQLITE=1 SECRET_KEY=x DEBUG=1 .venv/bin/python manage.py verifier_coherence_referentiels --strict
 USE_SQLITE=1 SECRET_KEY=x DEBUG=1 .venv/bin/python manage.py test referentiels
 
 # Preuve visuelle (Chromium fourni par @sparticuz/chromium — aucun root requis)

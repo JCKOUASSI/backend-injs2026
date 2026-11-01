@@ -1,87 +1,114 @@
-# Livrable 9 — API créées et modifiées
+# Livrable 9 — API du module Référentiels
 
-Toutes les routes sont sous `/api/referentiels/`. L'authentification est celle du projet (JWT) ; les permissions sont celles de `referentiels.ReferentielPermission` : lecture pour tout compte authentifié, écriture réservée aux rôles de gestion.
+Toutes les routes sont montées sous `/api/referentiels/`. Lecture ouverte à tout
+utilisateur authentifié (règle 9 : aucune valeur métier codée en dur côté
+React/Flutter) ; écriture réservée aux rôles administratifs.
 
-## 9.1 API créées
+## 9.1 Routes du registre (une seule source)
 
-| Méthode | Route | Rôle | Permission | Remarque |
-|---|---|---|---|---|
-| `GET` | `/tableau-de-bord/` | Cartographie complète : 7 catégories, 26 référentiels, compteurs, synthèse et taux de traçabilité | authentifié | Construite **entièrement** depuis le registre, aucune liste en dur |
-| `GET` | `/<slug>/` | Liste paginée d'un référentiel éditable | authentifié | `?archives=1` pour voir les valeurs archivées, `?actif=true|false` |
-| `POST` | `/<slug>/` | Création | rôles de gestion | Contrôle anti-doublon normalisé (casse/accents) + contrainte base |
-| `GET` | `/<slug>/<pk>/` | Détail | authentifié | Inclut les libellés des clés étrangères (`ecole_libelle`, `mention_libelle`…) |
-| `PATCH` / `PUT` | `/<slug>/<pk>/` | Modification | rôles de gestion | `code` immuable ; diff journalisé |
-| `POST` | `/<slug>/<pk>/archiver/` | Archivage réversible | rôles de gestion | `400` si déjà archivé ; accepte un `motif` |
-| `POST` | `/<slug>/<pk>/reactiver/` | Réactivation | rôles de gestion | `400` si non archivé |
-| `GET` | `/modules-officiels/` | Lecture seule des 227 modules | authentifié | Filtres `?filiere=`, `?semestre=`, `?formation=` ; écriture impossible (`405`) |
-| `GET` | `/volumes-horaires/` | Lecture seule des 51 volumes horaires | authentifié | Idem |
-| `DELETE` | *aucune* | — | — | Volontairement non exposé : archivage uniquement |
-
-**Slugs éditables (14)** : `ecoles`, `mentions`, `types-cursus`, `filieres`, `types-enseignement`, `statuts-vague`, `types-evaluation`, `types-decision`, `types-espace-sportif`, `grades-enseignant`, `types-document`, `types-frais`, `modes-paiement`, `types-notification`.
-
-## 9.2 API conservées sans changement de contrat
-
-| Route | Consommateur | Statut |
+| Méthode | Route | Rôle |
 |---|---|---|
-| `/referentiels/types-evaluation/`, `types-document/`, `grades-enseignant/`, `types-frais/`, `modes-paiement/`, `types-decision/`, `types-notification/`, `types-espace-sportif/` | Frontend (écrans génériques), mobile | **Inchangées** : leurs ViewSets dédiés restent prioritaires ; le registre les déclare avec `route_api` explicite pour qu'aucune route générique ne les masque |
-| `/scolarite/ref/{niveaux,semestres,parcours,annees,types-formation}/` | Scolarité, maquettes | Inchangées |
-| `/formations/ref/{formations,sites,batiments,salles,vagues,modules}/` | Formations, EDT | Inchangées, enrichies de `filiere`, `fiabilite`, `source_document` |
+| `GET` | `/api/referentiels/tableau-de-bord/` | Cartographie complète : catégories, entrées, volumétrie, traçabilité |
+| `GET` | `/api/referentiels/journal/` | Journal des modifications (lecture seule) |
 
-## 9.3 Correctifs d'API apportés pendant la mission
+## 9.2 Référentiels métier de la refonte (CRUD générique)
 
-| Défaut constaté | Correction |
+Un `ViewSet` unique sert les six référentiels créés par la mission ; le slug du
+registre choisit le modèle. Le contrat est identique partout :
+
+| Méthode | Route | Rôle |
+|---|---|---|
+| `GET` | `/api/referentiels/{slug}/` | Liste paginée (`?actif=`, `?archives=1`, `?page_size=`) |
+| `POST` | `/api/referentiels/{slug}/` | Création (code + libellé obligatoires, code immuable ensuite) |
+| `GET` | `/api/referentiels/{slug}/{id}/` | Détail |
+| `PATCH` | `/api/referentiels/{slug}/{id}/` | Modification partielle |
+| `POST` | `/api/referentiels/{slug}/{id}/archiver/` | Archivage réversible (aucune suppression physique) |
+| `POST` | `/api/referentiels/{slug}/{id}/reactiver/` | Réactivation — remet aussi la valeur en service |
+
+Slugs servis : `ecoles`, `mentions`, `filieres`, `types-cursus`,
+`statuts-vague`, `types-enseignement`.
+
+## 9.3 Référentiels historiques (ViewSets dédiés)
+
+| Route | Modèle |
 |---|---|
-| Les routes génériques `/<slug>/…` étaient construites avec `as_view({...})` **sans** le slug : tout accès répondait `404 Référentiel inconnu` | Le slug est transmis à `as_view(..., slug=slug)` ; vérifié par requêtes réelles (`200` sur les 6 slugs concernés) |
-| Les actions `archiver`/`reactiver` étaient mappées sur une méthode HTTP inexistante (`405`) | Mapping corrigé en `{'post': _action}` |
-| Les 8 référentiels du socle recevaient une **seconde** route générique qui écrasait leur ViewSet dédié (régression des tests d'archivage) | Les entrées déclarant `route_api` sont exclues de la génération générique |
-| `_routes_selecteurs()` supposait `modele` objet alors que certaines entrées déclarent une chaîne (`'formations.RefSalle'`) → `500` sur le tableau de bord | Résolution via `modele_de()` |
-| Pagination DRF globale à 50 lignes : les listes (227 modules) étaient tronquées sans le dire | `RefPagination` (`page_size=100` par défaut, `max 1000`) sur les ViewSets du module |
-| Réponse `{count, results}` non gérée par le front | Normalisation côté client (`listeRecue`) |
+| `/api/referentiels/types-evaluation/` | `RefTypeEvaluation` |
+| `/api/referentiels/types-document/` | `RefTypeDocument` |
+| `/api/referentiels/grades-enseignant/` | `RefGradeEnseignant` |
+| `/api/referentiels/types-frais/` | `RefTypeFrais` |
+| `/api/referentiels/modes-paiement/` | `RefModePaiement` |
+| `/api/referentiels/types-decision/` | `RefTypeDecision` |
+| `/api/referentiels/types-notification/` | `RefTypeNotification` |
+| `/api/referentiels/types-espace-sportif/` | `RefTypeEspaceSportif` |
 
-## 9.4 Exemples de réponses
+Ces huit routes partagent exactement le même contrat que §9.2 (mêmes actions
+`archiver`/`reactiver`, même sérialiseur de socle, donc les mêmes champs de
+traçabilité).
 
-`GET /api/referentiels/tableau-de-bord/` (extrait) :
+## 9.4 Données importées, en lecture seule
+
+| Route | Contenu | Pagination |
+|---|---|---|
+| `/api/referentiels/modules-officiels/` | 227 modules des maquettes | 100 / page, `page_size` jusqu'à 1000 |
+| `/api/referentiels/volumes-horaires/` | 51 répartitions CM/TD/TP/stage | idem |
+
+Ces deux routes sont servies par des `ReadOnlyModelViewSet` : aucune écriture
+n'est exposée, car les données viennent d'un document et ne peuvent être
+corrigées que par un nouvel import.
+
+## 9.5 Routes des référentiels hébergés par d'autres modules
+
+Le tableau de bord les référence sans les dupliquer :
+
+| Registre | Route réelle | Module propriétaire |
+|---|---|---|
+| Formations (cycles) | `/api/formations/ref/formations/` | `formations` |
+| Sites / bâtiments / salles / vagues | `/api/formations/ref/{sites,batiments,salles,vagues}/` | `formations` |
+| Niveaux / semestres / parcours / années | `/api/scolarite/ref/{niveaux,semestres,parcours,annees}/` | `scolarite` |
+| Modules, catégories, grades | `/api/formations/ref/...` | `formations` |
+
+## 9.6 Contrat de réponse (socle)
 
 ```json
 {
-  "synthese": {
-    "nb_referentiels": 26,
-    "nb_referentiels_editables": 14,
-    "nb_valeurs": 546,
-    "nb_a_renseigner": 20,
-    "nb_sans_source": 20,
-    "nb_valeurs_tracees": 507,
-    "taux_tracabilite": 0.9606
-  },
-  "categories": [
-    {
-      "cle": "offre-formation",
-      "libelle": "Offre de formation",
-      "entrees": [
-        {
-          "slug": "filieres",
-          "libelle": "Filières",
-          "editable": true,
-          "total": 8,
-          "a_renseigner": 0,
-          "route_api": "/referentiels/filieres/",
-          "selecteurs_routes": {
-            "ecole":        {"slug": "ecoles",       "route": "/referentiels/ecoles/",       "editable": true},
-            "mention":      {"slug": "mentions",     "route": "/referentiels/mentions/",     "editable": true},
-            "type_cursus":  {"slug": "types-cursus", "route": "/referentiels/types-cursus/", "editable": true}
-          }
-        }
-      ]
-    }
-  ]
+  "id": 1,
+  "code": "ENSEPS",
+  "libelle": "École Normale Supérieure d'Éducation Physique et Sportive",
+  "description": "",
+  "actif": true,
+  "date_activation": null,
+  "date_desactivation": null,
+  "archive": false,
+  "annee_academique": null,
+  "source_document": "Formations et Modules INJS — §1",
+  "fiabilite": "OFFICIEL",
+  "cree_le": "2026-10-31T21:12:04+0000",
+  "modifie_le": "2026-10-31T21:12:04+0000"
 }
 ```
 
-`GET /api/referentiels/filieres/?page_size=1000` (extrait) :
+Champs métier supplémentaires selon le référentiel (`nom_complet`, `abrege`,
+`est_stage`, `est_ouvert`…) et libellés des clés étrangères
+(`ecole_libelle`, `mention_libelle`, `type_cursus_libelle`) pour que le front
+n'ait jamais à recoder une liste.
 
-```json
-{"code": "EM", "libelle": "Éducation et Motricité", "code_dossier": "F01",
- "ecole_libelle": "ENSEPS", "mention_libelle": "STAPS",
- "type_cursus_libelle": "Cursus LMD (Licence-Master)",
- "fiabilite": "OFFICIEL", "source_document": "Formations et Modules INJS — §1"}
-```
+## 9.7 Erreurs normalisées
+
+| Cas | Statut | Corps |
+|---|---|---|
+| Code hors format (`A-Z 0-9 _`, 2 à 50) | `400` | `{"code": ["Code invalide : …"]}` |
+| Libellé vide | `400` | `{"libelle": ["Le libellé est obligatoire."]}` |
+| Doublon de code ou de libellé (insensible à la casse) | `400` | `{"detail": "Cette valeur existe déjà (code ou libellé en doublon)."}` |
+| `DELETE` | `405` | Méthode non exposée : l'archivage est la seule sortie |
+| Archivage d'une valeur déjà archivée | `400` | `{"detail": "Valeur déjà archivée."}` |
+| Réactivation d'une valeur active | `400` | `{"detail": "Valeur non archivée."}` |
+| Rôle sans droit d'écriture | `403` | Contrôlé par `ReferentielPermission` |
+
+## 9.8 Vérifications exécutées
+
+| Contrôle | Résultat |
+|---|---|
+| `test_route_api_declaree_existe_vraiment` | Chaque `route_api` du registre répond (pas de `404`) |
+| Requêtes réelles sur les 11 routes (jeton admin) | `200` / pagination conforme |
+| Création, modification, archivage, réactivation via HTTP | `201`, `200`, `200`, `200` |
+| `DELETE` | `405`, valeur toujours présente en base |

@@ -13,6 +13,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from authentication.models import User
+from formations.models import RefFormation
 from referentiels.models import (
     ReferentielJournal,
     RefEcole,
@@ -349,3 +350,58 @@ class ImportIdempotentTests(TestCase):
                 module.formation.filiere.code, module.filiere_code,
                 f'module {module.libelle} mal rattaché',
             )
+
+
+class CoherenceTests(TestCase):
+    """La commande de contrôle mesure sans jamais corriger."""
+
+    def _executer(self, *args):
+        sortie = StringIO()
+        call_command('verifier_coherence_referentiels', *args, stdout=sortie)
+        return sortie.getvalue()
+
+    #: Les 8 filières du référentiel tel que le code de scolarité les connaît.
+    CODES = ('EM', 'APA', 'ES', 'MS', 'AND', 'LOI', 'ECJP', 'GER')
+
+    def _filiere(self):
+        ecole = RefEcole.objects.create(
+            code='ENSEPS', libelle='ENSEPS',
+            source_document='Formations et Modules INJS — §1', fiabilite='OFFICIEL',
+        )
+        for rang, code in enumerate(self.CODES):
+            RefFiliere.objects.create(
+                code=code, libelle=f'Filière {code}', ecole=ecole,
+                source_document='Formations et Modules INJS — §1', fiabilite='OFFICIEL',
+            )
+        return RefFiliere.objects.get(code='EM')
+
+    def test_rapport_nominal_sans_constat(self):
+        RefFormation.objects.create(intitule='Licence STAPS', filiere=self._filiere())
+        sortie = self._executer()
+        self.assertIn('Provenance des valeurs', sortie)
+        self.assertIn('Duplication de référentiel', sortie)
+        self.assertIn('Aucun constat', sortie)
+
+    def test_strict_signale_une_formation_sans_filiere(self):
+        RefFormation.objects.create(intitule='Licence orpheline')
+        sortie = StringIO()
+        with self.assertRaises(SystemExit):
+            call_command(
+                'verifier_coherence_referentiels', '--strict', stdout=sortie,
+            )
+        self.assertIn('sans filière', sortie.getvalue())
+
+    def test_divergence_de_liste_codee_en_dur_est_signalee(self):
+        ecole = RefEcole.objects.create(
+            code='ENSEPS', libelle='ENSEPS', fiabilite='OFFICIEL',
+        )
+        RefFiliere.objects.create(code='EM', libelle='Éducation et Motricité', ecole=ecole)
+        sortie = self._executer()
+        self.assertIn('codée en dur divergente', sortie)
+
+    def test_valeur_sans_source_est_signalee(self):
+        RefEcole.objects.create(
+            code='ENSEPS', libelle='ENSEPS', source_document='', fiabilite='A_RENSEIGNER',
+        )
+        sortie = self._executer()
+        self.assertIn('sans source', sortie)
