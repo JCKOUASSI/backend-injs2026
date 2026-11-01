@@ -82,6 +82,19 @@ ENV
     (cd "$BACKEND" && USE_SQLITE=1 "$VENV/bin/python" manage.py importer_referentiels_injs) \
       && touch "$marqueur_ref"
   fi
+  # Système LMD : niveaux/semestres puis maquettes/UE/ECUE officielles
+  # (323 UE, 397 ECUE) depuis le jeu de données versionné de scolarite.
+  # Ordre imposé : les cycles (import ci-dessus) et les niveaux doivent
+  # exister avant la configuration des maquettes. Sans cette étape, les
+  # cartes « Système LMD » restaient à 0 sur une base reconstruite.
+  local marqueur_lmd="$BACKEND/.lmd_ok"
+  if [ ! -f "$marqueur_lmd" ] \
+     || [ "$BACKEND/scolarite/data/referentiel_offre_formation.json" -nt "$marqueur_lmd" ]; then
+    log "Référentiels LMD et maquettes officielles (idempotent)…"
+    (cd "$BACKEND" && USE_SQLITE=1 "$VENV/bin/python" manage.py init_referentiels_lmd \
+      && USE_SQLITE=1 "$VENV/bin/python" manage.py configurer_referentiel_injs) \
+      && touch "$marqueur_lmd"
+  fi
 }
 
 ensure_frontend() {

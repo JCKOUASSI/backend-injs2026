@@ -42,6 +42,7 @@ project_structure.txt
 # Marqueurs locaux du script scripts/start_dev.sh (démo hors Docker/SQLite)
 backend/.seed_ok
 backend/.referentiels_ok
+backend/.lmd_ok
 backend/.venv/.deps_ok
 backend/db.sqlite3
 # P00-02 — données nominatives et classeurs d'import : hors dépôt

@@ -12,7 +12,9 @@
 #   4. données de démonstration (seed_data.py)
 #   5. référentiels officiels INJS (importer_referentiels_injs : écoles,
 #      mentions, 8 filières, cycles LMD, modules officiels, lieux, volumes)
-#   6. dépendances npm du site
+#   6. système LMD (init_referentiels_lmd + configurer_referentiel_injs :
+#      niveaux, semestres, 20 maquettes, 323 UE, 397 ECUE)
+#   7. dépendances npm du site
 #
 # Les données SAISIES dans l'application ne sont pas reproductibles : si une
 # sauvegarde existe dans backups/ (voir arena/sauvegarder-donnees.sh), le
@@ -100,6 +102,13 @@ fi
 log "Référentiels officiels INJS (import idempotent)…"
 (cd "$BACKEND" && "$VENV/bin/python" manage.py importer_referentiels_injs) \
   && touch "$BACKEND/.referentiels_ok"
+
+# Système LMD : niveaux/semestres, puis maquettes/UE/ECUE officielles
+# (323 UE, 397 ECUE). Idempotent ; les maquettes restent en BROUILLON.
+log "Référentiels LMD et maquettes officielles (idempotent)…"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py init_referentiels_lmd \
+  && "$VENV/bin/python" manage.py configurer_referentiel_injs) \
+  && touch "$BACKEND/.lmd_ok"
 
 # ── 6. Site web ──────────────────────────────────────────────────────────────
 if [ ! -d "$FRONTEND/node_modules" ]; then
