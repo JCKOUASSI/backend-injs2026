@@ -111,6 +111,24 @@ class RefSocle(models.Model):
         self.save(update_fields=['archive', 'actif', 'date_desactivation', 'modifie_le'])
         self.journaliser(ReferentielJournal.Action.ARCHIVAGE, user, {'motif': motif})
 
+    def reactiver(self, user=None, motif=''):
+        """Sort une valeur de l'archive **et** la rend de nouveau utilisable.
+
+        L'archivage désactive la valeur (règle 3) : réactiver sans réactiver
+        laissait une valeur visible dans le journal mais absente de tous les
+        sélecteurs et du filtre « Actifs » — l'utilisateur croyait l'opération
+        sans effet. Réactivation et remise en service vont donc de pair.
+        """
+        self.archive = False
+        self.actif = True
+        self.date_activation = timezone.now()
+        self.date_desactivation = None
+        self.save(update_fields=[
+            'archive', 'actif', 'date_activation', 'date_desactivation', 'modifie_le',
+        ])
+        self.journaliser(ReferentielJournal.Action.REACTIVATION, user, {'motif': motif})
+        return self
+
     @classmethod
     def usables(cls):
         """Règle 5 : valeurs utilisables dans une nouvelle opération."""
@@ -135,6 +153,7 @@ class ReferentielJournal(models.Model):
         ACTIVATION = 'ACTIVATION', 'Activation'
         DESACTIVATION = 'DESACTIVATION', 'Désactivation'
         ARCHIVAGE = 'ARCHIVAGE', 'Archivage'
+        REACTIVATION = 'REACTIVATION', 'Réactivation'
 
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveBigIntegerField(db_index=True)

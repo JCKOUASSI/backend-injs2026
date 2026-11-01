@@ -28,10 +28,15 @@ class RefSocleSerializer(serializers.ModelSerializer):
     """Serializer partagé par tous les référentiels du socle."""
 
     class Meta:
+        # `source_document` et `fiabilite` font partie du contrat : sans eux,
+        # l'écran affichait une colonne « Fiabilité » toujours vide et les deux
+        # champs de traçabilité saisis dans le formulaire étaient silencieusement
+        # ignorés par l'API (les 8 routes historiques du routeur).
         fields = [
             'id', 'code', 'libelle', 'description',
             'actif', 'date_activation', 'date_desactivation',
             'archive', 'annee_academique',
+            'source_document', 'fiabilite',
             'cree_le', 'modifie_le',
         ]
         read_only_fields = ['archive', 'date_activation', 'date_desactivation']

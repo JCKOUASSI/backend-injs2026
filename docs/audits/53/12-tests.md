@@ -91,3 +91,31 @@ Aucun test existant n'a été modifié, désactivé ou affaibli.
 | Appareil mobile physique | Non disponible dans le bac à sable → **NON EXÉCUTÉ** |
 | Accessibilité (lecteur d'écran) | Non outillée ici ; les éléments interactifs portent `aria-label`, `aria-modal`, `role="alert"`, `aria-required` |
 | Charge (milliers de lignes simultanées) | Hors périmètre de la mission ; les listes sont paginées côté API |
+
+## 12.8 Reprise du 2026-11-01 — suite complète et recette agie
+
+| Contrôle | Résultat |
+|---|---|
+| `manage.py test referentiels` | **44 tests, 0 échec** (dont 24 dans `test_refonte.py`) |
+| `manage.py test` (suite complète, 2 838 tests) | 4 erreurs, toutes dans `scolarite.tests.test_smoke_command` → **corrigées** (voir ci-dessous), suite repassée au vert |
+| `npx vitest run` (frontend) | **115 fichiers, 2 073 tests, 0 échec** |
+| `npx eslint` (module Référentiels) | 0 problème |
+| `npx vite build` | ✓ built |
+| Recette de bout en bout (livrable 16) | 7 étapes vertes, 17 appels API, 0 erreur console |
+
+### Défaut de datation détecté par la suite complète
+
+`scolarite/management/commands/smoke_test_injs.py` créait sa campagne de
+démonstration avec des dates **fixes** (`2026-09-01` → `2026-10-31`). À partir du
+1ᵉʳ novembre 2026, la campagne était close : le parcours de fumée échouait à
+l'étape `SMOKE-02-CANDIDAT` et les 4 tests `test_smoke_command` tombaient en
+erreur. La fenêtre est désormais **glissante** autour du jour courant
+(`aujourd'hui − 30 j` → `aujourd'hui + 30 j`), ce qui rend la commande
+déterministe quel que soit le jour d'exécution. Aucune assertion de test n'a été
+modifiée.
+
+## 12.9 Reste hors périmètre
+
+Le défaut de datation ci-dessus concerne la scolarité, pas les référentiels ; il
+est corrigé parce qu'il rendait la suite complète rouge, et signalé ici pour que
+la correction soit vérifiable.

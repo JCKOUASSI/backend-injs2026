@@ -122,6 +122,7 @@ export default function ReferentielGenerique() {
   const [lignes, setLignes] = useState([])
   const [options, setOptions] = useState({})
   const [chargement, setChargement] = useState(true)
+  const [rafraichissement, setRafraichissement] = useState(false)
   const [erreur, setErreur] = useState('')
   const [recherche, setRecherche] = useState('')
   const [filtreActif, setFiltreActif] = useState('actifs')
@@ -138,8 +139,16 @@ export default function ReferentielGenerique() {
     return toutes.find((e) => e.slug === slug) || null
   }, [slug])
 
-  const charger = useCallback(async () => {
-    setChargement(true)
+  /**
+   * Charge (ou recharge) le référentiel.
+   *
+   * `silencieux` sert aux rechargements consécutifs à une écriture : le tableau
+   * reste affiché et seule une pastille « Actualisation… » signale l'attente,
+   * au lieu de remplacer tout l'écran par un chargement.
+   */
+  const charger = useCallback(async ({ silencieux = false } = {}) => {
+    if (silencieux) setRafraichissement(true)
+    else setChargement(true)
     setErreur('')
     try {
       // 1. La carte du référentiel vient du registre backend : elle dit si la
@@ -184,6 +193,7 @@ export default function ReferentielGenerique() {
       )
     } finally {
       setChargement(false)
+      setRafraichissement(false)
     }
   }, [slug, chargerCatalogue])
 
@@ -278,7 +288,7 @@ export default function ReferentielGenerique() {
         toast.success?.('Référentiel mis à jour.')
       }
       setModal(null)
-      await charger()
+      await charger({ silencieux: true })
     } catch (e) {
       const data = e.response?.data
       if (data && typeof data === 'object') {
@@ -301,7 +311,7 @@ export default function ReferentielGenerique() {
   const basculerStatut = async (ligne) => {
     try {
       await api.patch(`/referentiels/${slug}/${ligne.id}/`, { actif: !ligne.actif })
-      await charger()
+      await charger({ silencieux: true })
     } catch {
       toast.error?.('Changement de statut impossible.')
     }
@@ -314,7 +324,7 @@ export default function ReferentielGenerique() {
       await api.post(`/referentiels/${slug}/${confirmation.id}/archiver/`, {})
       toast.success?.('Valeur archivée — elle reste consultable.')
       setConfirmation(null)
-      await charger()
+      await charger({ silencieux: true })
     } catch {
       toast.error?.('Archivage impossible.')
     } finally {
@@ -325,7 +335,7 @@ export default function ReferentielGenerique() {
   const reactiver = async (ligne) => {
     try {
       await api.post(`/referentiels/${slug}/${ligne.id}/reactiver/`, {})
-      await charger()
+      await charger({ silencieux: true })
     } catch {
       toast.error?.('Réactivation impossible.')
     }
@@ -435,6 +445,12 @@ export default function ReferentielGenerique() {
             {entree.libelle}
           </h2>
           <div className="ref-panel-actions">
+            {rafraichissement && (
+              <span className="ref-pastille ref-pastille--neutre" role="status" aria-live="polite">
+                <i className="bi bi-arrow-repeat" aria-hidden="true"></i>
+                Actualisation…
+              </span>
+            )}
             <span className="cand-count-pill">
               {lignesFiltrees.length} / {lignes.length}
             </span>

@@ -258,6 +258,7 @@
 .ref-etat--complet { color: #0E7A4F; }
 .ref-etat--partiel { color: #B45309; }
 .ref-etat--vide { color: #B91C1C; }
+.ref-etat--neutre { color: #64748B; font-weight: 600; }
 
 .ref-lien {
   display: inline-flex;
@@ -375,7 +376,16 @@
    d'écraser la colonne des libellés. */
 .ref-page .cand-table-wrap { overflow-x: auto; }
 
-.ref-table--lecture { min-width: 1040px; }
+.ref-table--lecture { min-width: 960px; }
+
+/* La pastille de fiabilité ne doit jamais être rognée : elle porte
+   l'information de traçabilité la plus sensible du module. */
+.ref-table--lecture th[data-colonne='fiabilite'],
+.ref-table--lecture td[data-colonne='fiabilite'] {
+  max-width: none;
+  overflow: visible;
+  white-space: nowrap;
+}
 
 /* Tables importées : valeurs courtes, une seule ligne, infobulle au survol. */
 .ref-table--lecture tbody td {
@@ -402,8 +412,15 @@
 
 .ref-table--lecture th[data-colonne='formation_intitule'],
 .ref-table--lecture td[data-colonne='formation_intitule'] {
-  width: 18%;
+  width: 20%;
   max-width: 260px;
+  /* Le cycle de rattachement est un intitulé long : deux lignes maximum, le
+     reste masqué — l'intitulé complet reste disponible en infobulle. */
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: clip;
+  max-height: 3.1em;
+  line-height: 1.35;
 }
 
 .ref-table--lecture tbody td[data-colonne='filiere_code'] {

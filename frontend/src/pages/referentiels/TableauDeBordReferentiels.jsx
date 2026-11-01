@@ -309,11 +309,18 @@ export default function TableauDeBordReferentiels() {
                         Gérer
                         <i className="bi bi-arrow-right" aria-hidden="true"></i>
                       </Link>
-                    ) : (
+                    ) : entree.route_ui ? (
                       <Link className="ref-lien ref-lien--douce" to={entree.route_ui}>
                         Consulter
                         <i className="bi bi-arrow-right" aria-hidden="true"></i>
                       </Link>
+                    ) : (
+                      // Aucun écran ne gère ce référentiel : plutôt qu'un lien
+                      // vers une route inexistante, on l'annonce tel quel.
+                      <span className="ref-etat ref-etat--neutre">
+                        <i className="bi bi-file-earmark-text" aria-hidden="true"></i>
+                        Sans écran dédié
+                      </span>
                     )}
                   </footer>
                 </article>

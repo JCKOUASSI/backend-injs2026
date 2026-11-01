@@ -22,15 +22,17 @@ Dossier des livrables. Code concerné : `backend/referentiels/`, `backend/format
 | 13 | Anomalies restantes | [`13-anomalies.md`](13-anomalies.md) |
 | 14 | Fichiers modifiés et créés | [`14-fichiers-modifies.md`](14-fichiers-modifies.md) |
 | 15 | Commits | [`15-commits.md`](15-commits.md) |
+| 16 | Recette de bout en bout | [`16-recette-bout-en-bout.md`](16-recette-bout-en-bout.md) |
 
-Preuves visuelles : [`captures/`](captures) (bureau 1440 × 960) et [`captures/mobile/`](captures/mobile) (émulation 390 × 844).
+Preuves visuelles : [`captures/`](captures) (bureau 1440 × 960), [`captures/mobile/`](captures/mobile) (émulation 390 × 844) et [`captures/recette/`](captures/recette) (parcours agi : création → modification → archivage → réactivation, lecture seule).
 
 ## En bref
 
 - **26 référentiels** déclarés dans un registre unique, répartis en **7 catégories**.
 - **227 modules officiels**, **51 volumes horaires**, **1 site / 16 bâtiments / 166 espaces**, **8 filières**, **8 cycles LMD** : tous issus des documents, avec provenance.
-- **2 729 tests backend** et **2 073 tests frontend** exécutés, **0 échec**.
+- **2 838 tests backend** et **2 073 tests frontend** exécutés, **0 échec**.
 - **22 constats de cohérence** (3 familles) documentés, aucun corrigé par supposition.
+- **Recette agie** dans l'interface réelle : création, modification, archivage, réactivation, journal, lecture seule — 17 appels API, 0 erreur console (livrable 16).
 
 ## Reproduire
 
@@ -47,4 +49,6 @@ USE_SQLITE=1 SECRET_KEY=x DEBUG=1 .venv/bin/python manage.py test referentiels
 cd frontend
 npm i -D puppeteer-core @sparticuz/chromium
 LD_LIBRARY_PATH=/tmp/chlibs node scripts/capture-referentiels.cjs
+# Recette agie (nécessite l'API sur :8000 et le build servi sur :3100)
+LD_LIBRARY_PATH=/tmp/chlibs node scripts/recette-referentiels.cjs
 ```

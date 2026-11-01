@@ -125,10 +125,8 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
         obj = self._get_any_object(pk)
         if not obj.archive:
             return Response({'detail': 'Valeur non archivée.'}, status=status.HTTP_400_BAD_REQUEST)
-        obj.archive = False
-        obj.save(update_fields=['archive', 'modifie_le'])
-        obj.journaliser(ReferentielJournal.Action.MODIFICATION, request.user, {'desarchivage': True})
-        return Response({'detail': 'Valeur réactivée.', 'archive': False})
+        obj.reactiver(request.user, motif=request.data.get('motif', ''))
+        return Response({'detail': 'Valeur réactivée.', 'archive': False, 'actif': True})
 
 
 # ── ViewSets concrets (8 référentiels) ───────────────────────────────────────

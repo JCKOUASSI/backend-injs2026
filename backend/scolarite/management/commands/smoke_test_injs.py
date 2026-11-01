@@ -199,11 +199,16 @@ class Command(BaseCommand):
     def _campagne(self):
         self._referentiels()
         c = self.contexte
+        # Fenêtre glissante autour du jour courant : une date fixe rendait la
+        # commande (et les tests qui l'exécutent) « périmée » du jour au
+        # lendemain, dès que la campagne de démonstration arrivait à échéance.
+        aujourd_hui = timezone.localdate()
         campagne = CampagneAdmission.objects.create(
             libelle='Campagne de démo SMOKE 2026-2027',
             annee_academique=c['annee'], ref_formation=c['ref_formation'],
             parcours=c['parcours'],
-            date_ouverture=date(2026, 9, 1), date_fermeture=date(2026, 10, 31),
+            date_ouverture=aujourd_hui - timedelta(days=30),
+            date_fermeture=aujourd_hui + timedelta(days=30),
             quota_admissibles=100, quota_admis=80,
             statut=CampagneAdmission.Statut.OUVERTE,
         )

@@ -99,7 +99,12 @@ def entree(**kwargs):
     kwargs.setdefault('selecteurs', [])
     kwargs.setdefault('champs', [])
     kwargs.setdefault('modele', None)
-    kwargs.setdefault('route_ui', f"/referentiels/{kwargs['slug']}")
+    # Un référentiel éditable est géré par l'écran générique de la refonte ; le
+    # défaut pointe donc vers lui. Les référentiels historisés (editable=False)
+    # déclarent explicitement leur propre écran — ou `None` quand aucun écran
+    # n'existe : le tableau de bord n'affiche alors aucun lien plutôt qu'un lien
+    # vers une route qui n'existe pas.
+    kwargs.setdefault('route_ui', f"/referentiels/gestion/{kwargs['slug']}")
     kwargs.setdefault('avertissement', '')
     return kwargs
 
@@ -240,7 +245,7 @@ REGISTRE = {
         categorie=Categorie.OFFRE_FORMATION,
         modele='formations.RefFormation',
         editable=False, route_api='/formations/ref/formations/',
-        route_ui='/referentiels/formations', icone='bi-mortarboard-fill',
+        route_ui='/formations', icone='bi-mortarboard-fill',
         source='Formations et Modules INJS — §1',
     ),
     'niveaux': entree(
@@ -248,7 +253,7 @@ REGISTRE = {
         description='L1 à M2 — 60 ECTS par niveau annuel.',
         categorie=Categorie.SYSTEME_LMD, modele='scolarite.Niveau',
         editable=False, route_api='/scolarite/ref/niveaux/',
-        route_ui='/referentiels/niveaux', icone='bi-bar-chart-steps',
+        route_ui=None, icone='bi-bar-chart-steps',
         source='Architecture LMD (30 ECTS/semestre)',
     ),
     'semestres': entree(
@@ -256,7 +261,7 @@ REGISTRE = {
         description='S1 à S10 — 30 ECTS par semestre.',
         categorie=Categorie.SYSTEME_LMD, modele='scolarite.Semestre',
         editable=False, route_api='/scolarite/ref/semestres/',
-        route_ui='/referentiels/semestres', icone='bi-calendar3',
+        route_ui=None, icone='bi-calendar3',
         source='Architecture LMD (30 ECTS/semestre)',
     ),
     'parcours': entree(
@@ -264,13 +269,13 @@ REGISTRE = {
         description='Spécialisations internes à un cycle.',
         categorie=Categorie.SYSTEME_LMD, modele='scolarite.Parcours',
         editable=False, route_api='/scolarite/ref/parcours/',
-        route_ui='/referentiels/parcours', icone='bi-signpost-split',
+        route_ui=None, icone='bi-signpost-split',
     ),
     'ue-ecue': entree(
         slug='ue-ecue', libelle='UE / ECUE',
         description='Unités d’enseignement et éléments constitutifs des maquettes.',
         categorie=Categorie.SYSTEME_LMD, modele='scolarite.UE',
-        editable=False, route_ui='/referentiels/ue-ecue', icone='bi-layers',
+        editable=False, route_ui=None, icone='bi-layers',
         source='Maquettes officielles INJS',
     ),
     'annees': entree(
@@ -278,7 +283,7 @@ REGISTRE = {
         description='Périodes de référence de la scolarité.',
         categorie=Categorie.SCOLARITE, modele='scolarite.AnneeAcademique',
         editable=False, route_api='/scolarite/ref/annees/',
-        route_ui='/referentiels/annees', icone='bi-calendar-range',
+        route_ui=None, icone='bi-calendar-range',
     ),
     'sites': entree(
         slug='sites', libelle='Sites',

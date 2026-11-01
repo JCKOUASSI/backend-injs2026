@@ -14,6 +14,7 @@ from rest_framework.test import APIClient
 
 from authentication.models import User
 from referentiels.models import (
+    ReferentielJournal,
     RefEcole,
     RefFiliere,
     RefMention,
@@ -46,6 +47,39 @@ class RegistreTests(TestCase):
             cle = f'{modele._meta.app_label}.{modele._meta.model_name}'
             self.assertNotIn(cle, vus, f'{slug} duplique {vus.get(cle)}')
             vus[cle] = slug
+
+    def test_route_api_declaree_existe_vraiment(self):
+        """Une route annoncée par le registre doit répondre, pas 404.
+
+        Le registre sert d'index au tableau de bord : une route inventée y
+        enverrait l'utilisateur vers une page morte.
+        """
+        self.client = APIClient()
+        self.client.force_authenticate(make_user('routes_ok', role='ADMIN'))
+        for slug, entree in REGISTRE.items():
+            route = entree.get('route_api')
+            if not route:
+                continue
+            with self.subTest(slug=slug):
+                res = self.client.get(f'/api{route}')
+                self.assertNotEqual(res.status_code, status.HTTP_404_NOT_FOUND, route)
+
+    def test_route_ui_ne_pointe_que_vers_des_ecrans_existants(self):
+        """Écrans réellement déclarés dans le routeur React (App.jsx)."""
+        ecrans = {'/referentiels', '/referentiels/edition', '/formations'}
+        for slug, entree in REGISTRE.items():
+            with self.subTest(slug=slug):
+                if entree['editable']:
+                    # L'écran générique lit le slug : il doit correspondre.
+                    self.assertEqual(
+                        entree['route_ui'], f'/referentiels/gestion/{slug}',
+                    )
+                    continue
+                route = entree.get('route_ui')
+                if route and route.startswith('/referentiels/gestion/'):
+                    self.assertEqual(route, f'/referentiels/gestion/{slug}')
+                    continue
+                self.assertIn(route, ecrans | {None}, slug)
 
     def test_modules_officiels_declare_en_lecture_seule(self):
         entree = REGISTRE['modules-officiels']
@@ -146,6 +180,62 @@ class CrudGeneriqueTests(TestCase):
         )
         mention.refresh_from_db()
         self.assertFalse(mention.archive)
+
+    def test_tracabilite_ecrite_et_relue_sur_toutes_les_routes(self):
+        """`fiabilite` et `source_document` doivent faire l'aller-retour.
+
+        Les routes historiques du routeur (types d'évaluation, modes de
+        paiement…) et les routes générées du registre partagent le même écran :
+        elles doivent donc exposer le même contrat. Sinon le formulaire laissait
+        saisir la provenance et l'API la jetait sans le dire.
+        """
+        for rang, chemin in enumerate((
+            '/api/referentiels/types-evaluation/',
+            '/api/referentiels/mentions/',
+        )):
+            with self.subTest(chemin=chemin):
+                res = self.client.post(chemin, {
+                    'code': f'TRACE_{rang}',
+                    'libelle': 'Valeur tracée',
+                    'fiabilite': 'OFFICIEL',
+                    'source_document': 'Arrêté 2026-001',
+                })
+                self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.data)
+                self.assertEqual(res.data['fiabilite'], 'OFFICIEL')
+                self.assertEqual(res.data['source_document'], 'Arrêté 2026-001')
+                relu = self.client.get(f"{chemin}{res.data['id']}/").data
+                self.assertEqual(relu['fiabilite'], 'OFFICIEL')
+                self.assertEqual(relu['source_document'], 'Arrêté 2026-001')
+
+    def test_reactivation_remet_la_valeur_en_service(self):
+        """Archiver désactive ; réactiver doit donc réactiver (règle 3).
+
+        Sans cela la valeur revenait dans la liste des valeurs archivées puis
+        disparaissait de « Actifs » et de ``usables()`` : l'écran affichait un
+        succès sans effet observable.
+        """
+        mention = RefMention.objects.create(code='STASE', libelle='STASE')
+        url = f'/api/referentiels/mentions/{mention.pk}/'
+        self.client.post(f'{url}archiver/')
+        mention.refresh_from_db()
+        self.assertFalse(mention.actif)
+        self.assertIsNotNone(mention.date_desactivation)
+
+        res = self.client.post(f'{url}reactiver/', {'motif': 'retour en service'})
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(res.data['actif'])
+        mention.refresh_from_db()
+        self.assertFalse(mention.archive)
+        self.assertTrue(mention.actif)
+        self.assertIsNone(mention.date_desactivation)
+        self.assertIn(mention, RefMention.usables())
+
+        journal = ReferentielJournal.objects.filter(
+            object_id=mention.pk,
+            action=ReferentielJournal.Action.REACTIVATION,
+        )
+        self.assertEqual(journal.count(), 1)
+        self.assertEqual(journal.first().detail, {'motif': 'retour en service'})
 
     def test_delete_non_expose(self):
         mention = RefMention.objects.create(code='STASE', libelle='STASE')

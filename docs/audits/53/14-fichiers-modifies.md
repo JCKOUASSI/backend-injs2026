@@ -28,13 +28,16 @@
 | `backend/referentiels/migrations/0005_alter_refmoduleofficiel_filiere_code_and_more.py` | `help_text` conformes aux valeurs réelles |
 | `backend/formations/migrations/0099_refformation_filiere_refvague_categorie_and_more.py` | FK filière + catégorie de vague |
 | `backend/formations/migrations/0100_refbatiment_fiabilite_refbatiment_source_document_and_more.py` | Provenance des lieux |
-| `backend/referentiels/tests/test_refonte.py` | 34 tests dédiés à la refonte (lot total `referentiels` : 40) |
+| `backend/referentiels/migrations/0006_reactivation_action.py` | Action de journal `REACTIVATION` (correction A-53-09) |
+| `backend/referentiels/tests/test_refonte.py` | 24 tests dédiés à la refonte (lot total `referentiels` : 44) |
 
 ## 14.3 Frontend — fichiers modifiés
 
 | Fichier | Modification |
 |---|---|
 | `frontend/src/App.jsx` | Import des deux écrans ; `/referentiels` → tableau de bord ; `/referentiels/edition` → écran historique ; `/referentiels/gestion/:slug` → écran générique |
+| `frontend/src/pages/referentiels/ReferentielGenerique.jsx` | Rechargement silencieux après écriture (A-53-12) ; filtre d'état masqué en lecture seule |
+| `frontend/src/pages/referentiels/TableauDeBordReferentiels.jsx` | Lien « Consulter » seulement si l'écran existe ; mention « Sans écran dédié » sinon (A-53-11) |
 | `frontend/src/menu/arborescence.js` | Entrée « Tous les référentiels » renommée « Tableau de bord » ; ajout de « Édition des tables » (`/referentiels/edition`) |
 | `frontend/package.json` / `package-lock.json` | Ajout de `puppeteer-core` et `@sparticuz/chromium` en `devDependencies` (outil de capture, absent du bundle) |
 
@@ -46,14 +49,15 @@
 | `frontend/src/pages/referentiels/ReferentielGenerique.jsx` | CRUD générique, sélecteurs dépendants, archivage, lecture seule |
 | `frontend/src/styles/referentiels.css` | Styles `.ref-*` du module (s'appuie sur le socle `.cand-*`) |
 | `frontend/scripts/capture-referentiels.cjs` | Preuve visuelle reproductible (Chromium headless, connexion réelle à l'API) |
+| `frontend/scripts/recette-referentiels.cjs` | Recette de bout en bout **agie** (création, modification, archivage, réactivation, contrôle lecture seule, journal) — livrable 16 |
 
 ## 14.5 Documentation
 
 | Fichier | Rôle |
 |---|---|
-| `docs/audits/53/01-…-15-…` | Les 15 livrables de la mission |
+| `docs/audits/53/01-…-16-…` | Les 16 livrables de la mission (16 = recette de bout en bout) |
 | `docs/audits/53/00-schema-architecture-finale.md` | Schéma synthétique de l'architecture fonctionnelle |
-| `docs/audits/53/captures/*.png` | 8 preuves visuelles bureau + 8 émulations mobiles |
+| `docs/audits/53/captures/*.png` | 8 preuves visuelles bureau + 8 émulations mobiles + 7 captures de recette (`captures/recette/`) |
 
 ## 14.6 Fichiers volontairement **non** modifiés
 
