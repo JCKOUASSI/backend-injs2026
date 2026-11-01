@@ -7,7 +7,7 @@ Branche : `arena/d40e4a41-backend-injs2026` (jamais réécrite, aucun `--force`,
 | Ordre | Hash | Message | Contenu |
 |---|---|---|---|
 | 1 | `c70d87d` | `feat(referentiels): refonte du module Référentiels pilotée par un registre unique` | Backend complet (registre, modèles, migrations, API, import, contrôle de cohérence, tests), frontend (tableau de bord, CRUD générique, styles), 14 livrables, schéma et 16 captures |
-| 2 | *(à venir)* | `docs(referentiels): rapport de commits de la mission 53` | Ce livrable |
+| 2 | `49e303b` | `docs(referentiels): rapport des commits de la mission 53` | Ce livrable |
 
 **Statistiques du commit principal** : 61 fichiers, 8 356 insertions, 4 suppressions.
 
