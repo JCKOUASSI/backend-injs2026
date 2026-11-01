@@ -142,15 +142,31 @@ class Command(BaseCommand):
             AnneeAcademique, Groupe, Maquette, Niveau, Parcours, Semestre, StatutEtudiant, UE, ECUE,
         )
 
-        annee = AnneeAcademique.objects.create(
-            libelle='2026-2027', date_debut=date(2026, 10, 1), date_fin=date(2027, 9, 30),
-            courante=True,
+        # Réutilisation des lignes déjà présentes : sur une base réelle l'année
+        # 2026-2027 existe (créée par `init_referentiels_lmd`), et la commande
+        # échouait alors dès la première étape sur la contrainte d'unicité du
+        # libellé — elle était donc inutilisable précisément là où elle sert de
+        # contrôle avant mise en production.
+        annee, _ = AnneeAcademique.objects.get_or_create(
+            libelle='2026-2027',
+            defaults={
+                'date_debut': date(2026, 10, 1), 'date_fin': date(2027, 9, 30),
+                'courante': True,
+            },
         )
-        ref_formation = RefFormation.objects.create(intitule='LICENCE STAPS (SMOKE)')
-        niveau = Niveau.objects.create(code='L1S', libelle='Licence 1 Smoke', ordre=1, credits_requis=20)
-        semestre = Semestre.objects.create(niveau=niveau, numero=1, libelle='S1')
-        parcours = Parcours.objects.create(
-            ref_formation=ref_formation, code='EM-SMOKE', intitule='Éducation et Motricité (démo)',
+        ref_formation, _ = RefFormation.objects.get_or_create(
+            intitule='LICENCE STAPS (SMOKE)',
+        )
+        niveau, _ = Niveau.objects.get_or_create(
+            code='L1S',
+            defaults={'libelle': 'Licence 1 Smoke', 'ordre': 1, 'credits_requis': 20},
+        )
+        semestre, _ = Semestre.objects.get_or_create(
+            niveau=niveau, numero=1, defaults={'libelle': 'S1'},
+        )
+        parcours, _ = Parcours.objects.get_or_create(
+            ref_formation=ref_formation, code='EM-SMOKE',
+            defaults={'intitule': 'Éducation et Motricité (démo)'},
         )
         categorie, _ = RefCategorie.objects.get_or_create(libelle='A')
         grade, _ = RefGrade.objects.get_or_create(categorie=categorie, libelle='A3')
@@ -161,36 +177,50 @@ class Command(BaseCommand):
         TypePiece.objects.get_or_create(
             code='CV', defaults={'libelle': 'CV', 'obligatoire_par_defaut': False},
         )
-        groupe = Groupe.objects.create(
+        groupe, _ = Groupe.objects.get_or_create(
             annee_academique=annee, ref_formation=ref_formation, niveau=niveau,
-            nom='L1S-G1', capacite_max=25,
+            nom='L1S-G1', defaults={'capacite_max': 25},
         )
-        maquette = Maquette.objects.create(
+        maquette, _ = Maquette.objects.get_or_create(
             annee_academique=annee, ref_formation=ref_formation, niveau=niveau,
         )
-        ue = UE.objects.create(
+        ue, _ = UE.objects.get_or_create(
             maquette=maquette, semestre=semestre, code='UE-S1',
-            intitule='UE fondamentale', credits=20,
+            defaults={'intitule': 'UE fondamentale', 'credits': 20},
         )
-        ref_a = RefModule.objects.create(intitule='ANATOMIE (SMOKE)')
-        ref_b = RefModule.objects.create(intitule='PHYSIOLOGIE (SMOKE)')
-        ecue_a = ECUE.objects.create(
-            ue=ue, code='ECUE-A', intitule='Anatomie', credits=10, volume_cm=20, ref_module=ref_a,
+        ref_a, _ = RefModule.objects.get_or_create(intitule='ANATOMIE (SMOKE)')
+        ref_b, _ = RefModule.objects.get_or_create(intitule='PHYSIOLOGIE (SMOKE)')
+        ecue_a, _ = ECUE.objects.get_or_create(
+            ue=ue, code='ECUE-A',
+            defaults={
+                'intitule': 'Anatomie', 'credits': 10, 'volume_cm': 20, 'ref_module': ref_a,
+            },
         )
-        ecue_b = ECUE.objects.create(
-            ue=ue, code='ECUE-B', intitule='Physiologie', credits=10, volume_cm=20, ref_module=ref_b,
+        ecue_b, _ = ECUE.objects.get_or_create(
+            ue=ue, code='ECUE-B',
+            defaults={
+                'intitule': 'Physiologie', 'credits': 10, 'volume_cm': 20, 'ref_module': ref_b,
+            },
         )
         maquette.statut = Maquette.Statut.ACTIVE
         maquette.save()
 
-        formation_op = Formation.objects.create(formation='LICENCE STAPS 2026 (SMOKE)')
-        module_a = Module.objects.create(
-            formation=formation_op, intitule='Anatomie (démo)', ref_module=ref_a,
+        formation_op, _ = Formation.objects.get_or_create(formation='LICENCE STAPS 2026 (SMOKE)')
+        module_a, _ = Module.objects.get_or_create(
+            formation=formation_op, intitule='Anatomie (démo)',
+            defaults={'ref_module': ref_a},
         )
-        module_b = Module.objects.create(
-            formation=formation_op, intitule='Physiologie (démo)', ref_module=ref_b,
+        module_b, _ = Module.objects.get_or_create(
+            formation=formation_op, intitule='Physiologie (démo)',
+            defaults={'ref_module': ref_b},
         )
-        acteur = User.objects.create_user(username='smoke_agent', password='x', role='INJS_ADMIN')
+        acteur, _ = User.objects.get_or_create(
+            username='smoke_agent',
+            defaults={'role': 'INJS_ADMIN'},
+        )
+        acteur.set_password('x')
+        acteur.role = 'INJS_ADMIN'
+        acteur.save()
 
         self.contexte.update(locals())
 

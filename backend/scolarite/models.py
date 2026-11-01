@@ -879,15 +879,31 @@ class Maquette(models.Model):
             if ue.credits <= 0:
                 problemes.append(f"UE {ue.code} : crédits ECTS non renseignés.")
             if ecues:
-                somme_ecue = sum(e.credits for e in ecues)
-                if somme_ecue != ue.credits:
-                    problemes.append(
-                        f"UE {ue.code} : la somme des crédits ECUE ({somme_ecue}) "
-                        f"ne correspond pas aux crédits de l'UE ({ue.credits})."
-                    )
+                # Le référentiel officiel publie les crédits **par UE** ; il ne
+                # publie aucune répartition par ECUE. Le moteur de validation
+                # crédite d'ailleurs l'UE (`validation_services`), jamais
+                # l'ECUE. Exiger ici une somme d'ECUE rendait donc impossible
+                # la validation — puis l'activation — de toute maquette issue
+                # de la source officielle, alors qu'aucune donnée n'était
+                # fausse : elle était simplement absente.
+                # Règle conservée : dès qu'une ECUE déclare ses crédits, la
+                # répartition doit être complète et égale aux crédits de l'UE.
+                credits_declares = [e for e in ecues if e.credits]
+                if credits_declares:
+                    somme_ecue = sum(e.credits for e in credits_declares)
+                    if len(credits_declares) != len(ecues):
+                        problemes.append(
+                            f"UE {ue.code} : répartition des crédits ECUE incomplète "
+                            f"({len(credits_declares)}/{len(ecues)} ECUE renseignées)."
+                        )
+                    elif somme_ecue != ue.credits:
+                        problemes.append(
+                            f"UE {ue.code} : la somme des crédits ECUE ({somme_ecue}) "
+                            f"ne correspond pas aux crédits de l'UE ({ue.credits})."
+                        )
             for ecue in ecues:
-                if ecue.credits <= 0:
-                    problemes.append(f"ECUE {ecue.code} : crédits ECTS non renseignés.")
+                if ecue.credits < 0:
+                    problemes.append(f"ECUE {ecue.code} : crédits ECTS invalides.")
                 if ecue.coefficient <= 0:
                     problemes.append(f"ECUE {ecue.code} : coefficient invalide.")
                 if ecue.archive:

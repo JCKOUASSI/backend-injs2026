@@ -163,6 +163,35 @@ class CoherenceTests(MaquetteWorkflowBase):
         problemes = self.maquette.verifier_coherence()
         self.assertTrue(any('crédits ECUE' in p for p in problemes))
 
+    def test_credits_ecue_non_publies_ne_bloquent_pas_la_validation(self):
+        """Cas du référentiel officiel : les crédits ne sont publiés que par UE.
+
+        Le classeur INJS ne documente aucune répartition par ECUE. Ces ECUE
+        doivent rester valides : les ECTS sont portés par l'UE, et c'est l'UE
+        que le moteur de validation crédite.
+        """
+        ue = self.maquette.unites_enseignement.first()
+        ue.ecues.update(credits=0)
+        self.assertEqual(self.maquette.verifier_coherence(), [])
+        self.maquette.statut = Maquette.Statut.VALIDEE
+        self.maquette.full_clean()
+
+    def test_repartition_partielle_des_credits_ecue_signalee(self):
+        ue = self.maquette.unites_enseignement.first()
+        ecue = ue.ecues.order_by('pk').last()
+        ecue.credits = 0
+        ecue.save(update_fields=['credits'])
+        problemes = self.maquette.verifier_coherence()
+        self.assertTrue(any('répartition' in p for p in problemes), problemes)
+
+    def test_credits_ue_nuls_toujours_signales(self):
+        ue = self.maquette.unites_enseignement.first()
+        ue.credits = 0
+        ue.save(update_fields=['credits'])
+        ue.ecues.update(credits=0)
+        problemes = self.maquette.verifier_coherence()
+        self.assertTrue(any('UE11 : crédits ECTS non renseignés' in p for p in problemes))
+
     def test_module_duplique_dans_la_maquette_signale(self):
         ue = self.maquette.unites_enseignement.first()
         ECUE.objects.create(
