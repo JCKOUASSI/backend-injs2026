@@ -84,7 +84,8 @@
       "mention": "STAPS",
       "type_cursus": "LMD",
       "ordre": 1,
-      "source_document": "Formations et Modules INJS — §1",
+      "description": "Parcours orienté vers l'enseignement et l'intervention en Éducation Physique et Sportive (EPS) : formation aux activités physiques et sportives, didactique de l'EPS, préprofessionnalisation et stages pédagogiques.",
+      "source_document": "Formations et Modules INJS — §1 et §2 ; Formations INJS — §1.A",
       "fiabilite": "OFFICIEL",
       "code_dossier": "F01"
     },
@@ -95,7 +96,8 @@
       "mention": "STAPS",
       "type_cursus": "LMD",
       "ordre": 2,
-      "source_document": "Formations et Modules INJS — §1",
+      "description": "Formation à l'encadrement et à la préparation des sportifs : facteurs biologiques et psychosociologiques de la performance, développement des qualités physiques, spécialisation théorique et pratique dans une activité physique et sportive.",
+      "source_document": "Formations et Modules INJS — §1 et §3",
       "fiabilite": "OFFICIEL",
       "code_dossier": "F03"
     },
@@ -106,7 +108,8 @@
       "mention": "STAPS",
       "type_cursus": "LMD",
       "ordre": 3,
-      "source_document": "Formations et Modules INJS — §1",
+      "description": "Gestion et développement des organisations sportives : économie et marketing du sport, droit du sport, finance et comptabilité, événementiel sportif et gestion des infrastructures sportives.",
+      "source_document": "Formations et Modules INJS — §1 et §4",
       "fiabilite": "OFFICIEL",
       "code_dossier": "F04"
     },
@@ -117,7 +120,8 @@
       "mention": "STAPS",
       "type_cursus": "LMD",
       "ordre": 4,
-      "source_document": "Formations et Modules INJS — §1",
+      "description": "Activités physiques adaptées aux populations spécifiques : handicap, vieillissement, prévention par l'activité physique, rééducation fonctionnelle et santé.",
+      "source_document": "Formations et Modules INJS — §1 et §5 ; Formations INJS — §1.B",
       "fiabilite": "OFFICIEL",
       "code_dossier": "F02"
     },
