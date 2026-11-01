@@ -9,7 +9,7 @@ Branche : `arena/d40e4a41-backend-injs2026` (jamais réécrite, aucun `--force`,
 | 1 | `c70d87d` | `feat(referentiels): refonte du module Référentiels pilotée par un registre unique` | Backend complet (registre, modèles, migrations, API, import, contrôle de cohérence, tests), frontend (tableau de bord, CRUD générique, styles), 14 livrables, schéma et 16 captures |
 | 2 | `49e303b` | `docs(referentiels): rapport des commits de la mission 53` | Ce livrable |
 | 3 | `53e50ba` | `docs(referentiels): référencer le hash du commit de documentation` | Complète le tableau ci-dessus |
-| 4 | *(ce commit)* | `fix(referentiels): corriger les défauts révélés par la recette de bout en bout` | A-53-09 (réactivation), A-53-10 (traçabilité non persistée), A-53-11 (liens morts), A-53-12 (rechargement) ; migration `0006` ; livrable 16 ; 7 captures |
+| 4 | `c4b5468` | `fix(referentiels): corriger les défauts révélés par la recette de bout en bout` | A-53-09 (réactivation), A-53-10 (traçabilité non persistée), A-53-11 (liens morts), A-53-12 (rechargement) ; défaut de datation du parcours de fumée ; migration `0006` ; livrable 16 ; 7 captures |
 
 **Statistiques du commit principal** : 61 fichiers, 8 356 insertions, 4 suppressions.
 
@@ -57,8 +57,23 @@ Branche : `arena/d40e4a41-backend-injs2026` (jamais réécrite, aucun `--force`,
 
 | Contrôle | Résultat |
 |---|---|
-| `git status` avant commit | 25 entrées (10 modifiés, 15 nouveaux) — toutes intentionnelles |
+| `git status` avant commit principal | 25 entrées (10 modifiés, 15 nouveaux) — toutes intentionnelles |
+| `git status` avant commit de correction | 24 entrées (14 modifiés, 6 nouveaux fichiers + 7 captures) — toutes intentionnelles |
 | Recherche de secrets dans le diff indexé | Aucun (seuls des mots de passe de test, générés) |
 | Plus gros fichier ajouté | 1,5 Mo (capture mobile pleine page) |
 | `eslint`, `vite build`, suites de tests | Passés avant commit (voir livrable 12) |
-| Poussée | `98f6121..c70d87d` acceptée par `origin` |
+| Poussée | `98f6121..c70d87d` puis `49e303b..53e50ba` puis `53e50ba..c4b5468` acceptées par `origin` |
+
+## 15.6 État de la suite de tests au moment du commit de correction
+
+| Suite | Résultat |
+|---|---|
+| `manage.py test` (2 838 tests) | **0 échec**, 9 ignorés |
+| `manage.py test referentiels` | 44 tests, 0 échec |
+| `npx vitest run` | 115 fichiers, 2 073 tests, 0 échec |
+| `npx eslint src` | 0 problème |
+| `npx vite build` | ✓ built |
+
+Note : `frontend/scripts/*.cjs` n'est pas couvert par la configuration ESLint du
+projet (le script de capture préexistant présente les mêmes `no-undef` sur
+`process`) — écart antérieur, non introduit par cette mission.
