@@ -14,6 +14,7 @@ from django.core.management import call_command
 from django.test import TestCase
 
 from referentiels.models import (
+    RefGradeEnseignant,
     RefTypeDecision,
     RefTypeEnseignement,
     RefTypeEspaceSportif,
@@ -95,12 +96,41 @@ class ImportNomenclaturesPedagogiquesTests(TestCase):
         for ligne in RefTypeEspaceSportif.objects.all():
             self.assertEqual(ligne.fiabilite, 'MODELISE')
 
+    def test_grades_enseignant_deux_familles_sans_confusion_de_plan(self):
+        bloc = _charger('nomenclatures_pedagogiques.json')['grades_enseignant']
+        attendu = {i['code'] for i in bloc['valeurs']}
+        self._assert_complet(RefGradeEnseignant, attendu)
+        familles = {i['famille'] for i in bloc['valeurs']}
+        self.assertEqual(
+            familles,
+            {'Grades universitaires (CAMES)', 'Corps de la fonction publique'},
+        )
+        cames = [i for i in bloc['valeurs'] if i['famille'].endswith('(CAMES)')]
+        self.assertEqual(len(cames), 12)
+        self.assertEqual(len(bloc['valeurs']) - len(cames), 16)
+        # Échelle CAMES complète, de l'assistant au professeur titulaire.
+        self.assertTrue({
+            'ASSISTANT', 'MAITRE_ASSISTANT', 'MAITRE_CONFERENCES',
+            'PROFESSEUR_TITULAIRE',
+        } <= attendu)
+        # Grades de sortie des concours INJS (B3, A3, A4).
+        self.assertTrue({'MAITRE_EPS', 'PC_EPS', 'PL_EPS'} <= attendu)
+        # Le PDF distingue les plans : ni rôle applicatif, ni statut
+        # d'exercice, ni corps administratif dans les grades.
+        self.assertFalse(attendu & {
+            'ADMIN', 'DIRECTION', 'FORMATEUR', 'SUPERVISEUR', 'AUDITEUR',
+            'VACATAIRE', 'CONTRACTUEL', 'STAGIAIRE', 'TITULAIRE',
+            'CADRE_ADMINISTRATIF',
+        })
+        for ligne in RefGradeEnseignant.objects.all():
+            self.assertEqual(ligne.fiabilite, 'OFFICIEL')
+
     def test_deuxieme_execution_ne_cree_rien(self):
         avant = {
             m.__name__: m.objects.count()
             for m in (
                 RefTypeEnseignement, RefTypeEvaluation,
-                RefTypeDecision, RefTypeEspaceSportif,
+                RefTypeDecision, RefTypeEspaceSportif, RefGradeEnseignant,
             )
         }
         call_command(
@@ -110,7 +140,7 @@ class ImportNomenclaturesPedagogiquesTests(TestCase):
         )
         for m in (
             RefTypeEnseignement, RefTypeEvaluation,
-            RefTypeDecision, RefTypeEspaceSportif,
+            RefTypeDecision, RefTypeEspaceSportif, RefGradeEnseignant,
         ):
             self.assertEqual(m.objects.count(), avant[m.__name__])
 
@@ -125,3 +155,4 @@ class DryRunNomenclaturesTests(TestCase):
         self.assertEqual(RefTypeEvaluation.objects.count(), 0)
         self.assertEqual(RefTypeDecision.objects.count(), 0)
         self.assertEqual(RefTypeEspaceSportif.objects.count(), 0)
+        self.assertEqual(RefGradeEnseignant.objects.count(), 0)

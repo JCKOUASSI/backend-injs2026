@@ -42,6 +42,7 @@ from formations.models import RefBatiment, RefFormation, RefSalle, RefSite
 from referentiels.models import (
     RefEcole,
     RefFiliere,
+    RefGradeEnseignant,
     RefMention,
     RefModuleOfficiel,
     RefStatutVague,
@@ -473,6 +474,7 @@ class Command(BaseCommand):
             ('types_evaluation', RefTypeEvaluation),
             ('types_decision', RefTypeDecision),
             ('types_espace_sportif', RefTypeEspaceSportif),
+            ('grades_enseignant', RefGradeEnseignant),
         )
         bilan = {}
         for cle_bloc, modele in plan:

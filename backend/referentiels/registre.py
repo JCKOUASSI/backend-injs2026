@@ -230,7 +230,16 @@ REGISTRE = {
         description="Grades et statuts des enseignants — à ne pas confondre avec les rôles applicatifs.",
         categorie=Categorie.RESSOURCES_HUMAINES, modele=RefGradeEnseignant,
         route_api='/referentiels/grades-enseignant/',
-        icone='bi-award', source='Socle referentiels (lot L0/L7)',
+        icone='bi-award',
+        source='GRADES ET STATUTS DES ENSEIGNANTS-INJS (PDF, 1er nov. 2026) — §2 et §3',
+        avertissement=(
+            'Un grade est une décision officielle (listes d’aptitude CAMES, '
+            'arrêté de nomination dans un corps) : il ne se crée ni ne '
+            's’attribue dans l’application, et ne doit jamais être confondu '
+            'avec un rôle applicatif INJS-LMD, un statut d’exercice ou une '
+            'fonction de direction. Échelons, indices et statuts particuliers '
+            'restent à confirmer par la DRH de l’INJS.'
+        ),
     ),
     'types-document': entree(
         slug='types-document', libelle='Types de document',
