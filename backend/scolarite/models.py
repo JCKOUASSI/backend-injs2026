@@ -10,8 +10,9 @@ import uuid
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import F, Q
 from django.db.models.functions import Lower
 from django.utils import timezone
 
@@ -128,9 +129,31 @@ def journaliser(action, objet=None, acteur=None, **champs):
 
 
 class AnneeAcademique(models.Model):
-    """Année académique LMD (ex: 2026-2027)."""
+    """Année académique LMD (ex: 2026-2027).
 
-    libelle = models.CharField(max_length=20, unique=True, help_text='Format attendu : 2026-2027')
+    Cadre temporel de toute opération (inscriptions, barèmes, campagnes,
+    diplômes) : du 1er octobre au 31 juillet. La provenance est suivie
+    comme pour les autres référentiels (source, fiabilité, description) :
+    le calendrier est arrêté par la Direction des études — les années
+    planifiées restent des prévisions tant qu'elles ne sont pas ouvertes.
+    """
+
+    class Fiabilite(models.TextChoices):
+        OFFICIEL = 'OFFICIEL', 'Officiel (attesté par la source)'
+        MODELISE = 'MODELISE', 'Modélisé dans la source (proposition)'
+        CADRAGE = 'CADRAGE', 'Cadrage fonctionnel (à valider par l’INJS)'
+        A_RENSEIGNER = 'A_RENSEIGNER', 'À renseigner'
+
+    libelle = models.CharField(
+        max_length=20,
+        unique=True,
+        help_text='Format attendu : 2026-2027',
+        validators=[RegexValidator(
+            r'^\d{4}-\d{4}$',
+            "Libellé d'année académique invalide : format AAAA-AAAA attendu "
+            "(ex. 2026-2027).",
+        )],
+    )
     date_debut = models.DateField()
     date_fin = models.DateField()
     courante = models.BooleanField(
@@ -144,6 +167,15 @@ class AnneeAcademique(models.Model):
         help_text="Une année clôturée n'accepte plus de nouvelle inscription.",
     )
     date_cloture = models.DateField(null=True, blank=True)
+    # Provenance suivie, comme les référentiels du socle : la carte du
+    # module Référentiels présente ces trois zones pour chaque année.
+    description = models.TextField(blank=True, default='')
+    source_document = models.CharField(max_length=255, blank=True, default='')
+    fiabilite = models.CharField(
+        max_length=20,
+        choices=Fiabilite.choices,
+        default=Fiabilite.A_RENSEIGNER,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -156,11 +188,27 @@ class AnneeAcademique(models.Model):
                 condition=Q(courante=True),
                 name='uniq_annee_academique_courante',
             ),
+            # Garde-fous de processus, y compris hors des formulaires qui
+            # appellent clean() : une année finit après son début, et une
+            # année clôturée n'est jamais l'année courante (workflow de
+            # clôture : annee_services.cloturer_annee).
+            models.CheckConstraint(
+                condition=Q(date_fin__gt=F('date_debut')),
+                name='annee_fin_apres_debut',
+            ),
+            models.CheckConstraint(
+                condition=~(Q(cloturee=True) & Q(courante=True)),
+                name='annee_cloturee_non_courante',
+            ),
         ]
 
     def clean(self):
         if self.date_debut and self.date_fin and self.date_fin <= self.date_debut:
             raise ValidationError({'date_fin': 'La date de fin doit être postérieure à la date de début.'})
+        if self.cloturee and self.courante:
+            raise ValidationError({
+                'courante': "Une année clôturée ne peut pas être l'année courante."
+            })
 
     def __str__(self):
         return self.libelle

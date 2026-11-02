@@ -115,6 +115,11 @@ def entree(**kwargs):
     # (ex. le nom d'un bâtiment ou d'une salle est unique PAR SITE, pas
     # globalement). Vide = unicité globale du libellé.
     kwargs.setdefault('unicite_par', '')
+    # Drapeau booléen qui ne peut être vrai que sur une seule ligne (ex.
+    # l'année académique courante) : le passer à vrai sur l'écran générique
+    # bascule les autres lignes à faux, comme le workflow métier, au lieu
+    # de heurter la contrainte d'unicité de la base.
+    kwargs.setdefault('bascule_unique', '')
     # Libellé du bouton d'accès sur la carte du tableau de bord (défaut
     # front : « Gérer » si éditable, « Consulter » sinon).
     kwargs.setdefault('libelle_bouton', '')
@@ -382,15 +387,23 @@ REGISTRE = {
         slug='annees', libelle='Années académiques',
         description='Périodes de référence de la scolarité.',
         categorie=Categorie.SCOLARITE, modele='scolarite.AnneeAcademique',
-        editable=False, route_api='/scolarite/ref/annees/',
-        route_ui=None, icone='bi-calendar-range',
+        champ_code='libelle',
+        champs=[
+            'date_debut', 'date_fin', 'courante', 'cloturee', 'date_cloture',
+        ],
+        bascule_unique='courante',
+        icone='bi-calendar-range',
         source='ADMINISTRATIF & SCOLARITÉ (PDF) — §6',
         avertissement=(
-            '8 années (2021-2022 → 2028-2029, 1er octobre → 31 juillet) : '
-            '4 archivées, 2025-2026 clôturée, 2026-2027 courante (une seule '
-            'à la fois), 2 planifiées. Une année clôturée n’accepte plus '
-            'aucune nouvelle inscription. Le modèle ne suit pas la '
-            'provenance : pas de source ni de fiabilité par année.'
+            'Calendrier de l’Institut : 1er octobre → 31 juillet, libellé au '
+            'format AAAA-AAAA. Cocher « Année courante » bascule '
+            'automatiquement l’ancienne année courante (une seule à la '
+            'fois) ; une année clôturée ne peut pas être courante et '
+            'n’accepte plus aucune inscription. La clôture de fin d’année '
+            'reste pilotée par le workflow Scolarité (jurys, diplômation, '
+            'journal de scolarité) : cet écran sert à préparer le '
+            'calendrier. Années planifiées en fiabilité Cadrage, à '
+            'confirmer par la Direction des études.'
         ),
     ),
     'sites': entree(

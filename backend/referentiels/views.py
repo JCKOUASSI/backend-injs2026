@@ -6,7 +6,7 @@ Pattern retenu : ViewSet + DefaultRouter (comme l'app parametres).
 - DELETE : jamais exposé (règle 2 — archivage via action dédiée).
 """
 from django.contrib.contenttypes.models import ContentType
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.pagination import PageNumberPagination
@@ -101,7 +101,11 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
 
     def _save_or_400(self, serializer):
         try:
-            return serializer.save()
+            # Point de sauvegarde : une IntegrityError attrapée hors
+            # savepoint laisserait la transaction de la requête (ou du
+            # test) inutilisable alors même que l'erreur est traduite.
+            with transaction.atomic():
+                return serializer.save()
         except IntegrityError:
             # Règle 4 — anti-doublons : la contrainte DB (code unique,
             # Lower(libelle)) est traduite en 400 propre pour les clients.
@@ -134,10 +138,30 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
                 {'detail': 'Cette valeur existe déjà (code ou libellé en doublon).'}
             )
 
+    def _preparer_bascule_unique(self, serializer):
+        """Bascule un drapeau « un seul vrai » avant l'écriture.
+
+        Certains référentiels portent un booléen qui ne peut être vrai
+        que sur une ligne (année académique courante). Le processus
+        métier bascule alors l'ancienne ligne à faux plutôt que de
+        refuser l'opération : l'écran générique applique la même règle,
+        la contrainte d'unicité de la base restant le garde-fou.
+        """
+        if not hasattr(self, '_entree'):
+            return
+        champ = self._entree().get('bascule_unique')
+        if not champ or not serializer.validated_data.get(champ):
+            return
+        autres = self.queryset.model._default_manager.filter(**{champ: True})
+        if serializer.instance is not None:
+            autres = autres.exclude(pk=serializer.instance.pk)
+        autres.update(**{champ: False})
+
     def perform_create(self, serializer):
         self._controler_doublon_libelle(
             serializer.validated_data.get(self._champ_libelle()),
             serializer=serializer)
+        self._preparer_bascule_unique(serializer)
         obj = self._save_or_400(serializer)
         self._journaliser(obj, ReferentielJournal.Action.CREATION)
 
@@ -154,6 +178,7 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
             if nom in concrets
         ]
         before = {f: getattr(serializer.instance, f) for f in suivis}
+        self._preparer_bascule_unique(serializer)
         obj = self._save_or_400(serializer)
         after = {f: getattr(obj, f) for f in before}
         changes = {k: {'avant': before[k], 'apres': after[k]} for k in before if before[k] != after[k]}

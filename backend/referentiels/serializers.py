@@ -207,6 +207,16 @@ def serializer_pour_ref(slug):
             lambda self, obj, _fk=fk: _libelle_de_la_cible(obj, _fk)
         )
 
+    bascule = entree.get('bascule_unique')
+    if bascule and bascule in champs:
+        # Drapeau « un seul vrai » (année courante) : DRF déduit de la
+        # contrainte d'unicité conditionnelle un UniqueValidator porté
+        # par le champ, qui refuserait le formulaire avant même que la
+        # vue ait basculé les autres lignes (règle de processus). Le
+        # champ est donc déclaré explicitement, sans ce validateur ;
+        # la contrainte de base reste le garde-fou.
+        attributs[bascule] = serializers.BooleanField(required=False)
+
     attributs['Meta'] = type('Meta', (), {
         'model': modele,
         'fields': champs,

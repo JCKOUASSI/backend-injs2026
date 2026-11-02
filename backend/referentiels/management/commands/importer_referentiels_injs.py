@@ -627,9 +627,17 @@ class Command(BaseCommand):
             if drapeaux['courante']:
                 AnneeAcademique.objects.filter(courante=True).exclude(
                     libelle=item['libelle']).update(courante=False)
+            # Provenance : le calendrier écoulé et l'année courante sont
+            # des faits arrêtés (OFFICIEL) ; les années planifiées restent
+            # des prévisions à confirmer par la direction (CADRAGE).
             obj, c = self._upsert(AnneeAcademique, {'libelle': item['libelle']}, {
                 'date_debut': date.fromisoformat(item['date_debut']),
                 'date_fin': date_fin,
+                'description': item.get('observation', ''),
+                'source_document': (
+                    'ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — §6'
+                ),
+                'fiabilite': 'CADRAGE' if statut == 'PLANIFIEE' else 'OFFICIEL',
                 **drapeaux,
             })
             obj.save()

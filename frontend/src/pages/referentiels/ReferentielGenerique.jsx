@@ -55,6 +55,11 @@ const LIBELLES_CHAMPS = {
   periode_fin: 'Fin de période',
   effectif_prevu: 'Effectif prévu',
   effectif_reel: 'Effectif réel',
+  date_debut: 'Date de début',
+  date_fin: 'Date de fin',
+  courante: 'Année courante',
+  cloturee: 'Clôturée',
+  date_cloture: 'Date de clôture',
 }
 
 /** Ordre de lecture imposé aux tables importées, du plus signifiant au détail. */
@@ -101,7 +106,7 @@ const DEPENDANCES = {
   batiment: 'site',
 }
 
-const CHAMPS_BOOLEENS = ['actif', 'est_stage', 'est_ouvert']
+const CHAMPS_BOOLEENS = ['actif', 'est_stage', 'est_ouvert', 'courante', 'cloturee']
 
 const LIBELLE_TECHNIQUE = {
   formation_intitule: 'Cycle de rattachement',

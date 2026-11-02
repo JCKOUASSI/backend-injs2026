@@ -7,7 +7,7 @@
       "Le mode Orange Money porte le code ELEPHANT_MONEY : c'est le code historique du socle finances_etudiantes.MODE_PAIEMENT, repris tel quel par le PDF. Il est conservé à l'identique pour ne pas rompre l'alignement entre le référentiel et le module Finances ; un renommage exigerait une migration des paiements existants.",
       "Compteurs du PDF : sa couverture annonce 14/28/56/47, ses chapitres disent parfois « vingt-neuf » types de frais, « soixante » documents, « cinquante-huit » notifications — les tableaux détaillés comportent 14/28/56/47 lignes, transcrites toutes.",
       "Années académiques : le modèle scolarite.AnneeAcademique porte les mêmes champs que le §6.1 du PDF. Statut ARCHIVEE = cloturee + inactif ; CLOTUREE = cloturee (encore consultable) ; PLANIFIEE = actif, ni courante ni clôturée ; une seule COURANTE (2026-2027), date_cloture = date de fin pour les années closes.",
-      "Le modèle année ne suit pas la provenance (pas de champ source/fiabilité) : les observations du §6 sont conservées dans ce fichier et le registre nomme la source sur la carte."
+      "La provenance des années est estampillée comme les autres référentiels (migration scolarite 0019) : observation du §6 en description, source du document, fiabilité OFFICIEL pour les années écoulées/clôturée/courante et CADRAGE pour les planifiées (prévisions à confirmer par la direction)."
     ]
   },
   "modes_paiement": {
