@@ -1250,3 +1250,181 @@ select.cand-saisie {
   border-color: #F5C2C7;
   color: #A3222F;
 }
+
+/* ── Champ date premium : saisie libre + calendrier ─────────────────────────
+   Fenêtre flottante assortie aux modales premium (ombre --injs-shadow-float,
+   grand rayon, dégradé INJS pour le jour choisi). */
+.cand-date { position: relative; }
+
+.cand-date-ligne { display: flex; gap: 0.45rem; align-items: stretch; }
+.cand-date-ligne .cand-saisie { flex: 1 1 auto; min-width: 0; }
+
+.cand-date-bouton {
+  flex: 0 0 auto;
+  width: 42px;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border: 1px solid #D7E6F7;
+  border-radius: 11px;
+  font-size: 1.02rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.cand-date-bouton:hover { background: #DCEBFD; border-color: var(--injs-blue-royal); }
+.cand-date-bouton:focus-visible {
+  outline: var(--injs-focus-outline);
+  outline-offset: 2px;
+}
+
+.cand-cal {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 60;
+  width: 302px;
+  max-width: min(320px, 88vw);
+  padding: 0.8rem;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: var(--injs-radius-lg);
+  box-shadow: var(--injs-shadow-float), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  animation: cand-cal-apparition 0.16s ease;
+}
+@keyframes cand-cal-apparition {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cand-cal { animation: none; }
+}
+
+.cand-cal-entete {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.55rem;
+}
+
+.cand-cal-nav {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--injs-blue);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.cand-cal-nav:hover:not(:disabled) { background: var(--injs-blue-pale); color: var(--injs-blue-royal); }
+.cand-cal-nav:disabled { color: #CBD5E1; cursor: not-allowed; }
+.cand-cal-nav:focus-visible { outline: var(--injs-focus-outline); outline-offset: 1px; }
+
+.cand-cal-select {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0.3rem 1.6rem 0.3rem 0.55rem;
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #0F172A;
+  background-color: #FBFCFE;
+  border: 1px solid #E2E8F0;
+  border-radius: 9px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2364748B' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M3.5 6l4.5 4.5L12.5 6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  cursor: pointer;
+}
+.cand-cal-select:focus {
+  outline: none;
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
+}
+.cand-cal-select--mois { text-transform: capitalize; }
+
+.cand-cal-jours,
+.cand-cal-grille {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.cand-cal-jours span {
+  padding: 0.25rem 0;
+  text-align: center;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #94A3B8;
+}
+
+.cand-cal-jour {
+  height: 34px;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #0F172A;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
+}
+.cand-cal-jour:hover:not(:disabled) { background: var(--injs-blue-pale); }
+.cand-cal-jour:focus-visible { outline: var(--injs-focus-outline); outline-offset: 1px; }
+.cand-cal-jour:disabled { color: #D5DDE8; cursor: not-allowed; }
+
+.cand-cal-jour--hors { color: #B6C2D2; }
+
+.cand-cal-jour--aujourdhui {
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1.5px var(--injs-blue-royal);
+}
+
+.cand-cal-jour--choisi {
+  color: #FFFFFF;
+  font-weight: 700;
+  background: var(--injs-gradient-primary);
+  box-shadow: 0 6px 14px -6px rgba(18, 103, 214, 0.65);
+}
+.cand-cal-jour--choisi:hover:not(:disabled) { background: var(--injs-gradient-primary); }
+
+.cand-cal-pied {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.55rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #EDF2F7;
+}
+
+.cand-cal-effacer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.65rem;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748B;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.cand-cal-effacer:hover { color: #B3261E; background: #FDF2F2; }
+.cand-cal-effacer:focus-visible { outline: var(--injs-focus-outline); outline-offset: 1px; }

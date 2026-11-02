@@ -19,6 +19,7 @@ import { renderWithProviders } from '@/test/utils/renderWithProviders'
 import { flushPromises } from '@/test/utils/async'
 import { makeUser } from '@/test/utils/factories'
 import Candidatures, {
+  MOIS_FR,
   dateFrancaiseVersIso,
   erreurDateNaissance,
   masquerDateFrancaise,
@@ -379,5 +380,98 @@ describe('pages/scolarite/Candidatures — saisie manuelle de la date de naissan
     const candidats = posts((p) => p === '/admissions/candidats/')
     expect(candidats).toHaveLength(1)
     expect(candidats[0].body).toMatchObject({ date_naissance: '' })
+  })
+})
+
+describe('pages/scolarite/Candidatures — calendrier premium de la date de naissance', () => {
+  const ouvrirFormulaire = async () => {
+    mount()
+    await screen.findByText('C-005')
+    fireEvent.click(screen.getByRole('button', { name: /nouvelle candidature/i }))
+    return formOuvert()
+  }
+
+  const remplir = (card) => {
+    fireEvent.change(within(card).getByLabelText('Nom'), { target: { value: 'Traoré' } })
+    fireEvent.change(within(card).getByLabelText('Prénoms'), { target: { value: 'Mariam' } })
+    fireEvent.change(within(card).getByLabelText('Formation demandée'), { target: { value: '10' } })
+    fireEvent.change(within(card).getByLabelText('Niveau demandé'), { target: { value: '2' } })
+  }
+
+  const ouvrirCalendrier = async (card) => {
+    fireEvent.click(within(card).getByRole('button', { name: /ouvrir le calendrier/i }))
+    return within(card).findByRole('dialog', { name: /choisir une date de naissance/i })
+  }
+
+  it('s’ouvre une vingtaine d’années en arrière quand le champ est vide', async () => {
+    const card = await ouvrirFormulaire()
+    const dialogue = await ouvrirCalendrier(card)
+    const maintenant = new Date()
+    expect(within(dialogue).getByLabelText('Année affichée'))
+      .toHaveValue(String(maintenant.getFullYear() - 20))
+    expect(within(dialogue).getByLabelText('Mois affiché'))
+      .toHaveValue(String(maintenant.getMonth()))
+  })
+
+  it('sélectionne un jour après navigation mois/année et envoie la date en ISO', async () => {
+    const card = await ouvrirFormulaire()
+    remplir(card)
+    const dialogue = await ouvrirCalendrier(card)
+
+    fireEvent.change(within(dialogue).getByLabelText('Mois affiché'), { target: { value: '2' } })
+    fireEvent.change(within(dialogue).getByLabelText('Année affichée'), { target: { value: '2007' } })
+    fireEvent.click(within(dialogue).getByRole('button', { name: '14 mars 2007' }))
+
+    expect(within(card).getByLabelText('Date de naissance')).toHaveValue('14/03/2007')
+    expect(within(card).queryByRole('dialog')).not.toBeInTheDocument()
+
+    fireEvent.click(within(card).getByRole('button', { name: /enregistrer la candidature/i }))
+    await settle()
+    const candidats = posts((p) => p === '/admissions/candidats/')
+    expect(candidats).toHaveLength(1)
+    expect(candidats[0].body).toMatchObject({ date_naissance: '2007-03-14' })
+  })
+
+  it('rouvre sur le mois de la date déjà saisie et marque le jour choisi', async () => {
+    const card = await ouvrirFormulaire()
+    fireEvent.change(within(card).getByLabelText('Date de naissance'), {
+      target: { value: '14032007' },
+    })
+    const dialogue = await ouvrirCalendrier(card)
+    expect(within(dialogue).getByLabelText('Mois affiché')).toHaveValue('2')
+    expect(within(dialogue).getByLabelText('Année affichée')).toHaveValue('2007')
+    expect(within(dialogue).getByRole('button', { name: '14 mars 2007' }))
+      .toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('désactive les dates futures', async () => {
+    const card = await ouvrirFormulaire()
+    const dialogue = await ouvrirCalendrier(card)
+    const maintenant = new Date()
+    fireEvent.change(within(dialogue).getByLabelText('Mois affiché'), {
+      target: { value: String(maintenant.getMonth()) },
+    })
+    fireEvent.change(within(dialogue).getByLabelText('Année affichée'), {
+      target: { value: String(maintenant.getFullYear()) },
+    })
+    const demain = new Date(Date.now() + 24 * 3600 * 1000)
+    const libelle = `${demain.getDate()} ${MOIS_FR[demain.getMonth()]} ${demain.getFullYear()}`
+    expect(within(dialogue).getByRole('button', { name: libelle })).toBeDisabled()
+  })
+
+  it('Échap ferme le calendrier ; Effacer vide le champ', async () => {
+    const card = await ouvrirFormulaire()
+    const champDate = within(card).getByLabelText('Date de naissance')
+    fireEvent.change(champDate, { target: { value: '14032007' } })
+
+    let dialogue = await ouvrirCalendrier(card)
+    fireEvent.keyDown(dialogue, { key: 'Escape' })
+    expect(within(card).queryByRole('dialog')).not.toBeInTheDocument()
+    expect(champDate).toHaveValue('14/03/2007')
+
+    dialogue = await ouvrirCalendrier(card)
+    fireEvent.click(within(dialogue).getByRole('button', { name: /effacer/i }))
+    expect(champDate).toHaveValue('')
+    expect(within(card).queryByRole('dialog')).not.toBeInTheDocument()
   })
 })
