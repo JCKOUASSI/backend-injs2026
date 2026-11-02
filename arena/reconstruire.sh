@@ -131,6 +131,13 @@ log "Module Admissions : référentiels et données d'exemple…"
   && "$VENV/bin/python" manage.py seed_candidatures_demo) \
   && touch "$BACKEND/.admissions_demo_ok"
 
+# Équivalences et dispenses : demandes d'exemple sur les cohortes réelles
+# (2 types × 9 statuts répartis sur les 40 cohortes, cibles UE/ECUE des
+# maquettes ACTIVE). Idempotent ; retrait : seed_equivalences_demo --purger.
+log "Équivalences et dispenses : données d'exemple…"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py seed_equivalences_demo) \
+  && touch "$BACKEND/.equivalences_demo_ok"
+
 # ── 6. Site web ──────────────────────────────────────────────────────────────
 if [ ! -d "$FRONTEND/node_modules" ]; then
   log "Installation des dépendances npm…"

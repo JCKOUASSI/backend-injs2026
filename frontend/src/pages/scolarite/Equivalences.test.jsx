@@ -506,3 +506,115 @@ describe('pages/scolarite/Equivalences.jsx — application (LOT 31)', () => {
     expect(await screen.findByText('Application impossible.')).toBeInTheDocument()
   })
 })
+
+/* ------------------------------------------------------------------ */
+/* Premium : cycle cliquable, filtres, actions complétées, cibles       */
+/* ------------------------------------------------------------------ */
+
+describe('pages/scolarite/Equivalences.jsx — cycle, filtres et actions (premium)', () => {
+  beforeEach(() => {
+    apiController.reset()
+    window.localStorage.clear()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+  })
+
+  const ENRICHIES = [
+    {
+      id: 31, type_demande: 'EQUIVALENCE', matricule: 'B001', etudiant_nom: 'N’Guessan Aya',
+      ref_formation: 'LICENCE STAPS', niveau: 'L2', decision: 'EN_ATTENTE',
+      statut: 'EN_INSTRUCTION', credits_reconnus: null,
+      etablissement_origine: 'Université de Cocody (exemple)', diplome_origine: 'Licence STAPS (exemple)',
+      ue_code: 'UE11', ue_intitule: 'Sciences du mouvement',
+      nb_pieces: 2, pieces_validees: 1, dossier_complet: false,
+      motif: '[Exemple] Reconnaissance d’acquis antérieurs.',
+    },
+    {
+      id: 32, type_demande: 'DISPENSE', matricule: 'B002', etudiant_nom: 'Touré Ibrahim',
+      ref_formation: 'LICENCE STAPS', niveau: 'L2', decision: '',
+      statut: 'A_COMPLETER', credits_reconnus: null,
+      ecue_code: 'ECUE111', ecue_intitule: 'Anatomie',
+      nb_pieces: 2, pieces_validees: 2, dossier_complet: true,
+      motif: '[Exemple] UE déjà validée.',
+    },
+  ]
+
+  it('affiche nom, niveau, cible, pièces et la pastille Exemple ; EN_ATTENTE devient un tiret', async () => {
+    mount('ADMIN', () => ENRICHIES)
+    await settle()
+    const ligne = rowFor('B001')
+    expect(within(ligne).getByText('N’Guessan Aya')).toBeInTheDocument()
+    expect(within(ligne).getByText('L2')).toBeInTheDocument()
+    expect(within(ligne).getByText('Université de Cocody (exemple)')).toBeInTheDocument()
+    expect(within(ligne).getByText('1/2')).toBeInTheDocument()
+    expect(within(ligne).getByText('Incomplet')).toBeInTheDocument()
+    expect(within(ligne).getByText('Exemple')).toBeInTheDocument()
+    expect(within(ligne).queryByText('EN_ATTENTE')).toBeNull()
+    expect(within(rowFor('B002')).getByText('Complet')).toBeInTheDocument()
+  })
+
+  it('le cycle filtre par étape et le segment par type', async () => {
+    mount('ADMIN', () => ENRICHIES)
+    await settle()
+    const etapeACompleter = () => within(
+      screen.getByRole('group', { name: /Filtrer par étape/ }),
+    ).getByRole('button', { name: /À compléter/ })
+    fireEvent.click(etapeACompleter())
+    await settle()
+    expect(screen.queryByText('B001')).toBeNull()
+    expect(screen.getByText('B002')).toBeInTheDocument()
+    fireEvent.click(etapeACompleter())
+    await settle()
+    fireEvent.click(screen.getByRole('button', { name: 'Équivalences' }))
+    await settle()
+    expect(screen.getByText('B001')).toBeInTheDocument()
+    expect(screen.queryByText('B002')).toBeNull()
+  })
+
+  it('EN_INSTRUCTION propose À compléter et Rejeter (confirmé) ; A_COMPLETER propose Reprendre', async () => {
+    mount('ADMIN', () => ENRICHIES)
+    await settle()
+    fireEvent.click(within(rowFor('B001')).getByRole('button', { name: 'À compléter' }))
+    await waitFor(() => expect(postsTo('/31/transition/')).toHaveLength(1))
+    expect(postsTo('/31/transition/')[0][1]).toEqual({ statut: 'A_COMPLETER' })
+
+    fireEvent.click(within(rowFor('B002')).getByRole('button', { name: 'Reprendre' }))
+    await waitFor(() => expect(postsTo('/32/transition/')).toHaveLength(1))
+    expect(postsTo('/32/transition/')[0][1]).toEqual({ statut: 'EN_INSTRUCTION' })
+
+    fireEvent.click(within(rowFor('B001')).getByRole('button', { name: 'Rejeter' }))
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/Rejeter définitivement/i))
+    await waitFor(() =>
+      expect(postsTo('/31/transition/').at(-1)[1]).toEqual({ statut: 'REJETEE' }),
+    )
+  })
+
+  it('création : établissement, diplôme et cibles UE/ECUE rejoignent le payload quand ils sont renseignés', async () => {
+    apiController.setRoute('/scolarite/maquettes/', () => [{ id: 7 }])
+    apiController.setRoute('/scolarite/maquettes/7/', () => ({
+      unites_enseignement: [{
+        id: 11, code: 'UE11', intitule: 'Sciences du mouvement', credits: 6,
+        ecues: [{ id: 21, code: 'ECUE111', intitule: 'Anatomie', credits: 3 }],
+      }],
+    }))
+    mount()
+    await settle()
+    fireEvent.change(selectByPlaceholder('Formation…'), { target: { value: '3' } })
+    fireEvent.change(selectByPlaceholder('Niveau…'), { target: { value: '4' } })
+    await settle()
+    fireEvent.change(selectByPlaceholder('Étudiant…'), { target: { value: '1' } })
+    fireEvent.change(selectByPlaceholder('Année…'), { target: { value: '2' } })
+    fireEvent.change(screen.getByPlaceholderText('Établissement d’origine'), { target: { value: 'Université de Cocody' } })
+    fireEvent.change(screen.getByPlaceholderText('Diplôme d’origine'), { target: { value: 'Licence STAPS' } })
+    fireEvent.change(selectByPlaceholder('UE concernée (optionnel)…'), { target: { value: '11' } })
+    fireEvent.change(selectByPlaceholder('ECUE concernée (optionnel)…'), { target: { value: '21' } })
+    fireEvent.click(screen.getByRole('button', { name: '+' }))
+
+    await waitFor(() => expect(postsTo('/equivalences/demandes/')).toHaveLength(1))
+    expect(postsTo('/equivalences/demandes/')[0][1]).toMatchObject({
+      etablissement_origine: 'Université de Cocody',
+      diplome_origine: 'Licence STAPS',
+      ue_id: 11,
+      ecue_id: 21,
+    })
+  })
+})
