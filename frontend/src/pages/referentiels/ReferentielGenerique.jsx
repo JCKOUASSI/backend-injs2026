@@ -38,6 +38,23 @@ const LIBELLES_CHAMPS = {
   niveau: 'Niveau',
   ref_formation: 'Cycle de formation',
   type_formation: 'Type de formation',
+  type_lieu: 'Type de lieu',
+  capacite: 'Capacité',
+  equipements: 'Équipements',
+  indisponible_du: 'Indisponible du',
+  indisponible_au: 'Indisponible au',
+  geofence_latitude: 'Latitude (géorepérage)',
+  geofence_longitude: 'Longitude (géorepérage)',
+  geofence_rayon_m: 'Rayon de géorepérage (m)',
+  site: 'Site',
+  batiment: 'Bâtiment',
+  type_espace: "Type d'espace sportif",
+  formation: 'Formation (cycle)',
+  statut: 'Statut',
+  periode_debut: 'Début de période',
+  periode_fin: 'Fin de période',
+  effectif_prevu: 'Effectif prévu',
+  effectif_reel: 'Effectif réel',
 }
 
 /** Ordre de lecture imposé aux tables importées, du plus signifiant au détail. */
@@ -81,6 +98,7 @@ const LIBELLE_FIABILITE = {
 /** Un champ de type clé étrangère dépend-il d'un autre champ du formulaire ? */
 const DEPENDANCES = {
   mention: 'ecole',
+  batiment: 'site',
 }
 
 const CHAMPS_BOOLEENS = ['actif', 'est_stage', 'est_ouvert']
@@ -147,6 +165,10 @@ export default function ReferentielGenerique() {
   const aUnCode = entree ? entree.a_un_code !== false : true
   const champsChoix = entree?.champs_choix || {}
   const champsNumeriques = entree?.champs_numeriques || []
+  const champsDates = entree?.champs_dates || []
+  // Certains modèles tracent leur provenance sans porter de description
+  // (sites, bâtiments, salles, vagues) : ne pas afficher un champ mort.
+  const aUneDescription = entree ? entree.a_une_description !== false : true
 
   const afficherCellule = (ligne, cle) => {
     const choix = champsChoix[cle]
@@ -302,9 +324,12 @@ export default function ReferentielGenerique() {
     if (!provenanceSuivie) {
       delete corps.fiabilite
       delete corps.source_document
-      delete corps.description
     }
-    (entree?.selecteurs || []).forEach((fk) => {
+    if (!provenanceSuivie || !aUneDescription) delete corps.description
+    champsDates.forEach((champ) => {
+      if (corps[champ] === '') corps[champ] = null
+    })
+    ;(entree?.selecteurs || []).forEach((fk) => {
       corps[fk] = corps[fk] === '' ? null : Number(corps[fk])
     })
     Object.keys(champsChoix).forEach((champ) => {
@@ -743,7 +768,10 @@ export default function ReferentielGenerique() {
                     ) : (
                       <input
                         id={`ref-${champ}`}
-                        type={champsNumeriques.includes(champ) || champ === 'ordre' ? 'number' : 'text'}
+                        type={champsDates.includes(champ)
+                          ? 'date'
+                          : (champsNumeriques.includes(champ) || champ === 'ordre' ? 'number' : 'text')}
+                        step="any"
                         className="cand-saisie"
                         value={form[champ] ?? ''}
                         onChange={(e) => setForm({ ...form, [champ]: e.target.value })}
@@ -798,6 +826,7 @@ export default function ReferentielGenerique() {
                     placeholder="Document officiel attestant la valeur"
                   />
                 </div>
+                {aUneDescription && (
                 <div className="cand-champ ref-champ-large">
                   <label className="cand-etiquette" htmlFor="ref-description">Description</label>
                   <textarea
@@ -808,6 +837,7 @@ export default function ReferentielGenerique() {
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                   />
                 </div>
+                )}
                 </>
                 )}
               </div>

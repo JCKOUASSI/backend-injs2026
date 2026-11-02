@@ -21,7 +21,10 @@ from .models import (
     RefTypeNotification,
 )
 
-CODE_RE = re.compile(r'^[A-Z0-9_]{2,50}$')
+# Le tiret est admis : les codes métier des salles suivent la convention
+# AMP-001 / GYM-002 de l'inventaire des lieux. Le premier caractère reste
+# alphanumérique pour interdire les codes purement ponctuation.
+CODE_RE = re.compile(r'^[A-Z0-9][A-Z0-9_-]{1,49}$')
 
 
 class RefSocleSerializer(serializers.ModelSerializer):
@@ -49,9 +52,14 @@ class RefSocleSerializer(serializers.ModelSerializer):
 
     def validate_code(self, value):
         value = value.strip().upper()
+        if not value:
+            # Code facultatif sur certains modèles hérités (vagues) :
+            # l'obligation éventuelle est portée par allow_blank du champ.
+            return value
         if not CODE_RE.match(value):
             raise serializers.ValidationError(
-                "Code invalide : 2 à 50 caractères parmi A-Z, 0-9 et _."
+                "Code invalide : 2 à 50 caractères parmi A-Z, 0-9, _ et - "
+                "(ex. GYM-001)."
             )
         return value
 

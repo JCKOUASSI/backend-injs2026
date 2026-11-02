@@ -111,6 +111,10 @@ def entree(**kwargs):
     # = pas de colonne code distincte (ex. Semestre : « S1 » fait les deux).
     kwargs.setdefault('champ_libelle', 'libelle')
     kwargs.setdefault('champ_code', 'code')
+    # Champ de rattachement qui borne le contrôle anti-doublon de libellé
+    # (ex. le nom d'un bâtiment ou d'une salle est unique PAR SITE, pas
+    # globalement). Vide = unicité globale du libellé.
+    kwargs.setdefault('unicite_par', '')
     # Libellé du bouton d'accès sur la carte du tableau de bord (défaut
     # front : « Gérer » si éditable, « Consulter » sinon).
     kwargs.setdefault('libelle_bouton', '')
@@ -353,8 +357,9 @@ REGISTRE = {
         slug='sites', libelle='Sites',
         description='Sites et centres de formation.',
         categorie=Categorie.ORGANISATION, modele='formations.RefSite',
-        editable=False, route_api='/formations/ref/sites/',
-        route_ui='/referentiels/edition', icone='bi-geo-alt-fill',
+        champ_libelle='nom', champ_code='nom',
+        champs=['geofence_latitude', 'geofence_longitude', 'geofence_rayon_m'],
+        icone='bi-geo-alt-fill',
         source='Liste des bâtiments, salles et espaces ; Organisation pédagogique (PDF) — §5',
         avertissement=(
             'Seul le campus INJS Marcory est inventorié, avec son point de '
@@ -367,16 +372,24 @@ REGISTRE = {
         slug='batiments', libelle='Bâtiments',
         description='Bâtiments rattachés aux sites.',
         categorie=Categorie.ORGANISATION, modele='formations.RefBatiment',
-        editable=False, route_api='/formations/ref/batiments/',
-        route_ui='/referentiels/edition', icone='bi-building',
+        champ_libelle='nom', champ_code='nom',
+        selecteurs=['site'],
+        unicite_par='site',
+        icone='bi-building',
         source='Liste des bâtiments, salles et espaces',
     ),
     'salles': entree(
         slug='salles', libelle='Salles et espaces',
         description='Salles, amphithéâtres, gymnases et espaces sportifs.',
         categorie=Categorie.ORGANISATION, modele='formations.RefSalle',
-        editable=False, route_api='/formations/ref/salles/',
-        route_ui='/referentiels/edition', icone='bi-door-open',
+        champ_libelle='nom',
+        champs=[
+            'type_lieu', 'capacite', 'equipements',
+            'indisponible_du', 'indisponible_au',
+        ],
+        selecteurs=['site', 'batiment', 'type_espace'],
+        unicite_par='site',
+        icone='bi-door-open',
         source='Liste des bâtiments, salles et espaces ; Organisation pédagogique (PDF) — §7 et §8',
         avertissement=(
             'Inventaire déclaré partiellement modélisé par sa source : les '
@@ -390,8 +403,12 @@ REGISTRE = {
         slug='vagues', libelle='Vagues',
         description='Vagues de recrutement et de formation.',
         categorie=Categorie.ORGANISATION, modele='formations.RefVague',
-        editable=False, route_api='/formations/ref/vagues/',
-        route_ui='/referentiels/edition', icone='bi-layers-half',
+        champs=[
+            'ordre', 'periode_debut', 'periode_fin',
+            'effectif_prevu', 'effectif_reel',
+        ],
+        selecteurs=['formation', 'site', 'statut'],
+        icone='bi-layers-half',
         source='Vagues INJS 2026 ; Organisation pédagogique (PDF) — §4',
         avertissement=(
             'Les trois vagues de recrutement du référentiel sont des '

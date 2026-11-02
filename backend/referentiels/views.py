@@ -109,22 +109,35 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
                 {'detail': 'Cette valeur existe déjà (code ou libellé en doublon).'}
             )
 
-    def _controler_doublon_libelle(self, libelle, pk_exclu=None):
+    def _controler_doublon_libelle(self, libelle, pk_exclu=None, serializer=None):
         # ADR-006 — défense de profondeur au niveau application : la
         # comparaison normalisée (casse + accents) est portable sur
         # SQLite/PostgreSQL, là où la contrainte Lower() de base ne l'est
         # pas. La contrainte DB reste en garde-fou.
         modele = self.queryset.model
         champ = self._champ_libelle()
+        filtres = None
+        if hasattr(self, '_entree'):
+            # Certains référentiels bornent l'unicité du nom à un
+            # rattachement (nom de bâtiment/salle unique PAR SITE) :
+            # le contrôle suit alors le même périmètre que la contrainte.
+            unicite_par = self._entree().get('unicite_par')
+            if unicite_par and serializer is not None:
+                portee = serializer.validated_data.get(unicite_par)
+                if portee is None and serializer.instance is not None:
+                    portee = getattr(serializer.instance, unicite_par, None)
+                if portee is not None:
+                    filtres = {unicite_par: portee}
         if libelle and _a_le_champ(modele, champ) and libelle_en_doublon(
-                modele, libelle, pk_exclu, champ=champ):
+                modele, libelle, pk_exclu, champ=champ, filtres=filtres):
             raise ValidationError(
                 {'detail': 'Cette valeur existe déjà (code ou libellé en doublon).'}
             )
 
     def perform_create(self, serializer):
         self._controler_doublon_libelle(
-            serializer.validated_data.get(self._champ_libelle()))
+            serializer.validated_data.get(self._champ_libelle()),
+            serializer=serializer)
         obj = self._save_or_400(serializer)
         self._journaliser(obj, ReferentielJournal.Action.CREATION)
 
@@ -132,6 +145,7 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
         self._controler_doublon_libelle(
             serializer.validated_data.get(self._champ_libelle()),
             pk_exclu=serializer.instance.pk,
+            serializer=serializer,
         )
         concrets = {f.name for f in serializer.instance._meta.concrete_fields}
         suivis = [
@@ -352,8 +366,10 @@ class TableauDeBordReferentielsView(APIView):
                         and entree.get('champ_code', 'code')
                         != entree.get('champ_libelle', 'libelle')
                     ),
+                    'a_une_description': _a_le_champ(modele, 'description'),
                     'champs_choix': _champs_choix(modele, entree),
                     'champs_numeriques': _champs_numeriques(modele, entree),
+                    'champs_dates': _champs_dates(modele, entree),
                     'route_api': entree.get('route_api') or f'/referentiels/{entree["slug"]}/',
                     'selecteurs_routes': _routes_selecteurs(entree),
                 })
@@ -462,6 +478,17 @@ def _champs_choix(modele, entree):
                 for valeur, libelle in choix
             ]
     return resultat
+
+
+def _champs_dates(modele, entree):
+    """Champs métier de type date déclarés par l'entrée (périodes…)."""
+    from django.db import models as db_models
+
+    return [
+        nom for nom in entree.get('champs', [])
+        if _a_le_champ(modele, nom)
+        and isinstance(modele._meta.get_field(nom), db_models.DateField)
+    ]
 
 
 def _champs_numeriques(modele, entree):
