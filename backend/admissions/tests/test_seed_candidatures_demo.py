@@ -32,7 +32,8 @@ FORMATIONS_REQUISES = [
     ('F02', 'LICENCE'), ('F02', 'MASTER'),
     ('F03', 'LICENCE'), ('F03', 'MASTER'),
     ('F04', 'LICENCE'), ('F04', 'MASTER'),
-    ('F05', 'LICENCE'), ('F05', 'MASTER'), ('F06', 'LICENCE'),
+    ('F05', 'LICENCE'), ('F05', 'MASTER'),
+    ('F06', 'LICENCE'), ('F06', 'MASTER'),
     ('F07', 'LICENCE'), ('F07', 'MASTER'),
     ('F08', 'LICENCE'), ('F08', 'MASTER'),
 ]
@@ -104,7 +105,7 @@ class SeedCandidaturesDemoTests(TestCase):
         # Deux admis sont déjà inscrits : dossier étudiant + matricule.
         inscrites = InscriptionAdministrative.objects.filter(
             admission__isnull=False).exclude(statut__in=('ANNULEE', 'REJETEE'))
-        self.assertEqual(inscrites.count(), 2)
+        self.assertEqual(inscrites.count(), 3)
         self.assertTrue(all(
             i.etudiant.matricule.startswith('INJS') for i in inscrites))
         # Les décisions prononcées alignent le statut de la candidature
@@ -115,6 +116,33 @@ class SeedCandidaturesDemoTests(TestCase):
         for admission in admissions_admis:
             self.assertTrue(admission.reference_decision)
             self.assertIsNotNone(admission.date_limite_inscription)
+
+        # Inscriptions administratives : toutes les dimensions du module —
+        # les 16 formations (8 filières × Licence/Master), les 5 niveaux,
+        # les 6 types et les 8 statuts du cycle de vie.
+        inscriptions = InscriptionAdministrative.objects.all()
+        self.assertEqual(inscriptions.count(), 27)
+        self.assertEqual(
+            set(inscriptions.values_list('statut', flat=True)),
+            set(InscriptionAdministrative.Statut.values),
+        )
+        self.assertEqual(
+            set(inscriptions.values_list('type_inscription', flat=True)),
+            set(InscriptionAdministrative.Type.values),
+        )
+        self.assertEqual(
+            inscriptions.values('ref_formation').distinct().count(), 16)
+        self.assertEqual(
+            set(inscriptions.values_list('niveau__code', flat=True)),
+            {'L1', 'L2', 'L3', 'M1', 'M2'},
+        )
+        # Profils d'exemple renseignés sur une partie des dossiers et
+        # matricules reflétant l'année d'entrée (L2/M2 entrés en 2025).
+        self.assertTrue(inscriptions.filter(
+            categorie__isnull=False, grade__isnull=False).exists())
+        matricules = [i.etudiant.matricule for i in inscriptions]
+        self.assertTrue(any(m.startswith('INJS25-') for m in matricules))
+        self.assertTrue(any(m.startswith('INJS26-') for m in matricules))
 
         # Campagnes : les 7 états du cycle de vie sont représentés.
         campagnes = CampagneAdmission.objects.all()
@@ -171,6 +199,7 @@ class SeedCandidaturesDemoTests(TestCase):
             PieceCandidature.objects.count(), Admission.objects.count(),
             CampagneAdmission.objects.count(),
             ClassementConcours.objects.count(),
+            InscriptionAdministrative.objects.count(),
         )
         self._seed()
         self.assertEqual(instantane, (
@@ -178,6 +207,7 @@ class SeedCandidaturesDemoTests(TestCase):
             PieceCandidature.objects.count(), Admission.objects.count(),
             CampagneAdmission.objects.count(),
             ClassementConcours.objects.count(),
+            InscriptionAdministrative.objects.count(),
         ))
 
     def test_purge_retire_toutes_les_donnees_exemple(self):

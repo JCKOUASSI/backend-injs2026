@@ -323,6 +323,56 @@ COMPLEMENT_ADMISSIONS = [
     (36, None, None, False, False, True),
 ]
 
+# ── Inscriptions administratives d'exemple (module « Inscriptions ») ─────────
+# Étudiants créés directement (sans candidature) pour couvrir TOUTES les
+# dimensions de l'écran : les 8 filières × Licence/Master, les niveaux L1→M2,
+# les 6 types d'inscription, les 8 statuts du cycle de vie, les vagues, les
+# catégories/grades de profil et les régimes d'études. Chaque inscription est
+# portée sur l'année courante (les années clôturées refusent les validations)
+# et suit la machine à états officielle (appliquer_transition).
+# (nom/prenoms/sexe/année de naissance, filière, diplôme, niveau, type,
+#  statut cible, vague n°, (rang catégorie, rang grade) ou None, régime)
+INSCRIPTIONS_DEMO = [
+    (('Konan', 'Yao Jean-Marc', 'M', 2006), 'F01', 'LICENCE', 'L1', 'PREMIERE', 'VALIDEE', 1, (1, 0), 'INITIAL'),
+    (('Diallo', 'Fatoumata', 'F', 2005), 'F02', 'LICENCE', 'L1', 'PREMIERE', 'VALIDEE', 1, (0, 0), 'INITIAL'),
+    (('Touré', 'Ibrahim', 'M', 2006), 'F03', 'LICENCE', 'L1', 'PREMIERE', 'EN_ATTENTE', 2, None, 'INITIAL'),
+    (('Kacou', 'Affoué Nadia', 'F', 2005), 'F04', 'LICENCE', 'L1', 'PREMIERE', 'A_VALIDER', 2, (1, 1), 'INITIAL'),
+    (('Yao', 'Kouadio Olivier', 'M', 2006), 'F05', 'LICENCE', 'L1', 'PREMIERE', 'BROUILLON', None, None, 'INITIAL'),
+    (('Bamba', 'Tenin', 'F', 1999), 'F06', 'LICENCE', 'L1', 'PREMIERE', 'VALIDEE', 3, None, 'PROFESSIONNEL'),
+    (('Gbocho', 'Guy Martial', 'M', 2005), 'F07', 'LICENCE', 'L1', 'PREMIERE', 'REJETEE', None, None, 'INITIAL'),
+    (('Sylla', 'Mariam', 'F', 2001), 'F08', 'LICENCE', 'L1', 'PREMIERE', 'VALIDEE', 1, (0, 0), 'CONTINU'),
+    (('Oka', 'Jean Emmanuel', 'M', 2004), 'F01', 'LICENCE', 'L2', 'REINSCRIPTION', 'VALIDEE', 1, (1, 0), 'INITIAL'),
+    (('Sangaré', 'Mory', 'M', 2004), 'F03', 'LICENCE', 'L2', 'REINSCRIPTION', 'VALIDEE', None, None, 'INITIAL'),
+    (('Aka', 'Kouakou Guy', 'M', 2004), 'F04', 'LICENCE', 'L2', 'REDOUBLEMENT', 'EN_ATTENTE', None, None, 'INITIAL'),
+    (('Bakayoko', 'Salimata', 'F', 2003), 'F06', 'LICENCE', 'L2', 'REINSCRIPTION', 'SUSPENDUE', None, None, 'INITIAL'),
+    (('Toh', 'Olivia', 'F', 2003), 'F02', 'LICENCE', 'L3', 'REINSCRIPTION', 'VALIDEE', 1, (1, 0), 'INITIAL'),
+    (('Dié', 'Alain', 'M', 2002), 'F05', 'LICENCE', 'L3', 'REINSCRIPTION', 'TERMINEE', None, None, 'INITIAL'),
+    (('Doumbia', 'Makan', 'M', 2003), 'F07', 'LICENCE', 'L3', 'REPRISE', 'VALIDEE', None, None, 'INITIAL'),
+    (('Gnagne', 'Prisca Emmanuelle', 'F', 2002), 'F02', 'MASTER', 'M1', 'PREMIERE', 'VALIDEE', 1, (1, 1), 'INITIAL'),
+    (('Coumba', 'El Hadj', 'M', 2002), 'F03', 'MASTER', 'M1', 'PREMIERE', 'A_VALIDER', 2, None, 'INITIAL'),
+    (('Ouédraogo', 'Bernice', 'F', 2000), 'F05', 'MASTER', 'M1', 'PREMIERE', 'VALIDEE', None, (0, 0), 'ALTERNANCE'),
+    (('Kande', 'Hawa', 'F', 2001), 'F08', 'MASTER', 'M1', 'PREMIERE', 'ANNULEE', None, None, 'CONTINU'),
+    (('Mahamadou', 'Souley', 'M', 2001), 'F01', 'MASTER', 'M2', 'REINSCRIPTION', 'VALIDEE', 1, (1, 0), 'INITIAL'),
+    (('Loris', 'Cheick Ahmed', 'M', 2000), 'F04', 'MASTER', 'M2', 'TRANSFERT', 'VALIDEE', None, (1, 1), 'INITIAL'),
+    (('Diawara', 'Adjaratou', 'F', 2001), 'F06', 'MASTER', 'M2', 'REORIENTATION', 'EN_ATTENTE', None, None, 'INITIAL'),
+    (('Gassama', 'Yakhouba', 'M', 2001), 'F07', 'MASTER', 'M2', 'REINSCRIPTION', 'VALIDEE', None, (0, 0), 'INITIAL'),
+    (('Kone', 'Tiemoko', 'M', 2000), 'F08', 'MASTER', 'M2', 'REDOUBLEMENT', 'BROUILLON', None, None, 'CONTINU'),
+]
+
+CHEMINS_INSCRIPTIONS = {
+    'BROUILLON': [],
+    'EN_ATTENTE': ['EN_ATTENTE'],
+    'A_VALIDER': ['EN_ATTENTE', 'A_VALIDER'],
+    'VALIDEE': ['EN_ATTENTE', 'A_VALIDER', 'VALIDEE'],
+    'REJETEE': ['EN_ATTENTE', 'REJETEE'],
+    'ANNULEE': ['ANNULEE'],
+    'SUSPENDUE': ['EN_ATTENTE', 'A_VALIDER', 'VALIDEE', 'SUSPENDUE'],
+    'TERMINEE': ['EN_ATTENTE', 'A_VALIDER', 'VALIDEE', 'TERMINEE'],
+}
+
+
+
+
 # Scénarios 27 et 28 — campagne suspendue (Master Andragogie) : dossiers déposés
 # avant la suspension de la campagne.
 SCENARIOS_SUSPENDUE = [
@@ -371,7 +421,8 @@ class Command(BaseCommand):
         self.aujourdhui = timezone.localdate()
         self.regime = RegimeEtudes.objects.filter(code='INITIAL').first()
 
-        bilan = {'campagnes': 0, 'candidatures': 0, 'pieces': 0, 'admissions': 0}
+        bilan = {'campagnes': 0, 'candidatures': 0, 'pieces': 0, 'admissions': 0,
+                 'inscriptions': 0}
         with transaction.atomic():
             campagnes = self._campagnes(annee, bilan)
             par_cle = self._candidatures(annee, campagnes, bilan)
@@ -388,6 +439,7 @@ class Command(BaseCommand):
                     commentaire='Suspension (donnée d’exemple).',
                 )
             self._complement_admissions(par_cle, bilan)
+            self._inscriptions_demo(annee, par_cle, bilan)
 
         total = Candidature.objects.count()
         par_statut = {
@@ -1046,4 +1098,141 @@ class Command(BaseCommand):
             f'leurs dossiers, {nb_fichiers} fichier(s), '
             f'{nb_campagnes} campagne(s), {nb_categories} catégorie(s) '
             f'd’exemple.'
+        ))
+
+    # ── Inscriptions administratives d'exemple ────────────────────────────────
+    def _inscriptions_demo(self, annee, par_cle, bilan):
+        """Inscriptions couvrant toutes les dimensions du module, plus une
+        conversion d'admission supplémentaire (rang 8, ADMIS en Master).
+
+        Les étudiants sont créés par les services métier (participant →
+        dossier), le matricule reflétant leur année d'entrée (L1/M1 = année
+        courante, L2/M2 = année précédente, L3 = deux ans avant)."""
+        from scolarite import inscription_services
+        from scolarite.models import (
+            DossierEtudiant, InscriptionAdministrative, JournalScolarite,
+            Niveau, Parcours, StatutEtudiant, journaliser,
+        )
+
+        vagues = list(RefVague.objects.filter(actif=True).order_by('id'))
+        regimes = {r.code: r for r in RegimeEtudes.objects.all()}
+        niveaux = {n.code: n for n in Niveau.objects.all()}
+        statut_actif = StatutEtudiant.objects.filter(code='ACTIF').first()
+        self._referentiels_profil()  # garantit l'existence des (exemple)
+        # Rang 0 = catégorie B, rang 1 = catégorie A (tri décroissant des
+        # libellés d'exemple) ; les grades suivent l'ordre de création.
+        categories = list(RefCategorie.objects.filter(
+            grades__isnull=False).distinct().order_by('-libelle', 'id'))
+        # Années d'entrée déduites de l'année courante (« 2026-2027 »…).
+        try:
+            debut = int(str(annee.libelle)[:4])
+        except (TypeError, ValueError):
+            debut = None
+
+        for rang, (identite, code_filiere, diplome, code_niveau, type_insc,
+                   statut_cible, n_vague, profil, code_regime) in enumerate(
+                       INSCRIPTIONS_DEMO, start=1):
+            nom, prenoms, sexe, annee_naissance = identite
+            formation = self._formation(code_filiere, diplome)
+            niveau = niveaux.get(code_niveau)
+            if formation is None or niveau is None:
+                self.stdout.write(self.style.WARNING(
+                    f'Inscription d’exemple n°{rang} ignorée : formation ou '
+                    f'niveau introuvable ({code_filiere}/{diplome}/{code_niveau}).'
+                ))
+                continue
+            candidat, _ = Candidat.objects.get_or_create(
+                email=_slug_email(nom, prenoms),
+                defaults={
+                    'nom': nom, 'prenom': prenoms, 'sexe': sexe,
+                    'date_naissance': date(annee_naissance, (rang % 12) + 1,
+                                           (rang % 27) + 1),
+                    'telephone': f'07 {40 + rang:02d} {10 + rang:02d} 60 {rang:02d}',
+                },
+            )
+            decalage = {'L1': 0, 'M1': 0, 'L2': 1, 'M2': 1, 'L3': 2}.get(code_niveau, 0)
+            annee_entree = annee
+            if decalage and debut:
+                libelle_entree = f'{debut - decalage}-{debut - decalage + 1}'
+                annee_entree = (AnneeAcademique.objects
+                                .filter(libelle=libelle_entree).first() or annee)
+            participant, _ = inscription_services.creer_ou_retrouver_participant(
+                candidat, annee_entree, acteur=self.acteur)
+            dossier, _ = inscription_services.creer_ou_retrouver_dossier(
+                participant, acteur=self.acteur)
+            if InscriptionAdministrative.objects.filter(
+                    etudiant=dossier, annee_academique=annee).exists():
+                continue
+
+            categorie = grade = None
+            if profil is not None and categories:
+                rang_cat, rang_grade = profil
+                if rang_cat < len(categories):
+                    categorie = categories[rang_cat]
+                    grades = list(categorie.grades.order_by('id'))
+                    if rang_grade < len(grades):
+                        grade = grades[rang_grade]
+            vague = vagues[n_vague - 1] if n_vague and n_vague <= len(vagues) else None
+            inscription = InscriptionAdministrative(
+                etudiant=dossier, annee_academique=annee,
+                ref_formation=formation,
+                parcours=Parcours.objects.filter(
+                    ref_formation=formation).order_by('id').first(),
+                niveau=niveau, vague=vague, categorie=categorie, grade=grade,
+                regime=regimes.get(code_regime), statut_etudiant=statut_actif,
+                type_inscription=type_insc,
+                date_inscription=self.aujourdhui - timedelta(days=(rang % 20) + 1),
+                observations=(
+                    f'[Exemple] Dossier de démonstration — {diplome} '
+                    f'{code_niveau}, {type_insc.lower().replace("_", " ")}.'
+                ),
+            )
+            try:
+                inscription.full_clean(exclude=['date_validation'])
+            except ValidationError as erreur:
+                self.stdout.write(self.style.WARNING(
+                    f'Inscription d’exemple n°{rang} ignorée : {erreur.messages}'
+                ))
+                continue
+            inscription.save()
+            journaliser(
+                JournalScolarite.Action.INSCRIPTION_CREEE, objet=inscription,
+                acteur=self.acteur, commentaire='[Exemple] Dossier d’inscription.',
+            )
+            for etape in CHEMINS_INSCRIPTIONS[statut_cible]:
+                inscription_services.appliquer_transition(
+                    inscription, etape, acteur=self.acteur,
+                    commentaire='[Exemple] Avancement du dossier.',
+                )
+            bilan['inscriptions'] += 1
+
+        # Une 3ᵉ inscription issue des admissions (Touré Mamadou, rang 8, ADMIS
+        # Master Entraînement Sportif) — conversion idempotente.
+        from admissions.models import Admission
+
+        candidature8 = par_cle.get(8)
+        if candidature8 is not None:
+            admission8 = Admission.objects.filter(
+                candidature=candidature8).first()
+            if admission8 is not None and admission8.permet_inscription:
+                inscrit_avant = InscriptionAdministrative.objects.count()
+                inscription8 = \
+                    inscription_services.convertir_admission_en_inscription(
+                        admission8, acteur=self.acteur)
+                for etape in ['EN_ATTENTE', 'A_VALIDER', 'VALIDEE']:
+                    if inscription8.statut != 'VALIDEE':
+                        try:
+                            inscription_services.appliquer_transition(
+                                inscription8, etape, acteur=self.acteur,
+                                commentaire='[Exemple] Validation du dossier.',
+                            )
+                        except inscription_services.InscriptionImpossible:
+                            break
+                if InscriptionAdministrative.objects.count() > inscrit_avant:
+                    bilan['inscriptions'] += 1
+
+        self.stdout.write(self.style.SUCCESS(
+            f'Inscriptions administratives d’exemple : '
+            f'{bilan["inscriptions"]} inscription(s) créée(s) (toutes filières, '
+            f'niveaux, types et statuts représentés).'
         ))

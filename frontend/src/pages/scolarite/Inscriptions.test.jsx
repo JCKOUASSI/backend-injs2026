@@ -143,3 +143,51 @@ describe('pages/scolarite/Inscriptions — validation en cascade', () => {
     expect(await screen.findByText('Étape bloquée.')).toBeInTheDocument()
   })
 })
+
+describe('pages/scolarite/Inscriptions — refonte premium', () => {
+  it('passe les filtres formation, niveau et type au service', async () => {
+    mount()
+    await screen.findByText('MAT-001')
+
+    fireEvent.change(screen.getByDisplayValue('Toutes les formations'), {
+      target: { value: '10' },
+    })
+    await settle()
+    expect(listCalls().at(-1)).toMatchObject({ ref_formation_id: '10' })
+
+    fireEvent.change(screen.getByDisplayValue('Tous les niveaux'), {
+      target: { value: '2' },
+    })
+    await settle()
+    expect(listCalls().at(-1)).toMatchObject({ ref_formation_id: '10', niveau_id: '2' })
+
+    fireEvent.change(screen.getByDisplayValue('Tous les types'), {
+      target: { value: 'REINSCRIPTION' },
+    })
+    await settle()
+    expect(listCalls().at(-1)).toMatchObject({ type_inscription: 'REINSCRIPTION' })
+  })
+
+  it('affiche les indicateurs issus des statistiques serveur', async () => {
+    apiController.setRoute('/scolarite/inscriptions/stats/', () => ({
+      total: 40,
+      inscrits: 30,
+      par_statut: { VALIDEE: 30, BROUILLON: 2, EN_ATTENTE: 3, A_VALIDER: 1, REJETEE: 3, ANNULEE: 1 },
+    }))
+    mount()
+    await screen.findByText('MAT-001')
+    await settle()
+    // Totaux de l'année (40 dossiers), pas seulement les 2 lignes chargées.
+    expect(screen.getByText('40')).toBeInTheDocument()
+    expect(screen.getByText('75 % des dossiers')).toBeInTheDocument()
+    expect(screen.getByText('+ 1 annulée')).toBeInTheDocument()
+  })
+
+  it('présente l’étudiant avec son matricule et ouvre le dossier', async () => {
+    mount()
+    await screen.findByText('MAT-001')
+    const ligne = rowOf('MAT-001')
+    expect(within(ligne).getByText('Awa Koné')).toBeInTheDocument()
+    expect(within(ligne).getByRole('button', { name: 'Dossier' })).toBeInTheDocument()
+  })
+})
