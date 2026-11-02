@@ -18,7 +18,11 @@ import apiMock, { apiController } from '@/test/utils/mockApi'
 import { renderWithProviders } from '@/test/utils/renderWithProviders'
 import { flushPromises } from '@/test/utils/async'
 import { makeUser } from '@/test/utils/factories'
-import Candidatures from '@/pages/scolarite/Candidatures'
+import Candidatures, {
+  dateFrancaiseVersIso,
+  erreurDateNaissance,
+  masquerDateFrancaise,
+} from '@/pages/scolarite/Candidatures'
 
 const listCalls = () =>
   apiMock.get.mock.calls
@@ -279,5 +283,101 @@ describe('pages/scolarite/Candidatures — création', () => {
     expect(await within(card).findByText(/nom : ce champ est obligatoire/i)).toBeInTheDocument()
     // Aucune candidature n'a été créée (le candidat a échoué).
     expect(posts((p) => p === '/admissions/candidatures/')).toHaveLength(0)
+  })
+})
+
+describe('pages/scolarite/Candidatures — saisie manuelle de la date de naissance', () => {
+  it('masque JJ/MM/AAAA : séparateurs automatiques pendant la frappe', () => {
+    expect(masquerDateFrancaise('')).toBe('')
+    expect(masquerDateFrancaise('0')).toBe('0')
+    expect(masquerDateFrancaise('021')).toBe('02/1')
+    expect(masquerDateFrancaise('02112007')).toBe('02/11/2007')
+    // Idempotent (collage déjà formaté) et borné à 8 chiffres.
+    expect(masquerDateFrancaise('02/11/2007')).toBe('02/11/2007')
+    expect(masquerDateFrancaise('02112007999')).toBe('02/11/2007')
+    expect(masquerDateFrancaise('02-11-2007')).toBe('02/11/2007')
+  })
+
+  it('convertit JJ/MM/AAAA en ISO et refuse les dates inexistantes', () => {
+    expect(dateFrancaiseVersIso('02/11/2007')).toBe('2007-11-02')
+    expect(dateFrancaiseVersIso('29/02/2024')).toBe('2024-02-29')
+    expect(dateFrancaiseVersIso('29/02/2023')).toBeNull()
+    expect(dateFrancaiseVersIso('31/02/2007')).toBeNull()
+    expect(dateFrancaiseVersIso('2/11/2007')).toBeNull()
+    expect(dateFrancaiseVersIso('')).toBeNull()
+  })
+
+  it('valide : absente admise, invalide et futur refusés', () => {
+    expect(erreurDateNaissance('')).toBe('')
+    expect(erreurDateNaissance('14/03/2007')).toBe('')
+    expect(erreurDateNaissance('31/02/2007')).toMatch(/invalide/i)
+    expect(erreurDateNaissance('14/03/')).toMatch(/invalide/i)
+    const demain = new Date(Date.now() + 24 * 3600 * 1000)
+    const jj = String(demain.getDate()).padStart(2, '0')
+    const mm = String(demain.getMonth() + 1).padStart(2, '0')
+    expect(erreurDateNaissance(`${jj}/${mm}/${demain.getFullYear()}`)).toMatch(/futur/i)
+  })
+
+  const remplirIdentite = (card) => {
+    fireEvent.change(within(card).getByLabelText('Nom'), { target: { value: 'Traoré' } })
+    fireEvent.change(within(card).getByLabelText('Prénoms'), { target: { value: 'Mariam' } })
+    fireEvent.change(within(card).getByLabelText('Formation demandée'), { target: { value: '10' } })
+    fireEvent.change(within(card).getByLabelText('Niveau demandé'), { target: { value: '2' } })
+  }
+
+  it('le champ accepte la frappe libre et envoie la date en ISO', async () => {
+    mount()
+    await screen.findByText('C-005')
+    fireEvent.click(screen.getByRole('button', { name: /nouvelle candidature/i }))
+    const card = formOuvert()
+    remplirIdentite(card)
+
+    const champDate = within(card).getByLabelText('Date de naissance')
+    expect(champDate).toHaveAttribute('placeholder', 'JJ/MM/AAAA')
+    expect(champDate).toHaveAttribute('inputmode', 'numeric')
+
+    fireEvent.change(champDate, { target: { value: '14032007' } })
+    expect(champDate).toHaveValue('14/03/2007')
+
+    fireEvent.click(within(card).getByRole('button', { name: /enregistrer la candidature/i }))
+    await settle()
+
+    const candidats = posts((p) => p === '/admissions/candidats/')
+    expect(candidats).toHaveLength(1)
+    expect(candidats[0].body).toMatchObject({ date_naissance: '2007-03-14' })
+    expect(await screen.findByText('Candidature enregistrée')).toBeInTheDocument()
+  })
+
+  it('une date inexistante bloque l’enregistrement avec un message clair', async () => {
+    mount()
+    await screen.findByText('C-005')
+    fireEvent.click(screen.getByRole('button', { name: /nouvelle candidature/i }))
+    const card = formOuvert()
+    remplirIdentite(card)
+
+    fireEvent.change(within(card).getByLabelText('Date de naissance'), {
+      target: { value: '31022007' },
+    })
+    fireEvent.click(within(card).getByRole('button', { name: /enregistrer la candidature/i }))
+    await settle()
+
+    expect(await within(card).findByText(/date de naissance invalide/i)).toBeInTheDocument()
+    expect(posts((p) => p === '/admissions/candidats/')).toHaveLength(0)
+    expect(posts((p) => p === '/admissions/candidatures/')).toHaveLength(0)
+  })
+
+  it('sans date saisie, l’enregistrement envoie une valeur vide', async () => {
+    mount()
+    await screen.findByText('C-005')
+    fireEvent.click(screen.getByRole('button', { name: /nouvelle candidature/i }))
+    const card = formOuvert()
+    remplirIdentite(card)
+
+    fireEvent.click(within(card).getByRole('button', { name: /enregistrer la candidature/i }))
+    await settle()
+
+    const candidats = posts((p) => p === '/admissions/candidats/')
+    expect(candidats).toHaveLength(1)
+    expect(candidats[0].body).toMatchObject({ date_naissance: '' })
   })
 })

@@ -37,6 +37,52 @@ const STATUTS = [
 
 const LIBELLES_STATUT = Object.fromEntries(STATUTS)
 
+/** Saisie manuelle d'une date au format JJ/MM/AAAA.
+ *  Le champ natif <input type="date"> impose un calendrier ou une saisie
+ *  segmentée qui varie selon les navigateurs et gêne la frappe libre d'une
+ *  date de naissance ancienne. Le formulaire utilise donc un champ texte :
+ *  masque automatique des séparateurs pendant la frappe, validation complète,
+ *  puis conversion en ISO (AAAA-MM-JJ) pour l'API. */
+export function masquerDateFrancaise(valeur) {
+  const chiffres = String(valeur ?? '').replace(/\D/g, '').slice(0, 8)
+  return [chiffres.slice(0, 2), chiffres.slice(2, 4), chiffres.slice(4, 8)]
+    .filter(Boolean)
+    .join('/')
+}
+
+/** 'JJ/MM/AAAA' → 'AAAA-MM-JJ' ; null si le format est incomplet ou si la
+ *  date n'existe pas (31 février, 29 février d'une année non bissextile…). */
+export function dateFrancaiseVersIso(valeur) {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(valeur ?? '').trim())
+  if (!m) return null
+  const [, jj, mm, aaaa] = m
+  const date = new Date(Number(aaaa), Number(mm) - 1, Number(jj))
+  const coherente = date.getFullYear() === Number(aaaa)
+    && date.getMonth() === Number(mm) - 1
+    && date.getDate() === Number(jj)
+  return coherente ? `${aaaa}-${mm}-${jj}` : null
+}
+
+/** Message d'erreur de la date de naissance saisie ('' si absente ou valide). */
+export function erreurDateNaissance(valeur) {
+  if (!String(valeur ?? '').trim()) return ''
+  const iso = dateFrancaiseVersIso(valeur)
+  if (!iso) {
+    return 'Date de naissance invalide : saisissez-la au format JJ/MM/AAAA (par exemple 14/03/2007).'
+  }
+  const maintenant = new Date()
+  const aujourdhui = [
+    maintenant.getFullYear(),
+    String(maintenant.getMonth() + 1).padStart(2, '0'),
+    String(maintenant.getDate()).padStart(2, '0'),
+  ].join('-')
+  if (iso > aujourdhui) return 'La date de naissance ne peut pas être dans le futur.'
+  if (Number(iso.slice(0, 4)) < 1920) {
+    return 'Date de naissance invalide : vérifiez l’année saisie (format JJ/MM/AAAA).'
+  }
+  return ''
+}
+
 const candidatVide = {
   nom: '', prenom: '', sexe: '', date_naissance: '', lieu_naissance: '',
   nationalite: '', email: '', telephone: '',
@@ -291,9 +337,20 @@ function NouvelleCandidature({ annee, formations, niveaux, onCree, onAnnuler }) 
   const soumettre = async (e) => {
     e.preventDefault()
     setErreur('')
+    // La date est saisie en JJ/MM/AAAA : validation locale + conversion ISO
+    // pour l'API, avant tout appel réseau.
+    const problemeDate = erreurDateNaissance(candidat.date_naissance)
+    if (problemeDate) {
+      setErreur(problemeDate)
+      return
+    }
+    const candidatApi = {
+      ...candidat,
+      date_naissance: dateFrancaiseVersIso(candidat.date_naissance) || '',
+    }
     setEnvoi(true)
     try {
-      const candidatRes = await createCandidat(candidat)
+      const candidatRes = await createCandidat(candidatApi)
       await createCandidature({
         candidat_id: candidatRes.data.id,
         annee_academique_id: annee?.id,
@@ -353,9 +410,20 @@ function NouvelleCandidature({ annee, formations, niveaux, onCree, onAnnuler }) 
           <div className="cand-champ">
             <label className="cand-etiquette" htmlFor="cand-naissance">Date de naissance</label>
             <input
-              id="cand-naissance" type="date" className="cand-saisie" value={candidat.date_naissance}
-              onChange={(e) => setCandidat({ ...candidat, date_naissance: e.target.value })}
+              id="cand-naissance" type="text" inputMode="numeric" autoComplete="bday"
+              className="cand-saisie" value={candidat.date_naissance}
+              placeholder="JJ/MM/AAAA" title="Format JJ/MM/AAAA — saisie libre au clavier"
+              aria-describedby="cand-naissance-aide"
+              aria-invalid={candidat.date_naissance.length === 10
+                && Boolean(erreurDateNaissance(candidat.date_naissance))}
+              onChange={(e) => setCandidat({
+                ...candidat,
+                date_naissance: masquerDateFrancaise(e.target.value),
+              })}
             />
+            <span className="cand-texte-doux" id="cand-naissance-aide">
+              Saisie libre : JJ/MM/AAAA
+            </span>
           </div>
           <div className="cand-champ cand-champ--2">
             <label className="cand-etiquette" htmlFor="cand-telephone">Téléphone</label>
