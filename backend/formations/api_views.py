@@ -9,7 +9,7 @@ import calendar
 import re
 from django.core.cache import cache
 from django.http import HttpResponse
-from django.db.models import Count, Q, F, Prefetch, Case, When, Value, IntegerField
+from django.db.models import Count, Q, F, Prefetch, Case, When, Value, IntegerField, OuterRef, Subquery
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes, parser_classes
@@ -917,8 +917,21 @@ def participant_list_api(request):
     if vague:
         queryset = queryset.filter(vague__iexact=vague)
 
+    # Formation et niveau de l'inscription validée la plus récente
+    # (affichés dans le registre : filière et niveau de chaque étudiant).
+    from scolarite.models import InscriptionAdministrative as _InscAdm
+
+    _insc_recentes = _InscAdm.objects.filter(
+        etudiant__participant=OuterRef('pk'),
+        statut=_InscAdm.Statut.VALIDEE,
+    ).order_by('-date_inscription', '-id')
+    queryset = queryset.annotate(
+        formation_actuelle=Subquery(_insc_recentes.values('ref_formation__intitule')[:1]),
+        niveau_actuel=Subquery(_insc_recentes.values('niveau__code')[:1]),
+    )
+
     queryset = queryset.order_by('nom', 'prenom')
-    
+
     # Pagination
     total_count = queryset.count()
     start = (page - 1) * page_size
@@ -5055,3 +5068,48 @@ def refvague_detail_api(request, pk):
     obj.actif = request.data.get('actif', obj.actif)
     obj.save()
     return Response({'id': obj.id, 'libelle': obj.libelle, 'ordre': obj.ordre, 'actif': obj.actif})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, CanListParticipants])
+def participant_stats_api(request):
+    """Indicateurs du registre des étudiants (même périmètre que la liste).
+
+    Sert les cartes KPI de l'écran Étudiants : effectif total, parité
+    femmes/hommes, étudiants porteurs d'un grade (fonctionnaires),
+    répartitions par grade, vague et type de concours, et nombre
+    d'étudiants régulièrement inscrits sur l'année courante.
+    """
+    queryset = participants_queryset_for_user(request.user)
+
+    def repartition(champ):
+        return {
+            (ligne[champ] or 'Non renseigné'): ligne['total']
+            for ligne in queryset.values(champ).annotate(total=Count('id')).order_by()
+        }
+
+    inscrits_annee = 0
+    try:
+        from scolarite.models import AnneeAcademique, InscriptionAdministrative
+
+        courante = AnneeAcademique.objects.filter(courante=True).first()
+        if courante is not None:
+            inscrits_annee = (
+                InscriptionAdministrative.objects.filter(
+                    annee_academique=courante,
+                    statut=InscriptionAdministrative.Statut.VALIDEE,
+                    etudiant__participant__in=queryset.values('pk'),
+                ).values('etudiant__participant').distinct().count()
+            )
+    except Exception:  # l'indicateur reste facultatif
+        inscrits_annee = 0
+
+    return Response({
+        'total': queryset.count(),
+        'par_sexe': repartition('sexe'),
+        'avec_grade': queryset.exclude(grade='').count(),
+        'par_grade': repartition('grade'),
+        'par_vague': repartition('vague'),
+        'par_type_concours': repartition('type_concours'),
+        'inscrits_annee_courante': inscrits_annee,
+    })

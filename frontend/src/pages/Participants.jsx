@@ -18,6 +18,8 @@ import Pagination from '../components/Pagination'
 import { parsePaginatedResponse } from '../utils/paginatedResponse'
 import ParticipantDetailModal from '../components/ParticipantDetailModal'
 import '../styles/candidatures.css'
+import '../styles/admissions.css'
+import '../styles/etudiants.css'
 import '../styles/modale-premium.css'
 import '../styles/campagnes.css'
 
@@ -44,6 +46,7 @@ export default function Participants() {
   const [page, setPage] = useState(() => parseListPage(searchParams))
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+  const [stats, setStats] = useState(null)
   const [search, setSearch] = useState(initialFilters.search)
   const [sexeFilter, setSexeFilter] = useState(initialFilters.sexe)
   const [secretariatFilter, setSecretariatFilter] = useState(initialFilters.secretariat)
@@ -153,6 +156,13 @@ export default function Participants() {
     }
   }, [showDetail, canViewPresences])
 
+  const loadStats = async () => {
+    try {
+      const res = await api.get('/formations/participants/stats/')
+      setStats(res.data && !Array.isArray(res.data) && typeof res.data.total === 'number' ? res.data : null)
+    } catch { setStats(null) }
+  }
+
   const loadParticipants = async () => {
     setLoading(true)
     try {
@@ -171,6 +181,7 @@ export default function Participants() {
       setTotalCount(count)
       const payload = Array.isArray(response.data) ? {} : response.data
       setFilterOptions(payload.filter_options || { secretariats: [], grades: [], groupes: [], types_concours: [] })
+      loadStats()
     } catch (err) {
       setError('Erreur lors du chargement des étudiants')
       console.error(err)
@@ -329,6 +340,58 @@ export default function Participants() {
           </span>
         </div>
       </div>
+
+      {stats && (
+        <>
+          <div className="cand-kpi-row">
+            <div className="cand-kpi">
+              <span className="cand-kpi-icon is-blue" aria-hidden="true"><i className="bi bi-people"></i></span>
+              <div>
+                <span className="cand-kpi-value">{stats.total.toLocaleString('fr-FR')}</span>
+                <span className="cand-kpi-label">Effectif</span>
+                <span className="adm-kpi-sous">étudiants au registre</span>
+              </div>
+            </div>
+            <div className="cand-kpi">
+              <span className="cand-kpi-icon is-rose" aria-hidden="true"><i className="bi bi-gender-female"></i></span>
+              <div>
+                <span className="cand-kpi-value">{(stats.par_sexe?.FEMININ || 0).toLocaleString('fr-FR')}</span>
+                <span className="cand-kpi-label">Femmes</span>
+                <span className="adm-kpi-sous">
+                  {stats.total ? Math.round(((stats.par_sexe?.FEMININ || 0) / stats.total) * 100) : 0} % de l’effectif
+                </span>
+              </div>
+            </div>
+            <div className="cand-kpi">
+              <span className="cand-kpi-icon is-amber" aria-hidden="true"><i className="bi bi-gender-male"></i></span>
+              <div>
+                <span className="cand-kpi-value">{(stats.par_sexe?.MASCULIN || 0).toLocaleString('fr-FR')}</span>
+                <span className="cand-kpi-label">Hommes</span>
+                <span className="adm-kpi-sous">
+                  {stats.total ? Math.round(((stats.par_sexe?.MASCULIN || 0) / stats.total) * 100) : 0} % de l’effectif
+                </span>
+              </div>
+            </div>
+            <div className="cand-kpi">
+              <span className="cand-kpi-icon is-green" aria-hidden="true"><i className="bi bi-award"></i></span>
+              <div>
+                <span className="cand-kpi-value">{(stats.avec_grade || 0).toLocaleString('fr-FR')}</span>
+                <span className="cand-kpi-label">Avec grade</span>
+                <span className="adm-kpi-sous">
+                  {(stats.inscrits_annee_courante || 0).toLocaleString('fr-FR')} inscrits cette année
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="etud-parite" role="img"
+            aria-label={`Parité : ${stats.par_sexe?.FEMININ || 0} femmes, ${stats.par_sexe?.MASCULIN || 0} hommes`}>
+            <span className="etud-parite-f" style={{
+              width: `${stats.total ? ((stats.par_sexe?.FEMININ || 0) / stats.total) * 100 : 50}%`,
+            }}></span>
+            <span className="etud-parite-m"></span>
+          </div>
+        </>
+      )}
 
       {/* ── Recherche, filtres et actions ── */}
       <section className="cand-panel" aria-labelledby="titre-filtres-etudiants">
@@ -491,12 +554,27 @@ export default function Participants() {
                             : <span className="cand-texte-doux">-</span>}
                         </td>
                         <td className="etud-col-identite">
-                          <span className="cand-etudiant">{p.nom} {p.prenom}</span>
-                          {p.secretariat && (
-                            <span className="etud-sous">
-                              <i className="bi bi-geo-alt" aria-hidden="true"></i>{p.secretariat}
+                          <div className="etud-identite">
+                            <span className="etud-avatar" aria-hidden="true">
+                              {`${p.nom || ''} ${p.prenom || ''}`.trim().split(/\s+/)
+                                .slice(0, 2).map((m) => m[0]).join('').toUpperCase() || '?'}
                             </span>
-                          )}
+                            <span className="etud-identite-textes">
+                              <span className="cand-etudiant">{p.nom} {p.prenom}</span>
+                              {p.formation_actuelle && (
+                                <span className="etud-sous etud-formation">
+                                  {p.formation_actuelle}
+                                  {p.niveau_actuel ? ` · ${p.niveau_actuel}` : ''}
+                                </span>
+                              )}
+                              {(p.secretariat_nom || (typeof p.secretariat === 'string' && p.secretariat)) && (
+                                <span className="etud-sous">
+                                  <i className="bi bi-geo-alt" aria-hidden="true"></i>
+                                  {p.secretariat_nom || p.secretariat}
+                                </span>
+                              )}
+                            </span>
+                          </div>
                         </td>
                         <td>
                           {p.sexe
@@ -512,6 +590,7 @@ export default function Participants() {
                           {p.grade
                             ? <span className="cand-badge-neutre">{p.grade}</span>
                             : <span className="cand-texte-doux">-</span>}
+                          {p.groupe && <span className="etud-sous">{p.groupe}</span>}
                         </td>
                         <td>
                           {p.telephone

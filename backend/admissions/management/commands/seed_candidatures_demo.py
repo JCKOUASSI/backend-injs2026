@@ -386,6 +386,92 @@ SCENARIOS_SUSPENDUE = [
 ]
 
 
+# ── Effectifs étudiants d'exemple (module « Étudiants ») ─────────────────────
+# Registre complet de 3 500 étudiants — parité femmes/hommes exacte — répartis
+# sur les 8 filières × Licence/Master et les niveaux L1→M2, avec grades de la
+# fonction publique pour les étudiants fonctionnaires, groupes pédagogiques,
+# vagues, types de concours et secrétariats (exemple). Génération
+# déterministe (graine fixe) et création en masse (bulk_create) ; chaque
+# étudiant possède candidat @exemple.ci (purge), participant (matricule),
+# dossier étudiant et inscription VALIDEE sur l'année courante.
+EFFECTIF_CIBLE = 3500
+POIDS_NIVEAUX = {'L1': 0.30, 'L2': 0.22, 'L3': 0.18, 'M1': 0.17, 'M2': 0.13}
+PROBA_FONCTIONNAIRE = {'L1': 0.08, 'L2': 0.10, 'L3': 0.12, 'M1': 0.55, 'M2': 0.60}
+GRADES_FP = [
+    ('A4', 0.06), ('A3', 0.14), ('A2', 0.12), ('A1', 0.10),
+    ('B3', 0.16), ('B2', 0.12), ('B1', 0.08),
+    ('C3', 0.08), ('C2', 0.07), ('C1', 0.05), ('D1', 0.02),
+]
+NOMS_EFFECTIFS = [
+    'Abé', 'Aboa', 'Aboua', 'Achi', 'Adjé', 'Adjoussou',
+    'Adom', 'Adou', 'Adoubi', 'Affian', 'Ahoussou', 'Aka',
+    'Akaffou', 'Allou', 'Aman', 'Amara', 'Amani', 'Assemien',
+    'Assi', 'Assié', 'Atta', 'Ayé', 'Ayémou', 'Bah',
+    'Bakayoko', 'Bamba', 'Berté', 'Blé', 'Bouabré', 'Brou',
+    'Camara', 'Cissé', 'Coulibaly', 'Dadié', 'Dagbo', 'Dago',
+    'Diallo', 'Diabaté', 'Diakité', 'Dié', 'Diomandé', 'Diawara',
+    'Doué', 'Doumbia', 'Dramé', 'Ehouman', 'Ekissi', 'Fofana',
+    'Gassama', 'Glé', 'Gnagne', 'Guéï', 'Kacou', 'Kadio',
+    'Kadjo', 'Kamara', 'Kamagate', 'Kanaté', 'Kande', 'Kanté',
+    'Keïta', 'Koffi', 'Komenan', 'Konan', 'Konaté', 'Koné',
+    'Kouadio', 'Kouadio Koné', 'Kouakou', 'Kouadio', 'Kouassi', 'Loris',
+    'Mahamadou', 'Maho', "N'Dri", "N'Goran", "N'Guessan", 'Ouattara',
+    'Ouédraogo', 'Oka', 'Sangaré', 'Sanogo', 'Savané', 'Séry',
+    'Sidibé', 'Silué', 'Sissoko', 'Soro', 'Soumahoro', 'Sylla',
+    'Tanoh', 'Toh', 'Touré', 'Traoré', 'Yao', 'Yéo',
+    'Zadi', 'Zahoui', 'Zamblé',
+]
+
+PRENOMS_F_EFFECTIFS = [
+    'Adjaratou', 'Adjoua', 'Affoué', 'Aïcha', 'Aïchata', 'Aïchatou',
+    'Aïda', 'Aïssa', 'Aïssata', 'Aïssatou', 'Akissi', 'Amenan',
+    'Aminata', 'Awa', 'Aya', 'Bernadette', 'Bernice', 'Blandine',
+    'Christelle', 'Clarisse', 'Deborah', 'Diane', 'Edith', 'Emmanuelle',
+    'Esther', 'Evelyne', 'Fatou', 'Fatoumata', 'Flore', 'Gisèle',
+    'Grâce', 'Hawa', 'Hélène', 'Honorine', 'Inès', 'Jacqueline',
+    'Jeanne', 'Josiane', 'Judith', 'Kadidja', 'Kadiatou', 'Karidja',
+    'Larissa', 'Laure', 'Linda', 'Maïmouna', 'Mariam', 'Mariama',
+    'Marie', 'Marina', 'Martine', 'Mélanie', 'Mireille', 'Monique',
+    'Nadia', 'Nadège', 'Nafissatou', 'Nathalie', 'Nicole', 'Nina',
+    'Olivia', 'Oumou', 'Patricia', 'Pauline', 'Prisca', 'Rachel',
+    'Rama', 'Ramata', 'Reine', 'Rita', 'Rokia', 'Rosine',
+    'Ruth', 'Safiatou', 'Salimata', 'Sandra', 'Sandrine', 'Sara',
+    'Saran', 'Séverine', 'Sidonie', 'Simone', 'Sophie', 'Stéphanie',
+    'Suzanne', 'Tenin', 'Thérèse', 'Vanessa', 'Véronique', 'Viviane',
+    'Yasmina', 'Yolande', 'Yvette',
+]
+
+PRENOMS_M_EFFECTIFS = [
+    'Abdoulaye', 'Abou', 'Abraham', 'Adam', 'Adama', 'Alain',
+    'Albert', 'Alexandre', 'Alfred', 'Ali', 'Aliou', 'Alphonse',
+    'Amadou', 'Ambroise', 'Amos', 'André', 'Ange', 'Antoine',
+    'Armand', 'Armel', 'Arnaud', 'Arsène', 'Arthur', 'Auguste',
+    'Augustin', 'Aurélien', 'Bakary', 'Basile', 'Benjamin', 'Benoît',
+    'Bernard', 'Bertrand', 'Blaise', 'Boris', 'Boubacar', 'Brahima',
+    'Brice', 'Bruno', 'Casimir', 'Charles', 'Cheick', 'Christian',
+    'Christophe', 'Claude', 'Clément', 'Constant', 'Cyrille', 'Cédric',
+    'Damien', 'Daniel', 'Daouda', 'David', 'Denis', 'Didier',
+    'Dieudonné', 'Djibril', 'Dominique', 'Désiré', 'Edmond', 'Edouard',
+    'Elie', 'Emmanuel', 'Eric', 'Ernest', 'Etienne', 'Eugène',
+    'Fabrice', 'Fernand', 'Florent', 'Franck', 'François', 'Frédéric',
+    'Félix', 'Gabriel', 'Gaël', 'Gaston', 'Georges', 'Germain',
+    'Gilbert', 'Gilles', 'Gildas', 'Grégoire', 'Guillaume', 'Guy',
+    'Habib', 'Hamadou', 'Hamed', 'Hamidou', 'Hamza', 'Harouna',
+    'Hassan', 'Ibrahim', 'Ibrahima', 'Idrissa', 'Ignace', 'Ilyas',
+    'Innocent', 'Isaac', 'Ismaël', 'Jacob', 'Jacques', 'Jean',
+    'Jean-Baptiste', 'Jean-Marc', 'Jean-Marie', 'Jean-Paul', 'Jean-Pierre', 'Jean-Yves',
+    'Joachim', 'Jonathan', 'Joseph', 'Josias', 'Joël',
+]
+
+VILLES_EFFECTIFS = [
+    'Abidjan', 'Bouaké', 'Yamoussoukro', 'Korhogo', 'Man', 'San-Pédro',
+    'Daloa', 'Gagnoa', 'Abengourou', 'Grand-Bassam', 'Aboisso', 'Agboville',
+    'Divo', 'Soubré', 'Odienné', 'Bondoukou', 'Ferkessédougou', 'Oumé',
+    'Sinfra', 'Katiola', 'Daoukro', 'Toumodi', 'Lakota', 'Guiglo',
+    'Duékoué',
+]
+
+
 class Command(BaseCommand):
     help = (
         'Peuple le module Admissions & Candidatures avec des données '
@@ -422,7 +508,7 @@ class Command(BaseCommand):
         self.regime = RegimeEtudes.objects.filter(code='INITIAL').first()
 
         bilan = {'campagnes': 0, 'candidatures': 0, 'pieces': 0, 'admissions': 0,
-                 'inscriptions': 0}
+                 'inscriptions': 0, 'etudiants': 0}
         with transaction.atomic():
             campagnes = self._campagnes(annee, bilan)
             par_cle = self._candidatures(annee, campagnes, bilan)
@@ -440,6 +526,7 @@ class Command(BaseCommand):
                 )
             self._complement_admissions(par_cle, bilan)
             self._inscriptions_demo(annee, par_cle, bilan)
+            self._effectifs_etudiants(annee, bilan)
 
         total = Candidature.objects.count()
         par_statut = {
@@ -1093,10 +1180,15 @@ class Command(BaseCommand):
         nb_categories, _ = RefCategorie.objects.filter(
             libelle__in=CATEGORIES_EXEMPLE,
         ).delete()
+        from formations.models import Secretariat as _Secretariat
+        nb_secretariats, _ = _Secretariat.objects.filter(
+            numero__startswith='SEC-EXEMPLE-',
+        ).delete()
         self.stdout.write(self.style.SUCCESS(
             f'Données d’exemple retirées : {nb_candidats} candidat(s) et '
             f'leurs dossiers, {nb_fichiers} fichier(s), '
-            f'{nb_campagnes} campagne(s), {nb_categories} catégorie(s) '
+            f'{nb_campagnes} campagne(s), {nb_categories} catégorie(s), '
+            f'{nb_secretariats} secrétariat(s) '
             f'd’exemple.'
         ))
 
@@ -1235,4 +1327,256 @@ class Command(BaseCommand):
             f'Inscriptions administratives d’exemple : '
             f'{bilan["inscriptions"]} inscription(s) créée(s) (toutes filières, '
             f'niveaux, types et statuts représentés).'
+        ))
+
+
+    # ── Effectifs étudiants (3 500, parité exacte) ────────────────────────────
+    def _effectifs_etudiants(self, annee, bilan):
+        """Registre complet d'étudiants d'exemple, créé en masse.
+
+        Répartition : 8 filières × (L1/L2/L3 + M1/M2) selon POIDS_NIVEAUX ;
+        sexes alternés → parité femmes/hommes exacte. Les étudiants
+        fonctionnaires (surtout en Master) portent catégorie/grade de la
+        fonction publique ; groupes de ~40 par cohorte ; vagues pour les
+        entrants ; secrétariats (exemple) par cycle. Idempotent par e-mail.
+        """
+        import random
+        from datetime import datetime
+
+        from django.utils import timezone as _tz
+
+        from formations.models import Secretariat
+        from scolarite.models import Niveau
+
+        rng = random.Random(20261102)
+        aujourdhui = self.aujourdhui
+        try:
+            debut_courante = int(str(annee.libelle)[:4])
+        except (TypeError, ValueError):
+            debut_courante = aujourdhui.year
+
+        niveaux = {n.code: n for n in Niveau.objects.all()}
+        regimes = {r.code: r for r in RegimeEtudes.objects.all()}
+        vagues = list(RefVague.objects.filter(actif=True).order_by('id'))
+        libelles_vague = [v.libelle for v in vagues] or [
+            'PREMIERE VAGUE', 'DEUXIEME VAGUE', 'TROISIEME VAGUE']
+        statut_actif = None
+        from scolarite.models import StatutEtudiant as _StatutEtudiant
+        statut_actif = _StatutEtudiant.objects.filter(code='ACTIF').first()
+        self._referentiels_profil()
+        categories_ref = {
+            c.libelle[10]: c for c in RefCategorie.objects.filter(
+                grades__isnull=False).distinct()
+            if len(c.libelle) > 10
+        }
+
+        secretariats = {}
+        for cle, nom_complet in [
+            ('LICENCE', 'Secrétariat des Études — Licence (exemple)'),
+            ('MASTER', 'Secrétariat des Études — Master (exemple)'),
+            ('CONTINUE', 'Secrétariat de la Formation Continue (exemple)'),
+        ]:
+            secretariats[cle], _ = Secretariat.objects.get_or_create(
+                numero=f'SEC-EXEMPLE-{cle}', defaults={'nom': nom_complet})
+
+        # ── Cohortes : (formation, code niveau, diplôme, effectif) ───────────
+        codes_filieres = [f'F0{i}' for i in range(1, 9)]
+        cohortes = []
+        for code_niveau, poids in POIDS_NIVEAUX.items():
+            diplome = 'LICENCE' if code_niveau.startswith('L') else 'MASTER'
+            total_niveau = round(EFFECTIF_CIBLE * poids)
+            part, reste = divmod(total_niveau, len(codes_filieres))
+            for rang_f, code_filiere in enumerate(codes_filieres):
+                effectif = part + (1 if rang_f < reste else 0)
+                formation = self._formation(code_filiere, diplome)
+                if formation is None or code_niveau not in niveaux:
+                    continue
+                cohortes.append([formation, code_niveau, diplome, effectif])
+        ecart = EFFECTIF_CIBLE - sum(c[3] for c in cohortes)
+        if cohortes and ecart:
+            max(cohortes, key=lambda c: c[3])[3] += ecart
+
+        # ── Identités déterministes (parité stricte) ─────────────────────────
+        emails_existants = set(
+            Candidat.objects.filter(email__endswith=DOMAINE_EXEMPLE)
+            .values_list('email', flat=True))
+        # Prochain numéro de matricule par préfixe d'année d'entrée.
+        prochains = {}
+        for matricule_existant in Participant.objects.values_list(
+                'matricule', flat=True):
+            morceaux = str(matricule_existant).split('-')
+            if len(morceaux) == 2 and morceaux[0].startswith('INJS') \
+                    and morceaux[1].isdigit():
+                prefixe = morceaux[0]
+                prochains[prefixe] = max(
+                    prochains.get(prefixe, 0), int(morceaux[1]))
+
+        def matricule_suivant(annee_entree_debut):
+            prefixe = f'INJS{annee_entree_debut % 100:02d}'
+            prochains[prefixe] = prochains.get(prefixe, 0) + 1
+            return f'{prefixe}-{prochains[prefixe]:04d}'
+
+        def choix_grade_fp():
+            tirage, cumul = rng.random(), 0.0
+            for grade, proba in GRADES_FP:
+                cumul += proba
+                if tirage <= cumul:
+                    return grade
+            return 'B3'
+
+        decalages = {'L1': 0, 'M1': 0, 'L2': 1, 'M2': 1, 'L3': 2}
+        ages_base = {'L1': 18, 'L2': 19, 'L3': 20, 'M1': 22, 'M2': 23}
+        participants, liens = [], []  # (participant, cohorte, méta inscription)
+        indice = 0
+        for formation, code_niveau, diplome, effectif in cohortes:
+            liste_parcours = list(Parcours.objects.filter(
+                ref_formation=formation).order_by('id'))
+            for rang_cohorte in range(effectif):
+                indice += 1
+                sexe = 'F' if indice % 2 == 0 else 'M'
+                nom = rng.choice(NOMS_EFFECTIFS)
+                prenoms_pool = PRENOMS_F_EFFECTIFS if sexe == 'F' \
+                    else PRENOMS_M_EFFECTIFS
+                prenom = rng.choice(prenoms_pool)
+                if rng.random() < 0.3:
+                    prenom = f'{prenom} {rng.choice(prenoms_pool)}'
+                base_email = _slug_email(nom, prenom).removesuffix(DOMAINE_EXEMPLE)
+                email = f'{base_email}.{indice}{DOMAINE_EXEMPLE}'
+                fonctionnaire = rng.random() < PROBA_FONCTIONNAIRE[code_niveau]
+                grade_fp = choix_grade_fp() if fonctionnaire else ''
+                age = ages_base[code_niveau] + rng.randint(0, 3)
+                if fonctionnaire:
+                    age += rng.randint(3, 14)
+                naissance = date(
+                    aujourdhui.year - age, rng.randint(1, 12), rng.randint(1, 28))
+                annee_entree = debut_courante - decalages[code_niveau]
+                entrant = code_niveau in ('L1', 'M1')
+                if fonctionnaire:
+                    type_concours = ('Concours professionnel'
+                                     if rng.random() < 0.6
+                                     else 'Examen professionnel')
+                else:
+                    type_concours = 'Concours direct'
+                vague_str = vague_obj = ''
+                vague_obj = None
+                if entrant:
+                    tirage_vague = rng.random()
+                    rang_vague = 0 if tirage_vague < 0.6 else (
+                        1 if tirage_vague < 0.85 else 2)
+                    vague_str = libelles_vague[min(rang_vague, len(libelles_vague) - 1)]
+                    if rang_vague < len(vagues):
+                        vague_obj = vagues[rang_vague]
+                groupe = f"Groupe {chr(65 + rang_cohorte // 40)}"
+                if fonctionnaire:
+                    secretariat = secretariats['CONTINUE']
+                elif diplome == 'MASTER':
+                    secretariat = secretariats['MASTER']
+                else:
+                    secretariat = secretariats['LICENCE']
+                telephone = (
+                    f"{rng.choice(['07', '05', '01'])} {rng.randint(0, 99):02d} "
+                    f"{rng.randint(0, 99):02d} {rng.randint(0, 99):02d} "
+                    f"{rng.randint(0, 99):02d}")
+                participant = Participant(
+                    matricule=matricule_suivant(annee_entree),
+                    nom=nom.upper(), prenom=prenom,
+                    sexe='FEMININ' if sexe == 'F' else 'MASCULIN',
+                    date_naissance=naissance,
+                    lieu_naissance=rng.choice(VILLES_EFFECTIFS),
+                    email=email, telephone=telephone,
+                    type_concours=type_concours,
+                    libelle_concours=f'{type_concours} {annee_entree}',
+                    categorie=f'Catégorie {grade_fp[0]}' if grade_fp else '',
+                    grade=grade_fp, groupe=groupe,
+                    grade_groupe=(f'{grade_fp} · {groupe}' if grade_fp
+                                  else groupe),
+                    vague=vague_str, secretariat=secretariat,
+                )
+                participants.append(participant)
+                liens.append({
+                    'participant': participant, 'nom': nom, 'prenom': prenom,
+                    'sexe': sexe, 'email': email, 'naissance': naissance,
+                    'telephone': telephone,
+                    'formation': formation, 'code_niveau': code_niveau,
+                    'parcours': (liste_parcours[rang_cohorte % len(liste_parcours)]
+                                 if liste_parcours else None),
+                    'vague': vague_obj, 'grade_fp': grade_fp,
+                    'fonctionnaire': fonctionnaire, 'entrant': entrant,
+                    'annee_entree': annee_entree,
+                })
+
+        # Idempotence : le filtrage a lieu APRÈS la génération complète des
+        # identités (sinon les tirages aléatoires se désynchronisent et les
+        # e-mails régénérés ne correspondent plus à ceux déjà en base).
+        paires = [(part, lien) for part, lien in zip(participants, liens)
+                  if lien['email'] not in emails_existants]
+        participants = [part for part, _ in paires]
+        liens = [lien for _, lien in paires]
+
+        if not participants:
+            self.stdout.write(
+                'Effectifs étudiants d’exemple déjà présents (aucun ajout).')
+            return
+
+        Participant.objects.bulk_create(participants, batch_size=500)
+        Candidat.objects.bulk_create([
+            Candidat(
+                nom=lien['nom'], prenom=lien['prenom'], sexe=lien['sexe'],
+                date_naissance=lien['naissance'], email=lien['email'],
+                telephone=lien['telephone'],
+                participant=lien['participant'],
+            ) for lien in liens
+        ], batch_size=500)
+        dossiers = [
+            DossierEtudiant(
+                participant=lien['participant'], statut=statut_actif,
+                date_premiere_inscription=date(lien['annee_entree'], 9, 15),
+            ) for lien in liens
+        ]
+        DossierEtudiant.objects.bulk_create(dossiers, batch_size=500)
+
+        grades_ref_par_cat = {}
+        for lettre, cat in categories_ref.items():
+            grades_ref_par_cat[lettre] = list(cat.grades.order_by('id'))
+
+        inscriptions = []
+        for lien, dossier in zip(liens, dossiers):
+            categorie_ref = grade_ref = None
+            lettre = lien['grade_fp'][:1]
+            if lettre in grades_ref_par_cat and grades_ref_par_cat[lettre]:
+                categorie_ref = categories_ref[lettre]
+                liste_g = grades_ref_par_cat[lettre]
+                # A4 → dernier grade ; sinon premier grade de la catégorie.
+                grade_ref = liste_g[-1] if lien['grade_fp'] == 'A4' else liste_g[0]
+            if lien['fonctionnaire']:
+                regime = regimes.get(
+                    'CONTINU' if rng.random() < 0.6 else 'PROFESSIONNEL')
+            elif lien['code_niveau'] in ('M1', 'M2') and rng.random() < 0.1:
+                regime = regimes.get('ALTERNANCE')
+            else:
+                regime = regimes.get('INITIAL')
+            type_insc = 'PREMIERE' if lien['entrant'] else (
+                'REDOUBLEMENT' if rng.random() < 0.04 else 'REINSCRIPTION')
+            date_insc = date(debut_courante, 9, 1) + timedelta(
+                days=rng.randint(0, 45))
+            inscriptions.append(InscriptionAdministrative(
+                etudiant=dossier, annee_academique=annee,
+                ref_formation=lien['formation'], parcours=lien['parcours'],
+                niveau=niveaux[lien['code_niveau']], vague=lien['vague'],
+                categorie=categorie_ref, grade=grade_ref, regime=regime,
+                statut_etudiant=statut_actif, type_inscription=type_insc,
+                statut=InscriptionAdministrative.Statut.VALIDEE,
+                date_inscription=date_insc,
+                date_validation=_tz.make_aware(datetime.combine(
+                    date_insc + timedelta(days=rng.randint(1, 10)),
+                    datetime.min.time().replace(hour=10))),
+                valide_par=self.acteur,
+                observations='[Exemple] Effectif de démonstration.',
+            ))
+        InscriptionAdministrative.objects.bulk_create(
+            inscriptions, batch_size=500)
+        bilan['etudiants'] += len(participants)
+        self.stdout.write(self.style.SUCCESS(
+            f'Effectifs étudiants d’exemple : {len(participants)} étudiant(s) '
+            f'créé(s) (parité femmes/hommes, 8 filières, niveaux L1→M2).'
         ))

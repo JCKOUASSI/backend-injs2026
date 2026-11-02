@@ -303,3 +303,61 @@ class ReferentielAPIAccessTests(TestCase):
         self.client.force_authenticate(admin)
         res = self.client.get('/api/formations/ref/formations/')
         self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+
+class ParticipantStatsEtFiliereTests(TestCase):
+    """Registre premium : statistiques du module Étudiants et filière/niveau
+    actuels (inscription validée la plus récente) dans la liste."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from datetime import date
+
+        from scolarite.models import (
+            AnneeAcademique, DossierEtudiant, InscriptionAdministrative,
+            Niveau,
+        )
+
+        cls.admin = make_user('admin_stats', role='INJS_ADMIN')
+        annee = AnneeAcademique.objects.create(
+            libelle='2026-2027', date_debut=date(2026, 10, 1),
+            date_fin=date(2027, 9, 30), courante=True)
+        niveau = Niveau.objects.create(code='L2', libelle='L2', ordre=2)
+        formation = RefFormation.objects.create(
+            intitule='ÉDUCATION ET MOTRICITÉ — LICENCE',
+            filiere_code='F01', type_diplome='LICENCE')
+        cls.inscrite = Participant.objects.create(
+            matricule='INJS25-9001', nom='Inscrite', prenom='Awa',
+            sexe='FEMININ', grade='A3', type_concours='Concours direct')
+        cls.libre = Participant.objects.create(
+            matricule='INJS26-9002', nom='Libre', prenom='Karl',
+            sexe='MASCULIN')
+        dossier = DossierEtudiant.objects.create(participant=cls.inscrite)
+        InscriptionAdministrative.objects.create(
+            etudiant=dossier, annee_academique=annee,
+            ref_formation=formation, niveau=niveau,
+            statut=InscriptionAdministrative.Statut.VALIDEE,
+            date_inscription=date(2026, 9, 10))
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.force_authenticate(self.admin)
+
+    def test_stats_registre(self):
+        res = self.client.get('/api/formations/participants/stats/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        data = res.json()
+        self.assertEqual(data['total'], 2)
+        self.assertEqual(data['par_sexe'], {'FEMININ': 1, 'MASCULIN': 1})
+        self.assertEqual(data['avec_grade'], 1)
+        self.assertEqual(data['inscrits_annee_courante'], 1)
+
+    def test_liste_formation_et_niveau_actuels(self):
+        res = self.client.get('/api/formations/participants/list/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        par_matricule = {l['matricule']: l for l in res.json()['results']}
+        self.assertEqual(
+            par_matricule['INJS25-9001']['formation_actuelle'],
+            'ÉDUCATION ET MOTRICITÉ — LICENCE')
+        self.assertEqual(par_matricule['INJS25-9001']['niveau_actuel'], 'L2')
+        self.assertIsNone(par_matricule['INJS26-9002']['formation_actuelle'])

@@ -143,6 +143,10 @@ class SessionSerializer(serializers.ModelSerializer):
 
 class ParticipantSerializer(serializers.ModelSerializer):
     secretariat_nom = serializers.CharField(source='secretariat.nom', read_only=True)
+    # Formation et niveau de l'inscription administrative validée la plus
+    # récente — renseignés par annotation dans la vue liste (None sinon).
+    formation_actuelle = serializers.SerializerMethodField()
+    niveau_actuel = serializers.SerializerMethodField()
 
     class Meta:
         model = Participant
@@ -154,8 +158,15 @@ class ParticipantSerializer(serializers.ModelSerializer):
             'categorie', 'grade', 'groupe', 'grade_groupe', 'vague',
             'site', 'salle', 'motif_notoire',
             'secretariat', 'secretariat_nom', 'created_at',
+            'formation_actuelle', 'niveau_actuel',
         ]
         read_only_fields = ['id', 'created_at']
+
+    def get_formation_actuelle(self, obj):
+        return getattr(obj, 'formation_actuelle', None) or None
+
+    def get_niveau_actuel(self, obj):
+        return getattr(obj, 'niveau_actuel', None) or None
 
     def validate_matricule(self, value):
         from formations.participant_matricule import normalize_matricule, validate_participant_matricule

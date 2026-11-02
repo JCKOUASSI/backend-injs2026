@@ -68,6 +68,7 @@ urlpatterns = [
     
     # Participants list
     path('participants/list/', api_views.participant_list_api, name='api-participant-list'),
+    path('participants/stats/', api_views.participant_stats_api, name='api-participant-stats'),
     path('participants/<int:pk>/formations/', api_views.participant_formations_api, name='api-participant-formations'),
     
     # Formateurs list

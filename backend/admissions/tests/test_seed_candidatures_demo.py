@@ -121,7 +121,8 @@ class SeedCandidaturesDemoTests(TestCase):
         # les 16 formations (8 filières × Licence/Master), les 5 niveaux,
         # les 6 types et les 8 statuts du cycle de vie.
         inscriptions = InscriptionAdministrative.objects.all()
-        self.assertEqual(inscriptions.count(), 27)
+        # 27 dossiers soignés + 3 500 étudiants du registre complet.
+        self.assertEqual(inscriptions.count(), 3527)
         self.assertEqual(
             set(inscriptions.values_list('statut', flat=True)),
             set(InscriptionAdministrative.Statut.values),
@@ -140,9 +141,31 @@ class SeedCandidaturesDemoTests(TestCase):
         # matricules reflétant l'année d'entrée (L2/M2 entrés en 2025).
         self.assertTrue(inscriptions.filter(
             categorie__isnull=False, grade__isnull=False).exists())
-        matricules = [i.etudiant.matricule for i in inscriptions]
+        matricules = list(inscriptions.values_list(
+            'etudiant__participant__matricule', flat=True))
         self.assertTrue(any(m.startswith('INJS25-') for m in matricules))
         self.assertTrue(any(m.startswith('INJS26-') for m in matricules))
+
+        # Registre complet des étudiants : parité exacte et toutes les
+        # dimensions du module Étudiants (grades, groupes, concours).
+        from formations.models import Participant as _Participant
+        bulk = _Participant.objects.filter(email__regex=r'\.\d+@exemple\.ci$')
+        self.assertEqual(bulk.count(), 3500)
+        self.assertEqual(bulk.filter(sexe='FEMININ').count(), 1750)
+        self.assertEqual(bulk.filter(sexe='MASCULIN').count(), 1750)
+        self.assertEqual(
+            set(bulk.exclude(grade='').values_list('grade', flat=True)),
+            {'A1', 'A2', 'A3', 'A4', 'B1', 'B2', 'B3',
+             'C1', 'C2', 'C3', 'D1'},
+        )
+        self.assertEqual(
+            set(bulk.values_list('type_concours', flat=True)),
+            {'Concours direct', 'Concours professionnel',
+             'Examen professionnel'},
+        )
+        self.assertTrue(set(bulk.values_list('groupe', flat=True)))
+        self.assertEqual(
+            bulk.values('secretariat').distinct().count(), 3)
 
         # Campagnes : les 7 états du cycle de vie sont représentés.
         campagnes = CampagneAdmission.objects.all()
