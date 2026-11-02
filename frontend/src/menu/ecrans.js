@@ -413,16 +413,14 @@ export const ECRANS = {
     titreListe: 'Résultats',
     fil: 'Scolarité',
     icone: 'bi-trophy',
-    introduction: 'Campagnes de concours : classement calculé puis publié. '
-      + 'Le calcul et la publication sont des actes tracés côté serveur.',
+    introduction: 'Campagnes de concours : ouvrez une campagne pour voir son '
+      + 'classement (rang, score, liste), calculez-le à partir des notes '
+      + 'saisies, puis publiez-le. Le calcul et la publication sont des '
+      + 'actes tracés côté serveur.',
     endpoint: '/admissions/campagnes/',
-    // La colonne « Libellé » (donnée de test « Debug ») est volontairement
-    // exclue : la campagne est identifiée par sa formation + son année.
-    exclure: ['libelle', 'code'],
-    priorite: ['ref_formation_id', 'annee_academique_id', 'statut', 'nb_candidatures', 'nb_epreuves', 'date_ouverture', 'date_fermeture', 'quota_admissibles'],
-    // 8 colonnes explicites : `colonnesPour` renvoie `ecran.colonnes` tel quel
-    // quand il est renseigné (aucune troncature `maxColonnes`, aucune déduction).
-    recherche: { param: 'search', libelle: 'Rechercher une campagne', placeholder: 'Formation, statut…' },
+    // L'API lit le paramètre `q` (recherche sur le libellé et la formation) :
+    // avec `search`, la recherche était silencieusement ignorée.
+    recherche: { param: 'q', libelle: 'Rechercher une campagne', placeholder: 'Libellé, formation…' },
     filtres: [
       {
         param: 'statut', libelle: 'Statut', type: 'select',
@@ -438,22 +436,32 @@ export const ECRANS = {
       },
       {
         param: 'ref_formation_id', libelle: 'Formation', type: 'select',
-        optionsEndpoint: '/scolarite/ref/formations/',
+        optionsEndpoint: '/formations/ref/formations/',
         optionsCleValeur: 'id',
         optionsCleLibelle: 'intitule',
       },
       {
         param: 'annee_academique_id', libelle: 'Année', type: 'select',
-        // Généré (année courante + précédente) : une liste figée devenait
-        // obsolète au changement d'année académique.
-        options: anneesAcademiquesFiltre(),
+        optionsEndpoint: '/scolarite/ref/annees/',
+        optionsCleValeur: 'id',
+        optionsCleLibelle: 'libelle',
       },
     ],
+    // Colonnes explicites alignées sur le sérialiseur : les clés `*_id`
+    // affichaient des identifiants bruts (« Formation 10 », « Année 1 ») et
+    // le statut apparaissait en code. La colonne « Classement » distingue
+    // les trois états utiles de cet écran (non calculé / calculé / publié).
     colonnes: [
-      { cle: 'ref_formation_id', libelle: 'Formation' },
-      { cle: 'annee_academique_id', libelle: 'Année' },
+      { cle: 'libelle', libelle: 'Campagne' },
+      { cle: 'ref_formation', libelle: 'Formation' },
+      { cle: 'annee_academique', libelle: 'Année' },
       {
         cle: 'statut', libelle: 'Statut', format: 'badge',
+        badges: {
+          BROUILLON: 'Brouillon', PLANIFIEE: 'Planifiée', OUVERTE: 'Ouverte',
+          SUSPENDUE: 'Suspendue', CLOTUREE: 'Clôturée', ANNULEE: 'Annulée',
+          ARCHIVEE: 'Archivée',
+        },
         couleurs: {
           BROUILLON: 'text-bg-secondary', PLANIFIEE: 'text-bg-info',
           OUVERTE: 'text-bg-success', SUSPENDUE: 'text-bg-warning',
@@ -461,18 +469,48 @@ export const ECRANS = {
           ARCHIVEE: 'text-bg-dark',
         },
       },
+      {
+        cle: 'classement_publie', libelle: 'Classement', format: 'badge',
+        valeur: (l) => (l.classement_publie ? 'PUBLIE'
+          : l.classement_calcule ? 'CALCULE' : 'NON_CALCULE'),
+        badges: { PUBLIE: 'Publié', CALCULE: 'Calculé', NON_CALCULE: 'Non calculé' },
+        couleurs: {
+          PUBLIE: 'text-bg-success', CALCULE: 'text-bg-info',
+          NON_CALCULE: 'text-bg-secondary',
+        },
+      },
       { cle: 'nb_candidatures', libelle: 'Candidatures' },
       { cle: 'nb_epreuves', libelle: 'Épreuves' },
       { cle: 'date_ouverture', libelle: 'Ouverture', format: 'date' },
       { cle: 'date_fermeture', libelle: 'Fermeture', format: 'date' },
-      { cle: 'quota_admissibles', libelle: 'Quota admis.' },
+      { cle: 'quota_admissibles', libelle: 'Quota admissibles' },
+      { cle: 'quota_admis', libelle: 'Quota admis' },
     ],
     vide: 'Aucune campagne de concours pour ces critères.',
     detail: {
-      titre: (l) => `Classement — ${l.ref_formation || l.annee_academique || `campagne ${l.id}`}`,
-      sousTitre: 'Candidats classés',
+      titre: (l) => `Classement — ${l.libelle}`,
+      sousTitre: 'Candidats classés par rang de mérite',
       endpoint: (l) => `/admissions/campagnes/${l.id}/classement/`,
-      priorite: ['rang', 'candidat', 'note', 'total', 'admissible', 'decision'],
+      vide: 'Aucun classement pour cette campagne : saisissez les notes '
+        + 'des épreuves, puis utilisez « Calculer le classement ».',
+      colonnes: [
+        { cle: 'rang', libelle: 'Rang' },
+        { cle: 'candidature', libelle: 'N° dossier' },
+        { cle: 'candidat', libelle: 'Candidat' },
+        { cle: 'score_total', libelle: 'Score' },
+        {
+          cle: 'liste', libelle: 'Liste', format: 'badge',
+          badges: {
+            ADMISSIBLE: 'Admissible', LISTE_ATTENTE: "Liste d'attente",
+            NON_ADMIS: 'Non admis',
+          },
+          couleurs: {
+            ADMISSIBLE: 'text-bg-success', LISTE_ATTENTE: 'text-bg-warning',
+            NON_ADMIS: 'text-bg-secondary',
+          },
+        },
+        { cle: 'publie', libelle: 'Publié', format: 'booleen' },
+      ],
     },
     actions: [
       {
@@ -481,8 +519,10 @@ export const ECRANS = {
         apparence: 'btn-outline-primary',
         methode: 'POST',
         chemin: (l) => `/admissions/campagnes/${l.id}/classement/calculer/`,
+        // Inutile sans candidat, interdit une fois les résultats publiés.
+        visible: (l) => !l.classement_publie && l.nb_candidatures > 0,
         confirmation: 'Calculer le classement de cette campagne ?',
-        detail: 'Les notes des épreuves sont agrégées et les rangs recalculés.',
+        detail: 'Les notes des épreuves sont agrégées (note × coefficient) et les rangs recalculés.',
         succes: 'Classement calculé.',
       },
       {
@@ -491,8 +531,10 @@ export const ECRANS = {
         apparence: 'btn-outline-success',
         methode: 'POST',
         chemin: (l) => `/admissions/campagnes/${l.id}/classement/publier/`,
+        // Un classement doit exister et ne pas être déjà publié.
+        visible: (l) => l.classement_calcule && !l.classement_publie,
         confirmation: 'Publier les résultats de cette campagne ?',
-        detail: 'Acte officiel : la publication est journalisée et notifiée.',
+        detail: 'Acte officiel : la publication est journalisée et le classement publié ne peut plus être recalculé.',
         variant: 'danger',
         succes: 'Résultats publiés.',
       },

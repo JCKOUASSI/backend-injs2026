@@ -482,3 +482,103 @@ describe('filtre requis', () => {
     expect(derniersParams()).toMatchObject({ formation_id: '3' })
   })
 })
+
+describe('écran livré : résultats concours', () => {
+  const CAMPAGNES = [
+    {
+      id: 1, libelle: 'Concours — EM', ref_formation: 'Éducation et Motricité — Licence',
+      annee_academique: '2026-2027', statut: 'OUVERTE',
+      classement_calcule: true, classement_publie: false,
+      nb_candidatures: 6, nb_epreuves: 4,
+      date_ouverture: '2026-08-04', date_fermeture: '2027-03-02',
+      quota_admissibles: 3, quota_admis: 2,
+    },
+    {
+      id: 2, libelle: 'Concours — ES', ref_formation: 'Entraînement Sportif — Licence',
+      annee_academique: '2025-2026', statut: 'CLOTUREE',
+      classement_calcule: true, classement_publie: true,
+      nb_candidatures: 6, nb_epreuves: 3,
+      date_ouverture: '2025-08-29', date_fermeture: '2025-10-08',
+      quota_admissibles: 3, quota_admis: 2,
+    },
+    {
+      id: 3, libelle: 'Campagne vide', ref_formation: 'Gérontologie — Master',
+      annee_academique: '2026-2027', statut: 'BROUILLON',
+      classement_calcule: false, classement_publie: false,
+      nb_candidatures: 0, nb_epreuves: 0,
+      date_ouverture: null, date_fermeture: null,
+      quota_admissibles: null, quota_admis: null,
+    },
+  ]
+
+  beforeEach(() => {
+    apiController.setRoute('/admissions/campagnes/', CAMPAGNES)
+    apiController.setRoute('/formations/ref/formations/', [])
+    apiController.setRoute('/scolarite/ref/annees/', [])
+    apiController.setRoute('/admissions/campagnes/1/classement/', [
+      {
+        rang: 1, candidature: 'CAND-2026-2027-0016', candidat: 'N’DRI Armel',
+        score_total: '114.50', liste: 'ADMISSIBLE', liste_libelle: 'Admissible',
+        publie: false,
+      },
+      {
+        rang: 2, candidature: 'CAND-2026-2027-0017', candidat: 'TOURÉ Salimata',
+        score_total: '58.50', liste: 'NON_ADMIS', liste_libelle: 'Non admis',
+        publie: false,
+      },
+    ])
+    apiController.setRoute('/admissions/campagnes/3/classement/', [])
+  })
+
+  const monterResultats = () => monter(ECRANS.resultats_concours, {
+    chemin: '/scolarite/resultats-concours',
+  })
+
+  it('affiche les libellés (campagne, formation, statut, état du classement)', async () => {
+    monterResultats()
+    await screen.findByText('Concours — EM')
+    const ouverte = screen.getByText('Concours — EM').closest('tr')
+    expect(within(ouverte).getByText('Éducation et Motricité — Licence')).toBeTruthy()
+    expect(within(ouverte).getByText('Ouverte')).toBeTruthy()
+    expect(within(ouverte).getByText('Calculé')).toBeTruthy()
+    const cloturee = screen.getByText('Concours — ES').closest('tr')
+    expect(within(cloturee).getByText('Clôturée')).toBeTruthy()
+    expect(within(cloturee).getByText('Publié')).toBeTruthy()
+    expect(within(screen.getByText('Campagne vide').closest('tr'))
+      .getByText('Non calculé')).toBeTruthy()
+  })
+
+  it('ne propose Calculer / Publier que lorsque l’acte est possible', async () => {
+    monterResultats()
+    await screen.findByText('Concours — EM')
+    // Seule la campagne 1 (classement calculé, non publié, avec
+    // candidatures) expose les deux actes.
+    expect(screen.getAllByTestId('action-Calculer le classement')).toHaveLength(1)
+    expect(screen.getAllByTestId('action-Publier')).toHaveLength(1)
+  })
+
+  it('publier après confirmation appelle l’endpoint de publication', async () => {
+    monterResultats()
+    await screen.findByText('Concours — EM')
+    fireEvent.click(screen.getByTestId('action-Publier'))
+    const modale = await screen.findByText('Publier les résultats de cette campagne ?')
+    expect(apiController.findCall('post', '/admissions/campagnes/1/classement/publier/')).toBeFalsy()
+    fireEvent.click(within(modale.closest('.modal-content')).getByText('Publier'))
+    await waitFor(() => {
+      expect(apiController.findCall('post', '/admissions/campagnes/1/classement/publier/')).toBeTruthy()
+    })
+  })
+
+  it('le détail montre le classement en libellés, et le message vide dédié', async () => {
+    monterResultats()
+    fireEvent.click(await screen.findByText('Concours — EM'))
+    expect(await screen.findByText(/Classement — Concours — EM/)).toBeTruthy()
+    expect(await screen.findByText('CAND-2026-2027-0016')).toBeTruthy()
+    expect(screen.getByText('Admissible')).toBeTruthy()
+    expect(screen.getByText('Non admis')).toBeTruthy()
+    expect(screen.getAllByText('Non publié').length).toBeGreaterThan(0)
+    fireEvent.click(screen.getAllByRole('button', { name: /fermer/i })[0])
+    fireEvent.click(await screen.findByText('Campagne vide'))
+    expect(await screen.findByText(/Aucun classement pour cette campagne/)).toBeTruthy()
+  })
+})

@@ -973,7 +973,7 @@ function DetailGenerique({ ecran, ligne, cleBase, onFermer }) {
                         ))}
                         {lignes.length === 0 && (
                           <tr><td colSpan={colonnesDetail.length + (actionsDetail.length ? 1 : 0)} className="text-muted text-center">
-                            Aucun élément rattaché.
+                            {detail.vide || 'Aucun élément rattaché.'}
                           </td></tr>
                         )}
                       </tbody>

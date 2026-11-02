@@ -305,4 +305,27 @@ class ConcoursAPITests(ConcoursBase):
             self.assertIn(ligne['liste_libelle'], ('Admissible', "Liste d'attente", 'Non admis'))
 
 
+    def test_liste_recherche_q_et_etat_du_classement(self):
+        """q filtre par libellé/formation ; l'état du classement suit son cycle."""
+        self.client.force_authenticate(make_user('sec_api_q', role='SECRETARIAT'))
+        res = self.client.get('/api/admissions/campagnes/', {'q': 'introuvable-xyz'})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data, [])
+        res = self.client.get('/api/admissions/campagnes/',
+                              {'q': self.campagne.libelle[:6]})
+        self.assertEqual([c['id'] for c in res.data], [self.campagne.pk])
+        ligne = res.data[0]
+        self.assertFalse(ligne['classement_calcule'])
+        self.assertFalse(ligne['classement_publie'])
+
+        self._noter_tout()
+        concours_services.calculer_classement(self.campagne)
+        res = self.client.get(f'/api/admissions/campagnes/{self.campagne.pk}/')
+        self.assertTrue(res.data['classement_calcule'])
+        self.assertFalse(res.data['classement_publie'])
+        concours_services.publier_classement(self.campagne)
+        res = self.client.get(f'/api/admissions/campagnes/{self.campagne.pk}/')
+        self.assertTrue(res.data['classement_publie'])
+
+
 S = CampagneAdmission.Statut

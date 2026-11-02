@@ -5,6 +5,7 @@ explicites, permissions IsSecretariatOrDFRC (écriture et consultation
 staff) — même contrat que les autres endpoints de l'app admissions.
 """
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -41,6 +42,8 @@ def _serializer_campagne(campagne):
         'statut_libelle': campagne.get_statut_display(),
         'nb_candidatures': campagne.candidatures.count(),
         'nb_epreuves': campagne.epreuves.count(),
+        'classement_calcule': campagne.classements.exists(),
+        'classement_publie': campagne.classements.filter(publie=True).exists(),
     }
 
 
@@ -79,10 +82,16 @@ def campagne_list(request):
     if request.method == 'GET':
         queryset = CampagneAdmission.objects.select_related(
             'annee_academique', 'ref_formation',
-        )
+        ).prefetch_related('classements')
         for champ in ('statut', 'annee_academique_id', 'ref_formation_id'):
             if champ in request.query_params:
                 queryset = queryset.filter(**{champ: request.query_params[champ]})
+        recherche = (request.query_params.get('q') or '').strip()
+        if recherche:
+            queryset = queryset.filter(
+                Q(libelle__icontains=recherche)
+                | Q(ref_formation__intitule__icontains=recherche)
+            )
         return Response([_serializer_campagne(c) for c in queryset])
 
     try:
