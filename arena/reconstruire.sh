@@ -14,7 +14,10 @@
 #      mentions, 8 filières, cycles LMD, modules officiels, lieux, volumes)
 #   6. système LMD (init_referentiels_lmd + configurer_referentiel_injs :
 #      niveaux, semestres, 20 maquettes, 323 UE, 397 ECUE)
-#   7. dépendances npm du site
+#   7. module Admissions : référentiels + dossiers d'exemple
+#      (init_referentiels_admission + seed_candidatures_demo, idempotents ;
+#      retrait possible via `seed_candidatures_demo --purger`)
+#   8. dépendances npm du site
 #
 # Les données SAISIES dans l'application ne sont pas reproductibles : si une
 # sauvegarde existe dans backups/ (voir arena/sauvegarder-donnees.sh), le
@@ -111,6 +114,14 @@ log "Référentiels LMD et maquettes officielles (idempotent)…"
   && "$VENV/bin/python" manage.py configurer_referentiel_injs \
   && "$VENV/bin/python" manage.py completer_referentiel_lmd) \
   && touch "$BACKEND/.lmd_ok"
+
+# Module Admissions & Candidatures : référentiels (types de pièces, voies
+# d'accès) puis jeu d'exemple des écrans Candidatures/Admissions/Campagnes
+# (20 dossiers couvrant les 12 statuts, concours classé). Idempotent.
+log "Module Admissions : référentiels et données d'exemple…"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py init_referentiels_admission \
+  && "$VENV/bin/python" manage.py seed_candidatures_demo) \
+  && touch "$BACKEND/.admissions_demo_ok"
 
 # ── 6. Site web ──────────────────────────────────────────────────────────────
 if [ ! -d "$FRONTEND/node_modules" ]; then
