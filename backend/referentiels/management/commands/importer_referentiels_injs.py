@@ -24,6 +24,13 @@ Blocs importés
    décision (décisions officielles des jurys de délibération, OFFICIEL) et
    types d'espace sportif (catégories de l'inventaire des installations,
    MODELISE comme sa source). Voir les arbitrages dans le bloc `_meta`.
+6. `nomenclatures_administratif.json` — modes de paiement, types de frais,
+   de document et de notification, années académiques (document
+   « ADMINISTRATIF & SCOLARITÉ »). Les valeurs « socle » (5 natures de
+   frais, 6 modes de paiement) sont les choix du module finances_etudiantes
+   (OFFICIEL) ; la typologie pratique du document est importée en CADRAGE,
+   à arrêter par la DAF, la Scolarité et la Direction des études. Aucun
+   montant : les barèmes relèvent de l'arrêté annuel de tarification.
 
 Usage
 -----
@@ -33,6 +40,7 @@ Usage
 
 import json
 import re
+from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
@@ -45,15 +53,20 @@ from referentiels.models import (
     RefFiliere,
     RefGradeEnseignant,
     RefMention,
+    RefModePaiement,
     RefModuleOfficiel,
     RefStatutVague,
     RefTypeCursus,
     RefTypeDecision,
+    RefTypeDocument,
     RefTypeEnseignement,
     RefTypeEspaceSportif,
     RefTypeEvaluation,
+    RefTypeFrais,
+    RefTypeNotification,
     RefVolumeHoraireFormation,
 )
+from scolarite.models import AnneeAcademique
 
 DONNEES = Path(__file__).resolve().parents[2] / 'data'
 
@@ -550,6 +563,81 @@ class Command(BaseCommand):
             bilan[cle_bloc] = self._compter(cree, maj)
         return bilan
 
+    # ── Bloc 6 : nomenclatures administratives et années ─────────────────
+    def _importer_administratif(self):
+        """Modes de paiement, frais, documents, notifications, années.
+
+        Même discipline que le bloc pédagogique : chaque valeur porte la
+        source et la fiabilité de son bloc ou les siennes propres (valeurs
+        « socle » alignées sur finances_etudiantes en OFFICIEL, typologie
+        pratique du document en CADRAGE). Les années académiques vivent
+        dans scolarite.AnneeAcademique — mêmes champs que le §6.1 de la
+        source ; le statut documentaire se traduit en drapeaux du modèle
+        (voir les arbitrages du bloc `_meta` du fichier).
+        """
+        data = json.loads(
+            (DONNEES / 'nomenclatures_administratif.json').read_text(encoding='utf-8')
+        )
+        plan = (
+            ('modes_paiement', RefModePaiement),
+            ('types_frais', RefTypeFrais),
+            ('types_document', RefTypeDocument),
+            ('types_notification', RefTypeNotification),
+        )
+        bilan = {}
+        for cle_bloc, modele in plan:
+            bloc = data[cle_bloc]
+            cree = maj = 0
+            for item in bloc['valeurs']:
+                obj, c = self._upsert(modele, {'code': item['code']}, {
+                    'libelle': item['libelle'],
+                    'description': item.get('description', ''),
+                    'source_document': item.get(
+                        'source_document', bloc.get('source_document', '')),
+                    'fiabilite': item.get(
+                        'fiabilite', bloc.get('fiabilite', 'A_RENSEIGNER')),
+                })
+                obj.save()
+                cree += c
+                maj += not c
+            bilan[cle_bloc] = self._compter(cree, maj)
+
+        # Années académiques : l'année courante est traitée la première
+        # (sur une base neuve, c'est la plus ancienne ligne de la table,
+        # comme lorsque init_referentiels_lmd la créait seule). La
+        # contrainte « une seule courante » impose de libérer le drapeau
+        # avant de le poser.
+        valeurs_annees = data['annees_academiques']['valeurs']
+        valeurs_annees = sorted(
+            valeurs_annees, key=lambda v: v['statut'] != 'COURANTE')
+        cree = maj = 0
+        for item in valeurs_annees:
+            statut = item['statut']
+            date_fin = date.fromisoformat(item['date_fin'])
+            drapeaux = {
+                'PLANIFIEE': {'courante': False, 'actif': True,
+                              'cloturee': False, 'date_cloture': None},
+                'COURANTE': {'courante': True, 'actif': True,
+                             'cloturee': False, 'date_cloture': None},
+                'CLOTUREE': {'courante': False, 'actif': True,
+                             'cloturee': True, 'date_cloture': date_fin},
+                'ARCHIVEE': {'courante': False, 'actif': False,
+                             'cloturee': True, 'date_cloture': date_fin},
+            }[statut]
+            if drapeaux['courante']:
+                AnneeAcademique.objects.filter(courante=True).exclude(
+                    libelle=item['libelle']).update(courante=False)
+            obj, c = self._upsert(AnneeAcademique, {'libelle': item['libelle']}, {
+                'date_debut': date.fromisoformat(item['date_debut']),
+                'date_fin': date_fin,
+                **drapeaux,
+            })
+            obj.save()
+            cree += c
+            maj += not c
+        bilan['annees_academiques'] = self._compter(cree, maj)
+        return bilan
+
     # ── Orchestration ─────────────────────────────────────────────────────
     def handle(self, *args, **options):
         dry_run = options['dry_run']
@@ -569,6 +657,7 @@ class Command(BaseCommand):
             bilan_pedagogiques = self._importer_pedagogiques()
             bilan_lieux = {} if options['sans_lieux'] else self._importer_lieux()
             bilan_volumes = self._importer_volumes()
+            bilan_administratif = self._importer_administratif()
 
             if dry_run:
                 transaction.set_rollback(True)
@@ -580,6 +669,7 @@ class Command(BaseCommand):
             ('4. Bâtiments et espaces de formation', bilan_lieux),
             ('5. Volumes horaires (proposition de la source)', bilan_volumes),
             ('6. Nomenclatures pédagogiques (évaluations, jurys, espaces sportifs)', bilan_pedagogiques),
+            ('7. Administratif & scolarité (paiements, frais, documents, notifications, années)', bilan_administratif),
         ):
             self.stdout.write(self.style.HTTP_INFO(f'\n{titre}'))
             for cle, valeur in bilan.items():

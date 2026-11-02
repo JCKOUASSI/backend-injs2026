@@ -1,0 +1,948 @@
+{
+  "_meta": {
+    "objet": "Nomenclatures « Administratif & scolarité » : modes de paiement, types de frais, types de document, types de notification et années académiques, transcrites du PDF ADMINISTRATIF & SCOLARITÉ (1er novembre 2026).",
+    "arbitrages": [
+      "Valeurs « SOCLE » du PDF (5 natures de frais, 6 modes de paiement) : ce sont exactement les choix NATURE_FRAIS et MODE_PAIEMENT du module finances_etudiantes — importées en fiabilité OFFICIEL avec double source. Les autres valeurs sont la « typologie pratique » du PDF, qui dit lui-même qu’elles doivent être arrêtées par la DAF, la Scolarité et la Direction des études : fiabilité CADRAGE.",
+      "Aucun montant, aucun taux : le PDF les réserve à l’arrêté annuel de tarification (§3.1, §9.1) et les modèles de nomenclature n’ont de toute façon aucun champ de prix (les barèmes vivent dans finances_etudiantes.Tarification).",
+      "Le mode Orange Money porte le code ELEPHANT_MONEY : c'est le code historique du socle finances_etudiantes.MODE_PAIEMENT, repris tel quel par le PDF. Il est conservé à l'identique pour ne pas rompre l'alignement entre le référentiel et le module Finances ; un renommage exigerait une migration des paiements existants.",
+      "Compteurs du PDF : sa couverture annonce 14/28/56/47, ses chapitres disent parfois « vingt-neuf » types de frais, « soixante » documents, « cinquante-huit » notifications — les tableaux détaillés comportent 14/28/56/47 lignes, transcrites toutes.",
+      "Années académiques : le modèle scolarite.AnneeAcademique porte les mêmes champs que le §6.1 du PDF. Statut ARCHIVEE = cloturee + inactif ; CLOTUREE = cloturee (encore consultable) ; PLANIFIEE = actif, ni courante ni clôturée ; une seule COURANTE (2026-2027), date_cloture = date de fin pour les années closes.",
+      "Le modèle année ne suit pas la provenance (pas de champ source/fiabilité) : les observations du §6 sont conservées dans ce fichier et le registre nomme la source sur la carte."
+    ]
+  },
+  "modes_paiement": {
+    "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §2",
+    "fiabilite": "CADRAGE",
+    "valeurs": [
+      {
+        "code": "CAISSE",
+        "libelle": "Caisse (espèces)",
+        "description": "Famille : Espèces. Canal : Guichet de la DAF. Usage à l'INJS : Frais de dossier, d'inscription et de scolarité réglés sur place, ainsi que les frais de document. Confirmation : Immédiate : reçu remis au payeur au moment de l'encaissement. Traçabilité exigée : Numéro de reçu séquentiel, caisse, agent encaisseur, double signature pour les gros montants.",
+        "fiabilite": "OFFICIEL",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — §2, valeur SOCLE reprise mot pour mot du socle technique (finances_etudiantes.MODE_PAIEMENT)"
+      },
+      {
+        "code": "VIREMENT",
+        "libelle": "Virement bancaire",
+        "description": "Famille : Bancaire. Canal : Banque du payeur → compte de l'INJS. Usage à l'INJS : Frais de scolarité de montants élevés, paiements d'entreprises, d'employeurs et de collectivités. Confirmation : Différée : confirmée à réception de l'avis de crédit, puis rapprochée. Traçabilité exigée : Référence de virement obligatoire, relevé bancaire, bordereau, date de valeur.",
+        "fiabilite": "OFFICIEL",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — §2, valeur SOCLE reprise mot pour mot du socle technique (finances_etudiantes.MODE_PAIEMENT)"
+      },
+      {
+        "code": "ELEPHANT_MONEY",
+        "libelle": "Orange Money",
+        "description": "Famille : Mobile money. Canal : USSD, application ou paiement en ligne. Usage à l'INJS : Frais de préinscription, de candidature, d'inscription et de scolarité. Confirmation : Automatique : notification de l'opérateur, puis webhook et écriture CONFIRME. Traçabilité exigée : Identifiant de transaction externe (unique, anti-doublon), numéro de téléphone payeur, horodatage.",
+        "fiabilite": "OFFICIEL",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — §2, valeur SOCLE reprise mot pour mot du socle technique (finances_etudiantes.MODE_PAIEMENT)"
+      },
+      {
+        "code": "MTN_MONEY",
+        "libelle": "MTN Mobile Money",
+        "description": "Famille : Mobile money. Canal : USSD, application ou paiement en ligne. Usage à l'INJS : Mêmes usages qu'Orange Money ; canal alternatif pour la couverture nationale. Confirmation : Automatique : notification de l'opérateur, puis webhook et écriture CONFIRME. Traçabilité exigée : Identifiant de transaction externe unique, numéro de téléphone payeur, horodatage.",
+        "fiabilite": "OFFICIEL",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — §2, valeur SOCLE reprise mot pour mot du socle technique (finances_etudiantes.MODE_PAIEMENT)"
+      },
+      {
+        "code": "MOOV_MONEY",
+        "libelle": "Moov Money",
+        "description": "Famille : Mobile money. Canal : USSD, application ou paiement en ligne. Usage à l'INJS : Mêmes usages ; canal alternatif. Confirmation : Automatique : notification de l'opérateur, puis webhook et écriture CONFIRME. Traçabilité exigée : Identifiant de transaction externe unique, numéro de téléphone payeur, horodatage.",
+        "fiabilite": "OFFICIEL",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — §2, valeur SOCLE reprise mot pour mot du socle technique (finances_etudiantes.MODE_PAIEMENT)"
+      },
+      {
+        "code": "CARTE_BANCAIRE",
+        "libelle": "Carte bancaire",
+        "description": "Famille : Bancaire. Canal : Terminal de paiement ou passerelle en ligne. Usage à l'INJS : Frais de scolarité et de formation continue, paiement à distance des étudiants non résidents. Confirmation : Automatique via la passerelle ; différée via le terminal (bordereau de remise). Traçabilité exigée : Numéro d'autorisation, ticket ou bordereau de remise, masque de la carte (jamais le PAN complet).",
+        "fiabilite": "OFFICIEL",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — §2, valeur SOCLE reprise mot pour mot du socle technique (finances_etudiantes.MODE_PAIEMENT)"
+      },
+      {
+        "code": "CHEQUE",
+        "libelle": "Chèque bancaire",
+        "description": "Famille : Bancaire. Canal : Remise à l'encaissement. Usage à l'INJS : Frais de scolarité, paiements d'entreprises et de parents. Confirmation : Différée : EN_ATTENTE jusqu'à crédit effectif ; ÉCHOUE si rejet. Traçabilité exigée : Numéro de chèque, banque, tireur, date de remise, date de crédit."
+      },
+      {
+        "code": "WAVE",
+        "libelle": "Wave",
+        "description": "Famille : Mobile money. Canal : Application ou QR code marchand. Usage à l'INJS : Frais de candidature et de scolarité ; canal à faible commission. Confirmation : Automatique : notification et webhook. Traçabilité exigée : Identifiant de transaction externe unique, QR ou numéro marchand."
+      },
+      {
+        "code": "PRELEVEMENT",
+        "libelle": "Prélèvement automatique / domiciliation",
+        "description": "Famille : Bancaire. Canal : Mandat de prélèvement SEPA local. Usage à l'INJS : Entreprises, employeurs et collectivités qui prennent en charge plusieurs agents. Confirmation : Différée : à la date d'échéance convenue, avec avis préalable. Traçabilité exigée : Mandat signé, calendrier d'échéances, avis de prélèvement."
+      },
+      {
+        "code": "PAIEMENT_EN_LIGNE",
+        "libelle": "Paiement en ligne (agrégateur)",
+        "description": "Famille : Mixte. Canal : Passerelle agrégée (carte + mobile money). Usage à l'INJS : Préinscription aux concours, frais de dossier, scolarité à distance. Confirmation : Automatique : retour de la passerelle, puis webhook de confirmation. Traçabilité exigée : Référence de la passerelle, identifiant de transaction, reçu numérique."
+      },
+      {
+        "code": "MANDAT",
+        "libelle": "Mandat (postal ou express)",
+        "description": "Famille : Hors ligne. Canal : Opérateur de transfert d'argent. Usage à l'INJS : Étudiants et familles de l'intérieur du pays ; paiement d'un tiers pour le compte d'un étudiant. Confirmation : Différée : saisie au guichet à réception de l'avis de mandat. Traçabilité exigée : Référence du mandat, nom de l'émetteur, nom du bénéficiaire, pièce d'identité."
+      },
+      {
+        "code": "PRISE_EN_CHARGE",
+        "libelle": "Prise en charge (État, employeur, sponsor)",
+        "description": "Famille : Sans encaissement. Canal : Acte administratif. Usage à l'INJS : Étudiants boursiers, agents pris en charge par leur administration ou leur entreprise. Confirmation : Écriture comptable de compensation après réception de l'acte de prise en charge. Traçabilité exigée : Décision ou convention de prise en charge, référence budgétaire, montant couvert, période."
+      },
+      {
+        "code": "EXONERATION",
+        "libelle": "Exonération / dispense",
+        "description": "Famille : Sans encaissement. Canal : Décision de la direction. Usage à l'INJS : Cas sociaux, sportifs de haut niveau, personnel de l'INJS et leurs ayants droit, partenariats. Confirmation : Validation par la direction, puis écriture d'exonération motivée. Traçabilité exigée : Décision motivée nominative, durée, base légale ou sociale, signataire."
+      },
+      {
+        "code": "AVOIR_REMBOURSEMENT",
+        "libelle": "Avoir / remboursement",
+        "description": "Famille : Sans encaissement. Canal : Écriture d'extourne. Usage à l'INJS : Trop-perçu, désistement, double paiement, annulation d'inscription. Confirmation : Après instruction du dossier de remboursement et validation de la DAF. Traçabilité exigée : Demande écrite du payeur, motif, justificatif du paiement initial, décision d'accord."
+      }
+    ]
+  },
+  "types_frais": {
+    "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §3",
+    "fiabilite": "CADRAGE",
+    "valeurs": [
+      {
+        "code": "DOSSIER",
+        "libelle": "Frais de dossier",
+        "description": "Famille : Admission. Objet : Étude du dossier de candidature. Débiteur : Candidat. Exigibilité : Au dépôt du dossier. Remboursement : Non. Effet d'un impayé : Dossier non instruit.",
+        "fiabilite": "OFFICIEL",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — §3, nature SOCLE reprise mot pour mot du socle technique (finances_etudiantes.NATURE_FRAIS)"
+      },
+      {
+        "code": "INSCRIPTION",
+        "libelle": "Frais d'inscription",
+        "description": "Famille : Scolarité. Objet : Inscription administrative annuelle. Débiteur : Étudiant. Exigibilité : À l'inscription administrative. Remboursement : Non. Effet d'un impayé : Inscription non validée, pas de certificat de scolarité.",
+        "fiabilite": "OFFICIEL",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — §3, nature SOCLE reprise mot pour mot du socle technique (finances_etudiantes.NATURE_FRAIS)"
+      },
+      {
+        "code": "SCOLARITE",
+        "libelle": "Frais de scolarité",
+        "description": "Famille : Scolarité. Objet : Enseignements de l'année (droits de scolarité). Débiteur : Étudiant. Exigibilité : Échéancier annuel (1 à 4 tranches). Remboursement : Non. Effet d'un impayé : Attestation de fin d'année retenue, relevé non délivré.",
+        "fiabilite": "OFFICIEL",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — §3, nature SOCLE reprise mot pour mot du socle technique (finances_etudiantes.NATURE_FRAIS)"
+      },
+      {
+        "code": "EXAMEN",
+        "libelle": "Frais d'examen",
+        "description": "Famille : Évaluation. Objet : Passation des épreuves de fin de semestre. Débiteur : Étudiant. Exigibilité : Avant les épreuves. Remboursement : Non. Effet d'un impayé : Pas de convocation aux épreuves.",
+        "fiabilite": "OFFICIEL",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — §3, nature SOCLE reprise mot pour mot du socle technique (finances_etudiantes.NATURE_FRAIS)"
+      },
+      {
+        "code": "DOCUMENT",
+        "libelle": "Frais de document",
+        "description": "Famille : Documents. Objet : Délivrance d'un document payant (relevé, attestation, duplicata). Débiteur : Demandeur. Exigibilité : À la demande, avant délivrance. Remboursement : Non. Effet d'un impayé : Document non délivré.",
+        "fiabilite": "OFFICIEL",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — §3, nature SOCLE reprise mot pour mot du socle technique (finances_etudiantes.NATURE_FRAIS)"
+      },
+      {
+        "code": "REINSCRIPTION",
+        "libelle": "Frais de réinscription",
+        "description": "Famille : Scolarité. Objet : Réinscription d'un étudiant déjà inscrit l'année précédente. Débiteur : Étudiant. Exigibilité : À la réinscription. Remboursement : Non. Effet d'un impayé : Réinscription non validée."
+      },
+      {
+        "code": "PREINSCRIPTION",
+        "libelle": "Frais de préinscription en ligne",
+        "description": "Famille : Admission. Objet : Ouverture d'un dossier de candidature sur la plateforme. Débiteur : Candidat. Exigibilité : En ligne, avant l'ouverture du dossier. Remboursement : Non. Effet d'un impayé : Dossier non ouvert, candidature non recevable."
+      },
+      {
+        "code": "CONCOURS",
+        "libelle": "Frais de concours",
+        "description": "Famille : Admission. Objet : Participation aux épreuves du concours d'entrée. Débiteur : Candidat. Exigibilité : Avant la convocation aux épreuves. Remboursement : Non. Effet d'un impayé : Non-convocation aux épreuves."
+      },
+      {
+        "code": "TENUE_SPORTIVE",
+        "libelle": "Frais de tenue sportive",
+        "description": "Famille : Vie estudiantine. Objet : Tenue d'éducation physique et d'identification de l'étudiant. Débiteur : Étudiant. Exigibilité : À l'inscription. Remboursement : Non. Effet d'un impayé : Retard de dotation, pas de blocage pédagogique."
+      },
+      {
+        "code": "ASSURANCE",
+        "libelle": "Frais d'assurance étudiant",
+        "description": "Famille : Vie estudiantine. Objet : Couverture des accidents en pratique sportive et en stage. Débiteur : Étudiant. Exigibilité : À l'inscription. Remboursement : Non. Effet d'un impayé : Refus d'accès aux créneaux à risque élevé."
+      },
+      {
+        "code": "VISITE_MEDICALE",
+        "libelle": "Frais de visite médicale d'aptitude",
+        "description": "Famille : Santé. Objet : Certificat d'aptitude physique délivré par le CNMS. Débiteur : Candidat puis étudiant. Exigibilité : Avant les épreuves physiques ou la première pratique. Remboursement : Non. Effet d'un impayé : Exclusion des activités physiques et sportives."
+      },
+      {
+        "code": "STAGE",
+        "libelle": "Frais de stage",
+        "description": "Famille : Stage. Objet : Organisation, supervision et couverture des stages. Débiteur : Étudiant. Exigibilité : À l'inscription ou au départ en stage. Remboursement : Non. Effet d'un impayé : Convention non délivrée, stage non validé."
+      },
+      {
+        "code": "SOUTENANCE",
+        "libelle": "Frais de soutenance",
+        "description": "Famille : Diplômation. Objet : Organisation du jury de mémoire ou de thèse. Débiteur : Étudiant. Exigibilité : Avant la date de soutenance. Remboursement : Non. Effet d'un impayé : Soutenance non programmée."
+      },
+      {
+        "code": "MEMOIRE",
+        "libelle": "Frais de mémoire / de dépôt",
+        "description": "Famille : Diplômation. Objet : Encadrement et dépôt institutionnel du mémoire. Débiteur : Étudiant. Exigibilité : Au dépôt du mémoire. Remboursement : Non. Effet d'un impayé : Dépôt refusé, diplôme suspendu."
+      },
+      {
+        "code": "DIPLOME",
+        "libelle": "Frais de diplôme",
+        "description": "Famille : Diplômation. Objet : Impression sécurisée du diplôme et du supplément au diplôme. Débiteur : Étudiant. Exigibilité : Au retrait du diplôme. Remboursement : Partiellement (voir règlement). Effet d'un impayé : Diplôme non remis, attestation de réussite seule."
+      },
+      {
+        "code": "DUPLICATA",
+        "libelle": "Frais de duplicata",
+        "description": "Famille : Documents. Objet : Seconde délivrance d'un document perdu ou détérioré. Débiteur : Étudiant. Exigibilité : À la demande du duplicata. Remboursement : Non. Effet d'un impayé : Duplicata non délivré."
+      },
+      {
+        "code": "TIMBRE",
+        "libelle": "Droit de timbre",
+        "description": "Famille : Documents. Objet : Droit fiscal apposé sur certains documents officiels. Débiteur : Étudiant. Exigibilité : À la délivrance. Remboursement : Non. Effet d'un impayé : Document non régularisé."
+      },
+      {
+        "code": "RATTRAPAGE",
+        "libelle": "Frais de session de rattrapage",
+        "description": "Famille : Évaluation. Objet : Passation des épreuves de la seconde session. Débiteur : Étudiant ajourné. Exigibilité : Avant les épreuves de rattrapage. Remboursement : Non. Effet d'un impayé : Pas de convocation en session 2."
+      },
+      {
+        "code": "EXAMEN_SPECIAL",
+        "libelle": "Frais de session spéciale",
+        "description": "Famille : Évaluation. Objet : Épreuve de remplacement hors calendrier. Débiteur : Étudiant. Exigibilité : Avant l'épreuve. Remboursement : Non. Effet d'un impayé : Épreuve non organisée."
+      },
+      {
+        "code": "PENALITE_RETARD",
+        "libelle": "Pénalité de retard",
+        "description": "Famille : Scolarité. Objet : Majoration appliquée à une échéance impayée après mise en demeure. Débiteur : Étudiant. Exigibilité : Après échéance et relance. Remboursement : Non. Effet d'un impayé : Blocage des documents et de la réinscription."
+      },
+      {
+        "code": "TRANSFERT",
+        "libelle": "Frais de transfert de dossier",
+        "description": "Famille : Mobilité. Objet : Transfert du dossier vers un autre établissement. Débiteur : Étudiant. Exigibilité : À la demande de transfert. Remboursement : Non. Effet d'un impayé : Transfert non traité."
+      },
+      {
+        "code": "EQUIVALENCE",
+        "libelle": "Frais d'étude d'équivalence",
+        "description": "Famille : Admission. Objet : Instruction d'une demande d'équivalence de diplôme ou de crédits. Débiteur : Candidat. Exigibilité : Au dépôt de la demande. Remboursement : Non. Effet d'un impayé : Demande non instruite."
+      },
+      {
+        "code": "FORMATION_CONTINUE",
+        "libelle": "Frais de formation continue",
+        "description": "Famille : Formation continue. Objet : Inscription d'un auditeur à une session de formation continue. Débiteur : Auditeur ou employeur. Exigibilité : Avant l'ouverture de la session. Remboursement : Selon convention. Effet d'un impayé : Session non ouverte à l'auditeur."
+      },
+      {
+        "code": "HEBERGEMENT",
+        "libelle": "Frais d'hébergement et de restauration",
+        "description": "Famille : Vie estudiantine. Objet : Internat, restaurant universitaire. Débiteur : Étudiant. Exigibilité : Mensuel ou par trimestre. Remboursement : Non. Effet d'un impayé : Perte de la place réservée."
+      },
+      {
+        "code": "TRANSPORT",
+        "libelle": "Frais de transport pédagogique",
+        "description": "Famille : Vie estudiantine. Objet : Sorties pédagogiques, déplacements de stage ou de compétition. Débiteur : Étudiant. Exigibilité : Avant le départ. Remboursement : Non. Effet d'un impayé : Non-participation à la sortie."
+      },
+      {
+        "code": "CAUTION",
+        "libelle": "Caution / garantie matériel",
+        "description": "Famille : Patrimoine. Objet : Prêt de matériel sportif ou informatique de valeur. Débiteur : Étudiant. Exigibilité : À la remise du matériel. Remboursement : Oui, à la restitution. Effet d'un impayé : Matériel non remis."
+      },
+      {
+        "code": "FRAIS_BANCAIRES",
+        "libelle": "Frais bancaires refacturés",
+        "description": "Famille : Divers. Objet : Commission bancaire d'un virement ou d'un rejet de chèque. Débiteur : Payeur. Exigibilité : À l'opération. Remboursement : Non. Effet d'un impayé : Refacturation sur le solde suivant."
+      },
+      {
+        "code": "MAJORATION_ETRANGER",
+        "libelle": "Majoration étudiants étrangers",
+        "description": "Famille : Scolarité. Objet : Majoration éventuelle des droits pour les étudiants non nationaux. Débiteur : Étudiant étranger. Exigibilité : À l'inscription. Remboursement : Non. Effet d'un impayé : Inscription non validée."
+      }
+    ]
+  },
+  "types_document": {
+    "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4",
+    "fiabilite": "CADRAGE",
+    "valeurs": [
+      {
+        "code": "DOC_CAND_01",
+        "libelle": "Fiche de préinscription en ligne",
+        "description": "Famille : Candidature et admission. Nature : Justificatif. Émetteur : Candidat, via la plateforme. Signataire : Aucune (document du candidat). Validité : Jusqu'à la clôture de la campagne. Traçabilité : Numéro de dossier, horodatage.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.1"
+      },
+      {
+        "code": "DOC_CAND_02",
+        "libelle": "Reçu de dépôt de dossier de candidature",
+        "description": "Famille : Candidature et admission. Nature : Justificatif. Émetteur : Service des concours. Signataire : Agent d'accueil. Validité : Jusqu'à la décision. Traçabilité : Numéro de reçu, liste des pièces reçues.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.1"
+      },
+      {
+        "code": "DOC_CAND_03",
+        "libelle": "Quittance de frais de concours",
+        "description": "Famille : Candidature et admission. Nature : Officiel financier. Émetteur : DAF. Signataire : Chef de service financier. Validité : Permanente (archivage 10 ans). Traçabilité : Numéro séquentiel, transaction externe.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.1"
+      },
+      {
+        "code": "DOC_CAND_04",
+        "libelle": "Convocation aux épreuves",
+        "description": "Famille : Candidature et admission. Nature : Officiel. Émetteur : Service des concours. Signataire : Directeur des études ou responsable des concours. Validité : Jusqu'à l'épreuve. Traçabilité : Numéro de convocation, salle, date, contre-signature.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.1"
+      },
+      {
+        "code": "DOC_CAND_05",
+        "libelle": "Notification d'admission",
+        "description": "Famille : Candidature et admission. Nature : Officiel. Émetteur : Commission d'admission. Signataire : Directeur général. Validité : Jusqu'à la date limite d'inscription. Traçabilité : Référence de décision, vague, niveau.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.1"
+      },
+      {
+        "code": "DOC_CAND_06",
+        "libelle": "Notification de refus ou de liste d'attente",
+        "description": "Famille : Candidature et admission. Nature : Officiel. Émetteur : Commission d'admission. Signataire : Président de commission. Validité : Permanente (archivage). Traçabilité : Référence de décision, motif.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.1"
+      },
+      {
+        "code": "DOC_SCO_01",
+        "libelle": "Certificat de scolarité",
+        "description": "Famille : Scolarité. Nature : Officiel. Émetteur : Scolarité. Signataire : Directeur des études. Validité : Année académique en cours. Traçabilité : Numéro de certificat, inscription VALIDEE obligatoire.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.1"
+      },
+      {
+        "code": "DOC_SCO_02",
+        "libelle": "Attestation d'inscription",
+        "description": "Famille : Scolarité. Nature : Officiel. Émetteur : Scolarité. Signataire : Chef de service scolarité. Validité : Année académique en cours. Traçabilité : Numéro d'attestation, matricule, niveau.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.1"
+      },
+      {
+        "code": "DOC_SCO_03",
+        "libelle": "Carte d'étudiant",
+        "description": "Famille : Scolarité. Nature : Officiel. Émetteur : Scolarité. Signataire : Directeur général. Validité : Année académique (renouvelable). Traçabilité : Numéro de carte, photo, QR de vérification.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.1"
+      },
+      {
+        "code": "DOC_SCO_04",
+        "libelle": "Attestation de fréquentation",
+        "description": "Famille : Scolarité. Nature : Officiel. Émetteur : Scolarité. Signataire : Chef de service scolarité. Validité : Année académique. Traçabilité : Contrôle du taux de présence.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.1"
+      },
+      {
+        "code": "DOC_SCO_05",
+        "libelle": "Attestation de réussite",
+        "description": "Famille : Scolarité. Nature : Officiel. Émetteur : Scolarité. Signataire : Directeur des études. Validité : Permanente. Traçabilité : Référence du PV de jury, mention, crédits.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.1"
+      },
+      {
+        "code": "DOC_SCO_06",
+        "libelle": "Attestation de fin de cycle (en attente de diplôme)",
+        "description": "Famille : Scolarité. Nature : Officiel. Émetteur : Scolarité. Signataire : Directeur général. Validité : Jusqu'à la remise du diplôme. Traçabilité : Référence de la décision de jury.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.1"
+      },
+      {
+        "code": "DOC_SCO_07",
+        "libelle": "Certificat de radiation",
+        "description": "Famille : Scolarité. Nature : Officiel. Émetteur : Scolarité. Signataire : Directeur des études. Validité : Permanente. Traçabilité : Motif, date d'effet, solde financier.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.1"
+      },
+      {
+        "code": "DOC_SCO_08",
+        "libelle": "Autorisation de transfert",
+        "description": "Famille : Scolarité. Nature : Officiel. Émetteur : Direction. Signataire : Directeur général. Validité : 90 jours. Traçabilité : Établissement destinataire, motif, solde soldé.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.1"
+      },
+      {
+        "code": "DOC_SCO_09",
+        "libelle": "Attestation de réinscription",
+        "description": "Famille : Scolarité. Nature : Officiel. Émetteur : Scolarité. Signataire : Chef de service scolarité. Validité : Année académique. Traçabilité : Numéro d'inscription, crédits capitalisés.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.1"
+      },
+      {
+        "code": "DOC_EVA_01",
+        "libelle": "Relevé de notes semestriel",
+        "description": "Famille : Évaluation. Nature : Officiel. Émetteur : Scolarité. Signataire : Directeur des études. Validité : Permanente. Traçabilité : Référence de la session de jury, verrouillage.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.2"
+      },
+      {
+        "code": "DOC_EVA_02",
+        "libelle": "Relevé de notes annuel / transcript",
+        "description": "Famille : Évaluation. Nature : Officiel. Émetteur : Scolarité. Signataire : Directeur des études. Validité : Permanente. Traçabilité : Crédits, moyenne pondérée, décisions.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.2"
+      },
+      {
+        "code": "DOC_EVA_03",
+        "libelle": "Procès-verbal de délibération de semestre",
+        "description": "Famille : Évaluation. Nature : Officiel interne. Émetteur : Jury. Signataire : Président du jury. Validité : Permanente (archivage). Traçabilité : Verrouillage du PV, membres du jury.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.2"
+      },
+      {
+        "code": "DOC_EVA_04",
+        "libelle": "Procès-verbal de session de rattrapage",
+        "description": "Famille : Évaluation. Nature : Officiel interne. Émetteur : Jury. Signataire : Président du jury. Validité : Permanente. Traçabilité : Verrouillage, conservation de la meilleure note.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.2"
+      },
+      {
+        "code": "DOC_EVA_05",
+        "libelle": "Procès-verbal de soutenance de mémoire ou de thèse",
+        "description": "Famille : Évaluation. Nature : Officiel interne. Émetteur : Jury. Signataire : Président du jury. Validité : Permanente. Traçabilité : Composition du jury, mention, décision.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.2"
+      },
+      {
+        "code": "DOC_EVA_06",
+        "libelle": "Grille de notes d'ECUE",
+        "description": "Famille : Évaluation. Nature : Justificatif interne. Émetteur : Enseignant responsable. Signataire : Enseignant et chef de département. Validité : Permanente. Traçabilité : Statut de validation des notes, corrections motivées.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.2"
+      },
+      {
+        "code": "DOC_EVA_07",
+        "libelle": "Bordereau de notes de session",
+        "description": "Famille : Évaluation. Nature : Justificatif interne. Émetteur : Scolarité. Signataire : Responsable de la saisie et chef de service. Validité : Permanente. Traçabilité : Contrôle croisé avec la saisie.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.2"
+      },
+      {
+        "code": "DOC_DIP_01",
+        "libelle": "Diplôme national (Licence, Master, Doctorat)",
+        "description": "Famille : Diplômation. Nature : Officiel. Émetteur : Ministère / INJS. Signataire : Directeur général et ministre. Validité : Permanente. Traçabilité : Empreinte SHA-256, registre annuel, vérification en ligne.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.2"
+      },
+      {
+        "code": "DOC_DIP_02",
+        "libelle": "Supplément au diplôme",
+        "description": "Famille : Diplômation. Nature : Officiel. Émetteur : INJS. Signataire : Directeur des études. Validité : Permanente. Traçabilité : Lien au diplôme, descriptif des UE et des crédits.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.2"
+      },
+      {
+        "code": "DOC_DIP_03",
+        "libelle": "Réédition de diplôme",
+        "description": "Famille : Diplômation. Nature : Officiel. Émetteur : INJS. Signataire : Directeur général. Validité : Permanente. Traçabilité : Motif obligatoire, nouvelle empreinte, original gelé.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.2"
+      },
+      {
+        "code": "DOC_DIP_04",
+        "libelle": "Duplicata de diplôme",
+        "description": "Famille : Diplômation. Nature : Officiel. Émetteur : INJS. Signataire : Directeur général. Validité : Permanente. Traçabilité : Déclaration de perte, frais de duplicata.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.2"
+      },
+      {
+        "code": "DOC_DIP_05",
+        "libelle": "Registre des diplômes de l'année",
+        "description": "Famille : Diplômation. Nature : Officiel interne. Émetteur : Scolarité. Signataire : Directeur général. Validité : Permanente. Traçabilité : Numérotation continue, scellement, conservation longue durée.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.2"
+      },
+      {
+        "code": "DOC_STG_01",
+        "libelle": "Convention de stage",
+        "description": "Famille : Stage. Nature : Officiel. Émetteur : INJS et structure d'accueil. Signataire : Directeur des études et responsable de la structure. Validité : Durée du stage. Traçabilité : Numéro de convention, période, encadrants.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_STG_02",
+        "libelle": "Attestation de stage",
+        "description": "Famille : Stage. Nature : Officiel. Émetteur : Structure d'accueil. Signataire : Responsable de la structure. Validité : Permanente. Traçabilité : Période, missions, appréciation.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_STG_03",
+        "libelle": "Fiche d'évaluation de stage",
+        "description": "Famille : Stage. Nature : Justificatif. Émetteur : Tuteur de terrain. Signataire : Tuteur et encadrant académique. Validité : Permanente. Traçabilité : Note du tuteur, critères.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_STG_04",
+        "libelle": "Autorisation de soutenance",
+        "description": "Famille : Stage. Nature : Officiel interne. Émetteur : Direction des études. Signataire : Directeur des études. Validité : Jusqu'à la soutenance. Traçabilité : Visa de l'encadreur, dépôt effectué.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_FIN_01",
+        "libelle": "Quittance de paiement",
+        "description": "Famille : Finances. Nature : Officiel financier. Émetteur : DAF. Signataire : Chef de service financier. Validité : Permanente. Traçabilité : Numéro séquentiel unique, paiement rattaché.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_FIN_02",
+        "libelle": "Facture",
+        "description": "Famille : Finances. Nature : Officiel financier. Émetteur : DAF. Signataire : Chef de service financier. Validité : Permanente. Traçabilité : Numéro, lignes, total, statut.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_FIN_03",
+        "libelle": "Échéancier de paiement",
+        "description": "Famille : Finances. Nature : Justificatif. Émetteur : DAF. Signataire : Chef de service financier. Validité : Année académique. Traçabilité : Lignes datées, statuts par ligne.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_FIN_04",
+        "libelle": "Attestation de solde / de paiement",
+        "description": "Famille : Finances. Nature : Officiel. Émetteur : DAF. Signataire : Chef de service financier. Validité : 90 jours. Traçabilité : Solde dû, montant payé, date d'arrêté.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_FIN_05",
+        "libelle": "État financier de fin de période",
+        "description": "Famille : Finances. Nature : Officiel interne. Émetteur : DAF. Signataire : Directeur administratif et financier. Validité : Permanente. Traçabilité : Période, rapprochement, signature.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_FIN_06",
+        "libelle": "Bon de caisse et journal de caisse",
+        "description": "Famille : Finances. Nature : Justificatif interne. Émetteur : DAF. Signataire : Caissier et chef de service. Validité : 10 ans. Traçabilité : Numérotation continue, double signature.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_FIN_07",
+        "libelle": "Décision d'exonération ou de prise en charge",
+        "description": "Famille : Finances. Nature : Officiel. Émetteur : Direction. Signataire : Directeur général. Validité : Durée indiquée. Traçabilité : Motif, base légale ou sociale, montant couvert.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_FIN_08",
+        "libelle": "Dossier de remboursement",
+        "description": "Famille : Finances. Nature : Justificatif. Émetteur : DAF. Signataire : Directeur administratif et financier. Validité : Permanente. Traçabilité : Demande du payeur, motif, décision d'accord.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_MED_01",
+        "libelle": "Certificat médical d'aptitude physique",
+        "description": "Famille : Santé. Nature : Justificatif obligatoire. Émetteur : CNMS. Signataire : Médecin agréé. Validité : 12 mois maximum. Traçabilité : Numéro de certificat, date, aptitude ou inaptitude.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_MED_02",
+        "libelle": "Fiche de suivi médical de l'étudiant",
+        "description": "Famille : Santé. Nature : Justificatif confidentiel. Émetteur : CNMS. Signataire : Médecin. Validité : Durée du cursus. Traçabilité : Accès strictement limité au personnel médical.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_MED_03",
+        "libelle": "Certificat de dispense d'activité physique",
+        "description": "Famille : Santé. Nature : Justificatif. Émetteur : CNMS. Signataire : Médecin agréé. Validité : Durée indiquée. Traçabilité : Motif médical, durée, aménagements.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_PIE_01",
+        "libelle": "Extrait d'acte de naissance",
+        "description": "Famille : Pièces du dossier. Nature : Justificatif. Émetteur : État civil. Signataire : Officier d'état civil. Validité : Permanente (copie récente exigée). Traçabilité : Contrôle de la concordance nom, prénoms et date de naissance.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_PIE_02",
+        "libelle": "Certificat de nationalité",
+        "description": "Famille : Pièces du dossier. Nature : Justificatif. Émetteur : Autorité compétente. Signataire : Autorité signataire. Validité : Permanente. Traçabilité : Contrôle de la nationalité déclarée.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_PIE_03",
+        "libelle": "Copie de la pièce d'identité (CNI ou passeport)",
+        "description": "Famille : Pièces du dossier. Nature : Justificatif. Émetteur : Autorité émettrice. Signataire : Aucune. Validité : Validité de la pièce. Traçabilité : Contrôle de la validité à la date du dépôt.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_PIE_04",
+        "libelle": "Photos d'identité",
+        "description": "Famille : Pièces du dossier. Nature : Justificatif. Émetteur : Candidat. Signataire : Aucune. Validité : 6 mois. Traçabilité : Conformité aux normes de la carte d'étudiant.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_PIE_05",
+        "libelle": "Diplôme du baccalauréat ou attestation de réussite",
+        "description": "Famille : Pièces du dossier. Nature : Justificatif obligatoire. Émetteur : Ministère de l'Éducation nationale. Signataire : Autorité signataire. Validité : Permanente. Traçabilité : Vérification de l'authenticité.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_PIE_06",
+        "libelle": "Relevés de notes antérieurs",
+        "description": "Famille : Pièces du dossier. Nature : Justificatif. Émetteur : Établissement d'origine. Signataire : Chef d'établissement. Validité : Permanente. Traçabilité : Contrôle des crédits et des mentions.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_PIE_07",
+        "libelle": "Attestation d'équivalence ou de reconnaissance de diplôme",
+        "description": "Famille : Pièces du dossier. Nature : Officiel. Émetteur : Autorité nationale compétente. Signataire : Autorité signataire. Validité : Permanente. Traçabilité : Numéro de décision, diplôme reconnu.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_PIE_08",
+        "libelle": "Curriculum vitae",
+        "description": "Famille : Pièces du dossier. Nature : Justificatif. Émetteur : Candidat. Signataire : Aucune. Validité : Année de candidature. Traçabilité : Aucune valeur probante, pièce de contexte.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_PIE_09",
+        "libelle": "Certificat de prise de service ou attestation d'employeur",
+        "description": "Famille : Pièces du dossier. Nature : Justificatif. Émetteur : Employeur. Signataire : Responsable des ressources humaines. Validité : 3 mois. Traçabilité : Utile pour les concours professionnels.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_ETA_01",
+        "libelle": "Maquette pédagogique visée",
+        "description": "Famille : Actes de l'établissement. Nature : Officiel. Émetteur : INJS. Signataire : Directeur général. Validité : Durée du cycle. Traçabilité : Version, date de visa, référence de l'arrêté.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_ETA_02",
+        "libelle": "Arrêté d'ouverture de formation ou d'habilitation",
+        "description": "Famille : Actes de l'établissement. Nature : Officiel. Émetteur : Ministère de tutelle. Signataire : Ministre. Validité : Durée de l'habilitation. Traçabilité : Référence de l'arrêté, période couverte.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_ETA_03",
+        "libelle": "Convention de partenariat",
+        "description": "Famille : Actes de l'établissement. Nature : Officiel. Émetteur : INJS et partenaire. Signataire : Directeur général et partenaire. Validité : Durée de la convention. Traçabilité : Numéro, objet, obligations réciproques, dénonciation.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_ETA_04",
+        "libelle": "Calendrier académique officiel",
+        "description": "Famille : Actes de l'établissement. Nature : Officiel. Émetteur : Direction des études. Signataire : Directeur général. Validité : Année académique. Traçabilité : Version, date d'approbation.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      },
+      {
+        "code": "DOC_ETA_05",
+        "libelle": "Procès-verbal de jury de diplôme",
+        "description": "Famille : Actes de l'établissement. Nature : Officiel interne. Émetteur : Jury de diplôme. Signataire : Président du jury. Validité : Permanente. Traçabilité : Verrouillage, publication.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §4.3"
+      }
+    ]
+  },
+  "types_notification": {
+    "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5",
+    "fiabilite": "CADRAGE",
+    "valeurs": [
+      {
+        "code": "NOT_ALR_01",
+        "libelle": "Alerte de taux de présence",
+        "description": "Famille : Alertes de pilotage. Déclencheur : Le taux de présence d'un groupe passe sous le seuil. Destinataire : Chef de département, superviseur, direction. Canal : APP + e-mail. Gravité : AVERTISSEMENT. Action attendue : Analyser les absences et déclencher un suivi.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.1"
+      },
+      {
+        "code": "NOT_ALR_02",
+        "libelle": "Alerte de taux d'absence",
+        "description": "Famille : Alertes de pilotage. Déclencheur : Le taux d'absence d'un groupe dépasse le seuil. Destinataire : Superviseur, encadrant. Canal : APP. Gravité : AVERTISSEMENT. Action attendue : Contacter les étudiants concernés.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.1"
+      },
+      {
+        "code": "NOT_ALR_03",
+        "libelle": "Alerte de taux d'abandon",
+        "description": "Famille : Alertes de pilotage. Déclencheur : Le taux d'abandon d'une promotion dépasse le seuil. Destinataire : Direction des études. Canal : APP + e-mail. Gravité : CRITIQUE. Action attendue : Ouvrir une revue de promotion.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.1"
+      },
+      {
+        "code": "NOT_ALR_04",
+        "libelle": "Alerte de saturation d'un groupe",
+        "description": "Famille : Alertes de pilotage. Déclencheur : L'effectif d'un groupe atteint le seuil de saturation. Destinataire : Scolarité, emploi du temps. Canal : APP. Gravité : AVERTISSEMENT. Action attendue : Créer un groupe ou changer de salle.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.1"
+      },
+      {
+        "code": "NOT_ALR_05",
+        "libelle": "Alerte d'exécution du volume horaire",
+        "description": "Famille : Alertes de pilotage. Déclencheur : Le volume réalisé s'écarte du volume planifié. Destinataire : Chef de département, DAF. Canal : APP + e-mail. Gravité : AVERTISSEMENT. Action attendue : Justifier l'écart ou ajuster le planning.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.1"
+      },
+      {
+        "code": "NOT_ALR_06",
+        "libelle": "Alerte d'absences notoires",
+        "description": "Famille : Alertes de pilotage. Déclencheur : Un étudiant atteint le nombre d'absences notoires. Destinataire : Scolarité, superviseur. Canal : APP + SMS à l'étudiant. Gravité : CRITIQUE. Action attendue : Convoquer l'étudiant.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.1"
+      },
+      {
+        "code": "NOT_ALR_07",
+        "libelle": "Alerte de badgeage hors géorepérage",
+        "description": "Famille : Alertes de pilotage. Déclencheur : Un badgeage est enregistré hors du rayon du site. Destinataire : Superviseur, encadrant. Canal : APP. Gravité : AVERTISSEMENT. Action attendue : Valider ou rejeter la présence.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.1"
+      },
+      {
+        "code": "NOT_ALR_08",
+        "libelle": "Alerte d'appareil suspect",
+        "description": "Famille : Alertes de pilotage. Déclencheur : Badgeage hors ligne répété ou heartbeat anormal. Destinataire : Superviseur, administrateur. Canal : APP + e-mail. Gravité : CRITIQUE. Action attendue : Vérifier Device ID et données de localisation.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.1"
+      },
+      {
+        "code": "NOT_RAP_01",
+        "libelle": "Rappel d'échéance de paiement",
+        "description": "Famille : Rappels de scolarité. Déclencheur : Une échéance approche (J-7 puis J-1). Destinataire : Étudiant ou responsable de paiement. Canal : SMS + e-mail + APP. Action attendue : Payer avant l'échéance. Délai : J-7 et J-1.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.2"
+      },
+      {
+        "code": "NOT_RAP_02",
+        "libelle": "Relance pour impayé",
+        "description": "Famille : Rappels de scolarité. Déclencheur : Une échéance est dépassée. Destinataire : Étudiant, puis famille si autorisé. Canal : SMS puis lettre. Action attendue : Régulariser sous 15 jours. Délai : J+7, J+15, J+30.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.2"
+      },
+      {
+        "code": "NOT_RAP_03",
+        "libelle": "Rappel de dépôt de pièces manquantes",
+        "description": "Famille : Rappels de scolarité. Déclencheur : Une pièce obligatoire est au statut MANQUANTE ou REFUSEE. Destinataire : Candidat ou étudiant. Canal : APP + e-mail. Action attendue : Déposer la pièce avant la date limite. Délai : J-10 avant clôture.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.2"
+      },
+      {
+        "code": "NOT_RAP_04",
+        "libelle": "Rappel de pièce expirée",
+        "description": "Famille : Rappels de scolarité. Déclencheur : Un justificatif arrive à expiration. Destinataire : Étudiant. Canal : APP. Action attendue : Fournir un justificatif à jour. Délai : J-30.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.2"
+      },
+      {
+        "code": "NOT_RAP_05",
+        "libelle": "Rappel de réinscription",
+        "description": "Famille : Rappels de scolarité. Déclencheur : La campagne de réinscription est ouverte. Destinataire : Étudiant éligible. Canal : SMS + e-mail. Action attendue : Se réinscrire dans la fenêtre. Délai : Ouverture et J-7.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.2"
+      },
+      {
+        "code": "NOT_RAP_06",
+        "libelle": "Rappel de saisie de notes",
+        "description": "Famille : Rappels de scolarité. Déclencheur : La date limite de saisie approche. Destinataire : Enseignant, chef de département. Canal : APP + e-mail. Action attendue : Saisir puis soumettre les notes. Délai : J-5 puis J-1.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.2"
+      },
+      {
+        "code": "NOT_RAP_07",
+        "libelle": "Rappel de validation des notes",
+        "description": "Famille : Rappels de scolarité. Déclencheur : Des notes sont SOUMISES et attendent validation. Destinataire : Chef de département, directeur des études. Canal : APP. Action attendue : Valider et verrouiller. Délai : J-3.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.2"
+      },
+      {
+        "code": "NOT_RAP_08",
+        "libelle": "Rappel de convocation aux épreuves",
+        "description": "Famille : Rappels de scolarité. Déclencheur : La date de l'épreuve approche. Destinataire : Candidat ou étudiant. Canal : SMS + e-mail. Action attendue : Se présenter avec la convocation et une pièce. Délai : J-3.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.2"
+      },
+      {
+        "code": "NOT_RAP_09",
+        "libelle": "Rappel de mise à jour de l'emploi du temps",
+        "description": "Famille : Rappels de scolarité. Déclencheur : Un emploi du temps est remplacé par une nouvelle version. Destinataire : Étudiants et enseignants du groupe. Canal : APP + e-mail. Action attendue : Consulter la nouvelle version. Délai : À la publication.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.2"
+      },
+      {
+        "code": "NOT_RAP_10",
+        "libelle": "Rappel de fin de validité d'inscription",
+        "description": "Famille : Rappels de scolarité. Déclencheur : L'inscription approche de son terme. Destinataire : Étudiant. Canal : APP. Action attendue : Préparer la réinscription. Délai : J-60.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.2"
+      },
+      {
+        "code": "NOT_VAL_01",
+        "libelle": "Validation d'une inscription administrative",
+        "description": "Famille : Validations. Déclencheur : Une inscription est soumise au statut A_VALIDER. Destinataire : Scolarité. Action attendue : Vérifier les pièces et le paiement puis valider. Délai : 48 heures.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.3"
+      },
+      {
+        "code": "NOT_VAL_02",
+        "libelle": "Validation d'une décision d'admission",
+        "description": "Famille : Validations. Déclencheur : Une proposition d'admission attend la signature. Destinataire : Commission, direction. Action attendue : Prononcer la décision. Délai : 5 jours.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.3"
+      },
+      {
+        "code": "NOT_VAL_03",
+        "libelle": "Validation des notes d'un module",
+        "description": "Famille : Validations. Déclencheur : Un enseignant soumet ses notes. Destinataire : Chef de département. Action attendue : Contrôler et valider (verrouillage). Délai : 72 heures.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.3"
+      },
+      {
+        "code": "NOT_VAL_04",
+        "libelle": "Modification d'une note verrouillée",
+        "description": "Famille : Validations. Déclencheur : Une note validée est modifiée par un administrateur. Destinataire : Direction, auditeur. Action attendue : Exiger le motif et vérifier la correction auditée. Délai : Immédiat.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.3"
+      },
+      {
+        "code": "NOT_VAL_05",
+        "libelle": "Soumission d'un emploi du temps",
+        "description": "Famille : Validations. Déclencheur : Un EDT passe en EN_VALIDATION. Destinataire : Direction des études. Action attendue : Valider ou renvoyer pour correction. Délai : 48 heures.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.3"
+      },
+      {
+        "code": "NOT_VAL_06",
+        "libelle": "Publication d'un emploi du temps",
+        "description": "Famille : Validations. Déclencheur : Un EDT validé est publié. Destinataire : Étudiants et enseignants concernés. Action attendue : Prendre connaissance. Délai : Immédiat.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.3"
+      },
+      {
+        "code": "NOT_VAL_07",
+        "libelle": "Validation d'une réservation d'espace",
+        "description": "Famille : Validations. Déclencheur : Une réservation est au statut PROVISOIRE. Destinataire : Responsable des espaces, DIEM. Action attendue : Accorder ou refuser le créneau. Délai : 48 heures.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.3"
+      },
+      {
+        "code": "NOT_VAL_08",
+        "libelle": "Validation d'un rapport",
+        "description": "Famille : Validations. Déclencheur : Un rapport est soumis à validation. Destinataire : Direction. Action attendue : Valider, publier ou rejeter. Délai : 5 jours.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.3"
+      },
+      {
+        "code": "NOT_VAL_09",
+        "libelle": "Signature d'un rapport",
+        "description": "Famille : Validations. Déclencheur : Un rapport validé attend un visa. Destinataire : Signataire hiérarchique. Action attendue : Signer avec empreinte du contenu. Délai : 3 jours.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.3"
+      },
+      {
+        "code": "NOT_VAL_10",
+        "libelle": "Validation d'un diplôme",
+        "description": "Famille : Validations. Déclencheur : Un diplôme est en attente de validation. Destinataire : Directeur général. Action attendue : Vérifier les conditions puis valider. Délai : 10 jours.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.3"
+      },
+      {
+        "code": "NOT_VAL_11",
+        "libelle": "Proposition d'ajustement horaire",
+        "description": "Famille : Validations. Déclencheur : La DAF propose un ajustement sur une séance terminée. Destinataire : Direction. Action attendue : Valider ou rejeter avec motif. Délai : 5 jours.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.3"
+      },
+      {
+        "code": "NOT_VAL_12",
+        "libelle": "Validation d'une exonération ou d'une prise en charge",
+        "description": "Famille : Validations. Déclencheur : Une demande d'exonération est déposée. Destinataire : Direction, DAF. Action attendue : Statuer et motiver. Délai : 10 jours.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.3"
+      },
+      {
+        "code": "NOT_VAL_13",
+        "libelle": "Validation d'un remboursement",
+        "description": "Famille : Validations. Déclencheur : Un dossier de remboursement est complet. Destinataire : DAF, direction. Action attendue : Accorder ou refuser. Délai : 15 jours.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.3"
+      },
+      {
+        "code": "NOT_INF_01",
+        "libelle": "Ouverture d'une campagne de candidature",
+        "description": "Famille : Informations. Déclencheur : Une campagne passe à OUVERTE. Destinataire : Candidats potentiels, grand public. Canal : Site web + e-mail + réseaux. Action attendue : Déposer un dossier.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.4"
+      },
+      {
+        "code": "NOT_INF_02",
+        "libelle": "Publication d'un classement ou de résultats",
+        "description": "Famille : Informations. Déclencheur : Un classement est publié. Destinataire : Candidats et étudiants concernés. Canal : APP + site web. Action attendue : Consulter son résultat.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.4"
+      },
+      {
+        "code": "NOT_INF_03",
+        "libelle": "Confirmation de paiement et quittance disponible",
+        "description": "Famille : Informations. Déclencheur : Un paiement passe à CONFIRME. Destinataire : Payeur. Canal : SMS + e-mail. Action attendue : Télécharger la quittance.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.4"
+      },
+      {
+        "code": "NOT_INF_04",
+        "libelle": "Rejet d'un paiement",
+        "description": "Famille : Informations. Déclencheur : Un paiement passe à ÉCHOUE. Destinataire : Payeur. Canal : SMS + APP. Action attendue : Reprendre le paiement avec un autre mode.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.4"
+      },
+      {
+        "code": "NOT_INF_05",
+        "libelle": "Document disponible au retrait",
+        "description": "Famille : Informations. Déclencheur : Un document est au statut SIGNE. Destinataire : Demandeur. Canal : SMS + APP. Action attendue : Retirer le document avec une pièce d'identité.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.4"
+      },
+      {
+        "code": "NOT_INF_06",
+        "libelle": "Changement de salle ou de créneau",
+        "description": "Famille : Informations. Déclencheur : Une affectation de créneau est modifiée. Destinataire : Groupe, enseignant, surveillant. Canal : APP + e-mail. Action attendue : Prendre acte du changement.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.4"
+      },
+      {
+        "code": "NOT_INF_07",
+        "libelle": "Convocation à un jury",
+        "description": "Famille : Informations. Déclencheur : Une session de jury est programmée. Destinataire : Membres du jury. Canal : APP + e-mail. Action attendue : Confirmer sa présence.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.4"
+      },
+      {
+        "code": "NOT_INF_08",
+        "libelle": "Clôture d'une année académique",
+        "description": "Famille : Informations. Déclencheur : Une année passe à clôturée. Destinataire : Tous les utilisateurs. Canal : APP + e-mail. Action attendue : Achever les opérations en cours.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.4"
+      },
+      {
+        "code": "NOT_INF_09",
+        "libelle": "Bienvenue et activation de compte",
+        "description": "Famille : Informations. Déclencheur : Un compte est créé. Destinataire : Nouvel utilisateur. Canal : E-mail + SMS. Action attendue : Se connecter et changer le mot de passe.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.4"
+      },
+      {
+        "code": "NOT_INF_10",
+        "libelle": "Nouvelle version d'un document officiel",
+        "description": "Famille : Informations. Déclencheur : Un document est réédité. Destinataire : Détenteurs de la version précédente. Canal : APP + e-mail. Action attendue : Récupérer la version à jour.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.4"
+      },
+      {
+        "code": "NOT_SEC_01",
+        "libelle": "Première connexion — changement de mot de passe obligatoire",
+        "description": "Famille : Sécurité. Déclencheur : Un compte est créé avec un mot de passe provisoire. Destinataire : Utilisateur. Canal : APP. Action attendue : Changer le mot de passe.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.4"
+      },
+      {
+        "code": "NOT_SEC_02",
+        "libelle": "Réinitialisation de mot de passe",
+        "description": "Famille : Sécurité. Déclencheur : Une demande de réinitialisation est faite. Destinataire : Utilisateur. Canal : E-mail. Action attendue : Définir un nouveau mot de passe.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.4"
+      },
+      {
+        "code": "NOT_SEC_03",
+        "libelle": "Connexion inhabituelle",
+        "description": "Famille : Sécurité. Déclencheur : Une connexion est détectée depuis un appareil ou un lieu nouveau. Destinataire : Utilisateur. Canal : E-mail + APP. Action attendue : Confirmer ou signaler.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.4"
+      },
+      {
+        "code": "NOT_SEC_04",
+        "libelle": "Modification d'un rôle ou d'une permission",
+        "description": "Famille : Sécurité. Déclencheur : Les droits d'un compte changent. Destinataire : Administrateur et titulaire du compte. Canal : APP + e-mail. Action attendue : Vérifier la légitimité du changement.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.4"
+      },
+      {
+        "code": "NOT_SEC_05",
+        "libelle": "Accès à des données sensibles",
+        "description": "Famille : Sécurité. Déclencheur : Consultation d'un dossier médical ou d'un dossier disciplinaire. Destinataire : Auditeur, direction. Canal : APP. Action attendue : Contrôle a posteriori des accès.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.4"
+      },
+      {
+        "code": "NOT_SEC_06",
+        "libelle": "Tentative d'accès refusée",
+        "description": "Famille : Sécurité. Déclencheur : Un utilisateur tente une opération non autorisée. Destinataire : Administrateur. Canal : APP. Action attendue : Analyser et, si besoin, suspendre le compte.",
+        "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — typologie pratique à arrêter par la DAF, la Scolarité et la Direction des études — §5.4"
+      }
+    ]
+  },
+  "annees_academiques": {
+    "source_document": "ADMINISTRATIF & SCOLARITÉ (PDF, 1er novembre 2026) — §6",
+    "valeurs": [
+      {
+        "libelle": "2021-2022",
+        "date_debut": "2021-10-01",
+        "date_fin": "2022-07-31",
+        "statut": "ARCHIVEE",
+        "observation": "Année antérieure conservée pour les duplicata et les vérifications de diplôme"
+      },
+      {
+        "libelle": "2022-2023",
+        "date_debut": "2022-10-01",
+        "date_fin": "2023-07-31",
+        "statut": "ARCHIVEE",
+        "observation": "Historique des promotions et des barèmes"
+      },
+      {
+        "libelle": "2023-2024",
+        "date_debut": "2023-10-01",
+        "date_fin": "2024-07-31",
+        "statut": "ARCHIVEE",
+        "observation": "Historique"
+      },
+      {
+        "libelle": "2024-2025",
+        "date_debut": "2024-10-01",
+        "date_fin": "2025-07-31",
+        "statut": "ARCHIVEE",
+        "observation": "Historique"
+      },
+      {
+        "libelle": "2025-2026",
+        "date_debut": "2025-10-01",
+        "date_fin": "2026-07-31",
+        "statut": "CLOTUREE",
+        "observation": "Jurys et diplômation achevés ; plus d'inscription possible"
+      },
+      {
+        "libelle": "2026-2027",
+        "date_debut": "2026-10-01",
+        "date_fin": "2027-07-31",
+        "statut": "COURANTE",
+        "observation": "Année de référence du présent référentiel (calendrier du référentiel technique)"
+      },
+      {
+        "libelle": "2027-2028",
+        "date_debut": "2027-10-01",
+        "date_fin": "2028-07-31",
+        "statut": "PLANIFIEE",
+        "observation": "Ouverture des campagnes au printemps 2027"
+      },
+      {
+        "libelle": "2028-2029",
+        "date_debut": "2028-10-01",
+        "date_fin": "2029-07-31",
+        "statut": "PLANIFIEE",
+        "observation": "Prévision à trois ans, à confirmer par la direction"
+      }
+    ]
+  }
+}

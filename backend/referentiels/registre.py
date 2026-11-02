@@ -256,28 +256,60 @@ REGISTRE = {
         description='Documents officiels et justificatifs.',
         categorie=Categorie.SCOLARITE, modele=RefTypeDocument,
         route_api='/referentiels/types-document/',
-        icone='bi-file-earmark-text', source='Socle referentiels (lot L0/L7)',
+        icone='bi-file-earmark-text',
+        source='ADMINISTRATIF & SCOLARITÉ (PDF) — §4',
+        avertissement=(
+            '56 types en 7 familles (candidature, scolarité, évaluation, '
+            'diplômation, stage, finances, santé, pièces, actes) : nature, '
+            'émetteur, signataire, validité et traçabilité sont décrits pour '
+            'chacun. Les durées de conservation restent à arrêter avec la '
+            'Scolarité (point §9.1 du document).'
+        ),
     ),
     'types-frais': entree(
         slug='types-frais', libelle='Types de frais',
         description='Inscription, scolarité, examen, réinscription…',
         categorie=Categorie.SCOLARITE, modele=RefTypeFrais,
         route_api='/referentiels/types-frais/',
-        icone='bi-cash-coin', source='Socle referentiels (lot L0/L7)',
+        icone='bi-cash-coin',
+        source='ADMINISTRATIF & SCOLARITÉ (PDF) — §3 ; socle finances_etudiantes',
+        avertissement=(
+            '28 types, dont les 5 natures du socle finances '
+            '(DOSSIER, INSCRIPTION, SCOLARITE, EXAMEN, DOCUMENT). Aucun '
+            'montant ici : les barèmes relèvent de l’arrêté annuel de '
+            'tarification et vivent dans le module Finances (Tarification '
+            'par formation, parcours, niveau et année).'
+        ),
     ),
     'modes-paiement': entree(
         slug='modes-paiement', libelle='Modes de paiement',
         description='Espèces, virement, mobile money…',
         categorie=Categorie.SCOLARITE, modele=RefModePaiement,
         route_api='/referentiels/modes-paiement/',
-        icone='bi-credit-card', source='Socle referentiels (lot L0/L7)',
+        icone='bi-credit-card',
+        source='ADMINISTRATIF & SCOLARITÉ (PDF) — §2 ; socle finances_etudiantes',
+        avertissement=(
+            '14 modes : les 6 du socle finances (caisse, virement, mobile '
+            'money, carte) et 8 modes de la pratique (chèque, Wave, '
+            'prélèvement, mandat, prise en charge, exonération…). '
+            'L’ouverture effective suppose les conventions marchands et le '
+            'calendrier de rapprochement de chaque compte (§9.1).'
+        ),
     ),
     'types-notification': entree(
         slug='types-notification', libelle='Types de notification',
         description='Alertes, rappels et validations du système.',
         categorie=Categorie.SCOLARITE, modele=RefTypeNotification,
         route_api='/referentiels/types-notification/',
-        icone='bi-bell', source='Socle referentiels (lot L0/L7)',
+        icone='bi-bell',
+        source='ADMINISTRATIF & SCOLARITÉ (PDF) — §5',
+        avertissement=(
+            '47 types en 5 familles (alertes de pilotage, rappels, '
+            'validations, informations, sécurité) : déclencheur, '
+            'destinataire, canal, gravité/délai et action attendue sont '
+            'décrits. Les seuils d’alerte restent paramétrables (module '
+            'Statistiques).'
+        ),
     ),
     # ── Référentiels historiques : lecture seule ici, écran existant ───────
     'formations': entree(
@@ -352,6 +384,14 @@ REGISTRE = {
         categorie=Categorie.SCOLARITE, modele='scolarite.AnneeAcademique',
         editable=False, route_api='/scolarite/ref/annees/',
         route_ui=None, icone='bi-calendar-range',
+        source='ADMINISTRATIF & SCOLARITÉ (PDF) — §6',
+        avertissement=(
+            '8 années (2021-2022 → 2028-2029, 1er octobre → 31 juillet) : '
+            '4 archivées, 2025-2026 clôturée, 2026-2027 courante (une seule '
+            'à la fois), 2 planifiées. Une année clôturée n’accepte plus '
+            'aucune nouvelle inscription. Le modèle ne suit pas la '
+            'provenance : pas de source ni de fiabilité par année.'
+        ),
     ),
     'sites': entree(
         slug='sites', libelle='Sites',
