@@ -37,13 +37,20 @@ from django.utils import timezone
 
 from admissions import admission_services, concours_services, services, workflow
 from admissions.models import (
-    CampagneAdmission, Candidat, Candidature, ClassementConcours,
+    Admission, CampagneAdmission, Candidat, Candidature, ClassementConcours,
     ConvocationEpreuve, Epreuve, NoteConcours, PieceCandidature,
     SurveillanceEpreuve, TypeCandidature, TypePiece, VoieAcces,
 )
 from authentication.models import User
-from formations.models import RefFormation, RefSalle, RefSite
-from scolarite.models import AnneeAcademique, Niveau, Parcours, RegimeEtudes
+from formations.models import (
+    Participant, RefCategorie, RefFormation, RefGrade, RefSalle, RefSite,
+    RefVague,
+)
+from scolarite import inscription_services
+from scolarite.models import (
+    AnneeAcademique, DossierEtudiant, InscriptionAdministrative, Niveau,
+    Parcours, RegimeEtudes,
+)
 
 DOMAINE_EXEMPLE = '@exemple.ci'
 PREFIXE_OBSERVATION = '[Exemple] '
@@ -261,6 +268,61 @@ NOTES_HISTORIQUE = {
     26: ('8.00', '9.50', '7.00'),
 }
 
+# Scénarios 29 à 36 — renfort du module Admissions : dossiers complets et
+# admissibles dans des formations variées. Le champ admission reste à None :
+# les décisions (variées, voir COMPLEMENT_ADMISSIONS) sont prononcées par
+# _complement_admissions, qui gère aussi l'inscription et l'annulation.
+SCENARIOS_ADMISSIONS = [
+    ('Diabaté', 'Aboubacar', 'M', date(2003, 4, 12), 'Bouaké', 'CI',
+     'F02', 'LICENCE', 'L1', 'ADMISSION_SUR_TITRE', 'TITRE', 'complet',
+     'ADMISSIBLE', False, None, 'Admis avec profil administratif renseigné.'),
+    ('KONAN', 'Affoué Patricia', 'F', date(2002, 9, 3), 'Abidjan', 'CI',
+     'F01', 'MASTER', 'M1', 'ADMISSION_SUR_TITRE', 'TITRE', 'complet',
+     'ADMISSIBLE', False, None, 'Admise puis inscrite (dossier étudiant créé).'),
+    ('Koffi', 'Jean-Marc', 'M', date(2001, 1, 27), 'Yamoussoukro', 'CI',
+     'F06', 'LICENCE', 'L1', 'CONCOURS_DIRECT', 'CONCOURS', 'complet',
+     'ADMISSIBLE', False, None, 'Admis sous réserve de complément de dossier.'),
+    ('Touré', 'Aminata', 'F', date(2004, 5, 16), 'Korhogo', 'CI',
+     'F08', 'LICENCE', 'L1', 'ADMISSION_SUR_TITRE', 'TITRE', 'complet',
+     'ADMISSIBLE', False, None, 'Admission ouverte, décision non prononcée.'),
+    ('Koné', 'Ibrahim', 'M', date(2000, 8, 30), 'Man', 'CI',
+     'F07', 'MASTER', 'M1', 'ADMISSION_SUR_TITRE', 'TITRE', 'complet',
+     'ADMISSIBLE', False, None, 'Avis défavorable de la commission.'),
+    ('Sangaré', 'Fatou', 'F', date(2003, 12, 5), 'Abidjan', 'CI',
+     'F04', 'LICENCE', 'L1', 'CONCOURS_DIRECT', 'CONCOURS', 'complet',
+     'ADMISSIBLE', False, None, 'Admise mais délai d’inscription dépassé.'),
+    ('OUATTARA', 'Nagnin Crépin', 'M', date(2002, 2, 19), 'Daloa', 'CI',
+     'F02', 'MASTER', 'M1', 'ADMISSION_SUR_TITRE', 'TITRE', 'complet',
+     'ADMISSIBLE', False, None, 'Désistement après admission (annulée).'),
+    ('GBAKOU', 'Marie Laure', 'F', date(2001, 7, 22), 'San Pedro', 'CI',
+     'F05', 'LICENCE', 'L1', 'ADMISSION_SUR_TITRE', 'TITRE', 'complet',
+     'ADMISSIBLE', False, None, 'Profil renseigné, en attente de décision.'),
+]
+
+# Complément d'admissions : (rang de scénario, décision ou None si ouverte,
+# décalage de la date limite en jours, inscrire, annuler ensuite, profil).
+# Le rang 1 (major du classement calculé, admissible) reçoit une admission
+# ouverte ; le rang
+# 7 (admise 2026-2027) est inscrite — le major de la cohorte précédente
+# (rang 21) ne peut plus l'être, son année étant clôturée.
+CATEGORIES_EXEMPLE = {
+    'Catégorie A (exemple)': ['Grade A3 (exemple)', 'Grade A4 (exemple)'],
+    'Catégorie B (exemple)': ['Grade B3 (exemple)'],
+}
+
+COMPLEMENT_ADMISSIONS = [
+    (1, None, None, False, False, False),
+    (7, None, None, True, False, False),
+    (29, 'ADMIS', 30, False, False, True),
+    (30, 'ADMIS', 60, True, False, False),
+    (31, 'ADMIS_SOUS_RESERVE', 21, False, False, False),
+    (32, None, None, False, False, False),
+    (33, 'REFUSEE', None, False, False, False),
+    (34, 'ADMIS', -10, False, False, False),
+    (35, 'ADMIS', 45, False, True, False),
+    (36, None, None, False, False, True),
+]
+
 # Scénarios 27 et 28 — campagne suspendue (Master Andragogie) : dossiers déposés
 # avant la suspension de la campagne.
 SCENARIOS_SUSPENDUE = [
@@ -325,6 +387,7 @@ class Command(BaseCommand):
                     acteur=self.acteur,
                     commentaire='Suspension (donnée d’exemple).',
                 )
+            self._complement_admissions(par_cle, bilan)
 
         total = Candidature.objects.count()
         par_statut = {
@@ -573,6 +636,7 @@ class Command(BaseCommand):
             (SCENARIOS_HISTORIQUE, campagnes.get('annee_precedente'),
              campagnes.get('historique'), 21, 365),
             (SCENARIOS_SUSPENDUE, annee, campagnes.get('suspendue'), 27, 0),
+            (SCENARIOS_ADMISSIONS, annee, None, 29, 0),
         ]
         for scenarios, annee_groupe, campagne_groupe, rang_depart, decalage in groupes:
             if annee_groupe is None:
@@ -875,9 +939,93 @@ class Command(BaseCommand):
                 commentaire='Clôture après publication (donnée d’exemple).',
             )
 
+    # ── complément admissions : décisions variées, inscrits, profils ───────
+    def _referentiels_profil(self):
+        """Catégorie/grade/vague pour les profils d'exemple.
+
+        Les référentiels étudiants (corps d'appartenance) ne sont pas
+        chargés par la chaîne de reconstruction : s'ils sont vides, on crée
+        des valeurs explicitement marquées « (exemple) » — codes B3/A3/A4
+        de la fonction publique ivoirienne — retirées par --purger. Si des
+        valeurs réelles existent, elles sont utilisées sans rien créer.
+        """
+        categorie = RefCategorie.objects.filter(
+            grades__isnull=False).order_by('id').first()
+        if categorie is None:
+            for libelle_cat, libelles_grades in CATEGORIES_EXEMPLE.items():
+                cat, _ = RefCategorie.objects.get_or_create(libelle=libelle_cat)
+                for libelle_grade in libelles_grades:
+                    RefGrade.objects.get_or_create(
+                        categorie=cat, libelle=libelle_grade)
+            categorie = RefCategorie.objects.filter(
+                libelle=next(iter(CATEGORIES_EXEMPLE))).first()
+            self.stdout.write(
+                '  Référentiels catégorie/grade d’exemple créés '
+                '(retirés par --purger).')
+        grade = (RefGrade.objects.filter(categorie=categorie).order_by('id').first()
+                 if categorie is not None else None)
+        vague = RefVague.objects.filter(actif=True).order_by('id').first()
+        return categorie, grade, vague
+
+    def _complement_admissions(self, par_cle, bilan):
+        categorie, grade, vague = self._referentiels_profil()
+
+        for rang, decision, delai, inscrire, annuler, profil in COMPLEMENT_ADMISSIONS:
+            candidature = par_cle.get(rang)
+            if candidature is None:
+                continue
+            admission = Admission.objects.filter(candidature=candidature).first()
+            if admission is None:
+                champs = {}
+                if profil:
+                    champs = {'categorie': categorie, 'grade': grade, 'vague': vague}
+                admission = admission_services.creer_admission(
+                    candidature, acteur=self.acteur, **champs)
+                bilan['admissions'] += 1
+                if decision is not None:
+                    admission_services.prononcer_decision(
+                        admission, decision, acteur=self.acteur,
+                        reference=(
+                            f'DEC-ADM-{candidature.annee_academique.libelle}-{rang:03d}'),
+                        date_limite=(
+                            self.aujourdhui + timedelta(days=delai)
+                            if delai is not None and decision.startswith('ADMIS')
+                            else None),
+                        observations=(
+                            'Commission d’admission (donnée d’exemple).'
+                            if decision != 'REFUSEE'
+                            else 'Avis défavorable de la commission '
+                                 'd’admission (donnée d’exemple).'),
+                    )
+            if profil and admission.categorie_id is None and categorie is not None:
+                admission.categorie = categorie
+                admission.grade = grade
+                if admission.vague_id is None:
+                    admission.vague = vague
+                admission.save(update_fields=['categorie', 'grade', 'vague'])
+            if annuler and admission.decision != Admission.Decision.ANNULEE:
+                admission_services.annuler_admission(
+                    admission, acteur=self.acteur,
+                    motif='Désistement du candidat (donnée d’exemple).')
+            if inscrire:
+                # Conversion nativement idempotente : un rejeu ne crée rien.
+                inscription_services.convertir_admission_en_inscription(
+                    admission, acteur=self.acteur, valider=True)
+
     # ── purge ───────────────────────────────────────────────────────────────
     def _purger(self):
         candidats = Candidat.objects.filter(email__endswith=DOMAINE_EXEMPLE)
+        # Chaîne d'inscription des admis convertis : inscriptions, dossiers
+        # étudiants puis participants (le participant est PROTECT par le
+        # dossier, d'où cet ordre), avant les candidats eux-mêmes.
+        participants_ids = list(candidats.exclude(participant=None)
+                                .values_list('participant_id', flat=True))
+        if participants_ids:
+            InscriptionAdministrative.objects.filter(
+                etudiant__participant_id__in=participants_ids).delete()
+            DossierEtudiant.objects.filter(
+                participant_id__in=participants_ids).delete()
+            Participant.objects.filter(id__in=participants_ids).delete()
         pieces = PieceCandidature.objects.filter(
             candidature__candidat__in=candidats,
         ).exclude(fichier='')
@@ -890,8 +1038,12 @@ class Command(BaseCommand):
         nb_campagnes, _ = CampagneAdmission.objects.filter(
             libelle__in=LIBELLES_CAMPAGNES,
         ).delete()
+        nb_categories, _ = RefCategorie.objects.filter(
+            libelle__in=CATEGORIES_EXEMPLE,
+        ).delete()
         self.stdout.write(self.style.SUCCESS(
             f'Données d’exemple retirées : {nb_candidats} candidat(s) et '
             f'leurs dossiers, {nb_fichiers} fichier(s), '
-            f'{nb_campagnes} campagne(s).'
+            f'{nb_campagnes} campagne(s), {nb_categories} catégorie(s) '
+            f'd’exemple.'
         ))

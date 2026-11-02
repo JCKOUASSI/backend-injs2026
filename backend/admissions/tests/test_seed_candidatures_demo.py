@@ -17,8 +17,10 @@ from admissions.models import (
     Epreuve, NoteConcoursHistorique, NoteConcours, PieceCandidature,
 )
 from authentication.models import User
-from formations.models import RefFormation
-from scolarite.models import AnneeAcademique, Niveau
+from formations.models import Participant, RefCategorie, RefFormation
+from scolarite.models import (
+    AnneeAcademique, DossierEtudiant, InscriptionAdministrative, Niveau,
+)
 
 # Les dépôts de pièces écrivent dans un dossier temporaire, jamais dans
 # le MEDIA_ROOT du projet (même convention que test_candidatures.py).
@@ -30,8 +32,9 @@ FORMATIONS_REQUISES = [
     ('F02', 'LICENCE'), ('F02', 'MASTER'),
     ('F03', 'LICENCE'), ('F03', 'MASTER'),
     ('F04', 'LICENCE'), ('F04', 'MASTER'),
-    ('F05', 'MASTER'), ('F06', 'LICENCE'),
-    ('F07', 'LICENCE'), ('F08', 'LICENCE'), ('F08', 'MASTER'),
+    ('F05', 'LICENCE'), ('F05', 'MASTER'), ('F06', 'LICENCE'),
+    ('F07', 'LICENCE'), ('F07', 'MASTER'),
+    ('F08', 'LICENCE'), ('F08', 'MASTER'),
 ]
 
 
@@ -61,7 +64,7 @@ class SeedCandidaturesDemoTests(TestCase):
         self._seed()
 
         candidatures = list(Candidature.objects.all())
-        self.assertEqual(len(candidatures), 28)
+        self.assertEqual(len(candidatures), 36)
         # Les 12 statuts du workflow sont représentés.
         self.assertEqual(
             {c.statut for c in candidatures},
@@ -70,11 +73,11 @@ class SeedCandidaturesDemoTests(TestCase):
         # Indicateurs tels que les calcule l'écran Candidatures.
         en_cours = {'SOUMISE', 'EN_ATTENTE_DE_VERIFICATION',
                     'PIECES_INCOMPLETES', 'EN_ETUDE'}
-        self.assertEqual(sum(1 for c in candidatures if c.taux_completude == 100), 19)
+        self.assertEqual(sum(1 for c in candidatures if c.taux_completude == 100), 27)
         self.assertEqual(sum(1 for c in candidatures if c.statut in en_cours), 10)
         self.assertEqual(
             sum(1 for c in candidatures
-                if c.statut in ('ADMIS', 'ADMIS_SOUS_RESERVE')), 5)
+                if c.statut in ('ADMIS', 'ADMIS_SOUS_RESERVE')), 9)
 
         # Pièces : des fichiers réels, des refus motivés, une pièce expirée.
         self.assertTrue(
@@ -86,16 +89,29 @@ class SeedCandidaturesDemoTests(TestCase):
         self.assertTrue(
             PieceCandidature.objects.filter(statut='EXPIREE').exists())
 
-        # Admissions : les 4 décisions non annulées sont présentes.
+        # Admissions : les 5 décisions sont présentes, dont une annulée
+        # (désistement) et une expirée (délai d'inscription dépassé).
+        self.assertEqual(Admission.objects.count(), 19)
         self.assertEqual(
             set(Admission.objects.values_list('decision', flat=True)),
-            {'ADMIS', 'ADMIS_SOUS_RESERVE', 'EN_ATTENTE', 'REFUSEE'},
+            {'ADMIS', 'ADMIS_SOUS_RESERVE', 'EN_ATTENTE', 'REFUSEE', 'ANNULEE'},
         )
+        self.assertTrue(any(
+            a.est_expiree for a in Admission.objects.filter(decision='ADMIS')))
+        # Profils administratifs renseignés (catégorie/grade d'exemple).
+        self.assertTrue(Admission.objects.filter(
+            categorie__isnull=False, grade__isnull=False).exists())
+        # Deux admis sont déjà inscrits : dossier étudiant + matricule.
+        inscrites = InscriptionAdministrative.objects.filter(
+            admission__isnull=False).exclude(statut__in=('ANNULEE', 'REJETEE'))
+        self.assertEqual(inscrites.count(), 2)
+        self.assertTrue(all(
+            i.etudiant.matricule.startswith('INJS') for i in inscrites))
         # Les décisions prononcées alignent le statut de la candidature
         # et portent une référence + une date limite d'inscription.
         admissions_admis = Admission.objects.filter(
             decision='ADMIS', candidature__statut='ADMIS')
-        self.assertEqual(admissions_admis.count(), 4)
+        self.assertEqual(admissions_admis.count(), 7)
         for admission in admissions_admis:
             self.assertTrue(admission.reference_decision)
             self.assertIsNotNone(admission.date_limite_inscription)
@@ -166,7 +182,7 @@ class SeedCandidaturesDemoTests(TestCase):
 
     def test_purge_retire_toutes_les_donnees_exemple(self):
         self._seed()
-        self.assertEqual(Candidature.objects.count(), 28)
+        self.assertEqual(Candidature.objects.count(), 36)
 
         self._seed(purger=True)
         self.assertEqual(Candidat.objects.count(), 0)
@@ -174,3 +190,9 @@ class SeedCandidaturesDemoTests(TestCase):
         self.assertEqual(Admission.objects.count(), 0)
         self.assertEqual(CampagneAdmission.objects.count(), 0)
         self.assertEqual(PieceCandidature.objects.count(), 0)
+        # La chaîne d'inscription des admis convertis est aussi retirée,
+        # ainsi que les catégories/grades d'exemple.
+        self.assertEqual(InscriptionAdministrative.objects.count(), 0)
+        self.assertEqual(DossierEtudiant.objects.count(), 0)
+        self.assertEqual(Participant.objects.count(), 0)
+        self.assertEqual(RefCategorie.objects.count(), 0)
