@@ -265,3 +265,44 @@ def groupe_non_affectes(request):
             inscriptions = inscriptions.filter(
                 **{champ: request.query_params[champ]})
     return Response({'non_affectes': inscriptions.count()})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def groupe_liste_export(request, pk, fmt):
+    """Liste nominative d'un groupe TD/TP (affectations actives), PDF ou Excel.
+
+    Équivalent LMD de la « liste de classe » de la formation continue,
+    qui repose sur le champ libre `Participant.groupe` et ignore donc
+    les sections `scolarite.Groupe`.
+    """
+    from django.http import HttpResponse
+
+    from . import groupes_export
+
+    if fmt not in ('pdf', 'excel'):
+        return Response({'error': 'Format inconnu (pdf ou excel).'}, status=400)
+    groupe = (
+        Groupe.objects
+        .select_related('annee_academique', 'ref_formation', 'niveau')
+        .filter(pk=pk)
+        .first()
+    )
+    if groupe is None:
+        return Response({'error': 'Groupe introuvable.'}, status=404)
+    try:
+        buffer = (
+            groupes_export.export_groupe_pdf(groupe)
+            if fmt == 'pdf'
+            else groupes_export.export_groupe_excel(groupe)
+        )
+    except RuntimeError as exc:
+        return Response({'detail': str(exc)}, status=503)
+    type_contenu = (
+        'application/pdf' if fmt == 'pdf'
+        else 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response = HttpResponse(buffer.getvalue(), content_type=type_contenu)
+    nom_fichier = groupes_export.groupe_liste_filename(groupe, fmt)
+    response['Content-Disposition'] = f'attachment; filename="{nom_fichier}"'
+    return response

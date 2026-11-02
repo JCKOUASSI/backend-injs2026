@@ -52,6 +52,7 @@ urlpatterns = [
 
     path('groupes/effectifs/',                    groupes_api.groupe_effectifs,      name='scolarite-groupe-effectifs'),
     path('groupes/non-affectes/',                 groupes_api.groupe_non_affectes,   name='scolarite-groupe-non-affectes'),
+    path('groupes/<int:pk>/liste/<str:fmt>/',     groupes_api.groupe_liste_export,   name='scolarite-groupe-liste'),
     path('groupes/repartition/',                  groupes_api.repartition_automatique,
                                                                                      name='scolarite-groupe-repartition'),
     path('reinscriptions/',                       groupes_api.reinscrire,            name='scolarite-reinscription'),

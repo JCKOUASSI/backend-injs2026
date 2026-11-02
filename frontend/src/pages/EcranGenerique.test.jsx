@@ -132,10 +132,12 @@ describe('rendu des variantes de descripteur', () => {
   })
 
   it('documents : cartes de génération avec leurs formats', async () => {
-    monter('documents_scolaires', { chemin: '/scolarite/documents-scolaires' })
-    expect(await screen.findByTestId('ecran-documents_scolaires')).toBeTruthy()
-    expect(screen.getByText('Liste de classe')).toBeTruthy()
-    expect(screen.getByTestId('doc-liste_classe-pdf')).toBeTruthy()
-    expect(screen.getByTestId('doc-liste_classe-excel')).toBeTruthy()
+    // « Documents scolaires » est désormais une page dédiée ; la famille
+    // générique « documents » reste exercée via « Relevés de notes ».
+    monter('releves_notes', { chemin: '/evaluations/releves' })
+    expect(await screen.findByTestId('ecran-releves_notes')).toBeTruthy()
+    expect(screen.getByText('Relevé individuel')).toBeTruthy()
+    expect(screen.getByTestId('doc-releve_individuel-pdf')).toBeTruthy()
+    expect(screen.getByTestId('doc-releve_individuel-excel')).toBeTruthy()
   })
 })

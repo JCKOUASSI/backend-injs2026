@@ -599,60 +599,6 @@ export const ECRANS = {
     note: 'Source : /api/scolarite/etudiants/ + /evenements/',
   },
 
-  documents_scolaires: {
-    id: 'documents_scolaires',
-    type: 'documents',
-    titre: 'Documents scolaires',
-    fil: 'Scolarité',
-    icone: 'bi-file-earmark-text',
-    introduction: 'Documents produits par le serveur (listes de classe, fiches '
-      + 'de notes, relevés). Le droit de générer chaque document est vérifié '
-      + 'côté backend à chaque appel.',
-    documents: [
-      {
-        id: 'liste_classe',
-        libelle: 'Liste de classe',
-        icone: 'bi-people',
-        description: 'Auditeurs par groupe pédagogique (PDF ou Excel).',
-        parametres: [
-          { cle: 'groupe', libelle: 'Groupe (facultatif)', type: 'select', requis: false, ...RESSOURCES.groupes },
-          { cle: 'annee_academique_id', libelle: 'Année académique', type: 'select', requis: false, ...RESSOURCES.annees },
-        ],
-        formats: [
-          { id: 'pdf', libelle: 'PDF', suffixe: 'pdf', icone: 'bi-file-earmark-pdf' },
-          { id: 'excel', libelle: 'Excel', suffixe: 'xlsx', icone: 'bi-file-earmark-excel' },
-        ],
-        chemin: (v, f) => `/exports/participants/liste-classe/${f.id}/?${new URLSearchParams(
-          Object.fromEntries(Object.entries(v).filter(([, x]) => x)),
-        ).toString()}`,
-      },
-      {
-        id: 'fiche_notes_module',
-        libelle: 'Fiche de notes d\'un module',
-        icone: 'bi-card-checklist',
-        description: 'Fiche de notes par formation et module.',
-        parametres: [
-          { cle: 'formation', libelle: 'Formation', type: 'select', ...RESSOURCES.formations },
-          { cle: 'module', libelle: 'Module (id)', type: 'nombre' },
-        ],
-        formats: [{ id: 'pdf', libelle: 'PDF', suffixe: 'pdf', icone: 'bi-file-earmark-pdf' }],
-        chemin: (v) => `/formations/${v.formation}/modules/${v.module}/notes/fiche/pdf/`,
-      },
-      {
-        id: 'releve_etudiant',
-        libelle: "Relevé d'un étudiant",
-        icone: 'bi-person-lines-fill',
-        description: 'Fiche de notes individuelle (relevé).',
-        parametres: [{ cle: 'etudiant', libelle: 'Étudiant', type: 'select', ...RESSOURCES.etudiants }],
-        formats: [
-          { id: 'pdf', libelle: 'PDF', suffixe: 'pdf', icone: 'bi-file-earmark-pdf' },
-          { id: 'excel', libelle: 'Excel', suffixe: 'xlsx', icone: 'bi-file-earmark-excel' },
-        ],
-        chemin: (v, f) => `/participant/${v.etudiant}/notes-fiche/export/${f.id}/`,
-      },
-    ],
-    note: 'Sources : /api/exports/, /api/formations/, /api/participant/',
-  },
 
   // --------------------------------------------------------------- FORMATIONS
   filieres: {

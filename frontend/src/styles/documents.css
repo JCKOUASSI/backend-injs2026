@@ -1,0 +1,213 @@
+/* ── Documents scolaires — page dédiée premium ───────────────────────────────
+   Cartes de génération par famille (cycle LMD / formation continue),
+   mêmes matières que les écrans Scolarité (cand-). Ne pas écrire la
+   séquence de fin de commentaire dans un commentaire CSS. */
+
+.doc-section {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin: 1.1rem 0 .7rem;
+  font-size: 1.02rem;
+  font-weight: 750;
+  color: #16233a;
+}
+
+.doc-section i { color: #1d4fbf; }
+
+.doc-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.doc-carte {
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #e3eaf5;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(15, 35, 70, .05);
+  transition: box-shadow .18s ease, transform .18s ease;
+}
+
+.doc-carte:hover {
+  box-shadow: 0 10px 24px rgba(15, 35, 70, .09);
+  transform: translateY(-2px);
+}
+
+.doc-carte-entete { display: flex; gap: .7rem; align-items: flex-start; }
+
+.doc-icone {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: .8rem;
+  font-size: 1.15rem;
+}
+
+.doc-icone--bleu { background: #e7eefc; color: #1d4fbf; }
+.doc-icone--vert { background: #e7f7ee; color: #15803d; }
+.doc-icone--ambre { background: #fef3e2; color: #b45309; }
+.doc-icone--violet { background: #f1eafd; color: #6d28d9; }
+
+.doc-carte-titre { margin: 0; font-size: 1rem; font-weight: 750; color: #16233a; }
+.doc-carte-desc { margin: .2rem 0 0; font-size: .83rem; color: #5b6b82; line-height: 1.45; }
+
+.doc-carte-corps { display: flex; flex-direction: column; gap: .65rem; flex: 1 1 auto; }
+
+.doc-carte-pied {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+  padding-top: .7rem;
+  border-top: 1px solid #eef2f8;
+}
+
+.doc-etiquette {
+  display: block;
+  margin-bottom: .3rem;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #5b6b82;
+}
+
+.doc-requis { color: #dc2626; }
+.doc-select { width: 100%; }
+
+.doc-resume {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  margin: 0;
+  padding: .5rem .65rem;
+  border-radius: .6rem;
+  background: #e7f7ee;
+  color: #166534;
+  font-size: .82rem;
+  font-weight: 600;
+}
+
+.doc-resume--vide { background: #f2f6fc; color: #5b6b82; }
+
+.doc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .5rem .9rem;
+  border-radius: .65rem;
+  border: 1px solid transparent;
+  font-size: .85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.doc-btn:disabled { opacity: .45; cursor: not-allowed; }
+.doc-btn .spinner-border { width: .9rem; height: .9rem; border-width: .12em; }
+
+.doc-btn--pdf { background: #fdecec; color: #b91c1c; border-color: #f5c6c6; }
+.doc-btn--pdf:hover:not(:disabled) { background: #fbdcdc; }
+.doc-btn--excel { background: #e7f7ee; color: #15803d; border-color: #bfe8cd; }
+.doc-btn--excel:hover:not(:disabled) { background: #d3f0de; }
+
+.doc-lien {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  font-weight: 700;
+  color: #1d4fbf;
+  text-decoration: none;
+}
+
+.doc-lien:hover { text-decoration: underline; }
+
+/* Recherche d'étudiant : résultats déroulants. */
+.doc-recherche { position: relative; }
+.doc-recherche .adm-recherche .spinner-border {
+  width: .9rem; height: .9rem; border-width: .12em; color: #1d4fbf;
+}
+
+.doc-resultats {
+  list-style: none;
+  margin: .4rem 0 0;
+  padding: .3rem;
+  max-height: 230px;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #dbe4f3;
+  border-radius: .75rem;
+  box-shadow: 0 12px 28px rgba(15, 35, 70, .12);
+}
+
+.doc-resultat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .6rem;
+  width: 100%;
+  padding: .45rem .6rem;
+  border: 0;
+  border-radius: .55rem;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.doc-resultat:hover { background: #f2f6fc; }
+.doc-resultat-nom { font-weight: 650; color: #16233a; font-size: .88rem; }
+.doc-resultat-mat {
+  font-size: .74rem;
+  font-weight: 700;
+  color: #1d4fbf;
+  background: #eef3fb;
+  padding: .08rem .45rem;
+  border-radius: .4rem;
+}
+
+.doc-choisi {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .6rem;
+  margin: 0;
+  padding: .55rem .7rem;
+  border: 1px solid #bfe8cd;
+  border-radius: .65rem;
+  background: #e7f7ee;
+  color: #14532d;
+  font-size: .88rem;
+}
+
+.doc-choisi-mat {
+  margin-left: .5rem;
+  font-size: .74rem;
+  font-weight: 700;
+  color: #166534;
+  background: #fff;
+  padding: .08rem .45rem;
+  border-radius: .4rem;
+}
+
+.doc-choisi-effacer {
+  border: 0;
+  background: transparent;
+  color: #166534;
+  cursor: pointer;
+  padding: .2rem;
+}
+
+.doc-note {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  margin: 1rem 0 0;
+  font-size: .8rem;
+  color: #73839c;
+}

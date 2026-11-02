@@ -157,7 +157,6 @@ export const ARBORESCENCE = [
         id: 'scolarite.documents',
         libelle: 'Documents scolaires',
         chemin: '/scolarite/documents-scolaires',
-        ecran: 'documents_scolaires',
         droit: {
           curp: [
             'exports.export.generer',
