@@ -108,12 +108,20 @@ log "Référentiels officiels INJS (import idempotent)…"
 
 # Système LMD : niveaux/semestres, puis maquettes/UE/ECUE officielles
 # (323 UE, 397 ECUE), puis compléments du PDF de référence (doctorat,
-# cycles ENSEP, 16 parcours, maquette MS-S8). Idempotent ; maquettes BROUILLON.
+# cycles ENSEP, 16 parcours, maquette MS-S8). Idempotent ;
+# finaliser_maquettes_injs les passe ensuite en ACTIVE (voir plus bas).
 log "Référentiels LMD et maquettes officielles (idempotent)…"
 (cd "$BACKEND" && "$VENV/bin/python" manage.py init_referentiels_lmd \
   && "$VENV/bin/python" manage.py configurer_referentiel_injs \
   && "$VENV/bin/python" manage.py completer_referentiel_lmd) \
   && touch "$BACKEND/.lmd_ok"
+
+# Finalisation des maquettes : exemples [Exemple] pour les filières sans
+# référentiel publié (F05–F08), ventilation des crédits UE → ECUE, puis
+# validation + activation des 40 maquettes (journalisé). Idempotent.
+log "Finalisation des maquettes LMD (exemples + validation/activation)…"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py finaliser_maquettes_injs) \
+  && touch "$BACKEND/.maquettes_finalisees_ok"
 
 # Module Admissions & Candidatures : référentiels (types de pièces, voies
 # d'accès) puis jeu d'exemple des écrans Candidatures/Admissions/Campagnes

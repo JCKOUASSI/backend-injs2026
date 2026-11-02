@@ -1022,6 +1022,37 @@ class Maquette(models.Model):
             'statut': self.statut,
         }
 
+    def repartir_credits_ecue(self):
+        """Ventile les crédits des UE entre leurs ECUE, à parts égales.
+
+        Le référentiel officiel INJS publie l'ECTS au niveau UE, jamais par
+        ECUE : à l'import, les ECUE restent donc à 0 crédit, ce que
+        ``verifier_coherence`` sanctionne (somme ECUE ≠ crédits UE) — aucune
+        maquette importée n'est validable en l'état. Cette ventilation
+        **technique** débloque la validation sans modifier les crédits
+        officiels des UE : parts égales entre les ECUE de l'UE (dans l'ordre
+        d'affichage), le reliquat (+1) allant aux premières.
+
+        Garde-fous : maquette BROUILLON uniquement, et seules les UE dont
+        **toutes** les ECUE sont à 0 crédit sont touchées (jamais une saisie
+        pédagogique existante). Retourne le nombre d'ECUE mises à jour.
+        """
+        if self.statut != self.Statut.BROUILLON:
+            return 0
+        maj = 0
+        for ue in self.unites_enseignement.prefetch_related('ecues'):
+            ecues = sorted(ue.ecues.all(), key=lambda e: (e.ordre, e.code))
+            if not ecues or ue.credits < len(ecues):
+                continue
+            if any(e.credits for e in ecues):
+                continue
+            base, reste = divmod(ue.credits, len(ecues))
+            for rang, ecue in enumerate(ecues):
+                ecue.credits = base + (1 if rang < reste else 0)
+                ecue.save(update_fields=['credits'])
+                maj += 1
+        return maj
+
     # ── Lot L1 — clonage de version (correctif d'une maquette aboutie) ────────
     def cloner(self, utilisateur=None):
         """Crée une nouvelle version BROUILLON copiée de cette maquette.

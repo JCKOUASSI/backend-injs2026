@@ -298,3 +298,322 @@
   .maq-pastille { font-size: 0.7rem; }
   .maq-action { padding: 0 0.6rem; font-size: 0.72rem; }
 }
+
+/* ── 7. PREMIUM : sous-libellés KPI, cycle de validation, lot ── */
+.maq-kpi-sub {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #8C9AAD;
+  line-height: 1.25;
+}
+
+.maq-cycle {
+  display: flex;
+  align-items: stretch;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.maq-cycle-lien {
+  display: grid;
+  place-items: center;
+  color: #B6C3D4;
+  font-size: 0.9rem;
+}
+
+.maq-etape {
+  flex: 1 1 190px;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.8rem;
+  font-family: inherit;
+  text-align: left;
+  background: #FFFFFF;
+  border: 1px solid #E3EAF2;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.maq-etape:hover { border-color: var(--injs-blue-royal); }
+.maq-etape:focus-visible { outline: 2px solid var(--injs-blue-royal); outline-offset: 2px; }
+.maq-etape.is-active {
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px #DCEBFC;
+  background: #F5F9FF;
+}
+
+.maq-etape-icone {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  font-size: 0.95rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+
+.maq-etape.is-amber .maq-etape-icone { color: #8A5A00; background: #FFF8E8; border-color: #F5DFAE; }
+.maq-etape.is-blue .maq-etape-icone { color: #1D4ED8; background: #EEF4FF; border-color: #C7D9FB; }
+.maq-etape.is-green .maq-etape-icone { color: #0E7A4F; background: #F1FBF6; border-color: #B7E7CE; }
+.maq-etape.is-slate .maq-etape-icone { color: #475569; background: #F1F5F9; border-color: #DCE3EC; }
+
+.maq-etape-texte {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-right: auto;
+}
+
+.maq-etape-label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+  line-height: 1.2;
+}
+
+.maq-etape-aide {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #8C9AAD;
+  white-space: nowrap;
+}
+
+.maq-etape-nb {
+  font-size: 1.3rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--injs-navy);
+}
+
+.maq-progression {
+  margin-top: 0.85rem;
+  height: 8px;
+  background: #EDF1F6;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.maq-progression-barre {
+  display: block;
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--injs-blue-royal), #10B981);
+  transition: width 0.4s ease;
+}
+
+.maq-lot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.9rem;
+  padding: 0.8rem 1rem;
+  background: #FFF9EC;
+  border: 1px solid #F3DFAE;
+  border-radius: 12px;
+}
+
+.maq-lot-texte {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+  flex: 1 1 420px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #6E5A22;
+}
+
+.maq-lot-texte i { margin-top: 0.15rem; color: #B8860B; }
+
+.maq-lot-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.maq-cycle-ok {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.9rem 0 0;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0E7A4F;
+  background: #F1FBF6;
+  border: 1px solid #B7E7CE;
+  border-radius: 12px;
+}
+
+/* ── 8. PREMIUM : matrice de couverture ── */
+.maq-matrice {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: separate;
+  border-spacing: 0 0.45rem;
+  padding: 0.35rem 1rem 0.15rem;
+}
+
+.maq-matrice th {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7A8CA3;
+  text-align: center;
+  padding: 0.3rem 0.35rem;
+}
+
+.maq-matrice th:first-child { text-align: left; }
+.maq-matrice td { padding: 0 0.35rem; }
+
+.maq-matrice-filiere {
+  font-size: 0.8rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: var(--injs-navy) !important;
+  text-align: left !important;
+  max-width: 280px;
+}
+
+.maq-cellule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 42px;
+  padding: 0.45rem 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+a.maq-cellule:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15, 45, 90, 0.12); }
+a.maq-cellule:focus-visible { outline: 2px solid var(--injs-blue-royal); outline-offset: 2px; }
+
+.maq-cellule.is-active { color: #0B6B44; background: #E9F9F0; border-color: #A9E3C2; }
+.maq-cellule.is-validee { color: #1740B8; background: #EAF1FF; border-color: #B9CFFB; }
+.maq-cellule.is-brouillon { color: #8A5A00; background: #FFF8E8; border-color: #F0DCA6; }
+.maq-cellule.is-archivee { color: #64748B; background: #F1F5F9; border-color: #D6DEE8; }
+
+.maq-cellule--vide {
+  color: #C2CEDC;
+  background: #FAFCFE;
+  border-style: dashed;
+  border-color: #E1E9F2;
+}
+
+.maq-cellule-cr { font-variant-numeric: tabular-nums; }
+
+.maq-cellule-x {
+  padding: 0.05rem 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 9999px;
+}
+
+.maq-legende {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  flex-wrap: wrap;
+  padding-top: 0.4rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #64748B;
+}
+
+.maq-legende > span { display: inline-flex; align-items: center; gap: 0.35rem; }
+
+.maq-point {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1px solid transparent;
+}
+
+.maq-point.is-active { background: #22C55E; border-color: #16A34A; }
+.maq-point.is-validee { background: #3B82F6; border-color: #2563EB; }
+.maq-point.is-brouillon { background: #F59E0B; border-color: #D97706; }
+.maq-point.is-archivee { background: #94A3B8; border-color: #64748B; }
+
+.maq-legende-note { margin-left: auto; font-weight: 500; color: #8C9AAD; }
+
+/* ── 9. PREMIUM : lignes, jauge ECTS, conformité, exemple ── */
+.maq-statut { gap: 0.3rem; }
+.maq-statut i { font-size: 0.72rem; }
+
+.cand-table--maquettes tbody tr.maq-ligne--active { box-shadow: inset 3px 0 0 #22C55E; }
+.cand-table--maquettes tbody tr.maq-ligne--validee { box-shadow: inset 3px 0 0 #3B82F6; }
+.cand-table--maquettes tbody tr.maq-ligne--brouillon { box-shadow: inset 3px 0 0 #F59E0B; }
+.cand-table--maquettes tbody tr.maq-ligne--archivee { box-shadow: inset 3px 0 0 #94A3B8; }
+
+.maq-credits {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  min-width: 84px;
+}
+
+.maq-jauge {
+  display: block;
+  height: 5px;
+  background: #EDF1F6;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.maq-jauge-barre {
+  display: block;
+  height: 100%;
+  border-radius: 9999px;
+  background: #F5C04E;
+}
+
+.maq-jauge-barre.is-conforme { background: #22C55E; }
+
+.maq-conformite {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.maq-conformite.is-ok { color: #0E7A4F; }
+.maq-conformite.is-ko { color: #B45309; }
+
+.maq-exemple {
+  flex: 0 0 auto;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6D28B8;
+  background: #F4ECFF;
+  border: 1px solid #DCC9FB;
+  border-radius: 9999px;
+}
+
+/* ── 10. PREMIUM : responsive ── */
+@media (max-width: 760px) {
+  .maq-cycle-lien { display: none; }
+  .maq-etape { flex: 1 1 calc(50% - 0.45rem); }
+  .maq-lot { flex-direction: column; align-items: stretch; }
+  .maq-lot-btn { justify-content: center; }
+  .maq-legende-note { margin-left: 0; }
+}

@@ -78,6 +78,7 @@ urlpatterns = [
     path('maquettes/creer/',                      api_views.maquette_create,         name='scolarite-maquette-create'),
     path('maquettes/<int:pk>/modifier/',          api_views.maquette_update,         name='scolarite-maquette-update'),
     path('maquettes/<int:pk>/valider/',           api_views.maquette_valider,        name='scolarite-maquette-valider'),
+    path('maquettes/valider-toutes/',             api_views.maquette_valider_toutes, name='scolarite-maquette-valider-toutes'),
     path('maquettes/<int:pk>/activer/',           api_views.maquette_activer,        name='scolarite-maquette-activer'),
     path('maquettes/<int:pk>/archiver/',          api_views.maquette_archiver,       name='scolarite-maquette-archiver'),
     path('maquettes/<int:pk>/cloner/',            api_views.maquette_cloner,         name='scolarite-maquette-cloner'),

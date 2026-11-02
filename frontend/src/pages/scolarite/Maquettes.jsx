@@ -22,6 +22,39 @@ const BADGE_STATUT = {
   ARCHIVEE: 'dark',
 }
 
+const ICONE_STATUT = {
+  BROUILLON: 'bi-pencil-square',
+  VALIDEE: 'bi-lock',
+  ACTIVE: 'bi-check2-circle',
+  ARCHIVEE: 'bi-archive',
+}
+
+/** Étapes du cycle de validation, dans l'ordre du workflow. */
+const ETAPES = [
+  { value: 'BROUILLON', label: 'Brouillon', icone: 'bi-pencil-square', ton: 'amber', aide: 'Modifiable' },
+  { value: 'VALIDEE', label: 'Validée', icone: 'bi-lock', ton: 'blue', aide: 'Contenu gelé' },
+  { value: 'ACTIVE', label: 'Active', icone: 'bi-lightning-charge', ton: 'green', aide: 'Applicable, immuable' },
+  { value: 'ARCHIVEE', label: 'Archivée', icone: 'bi-archive', ton: 'slate', aide: 'Historique' },
+]
+
+const NIVEAUX_MATRICE = ['L1', 'L2', 'L3', 'M1', 'M2']
+const CREDITS_PAR_NIVEAU = 60
+
+/** « Licence 2 » → « L2 », « Master 1 » → « M1 », sinon le code tel quel. */
+const codeNiveau = (niveau) => {
+  const texte = (niveau || '').trim()
+  const licence = texte.match(/^(?:licence|l)\s*([1-3])$/i)
+  if (licence) return `L${licence[1]}`
+  const master = texte.match(/^(?:master|m)\s*([1-2])$/i)
+  if (master) return `M${master[1]}`
+  return texte.toUpperCase()
+}
+
+/** « ÉDUCATION ET MOTRICITÉ — LICENCE » → « ÉDUCATION ET MOTRICITÉ ». */
+const baseFormation = (intitule) => (intitule || '').split(/\s+—\s+/)[0].trim()
+
+const formatNombre = (n) => Number(n || 0).toLocaleString('fr-FR')
+
 export default function Maquettes() {
   const { user } = useAuth()
   const toast = useToast()
@@ -30,6 +63,7 @@ export default function Maquettes() {
   const [maquettes, setMaquettes] = useState([])
   const [chargement, setChargement] = useState(true)
   const [filtreStatut, setFiltreStatut] = useState('')
+  const [filtreFormation, setFiltreFormation] = useState('')
   const [recherche, setRecherche] = useState('')
   const [enCours, setEnCours] = useState(false)
   const [form, setForm] = useState({
@@ -107,26 +141,97 @@ export default function Maquettes() {
     }
   }
 
-  // Statistiques calculées
+  /** Validation en lot : ventilation ECUE + gel de tous les brouillons cohérents. */
+  const validerTout = async () => {
+    if (!window.confirm('Valider toutes les maquettes en brouillon (contenu gelé) ?')) return
+    setEnCours(true)
+    try {
+      const res = await api.post('/scolarite/maquettes/valider-toutes/', {})
+      const echecs = res.data?.echecs || []
+      toast.showToast(res.data?.detail || 'Validation en lot terminée.')
+      if (echecs.length) {
+        toast.showToast(
+          `${echecs.length} maquette(s) en échec : ouvrez le détail pour corriger les incohérences.`,
+          'error',
+        )
+      }
+      charger()
+    } catch (err) {
+      toast.showToast(err.response?.data?.error || 'Validation en lot impossible.', 'error')
+    } finally {
+      setEnCours(false)
+    }
+  }
+
+  // Indicateurs de la vue courante (la liste est déjà filtrée côté serveur).
   const stats = useMemo(() => {
     const total = maquettes.length
     const actives = maquettes.filter((m) => m.statut === 'ACTIVE').length
     const validees = maquettes.filter((m) => m.statut === 'VALIDEE').length
     const brouillons = maquettes.filter((m) => m.statut === 'BROUILLON').length
-    return { total, actives, validees, brouillons }
+    const archivees = maquettes.filter((m) => m.statut === 'ARCHIVEE').length
+    const credits = maquettes.reduce((somme, m) => somme + (m.total_credits || 0), 0)
+    const finalisees = actives + validees
+    return {
+      total, actives, validees, brouillons, archivees, credits,
+      pctFinalisees: total ? Math.round((finalisees / total) * 100) : 0,
+    }
   }, [maquettes])
 
-  // Filtrage local par recherche textuelle
+  const parStatut = useMemo(
+    () => ({
+      BROUILLON: stats.brouillons,
+      VALIDEE: stats.validees,
+      ACTIVE: stats.actives,
+      ARCHIVEE: stats.archivees,
+    }),
+    [stats],
+  )
+
+  // Formations présentes dans la vue, pour le filtre local.
+  const formationsPresentes = useMemo(() => {
+    const compte = new Map()
+    for (const m of maquettes) {
+      if (m.ref_formation) compte.set(m.ref_formation, (compte.get(m.ref_formation) || 0) + 1)
+    }
+    return [...compte.entries()].sort((a, b) => a[0].localeCompare(b[0], 'fr'))
+  }, [maquettes])
+
+  // Filtrage local : formation + recherche textuelle.
   const maquettesFiltrees = useMemo(() => {
-    if (!recherche.trim()) return maquettes
-    const q = recherche.toLowerCase()
-    return maquettes.filter(
-      (m) =>
-        (m.ref_formation || '').toLowerCase().includes(q) ||
-        (m.niveau || '').toLowerCase().includes(q) ||
-        (m.parcours || '').toLowerCase().includes(q) ||
-        (m.annee_academique || '').toLowerCase().includes(q),    )
-  }, [maquettes, recherche])
+    let liste = maquettes
+    if (filtreFormation) liste = liste.filter((m) => m.ref_formation === filtreFormation)
+    if (recherche.trim()) {
+      const q = recherche.toLowerCase()
+      liste = liste.filter(
+        (m) =>
+          (m.ref_formation || '').toLowerCase().includes(q) ||
+          (m.niveau || '').toLowerCase().includes(q) ||
+          (m.parcours || '').toLowerCase().includes(q) ||
+          (m.annee_academique || '').toLowerCase().includes(q),
+      )
+    }
+    return liste
+  }, [maquettes, filtreFormation, recherche])
+
+  // Matrice de couverture : filière (base de l'intitulé) × niveau L1–M2.
+  const couverture = useMemo(() => {
+    const groupes = new Map()
+    for (const m of maquettesFiltrees) {
+      const base = baseFormation(m.ref_formation)
+      const code = codeNiveau(m.niveau)
+      if (!base || !NIVEAUX_MATRICE.includes(code)) continue
+      if (!groupes.has(base)) groupes.set(base, new Map())
+      const parNiveau = groupes.get(base)
+      if (!parNiveau.has(code)) parNiveau.set(code, [])
+      parNiveau.get(code).push(m)
+    }
+    return [...groupes.entries()]
+      .filter(([, parNiveau]) => [...parNiveau.values()].reduce((n, l) => n + l.length, 0) >= 2)
+      .sort((a, b) => a[0].localeCompare(b[0], 'fr'))
+  }, [maquettesFiltrees])
+
+  const basculerStatut = (value) => setFiltreStatut((actuel) => (actuel === value ? '' : value))
 
   return (
     <div className="cand-page maq-page">
@@ -150,8 +255,12 @@ export default function Maquettes() {
             {maquettes.length} maquette{maquettes.length > 1 ? 's' : ''}
           </span>
           <span className="maq-pastille maq-pastille--neutre">
+            <i className="bi bi-collection" aria-hidden="true"></i>
+            {formatNombre(stats.credits)} crédits ECTS
+          </span>
+          <span className="maq-pastille maq-pastille--neutre">
             <i className="bi bi-shield-lock" aria-hidden="true"></i>
-            Actives immuables
+            {stats.pctFinalisees} % finalisées
           </span>
         </div>
       </div>
@@ -163,6 +272,7 @@ export default function Maquettes() {
           <div className="cand-kpi-texte">
             <span className="cand-kpi-value">{stats.total}</span>
             <span className="cand-kpi-label">Total maquettes</span>
+            <span className="maq-kpi-sub">{formatNombre(stats.credits)} ECTS documentés</span>
           </div>
         </div>
         <div className="cand-kpi">
@@ -170,6 +280,9 @@ export default function Maquettes() {
           <div className="cand-kpi-texte">
             <span className="cand-kpi-value">{stats.actives}</span>
             <span className="cand-kpi-label">Actives (immuables)</span>
+            <span className="maq-kpi-sub">
+              {stats.total ? Math.round((stats.actives / stats.total) * 100) : 0} % du catalogue
+            </span>
           </div>
         </div>
         <div className="cand-kpi">
@@ -177,6 +290,7 @@ export default function Maquettes() {
           <div className="cand-kpi-texte">
             <span className="cand-kpi-value">{stats.validees}</span>
             <span className="cand-kpi-label">Validées (gelées)</span>
+            <span className="maq-kpi-sub">Prêtes à activer</span>
           </div>
         </div>
         <div className="cand-kpi">
@@ -184,9 +298,151 @@ export default function Maquettes() {
           <div className="cand-kpi-texte">
             <span className="cand-kpi-value">{stats.brouillons}</span>
             <span className="cand-kpi-label">Brouillons</span>
+            <span className="maq-kpi-sub">
+              {stats.brouillons ? 'En attente de validation' : 'Aucun en attente'}
+            </span>
           </div>
         </div>
       </div>
+
+      {/* ── Cycle de validation académique ── */}
+      <section className="cand-panel" aria-labelledby="titre-cycle-maquettes">
+        <header className="cand-panel-head">
+          <h2 className="cand-panel-title" id="titre-cycle-maquettes">
+            <i className="bi bi-bezier2" aria-hidden="true"></i>Cycle de validation académique
+          </h2>
+          <span className="cand-count-pill">{stats.pctFinalisees} % finalisées</span>
+        </header>
+        <div className="cand-panel-body">
+          <div className="maq-cycle" role="group" aria-label="Filtrer par étape du cycle">
+            {ETAPES.map((etape, rang) => (
+              <React.Fragment key={etape.value}>
+                {rang > 0 && (
+                  <span className="maq-cycle-lien" aria-hidden="true">
+                    <i className="bi bi-chevron-right"></i>
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className={
+                    `maq-etape is-${etape.ton}` +
+                    (filtreStatut === etape.value ? ' is-active' : '')
+                  }
+                  aria-pressed={filtreStatut === etape.value}
+                  title={`Filtrer : ${etape.label}`}
+                  onClick={() => basculerStatut(etape.value)}
+                >
+                  <span className="maq-etape-icone" aria-hidden="true">
+                    <i className={`bi ${etape.icone}`}></i>
+                  </span>
+                  <span className="maq-etape-texte">
+                    <span className="maq-etape-label">{etape.label}</span>
+                    <span className="maq-etape-aide">{etape.aide}</span>
+                  </span>
+                  <span className="maq-etape-nb">{parStatut[etape.value] ?? 0}</span>
+                </button>
+              </React.Fragment>
+            ))}
+          </div>
+          <div
+            className="maq-progression"
+            role="progressbar"
+            aria-valuenow={stats.pctFinalisees}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Part des maquettes finalisées"
+          >
+            <span className="maq-progression-barre" style={{ width: `${stats.pctFinalisees}%` }}></span>
+          </div>
+          {peutAgir && stats.brouillons > 0 && (
+            <div className="maq-lot">
+              <p className="maq-lot-texte">
+                <i className="bi bi-exclamation-circle" aria-hidden="true"></i>
+                <span>
+                  <strong>{stats.brouillons} brouillon{stats.brouillons > 1 ? 's' : ''}</strong> en
+                  attente : la validation ventile les crédits des UE vers leurs ECUE, contrôle la
+                  cohérence LMD puis gèle le contenu (toute correction passera par un clonage).
+                </span>
+              </p>
+              <button
+                type="button"
+                className="cand-btn-principal maq-lot-btn"
+                disabled={enCours}
+                onClick={validerTout}
+              >
+                <i className="bi bi-check2-all" aria-hidden="true"></i>
+                Valider tous les brouillons
+              </button>
+            </div>
+          )}
+          {stats.total > 0 && stats.brouillons === 0 && (
+            <p className="maq-cycle-ok">
+              <i className="bi bi-patch-check" aria-hidden="true"></i>
+              Toutes les maquettes de la vue sont finalisées : aucune n’attend de validation.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* ── Couverture par formation ── */}
+      {couverture.length > 0 && (
+        <section className="cand-panel" aria-labelledby="titre-couverture-maquettes">
+          <header className="cand-panel-head">
+            <h2 className="cand-panel-title" id="titre-couverture-maquettes">
+              <i className="bi bi-grid-3x3-gap" aria-hidden="true"></i>Couverture par formation
+            </h2>
+            <span className="cand-count-pill">
+              {couverture.length} filière{couverture.length > 1 ? 's' : ''} · L1 → M2
+            </span>
+          </header>
+          <div className="cand-table-wrap">
+            <table className="maq-matrice">
+              <thead>
+                <tr>
+                  <th scope="col">Filière</th>
+                  {NIVEAUX_MATRICE.map((code) => <th key={code} scope="col">{code}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {couverture.map(([base, parNiveau]) => (
+                  <tr key={base}>
+                    <th scope="row" className="maq-matrice-filiere">{base}</th>
+                    {NIVEAUX_MATRICE.map((code) => {
+                      const liste = parNiveau.get(code) || []
+                      const m = liste[0]
+                      return (
+                        <td key={code}>
+                          {m ? (
+                            <Link
+                              to={`/scolarite/maquettes/${m.id}`}
+                              className={`maq-cellule is-${(m.statut || '').toLowerCase()}`}
+                              aria-label={`Détail de la maquette ${base} ${code}`}
+                              title={`${m.ref_formation} — ${m.statut}`}
+                            >
+                              <i className={`bi ${ICONE_STATUT[m.statut] || 'bi-file-earmark'}`} aria-hidden="true"></i>
+                              <span className="maq-cellule-cr">{m.total_credits} cr.</span>
+                              {liste.length > 1 && <span className="maq-cellule-x">×{liste.length}</span>}
+                            </Link>
+                          ) : (
+                            <span className="maq-cellule maq-cellule--vide" aria-hidden="true">—</span>
+                          )}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="cand-panel-body maq-legende">
+            <span><span className="maq-point is-active"></span>Active</span>
+            <span><span className="maq-point is-validee"></span>Validée</span>
+            <span><span className="maq-point is-brouillon"></span>Brouillon</span>
+            <span><span className="maq-point is-archivee"></span>Archivée</span>
+            <span className="maq-legende-note">Cliquez une case pour ouvrir la maquette.</span>
+          </div>
+        </section>
+      )}
 
       {/* ── Filtres et recherche ── */}
       <section className="cand-panel" aria-labelledby="titre-filtres-maquettes">
@@ -209,6 +465,20 @@ export default function Maquettes() {
                 onChange={(e) => setFiltreStatut(e.target.value)}
               >
                 {STATUTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+            <div className="maq-filtre">
+              <label className="cand-etiquette" htmlFor="maq-filtre-formation">Filtrer par formation</label>
+              <select
+                id="maq-filtre-formation"
+                className="cand-filter-select"
+                value={filtreFormation}
+                onChange={(e) => setFiltreFormation(e.target.value)}
+              >
+                <option value="">Toutes les formations</option>
+                {formationsPresentes.map(([intitule, nb]) => (
+                  <option key={intitule} value={intitule}>{intitule} ({nb})</option>
+                ))}
               </select>
             </div>
             <div className="maq-filtre maq-filtre--large">
@@ -349,83 +619,103 @@ export default function Maquettes() {
                       </span>
                       <p className="cand-vide-titre">Aucune maquette.</p>
                       <p className="cand-vide-texte">
-                        {recherche || filtreStatut
+                        {recherche || filtreStatut || filtreFormation
                           ? 'Aucune maquette ne correspond aux filtres sélectionnés.'
                           : 'Créez une première maquette pour structurer les UE/ECUE d’un parcours.'}
                       </p>
                     </div>
                   </td>
                 </tr>
-              ) : maquettesFiltrees.map((m) => (
-                <tr key={m.id}>
-                  <td>
-                    <span className="maq-formation">
-                      <span className="maq-formation-icone" aria-hidden="true">
-                        <i className="bi bi-mortarboard"></i>
+              ) : maquettesFiltrees.map((m) => {
+                const estExemple = (m.libelle || '').startsWith('[Exemple]')
+                const credits = m.total_credits || 0
+                const conforme = credits === CREDITS_PAR_NIVEAU
+                return (
+                  <tr key={m.id} className={`maq-ligne--${(m.statut || '').toLowerCase()}`}>
+                    <td>
+                      <span className="maq-formation">
+                        <span className="maq-formation-icone" aria-hidden="true">
+                          <i className="bi bi-mortarboard"></i>
+                        </span>
+                        <Link to={`/scolarite/maquettes/${m.id}`} className="maq-lien">
+                          {m.ref_formation}
+                        </Link>
+                        {estExemple && <span className="maq-exemple">Exemple</span>}
                       </span>
-                      <Link to={`/scolarite/maquettes/${m.id}`} className="maq-lien">
-                        {m.ref_formation}
-                      </Link>
-                    </span>
-                  </td>
-                  <td><span className="cand-badge-neutre">{m.niveau}</span></td>
-                  <td>
-                    {m.parcours
-                      ? <span className="maq-parcours">{m.parcours}</span>
-                      : <span className="cand-texte-doux">—</span>}
-                  </td>
-                  <td className="cand-col-etroit"><span className="maq-annee">{m.annee_academique}</span></td>
-                  <td><span className="maq-chip">v{m.version}</span></td>
-                  <td>
-                    <span className={`maq-statut text-bg-${BADGE_STATUT[m.statut] || 'secondary'}`}>
-                      {m.statut}
-                    </span>
-                  </td>
-                  <td className="cand-col-etroit"><span className="maq-nombre">{m.nb_ue}</span></td>
-                  <td className="cand-col-etroit">
-                    <span className="maq-nombre">{m.total_credits}</span>
-                    <span className="maq-unite"> cr.</span>
-                  </td>
-                  {peutAgir && (
-                    <td className="cand-col-actions">
-                      <div className="cand-actions maq-actions">
-                        {m.statut === 'BROUILLON' && (
-                          <button
-                            type="button" className="maq-action maq-action--valider" disabled={enCours}
-                            title="Valider cette maquette (contenu gelé)"
-                            onClick={() => action(m, 'valider', 'Valider cette maquette (contenu gelé) ?')}>
-                            <i className="bi bi-check2-circle" aria-hidden="true"></i>Valider
-                          </button>
-                        )}
-                        {m.statut === 'VALIDEE' && (
-                          <button
-                            type="button" className="maq-action maq-action--activer" disabled={enCours}
-                            title="Activer cette maquette (immuable)"
-                            onClick={() => action(m, 'activer', 'Activer cette maquette (immuable) ?')}>
-                            <i className="bi bi-lightning-charge" aria-hidden="true"></i>Activer
-                          </button>
-                        )}
-                        {m.statut === 'ACTIVE' && (
-                          <button
-                            type="button" className="maq-action maq-action--archiver" disabled={enCours}
-                            title="Archiver cette maquette"
-                            onClick={() => action(m, 'archiver', 'Archiver cette maquette ?')}>
-                            <i className="bi bi-archive" aria-hidden="true"></i>Archiver
-                          </button>
-                        )}
-                        {m.statut !== 'BROUILLON' && (
-                          <button
-                            type="button" className="maq-action maq-action--cloner" disabled={enCours}
-                            title="Créer une nouvelle version (clonage)"
-                            onClick={() => action(m, 'cloner', 'Créer une nouvelle version (clonage) ?')}>
-                            <i className="bi bi-copy" aria-hidden="true"></i>Cloner
-                          </button>
-                        )}
-                      </div>
                     </td>
-                  )}
-                </tr>
-              ))}
+                    <td><span className="cand-badge-neutre">{m.niveau}</span></td>
+                    <td>
+                      {m.parcours
+                        ? <span className="maq-parcours">{m.parcours}</span>
+                        : <span className="cand-texte-doux">—</span>}
+                    </td>
+                    <td className="cand-col-etroit"><span className="maq-annee">{m.annee_academique}</span></td>
+                    <td><span className="maq-chip">v{m.version}</span></td>
+                    <td>
+                      <span className={`maq-statut text-bg-${BADGE_STATUT[m.statut] || 'secondary'}`}>
+                        <i className={`bi ${ICONE_STATUT[m.statut] || 'bi-question-circle'}`} aria-hidden="true"></i>
+                        {m.statut}
+                      </span>
+                    </td>
+                    <td className="cand-col-etroit"><span className="maq-nombre">{m.nb_ue}</span></td>
+                    <td className="cand-col-etroit">
+                      <span className="maq-credits">
+                        <span>
+                          <span className="maq-nombre">{m.total_credits}</span>
+                          <span className="maq-unite"> cr.</span>
+                        </span>
+                        <span className="maq-jauge" aria-hidden="true">
+                          <span
+                            className={`maq-jauge-barre${conforme ? ' is-conforme' : ''}`}
+                            style={{ width: `${Math.min(100, (credits / CREDITS_PAR_NIVEAU) * 100)}%` }}
+                          ></span>
+                        </span>
+                        <span className={`maq-conformite${conforme ? ' is-ok' : ' is-ko'}`}>
+                          {conforme ? 'Conforme' : 'À compléter'}
+                        </span>
+                      </span>
+                    </td>
+                    {peutAgir && (
+                      <td className="cand-col-actions">
+                        <div className="cand-actions maq-actions">
+                          {m.statut === 'BROUILLON' && (
+                            <button
+                              type="button" className="maq-action maq-action--valider" disabled={enCours}
+                              title="Valider cette maquette (contenu gelé)"
+                              onClick={() => action(m, 'valider', 'Valider cette maquette (contenu gelé) ?')}>
+                              <i className="bi bi-check2-circle" aria-hidden="true"></i>Valider
+                            </button>
+                          )}
+                          {m.statut === 'VALIDEE' && (
+                            <button
+                              type="button" className="maq-action maq-action--activer" disabled={enCours}
+                              title="Activer cette maquette (immuable)"
+                              onClick={() => action(m, 'activer', 'Activer cette maquette (immuable) ?')}>
+                              <i className="bi bi-lightning-charge" aria-hidden="true"></i>Activer
+                            </button>
+                          )}
+                          {m.statut === 'ACTIVE' && (
+                            <button
+                              type="button" className="maq-action maq-action--archiver" disabled={enCours}
+                              title="Archiver cette maquette"
+                              onClick={() => action(m, 'archiver', 'Archiver cette maquette ?')}>
+                              <i className="bi bi-archive" aria-hidden="true"></i>Archiver
+                            </button>
+                          )}
+                          {m.statut !== 'BROUILLON' && (
+                            <button
+                              type="button" className="maq-action maq-action--cloner" disabled={enCours}
+                              title="Créer une nouvelle version (clonage)"
+                              onClick={() => action(m, 'cloner', 'Créer une nouvelle version (clonage) ?')}>
+                              <i className="bi bi-copy" aria-hidden="true"></i>Cloner
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

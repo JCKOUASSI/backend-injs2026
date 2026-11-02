@@ -444,3 +444,58 @@ describe('pages/scolarite/Maquettes.jsx (LOT 40) — workflow des actions', () =
     await waitFor(() => expect(screen.getByText('Opération effectuée.')).toBeInTheDocument())
   })
 })
+
+/* ------------------------------------------------------------------ */
+/* Premium : cycle de validation, lot et matrice de couverture          */
+/* ------------------------------------------------------------------ */
+
+describe('pages/scolarite/Maquettes.jsx — cycle, validation en lot, couverture', () => {
+  it('affiche le cycle de validation et filtre en cliquant une étape', async () => {
+    mount()
+    await screen.findByText('Licence 1 LSF')
+    expect(screen.getByText('Cycle de validation académique')).toBeInTheDocument()
+    const avant = listCalls().length
+    fireEvent.click(screen.getByRole('button', { name: /Validée/ }))
+    await waitFor(() => expect(listCalls()).toHaveLength(avant + 1))
+    expect(listCalls().at(-1)[1].params).toEqual({ statut: 'VALIDEE' })
+  })
+
+  it('propose la validation en lot quand des brouillons existent et poste sur valider-toutes', async () => {
+    mount()
+    await screen.findByText('Licence 1 LSF')
+    const bouton = screen.getByRole('button', { name: /Valider tous les brouillons/ })
+    fireEvent.click(bouton)
+    expect(window.confirm).toHaveBeenCalledWith(
+      'Valider toutes les maquettes en brouillon (contenu gelé) ?',
+    )
+    await waitFor(() =>
+      expect(apiMock.post).toHaveBeenCalledWith('/scolarite/maquettes/valider-toutes/', {}),
+    )
+  })
+
+  it('matrice de couverture : filières regroupées par niveau avec liens de détail', async () => {
+    mount('ADMIN', {
+      list: [
+        {
+          id: 21, ref_formation: 'ÉDUCATION ET MOTRICITÉ — LICENCE', niveau: 'L1',
+          parcours: null, annee_academique: '2026-2027', version: 1, statut: 'ACTIVE',
+          nb_ue: 18, total_credits: 60, libelle: 'EM L1',
+        },
+        {
+          id: 22, ref_formation: 'ÉDUCATION ET MOTRICITÉ — MASTER', niveau: 'M2',
+          parcours: null, annee_academique: '2026-2027', version: 1, statut: 'BROUILLON',
+          nb_ue: 5, total_credits: 45, libelle: '[Exemple] EM M2',
+        },
+      ],
+    })
+    expect(await screen.findByText('Couverture par formation')).toBeInTheDocument()
+    expect(screen.getByText('ÉDUCATION ET MOTRICITÉ')).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /Détail de la maquette ÉDUCATION ET MOTRICITÉ L1/ }),
+    ).toHaveAttribute('href', '/scolarite/maquettes/21')
+    // Pastille « Exemple » sur la ligne marquée [Exemple] et conformité ECTS.
+    expect(screen.getByText('Exemple')).toBeInTheDocument()
+    expect(screen.getByText('Conforme')).toBeInTheDocument()
+    expect(screen.getByText('À compléter')).toBeInTheDocument()
+  })
+})

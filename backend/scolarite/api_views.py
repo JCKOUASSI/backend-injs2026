@@ -7,7 +7,7 @@ explicites, filtrage manuel via ``request.query_params``.
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Count, Sum
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -507,6 +507,54 @@ def maquette_valider(request, pk):
         {'commentaire': maquette.commentaire_validation},
     )
     return Response(_serializer_maquette(maquette))
+
+
+class _EchecValidationLot(Exception):
+    """Interne : force le rollback d'une maquette du lot (avec ses problèmes)."""
+
+    def __init__(self, problemes):
+        super().__init__('Maquette incohérente')
+        self.problemes = problemes
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def maquette_valider_toutes(request):
+    """Validation en lot : BROUILLON → VALIDEE pour les maquettes cohérentes.
+
+    Chaque maquette est traitée dans sa propre transaction : ventilation
+    technique des crédits UE vers les ECUE (``repartir_credits_ecue``) puis
+    contrôle de cohérence. Une maquette encore incohérente est annulée
+    (rollback de la ventilation) et rapportée dans ``echecs`` sans bloquer
+    les autres. Filtre optionnel : ``annee_academique_id``.
+    """
+    brouillons = Maquette.objects.filter(statut=Maquette.Statut.BROUILLON)
+    annee_id = request.data.get('annee_academique_id')
+    if annee_id:
+        brouillons = brouillons.filter(annee_academique_id=annee_id)
+    validees, echecs = [], []
+    for maquette in brouillons:
+        try:
+            with transaction.atomic():
+                ventilees = maquette.repartir_credits_ecue()
+                problemes = maquette.verifier_coherence()
+                if problemes:
+                    raise _EchecValidationLot(problemes)
+                maquette.statut = Maquette.Statut.VALIDEE
+                maquette.validee_par = request.user
+                maquette.validee_le = timezone.now()
+                maquette.save()
+                _journaliser_maquette(
+                    maquette, MaquetteJournal.Action.VALIDATION, request.user,
+                    {'lot': True, 'ecue_ventilees': ventilees},
+                )
+            validees.append(maquette.id)
+        except _EchecValidationLot as exc:
+            echecs.append({'id': maquette.id, 'problemes': exc.problemes})
+    detail = f'{len(validees)} maquette(s) validée(s)'
+    if echecs:
+        detail += f', {len(echecs)} en échec'
+    return Response({'detail': detail + '.', 'validees': validees, 'echecs': echecs})
 
 
 @api_view(['POST'])
