@@ -400,7 +400,7 @@ describe('pages/scolarite/Candidatures — calendrier premium de la date de nais
 
   const ouvrirCalendrier = async (card) => {
     fireEvent.click(within(card).getByRole('button', { name: /ouvrir le calendrier/i }))
-    return within(card).findByRole('dialog', { name: /choisir une date de naissance/i })
+    return screen.findByRole('dialog', { name: /choisir une date de naissance/i })
   }
 
   it('s’ouvre une vingtaine d’années en arrière quand le champ est vide', async () => {
@@ -423,7 +423,8 @@ describe('pages/scolarite/Candidatures — calendrier premium de la date de nais
     fireEvent.click(within(dialogue).getByRole('button', { name: '14 mars 2007' }))
 
     expect(within(card).getByLabelText('Date de naissance')).toHaveValue('14/03/2007')
-    expect(within(card).queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: /choisir une date de naissance/i }))
+      .not.toBeInTheDocument()
 
     fireEvent.click(within(card).getByRole('button', { name: /enregistrer la candidature/i }))
     await settle()
@@ -466,12 +467,14 @@ describe('pages/scolarite/Candidatures — calendrier premium de la date de nais
 
     let dialogue = await ouvrirCalendrier(card)
     fireEvent.keyDown(dialogue, { key: 'Escape' })
-    expect(within(card).queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: /choisir une date de naissance/i }))
+      .not.toBeInTheDocument()
     expect(champDate).toHaveValue('14/03/2007')
 
     dialogue = await ouvrirCalendrier(card)
     fireEvent.click(within(dialogue).getByRole('button', { name: /effacer/i }))
     expect(champDate).toHaveValue('')
-    expect(within(card).queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: /choisir une date de naissance/i }))
+      .not.toBeInTheDocument()
   })
 })

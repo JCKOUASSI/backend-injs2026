@@ -260,17 +260,150 @@ export const ECRANS = {
     titreListe: 'Dossiers de candidature',
     fil: 'Scolarité',
     icone: 'bi-folder-check',
-    introduction: 'Dossiers de candidature et pièces déposées : consulter, '
-      + 'vérifier la conformité puis valider ou rejeter chaque pièce.',
+    introduction: 'File de contrôle des dossiers de candidature : ouvrez un '
+      + 'dossier pour consulter chaque pièce déposée, la télécharger, puis la '
+      + 'valider ou la refuser. La complétude du dossier et la liste se '
+      + 'mettent à jour après chaque décision.',
     endpoint: '/admissions/candidatures/',
-    recherche: { param: 'search', libelle: 'Rechercher un dossier', placeholder: 'N°, nom, courriel…' },
-    priorite: ['numero', 'candidat', 'statut', 'formation', 'type_candidature', 'date_creation'],
+    // L'API lit le paramètre `q` (pas `search`) : avec `search`, la
+    // recherche était silencieusement ignorée par le serveur.
+    recherche: { param: 'q', libelle: 'Rechercher un dossier', placeholder: 'N°, nom…' },
+    filtres: [
+      {
+        param: 'statut', libelle: 'Statut', type: 'select',
+        options: [
+          { valeur: 'BROUILLON', libelle: 'Brouillon' },
+          { valeur: 'SOUMISE', libelle: 'Soumise' },
+          { valeur: 'EN_ATTENTE_DE_VERIFICATION', libelle: 'En attente de vérification' },
+          { valeur: 'PIECES_INCOMPLETES', libelle: 'Pièces incomplètes' },
+          { valeur: 'PIECES_VALIDEES', libelle: 'Pièces validées' },
+          { valeur: 'EN_ETUDE', libelle: 'En étude' },
+          { valeur: 'ADMISSIBLE', libelle: 'Admissible' },
+          { valeur: 'ADMIS', libelle: 'Admis' },
+          { valeur: 'ADMIS_SOUS_RESERVE', libelle: 'Admis sous réserve' },
+          { valeur: 'LISTE_ATTENTE', libelle: "Liste d'attente" },
+          { valeur: 'REFUSE', libelle: 'Refusé' },
+          { valeur: 'ANNULE', libelle: 'Annulé' },
+        ],
+      },
+      {
+        param: 'ref_formation_id', libelle: 'Formation', type: 'select',
+        optionsEndpoint: '/formations/ref/formations/',
+        optionsCleValeur: 'id',
+        optionsCleLibelle: 'intitule',
+      },
+      {
+        param: 'niveau_id', libelle: 'Niveau', type: 'select',
+        optionsEndpoint: '/scolarite/ref/niveaux/',
+        optionsCleValeur: 'id',
+        optionsCleLibelle: 'code',
+      },
+    ],
+    // Colonnes explicites alignées sur le sérialiseur de l'API : la
+    // dérivation automatique affichait les codes de statut bruts.
+    colonnes: [
+      { cle: 'numero', libelle: 'N° dossier' },
+      { cle: 'candidat', libelle: 'Candidat' },
+      { cle: 'ref_formation', libelle: 'Formation' },
+      { cle: 'niveau', libelle: 'Niveau' },
+      { cle: 'annee_academique', libelle: 'Année' },
+      {
+        cle: 'statut', libelle: 'Statut', format: 'badge',
+        badges: {
+          BROUILLON: 'Brouillon', SOUMISE: 'Soumise',
+          EN_ATTENTE_DE_VERIFICATION: 'En attente de vérification',
+          PIECES_INCOMPLETES: 'Pièces incomplètes',
+          PIECES_VALIDEES: 'Pièces validées', EN_ETUDE: 'En étude',
+          ADMISSIBLE: 'Admissible', ADMIS: 'Admis',
+          ADMIS_SOUS_RESERVE: 'Admis sous réserve',
+          LISTE_ATTENTE: "Liste d'attente", REFUSE: 'Refusé', ANNULE: 'Annulé',
+        },
+        couleurs: {
+          BROUILLON: 'text-bg-secondary', SOUMISE: 'text-bg-info',
+          EN_ATTENTE_DE_VERIFICATION: 'text-bg-info',
+          PIECES_INCOMPLETES: 'text-bg-warning',
+          PIECES_VALIDEES: 'text-bg-primary', EN_ETUDE: 'text-bg-primary',
+          ADMISSIBLE: 'text-bg-primary', ADMIS: 'text-bg-success',
+          ADMIS_SOUS_RESERVE: 'text-bg-success',
+          LISTE_ATTENTE: 'text-bg-warning', REFUSE: 'text-bg-danger',
+          ANNULE: 'text-bg-dark',
+        },
+      },
+      {
+        cle: 'taux_completude', libelle: 'Complétude',
+        valeur: (l) => `${l.pieces_validees ?? 0}/${l.pieces_obligatoires ?? 0} pièces · ${l.taux_completude ?? 0} %`,
+      },
+      { cle: 'date_candidature', libelle: 'Déposée le', format: 'date' },
+    ],
     detail: {
       titre: (l) => `Pièces du dossier ${l.numero || l.id}`,
-      sousTitre: 'Pièces déposées',
+      sousTitre: 'Contrôle des pièces justificatives',
       endpoint: (l) => `/admissions/candidatures/${l.id}/pieces/`,
-      priorite: ['type_piece', 'statut', 'date_depot', 'obligatoire', 'motif'],
+      // La réponse est un objet : tableau sous `pieces`, synthèse à la racine.
+      racine: 'pieces',
+      resume: [
+        { cle: 'pieces_validees', libelle: 'Pièces validées' },
+        { cle: 'pieces_obligatoires', libelle: 'Pièces obligatoires' },
+        { cle: 'taux_completude', libelle: 'Complétude', format: 'pourcentage' },
+        { cle: 'dossier_complet', libelle: 'Dossier complet', format: 'booleen' },
+      ],
+      colonnes: [
+        { cle: 'type_piece', libelle: 'Pièce' },
+        { cle: 'obligatoire', libelle: 'Obligatoire', format: 'booleen' },
+        {
+          cle: 'statut', libelle: 'Statut', format: 'badge',
+          badges: {
+            MANQUANTE: 'Manquante', FOURNIE: 'Fournie',
+            EN_VERIFICATION: 'En vérification', VALIDEE: 'Validée',
+            REFUSEE: 'Refusée', EXPIREE: 'Expirée',
+          },
+          couleurs: {
+            MANQUANTE: 'text-bg-secondary', FOURNIE: 'text-bg-info',
+            EN_VERIFICATION: 'text-bg-info', VALIDEE: 'text-bg-success',
+            REFUSEE: 'text-bg-danger', EXPIREE: 'text-bg-danger',
+          },
+        },
+        { cle: 'numero_document', libelle: 'N° document' },
+        { cle: 'date_delivrance', libelle: 'Délivrée le', format: 'date' },
+        { cle: 'date_expiration', libelle: 'Expire le', format: 'date' },
+        { cle: 'verifie_par', libelle: 'Vérifiée par' },
+      ],
+      // Le contrôle s'effectue ici, pièce par pièce (miroir du panneau
+      // Dossier de l'écran Candidatures) : télécharger le fichier déposé,
+      // valider ou refuser — une pièce sans fichier ne peut pas être statuée.
+      actions: [
+        {
+          libelle: 'Télécharger la pièce', icone: 'bi-download',
+          telechargement: true,
+          chemin: (p) => `/admissions/pieces/${p.id}/fichier/`,
+          visible: (p) => Boolean(p.a_fichier),
+          apparence: 'btn-outline-secondary',
+          succes: 'Pièce téléchargée.',
+        },
+        {
+          libelle: 'Valider la pièce', icone: 'bi-check2', methode: 'POST',
+          chemin: (p) => `/admissions/pieces/${p.id}/verifier/`,
+          corps: { statut: 'VALIDEE' },
+          visible: (p) => Boolean(p.a_fichier) && p.statut !== 'VALIDEE',
+          apparence: 'btn-outline-success',
+          succes: 'Pièce validée.',
+          erreur: 'Validation refusée par le serveur.',
+        },
+        {
+          libelle: 'Refuser la pièce', icone: 'bi-x-lg', methode: 'POST',
+          chemin: (p) => `/admissions/pieces/${p.id}/verifier/`,
+          corps: { statut: 'REFUSEE' },
+          visible: (p) => Boolean(p.a_fichier) && p.statut !== 'REFUSEE',
+          apparence: 'btn-outline-danger',
+          confirmation: (p) => `Refuser la pièce « ${p.type_piece} » ? `
+            + 'Le candidat devra la redéposer.',
+          succes: 'Pièce refusée.',
+          erreur: 'Refus rejeté par le serveur.',
+        },
+      ],
     },
+    vide: 'Aucun dossier ne correspond à ces critères. Les dossiers '
+      + 'apparaissent ici dès leur dépôt depuis l’écran Candidatures.',
     note: 'Source : /api/admissions/candidatures/ + /pieces/',
   },
 

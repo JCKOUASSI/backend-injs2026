@@ -70,7 +70,15 @@ export function formater(valeur, format, colonne) {
   }
   if (valeur == null || valeur === '') return '—'
   if (typeof valeur === 'boolean') return valeur ? 'Oui' : 'Non'
-  if (Array.isArray(valeur)) return valeur.length ? valeur.join(', ') : '—'
+  if (Array.isArray(valeur)) {
+    if (!valeur.length) return '—'
+    // Un tableau d'objets joint par ', ' produisait « [object Object] » :
+    // on affiche leurs libellés quand ils existent, sinon un compteur lisible.
+    const textes = valeur.map((v) => (
+      v && typeof v === 'object' ? (v.libelle || v.nom || v.code || null) : String(v)
+    ))
+    return textes.every(Boolean) ? textes.join(', ') : `${valeur.length} élément(s)`
+  }
   if (typeof valeur === 'object') return valeur.libelle || valeur.nom || valeur.code || JSON.stringify(valeur)
   return String(valeur)
 }
@@ -293,6 +301,32 @@ function actionSuppression(formulaire, ligne) {
   }
 }
 
+/** Exécution d'une action déclarée (`actions` de liste ou `detail.actions`) :
+ *  téléchargement blob, ou appel REST selon la méthode. Partagé par la liste
+ *  principale et la fiche de détail pour un comportement strictement identique. */
+async function executerActionGenerique(action, ligne) {
+  const chemin = typeof action.chemin === 'function' ? action.chemin(ligne) : action.chemin
+  if (action.telechargement) {
+    const { blob, fileName } = await api.getBlob(chemin)
+    const url = URL.createObjectURL(blob)
+    const lien = document.createElement('a')
+    lien.href = url
+    lien.download = fileName || `${action.id || 'document'}`
+    document.body.appendChild(lien)
+    lien.click()
+    lien.remove()
+    URL.revokeObjectURL(url)
+    return { telecharge: true }
+  }
+  const corps = typeof action.corps === 'function' ? action.corps(ligne) : action.corps
+  const methode = (action.methode || 'POST').toLowerCase()
+  if (methode === 'get') return api.get(chemin)
+  if (methode === 'patch') return api.patch(chemin, corps ?? {})
+  if (methode === 'put') return api.put(chemin, corps ?? {})
+  if (methode === 'delete') return api.delete(chemin)
+  return api.post(chemin, corps ?? {})
+}
+
 /** Liste (ou onglets) générique — cœur du moteur d'écrans. */
 export function ListeGenerique({ ecran, cleBase }) {
   const { showToast } = useToast()
@@ -370,28 +404,7 @@ export function ListeGenerique({ ecran, cleBase }) {
   const colonnes = useMemo(() => colonnesPour(ecran, lignes), [ecran, lignes])
 
   const mutation = useMutation({
-    mutationFn: async ({ action, ligne }) => {
-      const chemin = typeof action.chemin === 'function' ? action.chemin(ligne) : action.chemin
-      if (action.telechargement) {
-        const { blob, fileName } = await api.getBlob(chemin)
-        const url = URL.createObjectURL(blob)
-        const lien = document.createElement('a')
-        lien.href = url
-        lien.download = fileName || `${action.id || 'document'}`
-        document.body.appendChild(lien)
-        lien.click()
-        lien.remove()
-        URL.revokeObjectURL(url)
-        return { telecharge: true }
-      }
-      const corps = typeof action.corps === 'function' ? action.corps(ligne) : action.corps
-      const methode = (action.methode || 'POST').toLowerCase()
-      if (methode === 'get') return api.get(chemin)
-      if (methode === 'patch') return api.patch(chemin, corps ?? {})
-      if (methode === 'put') return api.put(chemin, corps ?? {})
-      if (methode === 'delete') return api.delete(chemin)
-      return api.post(chemin, corps ?? {})
-    },
+    mutationFn: ({ action, ligne }) => executerActionGenerique(action, ligne),
     onSuccess: (_res, variables) => {
       showToast(variables.action.succes || 'Action enregistrée.')
       queryClient.invalidateQueries({ queryKey: cleBase })
@@ -745,6 +758,7 @@ export function ListeGenerique({ ecran, cleBase }) {
         <DetailGenerique
           ecran={ecran}
           ligne={selection}
+          cleBase={cleBase}
           onFermer={() => setSelection(null)}
         />
       )}
@@ -781,22 +795,44 @@ export function ListeGenerique({ ecran, cleBase }) {
   )
 }
 
-/** Fiche de détail : sous-ressource ou champs de la ligne courante. */
-function DetailGenerique({ ecran, ligne, onFermer }) {
+/** Fiche de détail : sous-ressource ou champs de la ligne courante.
+ *
+ * Extensions du descripteur :
+ * - `detail.racine` : clé du tableau quand l'endpoint renvoie un **objet**
+ *   (ex. `{ pieces: […], taux_completude: 43 }`). Sans elle, l'objet était
+ *   affiché comme une ligne unique et le tableau joint devenait
+ *   « [object Object], [object Object]… » ;
+ * - `detail.resume` : indicateurs lus sur cet objet racine (chips KPI) ;
+ * - `detail.actions` : actions par sous-ligne (même vocabulaire que les
+ *   actions de liste). Après succès, le détail **et** la liste parente sont
+ *   rechargés, mais la fiche reste ouverte pour enchaîner les décisions
+ *   (contrôle pièce par pièce). */
+function DetailGenerique({ ecran, ligne, cleBase, onFermer }) {
   const detail = ecran.detail
+  const navigate = useNavigate()
+  const { showToast } = useToast()
+  const queryClient = useQueryClient()
+  const [confirmation, setConfirmation] = useState(null)
   const endpoint = typeof detail.endpoint === 'function' ? detail.endpoint(ligne) : detail.endpoint
+  const cleDetail = ['ecran-generique', 'detail', ecran.id, ligne?.id, endpoint]
   const { data, isFetching, error } = useQuery({
-    queryKey: ['ecran-generique', 'detail', ecran.id, ligne?.id, endpoint],
+    queryKey: cleDetail,
     queryFn: async () => {
       const res = await api.get(endpoint)
       const brut = res?.data
-      if (Array.isArray(brut)) return brut
-      if (Array.isArray(brut?.results)) return brut.results
-      return [brut]
+      if (Array.isArray(brut)) return { lignes: brut, racine: null }
+      if (Array.isArray(brut?.results)) return { lignes: brut.results, racine: brut }
+      if (detail.racine && Array.isArray(brut?.[detail.racine])) {
+        return { lignes: brut[detail.racine], racine: brut }
+      }
+      return { lignes: [brut], racine: brut }
     },
     enabled: Boolean(endpoint),
     retry: false,
   })
+
+  const lignes = data?.lignes || []
+  const racine = data?.racine || null
 
   // Colonnes du détail : déclarées (`detail.colonnes`) ou **déduites** des
   // champs prioritaires puis du premier enregistrement, exactement comme pour
@@ -805,18 +841,52 @@ function DetailGenerique({ ecran, ligne, onFermer }) {
   const colonnesDetail = useMemo(
     () => (Array.isArray(detail.colonnes) && detail.colonnes.length
       ? detail.colonnes
-      : colonnesPour(detail, data || [])),
-    [detail, data],
+      : colonnesPour(detail, lignes)),
+    [detail, lignes],
   )
 
+  const mutation = useMutation({
+    mutationFn: ({ action, ligne: sousLigne }) => executerActionGenerique(action, sousLigne),
+    onSuccess: (_res, variables) => {
+      showToast(variables.action.succes || 'Action enregistrée.')
+      queryClient.invalidateQueries({ queryKey: cleDetail })
+      if (cleBase) queryClient.invalidateQueries({ queryKey: cleBase })
+      setConfirmation(null)
+    },
+    onError: (err, variables) => {
+      showToast(messageErreur(err, variables.action.erreur || 'Action refusée par le serveur.'), 'error')
+      setConfirmation(null)
+    },
+  })
+
+  const demander = (action, sousLigne) => {
+    if (action.confirmation) {
+      setConfirmation({ action, ligne: sousLigne })
+      return
+    }
+    mutation.mutate({ action, ligne: sousLigne })
+  }
+
+  const actionsDetail = detail.actions || []
+
   return (
-    <div className="modal d-block" tabIndex="-1" role="dialog" style={{ background: 'rgba(0,0,0,0.45)' }}>
-      <div className="modal-dialog modal-lg modal-dialog-scrollable">
+    <div
+      className="modal d-block gen-detail" tabIndex="-1" role="dialog" aria-modal="true"
+      style={{ background: 'rgba(7, 27, 58, 0.45)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onFermer() }}
+    >
+      <div className="modal-dialog modal-xl modal-dialog-scrollable">
         <div className="modal-content">
           <div className="modal-header">
-            <h5 className="modal-title">
-              {typeof detail.titre === 'function' ? detail.titre(ligne) : (detail.titre || 'Détail')}
-            </h5>
+            <span className="gen-detail-icon" aria-hidden="true">
+              <i className={`bi ${ecran.icone || 'bi-folder2-open'}`}></i>
+            </span>
+            <div className="gen-detail-heading">
+              <h5 className="modal-title">
+                {typeof detail.titre === 'function' ? detail.titre(ligne) : (detail.titre || 'Détail')}
+              </h5>
+              {detail.sousTitre && <span className="gen-detail-subtitle">{detail.sousTitre}</span>}
+            </div>
             <button type="button" className="btn-close" aria-label="Fermer" onClick={onFermer}></button>
           </div>
           <div className="modal-body">
@@ -836,7 +906,24 @@ function DetailGenerique({ ecran, ligne, onFermer }) {
             )}
             {endpoint && (
               <>
-                <h6 className="text-muted small text-uppercase">{detail.sousTitre || 'Éléments rattachés'}</h6>
+                {detail.resume && racine && (
+                  <div className="gen-detail-kpis">
+                    {detail.resume.map((r) => {
+                      const valeur = r.valeur ? r.valeur(racine) : lireChemin(racine, r.cle)
+                      return (
+                        <div className="gen-detail-kpi" key={r.cle || r.libelle}>
+                          <span className="gen-detail-kpi-label">{r.libelle}</span>
+                          <span className="gen-detail-kpi-value">{formater(valeur, r.format, r)}</span>
+                          {r.format === 'pourcentage' && typeof valeur === 'number' && (
+                            <span className="gen-detail-kpi-bar" aria-hidden="true">
+                              <span style={{ width: `${Math.min(100, Math.max(0, valeur))}%` }} />
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
                 {isFetching && <div className="text-muted small">Chargement…</div>}
                 {error && (
                   <div className="alert alert-warning py-2 small">
@@ -844,25 +931,54 @@ function DetailGenerique({ ecran, ligne, onFermer }) {
                   </div>
                 )}
                 {!isFetching && !error && (
-                  <table className="table table-sm">
-                    <thead>
-                      <tr>{colonnesDetail.map((c) => <th key={c.cle || c.libelle}>{c.libelle}</th>)}</tr>
-                    </thead>
-                    <tbody>
-                      {(data || []).map((sous, i) => (
-                        <tr key={sous?.id ?? i}>
-                          {colonnesDetail.map((c) => (
-                            <td key={c.cle || c.libelle}><Cellule ligne={sous} colonne={c} /></td>
-                          ))}
+                  <div className="table-responsive">
+                    <table className="table table-sm gen-detail-table">
+                      <thead>
+                        <tr>
+                          {colonnesDetail.map((c) => <th key={c.cle || c.libelle}>{c.libelle}</th>)}
+                          {actionsDetail.length > 0 && <th className="text-end">Actions</th>}
                         </tr>
-                      ))}
-                      {(data || []).length === 0 && (
-                        <tr><td colSpan={(detail.colonnes || []).length} className="text-muted text-center">
-                          Aucun élément rattaché.
-                        </td></tr>
-                      )}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {lignes.map((sous, i) => (
+                          <tr key={sous?.id ?? i}>
+                            {colonnesDetail.map((c) => (
+                              <td key={c.cle || c.libelle}><Cellule ligne={sous} colonne={c} /></td>
+                            ))}
+                            {actionsDetail.length > 0 && (
+                              <td className="text-end text-nowrap">
+                                {actionsDetail.map((action) => {
+                                  if (action.visible && !action.visible(sous)) return null
+                                  const cible = action.vers ? action.vers(sous) : null
+                                  return (
+                                    <button
+                                      key={action.libelle}
+                                      type="button"
+                                      className={`btn btn-sm ${action.apparence || 'btn-outline-secondary'} me-1`}
+                                      onClick={() => (action.vers
+                                        ? (cible ? navigate(cible) : showToast(action.indisponible || 'Cible incomplète pour cette action.', 'error'))
+                                        : demander(action, sous))}
+                                      disabled={mutation.isPending || (action.vers && !cible)}
+                                      title={action.libelle}
+                                      data-testid={`detail-action-${action.libelle}`}
+                                    >
+                                      {action.icone && <i className={`bi ${action.icone}`}></i>}
+                                      {!action.icone && action.libelle}
+                                    </button>
+                                  )
+                                })}
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                        {lignes.length === 0 && (
+                          <tr><td colSpan={colonnesDetail.length + (actionsDetail.length ? 1 : 0)} className="text-muted text-center">
+                            Aucun élément rattaché.
+                          </td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </>
             )}
@@ -872,6 +988,20 @@ function DetailGenerique({ ecran, ligne, onFermer }) {
           </div>
         </div>
       </div>
+      {confirmation && (
+        <ConfirmModal
+          message={
+            typeof confirmation.action.confirmation === 'function'
+              ? confirmation.action.confirmation(confirmation.ligne)
+              : confirmation.action.confirmation
+          }
+          detail={confirmation.action.detail || null}
+          variant={confirmation.action.variant || 'primary'}
+          confirmLabel={confirmation.action.libelle}
+          onConfirm={() => mutation.mutate(confirmation)}
+          onCancel={() => setConfirmation(null)}
+        />
+      )}
     </div>
   )
 }

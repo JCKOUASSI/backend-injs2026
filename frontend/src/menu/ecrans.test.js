@@ -81,6 +81,9 @@ function cheminsApi(ecran) {
   noter('endpoint', ecran.endpoint)
   for (const onglet of ecran.onglets || []) noter(`onglets[${onglet.id}]`, onglet.endpoint)
   if (ecran.detail) noter('detail.endpoint', ecran.detail.endpoint, FAUSSE_LIGNE)
+  for (const action of ecran.detail?.actions || []) {
+    if (action.chemin) noter(`detail.action « ${action.libelle} »`, action.chemin, FAUSSE_LIGNE)
+  }
   for (const action of [...(ecran.actions || []), ...(ecran.actionsGlobales || [])]) {
     // `vers` cible une route **frontend**, pas l'API : exclu du contrôle.
     if (action.chemin) noter(`action « ${action.libelle} »`, action.chemin, FAUSSE_LIGNE)

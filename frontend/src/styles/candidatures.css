@@ -1281,10 +1281,10 @@ select.cand-saisie {
 }
 
 .cand-cal {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 60;
+  /* Portail : position fixe calculée en JS — le panneau du formulaire
+     (.cand-panel, overflow: hidden) rognerait une fenêtre absolue. */
+  position: fixed;
+  z-index: 2000;
   width: 302px;
   max-width: min(320px, 88vw);
   padding: 0.8rem;

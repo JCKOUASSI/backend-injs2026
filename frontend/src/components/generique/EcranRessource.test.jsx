@@ -22,7 +22,7 @@ vi.mock('@/services/api', async (importOriginal) => {
 import { apiController } from '@/test/utils/mockApi'
 import { AllProviders } from '@/test/utils/renderWithProviders'
 import { makeUser } from '@/test/utils/factories'
-import EcranRessource from './EcranRessource'
+import EcranRessource, { formater } from './EcranRessource'
 import { ECRANS } from '@/menu/ecrans'
 
 /** Réponse de la liste, mutable : chaque test peut la remplacer avant montage. */

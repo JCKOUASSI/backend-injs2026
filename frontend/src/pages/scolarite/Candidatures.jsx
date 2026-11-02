@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useToast } from '../../context/ToastContext'
 import CompletudeBar from '../../components/scolarite/CompletudeBar'
 import StatutBadge from '../../components/scolarite/StatutBadge'
@@ -112,12 +113,38 @@ function dateVersIsoLocale(date) {
   return `${date.getFullYear()}-${mm}-${jj}`
 }
 
-/** Champ date hybride : saisie libre masquée + bouton ouvrant le calendrier. */
+/** Champ date hybride : saisie libre masquée + bouton ouvrant le calendrier.
+ *  Le calendrier est rendu en **portail** (position fixe sur le corps du
+ *  document) : le panneau du formulaire a un `overflow: hidden` qui rognerait
+ *  — jusqu'à l'invisibilité — une fenêtre positionnée en absolu dans le
+ *  champ. La position est calculée depuis le champ, retournée vers le haut
+ *  si la place manque sous le champ, et suivie au défilement. */
 export function ChampDateNaissance({ id, valeur, onChange }) {
   const [ouvert, setOuvert] = useState(false)
   const [moisVisible, setMoisVisible] = useState(null)
+  const [coords, setCoords] = useState(null)
   const zoneRef = useRef(null)
   const saisieRef = useRef(null)
+  const popupRef = useRef(null)
+
+  const fermer = useCallback(() => {
+    setOuvert(false)
+    setCoords(null)
+  }, [])
+
+  const placer = useCallback(() => {
+    const champ = saisieRef.current
+    if (!champ) return
+    const r = champ.getBoundingClientRect()
+    const largeur = Math.min(302, window.innerWidth - 16)
+    const hauteur = popupRef.current?.offsetHeight || 380
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - largeur - 8))
+    let top = r.bottom + 8
+    if (top + hauteur > window.innerHeight - 8) {
+      top = Math.max(8, r.top - hauteur - 8)
+    }
+    setCoords({ top, left })
+  }, [])
 
   const aujourdhui = useMemo(() => {
     const d = new Date()
@@ -128,7 +155,7 @@ export function ChampDateNaissance({ id, valeur, onChange }) {
 
   const ouvrir = () => {
     if (ouvert) {
-      setOuvert(false)
+      fermer()
       return
     }
     if (selectionIso) {
@@ -145,24 +172,35 @@ export function ChampDateNaissance({ id, valeur, onChange }) {
     setOuvert(true)
   }
 
+  // Placement initial (le portail vient d'être monté, encore invisible).
+  useLayoutEffect(() => {
+    if (ouvert) placer()
+  }, [ouvert, placer])
+
   useEffect(() => {
     if (!ouvert) return undefined
     const clicDehors = (e) => {
-      if (zoneRef.current && !zoneRef.current.contains(e.target)) setOuvert(false)
+      const dedans = zoneRef.current?.contains(e.target)
+        || popupRef.current?.contains(e.target)
+      if (!dedans) fermer()
     }
     const touche = (e) => {
       if (e.key === 'Escape') {
-        setOuvert(false)
+        fermer()
         saisieRef.current?.focus()
       }
     }
     document.addEventListener('mousedown', clicDehors)
     document.addEventListener('keydown', touche)
+    window.addEventListener('resize', placer)
+    window.addEventListener('scroll', placer, true)
     return () => {
       document.removeEventListener('mousedown', clicDehors)
       document.removeEventListener('keydown', touche)
+      window.removeEventListener('resize', placer)
+      window.removeEventListener('scroll', placer, true)
     }
-  }, [ouvert])
+  }, [ouvert, fermer, placer])
 
   const decalerMois = (delta) => setMoisVisible(({ annee, mois }) => {
     const d = new Date(annee, mois + delta, 1)
@@ -171,7 +209,7 @@ export function ChampDateNaissance({ id, valeur, onChange }) {
 
   const choisir = (date) => {
     onChange(dateVersJjMmAaaa(date))
-    setOuvert(false)
+    fermer()
     saisieRef.current?.focus()
   }
 
@@ -223,8 +261,16 @@ export function ChampDateNaissance({ id, valeur, onChange }) {
         Saisie libre (JJ/MM/AAAA) ou via le calendrier
       </span>
 
-      {ouvert && moisVisible && (
-        <div className="cand-cal" role="dialog" aria-label="Choisir une date de naissance">
+      {ouvert && moisVisible && createPortal(
+        <div
+          className="cand-cal" role="dialog" aria-label="Choisir une date de naissance"
+          ref={popupRef}
+          style={{
+            top: coords?.top ?? -9999,
+            left: coords?.left ?? -9999,
+            visibility: coords ? 'visible' : 'hidden',
+          }}
+        >
           <div className="cand-cal-entete">
             <button
               type="button" className="cand-cal-nav" onClick={() => decalerMois(-1)}
@@ -281,13 +327,12 @@ export function ChampDateNaissance({ id, valeur, onChange }) {
           <div className="cand-cal-pied">
             <button
               type="button" className="cand-cal-effacer"
-              onClick={() => { onChange(''); setOuvert(false); saisieRef.current?.focus() }}
+              onClick={() => { onChange(''); fermer(); saisieRef.current?.focus() }}
             >
               <i className="bi bi-eraser" aria-hidden="true"></i> Effacer
             </button>
           </div>
-        </div>
-      )}
+        </div>, document.body)}
     </div>
   )
 }
