@@ -1,7 +1,7 @@
 """API des affectations de groupe, réinscriptions et événements de scolarité."""
 
 from django.core.exceptions import ValidationError
-from django.db.models import Q
+from django.db.models import Count, Q
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -53,7 +53,14 @@ def _serialize_evenement(evenement):
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def groupe_effectifs(request):
     """Effectifs et places restantes par groupe."""
-    queryset = Groupe.objects.select_related('annee_academique', 'ref_formation', 'niveau')
+    queryset = (
+        Groupe.objects
+        .select_related('annee_academique', 'ref_formation', 'niveau')
+        # Effectif annoté en une seule requête (le registre compte plus
+        # d'une centaine de groupes : éviter deux requêtes par groupe).
+        .annotate(effectif=Count(
+            'affectations', filter=Q(affectations__active=True)))
+    )
     for champ in ('annee_academique_id', 'ref_formation_id', 'niveau_id', 'parcours_id', 'actif'):
         if champ in request.query_params:
             valeur = request.query_params[champ]
@@ -68,8 +75,11 @@ def groupe_effectifs(request):
             'ref_formation': groupe.ref_formation.intitule,
             'niveau': groupe.niveau.code,
             'capacite_max': groupe.capacite_max,
-            'effectif': groupes_services.effectif_groupe(groupe),
-            'places_restantes': groupes_services.places_restantes(groupe),
+            'effectif': groupe.effectif,
+            'places_restantes': (
+                None if groupe.capacite_max is None
+                else max(groupe.capacite_max - groupe.effectif, 0)
+            ),
             'actif': groupe.actif,
         }
         for groupe in queryset
@@ -233,3 +243,25 @@ def etudiant_evenements(request, pk):
 
     evenements = etudiant.evenements.select_related('enregistre_par')
     return Response([_serialize_evenement(e) for e in evenements])
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def groupe_non_affectes(request):
+    """Nombre d'inscriptions validées sans affectation de groupe active.
+
+    Sert d'alerte sur l'écran Groupes pédagogiques : tant qu'il reste des
+    étudiants non affectés sur le périmètre filtré, la répartition
+    automatique a du travail.
+    """
+    inscriptions = (
+        InscriptionAdministrative.objects
+        .filter(statut=InscriptionAdministrative.Statut.VALIDEE)
+        .exclude(affectations__active=True)
+    )
+    for champ in ('annee_academique_id', 'ref_formation_id', 'niveau_id'):
+        if request.query_params.get(champ):
+            inscriptions = inscriptions.filter(
+                **{champ: request.query_params[champ]})
+    return Response({'non_affectes': inscriptions.count()})

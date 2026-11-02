@@ -443,3 +443,24 @@ class GroupeAPITests(GroupeFixture, TestCase):
             {'type_evenement': 'INEXISTANT'}, format='json',
         )
         self.assertEqual(response.status_code, 400)
+
+    def test_non_affectes_compteur_et_filtres(self):
+        # L'inscription de la fixture est validée sans groupe : 1 non affecté.
+        response = self.client.get('/api/scolarite/groupes/non-affectes/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['non_affectes'], 1)
+        # Après affectation, le compteur retombe à zéro.
+        groupes_services.affecter_groupe(self.inscription, self.groupe_a)
+        response = self.client.get(
+            '/api/scolarite/groupes/non-affectes/',
+            {'annee_academique_id': self.annee.id,
+             'ref_formation_id': self.formation.id,
+             'niveau_id': self.niveau.id},
+        )
+        self.assertEqual(response.json()['non_affectes'], 0)
+        # Un niveau sans inscription validée compte zéro aussi.
+        response = self.client.get(
+            '/api/scolarite/groupes/non-affectes/',
+            {'niveau_id': self.niveau_l2.id},
+        )
+        self.assertEqual(response.json()['non_affectes'], 0)

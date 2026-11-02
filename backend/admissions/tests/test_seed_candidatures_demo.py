@@ -19,7 +19,8 @@ from admissions.models import (
 from authentication.models import User
 from formations.models import Participant, RefCategorie, RefFormation
 from scolarite.models import (
-    AnneeAcademique, DossierEtudiant, InscriptionAdministrative, Niveau,
+    AffectationGroupe, AnneeAcademique, DossierEtudiant, Groupe,
+    InscriptionAdministrative, Niveau,
 )
 
 # Les dépôts de pièces écrivent dans un dossier temporaire, jamais dans
@@ -167,6 +168,25 @@ class SeedCandidaturesDemoTests(TestCase):
         self.assertEqual(
             bulk.values('secretariat').distinct().count(), 3)
 
+        # Groupes pédagogiques : les 40 cohortes (16 formations × niveaux)
+        # ont leurs sections, remplies sans dépasser les capacités, avec
+        # quelques étudiants volontairement non affectés.
+        groupes = Groupe.objects.all()
+        self.assertEqual(
+            groupes.values('ref_formation', 'niveau').distinct().count(), 40)
+        self.assertGreaterEqual(groupes.count(), 100)
+        self.assertTrue(groupes.filter(actif=False).exists())
+        self.assertTrue(groupes.filter(capacite_max__isnull=True).exists())
+        affectations = AffectationGroupe.objects.filter(active=True)
+        self.assertGreaterEqual(affectations.count(), 3400)
+        for groupe in groupes.filter(capacite_max__isnull=False):
+            self.assertLessEqual(
+                affectations.filter(groupe=groupe).count(),
+                groupe.capacite_max)
+        non_affectes = inscriptions.filter(statut='VALIDEE').exclude(
+            affectations__active=True)
+        self.assertGreater(non_affectes.count(), 0)
+
         # Campagnes : les 7 états du cycle de vie sont représentés.
         campagnes = CampagneAdmission.objects.all()
         self.assertEqual(campagnes.count(), 7)
@@ -223,6 +243,8 @@ class SeedCandidaturesDemoTests(TestCase):
             CampagneAdmission.objects.count(),
             ClassementConcours.objects.count(),
             InscriptionAdministrative.objects.count(),
+            Groupe.objects.count(),
+            AffectationGroupe.objects.count(),
         )
         self._seed()
         self.assertEqual(instantane, (
@@ -231,6 +253,8 @@ class SeedCandidaturesDemoTests(TestCase):
             CampagneAdmission.objects.count(),
             ClassementConcours.objects.count(),
             InscriptionAdministrative.objects.count(),
+            Groupe.objects.count(),
+            AffectationGroupe.objects.count(),
         ))
 
     def test_purge_retire_toutes_les_donnees_exemple(self):
@@ -246,6 +270,8 @@ class SeedCandidaturesDemoTests(TestCase):
         # La chaîne d'inscription des admis convertis est aussi retirée,
         # ainsi que les catégories/grades d'exemple.
         self.assertEqual(InscriptionAdministrative.objects.count(), 0)
+        self.assertEqual(Groupe.objects.count(), 0)
+        self.assertEqual(AffectationGroupe.objects.count(), 0)
         self.assertEqual(DossierEtudiant.objects.count(), 0)
         self.assertEqual(Participant.objects.count(), 0)
         self.assertEqual(RefCategorie.objects.count(), 0)

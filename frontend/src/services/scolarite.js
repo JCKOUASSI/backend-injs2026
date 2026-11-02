@@ -90,6 +90,7 @@ export const retirerEcue = (ligneId) => api.delete(`/scolarite/pedagogie/${ligne
 // ── Groupes, réinscription, événements ──────────────────────────────────────
 
 export const getEffectifsGroupes = (params) => api.get('/scolarite/groupes/effectifs/', { params })
+export const getNonAffectesGroupes = (params) => api.get('/scolarite/groupes/non-affectes/', { params })
 export const getAffectations = (inscriptionId) =>
   api.get(`/scolarite/inscriptions/${inscriptionId}/affectations/`)
 export const affecterGroupe = (inscriptionId, body) =>

@@ -51,6 +51,7 @@ urlpatterns = [
     path('passerelle/lot/',                       passerelle_api.passerelle_lot,     name='scolarite-passerelle-lot'),
 
     path('groupes/effectifs/',                    groupes_api.groupe_effectifs,      name='scolarite-groupe-effectifs'),
+    path('groupes/non-affectes/',                 groupes_api.groupe_non_affectes,   name='scolarite-groupe-non-affectes'),
     path('groupes/repartition/',                  groupes_api.repartition_automatique,
                                                                                      name='scolarite-groupe-repartition'),
     path('reinscriptions/',                       groupes_api.reinscrire,            name='scolarite-reinscription'),

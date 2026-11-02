@@ -122,3 +122,83 @@
   .grp-hero-actions { width: 100%; }
   .grp-hero-actions .btn-premium-primary { width: 100%; justify-content: center; }
 }
+
+/* ── Refonte premium : étapes, cohortes, recherche ─────────────────────────── */
+
+.grp-etapes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .45rem;
+  margin-top: .6rem;
+}
+
+.grp-etape {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .3rem .65rem;
+  border: 1px solid #dbe4f3;
+  border-radius: 999px;
+  background: #fff;
+  color: #5b6b82;
+  font-size: .78rem;
+  font-weight: 600;
+}
+
+.grp-etape--actuelle {
+  border-color: transparent;
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, .28);
+}
+
+.grp-etape-fleche { color: #93a4bb; font-size: .8rem; }
+
+.grp-recherche { flex: 1 1 260px; align-self: flex-end; }
+
+.grp-btn-reinitialiser {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  align-self: flex-end;
+  padding: .5rem .8rem;
+  border: 1px solid #d7e0ef;
+  border-radius: .65rem;
+  background: #fff;
+  color: #44526a;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.grp-btn-reinitialiser:hover { background: #f2f6fc; }
+
+/* Bandeau de cohorte (formation × niveau) dans le tableau. */
+.grp-cohorte td {
+  background: linear-gradient(90deg, #eef3fb, #f8fafc);
+  border-top: 2px solid #dbe4f3;
+  padding-top: .55rem;
+  padding-bottom: .55rem;
+}
+
+.grp-cohorte-titre {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  font-weight: 700;
+  color: #16233a;
+  font-size: .85rem;
+  letter-spacing: .01em;
+}
+
+.grp-cohorte-meta {
+  margin-left: .6rem;
+  color: #5b6b82;
+  font-size: .78rem;
+  font-weight: 600;
+}
+
+.grp-ligne--inactif { opacity: .55; }
+
+.grp-complet { color: #b91c1c; font-weight: 700; }

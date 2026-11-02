@@ -508,7 +508,8 @@ class Command(BaseCommand):
         self.regime = RegimeEtudes.objects.filter(code='INITIAL').first()
 
         bilan = {'campagnes': 0, 'candidatures': 0, 'pieces': 0, 'admissions': 0,
-                 'inscriptions': 0, 'etudiants': 0}
+                 'inscriptions': 0, 'etudiants': 0, 'groupes': 0,
+                 'affectations': 0}
         with transaction.atomic():
             campagnes = self._campagnes(annee, bilan)
             par_cle = self._candidatures(annee, campagnes, bilan)
@@ -527,6 +528,7 @@ class Command(BaseCommand):
             self._complement_admissions(par_cle, bilan)
             self._inscriptions_demo(annee, par_cle, bilan)
             self._effectifs_etudiants(annee, bilan)
+            self._groupes_demo(annee, bilan)
 
         total = Candidature.objects.count()
         par_statut = {
@@ -1159,9 +1161,24 @@ class Command(BaseCommand):
         # dossier, d'où cet ordre), avant les candidats eux-mêmes.
         participants_ids = list(candidats.exclude(participant=None)
                                 .values_list('participant_id', flat=True))
+        nb_groupes_demo = 0
         if participants_ids:
+            from scolarite.models import AffectationGroupe, Groupe
+            groupes_demo_ids = list(AffectationGroupe.objects.filter(
+                inscription__etudiant__participant_id__in=participants_ids,
+            ).values_list('groupe_id', flat=True).distinct())
             InscriptionAdministrative.objects.filter(
                 etudiant__participant_id__in=participants_ids).delete()
+            # Les affectations ont suivi en cascade : les groupes qui ne
+            # portaient que des étudiants d'exemple peuvent être retirés,
+            # ainsi que les groupes inactifs vides au nom généré (L1-G3…).
+            nb_groupes_demo, _ = Groupe.objects.filter(
+                id__in=groupes_demo_ids).delete()
+            nb_vides, _ = Groupe.objects.filter(
+                affectations__isnull=True,
+                nom__regex=r'^[LM][0-9]-G[0-9]+$',
+            ).delete()
+            nb_groupes_demo += nb_vides
             DossierEtudiant.objects.filter(
                 participant_id__in=participants_ids).delete()
             Participant.objects.filter(id__in=participants_ids).delete()
@@ -1188,7 +1205,8 @@ class Command(BaseCommand):
             f'Données d’exemple retirées : {nb_candidats} candidat(s) et '
             f'leurs dossiers, {nb_fichiers} fichier(s), '
             f'{nb_campagnes} campagne(s), {nb_categories} catégorie(s), '
-            f'{nb_secretariats} secrétariat(s) '
+            f'{nb_secretariats} secrétariat(s), '
+            f'{nb_groupes_demo} groupe(s) pédagogique(s) '
             f'd’exemple.'
         ))
 
@@ -1579,4 +1597,86 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f'Effectifs étudiants d’exemple : {len(participants)} étudiant(s) '
             f'créé(s) (parité femmes/hommes, 8 filières, niveaux L1→M2).'
+        ))
+
+    # ── Groupes pédagogiques d'exemple ────────────────────────────────────────
+    def _groupes_demo(self, annee, bilan):
+        """Sections TD/TP de toutes les cohortes (formation × niveau).
+
+        Groupes « L1-G1 »… de capacité 30/35/40 remplis à ~90 %, une cohorte
+        sans limite de capacité, deux groupes inactifs (fermés) et ~2 %
+        d'étudiants volontairement non affectés pour que la répartition
+        automatique de l'écran reste démontrable. Création en masse,
+        idempotente (les inscriptions déjà affectées sont conservées).
+        """
+        import math
+
+        from scolarite.models import AffectationGroupe, Groupe
+
+        inscriptions = list(
+            InscriptionAdministrative.objects.filter(
+                annee_academique=annee,
+                statut=InscriptionAdministrative.Statut.VALIDEE,
+            ).order_by('ref_formation_id', 'niveau_id', 'id'))
+        deja_affectees = set(AffectationGroupe.objects.filter(
+            active=True,
+            inscription__annee_academique=annee,
+        ).values_list('inscription_id', flat=True))
+
+        cohortes = {}
+        for inscription in inscriptions:
+            cle = (inscription.ref_formation_id, inscription.niveau_id)
+            cohortes.setdefault(cle, []).append(inscription)
+
+        capacites_cycle = [35, 30, 40, 35]
+        affectations = []
+        date_affectation = self.aujourdhui - timedelta(days=20)
+        for rang_cohorte, ((formation_id, niveau_id), membres) in enumerate(
+                sorted(cohortes.items())):
+            formation = membres[0].ref_formation
+            niveau = membres[0].niveau
+            a_affecter = [
+                membre for rang, membre in enumerate(membres)
+                if membre.id not in deja_affectees and rang % 50 != 49
+            ]
+            # Une cohorte sans plafond (M2 Loisir) pour illustrer « sans limite ».
+            sans_limite = (formation.filiere_code == 'F06'
+                           and niveau.code == 'M2')
+            capacite = None if sans_limite else capacites_cycle[
+                rang_cohorte % len(capacites_cycle)]
+            cible = 32 if capacite is None else math.ceil(capacite * 0.9)
+            nb_groupes = max(1, math.ceil(len(a_affecter) / cible))
+            groupes_cohorte = []
+            for numero in range(1, nb_groupes + 1):
+                groupe, cree = Groupe.objects.get_or_create(
+                    annee_academique=annee, ref_formation=formation,
+                    niveau=niveau, nom=f'{niveau.code}-G{numero}',
+                    defaults={'capacite_max': capacite},
+                )
+                groupes_cohorte.append(groupe)
+                bilan['groupes'] += 1 if cree else 0
+            for rang, membre in enumerate(a_affecter):
+                affectations.append(AffectationGroupe(
+                    inscription=membre,
+                    groupe=groupes_cohorte[rang % nb_groupes],
+                    date_debut=date_affectation,
+                    motif='[Exemple] Répartition initiale des sections TD/TP.',
+                    affecte_par=self.acteur,
+                ))
+            # Deux groupes fermés (inactifs, vides) pour l'état correspondant.
+            if (formation.filiere_code in ('F01', 'F04')
+                    and niveau.code in ('L1', 'M1')):
+                _, cree = Groupe.objects.get_or_create(
+                    annee_academique=annee, ref_formation=formation,
+                    niveau=niveau, nom=f'{niveau.code}-G{nb_groupes + 1}',
+                    defaults={'capacite_max': 35, 'actif': False},
+                )
+                bilan['groupes'] += 1 if cree else 0
+
+        AffectationGroupe.objects.bulk_create(affectations, batch_size=500)
+        bilan['affectations'] += len(affectations)
+        self.stdout.write(self.style.SUCCESS(
+            f'Groupes pédagogiques d’exemple : {bilan["groupes"]} groupe(s), '
+            f'{bilan["affectations"]} affectation(s) créée(s) sur '
+            f'{len(cohortes)} cohorte(s).'
         ))
