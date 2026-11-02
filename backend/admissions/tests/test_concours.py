@@ -277,4 +277,32 @@ class ConcoursAPITests(ConcoursBase):
             'candidature_id': self.candidatures[0].pk, 'note': '19',
         }, format='json')
         self.assertEqual(res.status_code, 400)
+
+
+    def test_detail_campagne_retourne_epreuves_et_libelles(self):
+        """Régression : campagne_detail ne retournait rien (HTTP 500)."""
+        self.client.force_authenticate(make_user('sec_api_detail', role='SECRETARIAT'))
+        res = self.client.get(f'/api/admissions/campagnes/{self.campagne.pk}/')
+        self.assertEqual(res.status_code, 200, getattr(res, 'data', None))
+        self.assertEqual(res.data['statut_libelle'], self.campagne.get_statut_display())
+        self.assertEqual(res.data['ref_formation'], self.formation.intitule)
+        epreuves = res.data['epreuves']
+        self.assertEqual(len(epreuves), self.campagne.epreuves.count())
+        self.assertGreaterEqual(len(epreuves), 1)
+        self.assertEqual(epreuves[0]['type_libelle'], self.ecrit.get_type_display())
+        self.assertIn('nb_convocations', epreuves[0])
+
+    def test_detail_campagne_introuvable(self):
+        self.client.force_authenticate(make_user('sec_api_404', role='SECRETARIAT'))
+        res = self.client.get('/api/admissions/campagnes/999999/')
+        self.assertEqual(res.status_code, 404)
+
+    def test_classement_expose_le_libelle_de_liste(self):
+        self.client.force_authenticate(make_user('sec_api_class', role='SECRETARIAT'))
+        res = self.client.get(f'/api/admissions/campagnes/{self.campagne.pk}/classement/')
+        self.assertEqual(res.status_code, 200)
+        for ligne in res.data:
+            self.assertIn(ligne['liste_libelle'], ('Admissible', "Liste d'attente", 'Non admis'))
+
+
 S = CampagneAdmission.Statut

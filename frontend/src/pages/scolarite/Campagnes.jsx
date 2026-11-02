@@ -5,6 +5,9 @@ import { canActScolarite } from '../../utils/roles'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import StatutBadge from '../../components/scolarite/StatutBadge'
+import ChampDate, {
+  dateFrancaiseVersIso, erreurDateFrancaise,
+} from '../../components/scolarite/ChampDate'
 import '../../styles/candidatures.css'
 import '../../styles/campagnes.css'
 
@@ -21,6 +24,7 @@ const ACTIONS = {
   SUSPENDUE: { libelle: 'Suspendre', icone: 'bi-pause-circle', variante: 'attention' },
   CLOTUREE: { libelle: 'Clôturer', icone: 'bi-lock', variante: 'neutre' },
   ARCHIVEE: { libelle: 'Archiver', icone: 'bi-archive', variante: 'neutre' },
+  ANNULEE: { libelle: 'Annuler', icone: 'bi-x-octagon', variante: 'danger' },
 }
 
 const formaterDate = (iso) => {
@@ -72,10 +76,26 @@ export default function Campagnes() {
 
   const creer = async (e) => {
     e.preventDefault()
+    // Les dates sont saisies en JJ/MM/AAAA : validation locale puis
+    // conversion en ISO (AAAA-MM-JJ) pour l'API.
+    const erreurDates = erreurDateFrancaise(form.date_ouverture, 'La date d’ouverture')
+      || erreurDateFrancaise(form.date_fermeture, 'La date de fermeture')
+    if (erreurDates) {
+      toast.showToast(erreurDates, 'error')
+      return
+    }
+    const ouvertureIso = dateFrancaiseVersIso(form.date_ouverture)
+    const fermetureIso = dateFrancaiseVersIso(form.date_fermeture)
+    if (ouvertureIso && fermetureIso && fermetureIso < ouvertureIso) {
+      toast.showToast('La fermeture doit être postérieure ou égale à l’ouverture.', 'error')
+      return
+    }
     setEnCours(true)
     try {
       await api.post('/admissions/campagnes/', {
         ...form,
+        date_ouverture: ouvertureIso || undefined,
+        date_fermeture: fermetureIso || undefined,
         annee_academique_id: Number(form.annee_academique_id) || undefined,
         ref_formation_id: Number(form.ref_formation_id) || undefined,
         quota_admissibles: Number(form.quota_admissibles) || undefined,
@@ -130,13 +150,23 @@ export default function Campagnes() {
     candidatures: campagnes.reduce((s, c) => s + (Number(c.nb_candidatures) || 0), 0),
   }), [campagnes])
 
-  const anneeCourante = options.annees[0]?.libelle
+  // L'API renvoie les années par ordre décroissant : l'année affichée est
+  // celle marquée courante, pas la plus récente de la liste.
+  const anneeCourante = (options.annees.find((a) => a.courante) || options.annees[0])?.libelle
 
   /* Actions possibles depuis chaque statut (miroir des transitions serveur). */
   const transitionsDe = (c) => {
-    if (c.statut === 'BROUILLON') return [{ statut: 'PLANIFIEE' }]
+    if (c.statut === 'BROUILLON') {
+      return [
+        { statut: 'PLANIFIEE' },
+        { statut: 'ANNULEE', confirmation: 'Annuler cette campagne ?' },
+      ]
+    }
     if (c.statut === 'PLANIFIEE') {
-      return [{ statut: 'OUVERTE', confirmation: 'Ouvrir la campagne aux candidatures ?' }]
+      return [
+        { statut: 'OUVERTE', confirmation: 'Ouvrir la campagne aux candidatures ?' },
+        { statut: 'ANNULEE', confirmation: 'Annuler cette campagne ?' },
+      ]
     }
     if (c.statut === 'OUVERTE') {
       return [
@@ -144,8 +174,13 @@ export default function Campagnes() {
         { statut: 'CLOTUREE', confirmation: 'Clôturer ? Plus aucune candidature ne sera acceptée.' },
       ]
     }
-    // Une campagne suspendue se rouvre : le libellé le dit explicitement.
-    if (c.statut === 'SUSPENDUE') return [{ statut: 'OUVERTE', libelle: 'Réouvrir' }]
+    // Une campagne suspendue se rouvre (libellé explicite) ou se clôture.
+    if (c.statut === 'SUSPENDUE') {
+      return [
+        { statut: 'OUVERTE', libelle: 'Réouvrir' },
+        { statut: 'CLOTUREE', confirmation: 'Clôturer ? Plus aucune candidature ne sera acceptée.' },
+      ]
+    }
     if (c.statut === 'CLOTUREE') return [{ statut: 'ARCHIVEE' }]
     return []
   }
@@ -268,19 +303,22 @@ export default function Campagnes() {
                 <div className="camp-duo">
                   <div className="cand-champ">
                     <label className="cand-etiquette" htmlFor="camp-ouv">Ouverture</label>
-                    <input
-                      id="camp-ouv" type="date" className="cand-saisie"
-                      value={form.date_ouverture}
-                      onChange={(e) => setForm({ ...form, date_ouverture: e.target.value })}
+                    <ChampDate
+                      id="camp-ouv"
+                      valeur={form.date_ouverture}
+                      onChange={(texte) => setForm({ ...form, date_ouverture: texte })}
+                      reculAnnees={0} futurInterdit={false}
+                      etiquetteCalendrier="Choisir la date d’ouverture"
                     />
                   </div>
                   <div className="cand-champ">
                     <label className="cand-etiquette" htmlFor="camp-ferm">Fermeture</label>
-                    <input
-                      id="camp-ferm" type="date" className="cand-saisie"
-                      min={form.date_ouverture || undefined}
-                      value={form.date_fermeture}
-                      onChange={(e) => setForm({ ...form, date_fermeture: e.target.value })}
+                    <ChampDate
+                      id="camp-ferm"
+                      valeur={form.date_fermeture}
+                      onChange={(texte) => setForm({ ...form, date_fermeture: texte })}
+                      reculAnnees={0} futurInterdit={false}
+                      etiquetteCalendrier="Choisir la date de fermeture"
                     />
                   </div>
                 </div>

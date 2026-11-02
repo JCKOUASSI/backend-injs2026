@@ -302,6 +302,9 @@
 
 .camp-action--neutre { color: #475569; }
 
+.camp-action--danger { color: #991B1B; border-color: #F3B8B8; background: #FFF7F7; }
+.camp-action--danger:hover:not(:disabled) { background: #FDECEC; border-color: #E58A8A; }
+
 @media (max-width: 900px) {
   .camp-pastilles { width: 100%; }
   .camp-duo { grid-template-columns: minmax(0, 1fr); }

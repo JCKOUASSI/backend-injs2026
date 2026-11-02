@@ -14,7 +14,7 @@ from django.test import TestCase, override_settings
 
 from admissions.models import (
     Admission, CampagneAdmission, Candidat, Candidature, ClassementConcours,
-    PieceCandidature,
+    Epreuve, NoteConcoursHistorique, NoteConcours, PieceCandidature,
 )
 from authentication.models import User
 from formations.models import RefFormation
@@ -31,7 +31,7 @@ FORMATIONS_REQUISES = [
     ('F03', 'LICENCE'), ('F03', 'MASTER'),
     ('F04', 'LICENCE'), ('F04', 'MASTER'),
     ('F05', 'MASTER'), ('F06', 'LICENCE'),
-    ('F07', 'LICENCE'), ('F08', 'LICENCE'),
+    ('F07', 'LICENCE'), ('F08', 'LICENCE'), ('F08', 'MASTER'),
 ]
 
 
@@ -61,7 +61,7 @@ class SeedCandidaturesDemoTests(TestCase):
         self._seed()
 
         candidatures = list(Candidature.objects.all())
-        self.assertEqual(len(candidatures), 20)
+        self.assertEqual(len(candidatures), 28)
         # Les 12 statuts du workflow sont représentés.
         self.assertEqual(
             {c.statut for c in candidatures},
@@ -70,11 +70,11 @@ class SeedCandidaturesDemoTests(TestCase):
         # Indicateurs tels que les calcule l'écran Candidatures.
         en_cours = {'SOUMISE', 'EN_ATTENTE_DE_VERIFICATION',
                     'PIECES_INCOMPLETES', 'EN_ETUDE'}
-        self.assertEqual(sum(1 for c in candidatures if c.taux_completude == 100), 13)
-        self.assertEqual(sum(1 for c in candidatures if c.statut in en_cours), 8)
+        self.assertEqual(sum(1 for c in candidatures if c.taux_completude == 100), 19)
+        self.assertEqual(sum(1 for c in candidatures if c.statut in en_cours), 10)
         self.assertEqual(
             sum(1 for c in candidatures
-                if c.statut in ('ADMIS', 'ADMIS_SOUS_RESERVE')), 3)
+                if c.statut in ('ADMIS', 'ADMIS_SOUS_RESERVE')), 5)
 
         # Pièces : des fichiers réels, des refus motivés, une pièce expirée.
         self.assertTrue(
@@ -95,14 +95,18 @@ class SeedCandidaturesDemoTests(TestCase):
         # et portent une référence + une date limite d'inscription.
         admissions_admis = Admission.objects.filter(
             decision='ADMIS', candidature__statut='ADMIS')
-        self.assertEqual(admissions_admis.count(), 2)
+        self.assertEqual(admissions_admis.count(), 4)
         for admission in admissions_admis:
             self.assertTrue(admission.reference_decision)
             self.assertIsNotNone(admission.date_limite_inscription)
 
-        # Campagnes : ouverte peuplée, planifiée, clôturée.
+        # Campagnes : les 7 états du cycle de vie sont représentés.
         campagnes = CampagneAdmission.objects.all()
-        self.assertEqual(campagnes.count(), 3)
+        self.assertEqual(campagnes.count(), 7)
+        self.assertEqual(
+            set(campagnes.values_list('statut', flat=True)),
+            set(CampagneAdmission.Statut.values),
+        )
         ouverte = campagnes.get(statut='OUVERTE')
         self.assertEqual(ouverte.candidatures.count(), 6)
 
@@ -115,6 +119,34 @@ class SeedCandidaturesDemoTests(TestCase):
         self.assertEqual(scores, sorted(scores, reverse=True))
         self.assertEqual(classement[0].liste, 'ADMISSIBLE')
         self.assertEqual(classement[-1].liste, 'NON_ADMIS')
+
+        # Les 4 types d’épreuves notées sont présents sur la campagne
+        # ouverte ; la pratique est en saisie partielle (3 notes) et une
+        # correction de note est historisée.
+        self.assertEqual(
+            set(ouverte.epreuves.values_list('type', flat=True)),
+            {'ECRIT', 'PHYSIQUE', 'ORAL', 'PRATIQUE'},
+        )
+        pratique = ouverte.epreuves.get(type='PRATIQUE')
+        self.assertEqual(NoteConcours.objects.filter(epreuve=pratique).count(), 3)
+        self.assertTrue(NoteConcoursHistorique.objects.filter(
+            note__epreuve__campagne=ouverte).exists())
+
+        # Cohorte précédente : classement PUBLIÉ, campagne clôturée,
+        # rangs alignés sur les listes (quota admissibles = 3).
+        historique = campagnes.get(statut='CLOTUREE')
+        self.assertEqual(historique.candidatures.count(), 6)
+        classement_publie = list(ClassementConcours.objects.filter(
+            campagne=historique).order_by('rang'))
+        self.assertEqual(len(classement_publie), 6)
+        self.assertTrue(all(ligne.publie for ligne in classement_publie))
+        self.assertEqual(
+            [ligne.liste for ligne in classement_publie],
+            ['ADMISSIBLE', 'ADMISSIBLE', 'ADMISSIBLE',
+             'LISTE_ATTENTE', 'LISTE_ATTENTE', 'NON_ADMIS'],
+        )
+        self.assertTrue(all(
+            epreuve.verrouillee for epreuve in historique.epreuves.all()))
 
     def test_idempotence(self):
         self._seed()
@@ -134,7 +166,7 @@ class SeedCandidaturesDemoTests(TestCase):
 
     def test_purge_retire_toutes_les_donnees_exemple(self):
         self._seed()
-        self.assertEqual(Candidature.objects.count(), 20)
+        self.assertEqual(Candidature.objects.count(), 28)
 
         self._seed(purger=True)
         self.assertEqual(Candidat.objects.count(), 0)

@@ -117,7 +117,7 @@ log "Référentiels LMD et maquettes officielles (idempotent)…"
 
 # Module Admissions & Candidatures : référentiels (types de pièces, voies
 # d'accès) puis jeu d'exemple des écrans Candidatures/Admissions/Campagnes
-# (20 dossiers couvrant les 12 statuts, concours classé). Idempotent.
+# (dossiers couvrant les 12 statuts, 7 campagnes, concours classé et publié). Idempotent.
 log "Module Admissions : référentiels et données d'exemple…"
 (cd "$BACKEND" && "$VENV/bin/python" manage.py init_referentiels_admission \
   && "$VENV/bin/python" manage.py seed_candidatures_demo) \

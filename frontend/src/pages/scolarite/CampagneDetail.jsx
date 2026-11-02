@@ -4,6 +4,11 @@ import api from '../../services/api'
 import { canActScolarite } from '../../utils/roles'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import StatutBadge from '../../components/scolarite/StatutBadge'
+import ChampDate, {
+  dateFrancaiseVersIso, erreurDateFrancaise, isoVersDateFrancaise,
+} from '../../components/scolarite/ChampDate'
+import '../../styles/candidatures.css'
 
 const LISTE_BADGE = {
   ADMISSIBLE: 'success',
@@ -72,10 +77,20 @@ export default function CampagneDetail() {
 
   const ajouterEpreuve = async (e) => {
     e.preventDefault()
+    // La date est saisie en JJ/MM/AAAA : validation locale puis ISO.
+    const erreurDateEpreuve = !formEpreuve.date
+      ? 'La date de l’épreuve est requise (JJ/MM/AAAA).'
+      : erreurDateFrancaise(formEpreuve.date, 'La date de l’épreuve')
+    if (erreurDateEpreuve) {
+      toast.showToast(erreurDateEpreuve, 'error')
+      return
+    }
     setEnCours(true)
     try {
       await api.post(`/admissions/campagnes/${id}/epreuves/`, {
         ...formEpreuve,
+        date: dateFrancaiseVersIso(formEpreuve.date),
+        duree_minutes: Number(formEpreuve.duree_minutes) || 60,
         salle_id: Number(formEpreuve.salle_id) || undefined,
         coefficient: Number(formEpreuve.coefficient) || 1,
       })
@@ -115,7 +130,7 @@ export default function CampagneDetail() {
         <div>
           <h1 className="h4 mb-1">{campagne.libelle}</h1>
           <div className="text-muted">
-            <span className={`badge text-bg-secondary me-2`}>{campagne.statut}</span>
+            <span className="me-2"><StatutBadge statut={campagne.statut} libelle={campagne.statut_libelle} /></span>
             {campagne.nb_candidatures} candidature(s) · {campagne.nb_epreuves} épreuve(s)
             {campagne.quota_admissibles != null && <> · quota admissibles : {campagne.quota_admissibles}</>}
           </div>
@@ -130,8 +145,9 @@ export default function CampagneDetail() {
             {campagne.epreuves.map((e) => (
               <div className="d-flex justify-content-between align-items-center border-bottom py-2" key={e.id}>
                 <div>
-                  <strong>{e.intitule}</strong> <span className="badge text-bg-light">{e.type}</span>
-                  {' '}· {e.date} {e.heure_debut} ({e.duree_minutes} min) · coeff. {e.coefficient}
+                  <strong>{e.intitule}</strong> <span className="badge text-bg-light">{e.type_libelle || e.type}</span>
+                  {' '}· {isoVersDateFrancaise(e.date)} {e.heure_debut} ({e.duree_minutes} min) · coeff. {e.coefficient}
+                  {e.salle && <> · {e.salle}</>}{e.centre && <> · {e.centre}</>}
                   {' '}· {e.nb_convocations} convocation(s)
                   {e.verrouillee && <span className="badge text-bg-danger ms-1">verrouillée</span>}
                 </div>
@@ -163,12 +179,28 @@ export default function CampagneDetail() {
                          onChange={(e) => setFormEpreuve({ ...formEpreuve, intitule: e.target.value })} />
                 </div>
                 <div className="col-md-2">
-                  <input type="date" className="form-control" required value={formEpreuve.date}
-                         onChange={(e) => setFormEpreuve({ ...formEpreuve, date: e.target.value })} />
+                  <ChampDate
+                    id="epreuve-date"
+                    valeur={formEpreuve.date}
+                    onChange={(texte) => setFormEpreuve({ ...formEpreuve, date: texte })}
+                    reculAnnees={0} futurInterdit={false}
+                    etiquetteCalendrier="Choisir la date de l’épreuve"
+                  />
                 </div>
                 <div className="col-md-2">
                   <input type="time" className="form-control" required value={formEpreuve.heure_debut}
+                         aria-label="Heure de début"
                          onChange={(e) => setFormEpreuve({ ...formEpreuve, heure_debut: e.target.value })} />
+                </div>
+                <div className="col-md-1">
+                  <input type="number" className="form-control" min="1" value={formEpreuve.duree_minutes}
+                         placeholder="Durée (min)" aria-label="Durée en minutes"
+                         onChange={(e) => setFormEpreuve({ ...formEpreuve, duree_minutes: e.target.value })} />
+                </div>
+                <div className="col-md-1">
+                  <input type="number" className="form-control" min="0" step="0.5" value={formEpreuve.coefficient}
+                         placeholder="Coef." aria-label="Coefficient"
+                         onChange={(e) => setFormEpreuve({ ...formEpreuve, coefficient: e.target.value })} />
                 </div>
                 <div className="col-md-2">
                   <select className="form-select" value={formEpreuve.salle_id}
@@ -250,7 +282,7 @@ export default function CampagneDetail() {
                   <td>{c.candidature}</td>
                   <td>{c.candidat}</td>
                   <td>{c.score_total}</td>
-                  <td><span className={`badge text-bg-${LISTE_BADGE[c.liste] || 'secondary'}`}>{c.liste}</span></td>
+                  <td><span className={`badge text-bg-${LISTE_BADGE[c.liste] || 'secondary'}`}>{c.liste_libelle || c.liste}</span></td>
                   <td>{c.publie ? <span className="badge text-bg-success">oui</span> : <span className="text-muted">non</span>}</td>
                 </tr>
               ))}
