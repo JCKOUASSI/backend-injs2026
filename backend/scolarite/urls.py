@@ -56,6 +56,7 @@ urlpatterns = [
     path('groupes/repartition/',                  groupes_api.repartition_automatique,
                                                                                      name='scolarite-groupe-repartition'),
     path('reinscriptions/',                       groupes_api.reinscrire,            name='scolarite-reinscription'),
+    path('reinscriptions/stats/',                 groupes_api.reinscriptions_stats,  name='scolarite-reinscriptions-stats'),
     path('etudiants/<int:pk>/evenements/',        groupes_api.etudiant_evenements,   name='scolarite-etudiant-evenements'),
 
     # Contrat de données en lecture seule pour l'application d'emploi du temps.

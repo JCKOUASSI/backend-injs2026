@@ -99,6 +99,9 @@ export const retirerGroupe = (inscriptionId, body) =>
   api.post(`/scolarite/inscriptions/${inscriptionId}/retirer-groupe/`, body)
 export const repartirGroupes = (body) => api.post('/scolarite/groupes/repartition/', body)
 export const reinscrire = (body) => api.post('/scolarite/reinscriptions/', body)
+export const getReinscriptions = (params) => api.get('/scolarite/reinscriptions/', { params })
+export const getReinscriptionsStats = (params) =>
+  api.get('/scolarite/reinscriptions/stats/', { params })
 export const getEvenements = (etudiantId) =>
   api.get(`/scolarite/etudiants/${etudiantId}/evenements/`)
 export const createEvenement = (etudiantId, body) =>

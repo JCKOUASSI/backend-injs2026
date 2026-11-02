@@ -183,7 +183,39 @@ def reinscrire(request):
                 | Q(etudiant__participant__nom__icontains=recherche)
                 | Q(etudiant__participant__prenom__icontains=recherche)
             )
-        return Response([_serialize_inscription(i) for i in queryset[:500]])
+        # Tri déterministe : sans lui, des pages successives peuvent se
+        # chevaucher (même convention que la liste des dossiers étudiants).
+        queryset = queryset.order_by(
+            'etudiant__participant__nom', 'etudiant__participant__prenom',
+            'etudiant__participant__matricule', 'pk',
+        )
+        # Compatibilité : sans paramètres de pagination, la liste historique
+        # (plafond 500) est conservée. L'écran dédié demande des pages et
+        # obtient le total réel des flux (1 867 en 2026-2027, pas 500).
+        if 'page' not in request.query_params and 'page_size' not in request.query_params:
+            return Response([_serialize_inscription(i) for i in queryset[:500]])
+        try:
+            page = int(request.query_params.get('page', 1))
+            page_size = int(request.query_params.get('page_size', 50))
+        except (TypeError, ValueError):
+            return Response(
+                {'error': 'Les paramètres page et page_size doivent être numériques.'},
+                status=400,
+            )
+        if page < 1 or page_size < 1 or page_size > 100:
+            return Response(
+                {'error': 'page doit être >= 1 et page_size compris entre 1 et 100.'},
+                status=400,
+            )
+        total = queryset.count()
+        start = (page - 1) * page_size
+        return Response({
+            'results': [_serialize_inscription(i) for i in queryset[start:start + page_size]],
+            'count': total,
+            'total_pages': (total + page_size - 1) // page_size,
+            'page': page,
+            'page_size': page_size,
+        })
 
     etudiant = DossierEtudiant.objects.select_related('statut', 'participant').filter(
         pk=request.data.get('etudiant_id'),
@@ -217,6 +249,59 @@ def reinscrire(request):
     from .inscription_api import _serialize_inscription
 
     return Response(_serialize_inscription(inscription, detail=True), status=201)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def reinscriptions_stats(request):
+    """Panorama des flux de continuité d'une année (hors premières inscriptions).
+
+    Sert les indicateurs de l'écran « Réinscriptions & transferts » sans
+    dépendre d'une liste plafonnée : répartition par type de flux
+    (réinscription, redoublement, reprise, réorientation, transfert), par
+    statut et par niveau, et part de continuité parmi les inscrits validés.
+    """
+    annee_id = request.query_params.get('annee_academique_id')
+    if annee_id:
+        annee = AnneeAcademique.objects.filter(pk=annee_id).first()
+        if annee is None:
+            return Response({'error': 'Année académique introuvable.'}, status=400)
+    else:
+        annee = (
+            AnneeAcademique.objects.filter(courante=True).first()
+            or AnneeAcademique.objects.order_by('-libelle').first()
+        )
+    base = (
+        InscriptionAdministrative.objects.filter(annee_academique=annee)
+        if annee is not None else InscriptionAdministrative.objects.none()
+    )
+    flux = base.exclude(type_inscription=InscriptionAdministrative.Type.PREMIERE)
+    validees = base.filter(statut=InscriptionAdministrative.Statut.VALIDEE)
+    flux_valides = flux.filter(statut=InscriptionAdministrative.Statut.VALIDEE)
+
+    par_type = {choix: 0 for choix in InscriptionAdministrative.Type.values}
+    for ligne in base.values('type_inscription').annotate(total=Count('id')):
+        par_type[ligne['type_inscription']] = ligne['total']
+
+    return Response({
+        'annee_academique_id': annee.id if annee else None,
+        'annee_academique': annee.libelle if annee else None,
+        'total_inscriptions': base.count(),
+        'total_flux': flux.count(),
+        'taux_continuite': (
+            round(100 * flux_valides.count() / validees.count(), 1)
+            if validees.exists() else 0
+        ),
+        'par_type': par_type,
+        'par_statut': {
+            ligne['statut']: ligne['total']
+            for ligne in flux.values('statut').annotate(total=Count('id'))
+        },
+        'par_niveau': {
+            (ligne['niveau__code'] or 'Non renseigné'): ligne['total']
+            for ligne in flux.values('niveau__code').annotate(total=Count('id'))
+        },
+    })
 
 
 @api_view(['GET', 'POST'])

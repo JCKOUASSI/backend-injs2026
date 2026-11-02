@@ -188,7 +188,6 @@ export const ARBORESCENCE = [
         id: 'scolarite.reinscriptions',
         libelle: 'Réinscriptions & transferts',
         chemin: '/scolarite/reinscriptions',
-        ecran: 'reinscriptions',
         droit: {
           curp: [
             'scolarite.transfert.consulter',
