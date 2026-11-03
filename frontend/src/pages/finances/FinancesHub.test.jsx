@@ -84,6 +84,24 @@ describe('Hub Finances étudiantes premium', () => {
     expect(container.textContent).toContain('Non')
   })
 
+  it('thème premium dédié et icônes Bootstrap valides (capture 03/11)', async () => {
+    const { container } = mount()
+    await waitFor(() => expect(container.textContent).toContain('LICENCE STAPS'))
+    expect(container.querySelector('.finx-page')).toBeTruthy()
+    // Aucune icône « lucide » résiduelle (wallet, banknote…) : ModuleHub
+    // préfixe `bi`, ces noms ne rendaient aucun glyphe.
+    const icones = [...container.querySelectorAll('i.bi')]
+    expect(icones.length).toBeGreaterThan(0)
+    for (const icone of icones) {
+      // Chaque classe doit être un glyphe Bootstrap (`bi-*`) : un nom
+      // lucide nu (wallet, banknote…) serait un token sans préfixe.
+      for (const token of icone.className.split(/\s+/).filter(Boolean)) {
+        expect(token === 'bi' || token.startsWith('bi-')).toBe(true)
+      }
+    }
+    expect(container.querySelector('.cand-hero-icone i').className).toContain('bi-wallet2')
+  })
+
   it('affiche la situation financière avec reste à payer', async () => {
     const user = userEvent.setup()
     const { container } = mount()

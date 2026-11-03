@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import api from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import '../../styles/financesEtudiantes.css'
 
 const BADGE_STATUT_PA = {
   INITIE: 'secondary', EN_ATTENTE: 'info', CONFIRME: 'success',
@@ -10,6 +11,8 @@ const BADGE_STATUT_PA = {
 const BADGE_STATUT_LIGNE = {
   IMPAYE: 'danger', PAYE: 'success', PARTIELLEMENT_PAYE: 'warning', COMPLETE: 'success',
 }
+
+const formaterNombre = (n) => Number(n || 0).toLocaleString('fr-FR')
 
 export default function FinancesEtudiantes() {
   const { user } = useAuth()
@@ -45,6 +48,15 @@ export default function FinancesEtudiantes() {
 
   useEffect(() => { charger() }, [charger])
 
+  // Synthèse calculée sur les données chargées (aucun chiffre inventé).
+  const synthese = useMemo(() => ({
+    echeanciers: echeanciers.length,
+    lignes: echeanciers.reduce((total, e) => total + Number(e.lignes_count || 0), 0),
+    paiements: paiements.length,
+    aConfirmer: paiements.filter((p) => p.statut === 'INITIE' || p.statut === 'EN_ATTENTE').length,
+    confirmes: paiements.filter((p) => p.statut === 'CONFIRME').length,
+  }), [echeanciers, paiements])
+
   const creerPaiement = async (e) => {
     e.preventDefault()
     setEnCours(true)
@@ -78,59 +90,128 @@ export default function FinancesEtudiantes() {
   const MODES = ['CAISSE', 'VIREMENT', 'ELEPHANT_MONEY', 'MTN_MONEY', 'MOOV_MONEY', 'CARTE_BANCAIRE']
 
   return (
-    <div className="container-fluid py-4">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h1 className="h4 mb-0"><i className="bi bi-cash-coin me-2"></i>Finances étudiantes</h1>
-        <button className="btn btn-outline-secondary btn-sm" onClick={charger}>
-          <i className="bi bi-arrow-clockwise me-1"></i>Actualiser
+    <div className="fin-page">
+      <header className="fin-hero">
+        <div className="fin-hero-identite">
+          <span className="fin-hero-icone" aria-hidden="true">
+            <i className="bi bi-cash-coin"></i>
+          </span>
+          <div>
+            <span className="fin-hero-eyebrow">Scolarité</span>
+            <h1 className="fin-hero-titre">Finances étudiantes</h1>
+            <p className="fin-hero-intro">
+              Échéanciers et encaissements des étudiants : {formaterNombre(synthese.echeanciers)} échéanciers suivis,
+              {' '}{formaterNombre(synthese.paiements)} paiements enregistrés
+              {synthese.aConfirmer > 0
+                ? `, ${formaterNombre(synthese.aConfirmer)} en attente de confirmation.`
+                : '.'}
+            </p>
+          </div>
+        </div>
+        <button type="button" className="fin-btn-hero" onClick={charger}>
+          <i className="bi bi-arrow-clockwise" aria-hidden="true"></i>Actualiser
+        </button>
+      </header>
+
+      <div className="fin-kpis">
+        <div className="fin-kpi">
+          <span className="fin-kpi-icone is-blue" aria-hidden="true"><i className="bi bi-calendar-range"></i></span>
+          <span className="fin-kpi-corps">
+            <span className="fin-kpi-valeur">{formaterNombre(synthese.echeanciers)}</span>
+            <span className="fin-kpi-libelle">Échéanciers suivis</span>
+          </span>
+        </div>
+        <div className="fin-kpi">
+          <span className="fin-kpi-icone is-indigo" aria-hidden="true"><i className="bi bi-list-ol"></i></span>
+          <span className="fin-kpi-corps">
+            <span className="fin-kpi-valeur">{formaterNombre(synthese.lignes)}</span>
+            <span className="fin-kpi-libelle">Lignes d’échéance</span>
+          </span>
+        </div>
+        <div className="fin-kpi">
+          <span className="fin-kpi-icone is-cyan" aria-hidden="true"><i className="bi bi-wallet2"></i></span>
+          <span className="fin-kpi-corps">
+            <span className="fin-kpi-valeur">{formaterNombre(synthese.paiements)}</span>
+            <span className="fin-kpi-libelle">Paiements enregistrés</span>
+          </span>
+        </div>
+        <div className="fin-kpi">
+          <span className="fin-kpi-icone is-amber" aria-hidden="true"><i className="bi bi-hourglass-split"></i></span>
+          <span className="fin-kpi-corps">
+            <span className="fin-kpi-valeur">{formaterNombre(synthese.aConfirmer)}</span>
+            <span className="fin-kpi-libelle">À confirmer</span>
+            <span className="fin-kpi-sub">{formaterNombre(synthese.confirmes)} confirmé{synthese.confirmes > 1 ? 's' : ''}</span>
+          </span>
+        </div>
+      </div>
+
+      <div className="fin-tabs" aria-label="Finances étudiantes">
+        <button
+          type="button" aria-pressed={onglet === 'echeanciers'}
+          className={`fin-tab${onglet === 'echeanciers' ? ' is-active' : ''}`}
+          onClick={() => setOnglet('echeanciers')}>
+          <i className="bi bi-calendar-range" aria-hidden="true"></i>Échéanciers
+        </button>
+        <button
+          type="button" aria-pressed={onglet === 'paiements'}
+          className={`fin-tab${onglet === 'paiements' ? ' is-active' : ''}`}
+          onClick={() => setOnglet('paiements')}>
+          <i className="bi bi-wallet2" aria-hidden="true"></i>Paiements
         </button>
       </div>
 
-      <ul className="nav nav-tabs mb-3">
-        <li className="nav-item">
-          <button className={`nav-link ${onglet === 'echeanciers' ? 'active' : ''}`}
-                  onClick={() => setOnglet('echeanciers')}>Échéanciers</button>
-        </li>
-        <li className="nav-item">
-          <button className={`nav-link ${onglet === 'paiements' ? 'active' : ''}`}
-                  onClick={() => setOnglet('paiements')}>Paiements</button>
-        </li>
-      </ul>
-
       {onglet === 'echeanciers' && (
-        <div className="card">
-          <div className="table-responsive">
-            <table className="table table-hover align-middle mb-0">
-              <thead className="table-light">
+        <section className="fin-panel">
+          <header className="fin-panel-head">
+            <h2 className="fin-panel-titre">
+              <i className="bi bi-calendar-range" aria-hidden="true"></i>Échéanciers
+            </h2>
+            <span className="fin-count-pill">{formaterNombre(echeanciers.length)} élément{echeanciers.length > 1 ? 's' : ''}</span>
+          </header>
+          <div className="fin-table-wrap">
+            <table className="fin-table">
+              <thead>
                 <tr>
-                  <th>Étudiant</th><th>Année académique</th><th>Statut global</th><th>Lignes</th>
+                  <th scope="col">Étudiant</th><th scope="col">Année académique</th><th scope="col">Statut global</th><th scope="col">Lignes</th>
                 </tr>
               </thead>
               <tbody>
                 {chargement ? (
-                  <tr><td colSpan={4} className="text-center py-4"><div className="spinner-border spinner-border-sm" /></td></tr>
+                  <tr><td colSpan={4} className="fin-centre"><div className="spinner-border spinner-border-sm" /></td></tr>
                 ) : echeanciers.length === 0 ? (
-                  <tr><td colSpan={4} className="text-center text-muted py-4">Aucun échéancier.</td></tr>
+                  <tr>
+                    <td colSpan={4}>
+                      <div className="fin-vide">
+                        <span className="fin-vide-icone" aria-hidden="true"><i className="bi bi-calendar-x"></i></span>
+                        <p className="fin-vide-titre">Aucun échéancier.</p>
+                        <p className="fin-vide-texte">Les échéanciers générés à partir du barème actif apparaîtront ici.</p>
+                      </div>
+                    </td>
+                  </tr>
                 ) : echeanciers.map((e) => (
                   <tr key={e.id}>
-                    <td>Étudiant #{e.etudiant_id}</td>
+                    <td><span className="fin-etudiant">Étudiant #{e.etudiant_id}</span></td>
                     <td>{e.annee_academique}</td>
                     <td><span className={`badge text-bg-${BADGE_STATUT_LIGNE[e.statut_global] || 'secondary'}`}>{e.statut_global}</span></td>
-                    <td>{e.lignes_count}</td>
+                    <td><span className="fin-nombre-chip">{e.lignes_count}</span></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
       )}
-
 
       {onglet === 'paiements' && (
         <>
           {peutEcrire && (
-            <div className="card mb-3">
-              <div className="card-header"><strong>Enregistrer un paiement (idempotent via transaction_externe)</strong></div>
+            <div className="card fin-form-card mb-3">
+              <div className="fin-panel-head">
+                <h2 className="fin-panel-titre">
+                  <i className="bi bi-plus-circle" aria-hidden="true"></i>
+                  Enregistrer un paiement (idempotent via transaction_externe)
+                </h2>
+              </div>
               <div className="card-body">
                 <form onSubmit={creerPaiement} className="row g-2">
                   <div className="col-md-2">
@@ -171,42 +252,58 @@ export default function FinancesEtudiantes() {
                            onChange={(e) => setFormPaiement(f => ({ ...f, transaction_externe: e.target.value }))} />
                   </div>
                   <div className="col-md-1 d-flex align-items-end">
-                    <button type="submit" className="btn btn-primary btn-sm w-100" disabled={enCours}>OK</button>
+                    <button type="submit" className="btn btn-primary btn-sm w-100 fin-btn-ok" disabled={enCours}>OK</button>
                   </div>
                 </form>
               </div>
             </div>
           )}
 
-          <div className="card">
-            <div className="table-responsive">
-              <table className="table table-hover align-middle mb-0">
-                <thead className="table-light">
+          <section className="fin-panel">
+            <header className="fin-panel-head">
+              <h2 className="fin-panel-titre">
+                <i className="bi bi-wallet2" aria-hidden="true"></i>Paiements
+              </h2>
+              <span className="fin-count-pill">{formaterNombre(paiements.length)} élément{paiements.length > 1 ? 's' : ''}</span>
+            </header>
+            <div className="fin-table-wrap">
+              <table className="fin-table">
+                <thead>
                   <tr>
-                    <th>ID</th><th>Étudiant</th><th>Nature</th><th>Montant</th><th>Mode</th>
-                    <th>Statut</th><th>Date</th><th>Référence</th>
-                    {peutConfirmer && <th className="text-end">Action</th>}
+                    <th scope="col">ID</th><th scope="col">Étudiant</th><th scope="col">Nature</th><th scope="col">Montant</th><th scope="col">Mode</th>
+                    <th scope="col">Statut</th><th scope="col">Date</th><th scope="col">Référence</th>
+                    {peutConfirmer && <th scope="col" className="text-end">Action</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {chargement ? (
-                    <tr><td colSpan={9} className="text-center py-4"><div className="spinner-border spinner-border-sm" /></td></tr>
+                    <tr><td colSpan={9} className="fin-centre"><div className="spinner-border spinner-border-sm" /></td></tr>
                   ) : paiements.length === 0 ? (
-                    <tr><td colSpan={9} className="text-center text-muted py-4">Aucun paiement.</td></tr>
+                    <tr>
+                      <td colSpan={9}>
+                        <div className="fin-vide">
+                          <span className="fin-vide-icone" aria-hidden="true"><i className="bi bi-wallet2"></i></span>
+                          <p className="fin-vide-titre">Aucun paiement.</p>
+                          <p className="fin-vide-texte">Les paiements enregistrés à la caisse ou par mobile money apparaîtront ici.</p>
+                        </div>
+                      </td>
+                    </tr>
                   ) : paiements.map((p) => (
                     <tr key={p.id}>
-                      <td>{p.id}</td>
-                      <td>{p.etudiant_id ? `Étudiant #${p.etudiant_id}` : (p.candidat_id ? `Candidat #${p.candidat_id}` : '—')}</td>
+                      <td><span className="fin-id-chip">{p.id}</span></td>
+                      <td><span className="fin-etudiant">{p.etudiant_id ? `Étudiant #${p.etudiant_id}` : (p.candidat_id ? `Candidat #${p.candidat_id}` : '—')}</span></td>
                       <td>{p.nature}</td>
-                      <td>{p.montant} {p.devise}</td>
+                      <td><span className="fin-montant">{p.montant} {p.devise}</span></td>
                       <td>{p.mode}</td>
                       <td><span className={`badge text-bg-${BADGE_STATUT_PA[p.statut] || 'secondary'}`}>{p.statut}</span></td>
-                      <td>{new Date(p.date).toLocaleString()}</td>
-                      <td><small className="text-muted">{p.transaction_externe || '—'}</small></td>
+                      <td><span className="fin-date">{new Date(p.date).toLocaleString()}</span></td>
+                      <td>{p.transaction_externe
+                        ? <span className="fin-ref-chip">{p.transaction_externe}</span>
+                        : <small className="text-muted">—</small>}</td>
                       {peutConfirmer && (
                         <td className="text-end">
                           {(p.statut === 'INITIE' || p.statut === 'EN_ATTENTE') && (
-                            <button className="btn btn-outline-success btn-sm" disabled={enCours} onClick={() => confirmer(p)}>Confirmer</button>
+                            <button type="button" className="fin-btn-confirmer" disabled={enCours} onClick={() => confirmer(p)}>Confirmer</button>
                           )}
                         </td>
                       )}
@@ -215,10 +312,9 @@ export default function FinancesEtudiantes() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </section>
         </>
       )}
     </div>
   )
 }
-
