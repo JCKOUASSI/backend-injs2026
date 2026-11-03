@@ -778,7 +778,6 @@ export const ARBORESCENCE = [
         id: 'stages.conventions',
         libelle: 'Conventions',
         chemin: '/stages/conventions',
-        ecran: 'stages_conventions',
         droit: {
           curp: ['stages.convention.creer', 'stages.convention.signer', 'stages.convention.valider'],
           legacy: [['scolarite', 'voir']],
@@ -788,7 +787,6 @@ export const ARBORESCENCE = [
         id: 'stages.organismes',
         libelle: "Structures d'accueil",
         chemin: '/stages/organismes',
-        ecran: 'stages_organismes',
         droit: {
           curp: ['stages.organisme.consulter'],
           legacy: [['scolarite', 'voir']],
@@ -798,7 +796,6 @@ export const ARBORESCENCE = [
         id: 'stages.affectations',
         libelle: 'Affectations & tuteurs',
         chemin: '/stages/affectations',
-        ecran: 'stages_affectations',
         droit: {
           curp: ['stages.tuteur.consulter'],
           legacy: [['scolarite', 'voir']],
@@ -808,7 +805,6 @@ export const ARBORESCENCE = [
         id: 'stages.suivi',
         libelle: 'Suivi des stages',
         chemin: '/stages/suivi',
-        ecran: 'stages_suivi',
         droit: {
           curp: ['stages.convention.valider', 'stages.convention.signer'],
           legacy: [['scolarite', 'voir']],
@@ -818,7 +814,6 @@ export const ARBORESCENCE = [
         id: 'stages.evaluations',
         libelle: 'Évaluations',
         chemin: '/stages/evaluations',
-        ecran: 'stages_evaluations',
         droit: {
           curp: ['stages.evaluation_stage.consulter'],
           legacy: [['scolarite', 'voir']],

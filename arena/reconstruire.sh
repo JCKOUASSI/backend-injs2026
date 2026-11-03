@@ -154,6 +154,13 @@ log "Enseignants : corps enseignant d'exemple et couverture des ECUE…"
 (cd "$BACKEND" && "$VENV/bin/python" manage.py seed_enseignants_demo) \
   && touch "$BACKEND/.enseignants_demo_ok"
 
+# Stages d'exemple : organismes, tuteurs, conventions (workflow complet) et
+# évaluations — étudiants L3/M1/M2 réels de la démo. Idempotent ;
+# retrait : seed_stages_demo --purger.
+log "Stages : organismes, conventions et évaluations d'exemple…"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py seed_stages_demo) \
+  && touch "$BACKEND/.stages_demo_ok"
+
 # ── 6. Site web ──────────────────────────────────────────────────────────────
 if [ ! -d "$FRONTEND/node_modules" ]; then
   log "Installation des dépendances npm…"

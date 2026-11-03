@@ -85,6 +85,50 @@ def _serialize_convention(c):
     }
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def stats_api(request):
+    """Panorama des stages pour l'écran hub (tâche 34).
+
+    Les écrans génériques affichaient les listes brutes sans aucun
+    indicateur : impossible de savoir combien de conventions sont en cours
+    ou combien d'organismes partenaires existent.
+    """
+    from django.db.models import Avg, Count
+
+    conventions = ConventionStage.objects.all()
+    par_statut = {code: 0 for code in ConventionStage.Statut.values}
+    for ligne in conventions.values('statut').annotate(total=Count('id')):
+        par_statut[ligne['statut']] = ligne['total']
+    evaluations = EvaluationStage.objects.all()
+    moyenne = evaluations.exclude(note_finale__isnull=True).aggregate(
+        m=Avg('note_finale'),
+    )['m']
+    return Response({
+        'conventions': conventions.count(),
+        'en_cours': par_statut.get(ConventionStage.Statut.EN_COURS, 0),
+        'par_statut': par_statut,
+        'organismes': OrganismeAccueil.objects.filter(actif=True).count(),
+        'tuteurs': TuteurExterne.objects.filter(actif=True).count(),
+        'etudiants_en_stage': conventions.exclude(
+            statut__in=[
+                ConventionStage.Statut.ARCHIVEE,
+                ConventionStage.Statut.REFUSEE,
+            ],
+        ).values('etudiant').distinct().count(),
+        'evaluations': evaluations.count(),
+        'note_moyenne': round(float(moyenne), 2) if moyenne is not None else None,
+        'par_formation': [
+            {
+                'formation': ligne['ref_formation__intitule'] or 'Non renseignée',
+                'total': ligne['total'],
+            }
+            for ligne in conventions.values('ref_formation__intitule')
+            .annotate(total=Count('id')).order_by('-total', 'ref_formation__intitule')[:16]
+        ],
+    })
+
+
 # ---------- Organismes ----------
 
 @api_view(['GET'])

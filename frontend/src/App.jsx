@@ -119,6 +119,7 @@ const GroupesPedagogiques = lazy(() => import('./pages/scolarite/Groupes'))
 const DocumentsScolaires = lazy(() => import('./pages/scolarite/DocumentsScolaires'))
 const Reinscriptions = lazy(() => import('./pages/scolarite/Reinscriptions'))
 const JournalScolarite = lazy(() => import('./pages/scolarite/JournalScolarite'))
+const StagesHub = lazy(() => import('./pages/stages/StagesHub'))
 const Maquettes = lazy(() => import('./pages/scolarite/Maquettes'))
 const MaquetteDetail = lazy(() => import('./pages/scolarite/MaquetteDetail'))
 const Campagnes = lazy(() => import('./pages/scolarite/Campagnes'))
@@ -382,6 +383,51 @@ function App() {
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/scolarite">Scolarité</Link></li><li className="separator">/</li><li>Journal de scolarité</li></>}>
                 <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
                   <JournalScolarite />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/stages/conventions" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Stages</li><li className="separator">/</li><li>Conventions</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <StagesHub ongletInitial="conventions" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/stages/organismes" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Stages</li><li className="separator">/</li><li>Organismes d’accueil</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <StagesHub ongletInitial="organismes" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/stages/affectations" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Stages</li><li className="separator">/</li><li>Affectations &amp; tuteurs</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <StagesHub ongletInitial="tuteurs" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/stages/suivi" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Stages</li><li className="separator">/</li><li>Suivi des stages</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <StagesHub ongletInitial="suivi" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/stages/evaluations" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Stages</li><li className="separator">/</li><li>Évaluations</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <StagesHub ongletInitial="evaluations" />
                 </Suspense>
               </Layout>
             </ProtectedRoute>
