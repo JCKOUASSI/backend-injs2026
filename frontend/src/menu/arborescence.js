@@ -842,7 +842,6 @@ export const ARBORESCENCE = [
         id: 'personnel.agents',
         libelle: 'Personnel administratif',
         chemin: '/personnel/agents',
-        ecran: 'rh_agents',
         droit: {
           curp: ['rh.agent.consulter'],
           legacy: [['web', 'operationnel']],
@@ -852,7 +851,6 @@ export const ARBORESCENCE = [
         id: 'personnel.affectations',
         libelle: 'Affectations',
         chemin: '/personnel/affectations',
-        ecran: 'rh_affectations',
         droit: {
           curp: ['rh.affectation_rh.consulter'],
           legacy: [['web', 'operationnel']],
@@ -871,7 +869,6 @@ export const ARBORESCENCE = [
         id: 'personnel.disponibilites',
         libelle: 'Disponibilités agents',
         chemin: '/personnel/disponibilites',
-        ecran: 'rh_disponibilites',
         droit: {
           curp: ['rh.disponibilite_agent.consulter'],
           legacy: [['web', 'operationnel']],
@@ -881,7 +878,6 @@ export const ARBORESCENCE = [
         id: 'personnel.documents',
         libelle: 'Documents RH',
         chemin: '/personnel/documents',
-        ecran: 'rh_documents',
         droit: {
           curp: ['rh.document_rh.consulter', 'rh.document_rh.deposer'],
           legacy: [['web', 'operationnel']],

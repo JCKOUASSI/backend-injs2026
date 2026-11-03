@@ -1238,93 +1238,9 @@ export const ECRANS = {
 
   // ------------------------------------------------------------------- STAGES
   // ----------------------------------------------------------------- PERSONNEL
-  rh_agents: {
-    id: 'rh_agents',
-    titre: 'Personnel administratif',
-    fil: 'Personnel',
-    icone: 'bi-person-badge',
-    introduction: 'Agents de l\'établissement : fonctions, services et '
-      + 'affectations.',
-    endpoint: '/rh/agents/',
-    recherche: { param: 'search', libelle: 'Rechercher', placeholder: 'Nom, matricule…' },
-    priorite: ['matricule', 'nom', 'prenoms', 'fonction', 'service', 'statut'],
-    detail: {
-      titre: (l) => `Disponibilités — ${l.nom || ''} ${l.prenoms || ''}`.trim(),
-      sousTitre: 'Disponibilités déclarées',
-      endpoint: (l) => `/rh/agents/${l.id}/disponibilites/`,
-      priorite: ['date', 'jour', 'heure_debut', 'heure_fin', 'type', 'motif'],
-    },
-    actions: [
-      {
-        libelle: 'Affecter',
-        icone: 'bi-arrow-left-right',
-        apparence: 'btn-outline-primary',
-        methode: 'POST',
-        chemin: (l) => `/rh/agents/${l.id}/affecter/`,
-        confirmation: 'Ouvrir l\'affectation de cet agent ?',
-        detail: 'L\'affectation effective est enregistrée par le serveur après contrôle.',
-        erreur: 'Affectation refusée par le serveur.',
-        succes: 'Affectation enregistrée.',
-      },
-    ],
-    note: 'Source : /api/rh/agents/ + /disponibilites/',
-  },
 
-  rh_affectations: {
-    id: 'rh_affectations',
-    titre: 'Affectations du personnel',
-    fil: 'Personnel',
-    icone: 'bi-diagram-2',
-    introduction: 'Services et fonctions du référentiel RH utilisés pour les '
-      + 'affectations.',
-    onglets: [
-      {
-        id: 'services',
-        libelle: 'Services',
-        icone: 'bi-building',
-        endpoint: '/rh/services/',
-        recherche: { param: 'q', libelle: 'Rechercher un service' },
-        note: 'Source : /api/rh/services/',
-      },
-      {
-        id: 'fonctions',
-        libelle: 'Fonctions',
-        icone: 'bi-briefcase',
-        endpoint: '/rh/fonctions/',
-        note: 'Source : /api/rh/fonctions/',
-      },
-    ],
-  },
 
-  rh_disponibilites: {
-    id: 'rh_disponibilites',
-    titre: 'Disponibilités des agents',
-    fil: 'Personnel',
-    icone: 'bi-calendar-check',
-    introduction: 'Disponibilités déclarées par agent (sélectionner un agent '
-      + 'pour voir ses créneaux).',
-    endpoint: '/rh/agents/',
-    recherche: { param: 'search', libelle: 'Rechercher', placeholder: 'Nom, matricule…' },
-    priorite: ['matricule', 'nom', 'prenoms', 'fonction', 'service'],
-    detail: {
-      titre: (l) => `Disponibilités — ${l.nom || ''} ${l.prenoms || ''}`.trim(),
-      sousTitre: 'Créneaux déclarés',
-      endpoint: (l) => `/rh/agents/${l.id}/disponibilites/`,
-      priorite: ['date', 'jour', 'heure_debut', 'heure_fin', 'type', 'motif'],
-    },
-    note: 'Source : /api/rh/agents/ + /disponibilites/',
-  },
 
-  rh_documents: {
-    id: 'rh_documents',
-    titre: 'Documents RH',
-    fil: 'Personnel',
-    icone: 'bi-folder-symlink',
-    introduction: 'Documents administratifs du personnel déposés et classés.',
-    endpoint: '/rh/documents/',
-    priorite: ['reference', 'type', 'agent', 'date_depot', 'statut'],
-    note: 'Source : /api/rh/documents/',
-  },
 
   // ------------------------------------------------------------ ADMINISTRATION
 

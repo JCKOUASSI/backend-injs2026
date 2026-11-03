@@ -177,3 +177,70 @@ def documents_rh_api(request):
         return Response({'error': str(exc)}, status=400)
     return Response({'id': doc.id, 'agent': str(doc.agent), 'intitule': doc.intitule}, status=201)
     return Response(_serialize_agent(agent), status=201)
+
+# ---------- Vues globales (hub Personnel premium — tâche 34) ----------
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsGestionRHOrReadOnly])
+def affectations_api(request):
+    """Vue globale des affectations (agent → fonction → service)."""
+    from .models import AffectationRH
+    qs = AffectationRH.objects.select_related(
+        'agent', 'fonction__service',
+    ).order_by('-date_debut')
+    if request.GET.get('service_id'):
+        qs = qs.filter(fonction__service_id=request.GET['service_id'])
+    if request.GET.get('actives') == '1':
+        qs = qs.filter(date_fin__isnull=True)
+    return Response({'results': [
+        {
+            'id': a.id, 'agent_id': a.agent_id,
+            'agent': f'{a.agent.nom} {a.agent.prenom}'.strip(),
+            'agent_matricule': a.agent.matricule,
+            'fonction': a.fonction.intitule,
+            'service': a.fonction.service.nom,
+            'date_debut': a.date_debut.isoformat(),
+            'date_fin': a.date_fin.isoformat() if a.date_fin else None,
+            'active': a.date_fin is None,
+        } for a in qs
+    ]})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsGestionRHOrReadOnly])
+def disponibilites_api(request):
+    """Vue globale des indisponibilités (congés, missions, formations)."""
+    qs = DisponibiliteAgent.objects.select_related('agent').order_by('-date_debut')
+    if request.GET.get('type_indispo'):
+        qs = qs.filter(type_indispo=request.GET['type_indispo'])
+    return Response({'results': [
+        {
+            **_serialize_indispo(d),
+            'agent_matricule': d.agent.matricule,
+        } for d in qs
+    ]})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsConsultationRH])
+def stats_api(request):
+    """Indicateurs du personnel administratif et technique."""
+    from datetime import date as _date
+
+    from django.db.models import Count
+
+    aujourd_hui = _date.today()
+    return Response({
+        'agents': Agent.objects.count(),
+        'agents_actifs': Agent.objects.filter(statut=Agent.Statut.ACTIF).count(),
+        'par_contrat': dict(
+            Agent.objects.values_list('type_contrat')
+            .annotate(n=Count('id')).order_by()
+        ),
+        'services': Service.objects.filter(actif=True).count(),
+        'fonctions': Fonction.objects.filter(actif=True).count(),
+        'indisponibilites_en_cours': DisponibiliteAgent.objects.filter(
+            date_debut__lte=aujourd_hui, date_fin__gte=aujourd_hui,
+        ).count(),
+        'documents': DocumentRH.objects.count(),
+    })

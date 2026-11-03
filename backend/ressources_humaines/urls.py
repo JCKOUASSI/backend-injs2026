@@ -4,6 +4,9 @@ from django.urls import path
 from . import api
 
 urlpatterns = [
+    path('stats/', api.stats_api, name='rh-stats'),
+    path('affectations/', api.affectations_api, name='rh-affectations'),
+    path('disponibilites/', api.disponibilites_api, name='rh-disponibilites'),
     # Services & fonctions
     path('services/', api.services_api, name='rh-services'),
     path('fonctions/', api.fonctions_api, name='rh-fonctions'),

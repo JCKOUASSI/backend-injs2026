@@ -168,6 +168,13 @@ log "Administration : organigramme et vie administrative d'exemple…"
 (cd "$BACKEND" && "$VENV/bin/python" manage.py seed_administration_demo) \
   && touch "$BACKEND/.administration_demo_ok"
 
+# Personnel d'exemple (tâche 34) : fonctions par service, agents fictifs
+# sans compte, affectations, indisponibilités, documents (métadonnées).
+# Idempotent ; retrait : seed_personnel_demo --purger.
+log "Personnel : agents et affectations d'exemple…"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py seed_personnel_demo) \
+  && touch "$BACKEND/.personnel_demo_ok"
+
 # ── 6. Site web ──────────────────────────────────────────────────────────────
 if [ ! -d "$FRONTEND/node_modules" ]; then
   log "Installation des dépendances npm…"
