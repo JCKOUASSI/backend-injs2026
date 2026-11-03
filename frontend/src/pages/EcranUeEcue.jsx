@@ -71,8 +71,34 @@ function BadgeStatut({ statut }) {
     libelle: statut || '—', classe: 'text-bg-light',
   }
   return (
-    <span className={`badge ${definition.classe}`} data-testid={`statut-${statut}`}>
+    <span
+      className={`badge ${definition.classe} uex-badge uex-badge--${String(statut || 'inconnu').toLowerCase()}`}
+      data-testid={`statut-${statut}`}
+    >
       {definition.libelle}
+    </span>
+  )
+}
+
+/** Barre empilée CM/TD/TP d'un ECUE : la répartition des volumes en un coup d'œil. */
+function BarreVolumes({ ecue }) {
+  const cm = Number(ecue.volume_cm) || 0
+  const td = Number(ecue.volume_td) || 0
+  const tp = Number(ecue.volume_tp) || 0
+  const total = cm + td + tp
+  if (!total) return <span className="uex-volumes-vide">—</span>
+  const part = (v) => `${Math.round((v / total) * 1000) / 10}%`
+  return (
+    <span className="uex-volumes">
+      <span className="uex-volumes-barre" role="img" aria-label={`Volumes : CM ${cm} h, TD ${td} h, TP ${tp} h`}>
+        {cm > 0 && <span className="uex-volumes-seg is-cm" style={{ width: part(cm) }}></span>}
+        {td > 0 && <span className="uex-volumes-seg is-td" style={{ width: part(td) }}></span>}
+        {tp > 0 && <span className="uex-volumes-seg is-tp" style={{ width: part(tp) }}></span>}
+      </span>
+      <span className="uex-volumes-texte">
+        CM {cm} · TD {td} · TP {tp}
+        <strong> — {total} h</strong>
+      </span>
     </span>
   )
 }
@@ -381,6 +407,26 @@ export default function EcranUeEcue() {
 
   const ue = ues.find((u) => Number(u.id) === Number(ueId)) || null
 
+  // Synthèse de la maquette sélectionnée, calculée sur les UE déjà chargées.
+  const synthese = useMemo(() => {
+    const ecues = ues.flatMap((u) => u.ecues || [])
+    const volumes = ecues.reduce(
+      (acc, e) => ({
+        cm: acc.cm + (Number(e.volume_cm) || 0),
+        td: acc.td + (Number(e.volume_td) || 0),
+        tp: acc.tp + (Number(e.volume_tp) || 0),
+      }),
+      { cm: 0, td: 0, tp: 0 },
+    )
+    return {
+      nbEcue: ecues.length,
+      ects: ues.reduce((s, u) => s + (Number(u.credits) || 0), 0),
+      volumes,
+      volumeTotal: volumes.cm + volumes.td + volumes.tp,
+      semestres: new Set(ues.map((u) => u.semestre?.id).filter(Boolean)).size,
+    }
+  }, [ues])
+
   // Sélection par défaut : la première maquette, puis sa première UE.
   useEffect(() => {
     if (!maquetteId && maquettes.length) setMaquetteId(String(maquettes[0].id))
@@ -486,13 +532,14 @@ export default function EcranUeEcue() {
   const chargement = maquettesQuery.isLoading
 
   return (
-    <div className="ecran-generique" data-testid="ecran-ue-ecue">
-      <div className="ue-ecue-toolbar">
+    <div className="ecran-generique uex-page" data-testid="ecran-ue-ecue">
+      <div className="uex-toolbar">
+        <span className="uex-toolbar-icone" aria-hidden="true"><i className="bi bi-diagram-3"></i></span>
         <div className="ue-ecue-champ ue-ecue-champ--large">
           <label htmlFor="choix-maquette">Maquette</label>
           <select
             id="choix-maquette"
-            className="form-select form-select-sm"
+            className="form-select form-select-sm uex-select"
             data-testid="choix-maquette"
             value={maquetteId}
             onChange={(e) => setMaquetteId(e.target.value)}
@@ -510,22 +557,67 @@ export default function EcranUeEcue() {
         </div>
         <div className="ue-ecue-champ">
           <label htmlFor="recherche-ue">Rechercher une UE</label>
-          <input
-            id="recherche-ue"
-            type="search"
-            className="form-control form-control-sm"
-            placeholder="Code ou intitulé…"
-            value={recherche}
-            onChange={(e) => setRecherche(e.target.value)}
-            data-testid="recherche-ue"
-          />
+          <span className="uex-recherche">
+            <i className="bi bi-search" aria-hidden="true"></i>
+            <input
+              id="recherche-ue"
+              type="search"
+              className="form-control form-control-sm"
+              placeholder="Code ou intitulé…"
+              value={recherche}
+              onChange={(e) => setRecherche(e.target.value)}
+              data-testid="recherche-ue"
+            />
+          </span>
         </div>
         {maquette && (
-          <span className="ue-ecue-etat gen-count-pill" data-testid="etat-maquette">
+          <span
+            className={`ue-ecue-etat uex-etat uex-etat--${String(maquette.statut || '').toLowerCase()}`}
+            data-testid="etat-maquette"
+          >
+            <i className="bi bi-lock-fill" aria-hidden="true"></i>
             {STATUT_MAQUETTE[maquette.statut] || maquette.statut}
           </span>
         )}
+        {maquette && (
+          <div className="uex-meta">
+            <span><i className="bi bi-mortarboard"></i>{maquette.ref_formation}</span>
+            <span><i className="bi bi-layers"></i>Niveau {maquette.niveau}</span>
+            <span><i className="bi bi-calendar3"></i>{maquette.annee_academique}</span>
+            <span><i className="bi bi-git"></i>Version {maquette.version}</span>
+          </div>
+        )}
       </div>
+
+      {maquette && !uesQuery.isLoading && (
+        <div className="uex-kpis">
+          <div className="uex-kpi">
+            <span className="uex-kpi-icone is-blue"><i className="bi bi-collection"></i></span>
+            <div><strong>{ues.length}</strong><span>unités d’enseignement</span></div>
+          </div>
+          <div className="uex-kpi">
+            <span className="uex-kpi-icone is-indigo"><i className="bi bi-list-check"></i></span>
+            <div><strong>{synthese.nbEcue}</strong><span>ECUE au total</span></div>
+          </div>
+          <div className="uex-kpi">
+            <span className="uex-kpi-icone is-cyan"><i className="bi bi-award"></i></span>
+            <div><strong>{synthese.ects}</strong><span>crédits ECTS</span></div>
+          </div>
+          <div className="uex-kpi uex-kpi--volumes">
+            <div className="uex-kpi-volumes-tete">
+              <span className="uex-kpi-icone is-amber"><i className="bi bi-clock-history"></i></span>
+              <div><strong>{synthese.volumeTotal} h</strong><span>volume horaire (CM {synthese.volumes.cm} · TD {synthese.volumes.td} · TP {synthese.volumes.tp})</span></div>
+            </div>
+            {synthese.volumeTotal > 0 && (
+              <span className="uex-volumes-barre uex-volumes-barre--kpi" role="img" aria-label="Répartition des volumes de la maquette">
+                <span className="uex-volumes-seg is-cm" style={{ width: `${(synthese.volumes.cm / synthese.volumeTotal) * 100}%` }}></span>
+                <span className="uex-volumes-seg is-td" style={{ width: `${(synthese.volumes.td / synthese.volumeTotal) * 100}%` }}></span>
+                <span className="uex-volumes-seg is-tp" style={{ width: `${(synthese.volumes.tp / synthese.volumeTotal) * 100}%` }}></span>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {maquettesQuery.isError && (
         <div className="alert alert-danger py-2" role="alert" data-testid="erreur-maquettes">
@@ -541,17 +633,20 @@ export default function EcranUeEcue() {
       )}
 
       {maquette && !maquetteEditable && (
-        <div className="alert alert-warning py-2" role="status" data-testid="maquette-verrouillee">
-          Cette maquette est <strong>{STATUT_MAQUETTE[maquette.statut]?.toLowerCase()}</strong> :
-          son contenu ne peut plus être modifié. Créez une nouvelle version (clonage) pour
-          faire évoluer le programme.
+        <div className="uex-alerte" role="status" data-testid="maquette-verrouillee">
+          <i className="bi bi-lock-fill" aria-hidden="true"></i>
+          <span>
+            Cette maquette est <strong>{STATUT_MAQUETTE[maquette.statut]?.toLowerCase()}</strong> :
+            son contenu ne peut plus être modifié. Créez une nouvelle version (clonage) pour
+            faire évoluer le programme.
+          </span>
         </div>
       )}
 
       <div className="ue-ecue-colonnes">
         {/* ── Niveau 2 : les UE de la maquette ─────────────────────────── */}
         <div className="ue-ecue-panneau">
-          <div className="gen-panel">
+          <div className="gen-panel uex-panel">
             <div className="gen-panel-head">
               <h2 className="gen-panel-title">
                 <i className="bi bi-collection"></i>
@@ -587,12 +682,12 @@ export default function EcranUeEcue() {
                   </tr>
                 </thead>
                 <tbody>
-                  {uesFiltrees.map((ligne) => (
+                  {uesFiltrees.map((ligne, index) => (
                     <tr
                       key={ligne.id}
-                      className={Number(ligne.id) === Number(ueId) ? 'table-active' : ''}
+                      className={`uex-ligne${Number(ligne.id) === Number(ueId) ? ' table-active uex-ligne--active' : ''}`}
                       onClick={() => setUeId(ligne.id)}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: 'pointer', animationDelay: `${Math.min(index * 40, 400)}ms` }}
                       data-testid={`ligne-ue-${ligne.id}`}
                     >
                       <td>
@@ -609,9 +704,13 @@ export default function EcranUeEcue() {
                           <span className="gen-code-chip">{ligne.code}</span>
                         </button>
                       </td>
-                      <td>{ligne.intitule}</td>
-                      <td>{ligne.semestre?.libelle || '—'}</td>
-                      <td>{afficherValeur(ligne.credits)}</td>
+                      <td className="uex-intitule">{ligne.intitule}</td>
+                      <td>
+                        {ligne.semestre?.libelle
+                          ? <span className="uex-sem">{ligne.semestre.libelle}</span>
+                          : '—'}
+                      </td>
+                      <td><span className="uex-ects">{afficherValeur(ligne.credits)}</span></td>
                       <td><BadgeStatut statut={ligne.statut} /></td>
                       <td onClick={(e) => e.stopPropagation()}>
                         <div className="ue-ecue-actions">
@@ -671,12 +770,10 @@ export default function EcranUeEcue() {
                 </tbody>
               </table>
             </div>
-            <div className="gen-panel-foot">
+            <div className="gen-panel-foot uex-foot">
               <span className="gen-panel-foot-info">
                 <i className="bi bi-info-circle"></i>
-                <code className="gen-endpoint-chip">
-                  /api/scolarite/maquettes/&lt;id&gt;/ues/
-                </code>
+                {ues.length} UE · {synthese.nbEcue} ECUE · {synthese.ects} ECTS · {synthese.volumeTotal} h de cours
               </span>
             </div>
           </div>
@@ -684,7 +781,7 @@ export default function EcranUeEcue() {
 
         {/* ── Niveau 3 : les ECUE de l'UE sélectionnée ─────────────────── */}
         <div className="ue-ecue-panneau">
-          <div className="gen-panel">
+          <div className="gen-panel uex-panel">
             <div className="gen-panel-head">
               <h2 className="gen-panel-title">
                 <i className="bi bi-list-check"></i>
@@ -706,32 +803,32 @@ export default function EcranUeEcue() {
                 )}
               </div>
             </div>
-            <div className="table-responsive gen-table-wrap">
-              <table className="table table-sm table-hover align-middle mb-0 gen-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Code</th>
-                    <th scope="col">Intitulé</th>
-                    <th scope="col">ECTS</th>
-                    <th scope="col">Volumes</th>
-                    <th scope="col">Statut</th>
-                    <th scope="col" className="text-end">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(ue?.ecues || []).map((ecue) => (
-                    <tr key={ecue.id} data-testid={`ligne-ecue-${ecue.id}`}>
-                      <td><span className="gen-code-chip">{ecue.code}</span></td>
-                      <td>{ecue.intitule}</td>
-                      <td>{afficherValeur(ecue.credits)}</td>
-                      <td className="small text-muted">
-                        {Number(ecue.volume_cm) || Number(ecue.volume_td) || Number(ecue.volume_tp)
-                          ? `CM ${Number(ecue.volume_cm)} · TD ${Number(ecue.volume_td)} · TP ${Number(ecue.volume_tp)}`
-                          : '—'}
-                      </td>
-                      <td><BadgeStatut statut={ecue.statut} /></td>
-                      <td>
-                        <div className="ue-ecue-actions">
+            {ue && ue.ecues.length > 0 && (
+              <div className="uex-legende-volumes" aria-hidden="true">
+                <span><i className="uex-pastille is-cm"></i>Cours magistraux</span>
+                <span><i className="uex-pastille is-td"></i>Travaux dirigés</span>
+                <span><i className="uex-pastille is-tp"></i>Travaux pratiques</span>
+              </div>
+            )}
+            <div className="uex-ecue-grille" key={ue?.id || 'aucune'}>
+              {(ue?.ecues || []).map((ecue, index) => (
+                <article
+                  key={ecue.id}
+                  className="uex-ecue-carte"
+                  style={{ animationDelay: `${Math.min(index * 60, 360)}ms` }}
+                  data-testid={`ligne-ecue-${ecue.id}`}
+                >
+                  <header className="uex-ecue-entete">
+                    <span className="gen-code-chip">{ecue.code}</span>
+                    <BadgeStatut statut={ecue.statut} />
+                  </header>
+                  <h3 className="uex-ecue-intitule">{ecue.intitule}</h3>
+                  <div className="uex-ecue-volumes">
+                    <BarreVolumes ecue={ecue} />
+                  </div>
+                  <footer className="uex-ecue-pied">
+                    <span className="uex-ects" title="Crédits ECTS">{afficherValeur(ecue.credits)} ECTS</span>
+                    <div className="ue-ecue-actions">
                           {peutGerer && maquetteEditable && ecue.statut === 'BROUILLON' && (
                             <>
                               <button
@@ -764,27 +861,21 @@ export default function EcranUeEcue() {
                               onChanger={(el, statut) => executerStatut('ecue', el, statut)}
                             />
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {(!ue || ue.ecues.length === 0) && (
-                    <tr>
-                      <td colSpan={6}>
-                        <div className="gen-empty">
-                          <i className="bi bi-inbox" aria-hidden="true"></i>
-                          <span className="gen-empty-title">Aucun ECUE</span>
-                          <span className="gen-empty-text">
-                            {ue
-                              ? 'Sélectionnez « Nouvel ECUE » pour ajouter le premier élément constitutif.'
-                              : 'Sélectionnez une UE à gauche pour voir ses éléments constitutifs.'}
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    </div>
+                  </footer>
+                </article>
+              ))}
+              {(!ue || ue.ecues.length === 0) && (
+                <div className="gen-empty uex-vide">
+                  <i className="bi bi-inbox" aria-hidden="true"></i>
+                  <span className="gen-empty-title">Aucun ECUE</span>
+                  <span className="gen-empty-text">
+                    {ue
+                      ? 'Sélectionnez « Nouvel ECUE » pour ajouter le premier élément constitutif.'
+                      : 'Sélectionnez une UE à gauche pour voir ses éléments constitutifs.'}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="gen-panel-foot">
               <span className="gen-panel-foot-info">

@@ -127,11 +127,27 @@ describe('affichage et lecture', () => {
   it('affiche « — » plutôt que 0 pour un crédit d’ECUE non publié', async () => {
     monter()
     await attendreEcran()
-    const ligne = await screen.findByTestId('ligne-ecue-100')
-    const cellules = within(ligne).getAllByRole('cell')
-    // Colonnes : code, intitulé, ECTS, volumes, statut, actions.
-    expect(cellules[2]).toHaveTextContent('—')
-    expect(cellules[3]).toHaveTextContent('—')
+    const carte = await screen.findByTestId('ligne-ecue-100')
+    // Carte ECUE : ni les crédits ni les volumes non publiés ne deviennent 0.
+    expect(within(carte).getByText('— ECTS')).toBeInTheDocument()
+    expect(carte.querySelector('.uex-volumes-vide')).toHaveTextContent('—')
+  })
+
+  it('affiche la synthèse premium de la maquette et les barres de volumes', async () => {
+    const ueAvecVolumes = {
+      ...UE,
+      ecues: [{ ...UE.ecues[0], credits: 3, volume_cm: 12, volume_td: 8, volume_tp: 6 }],
+    }
+    const { container } = monter({ ues: [ueAvecVolumes] })
+    await attendreEcran()
+    // Synthèse calculée : barre de contexte, 4 indicateurs, volumes agrégés.
+    expect(container.querySelector('.uex-toolbar')).not.toBeNull()
+    expect(container.querySelectorAll('.uex-kpi')).toHaveLength(4)
+    expect(screen.getByText('26 h')).toBeInTheDocument()
+    const carte = await screen.findByTestId('ligne-ecue-100')
+    expect(carte.querySelector('.uex-volumes-barre')).not.toBeNull()
+    expect(within(carte).getByText(/CM 12 · TD 8 · TP 6/)).toBeInTheDocument()
+    expect(within(carte).getByText('3 ECTS')).toBeInTheDocument()
   })
 })
 
