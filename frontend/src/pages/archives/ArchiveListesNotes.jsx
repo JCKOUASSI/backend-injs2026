@@ -13,7 +13,7 @@ const MENTION_COLORS = {
   TRES_BIEN: { background: '#e8eff5', color: '#093f70' },
   BIEN: { background: '#e3f2fd', color: '#0d47a1' },
   ASSEZ_BIEN: { background: '#e8eaf6', color: '#283A87' },
-  PASSABLE: { background: '#fffae1', color: '#f5b417' },
+  PASSABLE: { background: '#fffae1', color: '#92600E' },
   INSUFFISANT: { background: '#ffebee', color: '#A3222F' },
   '': { background: '#f5f5f5', color: '#9e9e9e' },
 }
@@ -238,8 +238,8 @@ const tdStyle = { padding: '0.6rem' }
 export default function ArchiveListesNotes() {
   return (
     <ArchiveModuleBrowser
-      title="Listes de note"
-      description="Consultez les relevés de notes archivés par module (catégorie, grade, groupe), à l'image du classement « LISTES DE NOTE » des archives."
+      title="Listes de notes"
+      description="Consultez les relevés de notes archivés par module (catégorie, grade, groupe) — le classement de référence des archives de la scolarité."
       icon="bi-card-checklist"
       accent={ACCENT}
       documentVerb="Voir les notes"

@@ -9,6 +9,7 @@ import { useToast } from '../../context/ToastContext'
 import { canArchiveModuleFromUser } from '../../utils/roles'
 import ConfirmModal from '../ConfirmModal'
 import Pagination from '../Pagination'
+import '../../styles/archives.css'
 
 const STATUT_LABELS = {
   PLANIFIEE: 'Planifiée',
@@ -19,7 +20,7 @@ const STATUT_LABELS = {
 
 const STATUT_COLORS = {
   PLANIFIEE: { background: '#e3f2fd', color: '#0d47a1' },
-  EN_COURS: { background: '#fffae1', color: '#f5b417' },
+  EN_COURS: { background: '#fffae1', color: '#92600E' },
   SUSPENDUE: { background: '#fce4ec', color: '#ad1457' },
   TERMINEE: { background: '#e8eff5', color: '#093f70' },
 }
@@ -126,23 +127,19 @@ export default function ArchiveModuleBrowser({
   }
 
   return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-        <div style={{
-          width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-          background: `${accent}1a`, color: accent,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem',
-        }}>
+    <div className="archives-browser">
+      <div className="archives-browser-hero">
+        <span className="archives-browser-icone">
           <i className={`bi ${icon}`}></i>
-        </div>
+        </span>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <h2 style={{ margin: 0, fontWeight: 700 }}>{title}</h2>
+          <h2 style={{ margin: 0, fontWeight: 800 }}>{title}</h2>
           <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{description}</p>
         </div>
       </div>
 
       {/* Filtres */}
-      <div className="card" style={{ padding: '1rem', marginBottom: '1.25rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+      <div className="card archives-filtres" style={{ padding: '1rem', marginBottom: '1.25rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div style={{ flex: '2 1 240px' }}>
           <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 600 }}>Rechercher</label>
           <input
@@ -225,20 +222,18 @@ export default function ArchiveModuleBrowser({
         </div>
       ) : (
         <>
-          <div style={{ marginBottom: '0.75rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+          <div className="archives-compteur">
             {total} module{total !== 1 ? 's' : ''} archivé{total !== 1 ? 's' : ''}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+          <div className="archives-grille" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
             {modules.map(m => {
               const statutStyle = STATUT_COLORS[m.statut] || STATUT_COLORS.PLANIFIEE
               return (
                 <div
                   key={m.module_id}
-                  className="card"
-                  style={{ padding: '1rem', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '0.6rem', transition: 'box-shadow .15s, transform .15s' }}
+                  className="card archives-module-card"
+                  style={{ padding: '1rem', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}
                   onClick={() => setSelected(m)}
-                  onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 22px rgba(0,0,0,0.10)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                  onMouseLeave={e => { e.currentTarget.style.boxShadow = ''; e.currentTarget.style.transform = '' }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
                     <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, lineHeight: 1.3 }}>{m.module}</h3>
@@ -262,7 +257,7 @@ export default function ArchiveModuleBrowser({
                     )}
                   </div>
                   <button
-                    className="btn btn-sm w-100"
+                    className="btn btn-sm w-100 archives-btn-voir"
                     style={{ marginTop: '0.3rem', background: accent, color: '#fff', fontWeight: 600 }}
                     onClick={(e) => { e.stopPropagation(); setSelected(m) }}
                   >
@@ -270,7 +265,7 @@ export default function ArchiveModuleBrowser({
                   </button>
                   {canUnarchive && (
                     <button
-                      className="btn btn-sm btn-outline-secondary w-100"
+                      className="btn btn-sm btn-outline-secondary w-100 archives-btn-desarchiver"
                       style={{ marginTop: '0.35rem', fontWeight: 600 }}
                       onClick={(e) => { e.stopPropagation(); setUnarchiveTarget(m) }}
                     >

@@ -192,7 +192,7 @@ export default function ArchiveCahiersAppel() {
   return (
     <ArchiveModuleBrowser
       title="Cahiers d'appel"
-      description="Consultez les registres de présence (émargement) archivés par module, à l'image du classement « CAHIERS D'APPEL » des archives. Export PDF/Excel disponible."
+      description="Consultez les registres de présence (émargement) archivés par module — le classement de référence des archives de la scolarité. Export PDF/Excel disponible."
       icon="bi-journal-check"
       accent={ACCENT}
       documentVerb="Voir le cahier d'appel"
