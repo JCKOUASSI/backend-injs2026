@@ -35,6 +35,8 @@ import './styles/diplomation.css'
 import './styles/featureFlags.css'
 // Design premium sobre Statistiques & Bilans (chargé d'office).
 import './styles/statistiques.css'
+// Design premium sobre Personnel administratif & technique.
+import './styles/personnel.css'
 
 /**
  * Erreurs hors rendu React : promesses rejetées, erreurs d'événement, échec

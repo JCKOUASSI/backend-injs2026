@@ -92,3 +92,15 @@ describe('Hub Personnel premium', () => {
     expect(screen.getByText('16/10/2026')).toBeInTheDocument()
   })
 })
+
+describe('Hub Personnel — design premium sobre', () => {
+  it('applique le thème hub-personnel et des icônes Bootstrap valides', async () => {
+    const { container } = mount()
+    await waitFor(() => expect(screen.getByText('EX-AGT-001')).toBeInTheDocument())
+    expect(container.querySelector('.hub-personnel .cand-hero')).not.toBeNull()
+    expect(container.querySelector('.hub-personnel .hub-onglet.is-active')).not.toBeNull()
+    // Aucun nom d'icône Lucide résiduel (ils ne produisaient aucune icône).
+    expect(container.innerHTML).not.toContain('bi contactRound')
+    expect(container.innerHTML).not.toContain('bi calendarOff')
+  })
+})

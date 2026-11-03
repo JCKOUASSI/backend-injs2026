@@ -86,7 +86,7 @@ cd backend
 | Services | 16, rattachés aux départements |
 | Secrétariats pédagogiques | 3 (ENSEPS, ENSEP, Concours & Scolarité Centrale) |
 | Comptes utilisateurs fictifs | 47 `demo.*` — rôles DIRECTION (8), INJS_ADMIN (21), CHEF_SECRETARIAT (7), SECRETARIAT (3), FINANCE (2), ARCHIVE (2), ENCADRANT (2), FORMATEUR (2), groupes de permissions synchronisés ; mot de passe de démonstration `DemoInjs2026!` (à désactiver hors démo) |
-| Personnels (RH) | 45 agents `PERS-DEMO-*`, 17 fonctions, affectations au 01/09/2026 |
+| Personnels (RH) | 45 agents `PERS-DEMO-*` aux fonctions **cohérentes avec l'organigramme** (8 Directeur/Directrice, 15 Chef de département, 15 Chef de service, 1 Archiviste, 3 Chef de secrétariat, 3 Agent de secrétariat), contrats variés (36 fonctionnaires, 7 contractuels, 2 vacataires), entrées échelonnées 2016-2025, 18 indisponibilités et 20 documents RH d'exemple — correction du 03/11 : l'affectation « Archiviste » par défaut (29 agents) et l'uniformité contrat/date ont été supprimées (test de régression dédié) |
 | Courriers / Documents | 14 courriers (dont 3 archivés, fichiers PDF fictifs joints), 10 documents officiels versionnés (dont 1 archivé) |
 | Réunions & missions | 10 réunions/commissions (PV pour les tenues), 8 missions (budget 0 : aucun montant inventé) |
 | Archives (administratives) | courriers/documents au statut ARCHIVE + service des archives institutionnelles |

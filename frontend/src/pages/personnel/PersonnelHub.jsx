@@ -4,6 +4,7 @@
  * services. Les enseignants restent au registre Formateurs.
  */
 import ModuleHub from '@/components/hub/ModuleHub'
+import '../../styles/personnel.css'
 
 const parContrat = (s) =>
   `${s.par_contrat?.FONCTIONNAIRE ?? 0} fonctionnaires · ${s.par_contrat?.CONTRAT ?? 0} contractuels · ${s.par_contrat?.VACATAIRE ?? 0} vacataires`
@@ -13,24 +14,24 @@ export default function PersonnelHub({ ongletInitial = 'agents' }) {
     <ModuleHub
       titre="Personnel administratif & technique"
       badge="Personnel"
-      icone="contactRound"
-      introduction="Agents, affectations et disponibilités du personnel administratif et technique. Les données d’exemple sont étiquetées [Exemple] (matricules EX-AGT-…) ; les enseignants disposent de leur registre dédié (Formateurs, grades métier)."
+      icone="bi-person-badge"
+      introduction="Agents, affectations et disponibilités du personnel administratif et technique. Les données fictives de démonstration sont étiquetées [Démo fictive] (matricules PERS-DEMO-…, aucun compte réel) ; les enseignants disposent de leur registre dédié (Formateurs, grades métier)."
       statsEndpoint="/rh/stats/"
       pastilles={(s) => [
-        { icone: 'users', texte: `${s.agents_actifs ?? 0} agents actifs sur ${s.agents ?? 0}` },
-        { icone: 'briefcase', texte: parContrat(s) },
-        { icone: 'network', texte: `${s.fonctions ?? 0} fonctions dans ${s.services ?? 0} services` },
-        { icone: 'info', texte: 'Créations, affectations et dépôts restent dans les flux RH dédiés.' },
+        { icone: 'bi-people', texte: `${s.agents_actifs ?? 0} agents actifs sur ${s.agents ?? 0}` },
+        { icone: 'bi-briefcase', texte: parContrat(s) },
+        { icone: 'bi-diagram-3', texte: `${s.fonctions ?? 0} fonctions dans ${s.services ?? 0} services` },
+        { icone: 'bi-info-circle', texte: 'Créations, affectations et dépôts restent dans les flux RH dédiés.' },
       ]}
       tuiles={(s) => [
-        { valeur: s.agents, libelle: 'Agents', sub: `${s.agents_actifs ?? 0} actifs`, icone: 'contactRound', ton: 'blue' },
+        { valeur: s.agents, libelle: 'Agents', sub: `${s.agents_actifs ?? 0} actifs`, icone: 'bi-person-badge', ton: 'blue' },
         { valeur: s.fonctions, libelle: 'Fonctions', sub: `${s.services ?? 0} services`, icone: 'briefcase', ton: 'indigo' },
-        { valeur: s.indisponibilites_en_cours, libelle: 'Absences en cours', sub: 'congés, missions, formations', icone: 'calendarOff', ton: 'amber' },
-        { valeur: s.documents, libelle: 'Documents RH', sub: 'métadonnées classées', icone: 'folderOpen', ton: 'cyan' },
+        { valeur: s.indisponibilites_en_cours, libelle: 'Absences en cours', sub: 'congés, missions, formations', icone: 'bi-calendar-x', ton: 'amber' },
+        { valeur: s.documents, libelle: 'Documents RH', sub: 'métadonnées classées', icone: 'bi-folder2-open', ton: 'cyan' },
       ]}
       onglets={[
         {
-          id: 'agents', libelle: 'Agents', icone: 'contactRound',
+          id: 'agents', libelle: 'Agents', icone: 'bi-person-badge',
           endpoint: '/rh/agents/',
           rechercheLocale: ['nom', 'prenom', 'matricule', 'email'],
           recherchePlaceholder: 'Nom, matricule…',
@@ -50,7 +51,7 @@ export default function PersonnelHub({ ongletInitial = 'agents' }) {
           videTexte: 'Les agents du personnel administratif et technique apparaîtront ici.',
         },
         {
-          id: 'affectations', libelle: 'Affectations', icone: 'network',
+          id: 'affectations', libelle: 'Affectations', icone: 'bi-diagram-3',
           endpoint: '/rh/affectations/',
           paramsBase: { actives: '1' },
           rechercheLocale: ['agent', 'agent_matricule', 'fonction', 'service'],
@@ -66,7 +67,7 @@ export default function PersonnelHub({ ongletInitial = 'agents' }) {
           videTexte: 'Les affectations en cours des agents apparaîtront ici.',
         },
         {
-          id: 'disponibilites', libelle: 'Disponibilités', icone: 'calendarOff',
+          id: 'disponibilites', libelle: 'Disponibilités', icone: 'bi-calendar-x',
           endpoint: '/rh/disponibilites/',
           rechercheLocale: ['agent', 'agent_matricule', 'motif'],
           recherchePlaceholder: 'Agent ou motif…',
@@ -86,7 +87,7 @@ export default function PersonnelHub({ ongletInitial = 'agents' }) {
           videTexte: 'Congés, missions et formations déclarés apparaîtront ici.',
         },
         {
-          id: 'documents', libelle: 'Documents RH', icone: 'folderOpen',
+          id: 'documents', libelle: 'Documents RH', icone: 'bi-folder2-open',
           endpoint: '/rh/documents/',
           rechercheLocale: ['agent', 'intitule'],
           recherchePlaceholder: 'Agent ou document…',
@@ -101,7 +102,7 @@ export default function PersonnelHub({ ongletInitial = 'agents' }) {
           videTexte: 'Contrats, avis et attestations classés apparaîtront ici.',
         },
         {
-          id: 'fonctions', libelle: 'Fonctions', icone: 'briefcase',
+          id: 'fonctions', libelle: 'Fonctions', icone: 'bi-briefcase',
           endpoint: '/rh/fonctions/',
           rechercheLocale: ['intitule', 'service_nom'],
           recherchePlaceholder: 'Intitulé de fonction…',
@@ -114,7 +115,7 @@ export default function PersonnelHub({ ongletInitial = 'agents' }) {
           videTexte: 'Les fonctions rattachées aux services apparaîtront ici.',
         },
         {
-          id: 'services', libelle: 'Services', icone: 'network',
+          id: 'services', libelle: 'Services', icone: 'bi-diagram-3',
           endpoint: '/rh/services/',
           rechercheLocale: ['nom'],
           recherchePlaceholder: 'Nom du service…',
@@ -128,6 +129,7 @@ export default function PersonnelHub({ ongletInitial = 'agents' }) {
         },
       ]}
       ongletInitial={ongletInitial}
+      classePage="hub-personnel"
     />
   )
 }

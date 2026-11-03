@@ -61,3 +61,29 @@ class PeuplerAdministrationInjsTests(TestCase):
         self.assertEqual(notes.count(), 48)
         self.assertEqual(notes.filter(verrouillee=True,
                                       statut_validation='VALIDEE').count(), 48)
+
+    def test_personnels_coherents_avec_organigramme(self):
+        """Régression : pas d'« Archiviste » par défaut, contrats variés."""
+        from ressources_humaines.models import (
+            AffectationRH, Agent, DisponibiliteAgent, DocumentRH,
+        )
+        call_command('peupler_administration_injs')
+        demo = AffectationRH.objects.filter(
+            agent__matricule__startswith='PERS-DEMO-')
+        # Un seul archiviste : le chef du service des archives.
+        self.assertEqual(demo.filter(fonction__intitule='Archiviste').count(), 1)
+        self.assertEqual(demo.filter(fonction__intitule='Chef de service').count(), 15)
+        self.assertEqual(demo.filter(fonction__intitule='Chef de département').count(), 15)
+        self.assertEqual(demo.filter(fonction__intitule='Directeur / Directrice').count(), 8)
+        # Variété des contrats et des dates d'entrée (plus d'uniformité).
+        contrats = set(Agent.objects.filter(
+            matricule__startswith='PERS-DEMO-').values_list('type_contrat', flat=True))
+        self.assertGreaterEqual(len(contrats), 2)
+        entrees = set(Agent.objects.filter(
+            matricule__startswith='PERS-DEMO-').values_list('date_entree', flat=True))
+        self.assertGreater(len(entrees), 3)
+        # Onglets Disponibilités et Documents RH alimentés.
+        self.assertEqual(DisponibiliteAgent.objects.filter(
+            motif__startswith='[Démo fictive]').count(), 18)
+        self.assertEqual(DocumentRH.objects.filter(
+            intitule__startswith='[Démo fictive]').count(), 20)

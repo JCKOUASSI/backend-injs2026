@@ -55,7 +55,9 @@ from formations.models import (
     SessionModule,
 )
 from presences.models import Pointage
-from ressources_humaines.models import AffectationRH, Agent, Fonction, Service
+from ressources_humaines.models import (
+    AffectationRH, Agent, DisponibiliteAgent, DocumentRH, Fonction, Service,
+)
 
 User = get_user_model()
 
@@ -77,7 +79,10 @@ NOMS = [
     ('Josiane', 'Britto'), ('Wilfried', 'Adayé'), ('Ténin', 'Doukouré'),
     ('Ghislain', 'N’Dri'), ('Reine', 'Assoumou'), ('Bakary', 'Kéita'),
     ('Christelle', 'Aboa'), ('Noël', 'Gnahoua'), ('Pélagie', 'Somé'),
-    ('Ulrich', 'Tano'), ('Larissa', 'Djédjé'),
+    ('Ulrich', 'Tano'), ('Larissa', 'Djédjé'), ('Fabrice', 'Konan'),
+    ('Sandrine', 'Yéo'), ('Mamadou', 'Traoré'), ('Aïcha', 'Diaby'),
+    ('Windé', 'Soro'), ('Hermann', 'Zadi'), ('Clarisse', 'Pokou'),
+    ('Daouda', 'Camara'), ('Rosine', 'Eba'), ('Joël', 'Bayala'),
 ]
 
 DIRECTIONS = [
@@ -263,16 +268,31 @@ class Command(BaseCommand):
             user.groups.add(groupe)
         return user, (prenom, nom, fonction_libelle)
 
-    def _agent(self, user, prenom, nom, fonction, date_debut=date(2026, 9, 1)):
+    def _agent(self, user, prenom, nom, fonction, rang):
         matricule = f'PERS-DEMO-{user.id:03d}'
+        # Variété réaliste et déterministe : entrées échelonnées 2016-2025,
+        # contrats selon le profil (fonctionnaire majoritaire, contractuels
+        # et vacataires en appui) — fini les 45 lignes identiques.
+        date_entree = date(2016 + (rang % 10), 9, 1)
+        if user.role == 'SECRETARIAT':
+            type_contrat = Agent.TypeContrat.CONTRAT
+        elif user.role == 'ENCADRANT':
+            type_contrat = Agent.TypeContrat.VACATAIRE
+        elif rang % 9 == 4:
+            type_contrat = Agent.TypeContrat.CONTRAT
+        else:
+            type_contrat = Agent.TypeContrat.FONCTIONNAIRE
         agent, _ = Agent.objects.update_or_create(
             matricule=matricule,
             defaults={
                 'user': user, 'nom': nom, 'prenom': prenom,
-                'email': user.email, 'type_contrat': Agent.TypeContrat.FONCTIONNAIRE,
-                'statut': Agent.Statut.ACTIF, 'date_entree': date(2020, 9, 1),
+                'email': user.email, 'type_contrat': type_contrat,
+                'statut': Agent.Statut.ACTIF, 'date_entree': date_entree,
+                'telephone': f'+225 07 08 {10 + rang:02d} {20 + rang:02d} {30 + rang:02d}',
             },
         )
+        # Prise de fonction dans le poste actuel : postérieure à l'entrée.
+        date_debut = max(date_entree, date(2023 + (rang % 3), 9, 1))
         AffectationRH.objects.update_or_create(
             agent=agent, fonction=fonction, date_debut=date_debut,
             defaults={'date_fin': None},
@@ -334,6 +354,7 @@ class Command(BaseCommand):
 
         # 4) Secrétariats (responsable chef + 1 agent chacun)
         secretariats = {}
+        secretariats_profils = {}
         for numero, nom, dep_code in SECRETARIATS:
             chef, profil = self._utilisateur(idx, f'chef-{numero}', 'CHEF_SECRETARIAT', f'Chef de secrétariat — {nom}')
             idx += 1
@@ -345,7 +366,10 @@ class Command(BaseCommand):
                 'localisation': 'Bâtiment administratif INJS Marcory', 'actif': True,
             })
             secretariats[numero] = sec
+            service_secretariat = {'SEC-01': 'SRV-SCOL-EPS', 'SEC-02': 'SRV-SCOL-EP', 'SEC-03': 'SRV-CONC'}[numero]
+            secretariats_profils[numero] = (chef, profil, service_secretariat)
             membre, profil2 = self._utilisateur(idx, f'agent-{numero}', 'SECRETARIAT', f'Agent de secrétariat — {nom}')
+            secretariats_profils[numero] = (chef, profil, membre, profil2, service_secretariat)
             idx += 1
             profils.append((membre, *profil2))
             if membre.secretariat_id != sec.id:
@@ -353,35 +377,99 @@ class Command(BaseCommand):
                 membre.save(update_fields=['secretariat'])
         bilan['secretariats'] = len(secretariats)
 
-        # 5) Personnels : fonctions + agents + affectations
-        nb_fonctions = 0
-        fonctions_par_service = {}
-        for dep_code, code, nom, role in SERVICES:
-            fonction, cree = Fonction.objects.get_or_create(
-                intitule='Chef de service', service=services[code][0],
-                defaults={'grade': 'Cadre administratif (démo)'},
+        # 5) Personnels : fonction COHÉRENTE avec l'unité de chaque profil.
+        # (Corrige l'incohérence initiale : 29 agents « Archiviste » par
+        # défaut, 45 fonctionnaires entrés le même jour.)
+        AffectationRH.objects.filter(
+            agent__matricule__startswith='PERS-DEMO-').delete()
+
+        def fonction_de(service, intitule):
+            fonction, _ = Fonction.objects.get_or_create(
+                intitule=intitule, service=service,
+                defaults={'grade': 'Personnel administratif et technique (démo)', 'actif': True},
             )
-            fonctions_par_service[code] = fonction
-            nb_fonctions += int(cree)
-        fonction_archives, cree = Fonction.objects.get_or_create(
-            intitule='Archiviste', service=services['SRV-ARCH'][0],
-            defaults={'grade': 'Archives et documentation (démo)'},
-        )
-        nb_fonctions += int(cree)
-        # Affectations des profils créés (responsables de services rattachés,
-        # autres profils affectés au service Archives à titre de démonstration RH)
-        archives_fonction = fonction_archives
-        for user, prenom, nom, fonction_libelle in profils:
-            fonction = archives_fonction
-            for code, (svc, svc_user) in services.items():
-                if svc_user.id == user.id:
-                    fonction = fonctions_par_service[code]
-                    break
-            agent = self._agent(user, prenom, nom.replace(' (démo)', ''), fonction)
-            # Fonction libellé conservé dans l'affectation via l'agent (fiche RH)
-            _ = agent
+            return fonction
+
+        def premier_service(departement):
+            for dep_code, code, _nom, _role in SERVICES:
+                if dep_code == departement.code:
+                    return services[code][0]
+            return None
+
+        # user_id -> (service, intitulé de fonction)
+        postes = {}
+        for code, (direction, user) in directions.items():
+            for dep_code, dep in departements.items():
+                if dep[0].direction_id == direction.id:
+                    svc = premier_service(dep[0])
+                    if svc is not None:
+                        postes[user.id] = (svc, 'Directeur / Directrice')
+                        break
+        for code, (departement, user) in departements.items():
+            svc = premier_service(departement)
+            if svc is None:
+                # Département sans service propre (ex. contrôle interne) :
+                # rattachement au premier service de sa direction.
+                for autre in departements.values():
+                    if autre[0].direction_id == departement.direction_id:
+                        svc = premier_service(autre[0])
+                        if svc is not None:
+                            break
+            if svc is not None:
+                postes[user.id] = (svc, 'Chef de département')
+        for dep_code, code, nom, role in SERVICES:
+            svc, user = services[code]
+            intitule = 'Archiviste' if code == 'SRV-ARCH' else 'Chef de service'
+            postes[user.id] = (svc, intitule)
+        for numero, (chef, _p1, membre, _p2, code_service) in secretariats_profils.items():
+            svc = services[code_service][0]
+            postes[chef.id] = (svc, 'Chef de secrétariat')
+            postes[membre.id] = (svc, 'Agent de secrétariat')
+
+        for rang, (user, prenom, nom, fonction_libelle) in enumerate(profils):
+            cible = postes.get(user.id)
+            if cible is None:
+                continue
+            service, intitule = cible
+            self._agent(user, prenom, nom.replace(' (démo)', ''),
+                        fonction_de(service, intitule), rang)
         bilan['personnels'] = Agent.objects.filter(matricule__startswith='PERS-DEMO-').count()
-        bilan['fonctions'] = nb_fonctions
+        bilan['fonctions'] = Fonction.objects.filter(actif=True).count()
+
+        # Indisponibilités et documents RH d'exemple (onglets dédiés du hub)
+        agents_demo = list(Agent.objects.filter(
+            matricule__startswith='PERS-DEMO-').order_by('id'))
+        indispos = [
+            ('CONGE', 'Congé annuel 2026', date(2026, 10, 26), date(2026, 11, 13)),
+            ('MISSION', 'Supervision des stages pratiques', date(2026, 11, 2), date(2026, 11, 6)),
+            ('FORMATION', 'Perfectionnement gestion documentaire', date(2026, 11, 3), date(2026, 11, 7)),
+            ('CONGE', 'Congé annuel 2026 (2e tranche)', date(2026, 12, 21), date(2027, 1, 4)),
+            ('MISSION', 'Inventaire des infrastructures régionales', date(2027, 1, 11), date(2027, 1, 15)),
+            ('FORMATION', 'Gestion des archives numériques', date(2026, 9, 14), date(2026, 9, 18)),
+        ]
+        for rang, agent in enumerate(agents_demo[:18]):
+            type_i, motif, debut, fin = indispos[rang % len(indispos)]
+            DisponibiliteAgent.objects.update_or_create(
+                agent=agent, date_debut=debut,
+                defaults={'type_indispo': type_i, 'motif': f'[Démo fictive] {motif}',
+                          'date_fin': fin},
+            )
+        docs_rh = [
+            ('ATTESTATION', 'Attestation de prise de service'),
+            ('AVIS', 'Avis de situation administrative'),
+            ('EVALUATION', 'Fiche d’évaluation annuelle 2025-2026'),
+            ('CONTRAT', 'Copie du contrat / arrêté de nomination'),
+        ]
+        for rang, agent in enumerate(agents_demo[:20]):
+            type_d, intitule = docs_rh[rang % len(docs_rh)]
+            DocumentRH.objects.update_or_create(
+                agent=agent, intitule=f'[Démo fictive] {intitule}',
+                defaults={'type_document': type_d},
+            )
+        bilan['indisponibilites'] = DisponibiliteAgent.objects.filter(
+            motif__startswith='[Démo fictive]').count()
+        bilan['documents_rh'] = DocumentRH.objects.filter(
+            intitule__startswith='[Démo fictive]').count()
 
         # Formateurs fictifs (pour les archives pédagogiques)
         formateurs = []
