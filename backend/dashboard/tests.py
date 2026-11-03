@@ -249,11 +249,15 @@ class VueEnsembleCoherenceTests(TestCase):
         self.assertEqual(len(evo['labels']), len(evo['inscrits_cumul']))
         self.assertEqual(evo['inscrits_cumul'], sorted(evo['inscrits_cumul']))
 
-        # Taux : nombres calculés ou None — la diplomation n'est pas mesurée.
+        # Taux : nombres calculés ou None (dénominateur absent). Quand un
+        # taux est mesuré, sa fraction explicite l'accompagne : un « 0 % »
+        # doit prouver qu'il est une mesure, pas un widget vide.
         taux = data['taux']
-        self.assertIsNone(taux['diplomation'])
-        for cle in ('reussite', 'abandon'):
-            self.assertTrue(taux[cle] is None or isinstance(taux[cle], float))
+        for cle in ('reussite', 'abandon', 'diplomation'):
+            valeur = taux[cle]
+            self.assertTrue(valeur is None or isinstance(valeur, float))
+            if valeur is not None:
+                self.assertIn('sur', taux[f'{cle}_base'] or '')
 
         # Finances : impayé = attendu - encaissé (base échéanciers).
         finances = data['finances']

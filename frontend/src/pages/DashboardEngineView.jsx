@@ -345,9 +345,11 @@ export default function DashboardEngineView() {
                 />
 
                 {/* Taux calculés par le BACKEND (décisions de jury, statuts
-                    étudiants du référentiel) ; ``null`` → « — non mesuré ».
-                    La diplomation reste non mesurée : aucune cohorte
-                    sortante n'est suivie, un ratio serait inventé. */}
+                    étudiants du référentiel, diplômes validés / inscrits en
+                    année terminale) ; chaque jauge affiche sa fraction
+                    (numérateur/dénominateur) : un « 0 % » mesuré se
+                    distingue ainsi d'un « — non mesuré » (dénominateur
+                    absent, valeur ``null``). */}
                 <RadialGaugeCard
                   title="Taux de réussite"
                   value={data.taux?.reussite ?? null}
@@ -360,7 +362,12 @@ export default function DashboardEngineView() {
                   trendComparison={data.taux?.abandon_base || null}
                   color="#1267D6"
                 />
-                <RadialGaugeCard title="Taux de diplomation" value={data.taux?.diplomation ?? null} color="#16A36A" />
+                <RadialGaugeCard
+                  title="Taux de diplomation"
+                  value={data.taux?.diplomation ?? null}
+                  trendComparison={data.taux?.diplomation_base || null}
+                  color="#16A36A"
+                />
 
                 {/* Alertes institutionnelles */}
                 <AlertPanel alerts={data.alerts || []} />

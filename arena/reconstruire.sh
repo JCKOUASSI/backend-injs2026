@@ -102,6 +102,14 @@ if [ ! -f "$BACKEND/.seed_ok" ]; then
   (cd "$BACKEND" && "$VENV/bin/python" seed_data.py) && touch "$BACKEND/.seed_ok"
 fi
 
+# Comptes témoins (14 rôles) : requis notamment par seed_jurys_demo, qui
+# compose les jurys d'exemple à partir des comptes actifs (échec silencieux
+# constaté sinon : reconstruction « réussie » mais 0 session de jury, donc
+# taux de réussite « non mesuré » au tableau de bord). Idempotent.
+log "Comptes témoins (rôles de démonstration)…"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py creer_comptes_temoins) \
+  && touch "$BACKEND/.comptes_temoins_ok"
+
 log "Référentiels officiels INJS (import idempotent)…"
 (cd "$BACKEND" && "$VENV/bin/python" manage.py importer_referentiels_injs) \
   && touch "$BACKEND/.referentiels_ok"

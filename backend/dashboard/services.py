@@ -229,8 +229,13 @@ def get_direction_overview():
     # Taux de réussite : décisions de jury de l'année (admis + admis avec
     # réserves) / décisions rendues. Taux d'abandon : inscriptions de
     # l'année dont le statut étudiant (référentiel) est « Abandon ».
-    # Taux de diplomation : aucune cohorte sortante n'est mesurée comme
-    # telle — le ratio serait inventé, il reste ``None`` (« non mesuré »).
+    # Taux de diplomation : diplômes VALIDÉS de l'année / inscrits validés
+    # en ANNÉE TERMINALE de cycle (L3, M2, D3) — indicateur d'achèvement
+    # simplifié, affiché AVEC sa fraction (``*_base``) pour rester
+    # vérifiable : un vrai taux de cohorte exigerait un suivi longitudinal
+    # des promotions, qui n'existe pas encore.
+    # Chaque taux expose sa fraction numérateur/dénominateur : un « 0 % »
+    # mesuré doit se distinguer d'un « non mesuré » (dénominateur absent).
     decisions_qs = DecisionJury.objects.all()
     if annee_id:
         decisions_qs = decisions_qs.filter(session__annee_academique_id=annee_id)
@@ -246,6 +251,14 @@ def get_direction_overview():
     nb_abandons = inscr_tous_qs.filter(statut_etudiant__code='ABANDON').count()
     taux_abandon = (round(nb_abandons / nb_inscr_tous * 100, 1)
                     if nb_inscr_tous else None)
+
+    nb_terminaux = inscriptions_qs.filter(
+        niveau__code__in=('L3', 'M2', 'D3')).count()
+    taux_diplomation = (round(nb_diplomes / nb_terminaux * 100, 1)
+                        if nb_terminaux else None)
+
+    def _fraction(texte):
+        return texte.replace(',', ' ') if texte else None
 
     finances = _situation_recouvrement()
 
@@ -351,13 +364,18 @@ def get_direction_overview():
         },
         'taux': {
             'reussite': taux_reussite,
-            'reussite_base': (f"{nb_decisions} décision(s) de jury"
-                              if nb_decisions else None),
+            'reussite_base': _fraction(
+                f"{nb_reussites} admis sur {nb_decisions:,} décision(s) de jury"
+                if nb_decisions else None),
             'abandon': taux_abandon,
-            'abandon_base': (f"{nb_inscr_tous} inscription(s)"
-                             if nb_inscr_tous else None),
-            'diplomation': None,
-            'diplomation_base': None,
+            'abandon_base': _fraction(
+                f"{nb_abandons} abandon(s) sur {nb_inscr_tous:,} inscription(s)"
+                if nb_inscr_tous else None),
+            'diplomation': taux_diplomation,
+            'diplomation_base': _fraction(
+                f"{nb_diplomes} diplôme(s) validé(s) sur {nb_terminaux:,}"
+                " inscrit(s) en année terminale"
+                if nb_terminaux else None),
         },
         'finances': finances,
         'activite_recente': activite,

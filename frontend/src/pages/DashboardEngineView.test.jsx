@@ -213,9 +213,10 @@ describe('pages/DashboardEngineView.jsx — Rendu et Pilotage LMD 2026', () => {
         },
       },
       taux: {
-        reussite: 77.4, reussite_base: '84 décision(s) de jury',
-        abandon: 0, abandon_base: '3527 inscription(s)',
-        diplomation: null, diplomation_base: null,
+        reussite: 77.4, reussite_base: '65 admis sur 84 décision(s) de jury',
+        abandon: 0, abandon_base: '0 abandon(s) sur 3 527 inscription(s)',
+        diplomation: 0,
+        diplomation_base: '0 diplôme(s) validé(s) sur 1 090 inscrit(s) en année terminale',
       },
       finances: {
         montant_attendu: 13150000, montant_encaisse: 0,
@@ -232,10 +233,14 @@ describe('pages/DashboardEngineView.jsx — Rendu et Pilotage LMD 2026', () => {
     const admin = makeUser('ADMIN', { username: 'admin' })
     mountDashboardEngine(admin)
 
-    // Jauges : réussite réelle (décimale française), diplomation non mesurée.
+    // Jauges : réussite réelle (décimale française) + fractions explicites
+    // prouvant que les « 0 % » sont des mesures, pas des widgets vides.
     expect(await screen.findByText('77,4%')).toBeInTheDocument()
-    expect(screen.getByText(/84 décision\(s\) de jury/)).toBeInTheDocument()
-    expect(screen.getByText('non mesuré')).toBeInTheDocument()
+    expect(screen.getByText(/65 admis sur 84 décision/)).toBeInTheDocument()
+    expect(screen.getByText(/0 abandon\(s\) sur 3 527/)).toBeInTheDocument()
+    expect(screen.getByText(/en année terminale/)).toBeInTheDocument()
+    expect(screen.getAllByText('0%').length).toBeGreaterThanOrEqual(2)
+    expect(screen.queryByText('non mesuré')).not.toBeInTheDocument()
     // Répartition par sexe réelle.
     expect(screen.getByText('Femmes')).toBeInTheDocument()
     expect(screen.getByText('Hommes')).toBeInTheDocument()
