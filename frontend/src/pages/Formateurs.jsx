@@ -69,7 +69,6 @@ export default function Formateurs() {
   const [exportingFiche, setExportingFiche] = useState('')
   const { showToast } = useToast()
 
-  const [refModules, setRefModules] = useState([])
   const [financeDetail, setFinanceDetail] = useState(null)
   const [financeDetailLoading, setFinanceDetailLoading] = useState(false)
   const [financeDetailTab, setFinanceDetailTab] = useState('statistiques')
@@ -111,11 +110,6 @@ export default function Formateurs() {
 
   useEffect(() => { if (!canViewFinanceData) chargerStatsEns() }, [canViewFinanceData])
 
-  useEffect(() => {
-    api.get('/formations/ref/modules/')
-      .then(res => setRefModules(Array.isArray(res.data) ? res.data.filter(m => m.actif !== false) : []))
-      .catch(() => {})
-  }, [])
 
   useEffect(() => {
     if (!canViewFinanceData) return
@@ -160,6 +154,28 @@ export default function Formateurs() {
       console.error(err)
     } finally { setLoading(false) }
   }
+
+  // Filtres actifs de la vue « corps enseignant » : rappel visuel + bouton de
+  // réinitialisation — sans cela, un filtre oublié laisse croire à une liste vide.
+  const libelleGrade = (code) => (statsEns?.par_grade || []).find((g) => g.code === code)?.libelle || code
+  const nbFiltresActifs = (search ? 1 : 0) + (gradeFiltre ? 1 : 0) + (specialiteFiltre ? 1 : 0)
+  const reinitialiserFiltres = () => {
+    setSearch(''); setGradeFiltre(''); setSpecialiteFiltre(''); setPage(1)
+  }
+
+  // Spécialités proposées à la saisie : celles du corps enseignant LMD, plus
+  // la valeur déjà enregistrée (même si elle n'est plus proposée ailleurs).
+  const specialitesFormulaire = Array.from(new Set([
+    ...(statsEns?.specialites || []),
+    ...(form.specialite ? [form.specialite] : []),
+  ])).sort((a, b) => String(a).localeCompare(String(b), 'fr'))
+
+  useEffect(() => {
+    if (!showModal) return undefined
+    const fermer = (e) => { if (e.key === 'Escape') setShowModal(false) }
+    document.addEventListener('keydown', fermer)
+    return () => document.removeEventListener('keydown', fermer)
+  }, [showModal])
 
   const openCreate = () => { setEditingId(null); setForm({ ...emptyForm }); setFormError(''); setShowModal(true) }
   const openEdit = (f) => {
@@ -577,6 +593,11 @@ export default function Formateurs() {
               <span className="ens-kpi-value">{statsEns ? `${fmtNb(statsEns.couverture.ecue_couvertes)}/${fmtNb(statsEns.couverture.ecue_total)}` : '—'}</span>
               <span className="ens-kpi-label">ECUE avec enseignant</span>
               <span className="ens-kpi-sub">{statsEns ? `${statsEns.couverture.taux_couverture} % des maquettes actives ${statsEns.couverture.annee_academique || ''}` : 'Chargement…'}</span>
+              {statsEns && (
+                <span className="ens-kpi-bar" aria-hidden="true">
+                  <i style={{ width: `${Math.min(100, Math.max(0, Number(statsEns.couverture.taux_couverture) || 0))}%` }} />
+                </span>
+              )}
             </div>
           </div>
           <div className="ens-kpi">
@@ -643,6 +664,37 @@ export default function Formateurs() {
           )}
         </div>
       </div>
+
+      {/* Filtres actifs — rappel et réinitialisation (vue corps enseignant) */}
+      {!canViewFinanceData && nbFiltresActifs > 0 && (
+        <div className="ens-filtres-actifs" aria-label="Filtres actifs">
+          <span className="ens-filtres-titre">
+            <i className="bi bi-funnel-fill" aria-hidden="true"></i>
+            {nbFiltresActifs} filtre{nbFiltresActifs > 1 ? 's' : ''} actif{nbFiltresActifs > 1 ? 's' : ''}
+          </span>
+          {debouncedSearch && (
+            <button type="button" className="ens-chip" onClick={() => { setSearch(''); setPage(1) }}
+              aria-label={`Retirer le filtre de recherche ${debouncedSearch}`}>
+              Recherche : « {debouncedSearch} »<i className="bi bi-x" aria-hidden="true"></i>
+            </button>
+          )}
+          {gradeFiltre && (
+            <button type="button" className="ens-chip" onClick={() => { setGradeFiltre(''); setPage(1) }}
+              aria-label={`Retirer le filtre de grade ${libelleGrade(gradeFiltre)}`}>
+              Grade : {libelleGrade(gradeFiltre)}<i className="bi bi-x" aria-hidden="true"></i>
+            </button>
+          )}
+          {specialiteFiltre && (
+            <button type="button" className="ens-chip" onClick={() => { setSpecialiteFiltre(''); setPage(1) }}
+              aria-label={`Retirer le filtre de spécialité ${specialiteFiltre}`}>
+              Spécialité : {specialiteFiltre}<i className="bi bi-x" aria-hidden="true"></i>
+            </button>
+          )}
+          <button type="button" className="ens-chip ens-chip--reset" onClick={reinitialiserFiltres}>
+            <i className="bi bi-arrow-counterclockwise" aria-hidden="true"></i>Tout réinitialiser
+          </button>
+        </div>
+      )}
 
       {error && <div className="error-message px-error">{error}</div>}
 
@@ -786,9 +838,19 @@ export default function Formateurs() {
                       </tr>
                     )) : (
                       <tr><td colSpan={canViewFinanceData ? 10 : (7 + (canViewSensitive ? 2 : 0))} className="text-center py-4 text-muted">
-                        <span className="px-empty">
+                        <span className="px-empty ens-empty">
                           <span className="px-empty-badge"><i className="bi bi-person-x"></i></span>
-                          Aucun enseignant trouvé
+                          <span className="ens-empty-titre">Aucun enseignant trouvé</span>
+                          {!canViewFinanceData && nbFiltresActifs > 0 ? (
+                            <>
+                              <span className="ens-empty-sub">Aucun enseignant ne correspond aux filtres actifs.</span>
+                              <button type="button" className="btn btn-outline-primary btn-sm mt-2" onClick={reinitialiserFiltres}>
+                                <i className="bi bi-arrow-counterclockwise me-1"></i>Réinitialiser les filtres
+                              </button>
+                            </>
+                          ) : (
+                            <span className="ens-empty-sub">Le corps enseignant est vide pour ce périmètre.</span>
+                          )}
                         </span>
                       </td></tr>
                     )}
@@ -816,92 +878,126 @@ export default function Formateurs() {
         />
       )}
 
-      {/* Create/Edit Modal */}
+      {/* Création / édition — mêmes codes visuels que la fiche de lecture */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h5>{editingId ? "Modifier l'enseignant" : 'Nouvel enseignant'}</h5>
-              <button className="btn-close" onClick={() => setShowModal(false)}>&times;</button>
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body">
-                {formError && <div className="alert alert-danger">{formError}</div>}
-                <div className="form-group">
-                  <label className="form-label">N° Badge <small className="text-muted">(auto-généré si vide)</small></label>
-                  <input type="text" className="form-control" placeholder="Ex : F0042" value={form.numerobadge} onChange={e => setForm({...form, numerobadge: e.target.value})} />
-                </div>
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Nom *</label>
-                    <input type="text" className="form-control" required value={form.nom} onChange={e => setForm({...form, nom: e.target.value})} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Prénom *</label>
-                    <input type="text" className="form-control" required value={form.prenom} onChange={e => setForm({...form, prenom: e.target.value})} />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Spécialité</label>
-                  <select className="form-control" value={form.specialite} onChange={e => setForm({...form, specialite: e.target.value})}>
-                    <option value="">— Sélectionner une spécialité —</option>
-                    {form.specialite && !refModules.some(m => m.intitule === form.specialite) && (
-                      <option value={form.specialite}>{form.specialite}</option>
-                    )}
-                    {refModules.map(m => (
-                      <option key={m.id} value={m.intitule}>{m.intitule}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Grade enseignant</label>
-                    <select className="form-control" value={form.grade_ref} onChange={e => setForm({...form, grade_ref: e.target.value})}>
-                      <option value="">— Non renseigné —</option>
-                      {(statsEns?.grades_disponibles || []).map(g => (
-                        <option key={g.id} value={g.id}>{g.libelle}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Statut</label>
-                    <select className="form-control" value={form.statut_enseignant} onChange={e => setForm({...form, statut_enseignant: e.target.value})}>
-                      <option value="">— Non renseigné —</option>
-                      <option value="Titulaire">Titulaire</option>
-                      <option value="Vacataire">Vacataire</option>
-                      <option value="Contractuel">Contractuel</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Fonction <small className="text-muted">(ex : Chef de département)</small></label>
-                  <input type="text" className="form-control" value={form.fonction} onChange={e => setForm({...form, fonction: e.target.value})} />
-                </div>
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Adresse e-mail</label>
-                    <input type="email" className="form-control" value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Téléphone</label>
-                    <input type="text" className="form-control" value={form.telephone} onChange={e => setForm({...form, telephone: e.target.value})} />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Organisation</label>
-                  <input type="text" className="form-control" value={form.organisation} onChange={e => setForm({...form, organisation: e.target.value})} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Observations <small className="text-muted">(notes internes)</small></label>
-                  <textarea className="form-control" rows={4} value={form.observations} onChange={e => setForm({...form, observations: e.target.value})} placeholder="Notes / observations sur l'enseignant…" />
-                </div>
+        <div className="px-modal-overlay" onClick={() => setShowModal(false)}>
+          <section className="px-modal ens-form-modal" role="dialog" aria-modal="true"
+                   aria-labelledby="ens-form-titre" onClick={(e) => e.stopPropagation()}>
+            <header className="ens-form-hero">
+              <span className="ens-form-avatar" aria-hidden="true">
+                <i className={`bi ${editingId ? 'bi-pencil-square' : 'bi-person-plus'}`}></i>
+              </span>
+              <div className="ens-form-hero-texte">
+                <span className="px-hero-eyebrow">Corps enseignant · {editingId ? 'Édition' : 'Nouvelle fiche'}</span>
+                <h2 id="ens-form-titre">{editingId ? "Modifier l'enseignant" : 'Nouvel enseignant'}</h2>
+                <p>Identité, grade académique et coordonnées. Les volumes horaires se pilotent depuis les affectations pédagogiques.</p>
               </div>
-              <div className="modal-footer">
+              <button type="button" className="px-modal-close" onClick={() => setShowModal(false)}
+                      aria-label="Fermer le formulaire"><i className="bi bi-x-lg"></i></button>
+            </header>
+
+            <form onSubmit={handleSubmit} className="ens-form">
+              {formError && <div className="error-message m-3" role="alert">{formError}</div>}
+              <div className="ens-form-body">
+                <fieldset className="ens-form-section">
+                  <legend>Identité</legend>
+                  <div className="ens-form-grid">
+                    <label className="ens-champ">
+                      <span>Nom <em>*</em></span>
+                      <input type="text" className="px-input" required value={form.nom}
+                        onChange={e => setForm({...form, nom: e.target.value})} />
+                    </label>
+                    <label className="ens-champ">
+                      <span>Prénom <em>*</em></span>
+                      <input type="text" className="px-input" required value={form.prenom}
+                        onChange={e => setForm({...form, prenom: e.target.value})} />
+                    </label>
+                    <label className="ens-champ">
+                      <span>N° Badge <small>(auto-généré si vide)</small></span>
+                      <input type="text" className="px-input" placeholder="Ex : F0042" value={form.numerobadge}
+                        onChange={e => setForm({...form, numerobadge: e.target.value})} />
+                    </label>
+                  </div>
+                </fieldset>
+
+                <fieldset className="ens-form-section">
+                  <legend>Affectation académique</legend>
+                  <div className="ens-form-grid">
+                    <label className="ens-champ">
+                      <span>Grade enseignant</span>
+                      <select className="px-input" value={form.grade_ref}
+                        onChange={e => setForm({...form, grade_ref: e.target.value})}>
+                        <option value="">— Non renseigné —</option>
+                        {(statsEns?.grades_disponibles || []).map(g => (
+                          <option key={g.id} value={g.id}>{g.libelle}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="ens-champ">
+                      <span>Statut</span>
+                      <select className="px-input" value={form.statut_enseignant}
+                        onChange={e => setForm({...form, statut_enseignant: e.target.value})}>
+                        <option value="">— Non renseigné —</option>
+                        <option value="Titulaire">Titulaire</option>
+                        <option value="Vacataire">Vacataire</option>
+                        <option value="Contractuel">Contractuel</option>
+                      </select>
+                    </label>
+                    <label className="ens-champ">
+                      <span>Fonction <small>(ex : Chef de département)</small></span>
+                      <input type="text" className="px-input" value={form.fonction}
+                        onChange={e => setForm({...form, fonction: e.target.value})} />
+                    </label>
+                    <label className="ens-champ">
+                      <span>Spécialité</span>
+                      <select className="px-input" value={form.specialite}
+                        onChange={e => setForm({...form, specialite: e.target.value})}>
+                        <option value="">— Non renseignée —</option>
+                        {specialitesFormulaire.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </label>
+                  </div>
+                </fieldset>
+
+                <fieldset className="ens-form-section">
+                  <legend>Contact &amp; organisation</legend>
+                  <div className="ens-form-grid">
+                    <label className="ens-champ">
+                      <span>Adresse e-mail</span>
+                      <input type="email" className="px-input" value={form.email}
+                        onChange={e => setForm({...form, email: e.target.value})} />
+                    </label>
+                    <label className="ens-champ">
+                      <span>Téléphone</span>
+                      <input type="text" className="px-input" value={form.telephone}
+                        onChange={e => setForm({...form, telephone: e.target.value})} />
+                    </label>
+                    <label className="ens-champ">
+                      <span>Organisation</span>
+                      <input type="text" className="px-input" value={form.organisation}
+                        onChange={e => setForm({...form, organisation: e.target.value})} />
+                    </label>
+                  </div>
+                </fieldset>
+
+                <fieldset className="ens-form-section">
+                  <legend>Observations</legend>
+                  <label className="ens-champ ens-champ--plein">
+                    <span>Notes internes <small>(consultables par les archives)</small></span>
+                    <textarea className="px-input" rows={4} value={form.observations}
+                      onChange={e => setForm({...form, observations: e.target.value})}
+                      placeholder="Notes / observations sur l'enseignant…" />
+                  </label>
+                </fieldset>
+              </div>
+              <footer className="px-modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
-                <button type="submit" className="btn btn-dfrc" disabled={saving}>{saving ? 'Enregistrement...' : (editingId ? 'Enregistrer' : 'Créer')}</button>
-              </div>
+                <button type="submit" className="btn btn-dfrc" disabled={saving}>
+                  {saving ? 'Enregistrement...' : (editingId ? 'Enregistrer' : 'Créer l’enseignant')}
+                </button>
+              </footer>
             </form>
-          </div>
+          </section>
         </div>
       )}
 

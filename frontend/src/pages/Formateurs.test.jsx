@@ -134,6 +134,24 @@ describe('Enseignants — panorama premium', () => {
     expect(screen.queryByLabelText('Données d’exemple')).not.toBeInTheDocument()
   })
 
+  it('rappelle les filtres actifs et permet de les réinitialiser', async () => {
+    const user = userEvent.setup()
+    mount()
+    const select = await screen.findByLabelText('Filtrer par grade')
+    await user.selectOptions(select, 'PROFESSEUR_TITULAIRE')
+    // Sans rappel visuel, un filtre oublié laisse croire à une liste vide.
+    expect(await screen.findByText(/1 filtre actif/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /filtre de grade Professeur Titulaire/ })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Tout réinitialiser/ }))
+    await waitFor(() => {
+      const appels = apiMock.get.mock.calls
+        .map(([p]) => p)
+        .filter((p) => p.startsWith('/formations/formateurs/list/'))
+      expect(appels[appels.length - 1]).not.toContain('grade=')
+    })
+    expect(screen.queryByRole('button', { name: /Tout réinitialiser/ })).not.toBeInTheDocument()
+  })
+
   it('propose le grade dans la fiche de création', async () => {
     const user = userEvent.setup()
     mount()
@@ -190,6 +208,20 @@ describe('Enseignants — fiche pédagogique LMD', () => {
     expect(within(screen.getByRole('tabpanel')).getAllByText('Non disponible')).toHaveLength(3)
     await user.click(screen.getByRole('button', { name: /Export PDF/ }))
     expect(apiMock.getBlob).toHaveBeenCalledWith('/formations/formateurs/10/fiche/export/pdf/')
+  })
+
+  it('présente le formulaire de création en sections premium', async () => {
+    const user = userEvent.setup()
+    mount()
+    await user.click(await screen.findByRole('button', { name: /Nouvel enseignant/ }))
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toHaveAccessibleName('Nouvel enseignant')
+    for (const rubrique of ['Identité', 'Affectation académique', 'Contact & organisation', 'Observations']) {
+      expect(within(dialog).getByText(rubrique)).toBeInTheDocument()
+    }
+    // Spécialités du corps LMD (et non les modules de formation continue).
+    expect(within(dialog).getByRole('option', { name: '— Non renseignée —' })).toBeInTheDocument()
+    expect(within(dialog).getAllByRole('option').length).toBeGreaterThan(3)
   })
 
   it('ne substitue pas des zéros quand la fiche échoue', async () => {

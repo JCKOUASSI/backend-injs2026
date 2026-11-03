@@ -289,5 +289,9 @@ class FicheEnseignantLMDTests(EnseignantsBase):
         res = self.client.get('/api/formations/formateurs/list/', {'specialite': 'Physiologie de l’exercice'})
         self.assertEqual(res.data['count'], 1)
         self.assertFalse(res.data['results'][0]['est_exemple'])
+        # Un enseignant sans spécialité ne doit pas créer d'option vide.
+        Formateur.objects.create(numerobadge='F-SPE', nom='Sans', prenom='Spécialité', specialite='')
         stats = self.client.get('/api/formations/formateurs/stats/').data
         self.assertIn('Physiologie de l’exercice', stats['specialites'])
+        self.assertNotIn('', stats['specialites'])
+        self.assertNotIn(None, stats['specialites'])

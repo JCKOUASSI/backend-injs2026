@@ -1070,7 +1070,10 @@ def formateur_stats_api(request):
         'grades_disponibles': grades_disponibles,
         'par_grade': par_grade,
         'par_statut': par_statut,
-        'specialites': list(base.exclude(specialite='').values_list('specialite', flat=True).distinct().order_by('specialite')),
+        'specialites': list(
+            base.exclude(specialite__isnull=True).exclude(specialite='')
+            .values_list('specialite', flat=True).distinct().order_by('specialite')
+        ),
         'couverture': couverture,
     })
 

@@ -244,3 +244,178 @@
 /* Enseignants présents dans le référentiel mais sans affectation LMD pour
    l'année en cours (profils historiques de formation continue). */
 .ens-hors-lmd { font-size: .68rem; letter-spacing: .02em; text-transform: uppercase; }
+
+/* ==========================================================================
+   MISE EN NIVEAU PREMIUM (contrôle 35) — cohérence liste / formulaires /
+   fiche de lecture.
+   ========================================================================== */
+
+/* ── Panorama : jauge de couverture sous le KPI « ECUE avec enseignant » ── */
+.ens-kpi-bar {
+  display: block;
+  margin-top: 0.35rem;
+  height: 5px;
+  border-radius: 999px;
+  background: #E7EEF7;
+  overflow: hidden;
+}
+.ens-kpi-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--injs-blue-royal), #2FA37C);
+  transition: width 0.4s ease;
+}
+
+/* ── Filtres actifs : rappel + réinitialisation ── */
+.ens-filtres-actifs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.9rem;
+  background: #F7FAFD;
+  border: 1px solid #DFEAF4;
+  border-radius: 14px;
+}
+.ens-filtres-titre {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--injs-blue-royal);
+}
+.ens-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #334155;
+  background: #fff;
+  border: 1px solid #D8E4F2;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.ens-chip:hover { border-color: var(--injs-blue-royal); box-shadow: 0 2px 10px rgba(28, 71, 137, 0.12); }
+.ens-chip:active { transform: translateY(1px); }
+.ens-chip > i { color: #64748B; font-size: 0.85rem; }
+.ens-chip--reset {
+  margin-left: auto;
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border-color: var(--injs-border-strong);
+}
+
+/* ── Tableau : en-tête collant, lignes alternées, survol ── */
+.ens-panel .table-container { max-height: none; }
+.ens-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #F7FAFD;
+  box-shadow: inset 0 -1px 0 #DFEAF4;
+}
+.ens-table tbody tr:nth-child(even) { background: #FCFDFE; }
+.ens-table tbody tr {
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+}
+.ens-table tbody tr:hover {
+  background: #F2F7FD;
+  box-shadow: inset 3px 0 0 var(--injs-blue-royal);
+}
+.ens-table tbody td { vertical-align: middle; }
+
+/* ── État vide : titré + action de repli ── */
+.ens-empty { display: inline-flex; flex-direction: column; align-items: center; gap: 0.35rem; }
+.ens-empty-titre { font-weight: 800; color: #334155; }
+.ens-empty-sub { font-size: 0.82rem; color: #8C9AAD; max-width: 42ch; }
+
+/* ── Formulaire création / édition (aligné sur la fiche de lecture) ── */
+.ens-form-modal { width: min(880px, 96vw); max-height: 92vh; display: flex; flex-direction: column; padding: 0; }
+.ens-form-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.4rem 2rem;
+  background: linear-gradient(120deg, #0B2A50, #1C4789);
+  color: #fff;
+  border-radius: 18px 18px 0 0;
+}
+.ens-form-avatar {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 1.35rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+}
+.ens-form-hero-texte h2 { margin: 0.2rem 0 0.25rem; font-size: 1.35rem; font-weight: 800; }
+.ens-form-hero-texte p { margin: 0; font-size: 0.82rem; color: #DCE8F8; max-width: 62ch; }
+.ens-form-hero .px-hero-eyebrow { color: #BFDBFE; }
+.ens-form-hero .px-modal-close { position: absolute; top: 1rem; right: 1rem; color: #fff; background: rgba(255, 255, 255, 0.12); border: 0; border-radius: 50%; width: 34px; height: 34px; }
+
+.ens-form { display: flex; flex-direction: column; min-height: 0; }
+.ens-form-body { overflow-y: auto; padding: 1.25rem 2rem; display: flex; flex-direction: column; gap: 1.1rem; }
+.ens-form-section { border: 1px solid #DFEAF4; border-radius: 14px; padding: 0.9rem 1.1rem 1.1rem; margin: 0; }
+.ens-form-section legend {
+  padding: 0 0.45rem;
+  margin-left: -0.2rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--injs-blue-royal);
+}
+.ens-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem; }
+.ens-champ { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.ens-champ--plein { grid-column: 1 / -1; }
+.ens-champ > span { font-size: 0.76rem; font-weight: 800; letter-spacing: 0.02em; color: #5B7DA8; }
+.ens-champ > span em { color: #C0392B; font-style: normal; }
+.ens-champ > span small { font-weight: 600; color: #8C9AAD; }
+.ens-form-section .ens-form-grid > .ens-champ:nth-child(3) { grid-column: 1 / -1; }
+.ens-form .px-modal-footer { display: flex; justify-content: flex-end; gap: 0.65rem; padding: 0.9rem 2rem; border-top: 1px solid #DFEAF4; background: #F7FAFD; border-radius: 0 0 18px 18px; }
+
+/* ── Fiche de lecture : étiquettes du héros + alerte de charge ── */
+.ens-fiche-hero-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin-top: 0.45rem; }
+.ens-fiche-hero-tags .ens-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #E8F1FC;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+}
+.ens-fiche-champ dd.ens-fiche-indisponible { color: #8C9AAD; font-style: italic; }
+.ens-fiche-alerte {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  padding: 0.7rem 0.95rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  border-radius: 12px;
+}
+.ens-fiche-alerte.is-danger { color: #8A1C2B; background: #FDECEF; border: 1px solid #F6C9D1; }
+.ens-fiche-alerte.is-ok { color: #0E7A4F; background: #EAF7F0; border: 1px solid #BFEBD5; }
+
+@media (max-width: 900px) {
+  .ens-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ens-form-grid { grid-template-columns: 1fr; }
+  .ens-form-hero, .ens-form-body, .ens-form .px-modal-footer { padding-left: 1rem; padding-right: 1rem; }
+  .ens-chip--reset { margin-left: 0; }
+}

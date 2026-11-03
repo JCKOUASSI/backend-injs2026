@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import api from '../../services/api'
 import { fmtDuration } from '../FinanceStatsGrid'
 
@@ -12,8 +12,13 @@ const ONGLETS = [
 const nombre = (v) => v == null ? NON_DISPONIBLE : new Intl.NumberFormat('fr-FR').format(v)
 const texte = (v) => v || NON_DISPONIBLE
 
-function Champ({ label, value }) {
-  return <div className="ens-fiche-champ"><dt>{label}</dt><dd>{texte(value)}</dd></div>
+function Champ({ label, value, indisponible }) {
+  return (
+    <div className="ens-fiche-champ">
+      <dt>{label}</dt>
+      <dd className={indisponible ? 'ens-fiche-indisponible' : undefined}>{texte(value)}</dd>
+    </div>
+  )
 }
 
 /** Fiche pédagogique : aucune donnée de paie legacy ni agrégation académique côté React. */
@@ -21,6 +26,7 @@ export default function FormateurFicheModal({ formateur, onClose, onExport, expo
   const [fiche, setFiche] = useState(null)
   const [erreur, setErreur] = useState('')
   const [onglet, setOnglet] = useState('profil')
+  const refModal = useRef(null)
 
   useEffect(() => {
     let actif = true
@@ -33,6 +39,32 @@ export default function FormateurFicheModal({ formateur, onClose, onExport, expo
     return () => { actif = false }
   }, [formateur.id])
 
+  // Accessibilité : focus placé dans la fenêtre à l'ouverture, cycle de
+  // tabulation borné au dialogue, et focus rendu à l'élément d'origine.
+  useEffect(() => {
+    const precedent = document.activeElement
+    const focusables = () => Array.from(
+      refModal.current?.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ) || [],
+    ).filter((el) => el.offsetParent !== null)
+    focusables()[0]?.focus()
+    const surTab = (e) => {
+      if (e.key !== 'Tab') return
+      const liste = focusables()
+      if (!liste.length) return
+      const premier = liste[0]
+      const dernier = liste[liste.length - 1]
+      if (e.shiftKey && document.activeElement === premier) { e.preventDefault(); dernier.focus() }
+      else if (!e.shiftKey && document.activeElement === dernier) { e.preventDefault(); premier.focus() }
+    }
+    document.addEventListener('keydown', surTab)
+    return () => {
+      document.removeEventListener('keydown', surTab)
+      if (precedent && typeof precedent.focus === 'function') precedent.focus()
+    }
+  }, [])
+
   useEffect(() => {
     const fermer = e => { if (e.key === 'Escape' && !exporting) onClose() }
     document.addEventListener('keydown', fermer)
@@ -40,16 +72,25 @@ export default function FormateurFicheModal({ formateur, onClose, onExport, expo
   }, [onClose, exporting])
 
   const charge = fiche?.charge
+  const nbAffectations = fiche?.affectations?.length ?? 0
+  const libelleOnglet = (t) => (t.id === 'enseignements' && fiche ? `${t.label} (${nbAffectations})` : t.label)
   return (
     <div className="px-modal-overlay" onClick={() => !exporting && onClose()}>
-      <section className="px-modal ens-fiche-modal" role="dialog" aria-modal="true" aria-labelledby="ens-fiche-titre" onClick={e => e.stopPropagation()}>
+      <section className="px-modal ens-fiche-modal" role="dialog" aria-modal="true"
+               aria-labelledby="ens-fiche-titre" aria-busy={!fiche && !erreur ? 'true' : 'false'}
+               ref={refModal} onClick={e => e.stopPropagation()}>
         <header className="ens-fiche-hero">
           <span className="ens-avatar" aria-hidden="true">{formateur.nom?.[0]}{formateur.prenom?.[0]}</span>
           <div>
             <span className="px-hero-eyebrow">Corps enseignant · {fiche?.annee_academique || 'Année courante'}</span>
             <h2 id="ens-fiche-titre">{formateur.nom} {formateur.prenom}</h2>
             <p>{texte(fiche?.grade_label)} · {texte(fiche?.specialite)}</p>
-            {fiche?.est_exemple && <span className="badge-bg-warning" aria-label="Données d’exemple">[Exemple]</span>}
+            <div className="ens-fiche-hero-tags">
+              {fiche?.numerobadge && <span className="ens-tag"><i className="bi bi-upc-scan" aria-hidden="true"></i>{fiche.numerobadge}</span>}
+              {fiche?.statut_enseignant && <span className="ens-tag">{fiche.statut_enseignant}</span>}
+              {fiche?.fonction && <span className="ens-tag">{fiche.fonction}</span>}
+              {fiche?.est_exemple && <span className="badge-bg-warning" aria-label="Données d’exemple">[Exemple]</span>}
+            </div>
           </div>
           <button type="button" className="px-modal-close" onClick={onClose} aria-label="Fermer la fiche"><i className="bi bi-x-lg" /></button>
         </header>
@@ -64,7 +105,12 @@ export default function FormateurFicheModal({ formateur, onClose, onExport, expo
             <div><span>Heures effectuées</span><strong className="ens-fiche-indisponible">{NON_DISPONIBLE}</strong></div>
           </div>
           <div className="px-tabs" role="tablist" aria-label="Rubriques de la fiche enseignant">
-            {ONGLETS.map(t => <button key={t.id} type="button" role="tab" aria-selected={onglet === t.id} className={`px-tab ${onglet === t.id ? 'active' : ''}`} onClick={() => setOnglet(t.id)}><i className={`bi ${t.icon}`} />{t.label}</button>)}
+            {ONGLETS.map(t => (
+              <button key={t.id} type="button" role="tab" aria-selected={onglet === t.id}
+                      className={`px-tab ${onglet === t.id ? 'active' : ''}`} onClick={() => setOnglet(t.id)}>
+                <i className={`bi ${t.icon}`} />{libelleOnglet(t)}
+              </button>
+            ))}
           </div>
           <div className="ens-fiche-body" role="tabpanel">
             {onglet === 'profil' && <>
@@ -93,21 +139,29 @@ export default function FormateurFicheModal({ formateur, onClose, onExport, expo
             {onglet === 'charge' && (charge ? <>
               <p className="px-panel-sub">Volumes des affectations de {fiche.annee_academique}, hors affectations annulées. Un statut « réalisée » n’est pas une mesure d’heures effectuées.</p>
               <dl className="ens-fiche-grille">
-                <Champ label="Charge prévue (maquette)"
+                <Champ label="Charge prévue (maquette)" indisponible={charge.prevue_disponible === false}
                        value={charge.prevue_disponible === false ? NON_DISPONIBLE : `${nombre(charge.prevue)} h`} />
                 <Champ label="Charge affectée" value={`${nombre(charge.affectee)} h`} />
                 <Champ label="Volume validé" value={`${nombre(charge.validee)} h`} />
                 <Champ label="Volume planifié" value={`${nombre(charge.planifiee)} h`} />
                 <Champ label="Volume au statut réalisé" value={`${nombre(charge.realisee)} h`} />
                 <Champ label="Seuil d’alerte" value={`${nombre(charge.seuil)} h`} />
-                <Champ label="Alerte de surcharge" value={charge.surcharge ? 'Oui' : 'Non'} />
               </dl>
+              <p className={`ens-fiche-alerte ${charge.surcharge ? 'is-danger' : 'is-ok'}`}>
+                <i className={`bi ${charge.surcharge ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill'}`} aria-hidden="true"></i>
+                {charge.surcharge
+                  ? `Surcharge : ${nombre(charge.affectee)} h affectées pour un seuil de ${nombre(charge.seuil)} h.`
+                  : `Charge dans la limite du seuil (${nombre(charge.seuil)} h).`}
+              </p>
             </> : <div className="finance-empty">Charge annuelle : {NON_DISPONIBLE}.</div>)}
             {onglet === 'evaluation' && <>
               <dl className="ens-fiche-grille">
-                <Champ label="Heures effectuées" value={fiche.heures_effectuees == null ? NON_DISPONIBLE : fmtDuration(fiche.heures_effectuees * 60)} />
-                <Champ label="Présence de l’enseignant" value={fiche.taux_presence == null ? NON_DISPONIBLE : `${fiche.taux_presence} %`} />
-                <Champ label="Satisfaction étudiants" value={fiche.satisfaction_etudiants == null ? NON_DISPONIBLE : fiche.satisfaction_etudiants} />
+                <Champ label="Heures effectuées" indisponible={fiche.heures_effectuees == null}
+                       value={fiche.heures_effectuees == null ? NON_DISPONIBLE : fmtDuration(fiche.heures_effectuees * 60)} />
+                <Champ label="Présence de l’enseignant" indisponible={fiche.taux_presence == null}
+                       value={fiche.taux_presence == null ? NON_DISPONIBLE : `${fiche.taux_presence} %`} />
+                <Champ label="Satisfaction étudiants" indisponible={fiche.satisfaction_etudiants == null}
+                       value={fiche.satisfaction_etudiants == null ? NON_DISPONIBLE : fiche.satisfaction_etudiants} />
               </dl>
               <p className="ens-fiche-observations">{fiche.disponibilite_indicateurs}</p>
             </>}
