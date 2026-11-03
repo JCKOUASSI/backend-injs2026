@@ -106,6 +106,11 @@ export const getEvenements = (etudiantId) =>
   api.get(`/scolarite/etudiants/${etudiantId}/evenements/`)
 export const createEvenement = (etudiantId, body) =>
   api.post(`/scolarite/etudiants/${etudiantId}/evenements/`, body)
+export const getJournalEvenements = (params) =>
+  api.get('/scolarite/journal/evenements/', { params })
+export const getJournalAudit = (params) =>
+  api.get('/scolarite/journal/audit/', { params })
+export const getJournalStats = () => api.get('/scolarite/journal/stats/')
 
 // ── Passerelle vers les modules opérationnels ───────────────────────────────
 

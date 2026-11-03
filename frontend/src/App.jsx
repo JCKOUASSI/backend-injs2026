@@ -118,6 +118,7 @@ const FicheEtudiant = lazy(() => import('./pages/scolarite/FicheEtudiant'))
 const GroupesPedagogiques = lazy(() => import('./pages/scolarite/Groupes'))
 const DocumentsScolaires = lazy(() => import('./pages/scolarite/DocumentsScolaires'))
 const Reinscriptions = lazy(() => import('./pages/scolarite/Reinscriptions'))
+const JournalScolarite = lazy(() => import('./pages/scolarite/JournalScolarite'))
 const Maquettes = lazy(() => import('./pages/scolarite/Maquettes'))
 const MaquetteDetail = lazy(() => import('./pages/scolarite/MaquetteDetail'))
 const Campagnes = lazy(() => import('./pages/scolarite/Campagnes'))
@@ -372,6 +373,15 @@ function App() {
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/scolarite">Scolarité</Link></li><li className="separator">/</li><li>Réinscriptions &amp; transferts</li></>}>
                 <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
                   <Reinscriptions />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/scolarite/journal" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/scolarite">Scolarité</Link></li><li className="separator">/</li><li>Journal de scolarité</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <JournalScolarite />
                 </Suspense>
               </Layout>
             </ProtectedRoute>

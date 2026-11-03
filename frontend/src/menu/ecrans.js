@@ -542,25 +542,6 @@ export const ECRANS = {
     note: 'Source : /api/admissions/campagnes/ + /classement/',
   },
 
-  journal_scolarite: {
-    id: 'journal_scolarite',
-    titre: 'Journal de scolarité',
-    fil: 'Scolarité',
-    icone: 'bi-journal-text',
-    introduction: 'Événements du cycle de vie de chaque dossier étudiant '
-      + '(inscriptions, transferts, radiations, décisions).',
-    endpoint: '/scolarite/etudiants/',
-    recherche: { param: 'search', libelle: 'Rechercher un étudiant', placeholder: 'Matricule, nom…' },
-    priorite: ['matricule', 'nom', 'prenoms', 'statut', 'niveau', 'parcours'],
-    detail: {
-      titre: (l) => `Journal — ${l.nom || ''} ${l.prenoms || ''}`.trim(),
-      sousTitre: 'Événements du dossier',
-      endpoint: (l) => `/scolarite/etudiants/${l.id}/evenements/`,
-      priorite: ['horodatage', 'type_evenement', 'libelle', 'auteur', 'motif'],
-    },
-    note: 'Source : /api/scolarite/etudiants/ + /evenements/',
-  },
-
 
   // --------------------------------------------------------------- FORMATIONS
   filieres: {

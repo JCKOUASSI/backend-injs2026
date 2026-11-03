@@ -138,6 +138,14 @@ log "Équivalences et dispenses : données d'exemple…"
 (cd "$BACKEND" && "$VENV/bin/python" manage.py seed_equivalences_demo) \
   && touch "$BACKEND/.equivalences_demo_ok"
 
+# Journal de parcours : les chargements massifs ci-dessus créent les
+# inscriptions sans passer par les services qui journalisent. On déduit donc
+# les événements de parcours des inscriptions validées (aucune donnée
+# inventée, lignes marquées « [Reconstitué] »). Idempotent.
+log "Journal de scolarité : reconstitution depuis les inscriptions…"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py reconstruire_journal_parcours) \
+  && touch "$BACKEND/.journal_parcours_ok"
+
 # ── 6. Site web ──────────────────────────────────────────────────────────────
 if [ ! -d "$FRONTEND/node_modules" ]; then
   log "Installation des dépendances npm…"

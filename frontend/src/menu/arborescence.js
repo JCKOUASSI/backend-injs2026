@@ -200,7 +200,6 @@ export const ARBORESCENCE = [
         id: 'scolarite.journal',
         libelle: 'Journal de scolarité',
         chemin: '/scolarite/journal',
-        ecran: 'journal_scolarite',
         droit: {
           curp: ['scolarite.journal_scolarite.consulter'],
           legacy: [['scolarite', 'voir']],

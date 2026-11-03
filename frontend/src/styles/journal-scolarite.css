@@ -1,0 +1,512 @@
+/* STYLE DÉDIÉ : JOURNAL DE SCOLARITÉ — habillage premium.
+ *
+ * La page s'appuie sur le design system Scolarité (`.cand-*`) ; ne restent
+ * ici que les pièces propres au journal : onglets des deux périmètres,
+ * segments de types, chronologie verticale des parcours et tableau de
+ * traçabilité. Toutes les classes sont préfixées `.jou-`.
+ */
+
+/* ── 1. BANDEAU ET INDICATEURS ── */
+.jou-pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.75rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.2;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.jou-pastille--primary {
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border-color: #BFDCF5;
+}
+
+.jou-pastille--neutre {
+  color: #475569;
+  background: #F1F5F9;
+  border-color: #E2E8F0;
+}
+
+.jou-kpi-sub {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #8C9AAD;
+  line-height: 1.25;
+}
+
+/* ── 2. ONGLETS DES DEUX JOURNAUX ── */
+.jou-onglets {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.jou-onglet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.05rem;
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #64748B;
+  background: #FFFFFF;
+  border: 1px solid #E3EAF2;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+
+.jou-onglet i { font-size: 1rem; }
+
+.jou-onglet:hover { border-color: var(--injs-blue-royal); color: var(--injs-navy); }
+.jou-onglet:focus-visible { outline: 2px solid var(--injs-blue-royal); outline-offset: 2px; }
+
+.jou-onglet.is-active {
+  color: #FFFFFF;
+  background: linear-gradient(135deg, var(--injs-blue-royal), var(--injs-navy));
+  border-color: transparent;
+  box-shadow: 0 10px 20px -10px rgba(15, 45, 90, 0.55);
+}
+
+.jou-onglet-nb {
+  padding: 0.08rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--injs-navy);
+  background: #EDF2F8;
+  border-radius: 9999px;
+}
+
+.jou-onglet.is-active .jou-onglet-nb { background: rgba(255, 255, 255, 0.2); color: #FFFFFF; }
+
+/* ── 3. FORMULAIRE D'ENREGISTREMENT ── */
+.jou-form { grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; }
+.jou-form .cand-saisie { min-height: 42px; width: 100%; }
+.jou-form textarea.cand-saisie { min-height: 42px; resize: vertical; }
+.jou-champ--large { grid-column: span 2; }
+.jou-champ-recherche { position: relative; }
+
+.jou-propositions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  background: #FFFFFF;
+  border: 1px solid #DCE6F2;
+  border-radius: 12px;
+  box-shadow: 0 16px 32px -12px rgba(15, 45, 90, 0.25);
+  overflow: hidden;
+}
+
+.jou-proposition {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.55rem 0.8rem;
+  font-family: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #EDF1F6;
+  cursor: pointer;
+}
+
+.jou-proposition:last-child { border-bottom: 0; }
+.jou-proposition:hover { background: #F5F9FF; }
+.jou-proposition-nom { font-size: 0.82rem; font-weight: 700; color: var(--injs-navy); }
+
+.jou-proposition-matricule {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #8C9AAD;
+  white-space: nowrap;
+}
+
+.jou-etudiant-choisi {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  min-height: 42px;
+  padding: 0.4rem 0.7rem;
+  background: #EEF4FF;
+  border: 1px solid #C7D9FB;
+  border-radius: 11px;
+}
+
+.jou-etudiant-choisi span { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.jou-etudiant-choisi strong { font-size: 0.84rem; color: var(--injs-navy); }
+.jou-etudiant-choisi small { font-size: 0.72rem; color: #5B7DA8; }
+
+.jou-retirer {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  font-size: 0.72rem;
+  color: #475569;
+  background: #FFFFFF;
+  border: 1px solid #DCE6F2;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.jou-retirer:hover { color: #A3222F; border-color: #F5C2C7; }
+
+.jou-form-pied {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.2rem;
+  padding-top: 0.95rem;
+  border-top: 1px solid #EDF1F6;
+}
+
+.jou-form-pied .jou-note { margin: 0; flex: 1 1 320px; }
+.jou-form-pied .cand-btn-principal { min-height: 42px; }
+
+.jou-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0.85rem 0 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: #64748B;
+}
+
+.jou-note i { color: var(--injs-blue-royal); margin-top: 0.15rem; flex: 0 0 auto; }
+
+/* ── 4. SEGMENTS DE TYPES ET FILTRES ── */
+.jou-segments {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.95rem;
+}
+
+.jou-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #475569;
+  background: #FFFFFF;
+  border: 1px solid #E3EAF2;
+  border-radius: 9999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.jou-segment:hover { border-color: var(--injs-blue-royal); }
+.jou-segment:focus-visible { outline: 2px solid var(--injs-blue-royal); outline-offset: 2px; }
+
+.jou-segment.is-active {
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px #DCEBFC;
+  background: #F5F9FF;
+  color: var(--injs-navy);
+}
+
+.jou-segment.is-vide { opacity: 0.55; }
+
+.jou-segment i { font-size: 0.88rem; }
+.jou-segment.is-blue i { color: #1D4ED8; }
+.jou-segment.is-green i { color: #0E7A4F; }
+.jou-segment.is-amber i { color: #B8860B; }
+.jou-segment.is-indigo i { color: #4338CA; }
+.jou-segment.is-cyan i { color: #0E7490; }
+.jou-segment.is-slate i { color: #475569; }
+.jou-segment.is-red i { color: #A3222F; }
+
+.jou-segment-nb {
+  padding: 0.05rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--injs-navy);
+  background: #EDF2F8;
+  border-radius: 9999px;
+}
+
+.jou-filtres {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.9rem 1.1rem;
+  flex-wrap: wrap;
+}
+
+.jou-filtre {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+  flex: 0 0 220px;
+  min-width: 0;
+}
+
+.jou-filtre--large { flex: 1 1 260px; }
+
+.jou-filtre .cand-filter-select,
+.jou-filtre .cand-saisie {
+  width: 100%;
+  flex: 0 0 auto;
+  min-height: 42px;
+}
+
+.jou-recherche { max-width: none; width: 100%; }
+
+/* ── 5. CHRONOLOGIE DES PARCOURS ── */
+.jou-chronologie {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.jou-jour-titre {
+  margin: 0 0 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--injs-navy);
+  text-transform: capitalize;
+}
+
+.jou-fil {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 1.35rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.jou-fil::before {
+  content: '';
+  position: absolute;
+  left: 19px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: linear-gradient(180deg, #CBDCF2, #E5EDF7);
+  border-radius: 2px;
+}
+
+.jou-evenement {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  position: relative;
+}
+
+.jou-icone {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  margin-left: -1.35rem;
+  display: inline-grid;
+  place-items: center;
+  font-size: 1rem;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 2px 6px rgba(15, 45, 90, 0.12);
+  z-index: 1;
+}
+
+.jou-icone.is-green { color: #0E7A4F; background: #E7F8EF; }
+.jou-icone.is-amber { color: #8A5A00; background: #FFF3D6; }
+.jou-icone.is-blue { color: #1D4ED8; background: #E7EFFE; }
+.jou-icone.is-indigo { color: #4338CA; background: #EBEDFE; }
+.jou-icone.is-cyan { color: #0E7490; background: #E2F7FC; }
+.jou-icone.is-slate { color: #475569; background: #EEF2F7; }
+.jou-icone.is-red { color: #A3222F; background: #FDECEC; }
+
+.jou-carte {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.7rem 0.9rem;
+  background: #FFFFFF;
+  border: 1px solid #E7EDF5;
+  border-radius: 14px;
+}
+
+.jou-carte-entete {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.jou-type {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.jou-type.is-green { color: #0E7A4F; background: #F1FBF6; border-color: #B7E7CE; }
+.jou-type.is-amber { color: #8A5A00; background: #FFF8E8; border-color: #F5DFAE; }
+.jou-type.is-blue { color: #1D4ED8; background: #EEF4FF; border-color: #C7D9FB; }
+.jou-type.is-indigo { color: #4338CA; background: #EEF0FF; border-color: #CFD5FB; }
+.jou-type.is-cyan { color: #0E7490; background: #ECFAFD; border-color: #B6E4EF; }
+.jou-type.is-slate { color: #475569; background: #F1F5F9; border-color: #DCE3EC; }
+.jou-type.is-red { color: #A3222F; background: #FDF1F2; border-color: #F5C2C7; }
+
+.jou-transition {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+.jou-transition i { font-size: 0.72rem; color: #8C9AAD; }
+.jou-ancienne { color: #8C9AAD; text-decoration: line-through; text-decoration-thickness: 1px; }
+
+.jou-badge-reconstitue {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.14rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #64748B;
+  background: #F8FAFC;
+  border: 1px dashed #CBD5E1;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.jou-auteur { margin-left: auto; font-size: 0.72rem; font-weight: 600; color: #8C9AAD; white-space: nowrap; }
+
+.jou-carte-corps {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem 0.9rem;
+  flex-wrap: wrap;
+  margin-top: 0.4rem;
+}
+
+.jou-etudiant {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-weight: 700;
+  color: var(--injs-navy);
+  text-decoration: none;
+}
+
+.jou-etudiant:hover, .jou-etudiant:focus-visible {
+  color: var(--injs-blue-royal);
+  text-decoration: underline;
+}
+
+.jou-matricule {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #8C9AAD;
+}
+
+.jou-contexte { font-size: 0.78rem; color: #64748B; }
+
+.jou-commentaire {
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #475569;
+}
+
+/* ── 6. TABLEAU DE TRAÇABILITÉ ── */
+.jou-table { min-width: 1020px; }
+.jou-table th:nth-child(1), .jou-table td:nth-child(1) { width: 150px; }
+.jou-table th:nth-child(3), .jou-table td:nth-child(3) { width: 300px; }
+.jou-table th:nth-child(4), .jou-table td:nth-child(4) { width: 150px; }
+.jou-table th:nth-child(5), .jou-table td:nth-child(5) { width: 220px; }
+
+.jou-horodatage { font-variant-numeric: tabular-nums; font-weight: 600; color: #334155; white-space: nowrap; }
+
+.jou-action { display: block; font-weight: 700; color: var(--injs-navy); line-height: 1.35; }
+
+.jou-commentaire-ligne {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: #64748B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 340px;
+}
+
+.jou-objet-type {
+  display: inline-flex;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #475569;
+  background: #F1F5F9;
+  border-radius: 6px;
+}
+
+.jou-objet-libelle { display: block; margin-top: 0.25rem; font-size: 0.8rem; font-weight: 600; color: #0F172A; line-height: 1.35; }
+.jou-acteur { font-family: ui-monospace, Menlo, monospace; font-size: 0.78rem; color: #334155; }
+.jou-vide-valeur { color: #B3C0D1; }
+
+/* ── 7. PAGINATION ── */
+.jou-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1.1rem;
+  border-top: 1px solid #EDF1F6;
+}
+
+.jou-pagination-infos { font-size: 0.8rem; color: #64748B; font-variant-numeric: tabular-nums; }
+.jou-pagination-actions { display: inline-flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
+
+/* ── 8. RESPONSIVE ── */
+@media (max-width: 1100px) {
+  .jou-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .jou-form { grid-template-columns: minmax(0, 1fr); }
+  .jou-champ--large { grid-column: span 1; }
+  .jou-filtre, .jou-filtre--large { flex: 1 1 100%; }
+  .jou-pagination { flex-direction: column; align-items: stretch; }
+  .jou-pagination-actions { justify-content: space-between; }
+  .jou-badge-reconstitue, .jou-auteur { margin-left: 0; }
+}

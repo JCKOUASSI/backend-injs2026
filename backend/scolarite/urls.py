@@ -5,6 +5,7 @@ from . import (
     cours_lmd_api,
     edt_export,
     groupes_api,
+    journal_api,
     inscription_api,
     passerelle_api,
     pedagogie_api,
@@ -57,6 +58,9 @@ urlpatterns = [
                                                                                      name='scolarite-groupe-repartition'),
     path('reinscriptions/',                       groupes_api.reinscrire,            name='scolarite-reinscription'),
     path('reinscriptions/stats/',                 groupes_api.reinscriptions_stats,  name='scolarite-reinscriptions-stats'),
+    path('journal/evenements/',                   journal_api.journal_evenements,    name='scolarite-journal-evenements'),
+    path('journal/audit/',                        journal_api.journal_audit,         name='scolarite-journal-audit'),
+    path('journal/stats/',                        journal_api.journal_stats,         name='scolarite-journal-stats'),
     path('etudiants/<int:pk>/evenements/',        groupes_api.etudiant_evenements,   name='scolarite-etudiant-evenements'),
 
     # Contrat de données en lecture seule pour l'application d'emploi du temps.
