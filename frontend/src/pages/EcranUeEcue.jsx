@@ -431,10 +431,18 @@ export default function EcranUeEcue() {
     }
   }, [ues])
 
-  // Sélection par défaut : la première maquette, puis sa première UE.
+  // Sélection par défaut : pour un gestionnaire, la copie de travail
+  // (première maquette en brouillon) plutôt que la version officielle
+  // gelée — c'est là que créer/cocher/modifier est possible ; sinon la
+  // première maquette, puis sa première UE.
   useEffect(() => {
-    if (!maquetteId && maquettes.length) setMaquetteId(String(maquettes[0].id))
-  }, [maquettes, maquetteId])
+    if (!maquetteId && maquettes.length) {
+      const copieTravail = peutGerer
+        ? maquettes.find((m) => m.statut === 'BROUILLON')
+        : null
+      setMaquetteId(String((copieTravail || maquettes[0]).id))
+    }
+  }, [maquettes, maquetteId, peutGerer])
   useEffect(() => {
     if (ueId && !ues.some((u) => Number(u.id) === Number(ueId))) setUeId(null)
   }, [ues, ueId])
@@ -656,6 +664,18 @@ export default function EcranUeEcue() {
             {STATUT_MAQUETTE[maquette.statut] || maquette.statut}
           </span>
         )}
+        {maquette && !maquetteEditable && peutGerer && (
+          <button
+            type="button"
+            className="btn btn-warning uex-btn-edition"
+            onClick={executerClonage}
+            disabled={cloner.isPending}
+            data-testid="cloner-maquette-barre"
+          >
+            <i className="bi bi-pencil-square me-1" aria-hidden="true"></i>
+            {cloner.isPending ? 'Clonage…' : 'Passer en mode édition (cloner)'}
+          </button>
+        )}
         {maquette && (
           <div className="uex-meta">
             <span><i className="bi bi-mortarboard"></i>{maquette.ref_formation}</span>
@@ -806,11 +826,13 @@ export default function EcranUeEcue() {
               <table className="table table-sm table-hover align-middle mb-0 gen-table">
                 <thead>
                   <tr>
-                    {peutGerer && maquetteEditable && (
+                    {peutGerer && (
                       <th scope="col" className="uex-col-check">
                         <input
                           type="checkbox"
                           className="uex-check"
+                          disabled={!maquetteEditable}
+                          title={maquetteEditable ? 'Tout cocher ou décocher les UE affichées' : 'Maquette gelée : clonez-la en version brouillon pour sélectionner et modifier'}
                           aria-label="Tout cocher ou décocher les UE affichées"
                           data-testid="tout-cocher-ue"
                           checked={uesFiltrees.length > 0 && uesFiltrees.every((u) => selectionUe.includes(u.id))}
@@ -845,11 +867,13 @@ export default function EcranUeEcue() {
                       style={{ cursor: 'pointer', animationDelay: `${Math.min(index * 40, 400)}ms` }}
                       data-testid={`ligne-ue-${ligne.id}`}
                     >
-                      {peutGerer && maquetteEditable && (
+                      {peutGerer && (
                         <td onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
                             className="uex-check"
+                            disabled={!maquetteEditable}
+                            title={maquetteEditable ? `Sélectionner l’UE ${ligne.code}` : 'Maquette gelée : clonez-la en version brouillon pour sélectionner et modifier'}
                             aria-label={`Sélectionner l’UE ${ligne.code}`}
                             data-testid={`cocher-ue-${ligne.id}`}
                             checked={selectionUe.includes(ligne.id)}
@@ -919,7 +943,7 @@ export default function EcranUeEcue() {
                   ))}
                   {!uesQuery.isLoading && uesFiltrees.length === 0 && (
                     <tr>
-                      <td colSpan={peutGerer && maquetteEditable ? 7 : 6}>
+                      <td colSpan={peutGerer ? 7 : 6}>
                         <div className="gen-empty">
                           <i className="bi bi-inbox" aria-hidden="true"></i>
                           <span className="gen-empty-title">
@@ -955,11 +979,13 @@ export default function EcranUeEcue() {
                 ECUE {ue ? `— ${ue.code}` : ''}
               </h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {peutGerer && maquetteEditable && ue && ue.ecues.length > 0 && (
+                {peutGerer && ue && ue.ecues.length > 0 && (
                   <label className="uex-tout-cocher">
                     <input
                       type="checkbox"
                       className="uex-check"
+                      disabled={!maquetteEditable}
+                      title={maquetteEditable ? 'Tout cocher ou décocher les ECUE affichés' : 'Maquette gelée : clonez-la en version brouillon pour sélectionner et modifier'}
                       aria-label="Tout cocher ou décocher les ECUE affichés"
                       data-testid="tout-cocher-ecue"
                       checked={ue.ecues.every((e) => selectionEcue.includes(e.id))}
@@ -1051,10 +1077,12 @@ export default function EcranUeEcue() {
                   data-testid={`ligne-ecue-${ecue.id}`}
                 >
                   <header className="uex-ecue-entete">
-                    {peutGerer && maquetteEditable && (
+                    {peutGerer && (
                       <input
                         type="checkbox"
                         className="uex-check"
+                        disabled={!maquetteEditable}
+                        title={maquetteEditable ? `Sélectionner l’ECUE ${ecue.code}` : 'Maquette gelée : clonez-la en version brouillon pour sélectionner et modifier'}
                         aria-label={`Sélectionner l’ECUE ${ecue.code}`}
                         data-testid={`cocher-ecue-${ecue.id}`}
                         checked={selectionEcue.includes(ecue.id)}

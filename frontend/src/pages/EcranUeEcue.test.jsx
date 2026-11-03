@@ -522,3 +522,39 @@ describe('sélection multiple des ECUE (demande 03/11)', () => {
     expect(apiController.findCall('post', '/scolarite/ecues/100/statut/')).toBeFalsy()
   })
 })
+
+describe('visibilité sur maquette gelée (demande 03/11 — retour utilisateur)', () => {
+  it('montre les cases verrouillées et le bouton d’édition, puis tout s’active après clonage', async () => {
+    const clone = { ...MAQUETTE_VALIDEE, id: 3, statut: 'BROUILLON' }
+    const liste = [MAQUETTE_VALIDEE]
+    monter({ maquettes: liste })
+    apiController.setRoute('/scolarite/maquettes/2/cloner/', () => {
+      liste.push(clone)
+      return clone
+    })
+    expect(await screen.findByTestId('maquette-verrouillee')).toBeInTheDocument()
+    await attendreEcran()
+    // Les cases à cocher sont VUES (mais verrouillées) et le bouton
+    // « Passer en mode édition » est présent dans la barre d'outils.
+    const caseUe = screen.getByTestId('cocher-ue-10')
+    expect(caseUe).toBeInTheDocument()
+    expect(caseUe.disabled).toBe(true)
+    expect(screen.getByTestId('tout-cocher-ue').disabled).toBe(true)
+    expect(screen.getByTestId('cloner-maquette-barre')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('cloner-maquette-barre'))
+    // Après clonage : cases actives, sélection et barre de masse utilisables.
+    expect(await screen.findByTestId('nouvelle-ue')).toBeInTheDocument()
+    expect(screen.getByTestId('cocher-ue-10').disabled).toBe(false)
+    fireEvent.click(screen.getByTestId('cocher-ue-10'))
+    expect(await screen.findByTestId('barre-actions-ue')).toBeInTheDocument()
+  })
+
+  it('un gestionnaire ouvre l’écran directement sur la copie brouillon', async () => {
+    const copie = { ...MAQUETTE_VALIDEE, id: 3, statut: 'BROUILLON' }
+    monter({ maquettes: [MAQUETTE_VALIDEE, copie] })
+    // La maquette présélectionnée est la copie de travail (id 3).
+    expect(await screen.findByTestId('nouvelle-ue')).toBeInTheDocument()
+    expect(screen.getByTestId('choix-maquette').value).toBe('3')
+  })
+})

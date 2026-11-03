@@ -405,3 +405,17 @@
 @media (prefers-reduced-motion: reduce) {
   .uex-bulkbar { animation: none; }
 }
+
+/* ── Mode édition : bouton de clonage dans la barre d'outils ── */
+.uex-btn-edition {
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 8px 18px -8px rgba(217, 119, 6, 0.7);
+}
+
+/* Cases visibles mais verrouillées sur maquette gelée : elles signalent
+   la sélection multiple, activée par le clonage en version brouillon. */
+.uex-check:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
