@@ -344,7 +344,11 @@ export default function EcranUeEcue() {
   const [ueId, setUeId] = useState(null)
   const [formulaire, setFormulaire] = useState(null)
   const [suppression, setSuppression] = useState(null)
+  const [suppressionMasse, setSuppressionMasse] = useState(null)
   const [recherche, setRecherche] = useState('')
+  // Sélection multiple (cases à cocher) : ids des UE et des ECUE cochés.
+  const [selectionUe, setSelectionUe] = useState([])
+  const [selectionEcue, setSelectionEcue] = useState([])
 
   // Écriture : mêmes rôles que le serveur (IsSecretariatOrDFRC), sans créer de
   // système d'habilitation parallèle. Le refus réel vient toujours de l'API.
@@ -438,6 +442,11 @@ export default function EcranUeEcue() {
     if (!ueId && ues.length) setUeId(ues[0].id)
   }, [ues, ueId])
   useEffect(() => { setUeId(null) }, [maquetteId])
+  // La sélection multiple ne survit ni au changement de maquette (UE),
+  // ni au changement d'UE sélectionnée (ECUE) : cocher dans un contexte
+  // puis agir dans un autre serait un piège.
+  useEffect(() => { setSelectionUe([]); setSelectionEcue([]) }, [maquetteId])
+  useEffect(() => { setSelectionEcue([]) }, [ueId])
 
   const rafraichir = () => {
     queryClient.invalidateQueries({ queryKey: ['ue-ecue'] })
@@ -479,6 +488,12 @@ export default function EcranUeEcue() {
       const url = type === 'ue' ? `/scolarite/ues/${element.id}/` : `/scolarite/ecues/${element.id}/`
       return api.delete(url)
     },
+  })
+
+  // Clonage : seule voie pour modifier le contenu d'une maquette gelée —
+  // le clone naît en brouillon (version suivante), l'original reste intact.
+  const cloner = useMutation({
+    mutationFn: async () => api.post(`/scolarite/maquettes/${maquetteId}/cloner/`),
   })
 
   const soumettreFormulaire = async (corps, creation) => {
@@ -527,6 +542,68 @@ export default function EcranUeEcue() {
     } finally {
       setSuppression(null)
     }
+  }
+
+  const executerClonage = async () => {
+    try {
+      const res = await cloner.mutateAsync()
+      const clone = res?.data
+      showToast('Version brouillon créée par clonage : son contenu est modifiable.')
+      await queryClient.invalidateQueries({ queryKey: ['ue-ecue', 'maquettes'] })
+      if (clone?.id) setMaquetteId(String(clone.id))
+    } catch (erreur) {
+      showToast(erreurLisible(erreur, 'Clonage refusé par le serveur.'), 'error')
+    }
+  }
+
+  /** Coche/décoche un élément (sélection individuelle). */
+  const basculerSelection = (setSelection) => (id, coche) => {
+    setSelection((prec) => (coche
+      ? [...new Set([...prec, id])]
+      : prec.filter((x) => x !== id)))
+  }
+  const basculerUe = basculerSelection(setSelectionUe)
+  const basculerEcue = basculerSelection(setSelectionEcue)
+
+  /**
+   * Action de masse sur la sélection : seuls les éléments dont la
+   * transition est autorisée sont traités ; les autres sont comptés comme
+   * ignorés, les refus serveur comme échecs — le bilan dit tout.
+   */
+  const executerMasse = async (type, elements, action) => {
+    const eligibles = action === 'SUPPRIMER'
+      ? elements.filter((el) => el.statut === 'BROUILLON')
+      : elements.filter((el) => (TRANSITIONS[el.statut] || []).includes(action))
+    let reussis = 0
+    let echecs = 0
+    for (const element of eligibles) {
+      try {
+        if (action === 'SUPPRIMER') {
+          await supprimer.mutateAsync({ type, element })
+        } else {
+          await changerStatut.mutateAsync({ type, element, statut: action })
+        }
+        reussis += 1
+      } catch {
+        echecs += 1
+      }
+    }
+    const ignores = elements.length - eligibles.length
+    const libelleAction = { ACTIVE: 'Activation', DESACTIVEE: 'Désactivation', SUPPRIMER: 'Suppression' }[action]
+    const genre = type === 'ue' ? 'UE' : 'ECUE'
+    let message = `${libelleAction} groupée : ${reussis} ${genre} traitée${reussis > 1 ? 's' : ''}.`
+    if (ignores) message += ` ${ignores} ignorée${ignores > 1 ? 's' : ''} (transition non autorisée).`
+    if (echecs) message += ` ${echecs} refusée${echecs > 1 ? 's' : ''} par le serveur.`
+    showToast(message, echecs ? 'error' : 'success')
+    if (type === 'ue') setSelectionUe([])
+    else setSelectionEcue([])
+    rafraichir()
+  }
+
+  const confirmerSuppressionMasse = async () => {
+    const { type, elements } = suppressionMasse
+    setSuppressionMasse(null)
+    await executerMasse(type, elements, 'SUPPRIMER')
   }
 
   const chargement = maquettesQuery.isLoading
@@ -640,6 +717,18 @@ export default function EcranUeEcue() {
             son contenu ne peut plus être modifié. Créez une nouvelle version (clonage) pour
             faire évoluer le programme.
           </span>
+          {peutGerer && (
+            <button
+              type="button"
+              className="btn btn-sm btn-warning uex-btn-cloner"
+              onClick={executerClonage}
+              disabled={cloner.isPending}
+              data-testid="cloner-maquette"
+            >
+              <i className="bi bi-copy me-1" aria-hidden="true"></i>
+              {cloner.isPending ? 'Clonage…' : 'Créer une version brouillon (cloner)'}
+            </button>
+          )}
         </div>
       )}
 
@@ -669,10 +758,76 @@ export default function EcranUeEcue() {
                 )}
               </div>
             </div>
+            {peutGerer && maquetteEditable && selectionUe.length > 0 && (
+              <div className="uex-bulkbar" data-testid="barre-actions-ue">
+                <span className="uex-bulkbar-compte">
+                  <i className="bi bi-check2-square" aria-hidden="true"></i>
+                  {selectionUe.length} UE sélectionnée{selectionUe.length > 1 ? 's' : ''}
+                </span>
+                <div className="uex-bulkbar-actions">
+                  <button
+                    type="button" className="btn btn-sm btn-success"
+                    disabled={changerStatut.isPending || supprimer.isPending}
+                    onClick={() => executerMasse('ue', ues.filter((u) => selectionUe.includes(u.id)), 'ACTIVE')}
+                    data-testid="masse-ue-activer"
+                  >
+                    <i className="bi bi-check-circle me-1" aria-hidden="true"></i>Activer
+                  </button>
+                  <button
+                    type="button" className="btn btn-sm btn-warning"
+                    disabled={changerStatut.isPending || supprimer.isPending}
+                    onClick={() => executerMasse('ue', ues.filter((u) => selectionUe.includes(u.id)), 'DESACTIVEE')}
+                    data-testid="masse-ue-desactiver"
+                  >
+                    <i className="bi bi-pause-circle me-1" aria-hidden="true"></i>Désactiver
+                  </button>
+                  <button
+                    type="button" className="btn btn-sm btn-danger"
+                    disabled={changerStatut.isPending || supprimer.isPending}
+                    onClick={() => setSuppressionMasse({
+                      type: 'ue',
+                      elements: ues.filter((u) => selectionUe.includes(u.id)),
+                    })}
+                    data-testid="masse-ue-supprimer"
+                  >
+                    <i className="bi bi-trash me-1" aria-hidden="true"></i>Supprimer
+                  </button>
+                  <button
+                    type="button" className="btn btn-sm btn-outline-secondary"
+                    onClick={() => setSelectionUe([])}
+                    data-testid="masse-ue-effacer"
+                  >
+                    Tout désélectionner
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="table-responsive gen-table-wrap">
               <table className="table table-sm table-hover align-middle mb-0 gen-table">
                 <thead>
                   <tr>
+                    {peutGerer && maquetteEditable && (
+                      <th scope="col" className="uex-col-check">
+                        <input
+                          type="checkbox"
+                          className="uex-check"
+                          aria-label="Tout cocher ou décocher les UE affichées"
+                          data-testid="tout-cocher-ue"
+                          checked={uesFiltrees.length > 0 && uesFiltrees.every((u) => selectionUe.includes(u.id))}
+                          ref={(el) => {
+                            if (el) {
+                              el.indeterminate = uesFiltrees.some((u) => selectionUe.includes(u.id))
+                                && !uesFiltrees.every((u) => selectionUe.includes(u.id))
+                            }
+                          }}
+                          onChange={(e) => {
+                            setSelectionUe((prec) => (e.target.checked
+                              ? [...new Set([...prec, ...uesFiltrees.map((u) => u.id)])]
+                              : prec.filter((id) => !uesFiltrees.some((u) => u.id === id))))
+                          }}
+                        />
+                      </th>
+                    )}
                     <th scope="col">Code</th>
                     <th scope="col">Intitulé</th>
                     <th scope="col">Sem.</th>
@@ -690,6 +845,18 @@ export default function EcranUeEcue() {
                       style={{ cursor: 'pointer', animationDelay: `${Math.min(index * 40, 400)}ms` }}
                       data-testid={`ligne-ue-${ligne.id}`}
                     >
+                      {peutGerer && maquetteEditable && (
+                        <td onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            className="uex-check"
+                            aria-label={`Sélectionner l’UE ${ligne.code}`}
+                            data-testid={`cocher-ue-${ligne.id}`}
+                            checked={selectionUe.includes(ligne.id)}
+                            onChange={(e) => basculerUe(ligne.id, e.target.checked)}
+                          />
+                        </td>
+                      )}
                       <td>
                         {/* Seul contrôle focusable de la ligne : au clavier,
                             c'est le code qui « ouvre » l'UE. */}
@@ -752,7 +919,7 @@ export default function EcranUeEcue() {
                   ))}
                   {!uesQuery.isLoading && uesFiltrees.length === 0 && (
                     <tr>
-                      <td colSpan={6}>
+                      <td colSpan={peutGerer && maquetteEditable ? 7 : 6}>
                         <div className="gen-empty">
                           <i className="bi bi-inbox" aria-hidden="true"></i>
                           <span className="gen-empty-title">
@@ -788,6 +955,27 @@ export default function EcranUeEcue() {
                 ECUE {ue ? `— ${ue.code}` : ''}
               </h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {peutGerer && maquetteEditable && ue && ue.ecues.length > 0 && (
+                  <label className="uex-tout-cocher">
+                    <input
+                      type="checkbox"
+                      className="uex-check"
+                      aria-label="Tout cocher ou décocher les ECUE affichés"
+                      data-testid="tout-cocher-ecue"
+                      checked={ue.ecues.every((e) => selectionEcue.includes(e.id))}
+                      ref={(el) => {
+                        if (el) {
+                          el.indeterminate = ue.ecues.some((e) => selectionEcue.includes(e.id))
+                            && !ue.ecues.every((e) => selectionEcue.includes(e.id))
+                        }
+                      }}
+                      onChange={(e) => {
+                        setSelectionEcue(e.target.checked ? ue.ecues.map((x) => x.id) : [])
+                      }}
+                    />
+                    Tout cocher
+                  </label>
+                )}
                 <span className="gen-count-pill">
                   {ue ? `${ue.ecues.length} ECUE` : 'Aucune UE sélectionnée'}
                 </span>
@@ -803,6 +991,50 @@ export default function EcranUeEcue() {
                 )}
               </div>
             </div>
+            {peutGerer && maquetteEditable && ue && selectionEcue.length > 0 && (
+              <div className="uex-bulkbar" data-testid="barre-actions-ecue">
+                <span className="uex-bulkbar-compte">
+                  <i className="bi bi-check2-square" aria-hidden="true"></i>
+                  {selectionEcue.length} ECUE sélectionnée{selectionEcue.length > 1 ? 's' : ''}
+                </span>
+                <div className="uex-bulkbar-actions">
+                  <button
+                    type="button" className="btn btn-sm btn-success"
+                    disabled={changerStatut.isPending || supprimer.isPending}
+                    onClick={() => executerMasse('ecue', ue.ecues.filter((e) => selectionEcue.includes(e.id)), 'ACTIVE')}
+                    data-testid="masse-ecue-activer"
+                  >
+                    <i className="bi bi-check-circle me-1" aria-hidden="true"></i>Activer
+                  </button>
+                  <button
+                    type="button" className="btn btn-sm btn-warning"
+                    disabled={changerStatut.isPending || supprimer.isPending}
+                    onClick={() => executerMasse('ecue', ue.ecues.filter((e) => selectionEcue.includes(e.id)), 'DESACTIVEE')}
+                    data-testid="masse-ecue-desactiver"
+                  >
+                    <i className="bi bi-pause-circle me-1" aria-hidden="true"></i>Désactiver
+                  </button>
+                  <button
+                    type="button" className="btn btn-sm btn-danger"
+                    disabled={changerStatut.isPending || supprimer.isPending}
+                    onClick={() => setSuppressionMasse({
+                      type: 'ecue',
+                      elements: ue.ecues.filter((e) => selectionEcue.includes(e.id)),
+                    })}
+                    data-testid="masse-ecue-supprimer"
+                  >
+                    <i className="bi bi-trash me-1" aria-hidden="true"></i>Supprimer
+                  </button>
+                  <button
+                    type="button" className="btn btn-sm btn-outline-secondary"
+                    onClick={() => setSelectionEcue([])}
+                    data-testid="masse-ecue-effacer"
+                  >
+                    Tout désélectionner
+                  </button>
+                </div>
+              </div>
+            )}
             {ue && ue.ecues.length > 0 && (
               <div className="uex-legende-volumes" aria-hidden="true">
                 <span><i className="uex-pastille is-cm"></i>Cours magistraux</span>
@@ -819,6 +1051,16 @@ export default function EcranUeEcue() {
                   data-testid={`ligne-ecue-${ecue.id}`}
                 >
                   <header className="uex-ecue-entete">
+                    {peutGerer && maquetteEditable && (
+                      <input
+                        type="checkbox"
+                        className="uex-check"
+                        aria-label={`Sélectionner l’ECUE ${ecue.code}`}
+                        data-testid={`cocher-ecue-${ecue.id}`}
+                        checked={selectionEcue.includes(ecue.id)}
+                        onChange={(e) => basculerEcue(ecue.id, e.target.checked)}
+                      />
+                    )}
                     <span className="gen-code-chip">{ecue.code}</span>
                     <BadgeStatut statut={ecue.statut} />
                   </header>
@@ -913,6 +1155,20 @@ export default function EcranUeEcue() {
           confirmLabel="Supprimer"
           onConfirm={confirmerSuppression}
           onCancel={() => setSuppression(null)}
+        />
+      )}
+
+      {suppressionMasse && (
+        <ConfirmModal
+          message={`Supprimer les ${suppressionMasse.elements.length} ${suppressionMasse.type === 'ue' ? 'UE' : 'ECUE'} sélectionnée${suppressionMasse.elements.length > 1 ? 's' : ''} ?`}
+          detail={
+            suppressionMasse.type === 'ue'
+              ? 'Seuls les éléments en brouillon sans dépendance sont supprimés : le serveur refuse les autres et le bilan final le signalera. Aucune suppression en cascade n’est effectuée.'
+              : 'Seuls les ECUE en brouillon sont supprimés : le serveur refuse les autres et le bilan final le signalera.'
+          }
+          confirmLabel="Supprimer la sélection"
+          onConfirm={confirmerSuppressionMasse}
+          onCancel={() => setSuppressionMasse(null)}
         />
       )}
     </div>

@@ -319,3 +319,89 @@
   .uex-kpi, .uex-ecue-carte, .uex-volumes-seg { transition: none; }
   .uex-kpi:hover, .uex-ecue-carte:hover { transform: none; }
 }
+
+/* ==========================================================================
+   SÉLECTION MULTIPLE & ACTIONS GROUPÉES (demande 03/11)
+   Cases à cocher individuelles et « tout cocher » (état indéterminé =
+   sélection partielle), barre d'actions de masse Activer / Désactiver /
+   Supprimer visible dès qu'une sélection existe.
+   ========================================================================== */
+
+.uex-check {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: #0B2A5B;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.uex-col-check { width: 2.4rem; }
+
+.uex-tout-cocher {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #344054;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.uex-bulkbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin: 0.9rem 1.1rem 0;
+  padding: 0.6rem 0.9rem;
+  border-radius: 12px;
+  background: linear-gradient(120deg, #EAF2FF, #DCEBFF);
+  border: 1px solid #B9D4F5;
+  box-shadow: 0 8px 18px -12px rgba(11, 42, 91, 0.5);
+  animation: uexBulkIn 0.25s ease both;
+}
+
+@keyframes uexBulkIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.uex-bulkbar-compte {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #0B2A5B;
+}
+
+.uex-bulkbar-compte i { color: #1265D6; }
+
+.uex-bulkbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.uex-bulkbar .btn { font-weight: 700; }
+
+/* Carte ECUE cochée : liseré de sélection. */
+.uex-ecue-carte:has(.uex-check:checked) {
+  border-color: #1265D6;
+  box-shadow: 0 0 0 2px rgba(18, 101, 214, 0.35),
+              0 14px 28px -16px rgba(7, 27, 58, 0.4);
+}
+
+/* Ligne UE cochée : fond teinté. */
+.gen-table tbody tr:has(.uex-check:checked) td {
+  background: #EAF2FF;
+}
+
+.uex-btn-cloner { font-weight: 700; white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .uex-bulkbar { animation: none; }
+}
