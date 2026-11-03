@@ -25,8 +25,8 @@ export default function PersonnelHub({ ongletInitial = 'agents' }) {
       ]}
       tuiles={(s) => [
         { valeur: s.agents, libelle: 'Agents', sub: `${s.agents_actifs ?? 0} actifs`, icone: 'bi-person-badge', ton: 'blue' },
-        { valeur: s.fonctions, libelle: 'Fonctions', sub: `${s.services ?? 0} services`, icone: 'briefcase', ton: 'indigo' },
-        { valeur: s.indisponibilites_en_cours, libelle: 'Absences en cours', sub: 'congés, missions, formations', icone: 'bi-calendar-x', ton: 'amber' },
+        { valeur: s.fonctions, libelle: 'Fonctions', sub: `${s.services ?? 0} services`, icone: 'bi-briefcase', ton: 'indigo' },
+        { valeur: s.indisponibilites_en_cours, libelle: 'Indisponibilités en cours', sub: 'congés, missions, formations', icone: 'bi-calendar-x', ton: 'amber' },
         { valeur: s.documents, libelle: 'Documents RH', sub: 'métadonnées classées', icone: 'bi-folder2-open', ton: 'cyan' },
       ]}
       onglets={[
@@ -34,7 +34,7 @@ export default function PersonnelHub({ ongletInitial = 'agents' }) {
           id: 'agents', libelle: 'Agents', icone: 'bi-person-badge',
           endpoint: '/rh/agents/',
           rechercheLocale: ['nom', 'prenom', 'matricule', 'email'],
-          recherchePlaceholder: 'Nom, matricule…',
+          recherchePlaceholder: 'Nom, prénom, matricule…',
           filtres: [{ param: 'statut', libelle: 'Statut', options: [
             { valeur: 'ACTIF', libelle: 'Actifs' }, { valeur: 'INACTIF', libelle: 'Inactifs' },
           ] }],
@@ -130,6 +130,14 @@ export default function PersonnelHub({ ongletInitial = 'agents' }) {
       ]}
       ongletInitial={ongletInitial}
       classePage="hub-personnel"
+      routesOnglets={{
+        agents: '/personnel/agents',
+        affectations: '/personnel/affectations',
+        disponibilites: '/personnel/disponibilites',
+        documents: '/personnel/documents',
+        fonctions: '/personnel/fonctions',
+        services: '/personnel/services',
+      }}
     />
   )
 }

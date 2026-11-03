@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import api from '../../services/api'
 import { useToast } from '../../context/ToastContext'
 import { useDebounce } from '../../hooks/useDebounce'
@@ -103,7 +103,16 @@ function Cellule({ colonne, ligne }) {
       if (affichable === null || affichable === undefined || affichable === '') {
         return <span className="hub-vide">—</span>
       }
-      return <span className={colonne.gras ? 'hub-gras' : undefined}>{String(affichable)}</span>
+      // sousCle : valeur secondaire (prénom, matricule…) affichée en seconde
+      // ligne — auparavant ignorée, l'agent n'apparaissait que par son nom.
+      return (
+        <span className="hub-valeur-double">
+          <span className={colonne.gras ? 'hub-gras' : undefined}>{String(affichable)}</span>
+          {colonne.sousCle && ligne[colonne.sousCle] ? (
+            <span className="hub-lien-sous">{ligne[colonne.sousCle]}</span>
+          ) : null}
+        </span>
+      )
   }
 }
 
@@ -308,10 +317,26 @@ function OngletTable({ onglet, actif }) {
 
 export default function ModuleHub({
   titre, badge, icone, introduction, pastilles,
-  statsEndpoint, tuiles, onglets, ongletInitial, classePage,
+  statsEndpoint, tuiles, onglets, ongletInitial, classePage, routesOnglets,
 }) {
   const [ongletActif, setOngletActif] = useState(ongletInitial || onglets[0]?.id)
   const [stats, setStats] = useState(null)
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  // L'onglet initial suit la route : sans cela, naviguer d'un sous-module
+  // à l'autre (menu, fil d'Ariane) gardait l'ancien onglet affiché.
+  useEffect(() => {
+    if (ongletInitial) setOngletActif(ongletInitial)
+  }, [ongletInitial])
+
+  const choisirOnglet = (id) => {
+    setOngletActif(id)
+    // Si l'onglet a une route dédiée, synchroniser l'URL (et donc le fil
+    // d'Ariane) : le panneau affiché ne doit jamais contredire l'adresse.
+    const route = routesOnglets?.[id]
+    if (route && location.pathname !== route) navigate(route)
+  }
 
   useEffect(() => {
     if (!statsEndpoint) return
@@ -386,7 +411,7 @@ export default function ModuleHub({
             key={o.id}
             type="button" role="tab" aria-selected={ongletActif === o.id}
             className={`hub-onglet${ongletActif === o.id ? ' is-active' : ''}`}
-            onClick={() => setOngletActif(o.id)}>
+            onClick={() => choisirOnglet(o.id)}>
             <i className={`bi ${o.icone || 'bi-table'}`} aria-hidden="true"></i>
             {o.libelle}
           </button>

@@ -75,6 +75,9 @@ describe('Hub Personnel premium', () => {
   it('affiche le panorama et les agents avec fonction actuelle', async () => {
     const { container } = mount()
     await waitFor(() => expect(screen.getByText('EX-AGT-001')).toBeInTheDocument())
+    // Le prénom (sousCle) est rendu en seconde ligne : l'agent n'est plus
+    // identifié par son seul nom de famille.
+    expect(screen.getByText('Aïcha')).toBeInTheDocument()
     expect(container.textContent).toContain('Chef du service des examens')
     expect(container.textContent).toContain('22 agents actifs sur 24')
     expect(container.textContent).not.toContain('FONCTIONNAIRE')
@@ -102,5 +105,17 @@ describe('Hub Personnel — design premium sobre', () => {
     // Aucun nom d'icône Lucide résiduel (ils ne produisaient aucune icône).
     expect(container.innerHTML).not.toContain('bi contactRound')
     expect(container.innerHTML).not.toContain('bi calendarOff')
+  })
+
+  it('rend l’icône de la tuile Fonctions et le libellé Indisponibilités', async () => {
+    const { container } = mount()
+    await waitFor(() => expect(screen.getByText('EX-AGT-001')).toBeInTheDocument())
+    // 'briefcase' seul produisait « bi briefcase », classe inexistante :
+    // la tuile Fonctions doit porter une vraie icône Bootstrap.
+    expect(container.querySelector('.cand-kpi-icon .bi-briefcase')).not.toBeNull()
+    expect(container.innerHTML).not.toContain('"bi briefcase"')
+    // Terminologie alignée sur l'onglet et l'API (indisponibilités).
+    expect(screen.getByText('Indisponibilités en cours')).toBeInTheDocument()
+    expect(screen.queryByText('Absences en cours')).not.toBeInTheDocument()
   })
 })

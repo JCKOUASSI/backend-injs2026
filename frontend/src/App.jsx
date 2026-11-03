@@ -582,6 +582,24 @@ function App() {
               </Layout>
             </ProtectedRoute>
           } />
+          <Route path="/personnel/fonctions" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Personnel</li><li className="separator">/</li><li>Fonctions</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <PersonnelHub ongletInitial="fonctions" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/personnel/services" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Personnel</li><li className="separator">/</li><li>Services</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <PersonnelHub ongletInitial="services" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
           <Route path="/administration/courrier" element={
             <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Administration</li><li className="separator">/</li><li>Courrier</li></>}>
