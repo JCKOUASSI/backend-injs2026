@@ -182,6 +182,13 @@ log "Jurys : sessions et décisions d'exemple…"
 (cd "$BACKEND" && "$VENV/bin/python" manage.py seed_jurys_demo) \
   && touch "$BACKEND/.jurys_demo_ok"
 
+# Diplômation d'exemple (tâche 34) : diplômes NON validés de fin de cycle,
+# gabarits, registre annuel ouvert. Idempotent ; retrait :
+# seed_diplomation_demo --purger.
+log "Diplômation : diplômes d'exemple non validés…"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py seed_diplomation_demo) \
+  && touch "$BACKEND/.diplomation_demo_ok"
+
 # ── 6. Site web ──────────────────────────────────────────────────────────────
 if [ ! -d "$FRONTEND/node_modules" ]; then
   log "Installation des dépendances npm…"

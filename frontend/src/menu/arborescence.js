@@ -608,7 +608,6 @@ export const ARBORESCENCE = [
         id: 'diplomation.eligibilite',
         libelle: 'Éligibilité',
         chemin: '/diplomation/eligibilite',
-        ecran: 'eligibilite_diplome',
         droit: {
           curp: ['diplomation.diplome.consulter'],
           legacy: [['scolarite', 'voir']],
@@ -627,7 +626,6 @@ export const ARBORESCENCE = [
         id: 'diplomation.attestations',
         libelle: 'Attestations',
         chemin: '/diplomation/attestations',
-        ecran: 'attestations',
         droit: {
           curp: ['diplomation.attestation.consulter', 'diplomation.attestation.imprimer'],
           legacy: [['scolarite', 'voir']],
@@ -637,7 +635,6 @@ export const ARBORESCENCE = [
         id: 'diplomation.certificats',
         libelle: 'Certificats',
         chemin: '/diplomation/certificats',
-        ecran: 'certificats',
         droit: {
           curp: ['diplomation.modele_document.consulter'],
           legacy: [['scolarite', 'voir']],
@@ -647,7 +644,6 @@ export const ARBORESCENCE = [
         id: 'diplomation.registres',
         libelle: 'Registres & modèles',
         chemin: '/diplomation/registres',
-        ecran: 'registres_diplomes',
         droit: {
           curp: ['diplomation.registre.consulter'],
           legacy: [['scolarite', 'voir']],

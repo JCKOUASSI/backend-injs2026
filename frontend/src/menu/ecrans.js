@@ -926,64 +926,9 @@ export const ECRANS = {
 
 
   // -------------------------------------------------------------- DIPLÔMATION
-  eligibilite_diplome: {
-    id: 'eligibilite_diplome',
-    titre: 'Éligibilité aux diplômes',
-    fil: 'Diplômation',
-    icone: 'bi-person-check',
-    introduction: 'Dossiers de diplôme constitués et leur état de validation '
-      + '(crédits acquis, décisions de jury, pièces).',
-    endpoint: '/graduation/diplomes/',
-    recherche: { param: 'search', libelle: 'Rechercher', placeholder: 'Nom, matricule…' },
-    priorite: ['reference', 'etudiant', 'diplome', 'statut', 'annee_academique', 'date_validation'],
-    note: 'Source : /api/graduation/diplomes/',
-  },
 
-  attestations: {
-    id: 'attestations',
-    titre: 'Attestations',
-    fil: 'Diplômation',
-    icone: 'bi-file-earmark-check',
-    introduction: 'Attestations de réussite produites à partir des diplômes '
-      + 'validés (édition PDF serveur).',
-    endpoint: '/graduation/diplomes/',
-    priorite: ['reference', 'etudiant', 'diplome', 'statut', 'date_validation'],
-    actions: [
-      {
-        libelle: 'Attestation PDF',
-        icone: 'bi-file-earmark-pdf',
-        apparence: 'btn-outline-primary',
-        telechargement: true,
-        chemin: (l) => `/graduation/diplomes/${l.id}/pdf/`,
-        succes: 'Attestation téléchargée.',
-      },
-    ],
-    note: 'Source : /api/graduation/diplomes/ + /pdf/',
-  },
 
-  certificats: {
-    id: 'certificats',
-    titre: 'Certificats & modèles',
-    fil: 'Diplômation',
-    icone: 'bi-patch-plus',
-    introduction: 'Modèles de documents officiels (diplômes, attestations, '
-      + 'certificats) utilisés pour la génération.',
-    endpoint: '/graduation/modeles/',
-    priorite: ['code', 'libelle', 'type', 'actif', 'version'],
-    note: 'Source : /api/graduation/modeles/',
-  },
 
-  registres_diplomes: {
-    id: 'registres_diplomes',
-    titre: 'Registres des diplômes',
-    fil: 'Diplômation',
-    icone: 'bi-journals',
-    introduction: 'Registres officiels de délivrance (numérotation, mentions, '
-      + 'vérification par jeton).',
-    endpoint: '/graduation/registres/',
-    priorite: ['reference', 'libelle', 'annee_academique', 'statut', 'nombre_diplomes'],
-    note: 'Source : /api/graduation/registres/',
-  },
 
   // ------------------------------------------------------- FINANCES ÉTUDIANTES
   frais_scolarite: {

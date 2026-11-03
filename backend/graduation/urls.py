@@ -4,6 +4,8 @@ from django.urls import path
 from . import api
 
 urlpatterns = [
+    path('stats/', api.stats_api, name='graduation-stats'),
+    path('eligibles/', api.eligibles_api, name='graduation-eligibles'),
     # Gestion des diplômes
     path('diplomes/', api.diplomes_list_api, name='graduation-diplomes-list'),
     path('diplomes/creer/', api.diplome_creer_api, name='graduation-diplome-creer'),
