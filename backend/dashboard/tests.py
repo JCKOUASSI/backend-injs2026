@@ -200,3 +200,97 @@ class AnneeAcademiqueNonInventeeAPITests(APITestCase):
         res = self.client.get('/api/dashboard/overview/')
         self.assertEqual(res.status_code, 200)
         self.assertIsNone(res.data['annee_academique'])
+
+
+class VueEnsembleCoherenceTests(TestCase):
+    """Vue d'ensemble : widgets alimentés, compteurs cohérents, zéro repli.
+
+    Défauts corrigés (Capture 2026-11-03) : légendes de formations en
+    double (« ACTIVITÉS PHYSIQUES » x2, intitulés tronqués à 20 caractères)
+    totalisant 1 322 pour 3 516 inscrits ; étape « Évaluation » comptant
+    les Module hérités (6) au lieu des évaluations académiques ; 60
+    « diplômes délivrés » dont aucun validé ; taux/activité/sexe/charge/
+    finances jamais fournis ; constantes inventées dans les onglets
+    (310 h / 245 h / 79 %, 960 000 XOF soldés, mentions 3/3, `or 5`…).
+    """
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        self.user = User.objects.create_user(
+            username='pilotage_test', password='password123',
+            role=User.Role.ADMIN, is_staff=True,
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_overview_structure_et_coherence(self):
+        res = self.client.get('/api/dashboard/overview/')
+        self.assertEqual(res.status_code, 200)
+        data = res.data
+
+        # Étapes du parcours : les 8 identifiants canoniques, dans l'ordre.
+        self.assertEqual(
+            [p['id'] for p in data['pipeline']],
+            ['candidature', 'selection', 'admission', 'inscription',
+             'cours', 'evaluation', 'jury', 'diplome'],
+        )
+
+        charts = data['charts']
+        for cle in ('repartition_formations', 'repartition_sexe',
+                    'evolution_effectifs', 'charge_enseignement'):
+            self.assertIn(cle, charts)
+
+        # Légendes de filières : jamais deux libellés identiques.
+        labels = [r['label'] for r in charts['repartition_formations']]
+        self.assertEqual(len(labels), len(set(labels)))
+
+        # Évolution : labels et cumul alignés, cumul non décroissant.
+        evo = charts['evolution_effectifs']
+        self.assertEqual(len(evo['labels']), len(evo['inscrits_cumul']))
+        self.assertEqual(evo['inscrits_cumul'], sorted(evo['inscrits_cumul']))
+
+        # Taux : nombres calculés ou None — la diplomation n'est pas mesurée.
+        taux = data['taux']
+        self.assertIsNone(taux['diplomation'])
+        for cle in ('reussite', 'abandon'):
+            self.assertTrue(taux[cle] is None or isinstance(taux[cle], float))
+
+        # Finances : impayé = attendu - encaissé (base échéanciers).
+        finances = data['finances']
+        self.assertAlmostEqual(
+            finances['montant_impaye'],
+            finances['montant_attendu'] - finances['montant_encaisse'],
+            places=2,
+        )
+        if finances['montant_attendu'] == 0:
+            self.assertIsNone(finances['taux_recouvrement'])
+
+        self.assertIsInstance(data['activite_recente'], list)
+
+    def test_onglets_sans_constantes_inventees(self):
+        from finances_etudiantes.models import LigneEcheancier
+        from jurys.models import PVJury
+        from graduation.models import Diplome
+        from stages.models import OrganismeAccueil
+
+        ped = self.client.get('/api/dashboard/pedagogie/').data['kpis']
+        # Heures « exécutées » sans source : None (jamais 245 h / 79,0 %).
+        self.assertIsNone(ped['heures_executees'])
+        self.assertIsNone(ped['taux_realisation_vh'])
+
+        fin = self.client.get('/api/dashboard/finances/').data['kpis']
+        if not LigneEcheancier.objects.exists():
+            self.assertEqual(fin['total_facture_xof'], '0 XOF')
+            self.assertIsNone(fin['taux_recouvrement'])
+
+        exa = self.client.get('/api/dashboard/examens/').data['kpis']
+        self.assertEqual(exa['pv_scelles'], PVJury.objects.count())
+        self.assertEqual(
+            exa['diplomes_certifies'],
+            Diplome.objects.filter(statut=Diplome.Statut.VALIDATED).count(),
+        )
+
+        log = self.client.get('/api/dashboard/logistique/').data['kpis']
+        self.assertIsNone(log['installations_sportives'])
+        self.assertEqual(
+            log['organismes_partenaires'], OrganismeAccueil.objects.count())

@@ -15,7 +15,7 @@ from authentication.models import User
 from formations.models import Formateur, RefFormation
 from referentiels.models import RefGradeEnseignant
 from scolarite.models import (
-    AffectationPedagogique, AnneeAcademique, ECUE, Maquette, Niveau,
+    AffectationPedagogique, AnneeAcademique, ECUE, Groupe, Maquette, Niveau,
     Semestre, UE,
 )
 
@@ -158,6 +158,34 @@ class SeedEnseignantsTests(EnseignantsBase):
         # Volume d'exemple documenté : 5 h par crédit (6 crédits → 30 h).
         self.assertEqual(
             float(affectations.get(ecue=self.ecue).volume_horaire), 30.0,
+        )
+
+    def test_seed_rattache_les_affectations_aux_groupes(self):
+        # Sans groupe rattaché, le tableau de bord signalait « 130 groupes
+        # sans affectation pédagogique » alors que les affectations
+        # existaient : le seed doit relier chaque affectation d'exemple au
+        # groupe actif de son périmètre (année, formation, niveau).
+        groupe = Groupe.objects.create(
+            annee_academique=self.annee, ref_formation=self.formation,
+            niveau=self.niveau, nom='L1 — Groupe A',
+        )
+        call_command('seed_enseignants_demo')
+        affectations = AffectationPedagogique.objects.filter(
+            observations__startswith='[Exemple]',
+        )
+        self.assertEqual(affectations.count(), 2)
+        self.assertEqual(
+            set(affectations.values_list('groupe_id', flat=True)),
+            {groupe.pk},
+        )
+        # Régénération non destructive : mêmes lignes, pas de doublons.
+        ids_avant = set(affectations.values_list('pk', flat=True))
+        call_command('seed_enseignants_demo')
+        self.assertEqual(
+            set(AffectationPedagogique.objects.filter(
+                observations__startswith='[Exemple]',
+            ).values_list('pk', flat=True)),
+            ids_avant,
         )
 
     def test_seed_idempotent_puis_purge(self):

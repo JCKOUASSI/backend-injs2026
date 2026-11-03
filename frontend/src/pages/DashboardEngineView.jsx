@@ -172,7 +172,38 @@ export default function DashboardEngineView() {
   const repartitionFormations = (data?.charts?.repartition_formations || [])
     .filter((d) => Number(d.value) > 0)
   const totalFormations = repartitionFormations.reduce((acc, d) => acc + Number(d.value), 0)
-  const palette = ['#1E40AF', '#1267D6', '#35BDF5', '#0D9488', '#8B5CF6', '#F59E0B']
+  const palette = ['#1E40AF', '#1267D6', '#35BDF5', '#0D9488', '#8B5CF6', '#F59E0B', '#16A36A', '#E85D9E']
+
+  // Widgets de la vue d'ensemble désormais alimentés par l'API (ils étaient
+  // rendus vides : évolution, taux, activité, sexe, charge, finances).
+  const fmtNombre = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR')
+  const fmtFcfa = (n) => (n === null || n === undefined ? null : `${fmtNombre(n)} F CFA`)
+  const evolution = data?.charts?.evolution_effectifs || { labels: [], inscrits_cumul: [] }
+  const couleursSexe = { Femmes: '#E85D9E', Hommes: '#1267D6', 'Non renseigné': '#94A3B8' }
+  const repartitionSexe = (data?.charts?.repartition_sexe || [])
+    .filter((d) => Number(d.value) > 0)
+    .map((d) => ({
+      label: d.label,
+      value: Number(d.value) || 0,
+      display: fmtNombre(d.value),
+      color: couleursSexe[d.label] || '#1267D6',
+    }))
+  const couleursCharge = { CM: '#1267D6', TD: '#35BDF5', TP: '#16A36A' }
+  const chargeEns = data?.charts?.charge_enseignement || { categories: [], series: [] }
+  const chargeSeries = (chargeEns.series || []).map((serie) => ({
+    ...serie,
+    color: couleursCharge[serie.name] || '#1267D6',
+  }))
+  const activiteItems = (data?.activite_recente || []).map((a) => {
+    const moment = a.moment ? new Date(a.moment) : null
+    const aujourdhui = moment && moment.toDateString() === new Date().toDateString()
+    const temps = !moment || Number.isNaN(moment.getTime())
+      ? ''
+      : aujourdhui
+        ? moment.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        : moment.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+    return { time: temps, text: a.texte, icon: a.icone || 'bi-activity', color: a.couleur || '#64748B' }
+  })
 
   return (
     <div className="dash-engine-container">
@@ -290,7 +321,11 @@ export default function DashboardEngineView() {
                 <LmdPipeline steps={data.pipeline || []} />
                 <VectorSplineAreaChart
                   title="Évolution des effectifs"
-                  period="6 ans"
+                  period={data.annee_academique || ''}
+                  years={evolution.labels}
+                  series={evolution.inscrits_cumul.length > 1
+                    ? [{ name: 'Inscrits (cumul)', color: '#1267D6', data: evolution.inscrits_cumul }]
+                    : []}
                 />
               </div>
 
@@ -304,20 +339,28 @@ export default function DashboardEngineView() {
                   data={repartitionFormations.map((d, i) => ({
                     label: d.label,
                     value: Number(d.value) || 0,
-                    display: String(d.value),
+                    display: fmtNombre(d.value),
                     color: palette[i % palette.length],
                   }))}
                 />
 
-                {/* Gauge 1 : Taux de réussite */}
-                {/* Taux non calculés par l'API : affichés « — », jamais inventés. */}
-                <RadialGaugeCard title="Taux de réussite" value={null} color="#16A36A" />
-
-                {/* Gauge 2 : Taux d'abandon */}
-                <RadialGaugeCard title="Taux d'abandon" value={null} color="#1267D6" />
-
-                {/* Gauge 3 : Taux de diplomation */}
-                <RadialGaugeCard title="Taux de diplomation" value={null} color="#16A36A" />
+                {/* Taux calculés par le BACKEND (décisions de jury, statuts
+                    étudiants du référentiel) ; ``null`` → « — non mesuré ».
+                    La diplomation reste non mesurée : aucune cohorte
+                    sortante n'est suivie, un ratio serait inventé. */}
+                <RadialGaugeCard
+                  title="Taux de réussite"
+                  value={data.taux?.reussite ?? null}
+                  trendComparison={data.taux?.reussite_base || null}
+                  color="#16A36A"
+                />
+                <RadialGaugeCard
+                  title="Taux d'abandon"
+                  value={data.taux?.abandon ?? null}
+                  trendComparison={data.taux?.abandon_base || null}
+                  color="#1267D6"
+                />
+                <RadialGaugeCard title="Taux de diplomation" value={data.taux?.diplomation ?? null} color="#16A36A" />
 
                 {/* Alertes institutionnelles */}
                 <AlertPanel alerts={data.alerts || []} />
@@ -325,15 +368,23 @@ export default function DashboardEngineView() {
 
               {/* ── 5. Activité, Sexe, Charge, Finances ── */}
               <div className="row-activity-finance">
-                <RecentActivityTimeline title="Activité récente" />
+                <RecentActivityTimeline title="Activité récente" items={activiteItems} />
 
-                {/* Le sexe n'est pas qualifié dans les données : aucune part inventée. */}
-                <VectorDonutChart title="Répartition par sexe" totalLabel="Étudiants" data={[]} />
+                <VectorDonutChart title="Répartition par sexe" totalLabel="Étudiants" data={repartitionSexe} />
 
-                <TeachingLoadBarChart title="Charge d'enseignement" />
+                <TeachingLoadBarChart
+                  title="Charge d'enseignement"
+                  categories={chargeEns.categories || []}
+                  series={chargeSeries}
+                />
 
-                {/* Aucun montant n'est fourni par l'API : ne rien afficher plutôt qu'inventer. */}
-                <FinancialSituationCard title="Situation financière" />
+                <FinancialSituationCard
+                  title="Situation financière"
+                  rate={data.finances?.taux_recouvrement ?? null}
+                  recettes={fmtFcfa(data.finances?.montant_attendu)}
+                  paiements={fmtFcfa(data.finances?.montant_encaisse)}
+                  impayes={fmtFcfa(data.finances?.montant_impaye)}
+                />
               </div>
 
               {/* ── Actions Rapides ── */}

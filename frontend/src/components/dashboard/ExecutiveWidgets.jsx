@@ -19,7 +19,7 @@ export function RecentActivityTimeline({
         <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#071B3A', margin: 0 }}>
           {title}
         </h3>
-        <Link to="/scolarite" style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1267D6', textDecoration: 'none' }}>
+        <Link to="/scolarite/journal" style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1267D6', textDecoration: 'none' }}>
           Voir tout →
         </Link>
       </div>
@@ -100,7 +100,7 @@ export function FinancialSituationCard({
             />
           </svg>
           <div style={{ position: 'absolute', textAlign: 'center', lineHeight: 1 }}>
-            <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#071B3A' }}>{taux === null ? '—' : `${taux}%`}</span>
+            <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#071B3A' }}>{taux === null ? '—' : `${String(taux).replace('.', ',')}%`}</span>
           </div>
         </div>
 

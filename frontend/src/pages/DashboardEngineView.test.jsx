@@ -190,6 +190,67 @@ describe('pages/DashboardEngineView.jsx — Rendu et Pilotage LMD 2026', () => {
     expect(screen.getByText(/2 conventions en attente de signature/i)).toBeInTheDocument()
   })
 
+  it('alimente taux, sexe, finances, charge, activité et évolution depuis l’API', async () => {
+    // Le résolveur de routes retient la PREMIÈRE correspondance : on repart
+    // d'un registre vide pour que la fixture enrichie soit bien servie.
+    apiController.reset()
+    apiController.setRoute('/dashboard/overview/', () => ({
+      ...mockOverviewData,
+      charts: {
+        ...mockOverviewData.charts,
+        repartition_formations: [{ label: 'Andragogie', value: 120 }],
+        repartition_sexe: [
+          { label: 'Femmes', value: 61 },
+          { label: 'Hommes', value: 59 },
+        ],
+        evolution_effectifs: {
+          labels: ['sept. 2026', 'oct. 2026'],
+          inscrits_cumul: [80, 120],
+        },
+        charge_enseignement: {
+          categories: ['Licence', 'Master'],
+          series: [{ name: 'CM', values: [300, 120] }],
+        },
+      },
+      taux: {
+        reussite: 77.4, reussite_base: '84 décision(s) de jury',
+        abandon: 0, abandon_base: '3527 inscription(s)',
+        diplomation: null, diplomation_base: null,
+      },
+      finances: {
+        montant_attendu: 13150000, montant_encaisse: 0,
+        montant_impaye: 13150000, taux_recouvrement: 0,
+      },
+      activite_recente: [
+        {
+          texte: 'Candidature créée – KOFFI Awa', action: 'CANDIDATURE_CREEE',
+          acteur: 'admin', moment: new Date().toISOString(),
+          icone: 'bi-person-plus', couleur: '#1267D6',
+        },
+      ],
+    }))
+    const admin = makeUser('ADMIN', { username: 'admin' })
+    mountDashboardEngine(admin)
+
+    // Jauges : réussite réelle (décimale française), diplomation non mesurée.
+    expect(await screen.findByText('77,4%')).toBeInTheDocument()
+    expect(screen.getByText(/84 décision\(s\) de jury/)).toBeInTheDocument()
+    expect(screen.getByText('non mesuré')).toBeInTheDocument()
+    // Répartition par sexe réelle.
+    expect(screen.getByText('Femmes')).toBeInTheDocument()
+    expect(screen.getByText('Hommes')).toBeInTheDocument()
+    // Situation financière réelle (base échéanciers).
+    expect(screen.getAllByText(/13 150 000 F CFA/).length).toBeGreaterThan(0)
+    // Activité récente issue du journal.
+    expect(screen.getByText(/Candidature créée/)).toBeInTheDocument()
+    // Charge d'enseignement : catégories par cycle.
+    expect(screen.getByText(/Charge d.enseignement/)).toBeInTheDocument()
+    expect(screen.getByText('Licence')).toBeInTheDocument()
+    // Évolution : la série remplace le message d'historique insuffisant.
+    expect(screen.queryByText(/Historique insuffisant/)).not.toBeInTheDocument()
+    expect(screen.getByText('sept. 2026')).toBeInTheDocument()
+  })
+
   it('permet de naviguer entre les onglets (Vue d\'ensemble → Scolarité)', async () => {
     const admin = makeUser('ADMIN', { username: 'admin' })
     mountDashboardEngine(admin)

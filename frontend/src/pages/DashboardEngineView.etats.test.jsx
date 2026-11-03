@@ -73,6 +73,8 @@ describe('DashboardEngineView — chargement et panne de l’API', () => {
   it('affiche l’année académique réellement renvoyée par l’API', async () => {
     apiController.setRoute(/^\/dashboard\//, { annee_academique: '2024-2025', kpis: {} })
     renderWithProviders(<DashboardEngineView />, { authUser: admin })
-    expect(await screen.findByText(/2024-2025/)).toBeInTheDocument()
+    // L'année de l'API apparaît dans l'accroche ET sur le graphique
+    // d'évolution (pastille de période) : au moins une occurrence réelle.
+    expect((await screen.findAllByText(/2024-2025/)).length).toBeGreaterThan(0)
   })
 })
