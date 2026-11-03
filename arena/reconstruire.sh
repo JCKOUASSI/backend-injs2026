@@ -189,6 +189,14 @@ log "Diplômation : diplômes d'exemple non validés…"
 (cd "$BACKEND" && "$VENV/bin/python" manage.py seed_diplomation_demo) \
   && touch "$BACKEND/.diplomation_demo_ok"
 
+# Évaluations d'exemple (tâche 34) : sessions, évaluations et notes en
+# BROUILLON (jamais validées/verrouillées). Les inscriptions pédagogiques
+# sont générées explicitement par le service officiel (frontière
+# respectée). Idempotent ; retrait : seed_evaluations_demo --purger.
+log "Évaluations : sessions et notes brouillons d'exemple…"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py seed_evaluations_demo) \
+  && touch "$BACKEND/.evaluations_demo_ok"
+
 # ── 6. Site web ──────────────────────────────────────────────────────────────
 if [ ! -d "$FRONTEND/node_modules" ]; then
   log "Installation des dépendances npm…"

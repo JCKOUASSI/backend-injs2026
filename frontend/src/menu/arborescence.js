@@ -488,7 +488,6 @@ export const ARBORESCENCE = [
         id: 'evaluations.saisie_notes',
         libelle: 'Saisie des notes',
         chemin: '/evaluations/saisie',
-        ecran: 'saisie_notes',
         droit: {
           curp: ['evaluations.note.saisir'],
           legacy: [['evaluations', 'consulter']],
@@ -498,7 +497,6 @@ export const ARBORESCENCE = [
         id: 'evaluations.controle_notes',
         libelle: 'Contrôle des notes',
         chemin: '/evaluations/controle',
-        ecran: 'controle_notes',
         droit: {
           curp: [
             'evaluations.note.valider',
@@ -533,7 +531,6 @@ export const ARBORESCENCE = [
         id: 'evaluations.releves',
         libelle: 'Relevés de notes',
         chemin: '/evaluations/releves',
-        ecran: 'releves_notes',
         droit: {
           curp: ['diplomation.releve_notes.consulter'],
           legacy: [['notes', 'gerer'], ['exports', 'liste_classe']],

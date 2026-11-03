@@ -6,11 +6,18 @@ Aucun double chemin n'est créé — contrairement au doublon historique
 """
 from django.urls import path
 
-from . import views
+from . import hub_api, views
 
 app_name = 'evaluations'
 
 urlpatterns = [
+    # ── Hub premium (consultation consolidée — tâche 34) ─────────────
+    path('hub/stats/', hub_api.stats_api, name='eval-hub-stats'),
+    path('hub/sessions/', hub_api.sessions_hub_api, name='eval-hub-sessions'),
+    path('hub/evaluations/', hub_api.evaluations_hub_api, name='eval-hub-evaluations'),
+    path('hub/notes/', hub_api.notes_hub_api, name='eval-hub-notes'),
+    path('hub/releves/', hub_api.releves_hub_api, name='eval-hub-releves'),
+
     # ── Sessions ──────────────────────────────────────────────────────
     path('sessions/', views.sessions_list, name='eval-sessions-list'),
     path('sessions/create/', views.sessions_create, name='eval-sessions-create'),

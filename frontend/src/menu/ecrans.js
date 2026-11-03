@@ -806,69 +806,7 @@ export const ECRANS = {
   },
 
   // --------------------------------------------------------------- ÉVALUATIONS
-  saisie_notes: {
-    id: 'saisie_notes',
-    titre: 'Saisie des notes',
-    fil: 'Évaluations',
-    icone: 'bi-pencil-square',
-    introduction: 'Modules du catalogue : ouvrir la grille de saisie des notes '
-      + "d'un module pour une formation. La saisie elle-même reste sur l'écran "
-      + 'dédié, gardé par le backend.',
-    endpoint: '/formations/ref/modules/',
-    recherche: { param: 'search', libelle: 'Rechercher un module', placeholder: 'Intitulé…' },
-    colonnes: [
-      { cle: 'intitule', libelle: 'Module' },
-      {
-        cle: 'formations',
-        libelle: 'Formations',
-        valeur: (l) => (l.formations || []).map((f) => f.intitule).join(', '),
-      },
-      { cle: 'volume_horaire', libelle: 'Volume horaire' },
-      { cle: 'actif', libelle: 'Actif', format: 'booleen' },
-    ],
-    actions: [
-      {
-        libelle: 'Saisir les notes',
-        icone: 'bi-pencil-square',
-        apparence: 'btn-outline-primary',
-        vers: (l) => ((l.formation_ids || [])[0]
-          ? `/formations/${l.formation_ids[0]}/modules/${l.id}/notes`
-          : null),
-      },
-    ],
-    note: 'Source : /api/formations/ref/modules/',
-  },
 
-  controle_notes: {
-    id: 'controle_notes',
-    titre: 'Contrôle des notes',
-    fil: 'Évaluations',
-    icone: 'bi-clipboard-data',
-    introduction: 'Contrôle et validation des notes saisies : historique et '
-      + 'workflow de validation par module.',
-    endpoint: '/formations/ref/modules/',
-    recherche: { param: 'search', libelle: 'Rechercher un module', placeholder: 'Intitulé…' },
-    colonnes: [
-      { cle: 'intitule', libelle: 'Module' },
-      {
-        cle: 'formations',
-        libelle: 'Formations',
-        valeur: (l) => (l.formations || []).map((f) => f.intitule).join(', '),
-      },
-      { cle: 'actif', libelle: 'Actif', format: 'booleen' },
-    ],
-    actions: [
-      {
-        libelle: 'Ouvrir le contrôle',
-        icone: 'bi-box-arrow-up-right',
-        apparence: 'btn-outline-secondary',
-        vers: (l) => ((l.formation_ids || [])[0]
-          ? `/formations/${l.formation_ids[0]}/modules/${l.id}/notes`
-          : null),
-      },
-    ],
-    note: 'Source : /api/formations/ref/modules/ + workflow de notes',
-  },
 
   // NOTE — `deliberations_notes` et `resultats_notes` ont été SUPPRIMÉS.
   // Ces descripteurs pointaient sur `/formations/list/` (des formations, pas
@@ -879,46 +817,6 @@ export const ECRANS = {
   //   - Délibérations → `/api/jurys/` (moteur LMD/ECTS, source de vérité) ;
   //   - Résultats    → `/api/evaluations-academiques/resultats/{ecue,ue,semestre}/`.
 
-  releves_notes: {
-    id: 'releves_notes',
-    type: 'documents',
-    titre: 'Relevés de notes',
-    fil: 'Évaluations',
-    icone: 'bi-file-earmark-ruled',
-    introduction: 'Relevés individuels produits par le serveur. Un étudiant '
-      + 'doit être sélectionné : le fichier est généré puis téléchargé.',
-    documents: [
-      {
-        id: 'releve_individuel',
-        libelle: 'Relevé individuel',
-        icone: 'bi-person-lines-fill',
-        description: 'Fiche de notes complète (PDF ou Excel).',
-        parametres: [{ cle: 'etudiant', libelle: 'Étudiant', type: 'select', ...RESSOURCES.etudiants }],
-        formats: [
-          { id: 'pdf', libelle: 'PDF', suffixe: 'pdf', icone: 'bi-file-earmark-pdf' },
-          { id: 'excel', libelle: 'Excel', suffixe: 'xlsx', icone: 'bi-file-earmark-excel' },
-        ],
-        chemin: (v, f) => `/participant/${v.etudiant}/notes-fiche/export/${f.id}/`,
-      },
-      {
-        id: 'liste_classe_notes',
-        libelle: 'Liste de classe',
-        icone: 'bi-people',
-        description: 'Liste des auditeurs par groupe (PDF ou Excel).',
-        parametres: [
-          { cle: 'groupe', libelle: 'Groupe (facultatif)', type: 'select', requis: false, ...RESSOURCES.groupes },
-        ],
-        formats: [
-          { id: 'pdf', libelle: 'PDF', suffixe: 'pdf', icone: 'bi-file-earmark-pdf' },
-          { id: 'excel', libelle: 'Excel', suffixe: 'xlsx', icone: 'bi-file-earmark-excel' },
-        ],
-        chemin: (v, f) => `/exports/participants/liste-classe/${f.id}/?${new URLSearchParams(
-          Object.fromEntries(Object.entries(v).filter(([, x]) => x)),
-        ).toString()}`,
-      },
-    ],
-    note: 'Sources : /api/participant/, /api/exports/',
-  },
 
   // -------------------------------------------------------------------- JURYS
 
