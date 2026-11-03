@@ -49,6 +49,24 @@ def construire_fiche(enseignant, request):
     } for a in affectations]
     formations = list(dict.fromkeys(l['formation'] for l in lignes))
     identite = FormateurSerializer(enseignant, context={'request': request}).data
+
+    # Répartition des heures par nature d'enseignement (CM / TD / TP…) : agrégée
+    # ici, jamais recalculée côté React. Vide si aucune affectation.
+    cumul = {}
+    for ligne in lignes:
+        cle = ligne['type_enseignement'] or 'Nature non précisée'
+        cumul[cle] = cumul.get(cle, 0) + ligne['heures']
+    repartition = [
+        {'libelle': libelle, 'heures': round(heures, 2)}
+        for libelle, heures in sorted(cumul.items(), key=lambda item: (-item[1], item[0]))
+    ]
+    charge = charges_services.charge_enseignant(enseignant, annee) if annee else None
+    # Taux d'occupation du seuil d'alerte, arrondi côté serveur : le frontend
+    # n'a qu'à l'afficher, pas à refaire le ratio.
+    taux_charge = None
+    if charge and charge.get('seuil'):
+        taux_charge = round(float(charge.get('affectee') or 0) / float(charge['seuil']) * 100)
+
     return {
         **identite,
         'annee_academique': annee.libelle if annee else None,
@@ -59,7 +77,9 @@ def construire_fiche(enseignant, request):
         'heures_affectees': float(affectations.aggregate(total=Sum('volume_horaire'))['total'] or 0),
         'formations': formations,
         'affectations': lignes,
-        'charge': charges_services.charge_enseignant(enseignant, annee) if annee else None,
+        'repartition': repartition,
+        'charge': charge,
+        'taux_charge': taux_charge,
         'heures_effectuees': None,
         'taux_presence': None,
         'satisfaction_etudiants': None,

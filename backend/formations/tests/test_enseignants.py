@@ -238,6 +238,28 @@ class FicheEnseignantLMDTests(EnseignantsBase):
         liste = self.client.get('/api/formations/formateurs/list/')
         self.assertEqual(liste.data['results'][0]['nb_formations'], 1)
 
+    def test_repartition_et_taux_de_charge_calcules_cote_serveur(self):
+        """La répartition CM/TD/TP et le ratio de seuil sont agrégés au serveur."""
+        from scolarite.models import AffectationPedagogique
+        AffectationPedagogique.objects.create(
+            enseignant=self.enseignant, annee_academique=self.annee,
+            ref_formation=self.formation, niveau=self.niveau, semestre=self.semestre,
+            ue=self.ue, ecue=self.ecue, volume_horaire=10, groupe=None,
+            type_enseignement=AffectationPedagogique.TypeEnseignement.TD,
+        )
+        res = self.client.get(f'/api/formations/formateurs/{self.enseignant.pk}/fiche/')
+        self.assertEqual(res.status_code, 200)
+        repartition = res.data['repartition']
+        self.assertEqual(sum(r['heures'] for r in repartition), 40)
+        self.assertEqual(len(repartition), 2)
+        # Tri décroissant par volume : la nature la plus lourde d'abord.
+        self.assertGreaterEqual(repartition[0]['heures'], repartition[1]['heures'])
+        self.assertTrue(all(r['libelle'] for r in repartition))
+        # Taux de charge : affectée / seuil, arrondi côté serveur.
+        seuil = res.data['charge']['seuil']
+        attendu = round(res.data['charge']['affectee'] / seuil * 100) if seuil else None
+        self.assertEqual(res.data['taux_charge'], attendu)
+
     def test_affectation_annulee_exclue_de_la_fiche(self):
         self.affectation.statut = AffectationPedagogique.Statut.ANNULEE
         self.affectation.save()

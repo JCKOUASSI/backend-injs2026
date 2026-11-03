@@ -36,6 +36,16 @@ import '../styles/formateurs.css'
 
 const emptyForm = { numerobadge: '', nom: '', prenom: '', email: '', telephone: '', specialite: '', organisation: '', grade_ref: '', fonction: '', statut_enseignant: '', observations: '', secretariats: [] }
 
+// Taille de page envoyée au serveur : les deux endpoints de liste n'ont pas le
+// même défaut (50 pour « list », 25 pour « finance-report »). Sans valeur
+// explicite, la pagination annonce « 1–50 sur 68 » alors que 25 lignes sont
+// affichées. Une seule constante, transmise au serveur et à <Pagination>.
+const PAGE_SIZE = 50
+// Nombre de colonnes de la vue « corps enseignant » (hors colonnes sensibles
+// ajoutées pour la finance/archives) : sert à la fois à l'en-tête et à la
+// cellule d'état vide, pour qu'elles ne puissent plus diverger.
+const COLONNES_ENSEIGNANTS = 7
+
 const financeStatsForGrid = (detail) => ({
   ...(detail?.statistiques || {}),
   sessions_count: detail?.sessions_count,
@@ -44,7 +54,7 @@ const financeStatsForGrid = (detail) => ({
 })
 
 export default function Formateurs() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const isArchiveRole = user?.role === 'ARCHIVE'
   const canViewFinanceData = FINANCE_MODULE_ROLES.includes(user?.role) && !isArchiveRole
   const canEditFormateurSensitive = user?.role === 'FINANCE'
@@ -97,8 +107,15 @@ export default function Formateurs() {
     [page, debouncedSearch, appliedFinancePeriod, canViewFinanceData],
   )
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- rechargement intentionnel : la fonction de chargement n’est pas mémoïsée (l’ajouter provoquerait une boucle) ; les dépendances de données présentes pilotent déjà le (re)chargement.
-  useEffect(() => { loadFormateurs() }, [page, debouncedSearch, appliedFinancePeriod, gradeFiltre, specialiteFiltre])
+  // L'endpoint (corps enseignant ou suivi finance) dépend du rôle, connu
+  // seulement après résolution de l'identité : sans `authLoading` ni
+  // `canViewFinanceData` dans les dépendances, un utilisateur finance gardait
+  // la liste pédagogique chargée avant résolution — et un tableau vide.
+  useEffect(() => {
+    if (authLoading) return
+    loadFormateurs()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- rechargement intentionnel : la fonction de chargement n’est pas mémoïsée (l’ajouter provoquerait une boucle) ; les dépendances de données présentes pilotent déjà le (re)chargement.
+  }, [page, debouncedSearch, appliedFinancePeriod, gradeFiltre, specialiteFiltre, canViewFinanceData, authLoading])
 
   const chargerStatsEns = async () => {
     try {
@@ -131,6 +148,9 @@ export default function Formateurs() {
     setLoading(true)
     try {
       const params = new URLSearchParams({ page })
+      // Taille de page explicite : le serveur a des défauts différents selon
+      // l'endpoint (50 vs 25) ; on impose la même règle partout.
+      params.set('page_size', String(PAGE_SIZE))
       if (debouncedSearch) params.set('search', debouncedSearch)
       if (!canViewFinanceData && gradeFiltre) params.set('grade', gradeFiltre)
       if (!canViewFinanceData && specialiteFiltre) params.set('specialite', specialiteFiltre)
@@ -142,7 +162,7 @@ export default function Formateurs() {
         buildFinanceQuery(appliedFinancePeriod).forEach((v, k) => params.set(k, v))
       }
       const response = await api.get(`${endpoint}?${params}`)
-      const { results, count, totalPages: pages } = parsePaginatedResponse(response.data, 50)
+      const { results, count, totalPages: pages } = parsePaginatedResponse(response.data, PAGE_SIZE)
       setFormateurs(results)
       setTotalCount(count)
       setTotalPages(pages)
@@ -434,7 +454,7 @@ export default function Formateurs() {
       <section className="finance-section">
         <div className="finance-section-header">
           <h2><i className="bi bi-people"></i>Suivi des enseignants</h2>
-          <span className="badge-bg-secondary">{formateurs.length} résultat(s)</span>
+          <span className="badge-bg-secondary">{fmtNb(totalCount)} résultat{totalCount > 1 ? 's' : ''}</span>
         </div>
         <div className="finance-table-wrap">
           {loading ? (
@@ -506,7 +526,7 @@ export default function Formateurs() {
                 totalPages={totalPages}
                 onPageChange={setPage}
                 totalItems={totalCount}
-                pageSize={50}
+                pageSize={PAGE_SIZE}
                 className="p-3"
               />
             </>
@@ -571,7 +591,7 @@ export default function Formateurs() {
           <p className="px-hero-intro">Grades académiques, spécialités et enseignements (ECUE) rattachés aux formations LMD de toutes les filières.</p>
         </div>
         <div className="px-hero-side">
-          <span className="px-plaquette">{fmtNb(totalCount)} enseignant{totalCount > 1 ? 's' : ''}</span>
+          <span className="px-plaquette">{fmtNb(statsEns?.enseignants ?? totalCount)} enseignant{(statsEns?.enseignants ?? totalCount) > 1 ? 's' : ''}</span>
           <span className="px-plaquette px-plaquette--soft">{canDelete ? 'Gestion' : 'Consultation'}</span>
         </div>
       </header>
@@ -716,7 +736,7 @@ export default function Formateurs() {
           {loading ? <div className="loading px-loading"><div className="spinner"></div></div> : (
             <>
               <div className="table-container">
-                <table className="table px-table ens-table">
+                <table className={`table px-table ens-table${canViewSensitive ? ' is-sensitive' : ''}`}>
                   <thead>
                     <tr>
                       <th>Numéro</th>
@@ -837,7 +857,7 @@ export default function Formateurs() {
                         </td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={canViewFinanceData ? 10 : (7 + (canViewSensitive ? 2 : 0))} className="text-center py-4 text-muted">
+                      <tr><td colSpan={COLONNES_ENSEIGNANTS + (canViewSensitive ? 2 : 0)} className="text-center py-4 text-muted">
                         <span className="px-empty ens-empty">
                           <span className="px-empty-badge"><i className="bi bi-person-x"></i></span>
                           <span className="ens-empty-titre">Aucun enseignant trouvé</span>
@@ -862,7 +882,7 @@ export default function Formateurs() {
                 totalPages={totalPages}
                 onPageChange={setPage}
                 totalItems={totalCount}
-                pageSize={50}
+                pageSize={PAGE_SIZE}
               />
             </>
           )}

@@ -94,8 +94,10 @@ describe('Enseignants — panorama premium', () => {
     expect(container.textContent).toMatch(/12\s*000 h/)
     expect(container.textContent).toContain('16/16')
     // Total réel (67), pas la taille de la page affichée (2 lignes).
-    expect(screen.getByText(/67 enseignants/)).toBeInTheDocument()
-    expect(screen.getByText(/67 résultats/)).toBeInTheDocument()
+    // La liste attend la résolution de l'identité (l'endpoint dépend du rôle) :
+    // l'assertion est donc asynchrone, comme le chargement qu'elle vérifie.
+    expect(await screen.findByText(/67 enseignants/)).toBeInTheDocument()
+    expect(await screen.findByText(/67 résultats/)).toBeInTheDocument()
   })
 
   it('présente grade académique, fonction et charge réelle de chaque enseignant', async () => {
@@ -169,6 +171,12 @@ describe('Enseignants — fiche pédagogique LMD', () => {
     heures_effectuees: null, taux_presence: null, satisfaction_etudiants: null,
     disponibilite_indicateurs: 'Aucune source de présence enseignante reliée.',
     charge: { affectee: 210, validee: 210, planifiee: 0, realisee: 0, seuil: 192, surcharge: true },
+    taux_charge: 109,
+    repartition: [
+      { libelle: 'Cours magistral', heures: 120 },
+      { libelle: 'Travaux dirigés', heures: 60 },
+      { libelle: 'Travaux pratiques', heures: 30 },
+    ],
     affectations: [{ id: 7, ecue_code: 'ES-S1-EC01', ecue_intitule: 'Physiologie', ue: 'Sciences',
       formation: 'ENTRAÎNEMENT SPORTIF — LICENCE', filiere: 'ES', niveau: 'L1', semestre: 'S1',
       groupe: 'L1-G1', type_enseignement: 'Cours magistral', heures: 15, statut_label: 'Validée', est_exemple: true }],
@@ -231,5 +239,100 @@ describe('Enseignants — fiche pédagogique LMD', () => {
     await user.click(await screen.findByRole('button', { name: /Détail/ }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Aucune donnée financière de substitution')
     expect(screen.getByRole('button', { name: /Export PDF/ })).toBeDisabled()
+  })
+})
+
+describe('Enseignants — cohérence des appels et du design', () => {
+  it('envoie une taille de page explicite au serveur', async () => {
+    mount()
+    await screen.findByText(/KOUASSI/)
+    const appels = apiMock.get.mock.calls.map(([url]) => String(url))
+    const liste = appels.find((u) => u.includes('/formations/formateurs/list/'))
+    expect(liste).toBeTruthy()
+    // Les deux endpoints de liste n'ont pas le même défaut côté serveur
+    // (50 pour « list », 25 pour « finance-report ») : sans valeur explicite,
+    // la pagination annonçait 50 lignes pour 25 affichées.
+    expect(liste).toContain('page_size=50')
+  })
+
+  it('affiche le total du corps enseignant dans l’en-tête, pas le total filtré', async () => {
+    apiController.reset()
+    apiController.setRoute('/formations/formateurs/stats/', () => STATS)
+    apiController.setRoute('/formations/formateurs/list/', () => ({
+      ...LIGNES, results: [LIGNES.results[0]], count: 3, total_pages: 1,
+    }))
+    mount()
+    // 67 = total du panorama serveur (STATS.enseignants), 3 = résultats filtrés.
+    expect(await screen.findByText(/67 enseignants/)).toBeInTheDocument()
+    expect(await screen.findByText(/3 résultats/)).toBeInTheDocument()
+  })
+
+  const FICHE_PREMIUM = {
+    ...LIGNES.results[0], annee_academique: '2026-2027', grade_label: 'Professeur Titulaire',
+    est_exemple: true, nb_formations: 1, nb_ecue: 14, heures_affectees: 210,
+    heures_effectuees: null, taux_presence: null, satisfaction_etudiants: null,
+    disponibilite_indicateurs: 'Aucune source de présence enseignante reliée.',
+    charge: { affectee: 210, validee: 210, planifiee: 0, realisee: 0, seuil: 192, surcharge: true },
+    taux_charge: 109,
+    repartition: [
+      { libelle: 'Cours magistral', heures: 120 },
+      { libelle: 'Travaux dirigés', heures: 60 },
+      { libelle: 'Travaux pratiques', heures: 30 },
+    ],
+    affectations: [],
+  }
+
+  it('présente la fiche premium : rail d’identité, anneau de charge et répartition', async () => {
+    apiController.reset()
+    apiController.setRoute('/formations/formateurs/stats/', () => STATS)
+    apiController.setRoute('/formations/formateurs/list/', () => ({
+      ...LIGNES, results: [{ ...LIGNES.results[0], est_exemple: true }], count: 1, total_pages: 1,
+    }))
+    apiController.setRoute('/formations/formateurs/10/fiche/', () => FICHE_PREMIUM)
+    const user = userEvent.setup()
+    mount()
+    await user.click(await screen.findByRole('button', { name: /Détail/ }))
+    const dialog = await screen.findByRole('dialog')
+    // Rail d'identité : l'enseignant reste nommé quel que soit l'onglet.
+    expect(within(dialog).getByText('aya.kouassi@exemple.injs.ci')).toBeInTheDocument()
+    expect(within(dialog).getByText(/Source : affectations pédagogiques 2026-2027/)).toBeInTheDocument()
+    // Anneau de charge : pourcentage issu du serveur, jamais recalculé ici.
+    expect(within(dialog).getByRole('img', { name: /Charge à 109 % du seuil/ })).toBeInTheDocument()
+    expect(within(dialog).getByText(/18 h de dépassement/)).toBeInTheDocument()
+    // Répartition par nature d'enseignement (agrégée côté serveur).
+    await user.click(screen.getByRole('tab', { name: /Charge annuelle/ }))
+    expect(within(dialog).getByText('Répartition par nature d’enseignement')).toBeInTheDocument()
+    expect(within(dialog).getByText('Travaux dirigés')).toBeInTheDocument()
+    expect(within(dialog).getByText('120 h')).toBeInTheDocument()
+  })
+})
+
+describe('Enseignants — variante finance (temps et montants)', () => {
+  const LIGNES_FINANCE = {
+    count: 68, total_pages: 2, current_page: 1, page: 1, periode: null,
+    results: Array.from({ length: 50 }, (_, i) => ({
+      id: 100 + i, numerobadge: `F${100 + i}`, nom: `ENSEIGNANT${i}`, prenom: 'Test',
+      specialite: 'Physiologie', grades: 'Maître de Conférences', groupes: 'L1-G1',
+      sessions_count: 3, total_duree_minutes: 300, total_duree_realisee_minutes: 240,
+      montant_total_realise: 75000, statistiques: { taux_realisation_pct: 80 },
+    })),
+  }
+
+  it('affiche le total du référentiel et une taille de page explicite', async () => {
+    apiController.reset()
+    apiController.setRoute('/formations/finance/settings/', () => ({ afficher_montants_exports: true }))
+    apiController.setRoute('/formations/formateurs/finance-report/', () => LIGNES_FINANCE)
+    const me = makeUser('FINANCE', { username: 'finance' })
+    apiController.setMe(me)
+    renderWithProviders(<Formateurs />, { authUser: me, routePattern: '*', initialEntries: ['/formateurs'] })
+
+    // Le badge annonce le total du référentiel (68), pas la longueur de la page (50).
+    expect(await screen.findByText(/68 résultats/, undefined, { timeout: 5000 })).toBeInTheDocument()
+    expect(await screen.findByText(/ENSEIGNANT0/, undefined, { timeout: 5000 })).toBeInTheDocument()
+    const appel = apiMock.get.mock.calls
+      .map(([url]) => String(url)).find((u) => u.includes('finance-report'))
+    expect(appel).toBeTruthy()
+    // Même règle de taille de page pour les deux endpoints (le serveur met 25 par défaut ici).
+    expect(appel).toContain('page_size=50')
   })
 })

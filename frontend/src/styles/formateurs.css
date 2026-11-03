@@ -208,15 +208,66 @@
   padding: 0; overflow: auto; background: #fff; border-radius: 22px;
   box-shadow: 0 24px 80px rgba(7, 27, 58, .25);
 }
-.ens-fiche-hero {
-  display: flex; align-items: center; gap: 1rem; position: relative;
-  padding: 1.6rem 2rem; background: linear-gradient(120deg, #0B2A50, #1C4789); color: #fff;
+/* Rail d'identité : l'enseignant reste identifiable quel que soit l'onglet. */
+.ens-fiche-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 0; }
+.ens-fiche-rail {
+  position: relative; overflow: hidden; padding: 1.7rem 1.5rem; color: #fff;
+  background: linear-gradient(165deg, #0B2A50 0%, #1C4789 62%, #2E5FB0 100%);
 }
-.ens-fiche-hero .ens-avatar { background: rgba(255,255,255,.16); color: #fff; width: 60px; height: 60px; font-size: 1.2rem; }
-.ens-fiche-hero h2 { margin: .25rem 0; font-size: 1.5rem; font-weight: 800; }
-.ens-fiche-hero p { margin: 0 0 .4rem; color: #DCE8F8; font-size: .88rem; }
-.ens-fiche-hero .px-hero-eyebrow { color: #BFDBFE; }
-.ens-fiche-hero .px-modal-close { position: absolute; top: 1rem; right: 1rem; color: #fff; background: rgba(255,255,255,.12); border: 0; border-radius: 50%; width: 34px; height: 34px; }
+.ens-fiche-rail::after {
+  content: ""; position: absolute; left: -70px; bottom: -150px; width: 340px; height: 340px;
+  border-radius: 50%; background: radial-gradient(circle at 40% 40%, rgba(47,163,124,.30), transparent 62%);
+}
+.ens-fiche-rail::before {
+  content: ""; position: absolute; right: -70px; top: -110px; width: 280px; height: 280px;
+  border-radius: 50%; background: radial-gradient(circle at 40% 40%, rgba(216,175,74,.18), transparent 64%);
+}
+.ens-fiche-rail > * { position: relative; }
+.ens-fiche-rail .px-hero-eyebrow { color: #9FC5F5; }
+.ens-fiche-rail .px-modal-close {
+  position: absolute; top: 1rem; right: 1rem; z-index: 1;
+  color: #fff; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.24);
+  border-radius: 50%; width: 34px; height: 34px;
+}
+.ens-fiche-rail .ens-avatar {
+  display: grid; place-items: center; margin: 1rem 0 .7rem;
+  width: 64px; height: 64px; border-radius: 20px; font-size: 1.25rem;
+  color: #fff; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.24);
+  box-shadow: 0 10px 26px rgba(4, 20, 42, .30);
+}
+.ens-fiche-rail h2 { margin: .2rem 0 .25rem; font-size: 1.32rem; font-weight: 800; letter-spacing: -.01em; }
+.ens-fiche-role { margin: 0 0 .55rem; color: #DCE8F8; font-size: .86rem; font-weight: 600; }
+.ens-fiche-coordonnees { list-style: none; margin: 1.1rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
+.ens-fiche-coordonnees li { display: flex; align-items: center; gap: .5rem; font-size: .8rem; color: #D3E2F5; overflow-wrap: anywhere; }
+.ens-fiche-coordonnees i { flex: 0 0 auto; color: #9FC5F5; }
+.ens-fiche-source {
+  margin: 1.2rem 0 0; padding-top: .9rem; border-top: 1px solid rgba(255,255,255,.16);
+  font-size: .71rem; line-height: 1.5; color: #A8C4E6;
+}
+.ens-fiche-main { display: flex; flex-direction: column; min-width: 0; }
+
+/* Anneau de charge : le pourcentage est calculé côté serveur. */
+.ens-anneau-bloc { display: flex; align-items: center; gap: .9rem; padding: .95rem 1.6rem; border-bottom: 1px solid #DFEAF4; background: #FAFCFE; }
+.ens-anneau { flex: 0 0 62px; width: 62px; height: 62px; }
+.ens-anneau-piste { stroke: #E7EEF7; }
+.ens-anneau-valeur { stroke: #2FA37C; transition: stroke-dashoffset .5s ease; }
+.ens-anneau-bloc.is-warn .ens-anneau-valeur { stroke: #D8AF4A; }
+.ens-anneau-bloc.is-danger .ens-anneau-valeur { stroke: #C0392B; }
+.ens-anneau-texte { font-size: .72rem; font-weight: 800; fill: #1F2B41; }
+.ens-anneau-bloc.is-warn .ens-anneau-texte { fill: #8A5B0B; }
+.ens-anneau-bloc.is-danger .ens-anneau-texte { fill: #8A1C2B; }
+.ens-anneau-texte-bloc { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.ens-anneau-texte-bloc strong { font-size: .9rem; }
+.ens-anneau-texte-bloc span { font-size: .78rem; font-weight: 600; color: #64748B; }
+
+/* Répartition des heures par nature d'enseignement (CM / TD / TP…). */
+.ens-fiche-barres { display: flex; flex-direction: column; gap: .5rem; margin: .6rem 0 0; }
+.ens-fiche-barre { display: grid; grid-template-columns: minmax(120px, 180px) minmax(0, 1fr) 74px; align-items: center; gap: .7rem; font-size: .8rem; }
+.ens-fiche-barre-libelle { color: #475569; font-weight: 700; }
+.ens-fiche-barre-piste { height: 9px; border-radius: 999px; background: #EAF0F8; overflow: hidden; }
+.ens-fiche-barre-piste > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #1C4789, #2FA37C); }
+.ens-fiche-barre b { text-align: right; font-variant-numeric: tabular-nums; color: #0B2A50; }
+
 .ens-fiche-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; padding: 1.25rem 2rem; background: #F7FAFD; }
 .ens-fiche-kpis > div { display: flex; flex-direction: column; gap: .35rem; padding: .85rem 1rem; border: 1px solid #DFEAF4; border-radius: 14px; background: #fff; }
 .ens-fiche-kpis span { color: #64748B; font-size: .76rem; font-weight: 700; }
@@ -233,8 +284,14 @@
 .ens-fiche-observations { padding: 1rem; background: #F7FAFD; border-radius: 12px; color: #475569; font-size: .85rem; white-space: pre-wrap; }
 .ens-fiche-body td small { display: block; color: #64748B; margin-top: .25rem; }
 .ens-fiche-modal .px-modal-footer { display: flex; justify-content: flex-end; gap: .65rem; padding: 1rem 2rem; border-top: 1px solid #DFEAF4; background: #F7FAFD; }
+@media (max-width: 900px) {
+  .ens-fiche-grid { grid-template-columns: minmax(0, 1fr); }
+  .ens-fiche-rail { padding: 1.2rem 1rem; }
+  .ens-anneau-bloc { padding: .9rem 1rem; }
+  .ens-fiche-barre { grid-template-columns: minmax(90px, 1fr) minmax(0, 1fr) 60px; }
+}
 @media (max-width: 700px) {
-  .ens-fiche-hero, .ens-fiche-body { padding: 1rem; }
+  .ens-fiche-body { padding: 1rem; }
   .ens-fiche-kpis { grid-template-columns: repeat(2, 1fr); padding: 1rem; gap: .6rem; }
   .ens-fiche-grille { grid-template-columns: 1fr; }
   .ens-fiche-modal .px-tabs, .ens-fiche-modal .px-modal-footer { padding: .75rem 1rem; }
