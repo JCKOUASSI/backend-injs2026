@@ -31,6 +31,8 @@ import './styles/erreurFatale.css'
 import './styles/jurys.css'
 // Design premium Diplômation (même mécanisme, chargé d'office).
 import './styles/diplomation.css'
+// Design premium Feature flags (chargé d'office, comme jurys/diplomation).
+import './styles/featureFlags.css'
 
 /**
  * Erreurs hors rendu React : promesses rejetées, erreurs d'événement, échec

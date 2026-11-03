@@ -4,6 +4,7 @@ import api from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { formatApiErrors } from '../utils/apiErrors'
 import { FLAGS_QUERY_KEY } from '../lib/queryClient'
+import '../styles/featureFlags.css'
 
 /**
  * P00-08 — Écran d'administration des feature flags (ADMIN uniquement, la
@@ -30,8 +31,8 @@ function parseRoles(valeur) {
 
 function StatusBadge({ on }) {
   return on
-    ? <span className="badge badge-en-cours ms-2"><i className="bi bi-toggle-on me-1"></i>Activé</span>
-    : <span className="badge bg-secondary ms-2"><i className="bi bi-toggle-off me-1"></i>Désactivé</span>
+    ? <span className="badge badge-en-cours flags-badge flags-badge--on ms-2"><i className="bi bi-toggle-on me-1"></i>Activé</span>
+    : <span className="badge bg-secondary flags-badge ms-2"><i className="bi bi-toggle-off me-1"></i>Désactivé</span>
 }
 
 function FlagRow({ row, onSaved }) {
@@ -91,16 +92,16 @@ function FlagRow({ row, onSaved }) {
   }
 
   return (
-    <tr data-testid={`flag-row-${row.cle}`}>
+    <tr data-testid={`flag-row-${row.cle}`} className={`${isOn ? "is-on" : ""}${changed ? " is-changed" : ""}`}>
       <td style={{ width: '46%' }}>
-        <div className="fw-semibold">
+        <div className="flags-libelle">
           {row.libelle}
           <StatusBadge on={isOn} />
         </div>
-        <div><code className="small text-muted">{row.cle}</code></div>
-        {row.description && <div className="small text-muted mt-1">{row.description}</div>}
+        <div><code className="flags-cle">{row.cle}</code></div>
+        {row.description && <div className="flags-desc">{row.description}</div>}
         {history !== null && (
-          <div className="mt-2" data-testid="flag-history">
+          <div className="flags-history mt-2" data-testid="flag-history">
             {historyLoading ? (
               <span className="small text-muted">Chargement…</span>
             ) : history.length === 0 ? (
@@ -153,13 +154,13 @@ function FlagRow({ row, onSaved }) {
       <td style={{ width: '28%', textAlign: 'right' }}>
         <button
           type="button"
-          className="btn btn-primary btn-sm me-2"
+          className="btn btn-primary btn-sm flags-btn-save me-2"
           onClick={save}
           disabled={saving || !changed}
         >
           {saving ? '…' : 'Enregistrer'}
         </button>
-        <button type="button" className="btn btn-outline-secondary btn-sm" onClick={toggleHistory}>
+        <button type="button" className="btn btn-outline-secondary btn-sm flags-btn-history" onClick={toggleHistory}>
           {history !== null ? 'Masquer' : 'Historique'}
         </button>
       </td>
@@ -199,35 +200,53 @@ export default function FeatureFlags() {
     return ['true', '1', 'oui'].includes(String(f.valeur).toLowerCase())
   }), [flags])
 
+  const desactives = flags.length - actifs.length
+  const modifiables = flags.filter((f) => f.can_edit !== false && f.modifiable !== false).length
+
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title"><i className="bi bi-toggles me-2"></i>Fonctionnalités (feature flags)</h1>
-          <p className="page-subtitle">
+    <div className="page-container flags-page">
+      <header className="flags-hero">
+        <div className="flags-hero-main">
+          <span className="flags-kicker"><i className="bi bi-shield-lock"></i>Paramètres · Activation contrôlée</span>
+          <h1 className="flags-title"><i className="bi bi-toggles"></i>Fonctionnalités (feature flags)</h1>
+          <p className="flags-sub">
             Activez ou éteignez en urgence les fonctionnalités livrées derrière un interrupteur.
             Les flags sont livrés <strong>désactivés</strong> ; chaque bascule est tracée dans
             l’historique et appliquée immédiatement.
           </p>
         </div>
-        <span className="text-muted small">{actifs.length}/{flags.length} activé(s)</span>
-      </div>
-
-      <div className="card">
-        <div className="card-header">
-          <span><i className="bi bi-flag me-2"></i>Flags par lot de la refonte</span>
+        <div className="flags-hero-side">
+          <span className="flags-compteur">
+            <span className="flags-compteur-valeur">{actifs.length}/{flags.length}</span>
+            <span className="flags-compteur-libelle">activé(s)</span>
+          </span>
         </div>
-        <div className="card-body" style={{ padding: 0 }}>
+      </header>
+
+      <section className="flags-kpis" aria-label="Indicateurs des feature flags">
+        <div className="flags-kpi"><div><span className="flags-kpi-label">Flags suivis</span><span className="flags-kpi-value">{flags.length}</span></div><span className="flags-kpi-icon is-indigo"><i className="bi bi-toggles"></i></span></div>
+        <div className="flags-kpi"><div><span className="flags-kpi-label">Activés</span><span className="flags-kpi-value">{actifs.length}</span></div><span className="flags-kpi-icon is-green"><i className="bi bi-toggle-on"></i></span></div>
+        <div className="flags-kpi"><div><span className="flags-kpi-label">Désactivés</span><span className="flags-kpi-value">{desactives}</span></div><span className="flags-kpi-icon is-slate"><i className="bi bi-toggle-off"></i></span></div>
+        <div className="flags-kpi"><div><span className="flags-kpi-label">Modifiables</span><span className="flags-kpi-value">{modifiables}</span></div><span className="flags-kpi-icon is-amber"><i className="bi bi-pencil-square"></i></span></div>
+      </section>
+
+      <div className="flags-panel">
+        <div className="flags-panel-head">
+          <h2 className="flags-panel-title"><i className="bi bi-flag"></i>Flags par lot de la refonte</h2>
+          <span className="flags-count">{actifs.length}/{flags.length} activé(s)</span>
+        </div>
+        <div>
           {loading ? (
             <div className="loading py-5"><div className="spinner"></div></div>
           ) : flags.length === 0 ? (
-            <div className="text-center py-5 text-muted">
-              <i className="bi bi-inbox" style={{ fontSize: '2rem' }}></i>
-              <p className="mt-2">Aucun feature flag.</p>
+            <div className="flags-empty">
+              <span className="flags-empty-icon"><i className="bi bi-toggles"></i></span>
+              <p className="flags-empty-titre">Aucun feature flag.</p>
+              <p>Aucun interrupteur n’est visible pour votre compte : les flags sont réservés aux administrateurs habilités côté serveur.</p>
             </div>
           ) : (
             <div className="table-responsive">
-              <table className="table" style={{ width: '100%' }}>
+              <table className="table flags-table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
                     <th>Fonctionnalité</th>
