@@ -157,10 +157,41 @@ class VolumetrieTests(ChargesBase):
         affectation.save()
         resume = charges_services.charge_enseignant(self.enseignant, self.annee)
         self.assertEqual(resume['prevue'], 30.0)       # volume maquette ACTIVE
+        self.assertTrue(resume['prevue_disponible'])   # maquette volumétrique
         self.assertEqual(resume['affectee'], 30.0)
         self.assertEqual(resume['planifiee'], 30.0)
         self.assertEqual(resume['realisee'], 0.0)
         self.assertFalse(resume['surcharge'])
+
+    def test_prevue_indisponible_sans_volumetrie_maquette(self):
+        # Les maquettes de référence peuvent ne porter aucune volumétrie
+        # d'ECUE : la charge prévue vaut alors 0 h pour tout le monde. Le
+        # service doit le signaler pour que les écrans affichent
+        # « Non disponible » au lieu d'un faux zéro.
+        from formations.models import RefFormation
+        formation = RefFormation.objects.create(intitule='LICENCE SANS VOLUMETRIE')
+        niveau = Niveau.objects.create(code='L2', libelle='Licence 2', ordre=2)
+        s1 = Semestre.objects.create(niveau=niveau, numero=1, libelle='S1')
+        maquette = Maquette.objects.create(
+            annee_academique=self.annee, ref_formation=formation, niveau=niveau,
+        )
+        ue = UE.objects.create(maquette=maquette, semestre=s1, code='UE21',
+                               intitule='UE sans volume', credits=6)
+        ecue = ECUE.objects.create(ue=ue, code='ECUE211', intitule='Sans volume', credits=3)
+        maquette.statut = Maquette.Statut.ACTIVE
+        maquette.save(update_fields=['statut'])
+        AffectationPedagogique.objects.create(
+            annee_academique=self.annee, ref_formation=formation, niveau=niveau,
+            semestre=s1, ecue=ecue, enseignant=self.enseignant,
+            type_enseignement='CM', volume_horaire=30, statut='PLANIFIEE',
+        )
+        # Aucune affectation sur la maquette volumétrique (L1) : seul le
+        # périmètre sans volumétrie est couvert → charge prévue non mesurable
+        # alors que la charge affectée, elle, est bien renseignée.
+        resume = charges_services.charge_enseignant(self.enseignant, self.annee)
+        self.assertEqual(resume['affectee'], 30.0)
+        self.assertEqual(resume['prevue'], 0.0)
+        self.assertFalse(resume['prevue_disponible'])
 
     def test_realisee_calculee(self):
         AffectationPedagogique.objects.create(

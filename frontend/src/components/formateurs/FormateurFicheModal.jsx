@@ -1,229 +1,124 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import api from '../../services/api'
-import { useToast } from '../../context/ToastContext'
-import { FinanceStatsGrid, fmtDuration } from '../FinanceStatsGrid'
-import { FinanceSessionsByGroupeTable } from '../finance/FinanceSessionsByGroupe'
+import { fmtDuration } from '../FinanceStatsGrid'
 
-const TABS = [
-  { id: 'statistiques', label: 'Statistiques', icon: 'bi-graph-up' },
-  { id: 'identite', label: 'Identité', icon: 'bi-person-badge' },
-  { id: 'modules', label: 'Modules', icon: 'bi-journal-bookmark' },
-  { id: 'notes', label: 'Notes', icon: 'bi-pencil-square' },
-  { id: 'seances', label: 'Séances', icon: 'bi-clock-history' },
+const NON_DISPONIBLE = 'Non disponible'
+const ONGLETS = [
+  { id: 'profil', label: 'Profil', icon: 'bi-person-badge' },
+  { id: 'enseignements', label: 'Enseignements LMD', icon: 'bi-journal-bookmark' },
+  { id: 'charge', label: 'Charge annuelle', icon: 'bi-clock-history' },
+  { id: 'evaluation', label: 'Évaluation', icon: 'bi-clipboard-check' },
 ]
+const nombre = (v) => v == null ? NON_DISPONIBLE : new Intl.NumberFormat('fr-FR').format(v)
+const texte = (v) => v || NON_DISPONIBLE
 
-const STATUT_LABELS = {
-  PLANIFIEE: 'Planifiée', EN_COURS: 'En cours', TERMINEE: 'Terminée', SUSPENDUE: 'Suspendue',
+function Champ({ label, value }) {
+  return <div className="ens-fiche-champ"><dt>{label}</dt><dd>{texte(value)}</dd></div>
 }
 
-const fmtDate = (v) => {
-  if (!v) return '-'
-  const d = new Date(v)
-  return Number.isNaN(d.getTime()) ? '-' : d.toLocaleDateString('fr-FR')
-}
-
-/**
- * Fiche formateur à onglets (consultation, sans données financières).
- * Onglets : Statistiques · Identité · Modules · Notes (observations) · Séances.
- * Données chargées via le rapport formateur (toutes périodes), montants masqués.
- */
-export default function FormateurFicheModal({
-  formateur,
-  onClose,
-  canViewSensitive = false,
-  onExport,
-  exporting = '',
-}) {
-  const { showToast } = useToast()
-  const [tab, setTab] = useState('statistiques')
-  const [detail, setDetail] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  const load = useCallback(async (signal) => {
-    if (!formateur?.id) return
-    setLoading(true)
-    try {
-      const res = await api.get(
-        `/formations/formateurs/finance-report/?formateur_id=${formateur.id}&preset=tout`,
-        signal ? { signal } : {},
-      )
-      const rows = Array.isArray(res.data) ? res.data : (res.data.results || [])
-      setDetail(rows[0] || { ...formateur })
-    } catch (err) {
-      if (err?.name !== 'AbortError' && err?.code !== 'ERR_CANCELED' && err?.name !== 'CanceledError') {
-        // Repli : afficher au moins les infos de base de la ligne
-        setDetail({ ...formateur })
-        showToast('Détail complet indisponible, affichage des infos de base.', 'error')
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [formateur, showToast])
+/** Fiche pédagogique : aucune donnée de paie legacy ni agrégation académique côté React. */
+export default function FormateurFicheModal({ formateur, onClose, onExport, exporting }) {
+  const [fiche, setFiche] = useState(null)
+  const [erreur, setErreur] = useState('')
+  const [onglet, setOnglet] = useState('profil')
 
   useEffect(() => {
-    const ac = new AbortController()
-    load(ac.signal)
-    return () => ac.abort()
-  }, [load])
+    let actif = true
+    setFiche(null)
+    setErreur('')
+    setOnglet('profil')
+    api.get(`/formations/formateurs/${formateur.id}/fiche/`)
+      .then(res => { if (actif) setFiche(res.data) })
+      .catch(() => { if (actif) setErreur('Impossible de charger la fiche pédagogique. Aucune donnée financière de substitution n’est affichée.') })
+    return () => { actif = false }
+  }, [formateur.id])
 
-  if (!formateur) return null
-  const d = detail || formateur
-  const stats = { ...(d.statistiques || {}), sessions_count: d.sessions_count, total_duree_minutes: d.total_duree_minutes, total_duree_realisee_minutes: d.total_duree_realisee_minutes }
-  const modules = Array.isArray(d.modules) ? d.modules : []
+  useEffect(() => {
+    const fermer = e => { if (e.key === 'Escape' && !exporting) onClose() }
+    document.addEventListener('keydown', fermer)
+    return () => document.removeEventListener('keydown', fermer)
+  }, [onClose, exporting])
 
+  const charge = fiche?.charge
   return (
-    <div className="modal-overlay finance-modal" onClick={onClose}>
-      <div
-        className="modal-content"
-        style={{ width: 'min(96vw, 1000px)', maxWidth: '1000px', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <h5>
-            <i className="bi bi-person-video3 me-2"></i>
-            {d.prenom} {d.nom}
-            {d.numerobadge && <small className="ms-2 opacity-75">({d.numerobadge})</small>}
-          </h5>
-          <button type="button" className="btn-close" onClick={onClose}>&times;</button>
-        </div>
-
-        <div className="modal-body" style={{ overflowY: 'auto', flex: 1, padding: '1rem 1.25rem' }}>
-          {loading ? (
-            <div className="loading py-5"><div className="spinner"></div></div>
-          ) : (
-            <>
-              <ul className="finance-detail-tabs" role="tablist">
-                {TABS.map((t) => (
-                  <li key={t.id} role="presentation">
-                    <button
-                      type="button"
-                      className={`finance-detail-tab${tab === t.id ? ' active' : ''}`}
-                      onClick={() => setTab(t.id)}
-                    >
-                      <i className={`bi ${t.icon}`}></i>
-                      <span>{t.label}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="finance-modal-summary">
-                <span><i className="bi bi-clock"></i>Planifié <strong>{fmtDuration(d.total_duree_minutes)}</strong></span>
-                <span><i className="bi bi-clock-history"></i>Réalisé <strong>{fmtDuration(d.total_duree_realisee_minutes)}</strong></span>
-                <span><i className="bi bi-percent"></i>Taux <strong>{d.statistiques?.taux_realisation_pct ?? 0}%</strong></span>
-                <span><i className="bi bi-journal-bookmark"></i>Modules <strong>{d.nb_formations ?? modules.length}</strong></span>
-              </div>
-
-              {tab === 'statistiques' && <FinanceStatsGrid stats={stats} />}
-
-              {tab === 'identite' && (
-                <div className="grid-2">
-                  <div><small className="text-muted">N° Badge</small><div><span className="badge-bg-info">{d.numerobadge || '-'}</span></div></div>
-                  <div><small className="text-muted">Spécialité</small><div>{d.specialite || '-'}</div></div>
-                  <div><small className="text-muted">Nom</small><div><strong>{d.nom || '-'}</strong></div></div>
-                  <div><small className="text-muted">Prénom</small><div>{d.prenom || '-'}</div></div>
-                  <div><small className="text-muted">E-mail</small><div>{d.email || '-'}</div></div>
-                  <div><small className="text-muted">Téléphone</small><div>{d.telephone || '-'}</div></div>
-                  <div><small className="text-muted">Organisation</small><div>{d.organisation || '-'}</div></div>
-                  <div><small className="text-muted">Modules dispensés</small><div><span className="badge-bg-success">{d.nb_formations ?? modules.length}</span></div></div>
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <small className="text-muted">Secrétariat(s)</small>
-                    <div>{(d.secretariats_noms || []).join(', ') || '-'}</div>
-                  </div>
-                  {d.created_at && (
-                    <div><small className="text-muted">Enregistré le</small><div>{fmtDate(d.created_at)}</div></div>
-                  )}
-                  {canViewSensitive && (
-                    <>
-                      <div style={{ gridColumn: '1 / -1' }}>
-                        <hr className="my-2" />
-                        <small className="text-muted fw-semibold">Données confidentielles</small>
-                      </div>
-                      <div><small className="text-muted">N° pièce d&apos;identité</small><div>{d.numero_piece_identite || '-'}</div></div>
-                      <div><small className="text-muted">N° compte bancaire (RIB)</small><div>{d.numero_compte_bancaire || '-'}</div></div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {tab === 'modules' && (
-                modules.length === 0 ? (
-                  <div className="finance-empty"><i className="bi bi-journal-x"></i>Aucun module enregistré</div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                    {modules.map((m) => (
-                      <div key={m.module_id} className="finance-module-card">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', flexWrap: 'wrap' }}>
-                          <div>
-                            <strong style={{ fontSize: '0.95rem' }}>{m.module_intitule || '—'}</strong>
-                            {m.formation_intitule && <span className="text-muted" style={{ fontSize: '0.82rem' }}> — {m.formation_intitule}</span>}
-                            {(m.grade || m.groupe) && (
-                              <div className="text-muted" style={{ fontSize: '0.78rem', marginTop: '0.15rem' }}>
-                                {m.grade && <span><i className="bi bi-award me-1"></i>{m.grade}</span>}
-                                {m.grade && m.groupe && ' · '}
-                                {m.groupe && <span><i className="bi bi-people me-1"></i>{m.groupe}</span>}
-                              </div>
-                            )}
-                            {m.date_debut && (
-                              <div className="text-muted" style={{ fontSize: '0.78rem', marginTop: '0.25rem' }}>
-                                <i className="bi bi-calendar3 me-1"></i>
-                                {fmtDate(m.date_debut)}{m.date_fin ? ` → ${fmtDate(m.date_fin)}` : ''}
-                                {m.secretariat_nom && <span className="ms-2"><i className="bi bi-briefcase me-1"></i>{m.secretariat_nom}</span>}
-                              </div>
-                            )}
-                          </div>
-                          <span className="badge-bg-secondary" style={{ whiteSpace: 'nowrap' }}>{STATUT_LABELS[m.statut] || m.statut || '—'}</span>
-                        </div>
-                        <div className="finance-module-metrics">
-                          <span><i className="bi bi-calendar3 me-1"></i><strong>{m.sessions_count ?? 0}</strong> séance(s)</span>
-                          <span>Planifié <strong>{fmtDuration(m.total_duree_minutes)}</strong></span>
-                          <span>Réalisé <strong>{fmtDuration(m.total_duree_realisee_minutes)}</strong></span>
-                          <span>Taux <strong>{m.taux_realisation_pct ?? 0}%</strong></span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )
-              )}
-
-              {tab === 'notes' && (
-                <div>
-                  <div className="d-flex align-items-center gap-2 mb-2 text-muted small">
-                    <i className="bi bi-info-circle"></i>
-                    Observations enregistrées sur le formateur.
-                  </div>
-                  {d.observations ? (
-                    <div className="card" style={{ padding: '1rem', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{d.observations}</div>
-                  ) : (
-                    <div className="finance-empty"><i className="bi bi-journal-text"></i>Aucune observation enregistrée</div>
-                  )}
-                </div>
-              )}
-
-              {tab === 'seances' && (
-                <FinanceSessionsByGroupeTable
-                  groups={d.sessions_by_groupe ?? []}
-                  formatDuration={fmtDuration}
-                  showMontant={false}
-                  showPointage
-                />
-              )}
-            </>
-          )}
-        </div>
-
-        <div className="modal-footer" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <div className="d-flex gap-2 flex-wrap">
-            <button type="button" className="btn btn-outline-danger btn-sm" disabled={exporting === 'pdf'} onClick={() => onExport?.(formateur, 'pdf')}>
-              {exporting === 'pdf' ? <span className="spinner-border spinner-border-sm me-1" /> : <i className="bi bi-file-earmark-pdf me-1"></i>}Export PDF
-            </button>
-            <button type="button" className="btn btn-outline-success btn-sm" disabled={exporting === 'excel'} onClick={() => onExport?.(formateur, 'excel')}>
-              {exporting === 'excel' ? <span className="spinner-border spinner-border-sm me-1" /> : <i className="bi bi-file-earmark-spreadsheet me-1"></i>}Export Excel
-            </button>
+    <div className="px-modal-overlay" onClick={() => !exporting && onClose()}>
+      <section className="px-modal ens-fiche-modal" role="dialog" aria-modal="true" aria-labelledby="ens-fiche-titre" onClick={e => e.stopPropagation()}>
+        <header className="ens-fiche-hero">
+          <span className="ens-avatar" aria-hidden="true">{formateur.nom?.[0]}{formateur.prenom?.[0]}</span>
+          <div>
+            <span className="px-hero-eyebrow">Corps enseignant · {fiche?.annee_academique || 'Année courante'}</span>
+            <h2 id="ens-fiche-titre">{formateur.nom} {formateur.prenom}</h2>
+            <p>{texte(fiche?.grade_label)} · {texte(fiche?.specialite)}</p>
+            {fiche?.est_exemple && <span className="badge-bg-warning" aria-label="Données d’exemple">[Exemple]</span>}
           </div>
+          <button type="button" className="px-modal-close" onClick={onClose} aria-label="Fermer la fiche"><i className="bi bi-x-lg" /></button>
+        </header>
+
+        {erreur ? <div className="error-message m-3" role="alert">{erreur}</div> : !fiche ? (
+          <div className="loading py-5" role="status"><div className="spinner" /><span>Chargement de la fiche…</span></div>
+        ) : <>
+          <div className="ens-fiche-kpis" aria-label="Chiffres clés de l’enseignant">
+            <div><span>Formations LMD</span><strong>{nombre(fiche.nb_formations)}</strong></div>
+            <div><span>ECUE distinctes</span><strong>{nombre(fiche.nb_ecue)}</strong></div>
+            <div><span>Heures affectées</span><strong>{nombre(fiche.heures_affectees)} h</strong></div>
+            <div><span>Heures effectuées</span><strong className="ens-fiche-indisponible">{NON_DISPONIBLE}</strong></div>
+          </div>
+          <div className="px-tabs" role="tablist" aria-label="Rubriques de la fiche enseignant">
+            {ONGLETS.map(t => <button key={t.id} type="button" role="tab" aria-selected={onglet === t.id} className={`px-tab ${onglet === t.id ? 'active' : ''}`} onClick={() => setOnglet(t.id)}><i className={`bi ${t.icon}`} />{t.label}</button>)}
+          </div>
+          <div className="ens-fiche-body" role="tabpanel">
+            {onglet === 'profil' && <>
+              <dl className="ens-fiche-grille">
+                <Champ label="Identifiant" value={fiche.numerobadge} />
+                <Champ label="Grade académique" value={fiche.grade_label} />
+                <Champ label="Fonction" value={fiche.fonction} />
+                <Champ label="Statut" value={fiche.statut_enseignant} />
+                <Champ label="Spécialité" value={fiche.specialite} />
+                <Champ label="Organisation" value={fiche.organisation} />
+                <Champ label="Courriel" value={fiche.email} />
+                <Champ label="Téléphone" value={fiche.telephone} />
+              </dl>
+              <h3>Observations</h3><p className="ens-fiche-observations">{texte(fiche.observations)}</p>
+            </>}
+            {onglet === 'enseignements' && (fiche.affectations.length ? (
+              <div className="table-container"><table className="table px-table">
+                <thead><tr><th>ECUE / UE</th><th>Formation</th><th>Groupe</th><th>Volume</th><th>Statut</th></tr></thead>
+                <tbody>{fiche.affectations.map(a => <tr key={a.id}>
+                  <td><strong>{a.ecue_code} · {a.ecue_intitule}</strong><small>{a.ue} {a.est_exemple && <span className="badge-bg-warning">[Exemple]</span>}</small></td>
+                  <td>{a.formation}<small>{a.filiere} · {a.niveau} · {a.semestre}</small></td>
+                  <td>{texte(a.groupe)}</td><td>{nombre(a.heures)} h · {a.type_enseignement}</td><td>{a.statut_label}</td>
+                </tr>)}</tbody>
+              </table></div>
+            ) : <div className="finance-empty">Aucune affectation pédagogique pour l’année courante.</div>)}
+            {onglet === 'charge' && (charge ? <>
+              <p className="px-panel-sub">Volumes des affectations de {fiche.annee_academique}, hors affectations annulées. Un statut « réalisée » n’est pas une mesure d’heures effectuées.</p>
+              <dl className="ens-fiche-grille">
+                <Champ label="Charge prévue (maquette)"
+                       value={charge.prevue_disponible === false ? NON_DISPONIBLE : `${nombre(charge.prevue)} h`} />
+                <Champ label="Charge affectée" value={`${nombre(charge.affectee)} h`} />
+                <Champ label="Volume validé" value={`${nombre(charge.validee)} h`} />
+                <Champ label="Volume planifié" value={`${nombre(charge.planifiee)} h`} />
+                <Champ label="Volume au statut réalisé" value={`${nombre(charge.realisee)} h`} />
+                <Champ label="Seuil d’alerte" value={`${nombre(charge.seuil)} h`} />
+                <Champ label="Alerte de surcharge" value={charge.surcharge ? 'Oui' : 'Non'} />
+              </dl>
+            </> : <div className="finance-empty">Charge annuelle : {NON_DISPONIBLE}.</div>)}
+            {onglet === 'evaluation' && <>
+              <dl className="ens-fiche-grille">
+                <Champ label="Heures effectuées" value={fiche.heures_effectuees == null ? NON_DISPONIBLE : fmtDuration(fiche.heures_effectuees * 60)} />
+                <Champ label="Présence de l’enseignant" value={fiche.taux_presence == null ? NON_DISPONIBLE : `${fiche.taux_presence} %`} />
+                <Champ label="Satisfaction étudiants" value={fiche.satisfaction_etudiants == null ? NON_DISPONIBLE : fiche.satisfaction_etudiants} />
+              </dl>
+              <p className="ens-fiche-observations">{fiche.disponibilite_indicateurs}</p>
+            </>}
+          </div>
+        </>}
+        <footer className="px-modal-footer">
           <button type="button" className="btn btn-secondary" onClick={onClose}>Fermer</button>
-        </div>
-      </div>
+          <button type="button" className="btn btn-outline-success" disabled={!fiche || !!exporting} onClick={() => onExport(fiche, 'xlsx')}><i className="bi bi-file-earmark-spreadsheet me-1" />Export Excel</button>
+          <button type="button" className="btn btn-dfrc" disabled={!fiche || !!exporting} onClick={() => onExport(fiche, 'pdf')}><i className="bi bi-file-earmark-pdf me-1" />{exporting ? 'Export…' : 'Export PDF'}</button>
+        </footer>
+      </section>
     </div>
   )
 }

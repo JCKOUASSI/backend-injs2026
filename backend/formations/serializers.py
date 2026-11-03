@@ -194,13 +194,14 @@ class FormateurSerializer(serializers.ModelSerializer):
     secretariats_noms = serializers.SerializerMethodField()
     nb_formations = serializers.SerializerMethodField()
     grade = serializers.SerializerMethodField()
+    est_exemple = serializers.SerializerMethodField()
 
     class Meta:
         model = Formateur
         fields = [
             'id', 'numerobadge', 'nom', 'prenom', 'email',
             'telephone', 'specialite', 'organisation',
-            'grade_ref', 'grade', 'fonction', 'statut_enseignant',
+            'grade_ref', 'grade', 'est_exemple', 'fonction', 'statut_enseignant',
             'numero_piece_identite', 'numero_compte_bancaire',
             'observations',
             'secretariats', 'secretariats_noms', 'nb_formations', 'created_at',
@@ -236,11 +237,26 @@ class FormateurSerializer(serializers.ModelSerializer):
             return None
         return {'id': grade.id, 'code': grade.code, 'libelle': grade.libelle}
 
+    def get_est_exemple(self, obj):
+        return (obj.observations or '').startswith('[Exemple]')
+
     def get_secretariats_noms(self, obj):
         return [f"{s.nom} ({s.numero})" for s in obj.secretariats.all()]
 
     def get_nb_formations(self, obj):
-        return obj.modules_assignes.count()
+        # LMD d'abord ; le compteur historique n'est un repli que pour les
+        # formateurs de formation continue sans affectation LMD.
+        from scolarite.models import AffectationPedagogique, AnneeAcademique
+        annee = AnneeAcademique.courante_ou_none()
+        if annee:
+            nb = AffectationPedagogique.objects.filter(
+                enseignant=obj, annee_academique=annee,
+            ).exclude(statut=AffectationPedagogique.Statut.ANNULEE).values(
+                'ref_formation_id',
+            ).distinct().count()
+            if nb:
+                return nb
+        return obj.modules_assignes.values('module__formation_id').distinct().count()
 
     def create(self, validated_data):
         secretariats = validated_data.pop('secretariats', [])

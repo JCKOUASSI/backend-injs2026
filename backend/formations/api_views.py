@@ -1038,9 +1038,8 @@ def formateur_stats_api(request):
         affectations = AffectationPedagogique.objects.filter(
             annee_academique=annee,
         ).exclude(statut=AffectationPedagogique.Statut.ANNULEE)
-        ecue_couvertes = affectations.exclude(
-            ecue__isnull=True,
-        ).values('ecue').distinct().count()
+        affectations = affectations.filter(ecue__in=ecues)
+        ecue_couvertes = affectations.values('ecue').distinct().count()
         couverture = {
             'annee_academique': annee.libelle,
             'ecue_total': ecues.count(),
@@ -1071,6 +1070,7 @@ def formateur_stats_api(request):
         'grades_disponibles': grades_disponibles,
         'par_grade': par_grade,
         'par_statut': par_statut,
+        'specialites': list(base.exclude(specialite='').values_list('specialite', flat=True).distinct().order_by('specialite')),
         'couverture': couverture,
     })
 
@@ -1115,6 +1115,9 @@ def formateur_list_api(request):
     grade_code = request.query_params.get('grade')
     if grade_code:
         queryset = queryset.filter(grade_ref__code=grade_code)
+    specialite = request.query_params.get('specialite')
+    if specialite:
+        queryset = queryset.filter(specialite=specialite)
     filiere_id = request.query_params.get('filiere')
     if filiere_id:
         queryset = queryset.filter(

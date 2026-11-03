@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from . import api_views
+from . import api_views, enseignant_fiche
 from . import archives_api
 from . import notes_fiche_api
 from . import session_views
@@ -74,6 +74,9 @@ urlpatterns = [
     # Formateurs list
     path('formateurs/list/', api_views.formateur_list_api, name='api-formateur-list'),
     path('formateurs/stats/', api_views.formateur_stats_api, name='api-formateur-stats'),
+    path('formateurs/<int:pk>/fiche/', enseignant_fiche.fiche_api, name='api-enseignant-fiche'),
+    path('formateurs/<int:pk>/fiche/export/<str:format_export>/', enseignant_fiche.fiche_export,
+         name='api-enseignant-fiche-export'),
     path('formateurs/finance-report/', api_views.formateur_finance_report_api, name='api-formateur-finance-report'),
     path('formateurs/<int:pk>/donnees-sensibles/', api_views.formateur_donnees_sensibles_api, name='api-formateur-donnees-sensibles'),
     path('finance/dashboard/', api_views.finance_dashboard_api, name='api-finance-dashboard'),

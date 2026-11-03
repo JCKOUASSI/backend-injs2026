@@ -213,3 +213,81 @@ class SeedEnseignantsTests(EnseignantsBase):
         self.assertTrue(AffectationPedagogique.objects.filter(
             pk=self.affectation.pk,
         ).exists())
+
+
+class FicheEnseignantLMDTests(EnseignantsBase):
+    def test_fiche_utilise_les_affectations_lmd_pas_la_paie_legacy(self):
+        self.enseignant.observations = '[Exemple] Fiche fictive.'
+        self.enseignant.numero_piece_identite = 'SECRET-PIECE'
+        self.enseignant.numero_compte_bancaire = 'SECRET-RIB'
+        self.enseignant.save()
+        res = self.client.get(f'/api/formations/formateurs/{self.enseignant.pk}/fiche/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['nb_formations'], 1)
+        self.assertEqual(res.data['nb_ecue'], 1)
+        self.assertEqual(res.data['heures_affectees'], 30)
+        self.assertEqual(res.data['grade_label'], 'Maître de Conférences')
+        self.assertTrue(res.data['est_exemple'])
+        self.assertEqual(res.data['charge']['affectee'], 30)
+        self.assertEqual(res.data['affectations'][0]['ecue_code'], 'ECUE1')
+        self.assertIsNone(res.data['taux_presence'])
+        self.assertIsNone(res.data['heures_effectuees'])
+        self.assertIsNone(res.data['satisfaction_etudiants'])
+        self.assertNotIn('numero_piece_identite', res.data)
+        self.assertNotIn('numero_compte_bancaire', res.data)
+        liste = self.client.get('/api/formations/formateurs/list/')
+        self.assertEqual(liste.data['results'][0]['nb_formations'], 1)
+
+    def test_affectation_annulee_exclue_de_la_fiche(self):
+        self.affectation.statut = AffectationPedagogique.Statut.ANNULEE
+        self.affectation.save()
+        res = self.client.get(f'/api/formations/formateurs/{self.enseignant.pk}/fiche/')
+        self.assertEqual(res.data['nb_formations'], 0)
+        self.assertEqual(res.data['heures_affectees'], 0)
+        self.assertEqual(res.data['affectations'], [])
+
+    def test_exports_pedagogiques_reels_sans_montants(self):
+        from io import BytesIO
+        from openpyxl import load_workbook
+        pdf = self.client.get(f'/api/formations/formateurs/{self.enseignant.pk}/fiche/export/pdf/')
+        xlsx = self.client.get(f'/api/formations/formateurs/{self.enseignant.pk}/fiche/export/xlsx/')
+        self.assertEqual(pdf.status_code, 200)
+        self.assertTrue(pdf.content.startswith(b'%PDF'))
+        self.assertEqual(xlsx.status_code, 200)
+        wb = load_workbook(BytesIO(xlsx.content))
+        contenu = ' '.join(str(c.value or '') for row in wb.active.iter_rows() for c in row)
+        self.assertIn('ECUE1', contenu)
+        self.assertIn('Non disponible', contenu)
+        self.assertNotIn('Montant réalisé', contenu)
+
+    def test_fiche_anonyme_et_finance_refusees(self):
+        url = f'/api/formations/formateurs/{self.enseignant.pk}/fiche/'
+        self.client.force_authenticate(None)
+        self.assertEqual(self.client.get(url).status_code, 401)
+        self.client.force_authenticate(User.objects.create_user('finance-fiche', role='FINANCE'))
+        self.assertEqual(self.client.get(url).status_code, 403)
+
+    def test_couverture_limitee_aux_ecue_des_maquettes_actives(self):
+        brouillon = Maquette.objects.create(
+            annee_academique=self.annee, ref_formation=self.formation,
+            niveau=self.niveau, statut=Maquette.Statut.BROUILLON,
+        )
+        ue = UE.objects.create(maquette=brouillon, semestre=self.semestre, code='BROUILLON', intitule='Brouillon', credits=3)
+        ecue = ECUE.objects.create(ue=ue, code='HORS-ACTIF', intitule='Hors actif', credits=3)
+        AffectationPedagogique.objects.create(
+            annee_academique=self.annee, ref_formation=self.formation,
+            niveau=self.niveau, semestre=self.semestre, ue=ue, ecue=ecue,
+            enseignant=self.enseignant, volume_horaire=100,
+        )
+        couverture = self.client.get('/api/formations/formateurs/stats/').data['couverture']
+        self.assertEqual(couverture['ecue_total'], 2)
+        self.assertEqual(couverture['ecue_couvertes'], 1)
+        self.assertEqual(couverture['taux_couverture'], 50)
+        self.assertEqual(couverture['heures_affectees'], 30)
+
+    def test_filtre_specialite_et_source_reelle(self):
+        res = self.client.get('/api/formations/formateurs/list/', {'specialite': 'Physiologie de l’exercice'})
+        self.assertEqual(res.data['count'], 1)
+        self.assertFalse(res.data['results'][0]['est_exemple'])
+        stats = self.client.get('/api/formations/formateurs/stats/').data
+        self.assertIn('Physiologie de l’exercice', stats['specialites'])

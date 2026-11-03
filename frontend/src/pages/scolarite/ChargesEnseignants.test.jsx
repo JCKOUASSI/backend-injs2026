@@ -29,7 +29,7 @@ const ANNEES_REF_PATH = '/scolarite/ref/annees/'
 const FORMATIONS_REF_PATH = '/scolarite/ref/formations/'
 const NIVEAUX_REF_PATH = '/scolarite/ref/niveaux/'
 const SEMESTRES_REF_PATH = '/scolarite/ref/semestres/'
-const FORMATEURS_PATH = '/formateurs/list/'
+const FORMATEURS_PATH = '/formations/formateurs/list/'
 
 /* ------------------------------------------------------------------ */
 /* Jeux de données                                                      */

@@ -67,6 +67,11 @@ def charge_enseignant(enseignant, annee):
         'enseignant_id': enseignant.pk,
         'enseignant': f'{enseignant.nom} {enseignant.prenom}',
         'prevue': round(prevue, 2),
+        # La charge prévue n'est mesurable que si la maquette porte des
+        # volumes d'ECUE. À défaut (maquettes sans volumétrie), elle vaut
+        # zéro pour tout le monde : les écrans affichent alors
+        # « Non disponible » au lieu d'un faux 0 h.
+        'prevue_disponible': prevue > 0,
         'affectee': round(volumetrie['affectee'], 2),
         'validee': round(volumetrie['validee'], 2),
         'planifiee': round(volumetrie['planifiee'], 2),

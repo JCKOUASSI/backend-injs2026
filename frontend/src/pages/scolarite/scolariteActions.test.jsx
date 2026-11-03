@@ -174,7 +174,7 @@ describe('§10.8 LOT 8 — actions Scolarité au clic (écritures API)', () => {
     apiController.setRoute('/scolarite/ref/formations/', () => [{ id: 1, intitule: 'L1 LSF' }])
     apiController.setRoute('/scolarite/ref/niveaux/', () => [{ id: 2, code: 'N1' }])
     apiController.setRoute('/scolarite/ref/semestres/', () => [{ id: 3, libelle: 'S1', niveau_id: 2 }])
-    apiController.setRoute('/formateurs/list/', () => [{ id: 4, nom: 'Dupont', prenom: 'Jean' }])
+    apiController.setRoute('/formations/formateurs/list/', () => [{ id: 4, nom: 'Dupont', prenom: 'Jean' }])
     mount(ChargesEnseignants, { pattern: '/scolarite/charges', url: '/scolarite/charges' })
     await settle(7)
 

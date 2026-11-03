@@ -70,7 +70,7 @@ export default function ChargesEnseignants() {
       api.get('/scolarite/ref/formations/'),
       api.get('/scolarite/ref/niveaux/', { params: { actif: 'true' } }),
       api.get('/scolarite/ref/semestres/'),
-      api.get('/formateurs/list/'),
+      api.get('/formations/formateurs/list/', { params: { page_size: 200 } }),
     ])
       .then(([annees, formations, niveaux, semestres, formateurs]) => setOptions({
         annees: Array.isArray(annees.data) ? annees.data : (annees.data?.results || []),
@@ -190,7 +190,7 @@ export default function ChargesEnseignants() {
                       className={o.enseignant_id === Number(enseignantChoisi) ? 'table-active' : ''}
                       onClick={() => choisirEnseignant(o.enseignant_id)}>
                     <td>{o.enseignant}</td>
-                    <td className="px-num">{o.prevue}</td>
+                    <td className="px-num">{o.prevue_disponible === false ? 'Non disponible' : o.prevue}</td>
                     <td className="px-num">{o.affectee}</td>
                     <td className="px-num">{o.planifiee}</td>
                     <td className="px-num">{o.realisee}</td>
@@ -218,8 +218,12 @@ export default function ChargesEnseignants() {
           </div>
           <div className="card-body">
             <ul className="list-unstyled mb-2 chg-recap">
-              <li>Prévue : {charge.prevue} h · Affectée : {charge.affectee} h ·
-                Planifiée : {charge.planifiee} h · Réalisée : {charge.realisee} h</li>
+              <li>Prévue : {charge.prevue_disponible === false ? 'Non disponible' : `${charge.prevue} h`} ·
+                Affectée : {charge.affectee} h · Planifiée : {charge.planifiee} h ·
+                Réalisée : {charge.realisee} h</li>
+              <li className="text-muted small">La charge prévue n'est calculable que lorsque les ECUE des
+                maquettes actives portent une volumétrie ; sinon « Non disponible » est affiché
+                plutôt qu'un faux zéro.</li>
             </ul>
             <table className="table table-sm mb-0 px-table chg-aff-table">
               <thead className="table-light">

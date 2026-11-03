@@ -201,3 +201,46 @@
 @media (max-width: 640px) {
   .ens-kpi-row { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Fiche pédagogique LMD : même langage visuel que les autres hubs. */
+.ens-fiche-modal {
+  width: min(1060px, 96vw); max-width: none; max-height: 92vh;
+  padding: 0; overflow: auto; background: #fff; border-radius: 22px;
+  box-shadow: 0 24px 80px rgba(7, 27, 58, .25);
+}
+.ens-fiche-hero {
+  display: flex; align-items: center; gap: 1rem; position: relative;
+  padding: 1.6rem 2rem; background: linear-gradient(120deg, #0B2A50, #1C4789); color: #fff;
+}
+.ens-fiche-hero .ens-avatar { background: rgba(255,255,255,.16); color: #fff; width: 60px; height: 60px; font-size: 1.2rem; }
+.ens-fiche-hero h2 { margin: .25rem 0; font-size: 1.5rem; font-weight: 800; }
+.ens-fiche-hero p { margin: 0 0 .4rem; color: #DCE8F8; font-size: .88rem; }
+.ens-fiche-hero .px-hero-eyebrow { color: #BFDBFE; }
+.ens-fiche-hero .px-modal-close { position: absolute; top: 1rem; right: 1rem; color: #fff; background: rgba(255,255,255,.12); border: 0; border-radius: 50%; width: 34px; height: 34px; }
+.ens-fiche-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; padding: 1.25rem 2rem; background: #F7FAFD; }
+.ens-fiche-kpis > div { display: flex; flex-direction: column; gap: .35rem; padding: .85rem 1rem; border: 1px solid #DFEAF4; border-radius: 14px; background: #fff; }
+.ens-fiche-kpis span { color: #64748B; font-size: .76rem; font-weight: 700; }
+.ens-fiche-kpis strong { color: #0B2A50; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.ens-fiche-kpis .ens-fiche-indisponible { font-size: .85rem; color: #64748B; }
+.ens-fiche-modal .px-tabs { display: flex; gap: .4rem; padding: .75rem 2rem 0; border-bottom: 1px solid #DFEAF4; flex-wrap: wrap; }
+.ens-fiche-modal .px-tab { padding: .7rem 1rem; border: 0; border-bottom: 3px solid transparent; background: transparent; color: #64748B; font-weight: 700; font-size: .85rem; display: flex; gap: .45rem; align-items: center; }
+.ens-fiche-modal .px-tab.active { color: #1C4789; border-bottom-color: #1C4789; }
+.ens-fiche-body { padding: 1.5rem 2rem; min-height: 220px; }
+.ens-fiche-body h3 { font-size: .95rem; color: #0B2A50; margin-top: 1.4rem; }
+.ens-fiche-grille { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem 2rem; margin: 0; }
+.ens-fiche-champ dt { color: #64748B; font-size: .75rem; font-weight: 700; margin-bottom: .25rem; }
+.ens-fiche-champ dd { color: #0B2A50; margin: 0; font-size: .9rem; overflow-wrap: anywhere; }
+.ens-fiche-observations { padding: 1rem; background: #F7FAFD; border-radius: 12px; color: #475569; font-size: .85rem; white-space: pre-wrap; }
+.ens-fiche-body td small { display: block; color: #64748B; margin-top: .25rem; }
+.ens-fiche-modal .px-modal-footer { display: flex; justify-content: flex-end; gap: .65rem; padding: 1rem 2rem; border-top: 1px solid #DFEAF4; background: #F7FAFD; }
+@media (max-width: 700px) {
+  .ens-fiche-hero, .ens-fiche-body { padding: 1rem; }
+  .ens-fiche-kpis { grid-template-columns: repeat(2, 1fr); padding: 1rem; gap: .6rem; }
+  .ens-fiche-grille { grid-template-columns: 1fr; }
+  .ens-fiche-modal .px-tabs, .ens-fiche-modal .px-modal-footer { padding: .75rem 1rem; }
+}
+.px-modal-overlay:has(.ens-fiche-modal) { position: fixed; inset: 0; z-index: 1050; display: grid; place-items: center; padding: 1rem; background: rgba(7,27,58,.55); backdrop-filter: blur(4px); }
+
+/* Enseignants présents dans le référentiel mais sans affectation LMD pour
+   l'année en cours (profils historiques de formation continue). */
+.ens-hors-lmd { font-size: .68rem; letter-spacing: .02em; text-transform: uppercase; }

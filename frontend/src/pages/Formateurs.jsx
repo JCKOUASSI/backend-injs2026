@@ -79,6 +79,7 @@ export default function Formateurs() {
   const [financePeriodeInfo, setFinancePeriodeInfo] = useState(null)
   const [statsEns, setStatsEns] = useState(null)
   const [gradeFiltre, setGradeFiltre] = useState('')
+  const [specialiteFiltre, setSpecialiteFiltre] = useState('')
 
   const debouncedSearch = useDebounce(search)
   const [appliedFinancePeriod, setAppliedFinancePeriod] = useState(() => resolveFinancePeriod())
@@ -98,7 +99,7 @@ export default function Formateurs() {
   )
 
   // eslint-disable-next-line react-hooks/exhaustive-deps -- rechargement intentionnel : la fonction de chargement n’est pas mémoïsée (l’ajouter provoquerait une boucle) ; les dépendances de données présentes pilotent déjà le (re)chargement.
-  useEffect(() => { loadFormateurs() }, [page, debouncedSearch, appliedFinancePeriod, gradeFiltre])
+  useEffect(() => { loadFormateurs() }, [page, debouncedSearch, appliedFinancePeriod, gradeFiltre, specialiteFiltre])
 
   const chargerStatsEns = async () => {
     try {
@@ -138,6 +139,7 @@ export default function Formateurs() {
       const params = new URLSearchParams({ page })
       if (debouncedSearch) params.set('search', debouncedSearch)
       if (!canViewFinanceData && gradeFiltre) params.set('grade', gradeFiltre)
+      if (!canViewFinanceData && specialiteFiltre) params.set('specialite', specialiteFiltre)
       const endpoint = canViewFinanceData
         ? '/formations/formateurs/finance-report/'
         : '/formations/formateurs/list/'
@@ -270,12 +272,11 @@ export default function Formateurs() {
     setExportingFiche(format)
     const ext = format === 'pdf' ? 'pdf' : 'xlsx'
     // preset 'tout' = toutes les données ; montants masqués hors finance
-    const q = buildFinanceExportQuery({ preset: 'tout' }, canViewFinanceData)
-    const base = format === 'pdf'
-      ? `/exports/formateur/${f.id}/pdf/`
-      : `/exports/formateur/${f.id}/excel/`
+    // Fiche pédagogique LMD : ne pas exporter la paie legacy (zéro module
+    // pour les enseignants LMD) ni inclure de données bancaires.
+    const base = `/formations/formateurs/${f.id}/fiche/export/${ext}/`
     try {
-      const { blob, fileName } = await api.getBlob(`${base}?${q.toString()}`)
+      const { blob, fileName } = await api.getBlob(base)
       const safeName = `${f.nom || 'formateur'}_${f.prenom || ''}`.trim().replace(/\s+/g, '_')
       downloadBlob(blob, fileName || `fiche_formateur_${safeName || f.id}.${ext}`)
       showToast(`Fiche enseignant exportée (${ext.toUpperCase()})`)
@@ -624,6 +625,15 @@ export default function Formateurs() {
               </select>
             </label>
           )}
+          {!canViewFinanceData && (
+            <label className="px-field">
+              <span className="px-field-label">Spécialité</span>
+              <select className="px-input" aria-label="Filtrer par spécialité" value={specialiteFiltre} onChange={e => { setSpecialiteFiltre(e.target.value); setPage(1) }}>
+                <option value="">Toutes les spécialités</option>
+                {(statsEns?.specialites || []).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </label>
+          )}
           {canDelete && (
             <div className="px-toolbar-actions">
               <button onClick={openCreate} className="btn btn-dfrc">
@@ -684,7 +694,10 @@ export default function Formateurs() {
                           <span className="ens-identite">
                             <span className="ens-avatar" aria-hidden="true">{((f.nom || '?').trim().charAt(0) + (f.prenom || '').trim().charAt(0)).toUpperCase()}</span>
                             <span className="ens-identite-texte">
-                              <span className="ens-nom">{f.nom} <span className="ens-prenom">{f.prenom}</span></span>
+                              <span className="ens-nom">{f.nom} <span className="ens-prenom">{f.prenom}</span>{f.est_exemple && <span className="badge-bg-warning ms-1" aria-label="Données d’exemple">[Exemple]</span>}
+                                {!f.est_exemple && f.enseignements && !f.enseignements.nb_ecue && (
+                                  <span className="badge-bg-secondary ms-1 ens-hors-lmd"
+                                        title="Aucune affectation pédagogique LMD pour l’année en cours">Hors LMD</span>)}</span>
                               {f.fonction ? <span className="ens-fonction">{f.fonction}</span> : null}
                             </span>
                           </span>
@@ -897,7 +910,6 @@ export default function Formateurs() {
         <FormateurFicheModal
           formateur={detailFormateur}
           onClose={() => setDetailFormateur(null)}
-          canViewSensitive={canViewSensitive}
           onExport={exportFicheFormateur}
           exporting={exportingFiche}
         />

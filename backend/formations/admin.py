@@ -771,7 +771,7 @@ class FormateurAdmin(FormateurAdminScopeMixin, AuditLogAdminMixin, admin.ModelAd
     audit_action_update = AuditLog.Action.FORMATEUR_UPDATE
     audit_action_delete = AuditLog.Action.FORMATEUR_DELETE
     list_display = [
-        'numerobadge', 'nom', 'prenom', 'specialite',
+        'numerobadge', 'nom', 'prenom', 'grade_ref', 'statut_enseignant', 'specialite',
         'email', 'telephone', 'organisation',
     ]
     list_display_links = ['numerobadge', 'nom']
@@ -780,7 +780,8 @@ class FormateurAdmin(FormateurAdminScopeMixin, AuditLogAdminMixin, admin.ModelAd
         'telephone', 'specialite', 'organisation',
         'secretariats__nom', 'secretariats__numero',
     ]
-    list_filter = ['organisation', 'specialite', 'secretariats']
+    list_filter = ['grade_ref', 'statut_enseignant', 'organisation', 'specialite', 'secretariats']
+    list_select_related = ['grade_ref']
     filter_horizontal = ['secretariats']
     autocomplete_fields = ['user']
     ordering = ['nom', 'prenom']
@@ -798,7 +799,8 @@ class FormateurAdmin(FormateurAdminScopeMixin, AuditLogAdminMixin, admin.ModelAd
             'fields': (('email', 'telephone'),),
         }),
         ("Profil professionnel", {
-            'fields': ('specialite', 'organisation', 'secretariats'),
+            'fields': ('grade_ref', 'fonction', 'statut_enseignant',
+                       'specialite', 'organisation', 'secretariats', 'observations'),
         }),
         ("Compte utilisateur", {
             'classes': ('collapse',),

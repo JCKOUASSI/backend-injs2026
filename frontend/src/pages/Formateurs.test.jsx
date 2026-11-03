@@ -6,7 +6,7 @@
  */
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 vi.mock('@/services/api', async (importOriginal) => {
@@ -124,6 +124,16 @@ describe('Enseignants — panorama premium', () => {
     })
   })
 
+  it('signale les enseignants sans affectation LMD cette année', async () => {
+    mount()
+    // KONÉ (profil historique, hors corps LMD) ≠ DIARRASSOUBA (exemple LMD).
+    expect(await screen.findByText('Hors LMD')).toBeInTheDocument()
+    // Un seul profil historique dans le jeu d'essai, et il n'est pas marqué
+    // « [Exemple] » : les deux badges ne se cumulent jamais.
+    expect(screen.getAllByText('Hors LMD')).toHaveLength(1)
+    expect(screen.queryByLabelText('Données d’exemple')).not.toBeInTheDocument()
+  })
+
   it('propose le grade dans la fiche de création', async () => {
     const user = userEvent.setup()
     mount()
@@ -131,5 +141,63 @@ describe('Enseignants — panorama premium', () => {
     expect(await screen.findByText('Grade enseignant')).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Maître de Conférences' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Titulaire' })).toBeInTheDocument()
+  })
+})
+
+describe('Enseignants — fiche pédagogique LMD', () => {
+  const FICHE = {
+    ...LIGNES.results[0], annee_academique: '2026-2027', grade_label: 'Professeur Titulaire',
+    est_exemple: true, nb_formations: 1, nb_ecue: 14, heures_affectees: 210,
+    heures_effectuees: null, taux_presence: null, satisfaction_etudiants: null,
+    disponibilite_indicateurs: 'Aucune source de présence enseignante reliée.',
+    charge: { affectee: 210, validee: 210, planifiee: 0, realisee: 0, seuil: 192, surcharge: true },
+    affectations: [{ id: 7, ecue_code: 'ES-S1-EC01', ecue_intitule: 'Physiologie', ue: 'Sciences',
+      formation: 'ENTRAÎNEMENT SPORTIF — LICENCE', filiere: 'ES', niveau: 'L1', semestre: 'S1',
+      groupe: 'L1-G1', type_enseignement: 'Cours magistral', heures: 15, statut_label: 'Validée', est_exemple: true }],
+  }
+  let panne = false
+  beforeEach(() => {
+    // `preparer()` (beforeEach global) a déjà enregistré la liste complète :
+    // on repart d'une table rase pour que cette route prenne le pas.
+    panne = false
+    apiController.reset()
+    apiController.setRoute('/formations/formateurs/stats/', () => STATS)
+    apiController.setRoute('/formations/ref/modules/', () => [])
+    apiController.setRoute('/formations/formateurs/list/', () => ({
+      ...LIGNES, results: [{ ...LIGNES.results[0], est_exemple: true }],
+      count: 1, total_pages: 1,
+    }))
+    apiController.setRoute('/formations/formateurs/10/fiche/', () => {
+      if (panne) throw new Error('panne')
+      return FICHE
+    })
+  })
+
+  it('affiche la charge LMD réelle et non les zéros de la paie legacy', async () => {
+    const user = userEvent.setup()
+    mount()
+    await user.click(await screen.findByRole('button', { name: /Détail/ }))
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toHaveAccessibleName('KOUASSI Aya')
+    expect(dialog).toHaveTextContent('210 h')
+    expect(dialog).toHaveTextContent('[Exemple]')
+    expect(dialog).toHaveTextContent('Non disponible')
+    expect(apiMock.get).toHaveBeenCalledWith('/formations/formateurs/10/fiche/')
+    expect(apiMock.get.mock.calls.some(([path]) => path.includes('finance-report'))).toBe(false)
+    await user.click(screen.getByRole('tab', { name: /Enseignements LMD/ }))
+    expect(screen.getByText(/ES-S1-EC01 · Physiologie/)).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: /Évaluation/ }))
+    expect(within(screen.getByRole('tabpanel')).getAllByText('Non disponible')).toHaveLength(3)
+    await user.click(screen.getByRole('button', { name: /Export PDF/ }))
+    expect(apiMock.getBlob).toHaveBeenCalledWith('/formations/formateurs/10/fiche/export/pdf/')
+  })
+
+  it('ne substitue pas des zéros quand la fiche échoue', async () => {
+    panne = true
+    const user = userEvent.setup()
+    mount()
+    await user.click(await screen.findByRole('button', { name: /Détail/ }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Aucune donnée financière de substitution')
+    expect(screen.getByRole('button', { name: /Export PDF/ })).toBeDisabled()
   })
 })
