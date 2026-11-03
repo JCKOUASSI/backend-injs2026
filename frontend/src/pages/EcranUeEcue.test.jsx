@@ -558,3 +558,34 @@ describe('visibilité sur maquette gelée (demande 03/11 — retour utilisateur)
     expect(screen.getByTestId('choix-maquette').value).toBe('3')
   })
 })
+
+describe('bascule automatique au choix d’une maquette gelée (demande 03/11)', () => {
+  it('choisir la version officielle dans la liste ouvre sa copie de travail éditable', async () => {
+    const officielle = { ...MAQUETTE_VALIDEE, id: 2, statut: 'ACTIVE', version: 1 }
+    const copie = { ...MAQUETTE_VALIDEE, id: 3, statut: 'BROUILLON', version: 2 }
+    monter({ maquettes: [officielle, copie] })
+    await attendreEcran()
+    // L'écran démarre sur la copie ; l'utilisateur choisit quand même la v1.
+    expect(screen.getByTestId('choix-maquette').value).toBe('3')
+    fireEvent.change(screen.getByTestId('choix-maquette'), { target: { value: '2' } })
+    // Bascule automatique : on reste sur la copie éditable, cases actives.
+    expect(screen.getByTestId('choix-maquette').value).toBe('3')
+    expect(await screen.findByText(/copie brouillon/)).toBeInTheDocument()
+    expect(screen.getByTestId('nouvelle-ue')).toBeInTheDocument()
+    expect(screen.getByTestId('cocher-ue-10').disabled).toBe(false)
+    fireEvent.click(screen.getByTestId('cocher-ue-10'))
+    expect(await screen.findByTestId('barre-actions-ue')).toBeInTheDocument()
+  })
+
+  it('un rôle en lecture seule reste sur la maquette officielle choisie', async () => {
+    const officielle = { ...MAQUETTE_VALIDEE, id: 2, statut: 'ACTIVE', version: 1 }
+    const copie = { ...MAQUETTE_VALIDEE, id: 3, statut: 'BROUILLON', version: 2 }
+    monter({ utilisateur: ENSEIGNANT, maquettes: [officielle, copie] })
+    await attendreEcran()
+    fireEvent.change(screen.getByTestId('choix-maquette'), { target: { value: '2' } })
+    // Aucune bascule : consultation de l'officielle, aucune action d'écriture.
+    expect(screen.getByTestId('choix-maquette').value).toBe('2')
+    expect(screen.queryByTestId('nouvelle-ue')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('cocher-ue-10')).not.toBeInTheDocument()
+  })
+})

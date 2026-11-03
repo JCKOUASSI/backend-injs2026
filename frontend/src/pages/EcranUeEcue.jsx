@@ -369,6 +369,45 @@ export default function EcranUeEcue() {
   const maquette = maquettes.find((m) => String(m.id) === String(maquetteId)) || null
   const maquetteEditable = maquette?.statut === 'BROUILLON'
 
+  // Copie de travail (brouillon) d'une maquette : même année, formation,
+  // niveau et parcours. Si plusieurs brouillons existent, la plus récente.
+  const copieTravailDe = (m) => {
+    if (!m) return null
+    const memePerimetre = (c) =>
+      c.id !== m.id &&
+      c.statut === 'BROUILLON' &&
+      c.annee_academique_id === m.annee_academique_id &&
+      c.ref_formation_id === m.ref_formation_id &&
+      c.niveau_id === m.niveau_id &&
+      (c.parcours_id ?? null) === (m.parcours_id ?? null)
+    return maquettes
+      .filter(memePerimetre)
+      .sort((a, b) => (b.version ?? 0) - (a.version ?? 0))[0] || null
+  }
+
+  // Choix d'une maquette dans la liste : un gestionnaire qui choisit une
+  // version officielle gelée est basculé sur sa copie de travail, pour que
+  // créer/modifier/supprimer/activer/désactiver et la sélection par cases
+  // soient disponibles quelle que soit la maquette choisie. Sans copie,
+  // la maquette choisie s'affiche et le clonage reste proposé.
+  const choisirMaquette = (valeur) => {
+    const choisie = maquettes.find((m) => String(m.id) === String(valeur))
+    if (peutGerer && choisie && choisie.statut !== 'BROUILLON') {
+      const copie = copieTravailDe(choisie)
+      if (copie) {
+        setMaquetteId(String(copie.id))
+        showToast(
+          `Maquette officielle gelée : vous travaillez sur sa copie brouillon `
+          + `(v${copie.version ?? '—'}), entièrement modifiable. `
+          + 'L’originale reste intacte.',
+          'info',
+        )
+        return
+      }
+    }
+    setMaquetteId(valeur)
+  }
+
   const famillesQuery = useQuery({
     queryKey: ['ue-ecue', 'familles'],
     queryFn: async () => {
@@ -627,7 +666,7 @@ export default function EcranUeEcue() {
             className="form-select form-select-sm uex-select"
             data-testid="choix-maquette"
             value={maquetteId}
-            onChange={(e) => setMaquetteId(e.target.value)}
+            onChange={(e) => choisirMaquette(e.target.value)}
             disabled={chargement}
           >
             <option value="">
