@@ -265,7 +265,7 @@ describe('pages/EvaluationsModule — comportement', () => {
       installFetch(base)
       rendre(<SaisieNotes />, '/evaluations/saisie/7')
       expect(await screen.findByText('KOUASSI Adjoua')).toBeInTheDocument()
-      expect(screen.getByText('EN ATTENTE')).toBeInTheDocument()
+      expect(screen.getByText('En attente')).toBeInTheDocument()
     })
 
     it('envoie PUT et un corps liste (et non POST / un objet)', async () => {
@@ -775,7 +775,8 @@ installFetch({
       })
       rendre(<ListeEvaluations />)
       await screen.findByText('Examen final S1')
-      expect(screen.getAllByText('Non renseigné').length).toBeGreaterThan(0)
+      // Date absente : libellé métier « Non renseignée », jamais 0 ni ISO.
+      expect(screen.getAllByText('Non renseignée').length).toBeGreaterThan(0)
       expect(screen.queryByText('0')).not.toBeInTheDocument()
     })
   })
@@ -921,6 +922,61 @@ installFetch({
       const valeurs = Array.from(document.querySelectorAll('.ev-stat-valeur'))
         .map((n) => n.textContent)
       expect(valeurs).toEqual(['2', '1', '1', '0'])
+    })
+
+    it('une évaluation clôturée n’est ni « ouverte à la saisie » ni saisissable', async () => {
+      installFetch({
+        'GET /api/evaluations-academiques/evaluations/': {
+          count: 2, next: null, previous: null,
+          results: [
+            {
+              ...EVALUATION, id: 1, statut: 'PUBLIEE', statut_display: 'Publiée',
+              type_libelle: 'Contrôle continu', date_prevue: '2026-12-07',
+            },
+            {
+              ...EVALUATION, id: 2, libelle: 'Évaluation clôturée',
+              statut: 'CLOTUREE', statut_display: 'Clôturée',
+            },
+          ],
+        },
+        'GET /api/evaluations-academiques/sessions/': EMPTY,
+        'GET /api/evaluations-academiques/hub/stats/': {
+          notes: 4, notes_par_statut: { BROUILLON: 3, VALIDEE: 1 },
+          participants: 25, releves: 1, avancement_validation: 25.0,
+        },
+      })
+      rendre(<TableauDeBordEvaluations />)
+      await screen.findByText('Dernières évaluations')
+      // 2 compositions : 1 ouverte (publiée), la clôturée est exclue.
+      const valeurs = Array.from(document.querySelectorAll('.ev-stat-valeur'))
+        .map((n) => n.textContent)
+      expect(valeurs).toEqual(['2', '1', '0', '0'])
+      // Libellés métier accentués, jamais les codes bruts.
+      expect(screen.getByText('Publiée')).toBeInTheDocument()
+      expect(screen.getByText('Clôturée')).toBeInTheDocument()
+      expect(screen.queryByText('PUBLIEE')).not.toBeInTheDocument()
+      // Type et date au format métier (JJ/MM/AAAA).
+      expect(screen.getByText('Contrôle continu')).toBeInTheDocument()
+      expect(screen.getByText('07/12/2026')).toBeInTheDocument()
+      // Un seul bouton de saisie : celui de l'évaluation publiée.
+      expect(screen.getAllByRole('button', { name: /Saisir les notes/i })).toHaveLength(1)
+      expect(screen.getByLabelText('Saisie clôturée')).toBeInTheDocument()
+      // Suivi de saisie alimenté par le panorama backend.
+      expect(await screen.findByText(/validation :/i)).toBeInTheDocument()
+      expect(screen.getByText('Brouillons')).toBeInTheDocument()
+    })
+
+    it('le tableau de bord demande le tri par création décroissante', async () => {
+      const appels = installFetch({
+        'GET /api/evaluations-academiques/evaluations/': PAGE,
+        'GET /api/evaluations-academiques/sessions/': EMPTY,
+      })
+      rendre(<TableauDeBordEvaluations />)
+      await screen.findByText('Dernières évaluations')
+      const url = appels.mock.calls
+        .map(([u]) => String(u))
+        .find((u) => u.includes('/evaluations/') && !u.includes('/sessions/'))
+      expect(url).toContain('tri=recent')
     })
 
     it('la tuile « Évaluations » lit le `count` de l’API, pas la page affichée', async () => {

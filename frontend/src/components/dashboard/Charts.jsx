@@ -78,7 +78,7 @@ export function VectorSplineAreaChart({
 
       {!aDesDonnees && (
         <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '0.5rem 0 0' }}>
-          Aucun historique d’effectifs n’est enregistré : aucune série n’est affichée.
+          Historique insuffisant (moins de deux mois d’inscriptions) : aucune série n’est affichée.
         </p>
       )}
 
@@ -281,7 +281,7 @@ export function RadialGaugeCard({
             style={{ transition: 'stroke-dashoffset 0.8s ease' }}
           />
         </svg>
-        <span className="gauge-pct-text">{taux === null ? '—' : `${taux}%`}</span>
+        <span className="gauge-pct-text">{taux === null ? '—' : `${String(taux).replace('.', ',')}%`}</span>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.72rem', marginTop: '0.25rem' }}>

@@ -41,7 +41,7 @@ describe('dashboard/Charts — aucune valeur inventée par défaut', () => {
   it('la courbe d’évolution est vide et le dit, sans série 2021-2026', () => {
     render(<VectorSplineAreaChart title="Évolution des effectifs" />)
     expect(
-      screen.getByText(/Aucun historique d’effectifs n’est enregistré/i),
+      screen.getByText(/Historique insuffisant/i),
     ).toBeInTheDocument()
     expect(screen.queryByText('2021')).not.toBeInTheDocument()
     expect(screen.queryByText('1248')).not.toBeInTheDocument()
@@ -57,7 +57,7 @@ describe('dashboard/Charts — aucune valeur inventée par défaut', () => {
     )
     expect(screen.getByText('2024')).toBeInTheDocument()
     expect(
-      screen.queryByText(/Aucun historique d’effectifs/i),
+      screen.queryByText(/Historique insuffisant/i),
     ).not.toBeInTheDocument()
   })
 
