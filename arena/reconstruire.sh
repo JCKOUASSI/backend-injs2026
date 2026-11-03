@@ -146,6 +146,14 @@ log "Journal de scolarité : reconstitution depuis les inscriptions…"
 (cd "$BACKEND" && "$VENV/bin/python" manage.py reconstruire_journal_parcours) \
   && touch "$BACKEND/.journal_parcours_ok"
 
+# Corps enseignant d'exemple : 4 enseignants par formation (grades,
+# spécialités par filière) et affectation de toutes les ECUE des maquettes
+# ACTIVE (finaliser_maquettes_injs déjà passé). Idempotent ;
+# retrait : seed_enseignants_demo --purger.
+log "Enseignants : corps enseignant d'exemple et couverture des ECUE…"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py seed_enseignants_demo) \
+  && touch "$BACKEND/.enseignants_demo_ok"
+
 # ── 6. Site web ──────────────────────────────────────────────────────────────
 if [ ! -d "$FRONTEND/node_modules" ]; then
   log "Installation des dépendances npm…"

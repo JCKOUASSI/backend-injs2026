@@ -193,12 +193,14 @@ class FormateurSerializer(serializers.ModelSerializer):
     )
     secretariats_noms = serializers.SerializerMethodField()
     nb_formations = serializers.SerializerMethodField()
+    grade = serializers.SerializerMethodField()
 
     class Meta:
         model = Formateur
         fields = [
             'id', 'numerobadge', 'nom', 'prenom', 'email',
             'telephone', 'specialite', 'organisation',
+            'grade_ref', 'grade', 'fonction', 'statut_enseignant',
             'numero_piece_identite', 'numero_compte_bancaire',
             'observations',
             'secretariats', 'secretariats_noms', 'nb_formations', 'created_at',
@@ -222,6 +224,17 @@ class FormateurSerializer(serializers.ModelSerializer):
             attrs.pop('numero_piece_identite', None)
             attrs.pop('numero_compte_bancaire', None)
         return super().validate(attrs)
+
+    def get_grade(self, obj):
+        # Grade académique (referentiels.RefGradeEnseignant) — distinct des
+        # grades administratifs d'admission portés par les inscriptions.
+        if obj.grade_ref_id is None:
+            return None
+        try:
+            grade = obj.grade_ref
+        except Exception:  # noqa: BLE001 - jamais bloquant en lecture
+            return None
+        return {'id': grade.id, 'code': grade.code, 'libelle': grade.libelle}
 
     def get_secretariats_noms(self, obj):
         return [f"{s.nom} ({s.numero})" for s in obj.secretariats.all()]

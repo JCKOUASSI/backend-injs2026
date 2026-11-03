@@ -681,11 +681,16 @@ class Formateur(models.Model):
     telephone = models.CharField(max_length=20, blank=True, default='')
     specialite = models.CharField(max_length=255, blank=True, default='')
     organisation = models.CharField(max_length=255, blank=True, default='')
-    # Lot L3/L7 — distinction explicite grade / fonction / statut enseignant
+    # Lot L3/L7 — distinction explicite grade / fonction / statut enseignant.
+    # Ce champ pointait ``formations.RefGrade`` (grades administratifs
+    # d'admission : « Grade A3/A4/B3 ») : confusion de référentiels corrigée,
+    # le grade d'un enseignant relève de ``referentiels.RefGradeEnseignant``
+    # (Professeur Titulaire, Maître de Conférences, Maître EPS…). Toutes les
+    # valeurs étaient NULL en base : la migration ne perd aucune donnée.
     grade_ref = models.ForeignKey(
-        'RefGrade', on_delete=models.SET_NULL,
-        related_name='formateurs_lmd', null=True, blank=True,
-        verbose_name='Grade (référentiel)',
+        'referentiels.RefGradeEnseignant', on_delete=models.SET_NULL,
+        related_name='enseignants', null=True, blank=True,
+        verbose_name='Grade enseignant (référentiel)',
     )
     fonction = models.CharField(
         max_length=100, blank=True, default='',
