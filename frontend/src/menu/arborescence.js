@@ -967,7 +967,6 @@ export const ARBORESCENCE = [
         id: 'administration.courrier',
         libelle: 'Courrier / Documents',
         chemin: '/administration/courrier',
-        ecran: 'courrier_documents',
         droit: {
           curp: [
             'administrations.courrier.consulter',
@@ -980,7 +979,6 @@ export const ARBORESCENCE = [
         id: 'administration.reunions',
         libelle: 'Réunions & missions',
         chemin: '/administration/reunions',
-        ecran: 'reunions_missions',
         droit: {
           curp: ['administrations.reunion.consulter', 'administrations.mission.consulter'],
           legacy: [['web', 'operationnel']],

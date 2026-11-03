@@ -120,6 +120,7 @@ const DocumentsScolaires = lazy(() => import('./pages/scolarite/DocumentsScolair
 const Reinscriptions = lazy(() => import('./pages/scolarite/Reinscriptions'))
 const JournalScolarite = lazy(() => import('./pages/scolarite/JournalScolarite'))
 const StagesHub = lazy(() => import('./pages/stages/StagesHub'))
+const AdministrationHub = lazy(() => import('./pages/administration/AdministrationHub'))
 const Maquettes = lazy(() => import('./pages/scolarite/Maquettes'))
 const MaquetteDetail = lazy(() => import('./pages/scolarite/MaquetteDetail'))
 const Campagnes = lazy(() => import('./pages/scolarite/Campagnes'))
@@ -383,6 +384,24 @@ function App() {
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/scolarite">Scolarité</Link></li><li className="separator">/</li><li>Journal de scolarité</li></>}>
                 <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
                   <JournalScolarite />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/administration/courrier" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Administration</li><li className="separator">/</li><li>Courrier</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <AdministrationHub ongletInitial="courrier" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/administration/reunions" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Administration</li><li className="separator">/</li><li>Réunions &amp; commissions</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <AdministrationHub ongletInitial="reunions" />
                 </Suspense>
               </Layout>
             </ProtectedRoute>

@@ -1327,6 +1327,57 @@ export const ECRANS = {
   },
 
   // ------------------------------------------------------------ ADMINISTRATION
+
+
+
+
+
+  // -------------------------------------------------------------- STATISTIQUES
+  organisation_services: {
+    id: 'organisation_services',
+    titre: 'Services',
+    fil: 'Administration',
+    icone: 'bi-building',
+    introduction: 'Services et secrétariats, hiérarchisés sous les départements.',
+    endpoint: '/habilitations/organisation/services/',
+    recherche: { param: 'q', libelle: 'Rechercher un service' },
+    filtres: [{ param: 'departement', libelle: 'Département', type: 'select', ...RESSOURCES.departements }],
+    colonnes: [
+      { cle: 'numero', libelle: 'Numéro' },
+      { cle: 'nom', libelle: 'Nom' },
+      { cle: 'departement_libelle', libelle: 'Département' },
+      { cle: 'actif', libelle: 'Actif', format: 'booleen' },
+    ],
+    detail: {
+      titre: (l) => `Comptes rattachés — ${l.nom || l.numero}`,
+      sousTitre: 'Comptes utilisateurs',
+      endpoint: (l) => `/habilitations/organisation/services/${l.id}/comptes/`,
+      priorite: ['username', 'nom', 'prenoms', 'statut', 'roles'],
+    },
+    note: 'Source : /api/habilitations/organisation/services/',
+  },
+  organisation_departements: {
+    id: 'organisation_departements',
+    titre: 'Départements',
+    fil: 'Administration',
+    icone: 'bi-diagram-3',
+    introduction: 'Départements rattachés aux directions.',
+    endpoint: '/habilitations/organisation/departements/',
+    filtres: [{ param: 'direction', libelle: 'Direction', type: 'select', ...RESSOURCES.directions }],
+    colonnes: [
+      { cle: 'code', libelle: 'Code' },
+      { cle: 'libelle', libelle: 'Libellé' },
+      { cle: 'direction_libelle', libelle: 'Direction' },
+      { cle: 'actif', libelle: 'Actif', format: 'booleen' },
+    ],
+    detail: {
+      titre: (l) => `Comptes rattachés — ${l.libelle || l.code}`,
+      sousTitre: 'Comptes utilisateurs',
+      endpoint: (l) => `/habilitations/organisation/departements/${l.id}/comptes/`,
+      priorite: ['username', 'nom', 'prenoms', 'statut', 'roles'],
+    },
+    note: 'Source : /api/habilitations/organisation/departements/',
+  },
   organisation_directions: {
     id: 'organisation_directions',
     titre: 'Directions',
@@ -1353,130 +1404,6 @@ export const ECRANS = {
     },
     note: 'Source : /api/habilitations/organisation/directions/',
   },
-
-  organisation_departements: {
-    id: 'organisation_departements',
-    titre: 'Départements',
-    fil: 'Administration',
-    icone: 'bi-diagram-3',
-    introduction: 'Départements rattachés aux directions.',
-    endpoint: '/habilitations/organisation/departements/',
-    filtres: [{ param: 'direction', libelle: 'Direction', type: 'select', ...RESSOURCES.directions }],
-    colonnes: [
-      { cle: 'code', libelle: 'Code' },
-      { cle: 'libelle', libelle: 'Libellé' },
-      { cle: 'direction_libelle', libelle: 'Direction' },
-      { cle: 'actif', libelle: 'Actif', format: 'booleen' },
-    ],
-    detail: {
-      titre: (l) => `Comptes rattachés — ${l.libelle || l.code}`,
-      sousTitre: 'Comptes utilisateurs',
-      endpoint: (l) => `/habilitations/organisation/departements/${l.id}/comptes/`,
-      priorite: ['username', 'nom', 'prenoms', 'statut', 'roles'],
-    },
-    note: 'Source : /api/habilitations/organisation/departements/',
-  },
-
-  organisation_services: {
-    id: 'organisation_services',
-    titre: 'Services',
-    fil: 'Administration',
-    icone: 'bi-building',
-    introduction: 'Services et secrétariats, hiérarchisés sous les départements.',
-    endpoint: '/habilitations/organisation/services/',
-    recherche: { param: 'q', libelle: 'Rechercher un service' },
-    filtres: [{ param: 'departement', libelle: 'Département', type: 'select', ...RESSOURCES.departements }],
-    colonnes: [
-      { cle: 'numero', libelle: 'Numéro' },
-      { cle: 'nom', libelle: 'Nom' },
-      { cle: 'departement_libelle', libelle: 'Département' },
-      { cle: 'actif', libelle: 'Actif', format: 'booleen' },
-    ],
-    detail: {
-      titre: (l) => `Comptes rattachés — ${l.nom || l.numero}`,
-      sousTitre: 'Comptes utilisateurs',
-      endpoint: (l) => `/habilitations/organisation/services/${l.id}/comptes/`,
-      priorite: ['username', 'nom', 'prenoms', 'statut', 'roles'],
-    },
-    note: 'Source : /api/habilitations/organisation/services/',
-  },
-
-  courrier_documents: {
-    id: 'courrier_documents',
-    titre: 'Courrier / Documents',
-    fil: 'Administration',
-    icone: 'bi-envelope-paper',
-    introduction: 'Courriers entrants/sortants et documents officiels, avec '
-      + 'leurs circuits de validation.',
-    onglets: [
-      {
-        id: 'courriers',
-        libelle: 'Courriers',
-        icone: 'bi-envelope',
-        endpoint: '/administrations/courriers/',
-        priorite: ['reference', 'objet', 'sens', 'date', 'statut', 'destinataire'],
-        actions: [
-          {
-            libelle: 'Étape suivante',
-            icone: 'bi-arrow-right-circle',
-            apparence: 'btn-outline-primary',
-            methode: 'POST',
-            chemin: (l) => `/administrations/courriers/${l.id}/transition/`,
-            confirmation: 'Faire avancer ce courrier ?',
-            succes: 'Courrier mis à jour.',
-          },
-        ],
-        note: 'Source : /api/administrations/courriers/',
-      },
-      {
-        id: 'documents',
-        libelle: 'Documents officiels',
-        icone: 'bi-file-earmark-text',
-        endpoint: '/administrations/documents/',
-        priorite: ['reference', 'titre', 'type', 'date', 'statut', 'version'],
-        actions: [
-          {
-            libelle: 'Étape suivante',
-            icone: 'bi-arrow-right-circle',
-            apparence: 'btn-outline-primary',
-            methode: 'POST',
-            chemin: (l) => `/administrations/documents/${l.id}/transition/`,
-            confirmation: 'Faire avancer ce document ?',
-            succes: 'Document mis à jour.',
-          },
-        ],
-        note: 'Source : /api/administrations/documents/',
-      },
-    ],
-  },
-
-  reunions_missions: {
-    id: 'reunions_missions',
-    titre: 'Réunions & missions',
-    fil: 'Administration',
-    icone: 'bi-calendar-event',
-    introduction: 'Réunions institutionnelles et ordres de mission.',
-    onglets: [
-      {
-        id: 'reunions',
-        libelle: 'Réunions',
-        icone: 'bi-people',
-        endpoint: '/administrations/reunions/',
-        priorite: ['objet', 'date', 'lieu', 'statut', 'organisateur'],
-        note: 'Source : /api/administrations/reunions/',
-      },
-      {
-        id: 'missions',
-        libelle: 'Missions',
-        icone: 'bi-airplane',
-        endpoint: '/administrations/missions/',
-        priorite: ['objet', 'agent', 'date_debut', 'date_fin', 'lieu', 'statut'],
-        note: 'Source : /api/administrations/missions/',
-      },
-    ],
-  },
-
-  // -------------------------------------------------------------- STATISTIQUES
   stats_candidatures: {
     id: 'stats_candidatures',
     type: 'indicateurs',

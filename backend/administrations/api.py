@@ -253,3 +253,43 @@ def mission_transition_api(request, pk):
         return Response({'error': str(exc)}, status=400)
     return Response(_serialize_mission(m))
     return Response(_serialize_document(d))
+
+# ---------- Panorama (hub Administration premium — tâche 34) ----------
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def stats_api(request):
+    """Indicateurs de l'administration générale (consultation)."""
+    from datetime import date as _date
+
+    from django.db.models import Count
+
+    from ressources_humaines.models import Service
+    from .models import Direction, Departement
+    aujourd_hui = _date.today()
+    return Response({
+        'courriers': Courrier.objects.count(),
+        'courriers_en_traitement': Courrier.objects.filter(
+            statut=Courrier.Statut.EN_COURS,
+        ).count(),
+        'courriers_par_sens': dict(
+            Courrier.objects.values_list('sens')
+            .annotate(n=Count('id')).order_by()
+        ),
+        'documents': DocumentOfficiel.objects.count(),
+        'documents_publies': DocumentOfficiel.objects.filter(
+            statut=DocumentOfficiel.Statut.PUBLIE,
+        ).count(),
+        'reunions': ReunionCommission.objects.count(),
+        'reunions_a_venir': ReunionCommission.objects.filter(
+            date_reunion__gte=aujourd_hui,
+            statut=ReunionCommission.Statut.PLANIFIEE,
+        ).count(),
+        'missions': Mission.objects.count(),
+        'missions_en_cours': Mission.objects.filter(
+            statut=Mission.Statut.EN_COURS,
+        ).count(),
+        'directions': Direction.objects.count(),
+        'departements': Departement.objects.count(),
+        'services': Service.objects.count(),
+    })

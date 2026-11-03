@@ -161,6 +161,13 @@ log "Stages : organismes, conventions et évaluations d'exemple…"
 (cd "$BACKEND" && "$VENV/bin/python" manage.py seed_stages_demo) \
   && touch "$BACKEND/.stages_demo_ok"
 
+# Administration d'exemple (tâche 34) : organigramme générique (sans
+# titulaires désignés), courrier, documents, réunions, missions.
+# Idempotent ; retrait : seed_administration_demo --purger.
+log "Administration : organigramme et vie administrative d'exemple…"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py seed_administration_demo) \
+  && touch "$BACKEND/.administration_demo_ok"
+
 # ── 6. Site web ──────────────────────────────────────────────────────────────
 if [ ! -d "$FRONTEND/node_modules" ]; then
   log "Installation des dépendances npm…"
