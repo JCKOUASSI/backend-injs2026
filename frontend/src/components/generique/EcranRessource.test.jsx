@@ -582,3 +582,48 @@ describe('écran livré : résultats concours', () => {
     expect(await screen.findByText(/Aucun classement pour cette campagne/)).toBeTruthy()
   })
 })
+
+describe('Alertes & seuils (régression capture 03/11 : JSON brut)', () => {
+  const PAYLOAD_SEUILS = {
+    seuils: [],
+    indicateurs: [{
+      indicateur: 'taux_presence', libelle: 'Assiduité séance', valeur: 82.5,
+      unite: '%', inverse: false, icone: 'bi-person-check', couleur: '#2277C1',
+      aide: 'Places présentes ÷ places attendues.', echelle_max: 100,
+      niveau: 'non_configure', actif: false, configure: false,
+      seuil_avertissement: 75, seuil_critique: 60,
+    }],
+    synthese: { ok: 0, avertissement: 0, critique: 0, inactif: 0, non_configure: 1 },
+    seuils_vides: true,
+  }
+
+  it('rend synthèse, jauge et état « à initialiser » sans aucun JSON', async () => {
+    apiController.setRoute('/statistiques/alertes/seuils/', () => PAYLOAD_SEUILS)
+    apiController.setRoute('/stats/alertes/', () => ({ annee: '2026-2027', alertes: [] }))
+    monter(ECRANS.stats_alertes, { chemin: '/statistiques/alertes' })
+
+    expect(await screen.findByText('Assiduité séance')).toBeTruthy()
+    expect(screen.getByText('Aucun seuil configuré.')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Initialiser les seuils INJS/ })).toBeTruthy()
+    expect(screen.getAllByText('Non configuré').length).toBeGreaterThanOrEqual(1)
+    // Le cœur de la régression : aucun fragment JSON ne doit subsister.
+    expect(document.body.textContent).not.toContain('"indicateur"')
+    expect(document.body.textContent).not.toContain('"synthese"')
+    expect(document.body.textContent).not.toContain('{')
+  })
+
+  it('onglet Alertes : lit la racine `alertes` de l’enveloppe {annee, alertes}', async () => {
+    apiController.setRoute('/statistiques/alertes/seuils/', () => PAYLOAD_SEUILS)
+    apiController.setRoute('/stats/alertes/', () => ({
+      annee: '2026-2027',
+      alertes: [{ participant_id: 7, matricule: 'INJS21-0007', taux_presence: 40, taux_absence: 60, niveau: 'CRITIQUE' }],
+    }))
+    monter(ECRANS.stats_alertes, { chemin: '/statistiques/alertes' })
+    await screen.findByText('Assiduité séance')
+
+    fireEvent.click(screen.getByTestId('onglet-alertes'))
+    expect(await screen.findByText('INJS21-0007')).toBeTruthy()
+    expect(screen.getByText('CRITIQUE')).toBeTruthy()
+    expect(document.body.textContent).not.toContain('"alertes"')
+  })
+})

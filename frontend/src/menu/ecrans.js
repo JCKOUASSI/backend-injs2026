@@ -1025,6 +1025,9 @@ export const ECRANS = {
         libelle: 'Seuils',
         icone: 'bi-sliders',
         endpoint: '/statistiques/alertes/seuils/',
+        // Réponse objet structuré {seuils, indicateurs, synthese, seuils_vides} :
+        // rendu dédié (synthèse, jauges, seuils) et non cartes génériques.
+        rendu: 'alertes_seuils',
         note: 'Source : /api/statistiques/alertes/seuils/',
       },
       {
@@ -1032,6 +1035,15 @@ export const ECRANS = {
         libelle: 'Alertes',
         icone: 'bi-exclamation-triangle',
         endpoint: '/stats/alertes/',
+        // Réponse enveloppe {annee, alertes: [...]} : le tableau est à la racine.
+        racineListe: 'alertes',
+        colonnes: [
+          { cle: 'matricule', libelle: 'Matricule' },
+          { cle: 'taux_presence', libelle: 'Taux de présence', format: 'pourcentage' },
+          { cle: 'taux_absence', libelle: "Taux d'absence", format: 'pourcentage' },
+          { cle: 'niveau', libelle: 'Niveau', format: 'badge', couleurs: { AVERTISSEMENT: 'text-bg-warning', CRITIQUE: 'text-bg-danger' } },
+        ],
+        vide: 'Aucune alerte déclenchée : aucun étudiant ne franchit les seuils d’absence configurés.',
         note: 'Source : /api/stats/alertes/',
       },
     ],

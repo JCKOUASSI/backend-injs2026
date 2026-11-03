@@ -79,8 +79,29 @@ export function formater(valeur, format, colonne) {
     ))
     return textes.every(Boolean) ? textes.join(', ') : `${valeur.length} élément(s)`
   }
-  if (typeof valeur === 'object') return valeur.libelle || valeur.nom || valeur.code || JSON.stringify(valeur)
+  if (typeof valeur === 'object') return valeur.libelle || valeur.nom || valeur.code || resumeObjet(valeur)
   return String(valeur)
+}
+
+/**
+ * Résumé lisible d'un élément de liste ou d'un objet, SANS JSON brut :
+ * libellé métier en tête, puis valeur/niveau quand ils existent. Utilisé par
+ * les cartes d'indicateurs — `JSON.stringify` y affichait des chaînes
+ * illisibles (capture « Alertes & seuils » du 03/11).
+ */
+export function resumeObjet(valeur) {
+  if (valeur == null) return '—'
+  if (typeof valeur !== 'object') return String(valeur)
+  if (Array.isArray(valeur)) return `${valeur.length} élément(s)`
+  const libelle = valeur.libelle || valeur.nom || valeur.code || valeur.titre
+    || valeur.indicateur || valeur.id || 'Élément'
+  const morceaux = [String(libelle)]
+  if (valeur.valeur != null) {
+    morceaux.push(`${Number(valeur.valeur).toLocaleString('fr-FR')}${valeur.unite || ''}`)
+  }
+  if (valeur.niveau) morceaux.push(String(valeur.niveau).replace(/_/g, ' '))
+  else if (valeur.statut) morceaux.push(String(valeur.statut))
+  return morceaux.join(' — ')
 }
 
 /** Libellés français des champs fréquents (en-têtes de colonnes lisibles). */
@@ -125,6 +146,11 @@ export const LIBELLES_CHAMPS = {
   reference_paiement: 'Référence paiement', echeancier: 'Échéancier',
   facture: 'Facture', quittance: 'Quittance', relance: 'Relance',
   periode: 'Période', exercice: 'Exercice',
+  seuils: 'Seuils', indicateurs: 'Indicateurs', synthese: 'Synthèse',
+  seuils_vides: 'Seuils configurés', taux_presence: 'Taux de présence',
+  taux_absence: "Taux d'absence", ok: 'Conformes',
+  avertissement: 'Avertissements', critique: 'Critiques', inactif: 'Inactifs',
+  non_configure: 'Non configurés',
 }
 
 /** Champs techniques jamais affichés en colonne automatique. */
@@ -327,6 +353,161 @@ async function executerActionGenerique(action, ligne) {
   return api.post(chemin, corps ?? {})
 }
 
+const NIVEAUX_ALERTE = {
+  ok: { libelle: 'Conforme', ton: 'green' },
+  avertissement: { libelle: 'Avertissement', ton: 'amber' },
+  critique: { libelle: 'Critique', ton: 'red' },
+  inactif: { libelle: 'Inactif', ton: 'slate' },
+  non_configure: { libelle: 'Non configuré', ton: 'slate' },
+}
+
+/**
+ * Rendu dédié « Alertes & seuils » : l'endpoint renvoie un OBJET structuré
+ * `{seuils, indicateurs, synthese, seuils_vides}` que le rendu générique en
+ * cartes KPI dégradait en JSON brut (capture du 03/11). Ici : synthèse en
+ * pastilles comptées, une carte-jauge par indicateur (valeur, seuils,
+ * niveau) et le tableau des seuils configurés — ou l'état « à initialiser ».
+ */
+function VueAlertesSeuils({ payload, endpoint, onActualise }) {
+  const { showToast } = useToast()
+  const [initialisation, setInitialisation] = useState(false)
+  const indicateurs = Array.isArray(payload?.indicateurs) ? payload.indicateurs : []
+  const seuils = Array.isArray(payload?.seuils) ? payload.seuils : []
+  const synthese = payload?.synthese || {}
+  const seuilsVides = Boolean(payload?.seuils_vides) || seuils.length === 0
+
+  const initialiser = async () => {
+    if (!window.confirm('Initialiser les seuils INJS par défaut pour les 6 indicateurs ?')) return
+    setInitialisation(true)
+    try {
+      const res = await api.post(endpoint)
+      showToast(res?.data?.detail || 'Seuils initialisés.')
+      onActualise?.()
+    } catch (err) {
+      showToast(messageErreur(err, 'Initialisation des seuils refusée.'), 'error')
+    } finally {
+      setInitialisation(false)
+    }
+  }
+
+  return (
+    <div className="alertes-vue">
+      <section className="alertes-panel" aria-label="Synthèse des alertes">
+        <header className="alertes-panel-head">
+          <h2 className="alertes-panel-title"><i className="bi bi-activity"></i>Synthèse de surveillance</h2>
+          <button type="button" className="btn btn-sm alertes-btn-refresh" onClick={onActualise}>
+            <i className="bi bi-arrow-clockwise me-1"></i>Actualiser
+          </button>
+        </header>
+        <div className="alertes-synthese">
+          {Object.entries(NIVEAUX_ALERTE).map(([cle, meta]) => (
+            <div className={`alertes-stat alertes-stat--${meta.ton}`} key={cle}>
+              <span className="alertes-stat-valeur">{synthese[cle] ?? 0}</span>
+              <span className="alertes-stat-libelle">{meta.libelle}</span>
+            </div>
+          ))}
+        </div>
+        {seuilsVides && (
+          <div className="alertes-alerte-config" role="status">
+            <i className="bi bi-exclamation-triangle-fill"></i>
+            <div>
+              <strong>Aucun seuil configuré.</strong>{' '}
+              Les indicateurs ci-dessous affichent les paliers proposés par défaut,
+              sans surveillance active. Initialisez les seuils INJS pour activer les alertes.
+            </div>
+            <button type="button" className="btn btn-sm alertes-btn-init" onClick={initialiser} disabled={initialisation}>
+              {initialisation
+                ? <><span className="spinner-border spinner-border-sm me-1"></span>Initialisation…</>
+                : <><i className="bi bi-magic me-1"></i>Initialiser les seuils INJS</>}
+            </button>
+          </div>
+        )}
+      </section>
+
+      <section className="alertes-panel" aria-label="Indicateurs surveillés">
+        <header className="alertes-panel-head">
+          <h2 className="alertes-panel-title"><i className="bi bi-speedometer2"></i>Indicateurs surveillés</h2>
+          <span className="alertes-count">{indicateurs.length} indicateur{indicateurs.length > 1 ? 's' : ''}</span>
+        </header>
+        <div className="alertes-grille">
+          {indicateurs.map((ind) => {
+            const niveau = NIVEAUX_ALERTE[ind.niveau] || NIVEAUX_ALERTE.non_configure
+            const max = ind.echelle_max || 100
+            const pct = Math.max(0, Math.min(100, (Number(ind.valeur) || 0) / max * 100))
+            const posA = Math.max(0, Math.min(100, (Number(ind.seuil_avertissement) || 0) / max * 100))
+            const posC = Math.max(0, Math.min(100, (Number(ind.seuil_critique) || 0) / max * 100))
+            return (
+              <article className="alertes-carte" key={ind.indicateur}>
+                <div className="alertes-carte-head">
+                  <span className="alertes-carte-icone" style={{ background: `${ind.couleur || '#283A87'}1f`, color: ind.couleur || '#283A87' }}>
+                    <i className={`bi ${ind.icone || 'bi-speedometer2'}`}></i>
+                  </span>
+                  <span className={`alertes-badge alertes-badge--${niveau.ton}`}>{niveau.libelle}</span>
+                </div>
+                <h3 className="alertes-carte-titre">{ind.libelle || ind.indicateur}</h3>
+                <div className="alertes-carte-valeur">
+                  {Number(ind.valeur ?? 0).toLocaleString('fr-FR')}<small>{ind.unite || ''}</small>
+                </div>
+                <div className="alertes-jauge" aria-hidden="true">
+                  <span className={`alertes-jauge-remplissage alertes-jauge--${niveau.ton}`} style={{ width: `${pct}%` }}></span>
+                  <span className="alertes-jauge-seuil alertes-jauge-seuil--avert" style={{ left: `${posA}%` }}></span>
+                  <span className="alertes-jauge-seuil alertes-jauge-seuil--crit" style={{ left: `${posC}%` }}></span>
+                </div>
+                <div className="alertes-carte-seuils">
+                  <span><i className="alertes-point alertes-point--avert"></i>Avert. {ind.seuil_avertissement}{ind.unite}</span>
+                  <span><i className="alertes-point alertes-point--crit"></i>Crit. {ind.seuil_critique}{ind.unite}</span>
+                </div>
+                {ind.aide && <p className="alertes-carte-aide">{ind.aide}</p>}
+              </article>
+            )
+          })}
+          {indicateurs.length === 0 && (
+            <p className="alertes-vide">Aucun indicateur renvoyé par le serveur.</p>
+          )}
+        </div>
+      </section>
+
+      <section className="alertes-panel" aria-label="Seuils configurés">
+        <header className="alertes-panel-head">
+          <h2 className="alertes-panel-title"><i className="bi bi-sliders"></i>Seuils configurés</h2>
+          <span className="alertes-count">{seuils.length} seuil{seuils.length > 1 ? 's' : ''}</span>
+        </header>
+        {seuils.length === 0 ? (
+          <div className="alertes-vide-bloc">
+            <span className="alertes-vide-icone"><i className="bi bi-sliders"></i></span>
+            <p className="alertes-vide-titre">Aucun seuil en base</p>
+            <p className="alertes-vide-texte">
+              Les paliers ci-dessus sont les valeurs proposées par défaut. Utilisez
+              « Initialiser les seuils INJS » pour les enregistrer, puis ajustez-les
+              depuis Statistiques → Alertes (écran complet de configuration).
+            </p>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="table alertes-table mb-0">
+              <thead><tr><th>Indicateur</th><th className="text-center">Avertissement</th><th className="text-center">Critique</th><th className="text-center">Actif</th></tr></thead>
+              <tbody>
+                {seuils.map((s) => (
+                  <tr key={s.id ?? s.indicateur}>
+                    <td><strong>{s.libelle || s.indicateur}</strong></td>
+                    <td className="text-center alertes-cell-avert">{s.seuil_avertissement}</td>
+                    <td className="text-center alertes-cell-crit">{s.seuil_critique}</td>
+                    <td className="text-center">
+                      <span className={`alertes-badge alertes-badge--${s.actif === false ? 'slate' : 'green'}`}>
+                        {s.actif === false ? 'Inactif' : 'Actif'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </div>
+  )
+}
+
 /** Liste (ou onglets) générique — cœur du moteur d'écrans. */
 export function ListeGenerique({ ecran, cleBase }) {
   const { showToast } = useToast()
@@ -382,6 +563,14 @@ export function ListeGenerique({ ecran, cleBase }) {
     queryFn: async ({ signal }) => {
       const res = await api.get(ecran.endpoint, { params, signal })
       const brut = res?.data
+      // Racine de liste déclarée (`racineListe`) : la réponse est un objet
+      // enveloppe dont un champ porte le tableau (ex. `{annee, alertes: []}`
+      // de /stats/alertes/). Sans cela, l'écran affichait l'enveloppe comme
+      // des « indicateurs » et l'année comme une carte.
+      if (ecran.racineListe && brut && Array.isArray(brut[ecran.racineListe])) {
+        const extrait = brut[ecran.racineListe]
+        return { results: extrait, count: extrait.length, totalPages: 1 }
+      }
       // Réponse « objet » (statistiques, synthèse, contrôle d'intégrité) :
       // aucune liste à afficher, mais des indicateurs à présenter tels quels.
       const estObjet = brut && !Array.isArray(brut) && !Array.isArray(brut.results)
@@ -533,6 +722,21 @@ export function ListeGenerique({ ecran, cleBase }) {
     )
   }
 
+  // Rendu dédié « Alertes & seuils » : l'objet structuré de l'endpoint a son
+  // propre écran (synthèse, jauges, seuils) au lieu des cartes KPI génériques.
+  if (ecran.rendu === 'alertes_seuils' && indicateurs) {
+    return (
+      <div className="ecran-generique">
+        <VueAlertesSeuils
+          payload={indicateurs}
+          endpoint={ecran.endpoint}
+          onActualise={() => queryClient.invalidateQueries({ queryKey: cle })}
+        />
+        {ecran.note && <p className="gen-note mt-3">{ecran.note}</p>}
+      </div>
+    )
+  }
+
   if (indicateurs) {
     // Sans recherche, filtre ni action, la barre ne contiendrait que le
     // rechargement : on la masque pour préserver l'aspect des écrans purs.
@@ -564,13 +768,24 @@ export function ListeGenerique({ ecran, cleBase }) {
                       : Array.isArray(valeur)
                         ? (valeur.length
                           ? <span className="badge text-bg-warning">{valeur.length} élément(s)</span>
-                          : <span className="text-success"><i className="bi bi-shield-check me-1"></i>Aucune</span>)
-                        : formater(valeur, /_le$|_at$|date/.test(cle) ? 'datetime' : undefined)}
+                          : <span className="text-muted"><i className="bi bi-dash-circle me-1"></i>Aucun élément</span>)
+                        : (valeur && typeof valeur === 'object')
+                          ? (
+                            <dl className="gen-kpi-detail">
+                              {Object.entries(valeur).map(([sousCle, sousValeur]) => (
+                                <div key={sousCle}>
+                                  <dt>{LIBELLES_CHAMPS[sousCle] || sousCle.replace(/_/g, ' ')}</dt>
+                                  <dd>{resumeObjet(sousValeur)}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                          )
+                          : formater(valeur, /_le$|_at$|date/.test(cle) ? 'datetime' : undefined)}
                   </div>
                   {Array.isArray(valeur) && valeur.length > 0 && (
                     <ul className="gen-kpi-list">
                       {valeur.slice(0, 6).map((a, i) => (
-                        <li key={i}>{typeof a === 'object' ? JSON.stringify(a) : String(a)}</li>
+                        <li key={i}>{resumeObjet(a)}</li>
                       ))}
                       {valeur.length > 6 && <li>… {valeur.length - 6} autres</li>}
                     </ul>
