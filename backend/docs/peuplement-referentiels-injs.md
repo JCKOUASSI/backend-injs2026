@@ -95,6 +95,45 @@ cd backend
 
 Contrôles : `GET /api/administrations/stats/` (14 courriers, 10 documents,
 10 réunions, 8 missions, 8/15/16 unités), `archives/stats` (2 modules,
-12 participants, 2 formateurs), cahier d'appel (6 séances, 72 présences par
-module), connexion réussie des comptes fictifs, seconde exécution sans
+12 participants, 2 formateurs), cahier d'appel (6 séances, 60 présences
+effectives par module depuis le correctif d'assiduité du 03/11),
+connexion réussie des comptes fictifs, seconde exécution sans
 doublon, tests `administrations` ciblés OK.
+
+---
+
+# Annexe — Charges pédagogiques des enseignants (03/11/2026)
+
+Sur demande explicite, la réserve « maquettes BROUILLON non activées /
+maquettes [Exemple] F05–F08 non créées » ci-dessus est levée pour l'année
+courante 2026-2027. Commande dédiée, idempotente et étiquetée
+« [Démo fictive] » :
+
+```bash
+cd backend
+.venv/bin/python manage.py peupler_charges_pedagogiques_injs [--dry-run] [--annee 2026-2027]
+```
+
+Chaîne : maquettes `[Exemple]` F05–F08 créées en BROUILLON (créateur de
+`finaliser_maquettes_injs`) → volumes CM/TD/TP des ECUE renseignés par la
+grille **MODELISE** du document « Modéliser les volumes horaires » →
+validation + activation journalisées par `finaliser_maquettes_injs` →
+enseignants fictifs complets → une affectation VALIDEE par ECUE.
+
+| Élément | Résultat |
+|---|---|
+| Maquettes ACTIVE 2026-2027 | 40 (8 filières × L1, L2, L3, M1, M2), dont 20 `[Exemple]` ENSEP |
+| ECUE couvertes | 779 / 779 (100 %) |
+| Affectations pédagogiques | 779 VALIDEE, types CM/TD/TP selon composante dominante, dates par semestre |
+| Volume total affecté | 16 778 h (volumes **MODELISE**) |
+| Enseignants fictifs | 99 (`demo.ens.*` / badges `ENS-DEMO-*`, comptes FORMATEUR, mot de passe `DemoInjs2026!`) — fiche complète : grade du référentiel enseignants, fonction, statut, spécialité par domaine, école ENSEPS/ENSEP, contacts ; **compte bancaire volontairement non inventé** |
+| Charge par enseignant | ≤ 192 h/an (seuil de surcharge), charge max constatée 192 h |
+| Anomalies (service charges) | 0 (aucun module sans enseignant, aucune double affectation, aucune surcharge) |
+
+Lecture de la page : « Prévue » = volume total des maquettes ACTIVE des
+périmètres (formation/niveau) couverts par l'enseignant (définition
+historique et testée de `charges_services`), « Affectée » = ses propres
+affectations. Contrôles : `GET /api/enseignants/occupation/?annee_id=1`
+(99 enseignants, 0 surcharge), `GET /api/enseignants/anomalies/` (liste
+vide), tests `scolarite` (peuplement, finaliser, charges) OK, seconde
+exécution sans doublon.
