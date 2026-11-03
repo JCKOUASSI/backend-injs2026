@@ -39,6 +39,8 @@ import './styles/statistiques.css'
 import './styles/personnel.css'
 // Design premium sobre Administration générale.
 import './styles/administration.css'
+// Design premium sobre Espace Archives.
+import './styles/archives.css'
 
 /**
  * Erreurs hors rendu React : promesses rejetées, erreurs d'événement, échec

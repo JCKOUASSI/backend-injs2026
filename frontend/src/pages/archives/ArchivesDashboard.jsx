@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
+import '../../styles/archives.css'
 
 const STAT_CARDS = [
   { key: 'modules', label: 'Modules archivés', icon: 'bi-journal-bookmark', color: '#104A8E' },
@@ -12,7 +13,7 @@ const STAT_CARDS = [
 const DOC_CARDS = [
   {
     to: '/archives/listes-notes',
-    label: 'Listes de note',
+    label: 'Listes de notes',
     desc: 'Relevés de notes et moyennes par module, catégorie et grade.',
     icon: 'bi-card-checklist',
     color: '#104A8E',
@@ -29,6 +30,7 @@ const DOC_CARDS = [
 const QUICK_LINKS = [
   { to: '/participants', label: 'Étudiants', icon: 'bi-people' },
   { to: '/statistiques', label: 'Statistiques', icon: 'bi-bar-chart-line' },
+  { to: '/administration/courrier', label: 'Administration — courrier & documents', icon: 'bi-envelope-paper' },
 ]
 
 export default function ArchivesDashboard() {
@@ -55,45 +57,36 @@ export default function ArchivesDashboard() {
   const firstName = user?.first_name || user?.username || ''
 
   return (
-    <div>
+    <div className="archives-page">
       {/* En-tête */}
-      <div style={{
-        background: 'linear-gradient(120deg, #001a33 0%, #0a2a4d 100%)',
-        borderRadius: 18, padding: '1.75rem 2rem', color: '#fff', marginBottom: '1.5rem',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
-          <i className="bi bi-archive" style={{ fontSize: '1.6rem' }}></i>
-          <h1 style={{ margin: 0, fontWeight: 700, fontSize: '1.6rem' }}>Espace Archives</h1>
-        </div>
-        <p style={{ margin: 0, opacity: 0.9, fontSize: '0.95rem' }}>
+      <header className="archives-hero">
+        <span className="archives-hero-badge"><i className="bi bi-archive"></i>Archives · Documents pédagogiques</span>
+        <h1 className="archives-hero-title"><i className="bi bi-archive"></i>Espace Archives</h1>
+        <p className="archives-hero-sub">
           Bienvenue{firstName ? `, ${firstName}` : ''}. Consultez et exportez les documents pédagogiques archivés
-          (listes de note, cahiers d'appel) classés par formation, catégorie et grade.
+          (listes de notes, cahiers d'appel) classés par formation, catégorie et grade.
         </p>
-      </div>
+      </header>
 
       {/* Statistiques */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.75rem' }}>
+      <div className="archives-kpis">
         {STAT_CARDS.map(c => (
-          <div key={c.key} className="card" style={{ padding: '1.1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ width: 48, height: 48, borderRadius: 12, background: `${c.color}1a`, color: c.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
-              <i className={`bi ${c.icon}`}></i>
-            </div>
+          <div key={c.key} className="archives-kpi" style={{ '--accent': c.color }}>
+            <span className="archives-kpi-icon"><i className={`bi ${c.icon}`}></i></span>
             <div>
-              <div style={{ fontSize: '1.6rem', fontWeight: 800, lineHeight: 1 }}>
+              <div className="archives-kpi-value">
                 {counts[c.key] == null ? '—' : counts[c.key].toLocaleString('fr-FR')}
               </div>
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 2 }}>{c.label}</div>
+              <div className="archives-kpi-label">{c.label}</div>
             </div>
           </div>
         ))}
       </div>
 
       {counts.modules === 0 && (
-        <div className="card" style={{ padding: '1.25rem 1.5rem', marginBottom: '1.75rem', borderLeft: '4px solid #f5c10b', background: '#fffceb' }}>
-          <p style={{ margin: 0, fontWeight: 600, color: '#92660e' }}>
-            <i className="bi bi-info-circle me-2"></i>Aucun module archivé pour l'instant
-          </p>
-          <p style={{ margin: '0.5rem 0 0', fontSize: '0.9rem', color: '#78540f' }}>
+        <div className="archives-note-vide">
+          <p><i className="bi bi-info-circle me-2"></i>Aucun module archivé pour l'instant</p>
+          <p>
             En tant qu'<strong>archiviste</strong>, vous consultez ici les modules déjà transférés aux archives.
             L'archivage est effectué par le <strong>secrétariat</strong> ou la <strong>direction</strong> depuis la page
             <strong> Modules</strong> (bouton orange « Archiver », avec 3 confirmations).
@@ -102,35 +95,24 @@ export default function ArchivesDashboard() {
       )}
 
       {/* Documents d'archives */}
-      <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.9rem' }}>Documents d'archives</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.75rem' }}>
+      <h2 className="archives-section-title"><i className="bi bi-folder2-open"></i>Documents d'archives</h2>
+      <div className="archives-docs">
         {DOC_CARDS.map(c => (
-          <Link
-            key={c.to}
-            to={c.to}
-            className="card"
-            style={{ padding: '1.4rem', textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', gap: '0.6rem', transition: 'box-shadow .15s, transform .15s' }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 26px rgba(0,0,0,0.10)'; e.currentTarget.style.transform = 'translateY(-3px)' }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow = ''; e.currentTarget.style.transform = '' }}
-          >
-            <div style={{ width: 52, height: 52, borderRadius: 14, background: `${c.color}1a`, color: c.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
-              <i className={`bi ${c.icon}`}></i>
-            </div>
-            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>{c.label}</h3>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>{c.desc}</p>
-            <span style={{ marginTop: 'auto', color: c.color, fontWeight: 600, fontSize: '0.85rem' }}>
-              Ouvrir <i className="bi bi-arrow-right ms-1"></i>
-            </span>
+          <Link key={c.to} to={c.to} className="archives-doc-card" style={{ '--accent': c.color }}>
+            <span className="archives-doc-icon"><i className={`bi ${c.icon}`}></i></span>
+            <h3>{c.label}</h3>
+            <p>{c.desc}</p>
+            <span className="archives-doc-ouvrir">Ouvrir <i className="bi bi-arrow-right"></i></span>
           </Link>
         ))}
       </div>
 
       {/* Accès rapides */}
-      <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.9rem' }}>Accès rapides</h2>
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+      <h2 className="archives-section-title"><i className="bi bi-lightning-charge"></i>Accès rapides</h2>
+      <div className="archives-quick">
         {QUICK_LINKS.map(l => (
-          <Link key={l.to} to={l.to} className="btn btn-outline-secondary btn-sm">
-            <i className={`bi ${l.icon} me-1`}></i>{l.label}
+          <Link key={l.to} to={l.to} className="archives-quick-link">
+            <i className={`bi ${l.icon}`}></i>{l.label}
           </Link>
         ))}
       </div>

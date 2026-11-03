@@ -1,0 +1,79 @@
+/* STYLE DÉDIÉ : ESPACE ARCHIVES INJS — premium SOBRE et dynamique.
+   Même grammaire que Statistiques & Bilans / Personnel / Administration :
+   navy désaturé, surfaces claires, cartes relevées au survol, apparition
+   en cascade. Portée strictement limitée à .archives-page. */
+
+.archives-page { display:flex; flex-direction:column; color:#0f172a; }
+
+/* Héros sobre */
+.archives-hero { position:relative; overflow:hidden; border-radius:18px; color:#fff;
+  padding:1.35rem 1.6rem; margin-bottom:1.25rem;
+  background:
+    radial-gradient(560px 200px at 92% -40%, rgba(53,189,245,.26), transparent 60%),
+    linear-gradient(118deg, #0A1B36 0%, #16295C 52%, #283A87 82%, #17457E 100%);
+  box-shadow:0 16px 34px -18px rgba(7,27,58,.5), inset 0 1px 0 rgba(255,255,255,.16); }
+.archives-hero::after { content:""; position:absolute; left:0; right:0; bottom:0; height:3px;
+  background:linear-gradient(90deg, var(--injs-gold) 0 18%, transparent 18%), linear-gradient(90deg, #F59E0B, #38BDF8, #283A87); opacity:.85; }
+.archives-hero-badge { display:inline-flex; align-items:center; gap:.4rem; font-size:.66rem; font-weight:800;
+  letter-spacing:.14em; text-transform:uppercase; color:#FDE68A; border:1px solid rgba(245,158,11,.45);
+  background:rgba(245,158,11,.16); padding:.28rem .65rem; border-radius:999px; margin-bottom:.6rem; }
+.archives-hero-title { margin:0; font-size:1.6rem; font-weight:800; letter-spacing:-.02em;
+  display:flex; align-items:center; gap:.65rem; color:#fff; }
+.archives-hero-title .bi { color:#7DD3FC; }
+.archives-hero-sub { margin:.4rem 0 0; color:#C7D8F8; font-size:.93rem; max-width:75ch; }
+
+/* KPI en cascade */
+@keyframes archivesFadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+.archives-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+.archives-kpi { display:flex; align-items:center; gap:1rem; background:#fff; border:1px solid #E6EDF5;
+  border-radius:15px; padding:1.05rem 1.25rem; box-shadow:0 6px 18px -10px rgba(7,27,58,.18);
+  animation:archivesFadeUp .5s ease-out both; transition:transform .2s ease, box-shadow .2s ease; }
+.archives-kpi:nth-child(2) { animation-delay:.07s; }
+.archives-kpi:nth-child(3) { animation-delay:.14s; }
+.archives-kpi:hover { transform:translateY(-3px); box-shadow:0 14px 26px -12px rgba(7,27,58,.3); }
+.archives-kpi-icon { width:48px; height:48px; flex-shrink:0; border-radius:13px; display:flex;
+  align-items:center; justify-content:center; font-size:1.35rem;
+  background:color-mix(in srgb, var(--accent, #104A8E) 10%, #fff); color:var(--accent, #104A8E); }
+.archives-kpi-value { font-size:1.6rem; font-weight:800; line-height:1; color:var(--injs-navy); }
+.archives-kpi-label { font-size:.82rem; color:#64748B; margin-top:2px; font-weight:600; }
+
+/* Note état vide */
+.archives-note-vide { border:1px solid #FDE68A; border-left:4px solid #F59E0B; background:#FFFBEB;
+  border-radius:14px; padding:1.1rem 1.4rem; margin-bottom:1.5rem; }
+.archives-note-vide p:first-child { margin:0; font-weight:700; color:#92600E; }
+.archives-note-vide p:last-child { margin:.5rem 0 0; font-size:.9rem; color:#78540F; }
+
+/* Cartes documents */
+.archives-section-title { font-size:1.08rem; font-weight:800; color:var(--injs-navy); margin:0 0 .9rem;
+  display:flex; align-items:center; gap:.5rem; }
+.archives-section-title .bi { color:var(--injs-blue-royal); }
+.archives-docs { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1rem; margin-bottom:1.6rem; }
+.archives-doc-card { display:flex; flex-direction:column; gap:.6rem; background:#fff; border:1px solid #E6EDF5;
+  border-radius:16px; padding:1.35rem; text-decoration:none; color:inherit;
+  box-shadow:0 8px 22px -14px rgba(7,27,58,.22); animation:archivesFadeUp .5s ease-out both;
+  transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+.archives-doc-card:nth-child(2) { animation-delay:.08s; }
+.archives-doc-card:hover { transform:translateY(-4px); border-color:#C7D9F2;
+  box-shadow:0 16px 30px -14px rgba(7,27,58,.32); color:inherit; }
+.archives-doc-icon { width:52px; height:52px; border-radius:14px; display:flex; align-items:center;
+  justify-content:center; font-size:1.55rem;
+  background:color-mix(in srgb, var(--accent, #104A8E) 10%, #fff); color:var(--accent, #104A8E); }
+.archives-doc-card h3 { margin:0; font-size:1.04rem; font-weight:800; color:var(--injs-navy); }
+.archives-doc-card p { margin:0; font-size:.85rem; color:#64748B; line-height:1.5; }
+.archives-doc-ouvrir { margin-top:auto; font-weight:750; font-size:.85rem; color:var(--accent, #104A8E);
+  display:inline-flex; align-items:center; gap:.3rem; }
+.archives-doc-card:hover .archives-doc-ouvrir .bi { transform:translateX(3px); }
+.archives-doc-ouvrir .bi { transition:transform .2s ease; }
+
+/* Accès rapides en pilules */
+.archives-quick { display:flex; gap:.6rem; flex-wrap:wrap; }
+.archives-quick-link { display:inline-flex; align-items:center; gap:.4rem; padding:.5rem 1rem;
+  border-radius:999px; border:1px solid #DCE6F2; background:#fff; color:var(--injs-indigo);
+  font-size:.83rem; font-weight:700; text-decoration:none; transition:all .18s ease; }
+.archives-quick-link:hover { background:var(--injs-blue-pale); border-color:var(--injs-border-strong);
+  transform:translateY(-1px); color:var(--injs-indigo); }
+
+@media (prefers-reduced-motion: reduce) {
+  .archives-kpi, .archives-doc-card { animation:none; transition:none; }
+  .archives-doc-ouvrir .bi { transition:none; }
+}
