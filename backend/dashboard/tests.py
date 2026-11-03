@@ -300,6 +300,28 @@ class VueEnsembleCoherenceTests(TestCase):
             log['organismes_partenaires'], OrganismeAccueil.objects.count())
 
 
+class MesurePresenceTests(TestCase):
+    def test_seules_seances_terminees_avec_effectif_connu_sont_mesurees(self):
+        from dashboard.services import _mesure_presence
+        seance = {'statut': 'TERMINEE', 'effectif_attendu': 4,
+                  'presences': {'presents': 2, 'retards': 1}}
+        taux, detail, presents, attendus, nb = _mesure_presence([
+            seance,
+            {**seance, 'statut': 'A_VENIR', 'effectif_attendu': 100},
+            {**seance, 'statut': 'EN_COURS', 'effectif_attendu': 100},
+            {**seance, 'effectif_attendu': None},
+        ])
+        self.assertEqual((taux, presents, attendus, nb), (75.0, 3, 4, 1))
+        self.assertIn('retards inclus', detail)
+
+    def test_aucune_seance_termineee_reste_non_mesuree(self):
+        from dashboard.services import get_presences_dashboard
+        data = get_presences_dashboard()
+        self.assertIsNone(data['kpis']['taux_assiduite_moyen'])
+        self.assertEqual(data['kpis']['presence_attendus'], 0)
+        self.assertIn('Aucune séance terminée', data['kpis']['presence_detail'])
+
+
 class AccueilAdminAlignementLMDTests(TestCase):
     """Accueil admin Django aligné sur la chaîne LMD (Capture 2026-11-03).
 

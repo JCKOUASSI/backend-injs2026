@@ -242,7 +242,7 @@ def _compter(rows, attendus_ids):
     distinctes, ``EXCUSE`` (dispensé) et ``NON_RENSEIGNE`` aussi.
     """
     presents = absents_justifies = absents_injustifies = dispenses = 0
-    non_renseignes = retards = qr = manuel = 0
+    non_renseignes = retards = qr = manuel = exemple = 0
     hors_perimetre = 0
     for participant_id, ligne in rows.items():
         if attendus_ids and participant_id not in attendus_ids:
@@ -265,7 +265,9 @@ def _compter(rows, attendus_ids):
             non_renseignes += 1
         elif assiduite == Pointage.StatutAssiduite.RETARD:
             retards += 1
-        if ligne['device_id'] == 'EMARGEMENT_MANUEL':
+        if ligne['device_id'].startswith('[Exemple]'):
+            exemple += 1
+        elif ligne['device_id'] == 'EMARGEMENT_MANUEL':
             manuel += 1
         else:
             qr += 1
@@ -278,6 +280,7 @@ def _compter(rows, attendus_ids):
         'retards': retards,
         'source_qr': qr,
         'source_manuelle': manuel,
+        'source_exemple': exemple,
         'presences_hors_perimetre': hors_perimetre,
     }
 
@@ -308,6 +311,8 @@ def _seance_ligne(affectation, date, maintenant, rows, effectif, attendus_ids):
         'statut_libelle': LIBELLES_STATUT[statut],
         'en_direct': statut == 'EN_COURS',
         'intitule': affectation.intitule or None,
+        'est_exemple': (affectation.intitule.startswith('[Exemple]')
+                        or affectation.emploi_du_temps.titre.startswith('[Exemple]')),
         'nature': affectation.nature,
         'nature_libelle': affectation.get_nature_display() if affectation.nature else None,
         'semaine_debut': affectation.semaine_debut,

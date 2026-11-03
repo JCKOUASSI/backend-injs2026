@@ -305,7 +305,7 @@ export default function DashboardEngineView() {
                 <KpiCard
                   title="Taux de présence"
                   value={presenceVal}
-                  trendLabel={`vs ${anneeAcademiquePrecedente(new Date(), true)}`}
+                  subText={data?.kpis?.presence_detail || 'Séances terminées · non disponible'}
                   icon="bi-clock-history"
                 />
               </div>
@@ -605,15 +605,15 @@ export default function DashboardEngineView() {
                     title="Pointages du Jour"
                     value={data.kpis.pointages_jour}
                     icon="bi-qr-code-scan"
-                    subText="Temps réel"
-                    trendLabel="scans"
+                    subText="Relevés enregistrés"
+                    trendLabel="présences et absences"
                   />
                   <KpiCard
-                    title="Présents en Salle"
+                    title="Présents du jour"
                     value={data.kpis.presents_jour}
                     icon="bi-check-circle"
-                    subText="Actifs"
-                    trendLabel="auditeurs"
+                    subText="Statut PRÉSENT"
+                    trendLabel="hors retards"
                   />
                   <KpiCard
                     title="Retards & Justifications"
@@ -628,9 +628,9 @@ export default function DashboardEngineView() {
               <div className="row-pipeline-growth mt-3">
                 <RadialGaugeCard
                   title="Taux d'assiduité global"
-                  value={94}
+                  value={data.kpis.taux_assiduite_moyen ?? null}
                   color="#16A36A"
-                  trendComparison="vs semaine passée"
+                  trendComparison={data.kpis.presence_detail || 'Non disponible'}
                 />
                 <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>

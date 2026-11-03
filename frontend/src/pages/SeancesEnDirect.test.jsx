@@ -86,6 +86,15 @@ describe('Séances en direct — supervision LMD des séances et des présences'
     expect(screen.getByText('Participants présents')).toBeInTheDocument()
   })
 
+  it('étiquette le seed et distingue sa source de présence du QR réel', async () => {
+    monter(() => PAYLOAD([{ ...SEANCE_EN_COURS, est_exemple: true,
+      presences: PRESENCE({ source_qr: 0, source_manuelle: 0, source_exemple: 34 }) }]))
+    const carte = await screen.findByTestId('seance-41')
+    expect(within(carte).getByLabelText('Données d’exemple')).toHaveTextContent('[Exemple]')
+    expect(within(carte).getByText(/Exemple \(34\)/)).toBeInTheDocument()
+    expect(within(carte).queryByText(/QR \(/)).not.toBeInTheDocument()
+  })
+
   it('contextualise la séance par ECUE, UE, formation, groupe, enseignant et salle', async () => {
     monter()
     const carte = await screen.findByTestId('seance-41')

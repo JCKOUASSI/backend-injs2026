@@ -221,7 +221,12 @@ class Pointage(models.Model):
 
     def __str__(self):
         personne = self.personne
-        return f"{personne} — {self.session.module.formation.formation} ({self.get_statut_display()})"
+        if self.seance_edt_id:
+            seance = self.seance_edt.intitule or str(self.seance_edt.creneau_template)
+            return f'{personne} — {seance} ({self.get_statut_display()})'
+        if self.session_id:
+            return f'{personne} — {self.session.module.formation.formation} ({self.get_statut_display()})'
+        return f'{personne} — {self.date_journee} ({self.get_statut_display()})'
 
     def calculer_duree(self):
         """Calcule la durée de présence côté serveur (R5).

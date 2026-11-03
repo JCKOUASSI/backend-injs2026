@@ -51,12 +51,12 @@ class PointageAdmin(AdminScopeMixin, admin.ModelAdmin):
         'remettre_en_cours_action',
         'date_journee', 'personne_nom', 'personne_numero', 'type_personne_display',
         'formation_label', 'grade_label', 'groupe_label', 'vague_label',
-        'module_label', 'session_label',
+        'module_label', 'session_label', 'assiduite_label',
         'timestamp_entree', 'timestamp_sortie', 'duree_presence_minutes', 'statut_badge',
     ]
     list_display_links = ['personne_nom']
     list_filter = [
-        'statut', 'date_journee', TypePersonneFilter,
+        'statut', 'statut_assiduite', 'date_journee', TypePersonneFilter,
         'session__module__formation',
         'session__module__grade',
         'session__module__groupe',
@@ -69,6 +69,7 @@ class PointageAdmin(AdminScopeMixin, admin.ModelAdmin):
         'formateur__numerobadge', 'formateur__nom', 'formateur__prenom',
         'encadrant__matricule', 'encadrant__first_name', 'encadrant__last_name', 'encadrant__username',
         'session__intitule', 'session__module__intitule', 'session__module__formation__formation',
+        'seance_edt__intitule', 'device_id',
         'session__module__grade', 'session__module__groupe', 'session__module__vague',
     ]
     date_hierarchy = 'date_journee'
@@ -78,8 +79,9 @@ class PointageAdmin(AdminScopeMixin, admin.ModelAdmin):
         'formateur',
         'encadrant',
         'session', 'session__module', 'session__module__formation',
+        'seance_edt', 'seance_edt__groupe', 'seance_edt__formation',
     ]
-    autocomplete_fields = ['participant', 'formateur', 'encadrant', 'session']
+    autocomplete_fields = ['participant', 'formateur', 'encadrant', 'session', 'seance_edt']
     list_per_page = 50
     show_full_result_count = False
     actions = ['remettre_selection_en_cours']
@@ -88,7 +90,12 @@ class PointageAdmin(AdminScopeMixin, admin.ModelAdmin):
             'fields': ('participant', 'formateur', 'encadrant'),
             'description': "Un pointage concerne soit un participant, un formateur ou un encadrant.",
         }),
-        ("Séance", {
+        ("Séance LMD (emploi du temps)", {
+            'fields': ('seance_edt', 'statut_assiduite', 'annee_academique',
+                       'groupe_lmd', 'ecue_lmd'),
+            'description': 'Contexte pédagogique du pointage EDT. Les exemples portent la source [Exemple].',
+        }),
+        ("Séance historique (formation continue)", {
             'fields': ('session', 'session_contexte', 'date_journee'),
             'description': (
                 "Astuce : dans le champ « Session », vous pouvez chercher par formation, "
@@ -107,6 +114,7 @@ class PointageAdmin(AdminScopeMixin, admin.ModelAdmin):
         'duree_presence_minutes',
         'remettre_en_cours_depuis_fiche',
         'session_contexte',
+        'annee_academique', 'groupe_lmd', 'ecue_lmd',
         'created_at',
         'updated_at',
     ]
@@ -302,6 +310,10 @@ class PointageAdmin(AdminScopeMixin, admin.ModelAdmin):
         label = obj.session.intitule or f"Session {obj.session.numero}"
         url = reverse('admin:formations_sessionmodule_change', args=[obj.session_id])
         return format_html('<a href="{}">{}</a>', url, label)
+
+    @admin.display(description="Assiduité", ordering='statut_assiduite')
+    def assiduite_label(self, obj):
+        return obj.get_statut_assiduite_display() if obj.statut_assiduite else 'Non renseignée'
 
     @admin.display(description="Contexte de la séance")
     def session_contexte(self, obj):

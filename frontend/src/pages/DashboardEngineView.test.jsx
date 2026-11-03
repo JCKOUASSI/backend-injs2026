@@ -103,6 +103,8 @@ const mockPresencesData = {
     retards_jour: 2,
     absents_jour: 1,
     total_historique_pointages: 1450,
+    taux_assiduite_moyen: 87.5,
+    presence_detail: '28 présent(s), retards inclus, sur 32 attendu(s)',
   },
 }
 
@@ -294,7 +296,11 @@ describe('pages/DashboardEngineView.jsx — Rendu et Pilotage LMD 2026', () => {
 
     expect(await screen.findByText('Séances du Jour')).toBeInTheDocument()
     expect(screen.getByText('Pointages du Jour')).toBeInTheDocument()
-    expect(screen.getByText('Présents en Salle')).toBeInTheDocument()
+    expect(screen.getByText('Présents du jour')).toBeInTheDocument()
+    expect(screen.getByText('87,5%')).toBeInTheDocument()
+    expect(screen.getByText(/28 présent\(s\), retards inclus, sur 32 attendu\(s\)/)).toBeInTheDocument()
+    expect(screen.queryByText('94%')).not.toBeInTheDocument()
+    expect(screen.queryByText('vs semaine passée')).not.toBeInTheDocument()
   })
 
   it('permet de basculer vers le mode opérationnel (séances en direct) et revenir', async () => {

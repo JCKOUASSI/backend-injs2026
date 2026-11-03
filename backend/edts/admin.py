@@ -49,6 +49,7 @@ class AffectationCreneauAdmin(admin.ModelAdmin):
     search_fields = ['intitule', 'enseignant_nom', 'commentaire']
     readonly_fields = ['created_at', 'updated_at']
     raw_id_fields = ['emploi_du_temps', 'creneau_template', 'formation', 'groupe']
+    search_fields = ['intitule', 'enseignant_nom', 'commentaire', 'emploi_du_temps__titre']
 
 
 @admin.register(ConflitCreneau)

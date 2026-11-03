@@ -179,10 +179,12 @@ function CarteSeance({ seance }) {
   const sources = []
   if (presences.source_qr > 0) sources.push(`QR (${presences.source_qr})`)
   if (presences.source_manuelle > 0) sources.push(`Manuelle (${presences.source_manuelle})`)
+  if (presences.source_exemple > 0) sources.push(`Exemple (${presences.source_exemple})`)
 
   return (
     <article className="glass-panel seance-carte" data-testid={`seance-${seance.id}`}>
       <header className="seance-carte__entete">
+        {seance.est_exemple && <span className="seance-source" aria-label="Données d’exemple">[Exemple]</span>}
         <span className={`seance-statut ${CLASSE_STATUT[seance.statut] || ''}`}>
           {LIBELLES_STATUT[seance.statut] || seance.statut}
         </span>

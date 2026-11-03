@@ -263,6 +263,19 @@ class CategoriesPresenceTests(BaseSupervision):
         self.assertEqual(presences['source_manuelle'], 1)
 
 
+    def test_source_exemple_jamais_comptee_comme_scan_qr(self):
+        _pointage(self.participants[0], self.affectation, self.aujourdhui,
+                  statut=Pointage.Statut.TERMINE,
+                  device_id='[Exemple] SEED_EDT_DEMO', timestamp_sortie=timezone.now())
+        self.affectation.intitule = '[Exemple] Cours de démonstration'
+        self.affectation.save(update_fields=['intitule'])
+        ligne = self.ligne()
+        self.assertTrue(ligne['est_exemple'])
+        self.assertEqual(ligne['presences']['source_exemple'], 1)
+        self.assertEqual(ligne['presences']['source_qr'], 0)
+        self.assertEqual(ligne['presences']['source_manuelle'], 0)
+
+
 class PasDeDoubleComptageTests(BaseSupervision):
     """Un participant n'est compté qu'une fois, et seulement dans son groupe."""
 

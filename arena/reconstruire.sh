@@ -162,6 +162,15 @@ log "Enseignants : corps enseignant d'exemple et couverture des ECUE…"
 (cd "$BACKEND" && "$VENV/bin/python" manage.py seed_enseignants_demo) \
   && touch "$BACKEND/.enseignants_demo_ok"
 
+# EDT et assiduité d'exemple : 30 créneaux hebdomadaires issus des
+# affectations pédagogiques, prolongés jusqu'à la semaine courante. Le seed
+# est rejoué à chaque reconstruction pour compléter les nouveaux jours sans
+# doublons ; le marqueur atteste sa dernière exécution réussie.
+# Retrait : seed_edt_demo --purger (protège les pointages hors exemple).
+log "EDT et pointages : historique d'exemple jusqu'à aujourd'hui…"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py seed_edt_demo) \
+  && touch "$BACKEND/.edt_demo_ok"
+
 # Stages d'exemple : organismes, tuteurs, conventions (workflow complet) et
 # évaluations — étudiants L3/M1/M2 réels de la démo. Idempotent ;
 # retrait : seed_stages_demo --purger.
@@ -218,6 +227,11 @@ if [ ! -d "$FRONTEND/node_modules" ]; then
   log "Installation des dépendances npm…"
   (cd "$FRONTEND" && if [ -f package-lock.json ]; then npm ci --silent; else npm install --silent; fi)
 fi
+
+# Assets de l'admin Django (WhiteNoise) : indispensables après une reconstruction
+# vierge, indépendamment du bundle Vite construit par lancer-front-demo.sh.
+log "Assets statiques de l'administration Django…"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py collectstatic --noinput --verbosity 0)
 
 # ── Contrôle final ───────────────────────────────────────────────────────────
 log "Contrôle final :"

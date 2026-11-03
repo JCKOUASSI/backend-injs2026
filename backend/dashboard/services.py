@@ -84,6 +84,24 @@ def libelle_annee_courante():
     return annee.libelle if annee else None
 
 
+def _mesure_presence(seances):
+    """Assiduité des séances terminées : présents + retards / attendus connus.
+
+    Les séances à venir ne sont pas des absences. Les séances en cours ne sont
+    pas encore closes. Même numérateur que les graphiques admin et les stats
+    de présence ; aucun taux sans dénominateur Strictement positif.
+    """
+    mesurees = [s for s in seances if s['statut'] == 'TERMINEE'
+                and s['effectif_attendu'] is not None]
+    attendus = sum(s['effectif_attendu'] for s in mesurees)
+    presents = sum(s['presences']['presents'] + s['presences']['retards']
+                   for s in mesurees)
+    taux = round(presents / attendus * 100, 1) if attendus else None
+    detail = (f'{presents} présent(s), retards inclus, sur {attendus} attendu(s)'
+              if attendus else 'Aucune séance terminée avec effectif connu')
+    return taux, detail, presents, attendus, len(mesurees)
+
+
 def get_direction_overview():
     """Tableau de bord de direction / pilotage général INJS."""
     annee = get_current_academic_year()
@@ -125,15 +143,9 @@ def get_direction_overview():
     today = timezone.localdate()
     supervision = _supervision_du_jour(today)
     nb_seances_jour = supervision['resume']['seances_total']
-    presents_aujourdhui = supervision['resume']['participants_presents']
-    attendus_connus = [s['effectif_attendu'] for s in supervision['seances']
-                       if s['effectif_attendu'] is not None]
-    # Taux = présents / attendus × 100, uniquement si le dénominateur est
-    # connu. Sans dénominateur (aucune séance avec groupe rattaché), la valeur
-    # reste ``None`` : afficher 0 % ou 100 % serait faux.
-    total_attendus = sum(attendus_connus)
-    taux_presence = (round(presents_aujourdhui / total_attendus * 100, 1)
-                     if total_attendus > 0 else None)
+    taux_presence, detail_presence, presents_mesures, total_attendus, nb_mesurees = (
+        _mesure_presence(supervision['seances'])
+    )
 
     # Stages & Diplômation. « Délivrés » = diplômes VALIDÉS uniquement :
     # compter aussi les brouillons et les demandes en validation affichait
@@ -353,6 +365,10 @@ def get_direction_overview():
             'stages_en_cours': nb_stages_en_cours,
             'diplomes_delivres': nb_diplomes,
             'seances_jour': nb_seances_jour,
+            'presence_detail': detail_presence,
+            'presence_presents': presents_mesures,
+            'presence_attendus': total_attendus,
+            'presence_seances_mesurees': nb_mesurees,
         },
         'pipeline': pipeline,
         'charts': {
@@ -685,12 +701,9 @@ def get_presences_dashboard():
                     + sum(s['presences']['absents_justifies'] for s in seances))
     pointages_jour = Pointage.objects.filter(date_journee=today).count()
     total_pointages = Pointage.objects.count()
-    attendus_connus = [s['effectif_attendu'] for s in seances
-                       if s['effectif_attendu'] is not None]
-    total_attendus = sum(attendus_connus)
-    # Un taux sans denominateur connu reste None : ni 0 % ni 100 % inventes.
-    taux_assiduite = (round(presents_jour / total_attendus * 100, 1)
-                      if total_attendus > 0 else None)
+    taux_assiduite, detail_presence, presents_mesures, total_attendus, nb_mesurees = (
+        _mesure_presence(seances)
+    )
     anomalies_geofence = (Pointage.objects.filter(date_journee=today)
                           .exclude(outside_geofence_count=0).count())
 
@@ -705,6 +718,10 @@ def get_presences_dashboard():
             'absents_jour': absents_jour,
             'total_historique_pointages': total_pointages,
             'taux_assiduite_moyen': taux_assiduite,
+            'presence_detail': detail_presence,
+            'presence_presents': presents_mesures,
+            'presence_attendus': total_attendus,
+            'presence_seances_mesurees': nb_mesurees,
             'anomalies_geofence': anomalies_geofence,
         },
         'charts': {
