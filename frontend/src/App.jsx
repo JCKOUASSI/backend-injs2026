@@ -122,6 +122,7 @@ const JournalScolarite = lazy(() => import('./pages/scolarite/JournalScolarite')
 const StagesHub = lazy(() => import('./pages/stages/StagesHub'))
 const AdministrationHub = lazy(() => import('./pages/administration/AdministrationHub'))
 const PersonnelHub = lazy(() => import('./pages/personnel/PersonnelHub'))
+const JurysHub = lazy(() => import('./pages/jurys/JurysHub'))
 const Maquettes = lazy(() => import('./pages/scolarite/Maquettes'))
 const MaquetteDetail = lazy(() => import('./pages/scolarite/MaquetteDetail'))
 const Campagnes = lazy(() => import('./pages/scolarite/Campagnes'))
@@ -385,6 +386,42 @@ function App() {
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/scolarite">Scolarité</Link></li><li className="separator">/</li><li>Journal de scolarité</li></>}>
                 <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
                   <JournalScolarite />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/jurys/composition" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Jurys</li><li className="separator">/</li><li>Composition</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <JurysHub ongletInitial="composition" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/jurys/deliberations" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Jurys</li><li className="separator">/</li><li>Délibérations &amp; décisions</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <JurysHub ongletInitial="decisions" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/jurys/pv" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Jurys</li><li className="separator">/</li><li>PV &amp; publications</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <JurysHub ongletInitial="pv" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/jurys/validation" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Jurys</li><li className="separator">/</li><li>Validation</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <JurysHub ongletInitial="sessions" />
                 </Suspense>
               </Layout>
             </ProtectedRoute>

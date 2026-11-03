@@ -175,6 +175,13 @@ log "Personnel : agents et affectations d'exemple…"
 (cd "$BACKEND" && "$VENV/bin/python" manage.py seed_personnel_demo) \
   && touch "$BACKEND/.personnel_demo_ok"
 
+# Jurys d'exemple (tâche 34) : sessions sur maquettes réelles, compositions,
+# décisions manuelles de démonstration (aucune proposition ECTS fabriquée).
+# Idempotent ; retrait : seed_jurys_demo --purger.
+log "Jurys : sessions et décisions d'exemple…"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py seed_jurys_demo) \
+  && touch "$BACKEND/.jurys_demo_ok"
+
 # ── 6. Site web ──────────────────────────────────────────────────────────────
 if [ ! -d "$FRONTEND/node_modules" ]; then
   log "Installation des dépendances npm…"

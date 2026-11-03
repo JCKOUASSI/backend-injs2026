@@ -562,7 +562,6 @@ export const ARBORESCENCE = [
         id: 'jurys.composition',
         libelle: 'Composition',
         chemin: '/jurys/composition',
-        ecran: 'jury_composition',
         droit: {
           curp: ['jurys.membre_jury.consulter'],
           legacy: [['scolarite', 'voir']],
@@ -572,7 +571,6 @@ export const ARBORESCENCE = [
         id: 'jurys.deliberations',
         libelle: 'Délibérations',
         chemin: '/jurys/deliberations',
-        ecran: 'jury_deliberations',
         droit: {
           curp: ['jurys.deliberation.consulter', 'jurys.decision.consulter'],
           legacy: [['scolarite', 'voir']],
@@ -582,7 +580,6 @@ export const ARBORESCENCE = [
         id: 'jurys.pv',
         libelle: 'PV de jury',
         chemin: '/jurys/pv',
-        ecran: 'jury_pv',
         droit: {
           curp: ['jurys.pv.generer', 'jurys.pv.signer', 'jurys.pv.publier'],
           legacy: [['scolarite', 'voir']],
@@ -592,7 +589,6 @@ export const ARBORESCENCE = [
         id: 'jurys.validation',
         libelle: 'Validation',
         chemin: '/jurys/validation',
-        ecran: 'jury_validation',
         droit: {
           curp: ['jurys.resultat.publier', 'jurys.decision.valider'],
           legacy: [['scolarite', 'voir']],
