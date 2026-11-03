@@ -107,7 +107,7 @@ export default function Reinscriptions() {
 
   // Référentiels + année courante par défaut.
   useEffect(() => {
-    ;(async () => {
+    (async () => {
       try {
         const [annees, formations, niveaux, courante] = await Promise.all([
           api.get('/scolarite/ref/annees/'),

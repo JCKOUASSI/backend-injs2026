@@ -102,3 +102,6 @@ backend/nohup.out
 
 # SDK Flutter déposé localement (jamais versionné : ~1 Go)
 .sdk/
+
+# Livrable tableur généré (conservé localement, hygiène du dépôt)
+dossier_trvx/Documentation_TableauDeBord_Referentiels_INJS.xlsx
