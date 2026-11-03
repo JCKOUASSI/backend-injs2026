@@ -37,6 +37,8 @@ import './styles/featureFlags.css'
 import './styles/statistiques.css'
 // Design premium sobre Personnel administratif & technique.
 import './styles/personnel.css'
+// Design premium sobre Administration générale.
+import './styles/administration.css'
 
 /**
  * Erreurs hors rendu React : promesses rejetées, erreurs d'événement, échec

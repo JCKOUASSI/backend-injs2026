@@ -5,6 +5,7 @@
  * les transitions métier restent dans les flux dédiés.
  */
 import ModuleHub from '@/components/hub/ModuleHub'
+import '../../styles/administration.css'
 
 const TONS_DOC = { BROUILLON: 'slate', EN_VALIDATION: 'amber', SIGNE: 'green', PUBLIE: 'green', ARCHIVE: 'slate' }
 
@@ -13,25 +14,25 @@ export default function AdministrationHub({ ongletInitial = 'courrier' }) {
     <ModuleHub
       titre="Administration générale"
       badge="Administration"
-      icone="building2"
-      introduction="Courrier, documents officiels, réunions, missions et organigramme de l’établissement : une vision d’ensemble de l’activité administrative, avec des données de démonstration étiquetées [Exemple] (organigramme générique, aucun titulaire de poste désigné, aucun budget inventé)."
+      icone="bi-building"
+      introduction="Courrier, documents officiels, réunions, missions et organigramme de l’établissement : une vision d’ensemble de l’activité administrative. Données fictives de démonstration étiquetées [Démo fictive] : organigramme INJS du processus LMD avec responsables désignés (comptes fictifs), budgets de mission à 0 — aucun montant inventé."
       statsEndpoint="/administrations/stats/"
       pastilles={(s) => [
-        { icone: 'building2', texte: `${s.directions ?? 0} directions · ${s.departements ?? 0} départements · ${s.services ?? 0} services` },
-        { icone: 'mail', texte: `${s.courriers ?? 0} courriers (${s.courriers_par_sens?.ENTRANT ?? 0} entrants · ${s.courriers_par_sens?.SORTANT ?? 0} sortants)` },
-        { icone: 'calendarCheck2', texte: `${s.reunions_a_venir ?? 0} réunion(s) à venir` },
+        { icone: 'bi-building', texte: `${s.directions ?? 0} directions · ${s.departements ?? 0} départements · ${s.services ?? 0} services` },
+        { icone: 'bi-envelope', texte: `${s.courriers ?? 0} courriers (${s.courriers_par_sens?.ENTRANT ?? 0} entrants · ${s.courriers_par_sens?.SORTANT ?? 0} sortants)` },
+        { icone: 'bi-calendar-check', texte: `${s.reunions_a_venir ?? 0} réunion(s) à venir` },
         { icone: 'info', texte: 'Les transitions (réponse au courrier, PV, validation) restent dans les écrans métier dédiés.' },
       ]}
       tuiles={(s) => [
-        { valeur: s.courriers, libelle: 'Courriers', sub: `${s.courriers_en_traitement ?? 0} en traitement`, icone: 'mail', ton: 'blue' },
-        { valeur: s.documents, libelle: 'Documents officiels', sub: `${s.documents_publies ?? 0} publiés`, icone: 'fileText', ton: 'indigo' },
-        { valeur: s.reunions, libelle: 'Réunions & commissions', sub: `${s.reunions_a_venir ?? 0} à venir`, icone: 'users', ton: 'cyan' },
-        { valeur: s.missions, libelle: 'Missions', sub: `${s.missions_en_cours ?? 0} en cours`, icone: 'mapPin', ton: 'amber' },
-        { valeur: s.services, libelle: 'Services actifs', sub: `${s.directions ?? 0} directions`, icone: 'network', ton: 'violet' },
+        { valeur: s.courriers, libelle: 'Courriers', sub: `${s.courriers_en_traitement ?? 0} en traitement`, icone: 'bi-envelope', ton: 'blue' },
+        { valeur: s.documents, libelle: 'Documents officiels', sub: `${s.documents_publies ?? 0} publiés`, icone: 'bi-file-earmark-text', ton: 'indigo' },
+        { valeur: s.reunions, libelle: 'Réunions & commissions', sub: `${s.reunions_a_venir ?? 0} à venir`, icone: 'bi-people', ton: 'cyan' },
+        { valeur: s.missions, libelle: 'Missions', sub: `${s.missions_en_cours ?? 0} en cours`, icone: 'bi-geo-alt', ton: 'amber' },
+        { valeur: s.services, libelle: 'Services actifs', sub: `${s.directions ?? 0} directions`, icone: 'bi-diagram-3', ton: 'violet' },
       ]}
       onglets={[
         {
-          id: 'courrier', libelle: 'Courrier', icone: 'mail',
+          id: 'courrier', libelle: 'Courrier', icone: 'bi-envelope',
           endpoint: '/administrations/courriers/',
           rechercheLocale: ['reference', 'objet', 'expediteur', 'destinataire'],
           recherchePlaceholder: 'Référence, objet, expéditeur…',
@@ -59,7 +60,7 @@ export default function AdministrationHub({ ongletInitial = 'courrier' }) {
           videTexte: 'Les courriers entrants et sortants enregistrés par le service courrier apparaîtront ici.',
         },
         {
-          id: 'documents', libelle: 'Documents officiels', icone: 'fileText',
+          id: 'documents', libelle: 'Documents officiels', icone: 'bi-file-earmark-text',
           endpoint: '/administrations/documents/',
           rechercheLocale: ['titre', 'reference'],
           recherchePlaceholder: 'Titre du document…',
@@ -79,7 +80,7 @@ export default function AdministrationHub({ ongletInitial = 'courrier' }) {
           videTexte: 'Notes de service, décisions, circulaires et arrêtés apparaîtront ici.',
         },
         {
-          id: 'reunions', libelle: 'Réunions & commissions', icone: 'users',
+          id: 'reunions', libelle: 'Réunions & commissions', icone: 'bi-people',
           endpoint: '/administrations/reunions/',
           rechercheLocale: ['titre', 'type_reunion', 'lieu'],
           recherchePlaceholder: 'Intitulé, type de réunion…',
@@ -94,7 +95,7 @@ export default function AdministrationHub({ ongletInitial = 'courrier' }) {
           videTexte: 'Conseils, commissions et comités planifiés apparaîtront ici.',
         },
         {
-          id: 'missions', libelle: 'Missions', icone: 'mapPin',
+          id: 'missions', libelle: 'Missions', icone: 'bi-geo-alt',
           endpoint: '/administrations/missions/',
           rechercheLocale: ['objet', 'lieu'],
           recherchePlaceholder: 'Objet ou lieu de mission…',
@@ -110,7 +111,7 @@ export default function AdministrationHub({ ongletInitial = 'courrier' }) {
           videTexte: 'Les ordres de mission proposés et validés apparaîtront ici.',
         },
         {
-          id: 'directions', libelle: 'Directions', icone: 'building2',
+          id: 'directions', libelle: 'Directions', icone: 'bi-building',
           endpoint: '/administrations/organigramme/directions/',
           rechercheParam: 'q', recherchePlaceholder: 'Libellé ou code…',
           note: 'Organigramme générique de démonstration ; les responsables ne sont pas désignés dans les données d’exemple.',
@@ -126,7 +127,7 @@ export default function AdministrationHub({ ongletInitial = 'courrier' }) {
           videTexte: 'Les directions de l’organigramme apparaîtront ici.',
         },
         {
-          id: 'departements', libelle: 'Départements', icone: 'layers',
+          id: 'departements', libelle: 'Départements', icone: 'bi-layers',
           endpoint: '/administrations/organigramme/departements/',
           rechercheParam: 'q', recherchePlaceholder: 'Libellé ou code…',
           colonnes: [
@@ -141,7 +142,7 @@ export default function AdministrationHub({ ongletInitial = 'courrier' }) {
           videTexte: 'Les départements rattachés aux directions apparaîtront ici.',
         },
         {
-          id: 'services', libelle: 'Services', icone: 'network',
+          id: 'services', libelle: 'Services', icone: 'bi-diagram-3',
           endpoint: '/administrations/organigramme/services/',
           rechercheParam: 'q', recherchePlaceholder: 'Nom ou code du service…',
           colonnes: [
@@ -158,6 +159,7 @@ export default function AdministrationHub({ ongletInitial = 'courrier' }) {
         },
       ]}
       ongletInitial={ongletInitial}
+      classePage="hub-administration"
     />
   )
 }
