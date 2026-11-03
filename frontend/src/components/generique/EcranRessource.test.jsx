@@ -627,3 +627,27 @@ describe('Alertes & seuils (régression capture 03/11 : JSON brut)', () => {
     expect(document.body.textContent).not.toContain('"alertes"')
   })
 })
+
+describe('Résultats / bilans (régression capture 03/11 : « Élément » répété)', () => {
+  it('rend synthèse, périodes libellées et filtres en français, sans JSON', async () => {
+    apiController.setRoute('/statistiques/bilans/', () => ({
+      annee: 2026, mois: null, bilans: [], total_bilans: 0,
+      categories: [], modules: [], matieres: [], formations: [],
+      periodes: [{ value: 'QUOTIDIEN', label: 'Quotidien' }, { value: 'MENSUEL', label: 'Mensuel' }],
+      filtres_actifs: {
+        annee: 2026, mois: null, categorie: '', module_id: null, formation_id: null,
+        periode: '', periode_label: 'Toutes périodes', calendrier: '', dimension: 'formation',
+      },
+    }))
+    monter(ECRANS.stats_resultats, { chemin: '/statistiques/resultats' })
+
+    expect(await screen.findByText('Aucun bilan publié pour ce périmètre')).toBeTruthy()
+    expect(screen.getAllByText('Toutes périodes').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('Quotidien')).toBeTruthy()
+    expect(screen.getByText('Mensuel')).toBeTruthy()
+    expect(screen.getByText('Tous les mois')).toBeTruthy()
+    expect(document.body.textContent).not.toContain('Élément')
+    expect(document.body.textContent).not.toContain('"periodes"')
+    expect(document.body.textContent).not.toContain('module_id')
+  })
+})

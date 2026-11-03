@@ -93,7 +93,7 @@ export function resumeObjet(valeur) {
   if (valeur == null) return '—'
   if (typeof valeur !== 'object') return String(valeur)
   if (Array.isArray(valeur)) return `${valeur.length} élément(s)`
-  const libelle = valeur.libelle || valeur.nom || valeur.code || valeur.titre
+  const libelle = valeur.libelle || valeur.label || valeur.nom || valeur.code || valeur.titre
     || valeur.indicateur || valeur.id || 'Élément'
   const morceaux = [String(libelle)]
   if (valeur.valeur != null) {
@@ -508,6 +508,128 @@ function VueAlertesSeuils({ payload, endpoint, onActualise }) {
   )
 }
 
+/**
+ * Rendu dédié « Résultats » (bilans statistiques) : l'endpoint renvoie un
+ * OBJET `{annee, mois, bilans, total_bilans, categories, modules, matieres,
+ * formations, periodes, filtres_actifs}` que les cartes génériques éclataient
+ * en « Aucun élément » et en « Élément » répété (les périodes portent `label`,
+ * pas `libelle` — capture du 03/11). Ici : synthèse lisible, périodes en
+ * pastilles, couverture par référentiel et filtres actifs en français.
+ */
+function VueBilansResultats({ payload, onActualise }) {
+  const bilans = Array.isArray(payload?.bilans) ? payload.bilans : []
+  const periodes = Array.isArray(payload?.periodes) ? payload.periodes : []
+  const filtres = payload?.filtres_actifs || {}
+  const total = payload?.total_bilans ?? bilans.length
+  const couverture = [
+    { cle: 'categories', libelle: 'Catégories', icone: 'bi-tags' },
+    { cle: 'modules', libelle: 'Modules', icone: 'bi-journal-bookmark' },
+    { cle: 'matieres', libelle: 'Matières', icone: 'bi-book' },
+    { cle: 'formations', libelle: 'Formations', icone: 'bi-mortarboard' },
+  ]
+  const lignesFiltres = [
+    { libelle: 'Année', valeur: filtres.annee ?? payload?.annee },
+    { libelle: 'Mois', valeur: filtres.mois ?? payload?.mois, defaut: 'Tous les mois' },
+    { libelle: 'Période', valeur: filtres.periode_label, defaut: 'Toutes périodes' },
+    { libelle: 'Dimension', valeur: filtres.dimension },
+    { libelle: 'Catégorie', valeur: filtres.categorie, defaut: 'Toutes' },
+    { libelle: 'Calendrier', valeur: filtres.calendrier, defaut: 'Tous' },
+  ].filter((l) => l.valeur !== undefined)
+
+  return (
+    <div className="bilans-vue">
+      <section className="bilans-panel" aria-label="Synthèse des résultats">
+        <header className="bilans-panel-head">
+          <h2 className="bilans-panel-title"><i className="bi bi-graph-up-arrow"></i>Synthèse des résultats</h2>
+          <button type="button" className="btn btn-sm bilans-btn-refresh" onClick={onActualise}>
+            <i className="bi bi-arrow-clockwise me-1"></i>Actualiser
+          </button>
+        </header>
+        <div className="bilans-stats">
+          <div className="bilans-stat"><span className="bilans-stat-valeur">{payload?.annee ?? '—'}</span><span className="bilans-stat-libelle">Année</span></div>
+          <div className="bilans-stat"><span className="bilans-stat-valeur">{total}</span><span className="bilans-stat-libelle">Bilans publiés</span></div>
+          <div className="bilans-stat"><span className="bilans-stat-valeur bilans-stat-valeur--texte">{filtres.periode_label || 'Toutes périodes'}</span><span className="bilans-stat-libelle">Période active</span></div>
+          <div className="bilans-stat"><span className="bilans-stat-valeur bilans-stat-valeur--texte">{filtres.dimension || 'formation'}</span><span className="bilans-stat-libelle">Dimension</span></div>
+        </div>
+      </section>
+
+      <section className="bilans-panel" aria-label="Bilans publiés">
+        <header className="bilans-panel-head">
+          <h2 className="bilans-panel-title"><i className="bi bi-file-earmark-bar-graph"></i>Bilans publiés</h2>
+          <span className="bilans-count">{total} bilan{total > 1 ? 's' : ''}</span>
+        </header>
+        {bilans.length === 0 ? (
+          <div className="bilans-vide-bloc">
+            <span className="bilans-vide-icone"><i className="bi bi-file-earmark-bar-graph"></i></span>
+            <p className="bilans-vide-titre">Aucun bilan publié pour ce périmètre</p>
+            <p className="bilans-vide-texte">
+              Aucun bilan ne correspond à l’année {payload?.annee ?? ''} avec les filtres actifs.
+              Les bilans apparaissent dès que des séances comptabilisables existent pour une
+              formation ou une matière sur la période choisie.
+            </p>
+            <div className="bilans-periodes" aria-label="Périodes disponibles">
+              {periodes.map((p) => (
+                <span className="bilans-periode" key={p.value || p.label}>{p.label || p.libelle || p.value}</span>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="table bilans-table mb-0">
+              <thead><tr><th>Bilan</th><th>Formation</th><th className="text-center">Inscrits</th><th className="text-center">Pointages</th><th>Période</th></tr></thead>
+              <tbody>
+                {bilans.map((b, i) => (
+                  <tr key={b.id ?? i}>
+                    <td><strong>{b.libelle || b.module || 'Bilan'}</strong>{b.sous_titre && <span className="bilans-sous">{b.sous_titre}</span>}</td>
+                    <td>{b.formation || '—'}</td>
+                    <td className="text-center">{b.inscrits ?? '—'}</td>
+                    <td className="text-center">{b.nb_pointages ?? '—'}</td>
+                    <td>{b.periode_label || b.periode || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <div className="bilans-deux">
+        <section className="bilans-panel" aria-label="Couverture des référentiels">
+          <header className="bilans-panel-head">
+            <h2 className="bilans-panel-title"><i className="bi bi-collection"></i>Couverture</h2>
+          </header>
+          <div className="bilans-couverture">
+            {couverture.map((c) => {
+              const liste = Array.isArray(payload?.[c.cle]) ? payload[c.cle] : []
+              return (
+                <div className="bilans-couv" key={c.cle}>
+                  <span className="bilans-couv-icone"><i className={`bi ${c.icone}`}></i></span>
+                  <span className="bilans-couv-valeur">{liste.length}</span>
+                  <span className="bilans-couv-libelle">{c.libelle}</span>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+
+        <section className="bilans-panel" aria-label="Filtres actifs">
+          <header className="bilans-panel-head">
+            <h2 className="bilans-panel-title"><i className="bi bi-funnel"></i>Filtres actifs</h2>
+          </header>
+          <dl className="bilans-filtres">
+            {lignesFiltres.map((l) => (
+              <div key={l.libelle}>
+                <dt>{l.libelle}</dt>
+                <dd>{l.valeur === null || l.valeur === '' ? (l.defaut || '—') : String(l.valeur)}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      </div>
+    </div>
+  )
+}
+
 /** Liste (ou onglets) générique — cœur du moteur d'écrans. */
 export function ListeGenerique({ ecran, cleBase }) {
   const { showToast } = useToast()
@@ -717,6 +839,19 @@ export function ListeGenerique({ ecran, cleBase }) {
             : `Choisissez ${filtresManquants.map((f) => `« ${f.libelle} »`).join(', ')} pour charger les données.`}
           <div className="small text-muted mt-1">Endpoint appelé : <code>{ecran.endpoint}</code></div>
         </div>
+        {ecran.note && <p className="gen-note mt-3">{ecran.note}</p>}
+      </div>
+    )
+  }
+
+  // Rendu dédié « Résultats » (bilans) : objet structuré, pas de cartes génériques.
+  if (ecran.rendu === 'bilans_resultats' && indicateurs) {
+    return (
+      <div className="ecran-generique">
+        <VueBilansResultats
+          payload={indicateurs}
+          onActualise={() => queryClient.invalidateQueries({ queryKey: cle })}
+        />
         {ecran.note && <p className="gen-note mt-3">{ecran.note}</p>}
       </div>
     )

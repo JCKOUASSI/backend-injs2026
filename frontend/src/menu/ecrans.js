@@ -969,6 +969,9 @@ export const ECRANS = {
     icone: 'bi-graph-up-arrow',
     introduction: 'Bilans de résultats publiés par le service statistiques.',
     endpoint: '/statistiques/bilans/',
+    // Réponse objet structuré {annee, bilans, periodes, filtres_actifs…} :
+    // rendu dédié (synthèse, bilans, couverture, filtres) et non cartes génériques.
+    rendu: 'bilans_resultats',
     note: 'Source : /api/statistiques/bilans/',
   },
 
