@@ -32,35 +32,48 @@ def _serializer_piece(piece):
 
 
 def _serializer_demande(demande, detail=False):
+    pieces = list(demande.pieces.all())
+    obligatoires = [p for p in pieces if p.obligatoire]
     data = {
         'id': demande.id,
         'type_demande': demande.type_demande,
         'etudiant_id': demande.etudiant_id,
         'matricule': demande.etudiant.matricule,
+        'etudiant_nom': demande.etudiant.nom_complet,
         'annee_academique_id': demande.annee_academique_id,
+        'annee_academique': demande.annee_academique.libelle,
         'ref_formation_id': demande.ref_formation_id,
+        'ref_formation': demande.ref_formation.intitule,
         'parcours_id': demande.parcours_id,
         'niveau_id': demande.niveau_id,
+        'niveau': demande.niveau.code,
         'semestre_id': demande.semestre_id,
         'ue_id': demande.ue_id,
+        'ue_code': demande.ue.code if demande.ue_id else None,
+        'ue_intitule': demande.ue.intitule if demande.ue_id else None,
         'ecue_id': demande.ecue_id,
+        'ecue_code': demande.ecue.code if demande.ecue_id else None,
+        'ecue_intitule': demande.ecue.intitule if demande.ecue_id else None,
+        'etablissement_origine': demande.etablissement_origine,
+        'diplome_origine': demande.diplome_origine,
+        'motif': demande.motif,
         'decision': demande.decision,
         'statut': demande.statut,
         'credits_reconnus': demande.credits_reconnus,
         'date_effet': demande.date_effet,
         'fin_validite': demande.fin_validite,
         'est_verrouillee': demande.est_verrouillee,
+        'nb_pieces': len(pieces),
+        'pieces_validees': sum(1 for p in pieces if p.est_validee),
+        'dossier_complet': all(p.est_validee for p in obligatoires),
     }
     if detail:
         data.update({
-            'etablissement_origine': demande.etablissement_origine,
-            'diplome_origine': demande.diplome_origine,
             'annee_obtention': demande.annee_obtention,
             'analyse_pedagogique': demande.analyse_pedagogique,
             'commission': demande.commission,
             'date_commission': demande.date_commission,
             'note_transferee': demande.note_transferee,
-            'motif': demande.motif,
             'autorite_validation': demande.autorite_validation,
             'appliquee_le': demande.appliquee_le,
             'rectifiee_le': demande.rectifiee_le,
@@ -89,8 +102,9 @@ def _dossier_complet_pieces(demande):
 def demande_list(request):
     if request.method == 'GET':
         queryset = DemandeEquivalenceDispense.objects.select_related(
-            'etudiant__participant', 'annee_academique', 'ref_formation',
-        )
+            'etudiant__participant', 'annee_academique', 'ref_formation', 'niveau',
+            'ue', 'ecue',
+        ).prefetch_related('pieces')
         for champ in ('statut', 'type_demande', 'etudiant_id', 'annee_academique_id'):
             if champ in request.query_params:
                 queryset = queryset.filter(**{champ: request.query_params[champ]})
@@ -158,16 +172,16 @@ def demande_transition(request, pk):
     if demande is None:
         return Response({'error': 'Introuvable'}, status=404)
     try:
-        workflow.appliquer_transition(
-            demande, request.data.get('statut'), utilisateur=request.user,
-            commentaire=request.data.get('commentaire', ''),
-        )
         if request.data.get('statut') == DemandeEquivalenceDispense.Statut.AVIS_PEDAGOGIQUE:
             if not _dossier_complet_pieces(demande):
                 raise ValidationError(
                     'Dossier incomplet : toutes les pièces obligatoires doivent '
                     'être validées avant l’avis pédagogique.'
                 )
+        workflow.appliquer_transition(
+            demande, request.data.get('statut'), utilisateur=request.user,
+            commentaire=request.data.get('commentaire', ''),
+        )
     except ValidationError as erreur:
         return Response({'error': erreur.messages}, status=400)
     return Response(_serializer_demande(demande, detail=True))

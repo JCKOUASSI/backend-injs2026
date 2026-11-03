@@ -27,6 +27,7 @@ from datetime import datetime, time
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 from scolarite.models import AnneeAcademique, Groupe
 
@@ -598,3 +599,455 @@ class DisponibiliteHoraire(models.Model):
                 f'{self.heure_debut:%H:%M}–{self.heure_fin:%H:%M} '
                 f'[{self.get_statut_display()}]')
 
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# GET-INJS — INSCRIPTIONS IMPORTÉES (cohortes hors parcours)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class InscriptionImportee(models.Model):
+    """Inscription **lue dans un fichier externe**, rattachée à une cohorte.
+
+    Pourquoi cette table existe. Le moteur d'emploi du temps s'appuie sur la
+    chaîne LMD interne (``AffectationPedagogique``), qui suppose que chaque
+    étudiant a été inscrit **dans** l'application selon son parcours. Le
+    commanditaire a demandé que le GET-INJS sache aussi produire les emplois du
+    temps d'une année académique à partir d'un **fichier externe d'inscrits**,
+    y compris lorsque l'inscription n'est pas passée par ce parcours.
+
+    Cette table conserve donc la trace de ces inscriptions, **sans jamais**
+    créer d'``Etudiant``, d'``Inscription`` ou d'``AffectationPedagogique``
+    fictifs : les données importées restent identifiables comme telles
+    (``fichier``, ``empreinte``, ``ligne_source``) et supprimables sans
+    toucher aux dossiers métier réels.
+
+    Rôle dans le calcul : la ``cohorte`` (année + formation + parcours + niveau
+    + semestre + groupe + vague) porte l'**effectif réel** utilisé comme
+    contrainte de capacité (C4) — auparavant l'effectif provenait uniquement de
+    ``Groupe.capacite_max``, c'est-à-dire d'une capacité déclarée, jamais d'un
+    dénombrement.
+    """
+
+    class Statut(models.TextChoices):
+        INSCRIT = 'INSCRIT', 'Inscrit'
+        RADIE = 'RADIE', 'Radié'
+
+    class Sexe(models.TextChoices):
+        MASCULIN = 'M', 'Masculin'
+        FEMININ = 'F', 'Féminin'
+
+    annee_academique = models.ForeignKey(
+        AnneeAcademique,
+        on_delete=models.CASCADE,
+        related_name='inscriptions_importees',
+    )
+    # --- Identité
+    matricule = models.CharField(
+        max_length=64, db_index=True,
+        help_text="Matricule tel que fourni par le fichier externe (clé d'idempotence).",
+    )
+    nom = models.CharField(max_length=150)
+    prenoms = models.CharField(max_length=150, blank=True, default='')
+    sexe = models.CharField(max_length=1, choices=Sexe.choices, blank=True, default='')
+    date_naissance = models.DateField(null=True, blank=True)
+
+    # --- Cohorte pédagogique (les mêmes entités que la chaîne LMD)
+    filiere_code = models.CharField(
+        max_length=10, blank=True, default='', db_index=True,
+        help_text='Code de filière métier F01…F08 lu dans le fichier, si présent.',
+    )
+    ref_formation = models.ForeignKey(
+        'formations.RefFormation',
+        on_delete=models.PROTECT,
+        related_name='inscriptions_importees',
+    )
+    parcours = models.ForeignKey(
+        'scolarite.Parcours',
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name='inscriptions_importees',
+    )
+    niveau = models.ForeignKey(
+        'scolarite.Niveau',
+        on_delete=models.PROTECT,
+        related_name='inscriptions_importees',
+    )
+    semestre = models.ForeignKey(
+        'scolarite.Semestre',
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name='inscriptions_importees',
+    )
+    groupe = models.ForeignKey(
+        'scolarite.Groupe',
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name='inscriptions_importees',
+    )
+    vague = models.ForeignKey(
+        'formations.RefVague',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='inscriptions_importees',
+    )
+
+    # --- Traçabilité du fichier source
+    statut = models.CharField(
+        max_length=10, choices=Statut.choices, default=Statut.INSCRIT, db_index=True,
+    )
+    fichier = models.CharField(max_length=255, blank=True, default='')
+    empreinte = models.CharField(
+        max_length=64, blank=True, default='', db_index=True,
+        help_text='SHA-256 du contenu du fichier importé (lot de rattachement).',
+    )
+    ligne_source = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text='Numéro de ligne dans le fichier d’origine (traçabilité).',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['annee_academique__libelle', 'ref_formation__intitule',
+                    'niveau__ordre', 'groupe__nom', 'nom', 'prenoms']
+        verbose_name = 'GET-INJS – Inscription importée'
+        verbose_name_plural = 'GET-INJS – Inscriptions importées'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['annee_academique', 'matricule'],
+                name='uniq_inscription_importee_annee_matricule',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['annee_academique', 'groupe']),
+            models.Index(fields=['annee_academique', 'ref_formation', 'niveau']),
+            models.Index(fields=['empreinte']),
+        ]
+
+    def __str__(self):
+        return f'{self.matricule} — {self.nom} {self.prenoms}'.strip()
+
+    @property
+    def nom_complet(self):
+        return f'{self.nom} {self.prenoms}'.strip()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# GET-INJS APP — CAMPAGNES DE GÉNÉRATION (LOT 2)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class CampagneGeneration(models.Model):
+    """Campagne de génération des emplois du temps d'une année académique.
+
+    Pourquoi cette entité. La génération existait, mais son exécution n'était
+    qu'un appel HTTP : rien ne conservait le périmètre demandé, le bilan, les
+    anomalies, l'auteur, la durée, ni la possibilité de rejouer la même
+    campagne. Une campagne rend le traitement **traçable, reprenable et
+    publiable** — et interdit deux exécutions simultanées du même périmètre.
+
+    Cycle de vie (transitions contrôlées par ``edts.moteur.campagnes``) :
+
+        BROUILLON → VALIDATION_DONNEES → PRET → EN_COURS
+              → TERMINE | TERMINE_AVEC_ANOMALIES | ECHEC
+              → VALIDE → PUBLIE
+    """
+
+    class Statut(models.TextChoices):
+        BROUILLON = 'BROUILLON', 'Brouillon'
+        VALIDATION_DONNEES = 'VALIDATION_DONNEES', 'Validation des données'
+        PRET = 'PRET', 'Prêt à générer'
+        EN_COURS = 'EN_COURS', 'En cours'
+        TERMINE = 'TERMINE', 'Terminé'
+        TERMINE_AVEC_ANOMALIES = 'TERMINE_AVEC_ANOMALIES', 'Terminé avec anomalies'
+        ECHEC = 'ECHEC', 'Échec'
+        VALIDE = 'VALIDE', 'Validé'
+        PUBLIE = 'PUBLIE', 'Publié'
+
+    annee_academique = models.ForeignKey(
+        AnneeAcademique,
+        on_delete=models.PROTECT,
+        related_name='campagnes_getinjs',
+    )
+    libelle = models.CharField(max_length=255)
+    #: Semaines académiques planifiées (ex. [1, 2, 3]).
+    semaines = models.JSONField(
+        default=list, blank=True,
+        help_text='Semaines académiques ciblées ; liste vide = semaine 1.',
+    )
+    #: Périmètre : listes d'identifiants (formations, niveaux, groupes).
+    #: Vide = tout le périmètre INJS de l'année.
+    perimetre = models.JSONField(
+        default=dict, blank=True,
+        help_text='Filtres de périmètre : formations, niveaux, groupes.',
+    )
+    #: Paramètres passés au moteur (persister, remplacer, inclure_maquette…).
+    parametres = models.JSONField(default=dict, blank=True)
+    statut = models.CharField(
+        max_length=25, choices=Statut.choices, default=Statut.BROUILLON,
+        db_index=True,
+    )
+    cree_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='campagnes_getinjs_creees',
+    )
+    demarree_le = models.DateTimeField(null=True, blank=True)
+    terminee_le = models.DateTimeField(null=True, blank=True)
+    #: Bilan détaillé par groupe (celui de ``moteur.annee.generer_annee``).
+    bilan = models.JSONField(default=dict, blank=True)
+    #: Anomalies explicites : groupes non planifiés, séances non placées…
+    anomalies = models.JSONField(default=list, blank=True)
+    #: Mesures et compteurs (durée, effectif, séances, requêtes SQL si mesurées).
+    statistiques = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'GET-INJS – Campagne de génération'
+        verbose_name_plural = 'GET-INJS – Campagnes de génération'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['annee_academique', 'libelle'],
+                name='uniq_campagne_annee_libelle',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['annee_academique', 'statut']),
+            models.Index(fields=['statut', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.libelle} — {self.get_statut_display()}'
+
+    @property
+    def en_cours(self):
+        return self.statut == self.Statut.EN_COURS
+
+
+class ExecutionCampagne(models.Model):
+    """Une exécution d'une campagne — historique complet, reprise et mesures.
+
+    Chaque lancement crée une ligne, y compris les échecs : un échec silencieux
+    est précisément ce que la mission interdit. Le bilan et les anomalies sont
+    recopiés ici pour que l'historique reste lisible même si la campagne est
+    relancée plusieurs fois.
+    """
+
+    class Statut(models.TextChoices):
+        EN_COURS = 'EN_COURS', 'En cours'
+        TERMINE = 'TERMINE', 'Terminé'
+        TERMINE_AVEC_ANOMALIES = 'TERMINE_AVEC_ANOMALIES', 'Terminé avec anomalies'
+        ECHEC = 'ECHEC', 'Échec'
+
+    campagne = models.ForeignKey(
+        CampagneGeneration, on_delete=models.CASCADE, related_name='executions',
+    )
+    numero = models.PositiveIntegerField(help_text='Numéro d’exécution dans la campagne (1, 2, 3…).')
+    statut = models.CharField(
+        max_length=25, choices=Statut.choices, default=Statut.EN_COURS, db_index=True,
+    )
+    lancee_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='executions_campagnes_getinjs',
+    )
+    demarree_le = models.DateTimeField(default=timezone.now)
+    terminee_le = models.DateTimeField(null=True, blank=True)
+    duree_ms = models.PositiveBigIntegerField(null=True, blank=True)
+    bilan = models.JSONField(default=dict, blank=True)
+    anomalies = models.JSONField(default=list, blank=True)
+    statistiques = models.JSONField(default=dict, blank=True)
+    erreur = models.TextField(
+        blank=True, default='',
+        help_text='Message technique de l’échec — jamais masqué.',
+    )
+
+    class Meta:
+        ordering = ['-numero']
+        verbose_name = 'GET-INJS – Exécution de campagne'
+        verbose_name_plural = 'GET-INJS – Exécutions de campagne'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['campagne', 'numero'],
+                name='uniq_execution_campagne_numero',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.campagne_id} / exécution {self.numero}'
+
+
+class PolitiqueContraintesSouples(models.Model):
+    """Politique des contraintes souples, réglable depuis l'admin Django.
+
+    Pourquoi une table et pas seulement un réglage Django. Le réglage
+    ``EDTS_CONTRAINTES_SOUPLES`` ne s'applique qu'au **déploiement** : l'INJS
+    ne peut pas décider qu'une journée de 9 h devient problématique sans
+    qu'un développeur modifie un fichier et redémarre le service. Cette ligne
+    unique donne la main au secrétariat / à la direction, avec une trace
+    (auteur, date, motif) et sans redéploiement.
+
+    Trois garanties de conception :
+
+    * **Ligne unique** — ``save()`` force la clé primaire à 1 : il n'existe
+      jamais deux politiques concurrentes, donc jamais d'ambiguïté sur les
+      règles appliquées ;
+    * **Désactivée par défaut** — ``actives=False`` : créer la ligne ne change
+      rien au comportement du solveur tant que personne ne l'active ;
+    * **Traçable** — ``modifie_par``, ``modifie_le`` et ``motif`` sont
+      conservés : « qui a décidé quoi, quand et pourquoi » reste lisible.
+
+    Priorité effective (cf. ``edts.moteur.contraintes.politique_souples``) :
+    défauts du code < réglage Django < **cette ligne** < paramètre explicite
+    d'une génération. La ligne l'emporte sur le réglage Django parce qu'elle
+    est la décision opérationnelle la plus récente ; le paramètre de génération
+    l'emporte sur tout le reste parce qu'il est explicite et local.
+    """
+
+    actives = models.BooleanField(
+        default=False,
+        help_text='Si décoché, le moteur ignore entièrement les règles souples '
+                  '(comportement historique).',
+    )
+    max_heures_consecutives = models.FloatField(
+        default=4.0,
+        help_text='Série de cours continue au-delà de laquelle une pénalité est '
+                  'produite. La pause déjeuner, si elle est déclarée, rompt la série.',
+    )
+    max_heures_par_jour = models.FloatField(
+        default=8.0,
+        help_text='Total de cours d’une journée de groupe au-delà duquel une '
+                  'pénalité est produite.',
+    )
+    tolerance_minutes = models.PositiveSmallIntegerField(
+        default=15,
+        help_text='Interruption entre deux séances qui n’est pas considérée '
+                  'comme un trou (récréation, changement de salle).',
+    )
+    penaliser_trous = models.BooleanField(
+        default=True,
+        help_text='Produire une pénalité pour chaque trou horaire du groupe.',
+    )
+    pause_debut = models.TimeField(
+        null=True, blank=True,
+        help_text='Début de la pause institutionnelle (déjeuner). Vide = aucune '
+                  'pause supposée : le moteur n’invente pas d’horaire.',
+    )
+    pause_fin = models.TimeField(
+        null=True, blank=True,
+        help_text='Fin de la pause institutionnelle. À remplir avec le début.',
+    )
+    poids_trou = models.PositiveSmallIntegerField(default=1)
+    poids_consecutif = models.PositiveSmallIntegerField(default=2)
+    poids_surcharge = models.PositiveSmallIntegerField(default=3)
+    motif = models.TextField(
+        blank=True, default='',
+        help_text='Pourquoi cette politique (décision de la direction, '
+                  'calendrier particulier…). Facultatif mais recommandé.',
+    )
+    modifie_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='politiques_souples_modifiees',
+        help_text='Dernier utilisateur à avoir enregistré cette politique.',
+    )
+    modifie_le = models.DateTimeField(auto_now=True)
+    # ``default`` plutôt que ``auto_now_add`` : la clé primaire est forcée à 1
+    # dans ``save()``, ce qui fait considérer la ligne comme « existante » et
+    # enverrait ``created_at = NULL`` dans l'UPDATE. Un défaut est stable dans
+    # les deux chemins (INSERT initial, UPDATE ultérieur).
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        verbose_name = 'GET-INJS – Politique des contraintes souples'
+        verbose_name_plural = 'GET-INJS – Politique des contraintes souples'
+
+    def __str__(self):
+        etat = 'activée' if self.actives else 'désactivée'
+        return (f'Contraintes souples ({etat}) — '
+                f'{self.max_heures_consecutives:g} h consécutives, '
+                f'{self.max_heures_par_jour:g} h/jour')
+
+    # ── Validation ───────────────────────────────────────────────────────────
+    def clean(self):
+        """Refuse les politiques incohérentes — un réglage faux doit se voir.
+
+        Les messages sont rédigés pour l'utilisateur de l'admin : ils disent ce
+        qui ne va pas et quoi faire, sans jargon.
+        """
+        erreurs = {}
+        if bool(self.pause_debut) != bool(self.pause_fin):
+            erreurs['pause_debut'] = (
+                'Renseignez le début ET la fin de la pause, ou laissez les deux '
+                'vides pour n’en déclarer aucune.'
+            )
+        elif self.pause_debut and self.pause_fin <= self.pause_debut:
+            erreurs['pause_fin'] = 'La fin de la pause doit être après son début.'
+        if self.max_heures_consecutives is not None \
+                and self.max_heures_consecutives <= 0:
+            erreurs['max_heures_consecutives'] = (
+                'La borne doit être supérieure à 0 h ; pour désactiver les '
+                'règles souples, décochez « actives ».'
+            )
+        if self.max_heures_par_jour is not None and self.max_heures_par_jour <= 0:
+            erreurs['max_heures_par_jour'] = (
+                'La borne doit être supérieure à 0 h ; pour désactiver les '
+                'règles souples, décochez « actives ».'
+            )
+        for champ in ('poids_trou', 'poids_consecutif', 'poids_surcharge'):
+            if not getattr(self, champ, 1):
+                erreurs[champ] = (
+                    'Un poids nul rendrait la pénalité invisible. Pour ne pas '
+                    'appliquer une règle, désactivez-la ou décochez la règle '
+                    'correspondante.'
+                )
+        if erreurs:
+            raise ValidationError(erreurs)
+        super().clean()
+
+    # ── Lecture par le moteur ────────────────────────────────────────────────
+    def en_politique(self):
+        """Convertit la ligne en politique lisible par ``contraintes``.
+
+        Les bornes de la pause sont exprimées en **minutes depuis minuit**,
+        l'unité interne du moteur (cf. ``contraintes.SOUPLES_DEFAUT``). Les
+        heures et minutes lisibles sont produites à l'affichage par
+        ``contraintes.pause_lisible`` : une seule conversion, jamais deux.
+        """
+        pause = None
+        if self.pause_debut and self.pause_fin:
+            pause = (self.pause_debut.hour * 60 + self.pause_debut.minute,
+                     self.pause_fin.hour * 60 + self.pause_fin.minute)
+        return {
+            'actives': bool(self.actives),
+            'max_heures_consecutives': float(self.max_heures_consecutives),
+            'max_heures_par_jour': float(self.max_heures_par_jour),
+            'tolerance_minutes': int(self.tolerance_minutes),
+            'penaliser_trous': bool(self.penaliser_trous),
+            'pause_dejeuner': pause,
+            'poids_trou': int(self.poids_trou),
+            'poids_consecutif': int(self.poids_consecutif),
+            'poids_surcharge': int(self.poids_surcharge),
+        }
+
+    def resume(self):
+        """Trace lisible pour l'API : qui a réglé quoi, quand et pourquoi."""
+        return {
+            'politique': self.en_politique(),
+            'motif': self.motif or '',
+            'modifie_par': (
+                self.modifie_par.get_username() if self.modifie_par_id else None
+            ),
+            'modifie_le': self.modifie_le.isoformat() if self.modifie_le else None,
+        }
+
+    def save(self, *args, **kwargs):
+        """Force la ligne unique : une seule politique peut exister."""
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def charger(cls):
+        """Politique enregistrée, ou ``None`` si personne n'a encore réglé."""
+        return cls.objects.filter(pk=1).first()

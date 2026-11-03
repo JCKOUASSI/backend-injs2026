@@ -204,3 +204,78 @@ describe('pages/scolarite/Admissions — inscription et annulation (modale)', ()
     expect(writes((p) => p.includes('/annuler/'))).toHaveLength(0)
   })
 })
+
+describe('pages/scolarite/Admissions — refonte premium (recherche, année, inscrits)', () => {
+  const listeRiche = () => [
+    {
+      id: 1, candidat: 'Awa Koné', candidature_numero: 'C-005', ref_formation: 'L1 LSF',
+      niveau: 'L1', annee_academique: '2025-2026', decision: 'EN_ATTENTE',
+      decision_libelle: 'En attente', permet_inscription: false,
+      reference_decision: '', date_limite_inscription: '', inscrit: false,
+    },
+    {
+      id: 2, candidat: 'Karim Diop', candidature_numero: 'C-006', ref_formation: 'L1 LSF',
+      niveau: 'L1', annee_academique: '2025-2026', decision: 'ADMIS',
+      decision_libelle: 'Admis', permet_inscription: true,
+      reference_decision: 'DEC-2025-006', date_limite_inscription: '2020-01-15',
+      est_expiree: true, date_decision: '2025-11-20T10:00:00Z', decide_par: 'admin',
+      inscrit: false,
+    },
+    {
+      id: 3, candidat: 'Inscrite Inès Yao', candidature_numero: 'C-007', ref_formation: 'L1 LSF',
+      niveau: 'L1', annee_academique: '2025-2026', decision: 'ADMIS',
+      decision_libelle: 'Admis', permet_inscription: true,
+      reference_decision: 'DEC-2025-007', date_limite_inscription: '2027-01-31',
+      inscrit: true, matricule: 'INJS26-0007', etudiant_id: 42,
+      inscription_statut: 'Validée',
+    },
+  ]
+
+  const setupRiche = () => {
+    apiController.reset()
+    apiController.setRoute('/admissions/admissions/', () => listeRiche())
+    apiController.setRoute('/admissions/admissions/stats/', () => ({
+      total: 19,
+      par_decision: { ADMIS: 7, ADMIS_SOUS_RESERVE: 2, EN_ATTENTE: 7, REFUSEE: 2, ANNULEE: 1 },
+      a_inscrire: 6, inscrits: 2,
+    }))
+    setupRoutes()
+  }
+
+  it('filtre par l’année courante par défaut et recherche via le paramètre q', async () => {
+    setupRiche()
+    mount()
+    await screen.findByText('Awa Koné')
+    // Année courante du mock (id 1) appliquée dès le premier chargement.
+    expect(listCalls().at(-1)).toMatchObject({ annee_academique_id: '1' })
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Rechercher une admission' }),
+      { target: { value: 'Koné' } })
+    await settle()
+    expect(listCalls().at(-1)).toMatchObject({ q: 'Koné' })
+  })
+
+  it('affiche le matricule des inscrits sans bouton Inscrire, et l’échéance dépassée', async () => {
+    setupRiche()
+    mount()
+    await screen.findByText('Inscrite Inès Yao')
+    const ligneInscrite = rowOf('C-007')
+    expect(within(ligneInscrite).getByRole('button', { name: /INJS26-0007/ })).toBeInTheDocument()
+    expect(within(ligneInscrite).queryByRole('button', { name: 'Inscrire' })).toBeNull()
+    const ligneExpiree = rowOf('C-006')
+    expect(within(ligneExpiree).getByText('15/01/2020')).toBeInTheDocument()
+    expect(within(ligneExpiree).getByText(/dépassée/i)).toBeInTheDocument()
+    expect(within(ligneExpiree).getByText(/par admin/)).toBeInTheDocument()
+  })
+
+  it('indicateurs alimentés par les stats (année) : 5 cartes dont Inscrits', async () => {
+    setupRiche()
+    mount()
+    await screen.findByText('Awa Koné')
+    expect(await screen.findByText('dossiers étudiants créés')).toBeInTheDocument()
+    expect(screen.getByText(/% des décisions/)).toBeInTheDocument()
+    const statsCalls = apiMock.get.mock.calls
+      .filter(([p]) => p === '/admissions/admissions/stats/')
+    expect(statsCalls.length).toBeGreaterThan(0)
+    expect(statsCalls.at(-1)[1]?.params).toMatchObject({ annee_academique_id: '1' })
+  })
+})

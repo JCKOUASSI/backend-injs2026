@@ -27,7 +27,7 @@ const settle = async (n = 6) => {
   await act(async () => { await flushPromises(n) })
 }
 const ficheCalls = () =>
-  apiMock.get.mock.calls.filter(([p]) => p === '/scan/me/fiche/')
+  apiMock.get.mock.calls.filter(([p]) => p === '/me/fiche/')
 
 beforeEach(() => {
   apiController.reset()
@@ -36,7 +36,7 @@ beforeEach(() => {
 
 describe('pages/scolarite/MonEspace — chargement de la fiche', () => {
   it('affiche la fiche quand le service répond', async () => {
-    apiController.setRoute('/scan/me/fiche/', () => ({
+    apiController.setRoute('/me/fiche/', () => ({
       profil: { prenom: 'Awa', nom: 'Koné', numero: 'MAT-001' },
       stats: { nb_modules_inscrits: 8, taux_presence: 92 },
     }))
@@ -52,7 +52,7 @@ describe('pages/scolarite/MonEspace — chargement de la fiche', () => {
     // Deux échecs programmés puis un succès : un écran sain ne doit consommer
     // que le premier appel (l'échec), sans mécanisme de réessai.
     let n = 0
-    apiController.setRoute('/scan/me/fiche/', () => {
+    apiController.setRoute('/me/fiche/', () => {
       n += 1
       if (n <= 2) {
         // eslint-disable-next-line no-throw-literal
@@ -75,7 +75,7 @@ describe('pages/scolarite/MonEspace — chargement de la fiche', () => {
   it('affiche les compteurs par défaut et la zone attestations avec une fiche vide', async () => {
     // Le service répond sans profil ni stats : les valeurs de repli doivent
     // s'afficher (0 module, taux « — ») et la zone L4 rester présente.
-    apiController.setRoute('/scan/me/fiche/', () => ({}))
+    apiController.setRoute('/me/fiche/', () => ({}))
 
     renderWithProviders(<MonEspace />, { routePattern: '*', initialEntries: ['/mon-espace'] })
 
@@ -95,7 +95,7 @@ describe('pages/scolarite/MonEspace — téléchargement du relevé de notes', (
     renderWithProviders(<MonEspace />, { routePattern: '*', initialEntries: ['/mon-espace'] })
 
   const fiche = (profil) =>
-    apiController.setRoute('/scan/me/fiche/', () => ({
+    apiController.setRoute('/me/fiche/', () => ({
       profil,
       stats: { nb_modules_inscrits: 3, taux_presence: 88 },
     }))
@@ -147,7 +147,7 @@ describe('pages/scolarite/MonEspace — téléchargement du relevé de notes', (
   })
 
   it("refuse le téléchargement et notifie quand aucun dossier étudiant n'est rattaché", async () => {
-    apiController.setRoute('/scan/me/fiche/', () => ({}))
+    apiController.setRoute('/me/fiche/', () => ({}))
     mount()
     expect(await screen.findByRole('heading', { name: /mes notes/i })).toBeInTheDocument()
     await clickTelechargement()

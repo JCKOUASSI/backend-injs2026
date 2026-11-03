@@ -70,7 +70,7 @@ export default function JournalHabilitations() {
         </div>
         {integrite && (
           <div className={integrite.integre ? 'hab-avertissement' : 'hab-avertissement bloquant'}
-               style={{ borderLeftColor: integrite.integre ? '#1d6b35' : '#c62828', background: integrite.integre ? '#e8f5ec' : '#fbe7e7' }}
+               style={{ borderLeftColor: integrite.integre ? '#1d6b35' : '#DC3545', background: integrite.integre ? '#e8f5ec' : '#fbe7e7' }}
                data-testid="integrite-journal">
             <i className={`bi ${integrite.integre ? 'bi-patch-check' : 'bi-x-octagon'} me-1`} />
             {integrite.integre

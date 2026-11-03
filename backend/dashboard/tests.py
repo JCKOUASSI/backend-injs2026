@@ -1,6 +1,7 @@
 from django.test import TestCase, override_settings
 
-from formations.models import Secretariat
+from authentication.models import User
+from formations.models import Formateur, Participant, Secretariat
 from formations.views import _resolve_secretariat_from_matricule
 
 
@@ -133,3 +134,69 @@ class DashboardEngineAPITests(APITestCase):
         res = self.client.get('/api/dashboard/overview/')
         self.assertEqual(res.status_code, 401)
 
+
+
+class TableauDeBordSansDonneesInventeesTests(TestCase):
+    """Le tableau de bord ne sert jamais les données d'un tiers ni un repli inventé.
+
+    Défauts corrigés (constatés en production d'aperçu) :
+      * ``DossierEtudiant.objects.first()`` / ``Formateur.objects.first()``
+        affichaient le dossier ou l'identité d'une **autre** personne au compte
+        qui n'en avait pas ;
+      * moyenne « 13.38 / 20 », assiduité « 96% », solde « 0 FCFA (À jour) »,
+        120 h / 85 h / 96 étudiants / 3 groupes étaient des constantes ;
+      * l'année académique retombait sur « 2026-2027 » quand aucune n'existait.
+    """
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='compte_sans_dossier', password='password123', role=User.Role.FORMATEUR,
+        )
+
+    def test_etudiant_sans_dossier_ne_voit_aucune_donnee(self):
+        from dashboard.services import get_etudiant_dashboard
+
+        Participant.objects.create(matricule='INJS-T-001', nom='Autre', prenom='Etudiant')
+        data = get_etudiant_dashboard(self.user)
+        self.assertIsNone(data['etudiant'])
+        self.assertIsNone(data['matricule'])
+        self.assertIsNone(data['moyenne_generale'])
+        self.assertIsNone(data['kpis']['moyenne_generale'])
+        self.assertIsNone(data['kpis']['assiduite'])
+        self.assertIsNone(data['kpis']['credits_obtenus'])
+        self.assertNotIn('13.38', str(data))
+        self.assertNotIn('96%', str(data))
+        self.assertNotIn('INJS26-0001', str(data))
+
+    def test_enseignant_ne_voit_pas_les_modules_d_un_autre_formateur(self):
+        """Le compte FORMATEUR a bien sa fiche (créée par `profile_sync`), mais
+        aucun module : l'ancien repli `Formateur.objects.first()` lui servait
+        les cours, les 96 étudiants et les 120 h d'un autre enseignant."""
+        from dashboard.services import get_enseignant_dashboard
+
+        autre = Formateur.objects.create(numerobadge='F-001', nom='DIALLO', prenom='Mamadou')
+        data = get_enseignant_dashboard(self.user)
+        self.assertNotIn('DIALLO', str(data))
+        self.assertEqual(data['kpis']['cours_assignes'], 0)
+        self.assertEqual(data['kpis']['heures_prevues'], 0.0)
+        self.assertIsNone(data['kpis']['heures_realisees'])
+        self.assertEqual(data['kpis']['etudiants'], 0)
+        self.assertNotEqual(data['enseignant'], f"{autre.nom} {autre.prenom}")
+
+    def test_annee_academique_absente_n_est_pas_inventee(self):
+        from dashboard.services import libelle_annee_courante
+
+        self.assertIsNone(libelle_annee_courante())
+
+
+class AnneeAcademiqueNonInventeeAPITests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='admin_annee', password='password123', role=User.Role.ADMIN, is_staff=True,
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_overview_sans_annee_ne_renvoie_pas_de_libelle(self):
+        res = self.client.get('/api/dashboard/overview/')
+        self.assertEqual(res.status_code, 200)
+        self.assertIsNone(res.data['annee_academique'])

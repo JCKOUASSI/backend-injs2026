@@ -118,7 +118,7 @@ export default function Secretariats() {
   const getTypeBadge = (typeId) => {
     const t = typesSecretariat.find(x => x.id === typeId)
     if (!t) return null
-    const colors = ['#1565C0', '#125A99', '#E69700', '#6A1B9A', '#00838F']
+    const colors = ['#283A87', '#1267D6', '#35BDF5', '#0D9488', '#16A36A']
     const idx = typesSecretariat.indexOf(t)
     return { label: t.libelle, color: colors[idx % colors.length] }
   }

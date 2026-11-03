@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom'
 import EcranRessource from '../components/generique/EcranRessource'
 import EcranDocuments from '../components/generique/EcranDocuments'
+import EcranUeEcue from './EcranUeEcue'
 import { useMenuAutorise } from '../hooks/useMenuAutorise'
 import { ecranParId } from '../menu/ecrans'
 import { ARBORESCENCE, PIED_DE_BARRE, aplatir } from '../menu/arborescence'
@@ -14,6 +15,12 @@ import '../styles/ecransGeneriques.css'
 function libelleVue(ecran) {
   if (ecran.type === 'documents') return 'Générateur de documents'
   if (ecran.type === 'indicateurs') return 'Indicateurs consolidés'
+  // Un écran doté d'un formulaire n'est pas une simple consultation : il écrit
+  // en base. L'annoncer « Consultation » alors qu'un bouton « Nouveau » existe
+  // donnerait une fausse idée du pouvoir de la page.
+  if (ecran.formulaire || ecran.type === 'ue_ecue') {
+    return 'Gestion (création, modification, suppression)'
+  }
   if (ecran.recherche || (ecran.filtres || []).length) return 'Liste filtrable'
   return 'Consultation'
 }
@@ -110,9 +117,11 @@ export default function EcranGenerique({ id }) {
         </div>
       </div>
 
-      {ecran.type === 'documents'
-        ? <EcranDocuments ecran={ecran} />
-        : <EcranRessource ecran={ecran} cleBase={['ecran-generique', id]} />}
+      {ecran.type === 'documents' && <EcranDocuments ecran={ecran} />}
+      {ecran.type === 'ue_ecue' && <EcranUeEcue />}
+      {ecran.type !== 'documents' && ecran.type !== 'ue_ecue' && (
+        <EcranRessource ecran={ecran} cleBase={['ecran-generique', id]} />
+      )}
     </div>
   )
 }

@@ -25,7 +25,7 @@
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid #E9ECF2;
   border-radius: 18px;
-  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px -5px rgba(7, 27, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
 }
 
 .cand-hero-text {
@@ -37,7 +37,7 @@
 .cand-hero-title {
   font-size: 1.45rem;
   font-weight: 800;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   margin: 0;
   letter-spacing: -0.02em;
   line-height: 1.15;
@@ -72,7 +72,7 @@
 
 .cand-kpi:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 30px -5px rgba(11, 31, 58, 0.08);
+  box-shadow: 0 12px 30px -5px rgba(7, 27, 58, 0.08);
 }
 
 .cand-kpi-label {
@@ -90,7 +90,7 @@
   font-size: 1.6rem;
   font-weight: 800;
   line-height: 1;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   letter-spacing: -0.02em;
 }
 
@@ -121,13 +121,13 @@
 }
 
 .cand-page .plaquette-primary {
-  background: #DBEAFE;
-  color: #2563EB;
-  border: 1px solid #BFDBFE;
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal);
+  border: 1px solid var(--injs-border-strong);
 }
 
 .cand-page .btn-premium-primary {
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
   color: #FFFFFF;
   border: none;
   border-radius: 9999px;
@@ -137,16 +137,16 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 4px 14px rgba(18, 103, 214, 0.35);
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s ease;
 }
 
 .cand-page .btn-premium-primary:hover {
-  background: linear-gradient(135deg, #1D4ED8 0%, #256FD0 100%);
+  background: linear-gradient(135deg, var(--injs-blue) 0%, var(--injs-blue-royal) 100%);
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+  box-shadow: 0 6px 18px rgba(18, 103, 214, 0.45);
 }
 
 /* ── 4. BARRE DE FILTRES ── */
@@ -174,40 +174,106 @@
   pointer-events: none;
 }
 
-.cand-search .form-control {
-  padding-left: 2.1rem;
-  border-radius: 9999px;
-  border-color: #E2E8F0;
+/* Champ de saisie autonome : le projet n'embarque pas Bootstrap, donc
+   `.form-control` et `.form-select` n'ont aucun effet. Les contrôles de cet
+   écran trouvent ici leur apparence complète (hauteur, padding, focus). */
+.cand-input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0.55rem 0.9rem;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #0F172A;
   background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.cand-search .form-control:focus {
+.cand-input::placeholder { color: #A9B6C7; }
+
+.cand-input:hover:not(:focus) { border-color: #CBD5E1; }
+
+.cand-input:focus {
+  outline: none;
   background: #FFFFFF;
-  border-color: #2A7FFF;
-  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
 }
+
+.cand-search .cand-input { padding-left: 2.35rem; }
 
 .cand-filter-select {
   flex: 0 1 240px;
-  border-radius: 9999px;
-  border-color: #E2E8F0;
-  background-color: #F8FAFC;
+  min-height: 42px;
+  padding: 0.55rem 2.4rem 0.55rem 1rem;
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  font-size: 0.88rem;
   font-weight: 600;
-  color: var(--injs-text-secondary, #475569);
+  color: #475569;
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2364748B' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M3.5 6l4.5 4.5L12.5 6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+/* Un <select> prend par défaut la largeur de son option la plus longue :
+   avec des intitulés de formation complets, il débordait de sa colonne et
+   passait seul à la ligne. On le laisse se contraindre à sa base flexible. */
+.cand-filters .cand-filter-select { min-width: 0; }
+
+.cand-filter-select:hover { border-color: #CBD5E1; }
+
 .cand-filter-select:focus {
-  border-color: #2A7FFF;
-  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+  outline: none;
+  background-color: #FFFFFF;
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
+}
+
+/* Bouton d'action de la barre de filtres : même hauteur que les contrôles. */
+.cand-btn-recherche {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 42px;
+  padding: 0 1.25rem;
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  background: var(--injs-gradient-primary);
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 10px 22px -12px rgba(18, 103, 214, 0.9);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cand-btn-recherche:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px -12px rgba(18, 103, 214, 0.95);
+}
+
+.cand-btn-recherche:focus-visible {
+  outline: 2px solid var(--injs-blue-royal);
+  outline-offset: 2px;
 }
 
 .cand-count-pill {
   margin-left: auto;
   padding: 0.3rem 0.75rem;
   border-radius: 9999px;
-  background: #EFF6FF;
-  color: #2563EB;
-  border: 1px solid #BFDBFE;
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal);
+  border: 1px solid var(--injs-border-strong);
   font-size: 0.74rem;
   font-weight: 700;
   white-space: nowrap;
@@ -222,8 +288,68 @@
 
 .cand-table {
   margin: 0;
-  min-width: 860px;
+  width: 100%;
+  min-width: 1080px;
+  table-layout: fixed;
 }
+
+/* Répartition des colonnes : les intitulés de formation sont longs, ils
+   méritent l'essentiel de la largeur ; les colonnes de codes restent fixes.
+   Chaque écran a sa propre grille — les largeurs sont donc portées par une
+   classe dédiée et non par le `nth-child` générique, qui décalait les colonnes
+   de Candidatures (7 colonnes au lieu de 8). */
+.cand-table--inscriptions th:nth-child(1), .cand-table--inscriptions td:nth-child(1) { width: 120px; }
+.cand-table--inscriptions th:nth-child(2), .cand-table--inscriptions td:nth-child(2) { width: 152px; }
+.cand-table--inscriptions th:nth-child(4), .cand-table--inscriptions td:nth-child(4) { width: 70px; }
+.cand-table--inscriptions th:nth-child(5), .cand-table--inscriptions td:nth-child(5) { width: 124px; }
+.cand-table--inscriptions th:nth-child(6), .cand-table--inscriptions td:nth-child(6) { width: 100px; }
+.cand-table--inscriptions th:nth-child(7), .cand-table--inscriptions td:nth-child(7) { width: 118px; }
+.cand-table--inscriptions th:nth-child(8), .cand-table--inscriptions td:nth-child(8) { width: 146px; }
+
+/* Candidatures : N°, candidat, formation (large), niveau, statut, complétude,
+   action. */
+.cand-table--candidatures { min-width: 1080px; }
+.cand-table--candidatures th:nth-child(1), .cand-table--candidatures td:nth-child(1) { width: 132px; }
+.cand-table--candidatures th:nth-child(2), .cand-table--candidatures td:nth-child(2) { width: 176px; }
+.cand-table--candidatures th:nth-child(4), .cand-table--candidatures td:nth-child(4) { width: 78px; }
+.cand-table--candidatures th:nth-child(5), .cand-table--candidatures td:nth-child(5) { width: 172px; }
+.cand-table--candidatures th:nth-child(6), .cand-table--candidatures td:nth-child(6) { width: 176px; }
+.cand-table--candidatures th:nth-child(7), .cand-table--candidatures td:nth-child(7) { width: 84px; }
+
+/* Tableaux secondaires (pièces d'un dossier) : pas de largeur imposée. */
+.cand-table--simple {
+  min-width: 0;
+  table-layout: auto;
+}
+
+/* Une formation tient sur deux lignes au plus : la hauteur des lignes reste
+   régulière, et l'intitulé complet demeure accessible par l'infobulle. */
+/* Le clamp s'applique à un <span> interne : porté par le <td>, il cassait la
+   hauteur de la cellule et le texte tronqué débordait sur la ligne suivante. */
+.cand-texte-formation {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.35;
+}
+
+.cand-table .badge { white-space: nowrap; }
+
+/* Intitulé d'une colonne sans libellé visible (colonne d'actions). */
+.cand-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cand-table th.cand-th-actions { text-align: right; }
 
 .cand-table thead th {
   position: sticky;
@@ -263,9 +389,9 @@
   font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
   font-size: 0.76rem;
   font-weight: 700;
-  color: #1D4ED8;
-  background: #EFF6FF;
-  border: 1px solid #DBEAFE;
+  color: var(--injs-blue);
+  background: var(--injs-blue-pale);
+  border: 1px solid var(--injs-blue-pale);
   border-radius: 6px;
   padding: 0.15rem 0.45rem;
   white-space: nowrap;
@@ -273,7 +399,7 @@
 
 .cand-candidat {
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 .cand-formation {
@@ -288,24 +414,59 @@
   letter-spacing: 0.01em;
 }
 
+/* Cellule « Dossier » : la jauge garde une largeur utile sans écraser la
+   colonne voisine, et son compteur reste aligné à droite. */
 .cand-progress {
-  min-width: 150px;
+  min-width: 0;
 }
 
-.cand-progress .progress {
-  height: 0.45rem;
+/* ── Jauge de complétude (composant autonome, sans Bootstrap) ── */
+.cand-jauge {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+}
+
+.cand-jauge-piste {
+  position: relative;
+  flex: 1 1 auto;
+  height: 6px;
+  min-width: 54px;
   border-radius: 9999px;
-  background: #EEF2F7;
+  background: #EDF1F6;
+  overflow: hidden;
+}
+
+.cand-jauge-part {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.35s ease;
+}
+
+.cand-jauge-part--succes { background: linear-gradient(90deg, #22C55E, #16A34A); }
+.cand-jauge-part--attention { background: linear-gradient(90deg, #FBBF24, #F59E0B); }
+.cand-jauge-part--faible { background: linear-gradient(90deg, #FB7185, #E11D48); }
+
+.cand-jauge-valeur {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #64748B;
+  white-space: nowrap;
+}
 
 /* ── 6. PANNEAU DOSSIER ── */
 .cand-dossier {
-  border: 1px solid #BFDBFE !important;
-  box-shadow: 0 12px 30px -8px rgba(37, 99, 235, 0.18) !important;
+  border: 1px solid var(--injs-border-strong) !important;
+  box-shadow: 0 12px 30px -8px rgba(18, 103, 214, 0.18) !important;
 }
 
 .cand-dossier > .card-header {
-  background: linear-gradient(135deg, #EFF6FF 0%, #E8F1FF 100%);
-  border-bottom: 1px solid #DBEAFE;
+  background: linear-gradient(135deg, var(--injs-blue-pale) 0%, #E8F1FF 100%);
+  border-bottom: 1px solid var(--injs-blue-pale);
   padding: 0.9rem 1.25rem;
 }
 
@@ -352,7 +513,7 @@
 
 .cand-info-value {
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 /* ── 7. FORMULAIRE DE CRÉATION ── */
@@ -361,7 +522,7 @@
   border-bottom: 1px solid #EDF1F6;
   padding: 0.9rem 1.25rem;
   font-size: 1rem;
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 .cand-form > .card-body {
@@ -385,8 +546,8 @@
 
 .cand-form .form-control:focus,
 .cand-form .form-select:focus {
-  border-color: #2A7FFF;
-  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
 }
 
 .cand-form .btn {
@@ -396,9 +557,9 @@
 }
 
 .cand-form .btn-primary {
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
   border-color: transparent;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 14px rgba(18, 103, 214, 0.3);
 }
 
 .cand-form .btn-outline-secondary {
@@ -408,8 +569,8 @@
 }
 
 .cand-form .btn-outline-secondary:hover {
-  border-color: #2A7FFF;
-  color: #2563EB;
+  border-color: var(--injs-blue-royal);
+  color: var(--injs-blue-royal);
 }
 
 /* ── 8. RESPONSIVE ── */
@@ -420,23 +581,22 @@
 }
 
 @media (max-width: 640px) {
+  /* Deux tuiles par ligne : une seule colonne étirait chaque chiffre sur
+     toute la largeur et allongeait inutilement la page. */
   .cand-kpi-row {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
   }
-  .cand-hero {
-    align-items: flex-start;
-  }
+  .cand-kpi { padding: 0.8rem 0.9rem; gap: 0.65rem; }
+  .cand-kpi-icon { width: 36px; height: 36px; font-size: 1rem; }
+  .cand-kpi .cand-kpi-value { font-size: 1.25rem; }
+  .cand-kpi .cand-kpi-label { font-size: 0.62rem; }
+  .cand-hero { align-items: flex-start; }
+  .cand-hero-icone { width: 40px; height: 40px; flex-basis: 40px; font-size: 1.1rem; }
+  .cand-hero-title { font-size: 1.2rem; }
   .cand-count-pill {
     margin-left: 0;
   }
-}
-
-}
-
-.cand-progress small {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #64748B;
 }
 
 .cand-open-btn {
@@ -444,16 +604,16 @@
   font-weight: 700;
   font-size: 0.76rem;
   padding: 0.35rem 0.9rem;
-  border-color: #BFDBFE;
-  color: #2563EB;
+  border-color: var(--injs-border-strong);
+  color: var(--injs-blue-royal);
   background: #FFFFFF;
 }
 
 .cand-open-btn:hover {
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
   border-color: transparent;
   color: #FFFFFF;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 14px rgba(18, 103, 214, 0.3);
 }
 
 .cand-empty {
@@ -470,17 +630,18 @@
   color: #CBD5E1;
 }
 
-.cand-kpi-icon.is-blue  { background: #EBF3FF; color: #2A7FFF; }
+.cand-kpi-icon.is-blue  { background: #EBF3FF; color: var(--injs-blue-royal); }
 .cand-kpi-icon.is-green { background: #ECFDF5; color: #10B981; }
 .cand-kpi-icon.is-amber { background: #FFFBEB; color: #F59E0B; }
 .cand-kpi-icon.is-slate { background: #EEF2F7; color: #475569; }
+.cand-kpi-icon.is-red   { background: var(--injs-danger-soft); color: #C2263A; }
 
 /* ── 3. PANNEAU VERRE PARTAGÉ (tableau, formulaire, dossier) ── */
 .cand-panel {
   background: #FFFFFF;
   border: 1px solid #E9ECF2;
   border-radius: 18px;
-  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px -5px rgba(7, 27, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
   overflow: hidden;
   margin-bottom: 0 !important;
 }
@@ -502,15 +663,768 @@
   gap: 0.5rem;
   font-size: 1rem;
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   margin: 0;
 }
 
 .cand-panel-title i {
-  color: #2A7FFF;
+  color: var(--injs-blue-royal);
   font-size: 1.05rem;
 }
 
 .cand-panel-body {
   padding: 1.15rem 1.4rem 1.4rem;
 }
+
+/* ── 9. EN-TÊTE, TUILES, FILTRES ET TABLEAU (niveau « premium ») ───────────
+   Ces règles complètent la section 1 (le bandeau existait mais sans pastille
+   d'icône ni actions stylées) et donnent au tableau ses actions compactes et
+   son état vide. Même palette que le reste de l'application. */
+
+.cand-hero {
+  flex-wrap: nowrap;
+}
+
+.cand-hero-identite {
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Cellules à valeur courte (matricule, année) : jamais coupées en deux. */
+.cand-table td.cand-col-etroit { white-space: nowrap; }
+
+.cand-hero-icone {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 15px;
+  background: var(--injs-gradient-primary);
+  color: #FFFFFF;
+  font-size: 1.3rem;
+  box-shadow: 0 10px 22px -10px rgba(18, 103, 214, 0.8);
+}
+
+.cand-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+}
+
+.cand-btn-principal,
+.cand-btn-fantome {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 42px;
+  padding: 0 1.2rem;
+  font-family: inherit;
+  font-size: 0.87rem;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+              background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.cand-btn-principal {
+  background: var(--injs-gradient-primary);
+  color: #FFFFFF;
+  box-shadow: 0 10px 22px -12px rgba(18, 103, 214, 0.95);
+}
+
+.cand-btn-principal:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px -12px rgba(18, 103, 214, 0.95);
+  color: #FFFFFF;
+}
+
+/* Bouton d'action principal neutralisé (année non définie, envoi en cours) :
+   sans cet état, il gardait son dégradé vif et paraissait cliquable. */
+.cand-btn-principal:disabled,
+.cand-page .btn-premium-primary:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cand-btn-principal:disabled:hover,
+.cand-page .btn-premium-primary:disabled:hover {
+  transform: none;
+  box-shadow: none;
+  color: #FFFFFF;
+}
+
+.cand-btn-fantome {
+  background: #FFFFFF;
+  border-color: #E2E8F0;
+  color: #475569;
+}
+
+.cand-btn-fantome:hover {
+  background: #F5F9FF;
+  border-color: var(--injs-blue-royal);
+  color: var(--injs-blue-royal);
+}
+
+.cand-btn-principal:focus-visible,
+.cand-btn-fantome:focus-visible,
+.cand-action:focus-visible {
+  outline: 2px solid var(--injs-blue-royal);
+  outline-offset: 2px;
+}
+
+/* Tuiles KPI : icône colorée à gauche, valeur et libellé à droite. */
+.cand-kpi {
+  justify-content: flex-start;
+  gap: 0.9rem;
+}
+
+.cand-kpi .cand-kpi-value { font-size: 1.5rem; }
+.cand-kpi .cand-kpi-label { margin: 0.15rem 0 0; }
+
+/* Actions du tableau : boutons compacts, lisibles, sans dépendance Bootstrap. */
+.cand-col-actions { text-align: right; }
+
+.cand-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  flex-wrap: nowrap;
+}
+
+/* Quatre actions par ligne : en libellés, elles débordaient sur trois lignes
+   et écrasaient les colonnes voisines. Forme compacte (32 px), le libellé
+   restant accessible via `aria-label` et l'infobulle `title`. */
+.cand-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: #475569;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 9px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.cand-action:hover:not(:disabled) {
+  background: #F5F9FF;
+  border-color: var(--injs-blue-royal);
+  color: var(--injs-blue-royal);
+}
+
+.cand-action--succes { color: #0E7A4F; }
+
+.cand-action--danger { color: #B4232F; }
+
+.cand-action--succes:hover:not(:disabled) {
+  background: var(--injs-success-soft);
+  border-color: #B7E7CE;
+  color: #0E7A4F;
+}
+
+.cand-action--danger:hover:not(:disabled) {
+  background: var(--injs-danger-soft);
+  border-color: #F5C2C7;
+  color: #A3222F;
+}
+
+.cand-action:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.cand-action .spinner-border {
+  width: 12px;
+  height: 12px;
+  border-width: 2px;
+}
+
+.cand-etudiant { font-weight: 600; color: #0F172A; white-space: nowrap; }
+
+.cand-texte-doux { color: #64748B; font-size: 0.82rem; }
+
+.cand-badge-neutre {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #475569;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+}
+
+/* Chargement et état vide */
+.cand-chargement {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 2.5rem 1rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #64748B;
+}
+
+.cand-chargement .spinner-border { width: 18px; height: 18px; border-width: 2px; }
+
+.cand-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 2.75rem 1.5rem 3rem;
+  text-align: center;
+  border-top: 1px solid #F1F5F9;
+}
+
+.cand-vide-icone {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 0.4rem;
+  border-radius: 18px;
+  background: #F1F6FD;
+  color: #9FB4CE;
+  font-size: 1.5rem;
+}
+
+.cand-vide-titre {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+}
+
+.cand-vide-texte {
+  margin: 0 0 0.75rem;
+  max-width: 46ch;
+  font-size: 0.84rem;
+  color: #64748B;
+}
+
+@media (max-width: 900px) {
+  .cand-hero { flex-wrap: wrap; flex-direction: column; align-items: flex-start; }
+  .cand-hero-actions { width: 100%; }
+  .cand-hero-actions .cand-btn-principal,
+  .cand-hero-actions .cand-btn-fantome { flex: 1 1 auto; justify-content: center; }
+}
+
+/* Sur téléphone les deux actions s'empilent en pleine largeur : côte à côte,
+   « Inscrire un admis » se coupait sur trois lignes. */
+@media (max-width: 560px) {
+  .cand-hero-actions { flex-direction: column; align-items: stretch; }
+  .cand-hero-actions .cand-btn-principal,
+  .cand-hero-actions .cand-btn-fantome { width: 100%; white-space: nowrap; }
+}
+
+/* Le tableau garde ses colonnes ; sur écran étroit un indice explicite
+   remplace l'absence de barre de défilement visible. */
+.cand-defile {
+  display: none;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.55rem 0 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #7C8CA1;
+}
+
+.cand-defile i { color: var(--injs-blue-royal); }
+
+@media (max-width: 900px) {
+  .cand-defile { display: flex; }
+}
+
+@media (max-width: 640px) {
+  .cand-search { flex: 1 1 100%; max-width: none; }
+  .cand-filter-select { flex: 1 1 100%; }
+  .cand-btn-recherche { flex: 1 1 100%; justify-content: center; }
+}
+
+/* ── 10. FORMULAIRES ET FICHES DÉTAILLÉES (Candidatures) ───────────────────
+   Le formulaire de dépôt et le panneau « Dossier » reposaient sur la grille
+   Bootstrap (`row g-3`, `col-md-3`) et sur `form-control`/`form-select` :
+   aucune de ces classes n'existe ici, d'où des champs natifs de 19 px empilés
+   sans gouttière. Les règles ci-dessous fournissent le strict équivalent,
+   dans la palette du design system. */
+
+.cand-grille-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem 1.1rem;
+}
+
+.cand-champ {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.cand-champ--2 { grid-column: span 2; }
+.cand-champ--4 { grid-column: 1 / -1; }
+
+.cand-etiquette {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748B;
+}
+
+.cand-saisie {
+  width: 100%;
+  min-height: 42px;
+  padding: 0.55rem 0.85rem;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #0F172A;
+  background: #FBFCFE;
+  border: 1px solid #E2E8F0;
+  border-radius: 11px;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cand-saisie::placeholder { color: #A9B6C7; }
+
+.cand-saisie:hover:not(:focus) { border-color: #CBD5E1; }
+
+.cand-saisie:focus {
+  outline: none;
+  background: #FFFFFF;
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
+}
+
+select.cand-saisie {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.3rem;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2364748B' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M3.5 6l4.5 4.5L12.5 6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+}
+
+/* Champ de téléversement : le bouton natif est mis à l'échelle du formulaire. */
+.cand-saisie[type='file'] {
+  padding: 0.4rem 0.5rem;
+  font-size: 0.78rem;
+  color: #475569;
+}
+
+.cand-saisie[type='file']::file-selector-button {
+  margin-right: 0.6rem;
+  padding: 0.35rem 0.7rem;
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border: 1px solid #BFDCF5;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Bloc d'alerte du formulaire */
+.cand-alerte {
+  margin-bottom: 1rem;
+  padding: 0.8rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #A3222F;
+  background: var(--injs-danger-soft);
+  border: 1px solid #F5C2C7;
+  border-radius: 12px;
+  white-space: pre-line;
+}
+
+.cand-alerte--attention {
+  color: #8A5A00;
+  background: var(--injs-warning-soft);
+  border-color: #F3D49A;
+}
+
+/* Bandeau d'identité du dossier ouvert */
+.cand-dossier-entete {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid #EDF1F6;
+  background: linear-gradient(180deg, #F7FAFF 0%, #FFFFFF 100%);
+}
+
+.cand-dossier-numero {
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border: 1px solid #BFDCF5;
+  border-radius: 7px;
+  padding: 0.18rem 0.5rem;
+}
+
+.cand-dossier-nom {
+  display: block;
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+  line-height: 1.3;
+}
+
+.cand-dossier-sous {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #64748B;
+}
+
+.cand-section-titre {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 1.35rem 0 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #64748B;
+}
+
+.cand-section-titre i { color: var(--injs-blue-royal); font-size: 0.9rem; }
+
+.cand-completude {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 1.35rem;
+}
+
+.cand-completude-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #64748B;
+  white-space: nowrap;
+}
+
+.cand-completude-jauge { flex: 0 1 460px; min-width: 200px; }
+
+/* Dans la fiche, la jauge est un repère de lecture : un peu plus haute qu'en
+   tableau, sans devenir un trait pleine largeur. */
+.cand-completude .cand-jauge-piste { height: 8px; }
+.cand-completude .cand-jauge-valeur { font-size: 0.78rem; }
+
+.cand-transitions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cand-vide-actions { margin-top: 0.35rem; }
+
+/* Téléversement d'une pièce : le champ natif affichait « Choose File » en
+   anglais et cassait la hauteur des lignes ; l'entrée reste dans le libellé,
+   donc accessible au clavier, mais c'est le bouton de la charte qui se voit. */
+.cand-televerser {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.7rem;
+  border: 1px solid var(--injs-border-strong);
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: var(--injs-blue-royal);
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.cand-televerser:hover { background: var(--injs-blue-pale); border-color: var(--injs-blue-royal); }
+.cand-televerser:focus-within { outline: 2px solid var(--injs-blue-royal); outline-offset: 2px; }
+.cand-televerser i { font-size: 0.85rem; }
+
+.cand-televerser-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Pastille « Expirée » d'une pièce (remplace le badge Bootstrap). */
+.cand-puce-alerte {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 9999px;
+  border: 1px solid #FBD5D5;
+  background: #FEF2F2;
+  color: #B91C1C;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+}
+
+@media (max-width: 900px) {
+  .cand-grille-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cand-champ--2 { grid-column: 1 / -1; }
+}
+
+@media (max-width: 560px) {
+  .cand-grille-form { grid-template-columns: minmax(0, 1fr); }
+  .cand-dossier-entete { flex-wrap: wrap; }
+}
+
+@media (max-width: 560px) {
+  /* Tuile en colonne : sur 163 px de large, l'icône à gauche ne laissait que
+     ~87 px à l'intitulé, qui se coupait mot par mot (« DOSSIERS / REÇUS »). */
+  .cand-kpi { flex-direction: column; align-items: flex-start; gap: 0.5rem; padding: 0.8rem 0.85rem; }
+  .cand-kpi .cand-kpi-icon { width: 30px; height: 30px; font-size: 0.9rem; border-radius: 9px; }
+  .cand-kpi .cand-kpi-value { font-size: 1.3rem; }
+  .cand-kpi .cand-kpi-label { font-size: 0.6rem; line-height: 1.35; letter-spacing: 0.03em; margin: 0.15rem 0 0; }
+}
+/* Pastille « Scolarité — Admissions » du bandeau : simple étiquette, elle
+   s'étirait sur toute la largeur du bandeau et ressemblait à un champ vide. */
+.cand-hero-badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.22rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border: 1px solid #BFDCF5;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+/* Action « Ouvrir » du tableau des candidatures */
+.cand-action--ouvrir { color: var(--injs-blue-royal); }
+
+/* Barre d'actions du formulaire de dépôt */
+.cand-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid #EDF1F6;
+}
+
+.cand-btn-fantome--danger:hover {
+  background: var(--injs-danger-soft);
+  border-color: #F5C2C7;
+  color: #A3222F;
+}
+
+/* ── Champ date premium : saisie libre + calendrier ─────────────────────────
+   Fenêtre flottante assortie aux modales premium (ombre --injs-shadow-float,
+   grand rayon, dégradé INJS pour le jour choisi). */
+.cand-date { position: relative; }
+
+.cand-date-ligne { display: flex; gap: 0.45rem; align-items: stretch; }
+.cand-date-ligne .cand-saisie { flex: 1 1 auto; min-width: 0; }
+
+.cand-date-bouton {
+  flex: 0 0 auto;
+  width: 42px;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border: 1px solid #D7E6F7;
+  border-radius: 11px;
+  font-size: 1.02rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.cand-date-bouton:hover { background: #DCEBFD; border-color: var(--injs-blue-royal); }
+.cand-date-bouton:focus-visible {
+  outline: var(--injs-focus-outline);
+  outline-offset: 2px;
+}
+
+.cand-cal {
+  /* Portail : position fixe calculée en JS — le panneau du formulaire
+     (.cand-panel, overflow: hidden) rognerait une fenêtre absolue. */
+  position: fixed;
+  z-index: 2000;
+  width: 302px;
+  max-width: min(320px, 88vw);
+  padding: 0.8rem;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: var(--injs-radius-lg);
+  box-shadow: var(--injs-shadow-float), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  animation: cand-cal-apparition 0.16s ease;
+}
+@keyframes cand-cal-apparition {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cand-cal { animation: none; }
+}
+
+.cand-cal-entete {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.55rem;
+}
+
+.cand-cal-nav {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--injs-blue);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.cand-cal-nav:hover:not(:disabled) { background: var(--injs-blue-pale); color: var(--injs-blue-royal); }
+.cand-cal-nav:disabled { color: #CBD5E1; cursor: not-allowed; }
+.cand-cal-nav:focus-visible { outline: var(--injs-focus-outline); outline-offset: 1px; }
+
+.cand-cal-select {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0.3rem 1.6rem 0.3rem 0.55rem;
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #0F172A;
+  background-color: #FBFCFE;
+  border: 1px solid #E2E8F0;
+  border-radius: 9px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2364748B' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M3.5 6l4.5 4.5L12.5 6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  cursor: pointer;
+}
+.cand-cal-select:focus {
+  outline: none;
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
+}
+.cand-cal-select--mois { text-transform: capitalize; }
+
+.cand-cal-jours,
+.cand-cal-grille {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.cand-cal-jours span {
+  padding: 0.25rem 0;
+  text-align: center;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #94A3B8;
+}
+
+.cand-cal-jour {
+  height: 34px;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #0F172A;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
+}
+.cand-cal-jour:hover:not(:disabled) { background: var(--injs-blue-pale); }
+.cand-cal-jour:focus-visible { outline: var(--injs-focus-outline); outline-offset: 1px; }
+.cand-cal-jour:disabled { color: #D5DDE8; cursor: not-allowed; }
+
+.cand-cal-jour--hors { color: #B6C2D2; }
+
+.cand-cal-jour--aujourdhui {
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1.5px var(--injs-blue-royal);
+}
+
+.cand-cal-jour--choisi {
+  color: #FFFFFF;
+  font-weight: 700;
+  background: var(--injs-gradient-primary);
+  box-shadow: 0 6px 14px -6px rgba(18, 103, 214, 0.65);
+}
+.cand-cal-jour--choisi:hover:not(:disabled) { background: var(--injs-gradient-primary); }
+
+.cand-cal-pied {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.55rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #EDF2F7;
+}
+
+.cand-cal-effacer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.65rem;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748B;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.cand-cal-effacer:hover { color: #B3261E; background: #FDF2F2; }
+.cand-cal-effacer:focus-visible { outline: var(--injs-focus-outline); outline-offset: 1px; }

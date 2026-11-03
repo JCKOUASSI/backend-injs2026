@@ -1,0 +1,178 @@
+/* ── Module Admissions (page premium) ────────────────────────────────────
+   Compléments au design system (préfixes cand- et camp-) : rangée de 5
+   indicateurs avec sous-libellés, recherche, avatar candidat, échéance
+   d'inscription et état d'inscription (matricule). */
+
+/* Indicateurs : 5 cartes (la rangée partagée en compte 4). */
+.adm-kpi-row {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.adm-kpi-sous {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #94A3B8;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+@media (max-width: 1100px) {
+  .adm-kpi-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .adm-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Recherche libre dans la barre de filtres. */
+.adm-recherche {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 300px;
+  min-height: 42px;
+  padding: 0 0.9rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  background: #FFFFFF;
+  color: #64748B;
+}
+
+.adm-recherche:focus-within {
+  border-color: #93C5FD;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.adm-recherche input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.85rem;
+  color: #1E293B;
+}
+
+/* Candidat : avatar initiales + nom + numéro. */
+.adm-candidat {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.adm-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  inline-size: 2.15rem;
+  block-size: 2.15rem;
+  border-radius: 50%;
+  color: #FFFFFF;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 2px 6px rgba(15, 23, 42, 0.18);
+}
+
+.adm-candidat-noms {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+/* Méta discrète sous une valeur (date de décision, niveau · année…). */
+.adm-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #94A3B8;
+}
+
+/* Référence de décision : jamais coupée au milieu. */
+.cand-table--admissions .camp-reference {
+  white-space: nowrap;
+  font-size: 0.72rem;
+}
+
+/* Échéance d'inscription et son niveau d'urgence. */
+.adm-limite {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.adm-urgence {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.08rem 0.45rem;
+  border-radius: 9999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.adm-urgence--proche {
+  color: #92400E;
+  background: #FEF3C7;
+  border: 1px solid #FCD34D;
+}
+
+.adm-urgence--depassee {
+  color: #991B1B;
+  background: #FEE2E2;
+  border: 1px solid #FCA5A5;
+}
+
+/* État d'inscription : matricule cliquable vers la fiche étudiant. */
+.adm-inscrit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  border: 1px solid #6EE7B7;
+  border-radius: 9999px;
+  background: #ECFDF5;
+  color: #065F46;
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.adm-inscrit:hover {
+  background: #D1FAE5;
+  border-color: #34D399;
+}
+
+.adm-a-inscrire {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.65rem;
+  border: 1px solid #FCD34D;
+  border-radius: 9999px;
+  background: #FFFBEB;
+  color: #92400E;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+/* Actions libellées (icône + texte), alignées à droite sans retour ligne. */
+.adm-actions {
+  flex-wrap: nowrap;
+}
+
+.adm-actions .camp-action {
+  white-space: nowrap;
+}

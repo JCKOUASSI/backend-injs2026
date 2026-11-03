@@ -41,6 +41,34 @@ describe('components/ConfirmModal.jsx — formulaire de décision', () => {
     expect(onCancel).not.toHaveBeenCalled()
   })
 
+  it('se comporte comme une boîte de dialogue accessible', () => {
+    render(<ConfirmModal message="Supprimer ce dossier ?" onConfirm={() => {}} onCancel={() => {}} />)
+    const boite = screen.getByRole('dialog')
+    expect(boite).toHaveAttribute('aria-modal', 'true')
+    // Le titre sert de nom accessible, la description de texte relié.
+    expect(boite).toHaveAccessibleName('Confirmation')
+    expect(boite).toHaveAccessibleDescription(/Supprimer ce dossier/)
+  })
+
+  it('se ferme avec la touche Échap', async () => {
+    const onCancel = vi.fn()
+    render(<ConfirmModal message="x" onConfirm={() => {}} onCancel={onCancel} />)
+    await userEvent.keyboard('{Escape}')
+    expect(onCancel).toHaveBeenCalledOnce()
+  })
+
+  it('place le focus sur l’action de confirmation à l’ouverture', async () => {
+    render(<ConfirmModal message="x" confirmLabel="Supprimer" onConfirm={() => {}} onCancel={() => {}} />)
+    await screen.findByRole('button', { name: 'Supprimer' })
+    await userEvent.tab()
+    expect(document.activeElement).toHaveTextContent('Supprimer')
+  })
+
+  it('le bouton de fermeture possède un nom accessible', () => {
+    render(<ConfirmModal message="x" onConfirm={() => {}} onCancel={() => {}} />)
+    expect(screen.getByRole('button', { name: 'Fermer la boîte de dialogue' })).toBeInTheDocument()
+  })
+
   it('utilise les libellés personnalisés et la variante de succès', () => {
     render(<ConfirmModal message="x" variant="success" confirmLabel="Publier" cancelLabel="Retour" onConfirm={() => {}} onCancel={() => {}} />)
     expect(screen.getByRole('button', { name: 'Publier' })).toBeInTheDocument()

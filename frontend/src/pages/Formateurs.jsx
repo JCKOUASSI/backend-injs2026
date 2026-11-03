@@ -34,7 +34,7 @@ import { safeLocalStorage } from '../utils/safeStorage'
 import '../styles/premiumCommun.css'
 import '../styles/formateurs.css'
 
-const emptyForm = { numerobadge: '', nom: '', prenom: '', email: '', telephone: '', specialite: '', organisation: '', observations: '', secretariats: [] }
+const emptyForm = { numerobadge: '', nom: '', prenom: '', email: '', telephone: '', specialite: '', organisation: '', grade_ref: '', fonction: '', statut_enseignant: '', observations: '', secretariats: [] }
 
 const financeStatsForGrid = (detail) => ({
   ...(detail?.statistiques || {}),
@@ -77,6 +77,8 @@ export default function Formateurs() {
   const [exportingSynthese, setExportingSynthese] = useState(false)
   const [financePeriod, setFinancePeriod] = useState(() => resolveFinancePeriod())
   const [financePeriodeInfo, setFinancePeriodeInfo] = useState(null)
+  const [statsEns, setStatsEns] = useState(null)
+  const [gradeFiltre, setGradeFiltre] = useState('')
 
   const debouncedSearch = useDebounce(search)
   const [appliedFinancePeriod, setAppliedFinancePeriod] = useState(() => resolveFinancePeriod())
@@ -96,7 +98,17 @@ export default function Formateurs() {
   )
 
   // eslint-disable-next-line react-hooks/exhaustive-deps -- rechargement intentionnel : la fonction de chargement n’est pas mémoïsée (l’ajouter provoquerait une boucle) ; les dépendances de données présentes pilotent déjà le (re)chargement.
-  useEffect(() => { loadFormateurs() }, [page, debouncedSearch, appliedFinancePeriod])
+  useEffect(() => { loadFormateurs() }, [page, debouncedSearch, appliedFinancePeriod, gradeFiltre])
+
+  const chargerStatsEns = async () => {
+    try {
+      const res = await api.get('/formations/formateurs/stats/')
+      const data = res.data
+      if (data && !Array.isArray(data) && typeof data.enseignants === 'number') setStatsEns(data)
+    } catch { /* panorama optionnel : la liste reste fonctionnelle */ }
+  }
+
+  useEffect(() => { if (!canViewFinanceData) chargerStatsEns() }, [canViewFinanceData])
 
   useEffect(() => {
     api.get('/formations/ref/modules/')
@@ -125,6 +137,7 @@ export default function Formateurs() {
     try {
       const params = new URLSearchParams({ page })
       if (debouncedSearch) params.set('search', debouncedSearch)
+      if (!canViewFinanceData && gradeFiltre) params.set('grade', gradeFiltre)
       const endpoint = canViewFinanceData
         ? '/formations/formateurs/finance-report/'
         : '/formations/formateurs/list/'
@@ -157,6 +170,9 @@ export default function Formateurs() {
       telephone: f.telephone || '',
       specialite: f.specialite || '',
       organisation: f.organisation || '',
+      grade_ref: f.grade?.id ?? f.grade_ref ?? '',
+      fonction: f.fonction || '',
+      statut_enseignant: f.statut_enseignant || '',
       observations: f.observations || '',
       secretariats: f.secretariats || [],
     })
@@ -176,6 +192,7 @@ export default function Formateurs() {
       }
       setShowModal(false)
       loadFormateurs()
+      chargerStatsEns()
       showToast(editingId ? 'Enseignant modifié' : 'Enseignant créé')
     } catch (err) {
       const data = err.response?.data
@@ -193,7 +210,7 @@ export default function Formateurs() {
       message: 'Supprimer cet enseignant ?',
       detail: 'Cette action est définitive.',
       onConfirm: async () => {
-        try { await api.delete(`/formations/formateurs/${id}/`); loadFormateurs(); showToast('Enseignant supprimé') }
+        try { await api.delete(`/formations/formateurs/${id}/`); loadFormateurs(); chargerStatsEns(); showToast('Enseignant supprimé') }
         catch { showToast('Erreur lors de la suppression', 'error') }
       }
     })
@@ -201,6 +218,17 @@ export default function Formateurs() {
 
   const canEdit = !canViewFinanceData && canMutateFormations(user)
   const canDelete = !canViewFinanceData && canMutateFormations(user)
+
+  const fmtNb = (n) => Number(n || 0).toLocaleString('fr-FR')
+
+  const tonGrade = (code = '') => {
+    if (code.startsWith('PROFESSEUR')) return 'indigo'
+    if (code.includes('EPS') || code.includes('_EP')) return 'green'
+    if (code.startsWith('MAITRE_CONFERENCES')) return 'blue'
+    if (code.startsWith('INSPECTEUR') || code.startsWith('CONSEILLER')) return 'amber'
+    if (code.startsWith('ASSISTANT')) return 'slate'
+    return 'cyan'
+  }
 
   const formatDate = (value) => {
     if (!value) return '-'
@@ -523,13 +551,51 @@ export default function Formateurs() {
         <div className="px-hero-text">
           <span className="px-hero-eyebrow">Corps enseignant · INJS</span>
           <h1 className="px-hero-title">Enseignants</h1>
-          <p className="px-hero-intro">Profils, spécialités et rattachement des modules enseignés dans les formations LMD.</p>
+          <p className="px-hero-intro">Grades académiques, spécialités et enseignements (ECUE) rattachés aux formations LMD de toutes les filières.</p>
         </div>
         <div className="px-hero-side">
-          <span className="px-plaquette">{formateurs.length} enseignant(s)</span>
+          <span className="px-plaquette">{fmtNb(totalCount)} enseignant{totalCount > 1 ? 's' : ''}</span>
           <span className="px-plaquette px-plaquette--soft">{canDelete ? 'Gestion' : 'Consultation'}</span>
         </div>
       </header>
+
+      {/* Panorama du corps enseignant (variante enseignants) */}
+      {!canViewFinanceData && (
+        <div className="ens-kpi-row" aria-label="Panorama du corps enseignant">
+          <div className="ens-kpi">
+            <span className="ens-kpi-icon is-blue"><i className="bi bi-person-video3"></i></span>
+            <div className="ens-kpi-texte">
+              <span className="ens-kpi-value">{statsEns ? fmtNb(statsEns.enseignants) : fmtNb(totalCount)}</span>
+              <span className="ens-kpi-label">Enseignants</span>
+              <span className="ens-kpi-sub">{statsEns ? `${fmtNb(statsEns.sans_grade)} sans grade renseigné` : 'Corps enseignant LMD'}</span>
+            </div>
+          </div>
+          <div className="ens-kpi">
+            <span className="ens-kpi-icon is-green"><i className="bi bi-check2-square"></i></span>
+            <div className="ens-kpi-texte">
+              <span className="ens-kpi-value">{statsEns ? `${fmtNb(statsEns.couverture.ecue_couvertes)}/${fmtNb(statsEns.couverture.ecue_total)}` : '—'}</span>
+              <span className="ens-kpi-label">ECUE avec enseignant</span>
+              <span className="ens-kpi-sub">{statsEns ? `${statsEns.couverture.taux_couverture} % des maquettes actives ${statsEns.couverture.annee_academique || ''}` : 'Chargement…'}</span>
+            </div>
+          </div>
+          <div className="ens-kpi">
+            <span className="ens-kpi-icon is-amber"><i className="bi bi-clock-history"></i></span>
+            <div className="ens-kpi-texte">
+              <span className="ens-kpi-value">{statsEns ? `${fmtNb(statsEns.couverture.heures_affectees)} h` : '—'}</span>
+              <span className="ens-kpi-label">Heures affectées</span>
+              <span className="ens-kpi-sub">{statsEns ? `${fmtNb(statsEns.couverture.affectations)} affectations pédagogiques` : 'Chargement…'}</span>
+            </div>
+          </div>
+          <div className="ens-kpi">
+            <span className="ens-kpi-icon is-slate"><i className="bi bi-diagram-3"></i></span>
+            <div className="ens-kpi-texte">
+              <span className="ens-kpi-value">{statsEns ? `${statsEns.couverture.formations_couvertes}/${statsEns.couverture.formations_total}` : '—'}</span>
+              <span className="ens-kpi-label">Formations couvertes</span>
+              <span className="ens-kpi-sub">{statsEns ? `${statsEns.couverture.filieres_couvertes}/${statsEns.couverture.filieres_total} filières` : 'Chargement…'}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Barre de recherche — panneau premium */}
       <div className="card px-panel ens-toolbar">
@@ -542,6 +608,22 @@ export default function Formateurs() {
                 value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} />
             </span>
           </label>
+          {!canViewFinanceData && (
+            <label className="px-field">
+              <span className="px-field-label">Grade</span>
+              <select
+                className="px-input"
+                aria-label="Filtrer par grade"
+                value={gradeFiltre}
+                onChange={(e) => { setGradeFiltre(e.target.value); setPage(1) }}
+              >
+                <option value="">Tous les grades</option>
+                {(statsEns?.par_grade || []).filter((g) => g.total > 0 || g.code === gradeFiltre).map((g) => (
+                  <option key={g.code} value={g.code}>{g.libelle} ({g.total})</option>
+                ))}
+              </select>
+            </label>
+          )}
           {canDelete && (
             <div className="px-toolbar-actions">
               <button onClick={openCreate} className="btn btn-dfrc">
@@ -565,7 +647,7 @@ export default function Formateurs() {
             <p className="px-panel-sub">Ouvrez la fiche complète d'un enseignant avec « Détail ».</p>
           </div>
           <div className="px-panel-tools">
-            <span className="px-count-pill">{formateurs.length} résultat(s)</span>
+            <span className="px-count-pill">{fmtNb(totalCount)} résultat{totalCount > 1 ? 's' : ''}</span>
           </div>
         </div>
         <div className="card-body-flush">
@@ -576,12 +658,12 @@ export default function Formateurs() {
                   <thead>
                     <tr>
                       <th>Numéro</th>
-                      <th>Nom</th>
-                      <th>Prénom</th>
+                      <th>Enseignant</th>
+                      {canViewFinanceData && <th>Prénom</th>}
+                      {!canViewFinanceData && <th>Grade</th>}
                       <th>Spécialité</th>
-                      {!canViewFinanceData && <th>Adresse e-mail</th>}
-                      {!canViewFinanceData && <th>Téléphone</th>}
-                      {!canViewFinanceData && <th>Modules</th>}
+                      {!canViewFinanceData && <th>Contact</th>}
+                      {!canViewFinanceData && <th>Enseignements {statsEns?.couverture?.annee_academique || 'année courante'}</th>}
                       {!canViewFinanceData && canViewSensitive && <th>N° pièce d'identité</th>}
                       {!canViewFinanceData && canViewSensitive && <th>N° compte bancaire (RIB)</th>}
                       {canViewFinanceData && <th>Séances</th>}
@@ -598,13 +680,46 @@ export default function Formateurs() {
                         <td>{f.numerobadge
                           ? <span className="badge-bg-info ens-num">{f.numerobadge}</span>
                           : <span className="px-dash">—</span>}</td>
-                        <td><strong>{f.nom}</strong></td>
-                        <td>{f.prenom}</td>
-                        <td>{f.specialite || <span className="px-dash">—</span>}</td>
-                        {!canViewFinanceData && <td>{f.email || <span className="px-dash">—</span>}</td>}
-                        {!canViewFinanceData && <td>{f.telephone || <span className="px-dash">—</span>}</td>}
+                        <td>
+                          <span className="ens-identite">
+                            <span className="ens-avatar" aria-hidden="true">{((f.nom || '?').trim().charAt(0) + (f.prenom || '').trim().charAt(0)).toUpperCase()}</span>
+                            <span className="ens-identite-texte">
+                              <span className="ens-nom">{f.nom} <span className="ens-prenom">{f.prenom}</span></span>
+                              {f.fonction ? <span className="ens-fonction">{f.fonction}</span> : null}
+                            </span>
+                          </span>
+                        </td>
+                        {canViewFinanceData && <td>{f.prenom}</td>}
                         {!canViewFinanceData && (
-                          <td><span className={`ens-count${f.nb_formations ? ' ens-count--on' : ''}`}>{f.nb_formations || 0}</span></td>
+                          <td>
+                            {f.grade ? (
+                              <>
+                                <span className={`ens-grade is-${tonGrade(f.grade.code)}`}>{f.grade.libelle}</span>
+                                {f.statut_enseignant ? <span className="ens-statut">{f.statut_enseignant}</span> : null}
+                              </>
+                            ) : <span className="px-dash">—</span>}
+                          </td>
+                        )}
+                        <td>{f.specialite || <span className="px-dash">—</span>}</td>
+                        {!canViewFinanceData && (
+                          <td>
+                            <span className="ens-contact">
+                              <span>{f.email || '—'}</span>
+                              <span className="ens-contact-tel">{f.telephone || ''}</span>
+                            </span>
+                          </td>
+                        )}
+                        {!canViewFinanceData && (
+                          <td>
+                            {f.enseignements?.nb_ecue ? (
+                              <span className="ens-charge">
+                                <strong>{f.enseignements.nb_ecue} ECUE · {fmtNb(f.enseignements.heures)} h</strong>
+                                <span className="ens-charge-formations" title={f.enseignements.formations.join(' · ')}>
+                                  {f.enseignements.formations.join(' · ')}
+                                </span>
+                              </span>
+                            ) : <span className="ens-charge-vide">Aucune affectation</span>}
+                          </td>
                         )}
                         {!canViewFinanceData && canViewSensitive && <td className="small">{f.numero_piece_identite || '-'}</td>}
                         {!canViewFinanceData && canViewSensitive && <td className="small">{f.numero_compte_bancaire || '-'}</td>}
@@ -657,7 +772,7 @@ export default function Formateurs() {
                         </td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={canViewFinanceData ? 10 : (8 + (canViewSensitive ? 2 : 0))} className="text-center py-4 text-muted">
+                      <tr><td colSpan={canViewFinanceData ? 10 : (7 + (canViewSensitive ? 2 : 0))} className="text-center py-4 text-muted">
                         <span className="px-empty">
                           <span className="px-empty-badge"><i className="bi bi-person-x"></i></span>
                           Aucun enseignant trouvé
@@ -717,10 +832,37 @@ export default function Formateurs() {
                   <label className="form-label">Spécialité</label>
                   <select className="form-control" value={form.specialite} onChange={e => setForm({...form, specialite: e.target.value})}>
                     <option value="">— Sélectionner une spécialité —</option>
+                    {form.specialite && !refModules.some(m => m.intitule === form.specialite) && (
+                      <option value={form.specialite}>{form.specialite}</option>
+                    )}
                     {refModules.map(m => (
                       <option key={m.id} value={m.intitule}>{m.intitule}</option>
                     ))}
                   </select>
+                </div>
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Grade enseignant</label>
+                    <select className="form-control" value={form.grade_ref} onChange={e => setForm({...form, grade_ref: e.target.value})}>
+                      <option value="">— Non renseigné —</option>
+                      {(statsEns?.grades_disponibles || []).map(g => (
+                        <option key={g.id} value={g.id}>{g.libelle}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Statut</label>
+                    <select className="form-control" value={form.statut_enseignant} onChange={e => setForm({...form, statut_enseignant: e.target.value})}>
+                      <option value="">— Non renseigné —</option>
+                      <option value="Titulaire">Titulaire</option>
+                      <option value="Vacataire">Vacataire</option>
+                      <option value="Contractuel">Contractuel</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Fonction <small className="text-muted">(ex : Chef de département)</small></label>
+                  <input type="text" className="form-control" value={form.fonction} onChange={e => setForm({...form, fonction: e.target.value})} />
                 </div>
                 <div className="grid-2">
                   <div className="form-group">

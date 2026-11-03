@@ -99,7 +99,7 @@ class TestEnregistrementPaiement(TestCase):
             candidat=candidat, nature='SCOLARITE', montant=Decimal('25000'),
             devise='XOF', mode='CAISSE', transaction_externe='TX_CONF_001',
         )
-        paiement.preuve = SimpleUploadedFile('preuve.txt', b'preuve')
+        paiement.preuve = SimpleUploadedFile('preuve.pdf', b'preuve')
         paiement.save()
         confirmer_paiement(paiement, utilisateur=None)
         paiement.refresh_from_db()

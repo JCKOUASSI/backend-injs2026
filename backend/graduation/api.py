@@ -233,7 +233,10 @@ def registre_detail_api(request, pk):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrAbove])
 def modeles_list_api(request):
-    qs = ModeleDocument.objects.select_related('formation').order_by('type', 'formation__libelle')
+    # `RefFormation` nomme son champ `intitule` (il n'a jamais eu de
+    # `libelle`) : trier sur `formation__libelle` levait un FieldError → 500
+    # sur la liste des modèles de documents.
+    qs = ModeleDocument.objects.select_related('formation').order_by('type', 'formation__intitule')
     return Response({'results': [{
         'id': m.id, 'type': m.type, 'type_display': m.get_type_display(),
         'formation_id': m.formation_id, 'formation': str(m.formation) if m.formation_id else None,
@@ -273,3 +276,90 @@ def verifier_diplome_api(request, token):
     """
     return Response(services.verifier_par_token(token))
 
+
+
+# ---------- Panorama & éligibilité (hub Diplômation — tâche 34) ----------
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrAbove])
+def stats_api(request):
+    """Indicateurs de diplômation (aucun diplôme d'exemple n'est validé)."""
+    from django.db.models import Count
+
+    from scolarite.models import InscriptionAdministrative
+
+    eligibles = InscriptionAdministrative.objects.filter(
+        statut=InscriptionAdministrative.Statut.VALIDEE,
+        niveau__code__in=('L3', 'M2'),
+    ).count()
+    return Response({
+        'diplomes': Diplome.objects.count(),
+        'par_statut': dict(
+            Diplome.objects.values_list('statut')
+            .annotate(n=Count('id')).order_by()
+        ),
+        'reeditions': Reedition.objects.count(),
+        'registres': RegistreDiplomes.objects.count(),
+        'registres_clotures': RegistreDiplomes.objects.filter(cloture=True).count(),
+        'modeles': ModeleDocument.objects.filter(actif=True).count(),
+        'etudiants_fin_cycle': eligibles,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrAbove])
+def eligibles_api(request):
+    """Étudiants en fin de cycle et leur état d'éligibilité factuel.
+
+    Ne décide rien : indique, pour chaque inscription validée de L3/M2, si
+    une décision de jury existe et si un diplôme a été préparé/validé.
+    """
+    from scolarite.models import AnneeAcademique, InscriptionAdministrative
+
+    annee_id = request.GET.get('annee_academique_id')
+    qs = (
+        InscriptionAdministrative.objects.select_related(
+            'etudiant__participant', 'ref_formation', 'niveau',
+        )
+        .filter(
+            statut=InscriptionAdministrative.Statut.VALIDEE,
+            niveau__code__in=('L3', 'M2'),
+        )
+        .order_by('ref_formation__intitule', 'etudiant__participant__nom')
+    )
+    if annee_id:
+        qs = qs.filter(annee_academique_id=annee_id)
+    else:
+        courante = AnneeAcademique.objects.filter(courante=True).first()
+        if courante:
+            qs = qs.filter(annee_academique=courante)
+    diplomes = {
+        (d.etudiant_id, d.ref_formation_id, d.niveau_id): d
+        for d in Diplome.objects.filter(
+            annee_academique_id__in=qs.values('annee_academique_id'),
+        )
+    }
+    results = []
+    for ia in qs:
+        diplome = diplomes.get((ia.etudiant_id, ia.ref_formation_id, ia.niveau_id))
+        decision_ok = bool(diplome and diplome.decision_jury_id)
+        results.append({
+            'id': ia.id,
+            'etudiant_id': ia.etudiant_id,
+            'matricule': ia.etudiant.participant.matricule,
+            'nom_complet': ia.etudiant.nom_complet,
+            'formation': ia.ref_formation.intitule,
+            'niveau': ia.niveau.code,
+            'decision_jury': decision_ok,
+            'diplome_statut': diplome.statut if diplome else None,
+            'diplome_statut_display': (
+                diplome.get_statut_display() if diplome else None
+            ),
+            'etat': (
+                'Diplôme validé' if diplome and diplome.statut == 'VALIDATED'
+                else 'Diplôme préparé' if diplome
+                else 'Décision de jury disponible' if decision_ok
+                else 'En attente du jury'
+            ),
+        })
+    return Response({'results': results})

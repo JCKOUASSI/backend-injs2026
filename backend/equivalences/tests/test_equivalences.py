@@ -202,3 +202,39 @@ class EquivalenceAPITests(EquivalenceBase):
         self.client.force_authenticate(make_user('admin_eq', role='ADMIN'))
         res = self.client.delete(f'/api/equivalences/demandes/{self.demande.pk}/')
         self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+class EquivalenceAdminTests(EquivalenceBase):
+    """Régression : la recherche de l'admin des équivalences renvoyait 500.
+
+    `DemandeEquivalenceDispense` n'a pas de champ `libelle` ; `search_fields`
+    le référençait. La liste s'affichait (le tri n'était pas en cause) mais
+    toute recherche — et donc tout appui sur « Rechercher » — levait un
+    `FieldError` et affichait une erreur 500.
+    """
+
+    def setUp(self):
+        from django.test import Client
+
+        self.client = Client()
+        # L'admin exige is_staff : un simple rôle ADMIN n'y donne pas accès.
+        self.client.force_login(
+            User.objects.create_superuser(
+                username='admin_eq_admin', email='a@e.org', password='x',
+            ),
+        )
+
+    def test_recherche_admin_sans_erreur(self):
+        reponse = self.client.get(
+            '/admin/equivalences/demandeequivalencedispense/', {'q': 'Cocody'},
+        )
+        self.assertEqual(reponse.status_code, 200, reponse.content[:300])
+
+    def test_recherche_admin_par_etablissement(self):
+        DemandeEquivalenceDispense.objects.filter(pk=self.demande.pk).update(
+            etablissement_origine='Universite de Cocody',
+        )
+        reponse = self.client.get(
+            '/admin/equivalences/demandeequivalencedispense/', {'q': 'Cocody'},
+        )
+        self.assertEqual(reponse.status_code, 200, reponse.content[:300])
+        self.assertContains(reponse, 'Cocody')

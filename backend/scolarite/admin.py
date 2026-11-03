@@ -6,6 +6,7 @@ from .models import (
     EvenementScolarite,
     DossierEtudiant,
     ECUE,
+    FamilleModule,
     Groupe,
     InscriptionAdministrative,
     InscriptionPedagogique,
@@ -80,11 +81,22 @@ class ECUEInline(admin.TabularInline):
     extra = 0
 
 
+@admin.register(FamilleModule)
+class FamilleModuleAdmin(admin.ModelAdmin):
+    list_display = ('code', 'libelle', 'ordre', 'actif', 'nb_ue')
+    list_filter = ('actif',)
+    search_fields = ('code', 'libelle')
+
+    @admin.display(description='UE rattachées')
+    def nb_ue(self, obj):
+        return obj.unites_enseignement.count()
+
+
 @admin.register(UE)
 class UEAdmin(admin.ModelAdmin):
-    list_display = ('code', 'intitule', 'maquette', 'semestre', 'credits', 'caractere')
-    list_filter = ('caractere', 'semestre')
-    search_fields = ('code', 'intitule')
+    list_display = ('code', 'intitule', 'maquette', 'semestre', 'credits', 'caractere', 'famille')
+    list_filter = ('caractere', 'semestre', 'famille')
+    search_fields = ('code', 'intitule', 'famille__libelle')
     inlines = [ECUEInline]
 
 

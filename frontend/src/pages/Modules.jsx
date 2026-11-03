@@ -485,7 +485,7 @@ export default function Modules() {
                       <tr key={m.module_id || m.id}>
                         <td><strong style={{ color: '#805ad5' }}>{m.module}</strong></td>
                         <td><span style={{ fontSize: '0.82rem', color: '#64748b' }}>{m.formation}</span></td>
-                        <td><span style={{ fontSize: '0.82rem', background: '#f0f7ff', color: '#11407d', padding: '2px 7px', borderRadius: 4 }}>{m.grade || '—'}</span></td>
+                        <td><span style={{ fontSize: '0.82rem', background: '#f0f7ff', color: '#0B2D5B', padding: '2px 7px', borderRadius: 4 }}>{m.grade || '—'}</span></td>
                         <td>{m.secretariat_nom
                           ? <span className="text-muted" style={{ fontSize: '0.82rem' }}>{m.secretariat_nom}</span>
                           : <span className="text-muted">-</span>}

@@ -1,0 +1,980 @@
+{
+  "site": {
+    "nom": "INJS Marcory",
+    "actif": true,
+    "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+    "fiabilite": "OFFICIEL",
+    "geofence_latitude": "5.308300",
+    "geofence_longitude": "-3.982500",
+    "geofence_rayon_m": 200
+  },
+  "batiments": [
+    {
+      "nom": "Bloc ENSEPS",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+      "fiabilite": "MODELISE",
+      "espaces": [
+        {
+          "nom": "Amphithéâtre ENSEPS A",
+          "type_lieu": "AMPHI",
+          "capacite": null
+        },
+        {
+          "nom": "Amphithéâtre ENSEPS B",
+          "type_lieu": "AMPHI",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de pédagogie sportive",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de biomécanique",
+          "type_lieu": "LABORATOIRE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de physiologie",
+          "type_lieu": "LABORATOIRE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de psychologie du sport",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle d'analyse vidéo",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle informatique STAPS",
+          "type_lieu": "INFORMATIQUE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle multimédia",
+          "type_lieu": "INFORMATIQUE",
+          "capacite": null
+        }
+      ]
+    },
+    {
+      "nom": "Bloc ENSEP",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+      "fiabilite": "MODELISE",
+      "espaces": [
+        {
+          "nom": "Amphithéâtre ENSEP",
+          "type_lieu": "AMPHI",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de sociologie",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de psychologie",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de communication",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle d'animation socioculturelle",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle entrepreneuriat",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle économie sociale",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle informatique ENSEP",
+          "type_lieu": "INFORMATIQUE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle multimédia ENSEP",
+          "type_lieu": "INFORMATIQUE",
+          "capacite": null
+        }
+      ]
+    },
+    {
+      "nom": "Bâtiment LMD",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+      "fiabilite": "MODELISE",
+      "espaces": [
+        {
+          "nom": "Amphi 500 places",
+          "type_lieu": "AMPHI",
+          "capacite": 500
+        },
+        {
+          "nom": "Amphi 300 places",
+          "type_lieu": "AMPHI",
+          "capacite": 300
+        },
+        {
+          "nom": "Salle de cours LMD 01",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 02",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 03",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 04",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 05",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 06",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 07",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 08",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 09",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 10",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 11",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 12",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 13",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 14",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 15",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 16",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 17",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 18",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 19",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de cours LMD 20",
+          "type_lieu": "COURS",
+          "capacite": 40
+        },
+        {
+          "nom": "Salle de TD LMD 01",
+          "type_lieu": "TD",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TD LMD 02",
+          "type_lieu": "TD",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TD LMD 03",
+          "type_lieu": "TD",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TD LMD 04",
+          "type_lieu": "TD",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TD LMD 05",
+          "type_lieu": "TD",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TD LMD 06",
+          "type_lieu": "TD",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TD LMD 07",
+          "type_lieu": "TD",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TD LMD 08",
+          "type_lieu": "TD",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TD LMD 09",
+          "type_lieu": "TD",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TD LMD 10",
+          "type_lieu": "TD",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TP LMD 01",
+          "type_lieu": "TP",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TP LMD 02",
+          "type_lieu": "TP",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TP LMD 03",
+          "type_lieu": "TP",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TP LMD 04",
+          "type_lieu": "TP",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TP LMD 05",
+          "type_lieu": "TP",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TP LMD 06",
+          "type_lieu": "TP",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TP LMD 07",
+          "type_lieu": "TP",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de TP LMD 08",
+          "type_lieu": "TP",
+          "capacite": null
+        },
+        {
+          "nom": "Centre de visioconférence",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Centre e-learning",
+          "type_lieu": "INFORMATIQUE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle Moodle",
+          "type_lieu": "INFORMATIQUE",
+          "capacite": null
+        },
+        {
+          "nom": "Studio audiovisuel",
+          "type_lieu": "SALLE",
+          "capacite": null
+        }
+      ]
+    },
+    {
+      "nom": "CNMS — Centre National de Médecine du Sport",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+      "fiabilite": "MODELISE",
+      "espaces": [
+        {
+          "nom": "Salle Anatomie",
+          "type_lieu": "LABORATOIRE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle Physiologie",
+          "type_lieu": "LABORATOIRE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle Biomécanique",
+          "type_lieu": "LABORATOIRE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle Nutrition",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle Kinésithérapie",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle Massage sportif",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle Rééducation",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle Urgence sportive",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Laboratoire biomédical",
+          "type_lieu": "LABORATOIRE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle ECG",
+          "type_lieu": "LABORATOIRE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle Ergométrie",
+          "type_lieu": "LABORATOIRE",
+          "capacite": null
+        }
+      ]
+    },
+    {
+      "nom": "CNSHN — Centre National du Sport de Haut Niveau",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+      "fiabilite": "MODELISE",
+      "espaces": [
+        {
+          "nom": "Salle préparation physique",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "SALLE_PREPARATION_PHYSIQUE"
+        },
+        {
+          "nom": "Salle musculation",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "SALLE_MUSCULATION"
+        },
+        {
+          "nom": "Salle récupération",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle cryothérapie",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle vidéo",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle analyse tactique",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle préparation mentale",
+          "type_lieu": "SALLE",
+          "capacite": null
+        }
+      ]
+    },
+    {
+      "nom": "Gymnases",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+      "fiabilite": "MODELISE",
+      "espaces": [
+        {
+          "nom": "Gymnase 1",
+          "type_lieu": "GYMNASE",
+          "capacite": null,
+          "type_espace": "GYMNASE"
+        },
+        {
+          "nom": "Gymnase 2",
+          "type_lieu": "GYMNASE",
+          "capacite": null,
+          "type_espace": "GYMNASE"
+        }
+      ]
+    },
+    {
+      "nom": "Installations sportives extérieures",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+      "fiabilite": "MODELISE",
+      "espaces": [
+        {
+          "nom": "Piste 400 m",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "PISTE_ATHLETISME"
+        },
+        {
+          "nom": "Aires de saut",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "AIRE_SAUTS_LANCERS"
+        },
+        {
+          "nom": "Lancers",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "AIRE_SAUTS_LANCERS"
+        },
+        {
+          "nom": "Salle chronométrage",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Terrain principal",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "TERRAIN"
+        },
+        {
+          "nom": "Terrain synthétique",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "TERRAIN"
+        },
+        {
+          "nom": "Terrain d'entraînement",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "TERRAIN"
+        },
+        {
+          "nom": "Basketball extérieur",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "PLATEAU_SPORTIF"
+        },
+        {
+          "nom": "Handball extérieur",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "PLATEAU_SPORTIF"
+        },
+        {
+          "nom": "Volleyball extérieur",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "PLATEAU_SPORTIF"
+        },
+        {
+          "nom": "Courts de tennis",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "COURT_TENNIS"
+        },
+        {
+          "nom": "Piscine olympique",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "PISCINE"
+        },
+        {
+          "nom": "Bassin d'apprentissage",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "BASSIN_APPRENTISSAGE"
+        },
+        {
+          "nom": "Dojo",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "DOJO"
+        },
+        {
+          "nom": "Salle de boxe",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "SALLE_BOXE"
+        },
+        {
+          "nom": "Salle de karaté",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "DOJO"
+        },
+        {
+          "nom": "Salle de taekwondo",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "DOJO"
+        },
+        {
+          "nom": "Salle de judo",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "DOJO"
+        },
+        {
+          "nom": "Salle de musculation principale",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "SALLE_MUSCULATION"
+        },
+        {
+          "nom": "Salle haltérophilie",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "SALLE_HALTEROPHILIE"
+        }
+      ]
+    },
+    {
+      "nom": "Laboratoires pédagogiques",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+      "fiabilite": "MODELISE",
+      "espaces": [
+        {
+          "nom": "Laboratoire Informatique 1",
+          "type_lieu": "INFORMATIQUE",
+          "capacite": null
+        },
+        {
+          "nom": "Laboratoire Informatique 2",
+          "type_lieu": "INFORMATIQUE",
+          "capacite": null
+        },
+        {
+          "nom": "Laboratoire Réseaux",
+          "type_lieu": "LABORATOIRE",
+          "capacite": null
+        },
+        {
+          "nom": "Laboratoire IA",
+          "type_lieu": "LABORATOIRE",
+          "capacite": null
+        },
+        {
+          "nom": "Laboratoire Analyse vidéo",
+          "type_lieu": "LABORATOIRE",
+          "capacite": null
+        },
+        {
+          "nom": "Laboratoire Biomécanique",
+          "type_lieu": "LABORATOIRE",
+          "capacite": null
+        },
+        {
+          "nom": "Laboratoire Physiologie",
+          "type_lieu": "LABORATOIRE",
+          "capacite": null
+        },
+        {
+          "nom": "Laboratoire Psychologie",
+          "type_lieu": "LABORATOIRE",
+          "capacite": null
+        },
+        {
+          "nom": "Laboratoire Statistiques",
+          "type_lieu": "LABORATOIRE",
+          "capacite": null
+        },
+        {
+          "nom": "Laboratoire Recherche scientifique",
+          "type_lieu": "LABORATOIRE",
+          "capacite": null
+        }
+      ]
+    },
+    {
+      "nom": "Espaces numériques",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+      "fiabilite": "MODELISE",
+      "espaces": [
+        {
+          "nom": "Salle informatique A",
+          "type_lieu": "INFORMATIQUE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle informatique B",
+          "type_lieu": "INFORMATIQUE",
+          "capacite": null
+        },
+        {
+          "nom": "Cyber étudiant",
+          "type_lieu": "INFORMATIQUE",
+          "capacite": null
+        },
+        {
+          "nom": "Studio MOOC",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle réalité virtuelle",
+          "type_lieu": "INFORMATIQUE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle intelligence artificielle",
+          "type_lieu": "INFORMATIQUE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle développement mobile",
+          "type_lieu": "INFORMATIQUE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle cybersécurité",
+          "type_lieu": "INFORMATIQUE",
+          "capacite": null
+        }
+      ]
+    },
+    {
+      "nom": "Espaces de recherche",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+      "fiabilite": "MODELISE",
+      "espaces": [
+        {
+          "nom": "Centre de recherche STAPS",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Centre de recherche STASE",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Centre innovation sportive",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle doctorants",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle chercheurs",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle publications",
+          "type_lieu": "SALLE",
+          "capacite": null
+        }
+      ]
+    },
+    {
+      "nom": "Bibliothèque",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+      "fiabilite": "MODELISE",
+      "espaces": [
+        {
+          "nom": "Salle lecture générale",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle lecture numérique",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle mémoire",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle thèses",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle revues",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle audiovisuelle",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Archives",
+          "type_lieu": "SALLE",
+          "capacite": null
+        }
+      ]
+    },
+    {
+      "nom": "Salles spécialisées",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+      "fiabilite": "MODELISE",
+      "espaces": [
+        {
+          "nom": "Salle de langues",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle audiovisuel sportif",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle pédagogie",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle innovation",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle leadership",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle protocoles",
+          "type_lieu": "SALLE",
+          "capacite": null
+        }
+      ]
+    },
+    {
+      "nom": "Espaces administratifs",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+      "fiabilite": "MODELISE",
+      "espaces": [
+        {
+          "nom": "Direction des études",
+          "type_lieu": "REUNION",
+          "capacite": null
+        },
+        {
+          "nom": "Service Scolarité",
+          "type_lieu": "REUNION",
+          "capacite": null
+        },
+        {
+          "nom": "Service Examens",
+          "type_lieu": "REUNION",
+          "capacite": null
+        },
+        {
+          "nom": "Service Emplois du temps",
+          "type_lieu": "REUNION",
+          "capacite": null
+        },
+        {
+          "nom": "Service Stages",
+          "type_lieu": "REUNION",
+          "capacite": null
+        },
+        {
+          "nom": "Service LMD",
+          "type_lieu": "REUNION",
+          "capacite": null
+        },
+        {
+          "nom": "Bureau enseignants",
+          "type_lieu": "REUNION",
+          "capacite": null
+        },
+        {
+          "nom": "Bureau responsables pédagogiques",
+          "type_lieu": "REUNION",
+          "capacite": null
+        }
+      ]
+    },
+    {
+      "nom": "Espaces polyvalents",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+      "fiabilite": "MODELISE",
+      "espaces": [
+        {
+          "nom": "Salle de conférences",
+          "type_lieu": "CONFERENCE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle des soutenances",
+          "type_lieu": "CONFERENCE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle des conseils",
+          "type_lieu": "CONFERENCE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de formation continue",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de séminaires",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle des cérémonies",
+          "type_lieu": "CONFERENCE",
+          "capacite": null
+        }
+      ]
+    },
+    {
+      "nom": "Résidences pédagogiques",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+      "fiabilite": "MODELISE",
+      "espaces": [
+        {
+          "nom": "Dortoir Hommes",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Dortoir Femmes",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle d'étude",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle informatique résidence",
+          "type_lieu": "INFORMATIQUE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle TV",
+          "type_lieu": "SALLE",
+          "capacite": null
+        },
+        {
+          "nom": "Salle de réunion",
+          "type_lieu": "REUNION",
+          "capacite": null
+        }
+      ]
+    },
+    {
+      "nom": "Espaces extérieurs",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+      "fiabilite": "MODELISE",
+      "espaces": [
+        {
+          "nom": "Place d'armes",
+          "type_lieu": "SPORT",
+          "capacite": null
+        },
+        {
+          "nom": "Esplanade",
+          "type_lieu": "SPORT",
+          "capacite": null
+        },
+        {
+          "nom": "Jardin pédagogique",
+          "type_lieu": "SPORT",
+          "capacite": null
+        },
+        {
+          "nom": "Parcours sportif",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "PARCOURS_SPORTIF"
+        },
+        {
+          "nom": "Aire de fitness",
+          "type_lieu": "SPORT",
+          "capacite": null,
+          "type_espace": "PARCOURS_SPORTIF"
+        },
+        {
+          "nom": "Parking enseignants",
+          "type_lieu": "SPORT",
+          "capacite": null
+        },
+        {
+          "nom": "Parking étudiants",
+          "type_lieu": "SPORT",
+          "capacite": null
+        }
+      ]
+    }
+  ]
+}

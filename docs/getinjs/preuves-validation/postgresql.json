@@ -1,0 +1,44 @@
+{
+  "environnement": {
+    "moteur": "PostgreSQL",
+    "version": "16.2",
+    "installation": "roue PyPI pgserver (sans root)",
+    "cluster": "/tmp/pg_injs/data",
+    "port": 55432,
+    "base_validation": "injs_validation",
+    "base_charge": "injs_load",
+    "profil_django": "arena.settings_sandbox",
+    "variables": {
+      "USE_SQLITE": "0",
+      "DJANGO_DEBUG": "0",
+      "STORAGES": "STORAGE_DE_TEST",
+      "POSTGRES_HOST": "127.0.0.1",
+      "POSTGRES_PORT": "55432"
+    }
+  },
+  "schema": {
+    "manage_py_check": "0 problème",
+    "makemigrations_check": "No changes detected",
+    "migrate": "OK, 208 tables"
+  },
+  "groupes": [
+    { "groupe": "scolarite", "applications": ["scolarite"], "tests": 481, "duree_s": 253.0, "resultat": "OK", "ignores": 2 },
+    { "groupe": "formations", "applications": ["formations"], "tests": 272, "duree_s": 82.5, "resultat": "OK", "ignores": 0 },
+    { "groupe": "auth", "applications": ["authentication"], "tests": 242, "duree_s": 250.9, "resultat": "OK", "ignores": 0 },
+    { "groupe": "edt", "applications": ["edts", "presences"], "tests": 581, "duree_s": 170.9, "resultat": "OK", "ignores": 0 },
+    { "groupe": "evaluations", "applications": ["evaluations", "jurys"], "tests": 230, "duree_s": 87.9, "resultat": "OK", "ignores": 0 },
+    { "groupe": "pilotage", "applications": ["statistiques", "config", "dashboard"], "tests": 201, "duree_s": 25.1, "resultat": "1 échec (artefact de harnais, voir analyse)", "ignores": 2 },
+    { "groupe": "socle", "applications": ["core", "admissions", "administrations", "referentiels"], "tests": 188, "duree_s": 132.0, "resultat": "OK", "ignores": 0 },
+    { "groupe": "divers", "applications": ["parametres", "suiviEvaluation", "graduation", "equivalences", "stages", "patrimoine", "ressources_humaines", "finances_etudiantes", "exports"], "tests": 139, "duree_s": 30.0, "resultat": "OK", "ignores": 0 },
+    { "groupe": "habilitations", "applications": ["habilitations"], "tests": 480, "duree_s": 2261.1, "resultat": "OK", "ignores": 1 }
+  ],
+  "total": { "tests": 2814, "reussis": 2813, "echecs": 1, "ignores": 5 },
+  "echec_analyse": {
+    "test": "config.tests.test_apercu_hardening.PreviewAutoLoginTests.test_admin_est_connecte_et_post_ne_bloque_pas_sur_csrf",
+    "cause": "DemoAdminAutoLoginMiddleware n'est inséré dans MIDDLEWARE que si DEBUG est actif au chargement des réglages (backend/config/settings.py l. 199-207). Le harnais démarre en DJANGO_DEBUG=0 ; le test applique @override_settings(DEBUG=True), ce qui ne peut pas réinsérer un middleware absent. Son process_view s'exécute donc après CsrfViewMiddleware et le POST sans jeton reçoit 403.",
+    "preuve": "Même test, même base PostgreSQL, DJANGO_DEBUG=1 et DEMO_ADMIN_AUTOLOGIN=1 : 24 tests OK (1 ignoré).",
+    "imputable_au_moteur": false,
+    "imputable_au_lot": false,
+    "correctif_applique": "aucun (ne pas toucher au CSRF ni au test)"
+  }
+}

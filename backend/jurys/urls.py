@@ -3,6 +3,10 @@ from django.urls import path
 from . import api
 
 urlpatterns = [
+    path('hub/stats/', api.hub_stats_api, name='api-jury-hub-stats'),
+    path('hub/sessions/', api.hub_sessions_api, name='api-jury-hub-sessions'),
+    path('hub/membres/', api.hub_membres_api, name='api-jury-hub-membres'),
+    path('hub/decisions/', api.hub_decisions_api, name='api-jury-hub-decisions'),
     path('sessions/', api.session_list, name='api-jury-sessions'),
     path('sessions/<int:pk>/', api.session_detail, name='api-jury-session-detail'),
     path('sessions/<int:pk>/anomalies/', api.session_anomalies, name='api-jury-session-anomalies'),

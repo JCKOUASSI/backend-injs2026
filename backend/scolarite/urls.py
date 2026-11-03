@@ -5,6 +5,7 @@ from . import (
     cours_lmd_api,
     edt_export,
     groupes_api,
+    journal_api,
     inscription_api,
     passerelle_api,
     pedagogie_api,
@@ -51,9 +52,15 @@ urlpatterns = [
     path('passerelle/lot/',                       passerelle_api.passerelle_lot,     name='scolarite-passerelle-lot'),
 
     path('groupes/effectifs/',                    groupes_api.groupe_effectifs,      name='scolarite-groupe-effectifs'),
+    path('groupes/non-affectes/',                 groupes_api.groupe_non_affectes,   name='scolarite-groupe-non-affectes'),
+    path('groupes/<int:pk>/liste/<str:fmt>/',     groupes_api.groupe_liste_export,   name='scolarite-groupe-liste'),
     path('groupes/repartition/',                  groupes_api.repartition_automatique,
                                                                                      name='scolarite-groupe-repartition'),
     path('reinscriptions/',                       groupes_api.reinscrire,            name='scolarite-reinscription'),
+    path('reinscriptions/stats/',                 groupes_api.reinscriptions_stats,  name='scolarite-reinscriptions-stats'),
+    path('journal/evenements/',                   journal_api.journal_evenements,    name='scolarite-journal-evenements'),
+    path('journal/audit/',                        journal_api.journal_audit,         name='scolarite-journal-audit'),
+    path('journal/stats/',                        journal_api.journal_stats,         name='scolarite-journal-stats'),
     path('etudiants/<int:pk>/evenements/',        groupes_api.etudiant_evenements,   name='scolarite-etudiant-evenements'),
 
     # Contrat de données en lecture seule pour l'application d'emploi du temps.
@@ -67,6 +74,7 @@ urlpatterns = [
     path('edt/affectations/',                     edt_export.affectations,           name='scolarite-edt-affectations'),
     path('edt/espaces/<int:salle_id>/occupation/', edt_export.espaces_occupation,    name='scolarite-edt-espaces-occupation'),
 
+    path('familles/',                            api_views.famille_list,            name='scolarite-famille-list'),
     path('maquettes/',                            api_views.maquette_list,           name='scolarite-maquette-list'),
     path('maquettes/<int:pk>/',                   api_views.maquette_detail,         name='scolarite-maquette-detail'),
     path('maquettes/<int:pk>/semestres/<int:semestre_id>/ecues/',
@@ -75,14 +83,17 @@ urlpatterns = [
     path('maquettes/creer/',                      api_views.maquette_create,         name='scolarite-maquette-create'),
     path('maquettes/<int:pk>/modifier/',          api_views.maquette_update,         name='scolarite-maquette-update'),
     path('maquettes/<int:pk>/valider/',           api_views.maquette_valider,        name='scolarite-maquette-valider'),
+    path('maquettes/valider-toutes/',             api_views.maquette_valider_toutes, name='scolarite-maquette-valider-toutes'),
     path('maquettes/<int:pk>/activer/',           api_views.maquette_activer,        name='scolarite-maquette-activer'),
     path('maquettes/<int:pk>/archiver/',          api_views.maquette_archiver,       name='scolarite-maquette-archiver'),
     path('maquettes/<int:pk>/cloner/',            api_views.maquette_cloner,         name='scolarite-maquette-cloner'),
     path('maquettes/<int:pk>/journal/',           api_views.maquette_journal,        name='scolarite-maquette-journal'),
     path('maquettes/<int:pk>/ues/',               api_views.maquette_ue_create,      name='scolarite-maquette-ue-create'),
     path('ues/<int:pk>/',                         api_views.ue_detail,               name='scolarite-ue-detail'),
+    path('ues/<int:pk>/statut/',                  api_views.ue_statut,               name='scolarite-ue-statut'),
     path('ues/<int:pk>/ecues/',                   api_views.ue_ecue_create,          name='scolarite-ue-ecue-create'),
     path('ecues/<int:pk>/',                       api_views.ecue_detail,             name='scolarite-ecue-detail'),
+    path('ecues/<int:pk>/statut/',                api_views.ecue_statut,             name='scolarite-ecue-statut'),
 
     # Lot B refonte — vue « Cours / Enseignements » LMD (affectations × EDT).
     path('pedagogie/cours/',                      cours_lmd_api.cours_list,          name='scolarite-pedagogie-cours'),

@@ -1,0 +1,532 @@
+{
+ "1. Éducation et Motricité — Licence": [
+  {
+   "intitule": "Anatomie et physiologie",
+   "cm": 20.0,
+   "td": 10.0,
+   "tp": 15.0,
+   "stage": null,
+   "total": 45.0
+  },
+  {
+   "intitule": "Biomécanique",
+   "cm": 15.0,
+   "td": 10.0,
+   "tp": 15.0,
+   "stage": null,
+   "total": 40.0
+  },
+  {
+   "intitule": "Psychologie du développement",
+   "cm": 20.0,
+   "td": 10.0,
+   "tp": null,
+   "stage": null,
+   "total": 30.0
+  },
+  {
+   "intitule": "Psychologie du sport",
+   "cm": 15.0,
+   "td": 10.0,
+   "tp": null,
+   "stage": null,
+   "total": 25.0
+  },
+  {
+   "intitule": "Sociologie du sport",
+   "cm": 15.0,
+   "td": 10.0,
+   "tp": null,
+   "stage": null,
+   "total": 25.0
+  },
+  {
+   "intitule": "Pédagogie générale",
+   "cm": 20.0,
+   "td": 15.0,
+   "tp": null,
+   "stage": null,
+   "total": 35.0
+  },
+  {
+   "intitule": "Didactique de l’EPS",
+   "cm": 20.0,
+   "td": 20.0,
+   "tp": 20.0,
+   "stage": null,
+   "total": 60.0
+  },
+  {
+   "intitule": "Athlétisme",
+   "cm": 10.0,
+   "td": 10.0,
+   "tp": 30.0,
+   "stage": null,
+   "total": 50.0
+  },
+  {
+   "intitule": "Gymnastique",
+   "cm": 10.0,
+   "td": 10.0,
+   "tp": 30.0,
+   "stage": null,
+   "total": 50.0
+  },
+  {
+   "intitule": "Sports collectifs",
+   "cm": 10.0,
+   "td": 15.0,
+   "tp": 35.0,
+   "stage": null,
+   "total": 60.0
+  },
+  {
+   "intitule": "Sports de combat",
+   "cm": 10.0,
+   "td": 10.0,
+   "tp": 30.0,
+   "stage": null,
+   "total": 50.0
+  },
+  {
+   "intitule": "Natation",
+   "cm": 10.0,
+   "td": 10.0,
+   "tp": 30.0,
+   "stage": null,
+   "total": 50.0
+  },
+  {
+   "intitule": "Méthodologie de l’entraînement",
+   "cm": 15.0,
+   "td": 15.0,
+   "tp": 20.0,
+   "stage": null,
+   "total": 50.0
+  },
+  {
+   "intitule": "Évaluation des apprentissages",
+   "cm": 15.0,
+   "td": 15.0,
+   "tp": 10.0,
+   "stage": null,
+   "total": 40.0
+  },
+  {
+   "intitule": "TIC appliquées à l’EPS",
+   "cm": 10.0,
+   "td": 10.0,
+   "tp": 15.0,
+   "stage": null,
+   "total": 35.0
+  },
+  {
+   "intitule": "Stage pédagogique",
+   "cm": null,
+   "td": null,
+   "tp": null,
+   "stage": 100.0,
+   "total": 100.0
+  }
+ ],
+ "2. Éducation et Motricité — Master": [
+  {
+   "intitule": "Sciences avancées de la motricité",
+   "cm": 20.0,
+   "td": 15.0,
+   "tp": 15.0,
+   "stage": null,
+   "total": 50.0
+  },
+  {
+   "intitule": "Physiologie avancée de l’exercice",
+   "cm": 20.0,
+   "td": 10.0,
+   "tp": 20.0,
+   "stage": null,
+   "total": 50.0
+  },
+  {
+   "intitule": "Biomécanique avancée",
+   "cm": 15.0,
+   "td": 10.0,
+   "tp": 20.0,
+   "stage": null,
+   "total": 45.0
+  },
+  {
+   "intitule": "Psychologie de la performance",
+   "cm": 15.0,
+   "td": 15.0,
+   "tp": 10.0,
+   "stage": null,
+   "total": 40.0
+  },
+  {
+   "intitule": "Didactique approfondie de l’EPS",
+   "cm": 20.0,
+   "td": 20.0,
+   "tp": 20.0,
+   "stage": null,
+   "total": 60.0
+  },
+  {
+   "intitule": "Ingénierie de formation",
+   "cm": 15.0,
+   "td": 20.0,
+   "tp": 10.0,
+   "stage": null,
+   "total": 45.0
+  },
+  {
+   "intitule": "Méthodologie de recherche",
+   "cm": 20.0,
+   "td": 20.0,
+   "tp": 10.0,
+   "stage": null,
+   "total": 50.0
+  },
+  {
+   "intitule": "Statistiques appliquées",
+   "cm": 15.0,
+   "td": 20.0,
+   "tp": 15.0,
+   "stage": null,
+   "total": 50.0
+  },
+  {
+   "intitule": "Management des organisations sportives",
+   "cm": 20.0,
+   "td": 15.0,
+   "tp": null,
+   "stage": null,
+   "total": 35.0
+  },
+  {
+   "intitule": "Technologies numériques appliquées au sport",
+   "cm": 10.0,
+   "td": 15.0,
+   "tp": 20.0,
+   "stage": null,
+   "total": 45.0
+  },
+  {
+   "intitule": "Séminaire professionnel",
+   "cm": 10.0,
+   "td": 20.0,
+   "tp": 10.0,
+   "stage": null,
+   "total": 40.0
+  },
+  {
+   "intitule": "Stage / mémoire",
+   "cm": null,
+   "td": null,
+   "tp": null,
+   "stage": 150.0,
+   "total": 150.0
+  }
+ ],
+ "3. Activités Physiques Adaptées — Licence": [
+  {
+   "intitule": "Anatomie fonctionnelle",
+   "cm": 20.0,
+   "td": 10.0,
+   "tp": 15.0,
+   "stage": null,
+   "total": 45.0
+  },
+  {
+   "intitule": "Physiologie de l’exercice",
+   "cm": 20.0,
+   "td": 10.0,
+   "tp": 20.0,
+   "stage": null,
+   "total": 50.0
+  },
+  {
+   "intitule": "Psychologie",
+   "cm": 20.0,
+   "td": 15.0,
+   "tp": null,
+   "stage": null,
+   "total": 35.0
+  },
+  {
+   "intitule": "Handicap et inclusion",
+   "cm": 20.0,
+   "td": 15.0,
+   "tp": 10.0,
+   "stage": null,
+   "total": 45.0
+  },
+  {
+   "intitule": "Pathologies et limitations fonctionnelles",
+   "cm": 25.0,
+   "td": 15.0,
+   "tp": 15.0,
+   "stage": null,
+   "total": 55.0
+  },
+  {
+   "intitule": "Évaluation motrice",
+   "cm": 15.0,
+   "td": 15.0,
+   "tp": 25.0,
+   "stage": null,
+   "total": 55.0
+  },
+  {
+   "intitule": "Rééducation par l’activité physique",
+   "cm": 15.0,
+   "td": 15.0,
+   "tp": 30.0,
+   "stage": null,
+   "total": 60.0
+  },
+  {
+   "intitule": "Sport adapté",
+   "cm": 10.0,
+   "td": 15.0,
+   "tp": 35.0,
+   "stage": null,
+   "total": 60.0
+  },
+  {
+   "intitule": "Psychomotricité",
+   "cm": 15.0,
+   "td": 10.0,
+   "tp": 25.0,
+   "stage": null,
+   "total": 50.0
+  },
+  {
+   "intitule": "Ergonomie",
+   "cm": 15.0,
+   "td": 10.0,
+   "tp": 15.0,
+   "stage": null,
+   "total": 40.0
+  },
+  {
+   "intitule": "Méthodologie de recherche",
+   "cm": 15.0,
+   "td": 15.0,
+   "tp": 10.0,
+   "stage": null,
+   "total": 40.0
+  },
+  {
+   "intitule": "Stage pratique",
+   "cm": null,
+   "td": null,
+   "tp": null,
+   "stage": 120.0,
+   "total": 120.0
+  }
+ ],
+ "4. Activités Physiques Adaptées — Master": [
+  {
+   "intitule": "Physiologie clinique de l’exercice",
+   "cm": 25.0,
+   "td": 15.0,
+   "tp": 20.0,
+   "stage": null,
+   "total": 60.0
+  },
+  {
+   "intitule": "Évaluation fonctionnelle avancée",
+   "cm": 20.0,
+   "td": 15.0,
+   "tp": 25.0,
+   "stage": null,
+   "total": 60.0
+  },
+  {
+   "intitule": "Activité physique et maladies chroniques",
+   "cm": 25.0,
+   "td": 15.0,
+   "tp": 20.0,
+   "stage": null,
+   "total": 60.0
+  },
+  {
+   "intitule": "Réadaptation fonctionnelle",
+   "cm": 20.0,
+   "td": 15.0,
+   "tp": 30.0,
+   "stage": null,
+   "total": 65.0
+  },
+  {
+   "intitule": "Sport et handicap",
+   "cm": 20.0,
+   "td": 15.0,
+   "tp": 25.0,
+   "stage": null,
+   "total": 60.0
+  },
+  {
+   "intitule": "Prescription d’activité physique",
+   "cm": 20.0,
+   "td": 20.0,
+   "tp": 25.0,
+   "stage": null,
+   "total": 65.0
+  },
+  {
+   "intitule": "Méthodologie de recherche",
+   "cm": 20.0,
+   "td": 20.0,
+   "tp": 15.0,
+   "stage": null,
+   "total": 55.0
+  },
+  {
+   "intitule": "Biostatistiques",
+   "cm": 15.0,
+   "td": 20.0,
+   "tp": 15.0,
+   "stage": null,
+   "total": 50.0
+  },
+  {
+   "intitule": "Management des programmes APA",
+   "cm": 20.0,
+   "td": 15.0,
+   "tp": null,
+   "stage": null,
+   "total": 35.0
+  },
+  {
+   "intitule": "Séminaires spécialisés",
+   "cm": 15.0,
+   "td": 20.0,
+   "tp": 15.0,
+   "stage": null,
+   "total": 50.0
+  },
+  {
+   "intitule": "Stage / mémoire",
+   "cm": null,
+   "td": null,
+   "tp": null,
+   "stage": 150.0,
+   "total": 150.0
+  }
+ ],
+ "8. Maître(sse) d’Éducation Physique et Sportive": [
+  {
+   "intitule": "Bases d’anatomie",
+   "cm": 15.0,
+   "td": 10.0,
+   "tp": 10.0,
+   "stage": null,
+   "total": 35.0
+  },
+  {
+   "intitule": "Bases de physiologie",
+   "cm": 15.0,
+   "td": 10.0,
+   "tp": 15.0,
+   "stage": null,
+   "total": 40.0
+  },
+  {
+   "intitule": "Psychologie de l’enfant",
+   "cm": 20.0,
+   "td": 15.0,
+   "tp": null,
+   "stage": null,
+   "total": 35.0
+  },
+  {
+   "intitule": "Pédagogie",
+   "cm": 20.0,
+   "td": 20.0,
+   "tp": 10.0,
+   "stage": null,
+   "total": 50.0
+  },
+  {
+   "intitule": "Initiation à la didactique EPS",
+   "cm": 15.0,
+   "td": 15.0,
+   "tp": 15.0,
+   "stage": null,
+   "total": 45.0
+  },
+  {
+   "intitule": "Athlétisme",
+   "cm": 5.0,
+   "td": 10.0,
+   "tp": 30.0,
+   "stage": null,
+   "total": 45.0
+  },
+  {
+   "intitule": "Gymnastique",
+   "cm": 5.0,
+   "td": 10.0,
+   "tp": 30.0,
+   "stage": null,
+   "total": 45.0
+  },
+  {
+   "intitule": "Sports collectifs",
+   "cm": 5.0,
+   "td": 15.0,
+   "tp": 35.0,
+   "stage": null,
+   "total": 55.0
+  },
+  {
+   "intitule": "Sports de combat",
+   "cm": 5.0,
+   "td": 10.0,
+   "tp": 25.0,
+   "stage": null,
+   "total": 40.0
+  },
+  {
+   "intitule": "Natation",
+   "cm": 5.0,
+   "td": 10.0,
+   "tp": 25.0,
+   "stage": null,
+   "total": 40.0
+  },
+  {
+   "intitule": "Jeux et activités récréatives",
+   "cm": 5.0,
+   "td": 10.0,
+   "tp": 30.0,
+   "stage": null,
+   "total": 45.0
+  },
+  {
+   "intitule": "Sécurité et secourisme",
+   "cm": 10.0,
+   "td": 10.0,
+   "tp": 15.0,
+   "stage": null,
+   "total": 35.0
+  },
+  {
+   "intitule": "Encadrement et animation sportive",
+   "cm": 15.0,
+   "td": 15.0,
+   "tp": 20.0,
+   "stage": null,
+   "total": 50.0
+  },
+  {
+   "intitule": "Stage pratique",
+   "cm": null,
+   "td": null,
+   "tp": null,
+   "stage": 120.0,
+   "total": 120.0
+  }
+ ]
+}

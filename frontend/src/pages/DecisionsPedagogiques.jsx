@@ -8,8 +8,8 @@ const DECISION_LABELS = {
 }
 const DECISION_COLORS = {
   ADMIS:      { background: '#e8eff5', color: '#093f70' },
-  AJOURNE:    { background: '#fff8e0', color: '#e69700' },
-  EXCLUSION:  { background: '#ffebee', color: '#b71c1c' },
+  AJOURNE:    { background: '#fff8e0', color: '#D97706' },
+  EXCLUSION:  { background: '#ffebee', color: '#A3222F' },
   EN_ATTENTE: { background: '#f5f5f5', color: '#616161' },
 }
 const MENTION_LABELS = {
@@ -154,13 +154,13 @@ export default function DecisionsPedagogiques() {
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{d.participant_matricule}</div>
                   </td>
                   <td style={{ padding: '0.65rem 0.5rem', textAlign: 'center' }}>
-                    <strong style={{ color: d.moyenne_generale >= criteres.seuil_admission ? '#125a99' : '#b71c1c' }}>
+                    <strong style={{ color: d.moyenne_generale >= criteres.seuil_admission ? '#104A8E' : '#A3222F' }}>
                       {d.moyenne_generale !== null ? `${d.moyenne_generale}/20` : '—'}
                     </strong>
                   </td>
                   <td style={{ padding: '0.65rem 0.5rem', textAlign: 'center' }}>
                     {d.taux_presence !== null ? (
-                      <span style={{ color: d.taux_presence >= criteres.taux_presence_min ? '#125a99' : '#b71c1c', fontWeight: 600 }}>
+                      <span style={{ color: d.taux_presence >= criteres.taux_presence_min ? '#104A8E' : '#A3222F', fontWeight: 600 }}>
                         {d.taux_presence}%
                       </span>
                     ) : '—'}
@@ -199,7 +199,7 @@ export default function DecisionsPedagogiques() {
                   </td>
                   <td style={{ padding: '0.65rem 0.5rem', textAlign: 'center' }}>
                     {d.validee_le
-                      ? <i className="bi bi-check-circle-fill" style={{ color: '#125a99' }} title={`Validée par ${d.validee_par_nom}`}></i>
+                      ? <i className="bi bi-check-circle-fill" style={{ color: '#104A8E' }} title={`Validée par ${d.validee_par_nom}`}></i>
                       : <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>auto</span>}
                   </td>
                   <td style={{ padding: '0.65rem 0.5rem', textAlign: 'center' }}>

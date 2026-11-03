@@ -21,19 +21,21 @@
 
 /* ── Tableau : largeur minimale + calibrage des colonnes ── */
 .ens-table {
-  min-width: 860px;
+  min-width: 1080px;
 }
 
-.ens-table thead th:nth-child(1) { width: 96px; }    /* Numéro   */
-.ens-table thead th:nth-child(2) { width: 150px; }   /* Nom      */
-.ens-table thead th:nth-child(3) { width: 130px; }   /* Prénom   */
-.ens-table thead th:nth-child(4) { min-width: 165px; } /* Spécialité */
+.ens-table thead th:nth-child(1) { width: 92px; }     /* Numéro        */
+.ens-table thead th:nth-child(2) { width: 230px; }    /* Enseignant    */
+.ens-table thead th:nth-child(3) { width: 205px; }    /* Grade         */
+.ens-table thead th:nth-child(4) { min-width: 170px; } /* Spécialité   */
+.ens-table thead th:nth-child(5) { width: 225px; }    /* Contact       */
+.ens-table thead th:nth-child(6) { width: 245px; }    /* Enseignements */
 .ens-table thead th:last-child { width: 205px; }
 
 /* ── Cellules ── */
 /* Nom en navy 700 (le <strong> du rendu). */
 .table.ens-table tbody td strong {
-  color: #0B1F3A;
+  color: var(--injs-navy);
   font-weight: 700;
   letter-spacing: 0.01em;
 }
@@ -64,13 +66,138 @@
 }
 
 .ens-count.ens-count--on {
-  background: #EFF6FF;
-  border-color: #BFDBFE;
-  color: #2563EB;
+  background: var(--injs-blue-pale);
+  border-color: var(--injs-border-strong);
+  color: var(--injs-blue-royal);
 }
 
 /* Colonnes optionnelles (pièce d'identité, RIB) en petit texte. */
 .table.ens-table tbody td.small {
   font-size: 0.78rem;
   color: #64748B;
+}
+
+/* ==========================================================================
+   PANORAMA PREMIUM (tâche 33) : KPI de couverture, identité, grades et
+   charge réelle (ECUE/heures) — variante « enseignants » uniquement.
+   ========================================================================== */
+.ens-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.ens-kpi {
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+  padding: 1.05rem 1.15rem;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F7FAFD 100%);
+  border: 1px solid #DFEAF4;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(28, 71, 137, 0.05);
+  min-width: 0;
+}
+
+.ens-kpi-icon {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 1.3rem;
+  border-radius: 14px;
+}
+
+.ens-kpi-icon.is-blue { color: #1D4ED8; background: #EAF1FE; }
+.ens-kpi-icon.is-green { color: #0E7A4F; background: #EAF7F0; }
+.ens-kpi-icon.is-amber { color: #B8860B; background: #FFF5DE; }
+.ens-kpi-icon.is-slate { color: #475569; background: #EEF2F7; }
+
+.ens-kpi-texte { display: flex; flex-direction: column; gap: 0.08rem; min-width: 0; }
+
+.ens-kpi-value {
+  font-size: 1.42rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--injs-navy);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ens-kpi-label { font-size: 0.76rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #5B7DA8; }
+.ens-kpi-sub { font-size: 0.72rem; font-weight: 600; color: #8C9AAD; line-height: 1.3; }
+
+/* ── Identité (avatar initiales + nom) ── */
+.ens-identite { display: inline-flex; align-items: center; gap: 0.65rem; min-width: 0; }
+
+.ens-avatar {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, var(--injs-blue-royal), var(--injs-navy));
+  border-radius: 50%;
+}
+
+.ens-identite-texte { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+.ens-nom { font-weight: 800; color: var(--injs-navy); letter-spacing: 0.01em; }
+.ens-prenom { font-weight: 600; color: #334155; }
+.ens-fonction { font-size: 0.72rem; font-weight: 700; color: #B8860B; }
+
+/* ── Grade académique + statut ── */
+.ens-grade {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.ens-grade.is-indigo { color: #4338CA; background: #EEF0FF; border-color: #CFD5FB; }
+.ens-grade.is-blue { color: #1D4ED8; background: #EEF4FF; border-color: #C7D9FB; }
+.ens-grade.is-cyan { color: #0E7490; background: #ECFAFD; border-color: #B6E4EF; }
+.ens-grade.is-green { color: #0E7A4F; background: #F1FBF6; border-color: #B7E7CE; }
+.ens-grade.is-amber { color: #8A5A00; background: #FFF8E8; border-color: #F5DFAE; }
+.ens-grade.is-slate { color: #475569; background: #F1F5F9; border-color: #DCE3EC; }
+
+.ens-statut { display: block; margin-top: 0.28rem; font-size: 0.72rem; font-weight: 600; color: #8C9AAD; }
+
+/* ── Contact empilé ── */
+.ens-contact { display: flex; flex-direction: column; gap: 0.1rem; font-size: 0.8rem; color: #334155; min-width: 0; }
+.ens-contact span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ens-contact-tel { font-size: 0.74rem; color: #8C9AAD; font-variant-numeric: tabular-nums; }
+
+/* ── Charge réelle (ECUE · heures · formations) ── */
+.ens-charge { display: flex; flex-direction: column; gap: 0.12rem; min-width: 0; }
+.ens-charge strong { font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+
+.ens-charge-formations {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 230px;
+}
+
+.ens-charge-vide { font-size: 0.78rem; font-weight: 600; color: #B3C0D1; font-style: italic; }
+
+@media (max-width: 1100px) {
+  .ens-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .ens-kpi-row { grid-template-columns: minmax(0, 1fr); }
 }

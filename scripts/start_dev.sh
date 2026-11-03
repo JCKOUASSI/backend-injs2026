@@ -69,6 +69,34 @@ ENV
     log "Chargement des données de démonstration (une seule fois)…"
     (cd "$BACKEND" && USE_SQLITE=1 "$VENV/bin/python" seed_data.py) && touch "$BACKEND/.seed_ok"
   fi
+  # Référentiels officiels INJS (écoles, mentions, 8 filières, cycles LMD,
+  # modules officiels, lieux, volumes) : import idempotent depuis les JSON
+  # versionnés de backend/referentiels/data/. Sans cette étape, une base
+  # reconstruite après réinitialisation du bac à sable restait vide côté
+  # référentiels (écran « Filières : 0 valeur »). Le marqueur est invalidé
+  # dès qu'un fichier de données change.
+  local marqueur_ref="$BACKEND/.referentiels_ok"
+  if [ ! -f "$marqueur_ref" ] \
+     || [ -n "$(find "$BACKEND/referentiels/data" -name '*.json' -newer "$marqueur_ref" -print -quit 2>/dev/null)" ]; then
+    log "Import des référentiels officiels INJS (idempotent)…"
+    (cd "$BACKEND" && USE_SQLITE=1 "$VENV/bin/python" manage.py importer_referentiels_injs) \
+      && touch "$marqueur_ref"
+  fi
+  # Système LMD : niveaux/semestres puis maquettes/UE/ECUE officielles
+  # (323 UE, 397 ECUE) depuis le jeu de données versionné de scolarite.
+  # Ordre imposé : les cycles (import ci-dessus) et les niveaux doivent
+  # exister avant la configuration des maquettes. Sans cette étape, les
+  # cartes « Système LMD » restaient à 0 sur une base reconstruite.
+  local marqueur_lmd="$BACKEND/.lmd_ok"
+  if [ ! -f "$marqueur_lmd" ] \
+     || [ "$BACKEND/scolarite/data/referentiel_offre_formation.json" -nt "$marqueur_lmd" ] \
+     || [ "$BACKEND/scolarite/data/complement_referentiel_lmd_pdf.json" -nt "$marqueur_lmd" ]; then
+    log "Référentiels LMD et maquettes officielles (idempotent)…"
+    (cd "$BACKEND" && USE_SQLITE=1 "$VENV/bin/python" manage.py init_referentiels_lmd \
+      && USE_SQLITE=1 "$VENV/bin/python" manage.py configurer_referentiel_injs \
+      && USE_SQLITE=1 "$VENV/bin/python" manage.py completer_referentiel_lmd) \
+      && touch "$marqueur_lmd"
+  fi
 }
 
 ensure_frontend() {

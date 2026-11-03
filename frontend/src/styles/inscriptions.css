@@ -1,0 +1,122 @@
+/* ── Inscriptions administratives — habillage premium ────────────────────────
+   Complète candidatures.css (coquille cand-) et admissions.css (avatar,
+   métadonnées, recherche) : badge de module, étapes du parcours étudiant,
+   tableau lisible sans débordement et actions libellées. */
+
+.insc-badge {
+  display: inline-block;
+  margin-bottom: .35rem;
+  padding: .18rem .6rem;
+  border-radius: 999px;
+  background: #e7eefc;
+  color: #1d4fbf;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.insc-etapes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .45rem;
+  margin-top: .6rem;
+}
+
+.insc-etape {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .3rem .65rem;
+  border: 1px solid #dbe4f3;
+  border-radius: 999px;
+  background: #fff;
+  color: #5b6b82;
+  font-size: .78rem;
+  font-weight: 600;
+}
+
+.insc-etape--actuelle {
+  border-color: transparent;
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, .28);
+}
+
+.insc-etape-fleche { color: #93a4bb; font-size: .8rem; }
+
+/* Filtres : la recherche respire, les listes se replient proprement. */
+.insc-filtres { align-items: center; }
+.insc-filtres .adm-recherche { flex: 1 1 240px; }
+
+.insc-btn-reinitialiser {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .5rem .8rem;
+  border: 1px solid #d7e0ef;
+  border-radius: .65rem;
+  background: #fff;
+  color: #44526a;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.insc-btn-reinitialiser:hover { background: #f2f6fc; }
+
+/* Tableau : nom porté par l'avatar, jamais de débordement sur la formation. */
+.insc-table td { vertical-align: middle; }
+
+.insc-etudiant-nom {
+  display: block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: #16233a;
+}
+
+.insc-matricule {
+  display: inline-block;
+  margin-top: .15rem;
+  padding: .08rem .45rem;
+  border-radius: .4rem;
+  background: #eef3fb;
+  color: #1d4fbf;
+  font-size: .74rem;
+  font-weight: 700;
+}
+
+.insc-type { font-weight: 550; color: #2c3a52; }
+.insc-date { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.insc-date .adm-meta { white-space: normal; }
+
+.insc-action {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .42rem .65rem;
+  border: 1px solid #d7e0ef;
+  border-radius: .6rem;
+  background: #fff;
+  color: #33445f;
+  font-size: .8rem;
+  font-weight: 650;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.insc-action:hover:not(:disabled) { background: #f2f6fc; }
+.insc-action:disabled { opacity: .55; cursor: wait; }
+
+.insc-action--succes {
+  border-color: transparent;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: #fff;
+}
+
+.insc-action--succes:hover:not(:disabled) { background: linear-gradient(135deg, #15803d, #166534); }
+.insc-action .spinner-border { width: .85rem; height: .85rem; border-width: .12em; }

@@ -4,6 +4,7 @@ from django.urls import path
 from . import api, organigramme_api as organigramme
 
 urlpatterns = [
+    path('stats/', api.stats_api, name='adm-stats'),
     # Courriers
     path('courriers/', api.courriers_list_api, name='adm-courriers-list'),
     path('courriers/creer/', api.courrier_creer_api, name='adm-courrier-creer'),

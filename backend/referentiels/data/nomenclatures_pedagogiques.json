@@ -1,0 +1,562 @@
+{
+  "_meta": {
+    "objet": "Nomenclatures pédagogiques du module Référentiels : types d'évaluation, types de décision de jury, types d'espace sportif, grades enseignants.",
+    "regle": "Aucune valeur n'est inventée : chaque bloc reproduit la nomenclature de sa source et porte son degré de fiabilité. Le fichier « NOMENCLATURES MÉTIER ET ACADÉMIQUES.pdf » annoncé par le commanditaire n'a pas été reçu dans l'espace de travail : les sources retenues sont les documents et le code de l'application elle-même (voir chaque bloc).",
+    "arbitrages": [
+      "Types de décision : nomenclature restreinte aux décisions de jury de délibération (module Jurys) ; les décisions d'admission au concours (module Admissions) relèvent d'un autre processus et ne sont pas reprises ici.",
+      "Types d'espace sportif : seuls les espaces à vocation sportive de l'inventaire sont retenus ; les types génériques de salles de l'ancien seed de démonstration (amphithéâtre, salle de TD, salle informatique, salle de réunion) restent couverts par les types de lieu des salles et ne sont pas dupliqués. Aucune salle existante n'est reclassée automatiquement.",
+      "Grades enseignants : seuls les grades (plan 1 du PDF « GRADES ET STATUTS DES ENSEIGNANTS-INJS ») entrent dans ce référentiel — les statuts d'exercice, fonctions de direction, habilitations, rôles applicatifs et permissions du même document relèvent d'autres plans et sont restitués dans le classeur généré, jamais mélangés aux grades. Les lignes composites du PDF sont éclatées en grades atomiques (assistant/maître de conférences associé ; chargé/maître/directeur de recherche ; PC-EP/PC-EP-ENT ; conseillers, inspecteurs, professorats et agrégations EPS/EP ; médecin/cadre paramédical) : 12 grades CAMES + 16 corps = 28 lignes pour les 9 + 11 lignes de tableaux du PDF. La ligne « Cadres administratifs et de direction » du §3 est exclue (corps administratifs, non enseignants).",
+      "Types d'espace sportif complétés par le PDF « Organisation pédagogique » §8 : quatre types sportifs absents de l'inventaire sont ajoutés en fiabilité CADRAGE avec source propre (salle d'expression corporelle, salle d'APA, stade, terrain de sable). Ses types pédagogiques, de support et externe (amphithéâtre, salle de cours, vestiaires, site externe…) restent couverts par les 11 types de lieu des salles et ne sont pas dupliqués ; ses terrains par discipline (football/handball/basket/volley) restent regroupés sous Terrain de sport collectif et Plateau sportif extérieur, conformes à l'inventaire nominatif."
+    ]
+  },
+  "types_evaluation": {
+    "source_document": "Refonte du Module Évaluations — nomenclature des types d'évaluation",
+    "fiabilite": "CADRAGE",
+    "valeurs": [
+      {
+        "code": "INTERROGATION",
+        "libelle": "Interrogation",
+        "description": "Courte épreuve écrite ou orale, souvent inopinée, vérifiant l'acquisition ponctuelle d'une notion au fil du semestre."
+      },
+      {
+        "code": "DEVOIR_SURVEILLE",
+        "libelle": "Devoir surveillé",
+        "description": "Épreuve écrite réalisée en classe, en temps limité et sous surveillance, sur une partie du programme de l'ECUE."
+      },
+      {
+        "code": "DEVOIR_MAISON",
+        "libelle": "Devoir maison",
+        "description": "Travail écrit réalisé hors classe et remis à échéance (dissertation, synthèse, résolution de problèmes)."
+      },
+      {
+        "code": "CC",
+        "libelle": "Contrôle continu",
+        "description": "Évaluation progressive tout au long du semestre (interrogations, devoirs, participation) ; composant « CC » du moteur de calcul des notes, pondéré avec l'examen selon le paramétrage de l'ECUE."
+      },
+      {
+        "code": "TD",
+        "libelle": "Évaluation de travaux dirigés",
+        "description": "Note sanctionnant les travaux dirigés : exercices encadrés, applications et études de cas réalisées en groupe restreint."
+      },
+      {
+        "code": "TP",
+        "libelle": "Évaluation de travaux pratiques",
+        "description": "Note sanctionnant les travaux pratiques encadrés (laboratoire, atelier, plateau sportif), hors épreuve pratique terminale."
+      },
+      {
+        "code": "COMPTE_RENDU_TP",
+        "libelle": "Compte rendu de TP",
+        "description": "Rapport écrit restituant une séance de travaux pratiques : protocole, observations, résultats et interprétation."
+      },
+      {
+        "code": "EXPOSE",
+        "libelle": "Exposé",
+        "description": "Présentation orale, individuelle ou en groupe, d'un thème de l'ECUE, évaluée sur le fond et la qualité de la restitution."
+      },
+      {
+        "code": "PROJET",
+        "libelle": "Projet",
+        "description": "Travail de conception ou de réalisation mené sur plusieurs semaines (projet pédagogique, sportif, d'animation ou de recherche appliquée)."
+      },
+      {
+        "code": "ETUDE_DE_CAS",
+        "libelle": "Étude de cas",
+        "description": "Analyse argumentée d'une situation réelle ou simulée (entraînement, enseignement, management sportif) mobilisant les acquis de l'ECUE."
+      },
+      {
+        "code": "ORAL",
+        "libelle": "Oral",
+        "description": "Épreuve orale devant un enseignant ou un jury, avec ou sans temps de préparation."
+      },
+      {
+        "code": "PRATIQUE",
+        "libelle": "Évaluation pratique (continue)",
+        "description": "Évaluation des habiletés et performances physiques et sportives observées en situation de pratique pendant le semestre (technique, tactique, sécurité)."
+      },
+      {
+        "code": "EXAMEN_TERMINAL",
+        "libelle": "Examen terminal",
+        "description": "Épreuve de fin de semestre organisée en session normale d'examens ; composant d'examen du moteur de calcul des notes, pondéré avec le contrôle continu selon le paramétrage de l'ECUE."
+      },
+      {
+        "code": "EXAMEN_ECRIT",
+        "libelle": "Examen écrit",
+        "description": "Examen terminal sous forme écrite et anonyme, en salle d'examen et en temps limité."
+      },
+      {
+        "code": "EXAMEN_PRATIQUE",
+        "libelle": "Examen pratique",
+        "description": "Examen terminal sous forme de performance ou de démonstration physique et sportive évaluée sur grille (barème de performance, correction technique, sécurité)."
+      },
+      {
+        "code": "SOUTENANCE",
+        "libelle": "Soutenance",
+        "description": "Défense orale devant jury d'un mémoire, d'un rapport de stage ou d'un projet de fin de cycle."
+      },
+      {
+        "code": "STAGE",
+        "libelle": "Évaluation de stage",
+        "description": "Évaluation de la période de stage : appréciation du maître de stage, visites d'encadrement et rapport de stage, selon la maquette."
+      },
+      {
+        "code": "MEMOIRE",
+        "libelle": "Mémoire",
+        "description": "Document de recherche ou d'étude professionnelle rédigé en fin de cycle (notamment Master) et évalué avant soutenance."
+      },
+      {
+        "code": "RATTRAPAGE",
+        "libelle": "Rattrapage",
+        "description": "Épreuve de seconde session réservée aux UE/ECUE non validées en session normale ; la règle de substitution ou de conservation de la note est paramétrée dans le moteur de calcul."
+      },
+      {
+        "code": "AUTRE",
+        "libelle": "Autre évaluation",
+        "description": "Modalité d'évaluation particulière définie librement par l'équipe pédagogique pour une ECUE (à préciser dans le paramétrage de l'évaluation)."
+      }
+    ]
+  },
+  "types_decision": {
+    "source_document": "Jurys de délibération INJS — décisions officielles (module Jurys)",
+    "fiabilite": "OFFICIEL",
+    "valeurs": [
+      {
+        "code": "ADMIS",
+        "libelle": "Admis",
+        "description": "Le jury prononce l'admission : le semestre (ou le niveau) est validé, les crédits ECTS acquis sont capitalisés et l'étudiant poursuit son parcours au semestre suivant."
+      },
+      {
+        "code": "ADMIS_RESERVES",
+        "libelle": "Admis avec réserves",
+        "description": "Admission prononcée par le jury avec une ou plusieurs réserves inscrites au procès-verbal de délibération, à régulariser selon les modalités fixées par le jury."
+      },
+      {
+        "code": "AJOURNE",
+        "libelle": "Ajourné",
+        "description": "Le jury prononce l'ajournement : le semestre n'est pas validé. Conformément au système LMD, les crédits des UE acquises restent capitalisés et seules les UE/ECUE non validées sont reprises."
+      },
+      {
+        "code": "EXCLUSION",
+        "libelle": "Exclusion",
+        "description": "Décision officielle INJS produite lorsque la moyenne d'une UE passe sous le seuil éliminatoire paramétré dans les règles de validation LMD ; elle n'est jamais convertie en simple ajournement."
+      }
+    ]
+  },
+  "types_espace_sportif": {
+    "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
+    "fiabilite": "MODELISE",
+    "valeurs": [
+      {
+        "code": "GYMNASE",
+        "libelle": "Gymnase",
+        "description": "Plateau sportif couvert omnisports (gymnases 1 et 2 de l'inventaire) accueillant les sports collectifs en salle, la gymnastique et les évaluations pratiques couvertes."
+      },
+      {
+        "code": "PISCINE",
+        "libelle": "Piscine",
+        "description": "Bassin de natation sportif (piscine olympique de l'inventaire) pour l'enseignement de la natation, du sauvetage et des activités aquatiques."
+      },
+      {
+        "code": "BASSIN_APPRENTISSAGE",
+        "libelle": "Bassin d'apprentissage",
+        "description": "Petit bassin peu profond dédié à l'apprentissage de la natation et à l'aisance aquatique des débutants."
+      },
+      {
+        "code": "TERRAIN",
+        "libelle": "Terrain de sport collectif",
+        "description": "Terrain extérieur de grand jeu (terrain principal, terrain synthétique et terrain d'entraînement de l'inventaire) : football, rugby et grands jeux collectifs."
+      },
+      {
+        "code": "PLATEAU_SPORTIF",
+        "libelle": "Plateau sportif extérieur",
+        "description": "Plateau extérieur aménagé pour les sports collectifs de petit terrain (basketball, handball et volleyball extérieurs de l'inventaire)."
+      },
+      {
+        "code": "COURT_TENNIS",
+        "libelle": "Court de tennis",
+        "description": "Court de tennis extérieur pour l'enseignement et la pratique des sports de raquette."
+      },
+      {
+        "code": "PISTE_ATHLETISME",
+        "libelle": "Piste d'athlétisme",
+        "description": "Piste d'athlétisme de 400 m pour les courses, les tests de performance et l'enseignement de l'athlétisme."
+      },
+      {
+        "code": "AIRE_SAUTS_LANCERS",
+        "libelle": "Aire de sauts et lancers",
+        "description": "Aires spécialisées d'athlétisme (sauts et lancers de l'inventaire) : fosses de réception, aires de lancer du poids, du javelot et du disque."
+      },
+      {
+        "code": "DOJO",
+        "libelle": "Dojo / salle d'arts martiaux",
+        "description": "Salle à tatamis pour les arts martiaux et sports de combat au sol (dojo, salles de judo, de karaté et de taekwondo de l'inventaire)."
+      },
+      {
+        "code": "SALLE_BOXE",
+        "libelle": "Salle de boxe",
+        "description": "Salle équipée pour la boxe et les sports de percussion (ring, sacs de frappe)."
+      },
+      {
+        "code": "SALLE_MUSCULATION",
+        "libelle": "Salle de musculation",
+        "description": "Salle de musculation et de renforcement musculaire (salle de musculation principale et salle du CNSHN de l'inventaire)."
+      },
+      {
+        "code": "SALLE_HALTEROPHILIE",
+        "libelle": "Salle d'haltérophilie",
+        "description": "Salle dédiée à l'haltérophilie et à la force athlétique (plateaux de lever, barres et disques)."
+      },
+      {
+        "code": "SALLE_PREPARATION_PHYSIQUE",
+        "libelle": "Salle de préparation physique",
+        "description": "Salle de préparation physique générale et spécifique, notamment celle du Centre National du Sport de Haut Niveau (CNSHN) de l'inventaire."
+      },
+      {
+        "code": "PARCOURS_SPORTIF",
+        "libelle": "Parcours sportif extérieur",
+        "description": "Parcours sportif et aire de fitness en plein air (agrès extérieurs, parcours de santé) pour le renforcement et l'entretien physique."
+      },
+      {
+        "code": "SALLE_EXPRESSION",
+        "libelle": "Salle d'expression corporelle / de danse",
+        "description": "Salle au sol souple (parquet ou praticable, miroirs, barres, sonorisation) pour la gymnastique douce, l'expression corporelle, la danse, la relaxation et l'animation socio-éducative STASE. Code « DANSE » du document source ; chaussons ou pieds nus.",
+        "source_document": "Organisation pédagogique (PDF) — §8",
+        "fiabilite": "CADRAGE"
+      },
+      {
+        "code": "SALLE_APA",
+        "libelle": "Salle d'APA / de rééducation fonctionnelle",
+        "description": "Salle spécialisée des activités physiques adaptées et de la rééducation fonctionnelle (barres parallèles, espaliers, matériel adapté, accès PMR) pour les populations spéciales : handicap, seniors, maladies chroniques. Encadrement spécialisé et protocole individualisé.",
+        "source_document": "Organisation pédagogique (PDF) — §8",
+        "fiabilite": "CADRAGE"
+      },
+      {
+        "code": "STADE",
+        "libelle": "Stade / complexe sportif",
+        "description": "Complexe extérieur de grande capacité (terrain, piste, tribunes, vestiaires, infirmerie, éclairage) pour les compétitions, les évaluations de masse et les cérémonies sportives. Réservation institutionnelle et jauge de sécurité.",
+        "source_document": "Organisation pédagogique (PDF) — §8",
+        "fiabilite": "CADRAGE"
+      },
+      {
+        "code": "TERRAIN_SABLE",
+        "libelle": "Terrain de sable / beach-volley",
+        "description": "Terrain de sable pour le beach-volley, le beach-handball, la préparation physique et les activités de loisir. Entretien et drainage du sable à planifier.",
+        "source_document": "Organisation pédagogique (PDF) — §8",
+        "fiabilite": "CADRAGE"
+      }
+    ]
+  },
+  "grades_enseignant": {
+    "source_document": "GRADES ET STATUTS DES ENSEIGNANTS-INJS (PDF, 1er nov. 2026) — §2 et §3",
+    "fiabilite": "OFFICIEL",
+    "valeurs": [
+      {
+        "code": "ASSISTANT",
+        "libelle": "Assistant",
+        "famille": "Grades universitaires (CAMES)",
+        "categorie": "Aucun cauri",
+        "voie_acces": "Recrutement direct sur titre de docteur",
+        "lieu_exercice": "DER/STAPS et DER/STASE ; appui aux UE scientifiques (SVS, biomécanique, physiologie)",
+        "enseignements": "TD, TP, encadrement de groupes sous la responsabilité d'un enseignant confirmé",
+        "roles_applicatifs": "FORMATEUR",
+        "description": "Premier grade de la carrière d'enseignant-chercheur CAMES, recruté sur titre de docteur. À l'INJS, il appuie les UE scientifiques des DER STAPS et STASE (TD, TP, encadrement de groupes) sous la responsabilité d'un enseignant confirmé ; le cours magistral ne lui est ouvert que sur dérogation encadrée."
+      },
+      {
+        "code": "MAITRE_ASSISTANT",
+        "libelle": "Maître-Assistant",
+        "famille": "Grades universitaires (CAMES)",
+        "categorie": "1 cauri",
+        "voie_acces": "Liste d'aptitude LAFMA (CAMES)",
+        "lieu_exercice": "Cœur de l'enseignement académique de l'INJS : SVS, SHS, didactique, entraînement, management",
+        "enseignements": "CM, TD, TP, conception des supports, direction de mémoires de Master",
+        "roles_applicatifs": "FORMATEUR · ENCADRANT · SUPERVISEUR (si fonction de coordination)",
+        "description": "Grade CAMES obtenu par inscription sur la liste d'aptitude LAFMA. Il constitue le cœur de l'enseignement académique de l'INJS (sciences de la vie et de la santé, sciences humaines et sociales, didactique, entraînement, management) : cours magistraux, conception des supports et direction de mémoires de Master."
+      },
+      {
+        "code": "MAITRE_CONFERENCES",
+        "libelle": "Maître de Conférences",
+        "famille": "Grades universitaires (CAMES)",
+        "categorie": "2 cauris — rang magistral",
+        "voie_acces": "Liste d'aptitude LAFMC — 3 ans révolus après la LAFMA",
+        "lieu_exercice": "Responsabilités d'UE majeures, séminaires de recherche et formation doctorale",
+        "enseignements": "CM, direction de mémoires et de thèses, présidence de jury de Master",
+        "roles_applicatifs": "FORMATEUR · ENCADRANT · SUPERVISEUR · DIRECTION (si nommé à une fonction de direction)",
+        "description": "Premier grade du rang magistral CAMES, obtenu sur la liste d'aptitude LAFMC après trois ans révolus comme maître-assistant. Il porte les UE majeures, les séminaires de recherche et la formation doctorale, dirige mémoires et thèses et préside les jurys de Master. Le titre de « Professeur » ne lui est pas ouvert (note CAMES du 3 mai 2014)."
+      },
+      {
+        "code": "MAITRE_CONFERENCES_AGREGE",
+        "libelle": "Maître de Conférences Agrégé",
+        "famille": "Grades universitaires (CAMES)",
+        "categorie": "2 cauris — rang magistral",
+        "voie_acces": "Concours d'agrégation (sciences juridiques, médecine, pharmacie)",
+        "lieu_exercice": "Interventions spécialisées : droit du sport, santé du sportif",
+        "enseignements": "CM, direction de travaux",
+        "roles_applicatifs": "FORMATEUR · ENCADRANT",
+        "description": "Grade du rang magistral obtenu par le concours d'agrégation du CAMES (sciences juridiques, médecine, pharmacie). À l'INJS, ses titulaires interviennent sur les enseignements spécialisés tels que le droit du sport et la santé du sportif (cours magistraux, direction de travaux)."
+      },
+      {
+        "code": "PROFESSEUR_TITULAIRE",
+        "libelle": "Professeur Titulaire",
+        "famille": "Grades universitaires (CAMES)",
+        "categorie": "3 cauris — rang magistral",
+        "voie_acces": "Liste d'aptitude LAFPT — 3 ans révolus comme maître de conférences",
+        "lieu_exercice": "Direction des DER, présidence des jurys de doctorat, autorité scientifique de l'établissement",
+        "enseignements": "CM, direction de thèses jusqu'à soutenance, présidence de jurys",
+        "roles_applicatifs": "FORMATEUR · ENCADRANT · SUPERVISEUR · DIRECTION (de droit si directeur d'école)",
+        "description": "Grade le plus élevé de la carrière CAMES, obtenu sur la liste d'aptitude LAFPT après trois ans révolus comme maître de conférences. Seul titulaire du titre de « Professeur » (note CAMES du 3 mai 2014), il exerce l'autorité scientifique de l'établissement : direction de DER, direction de thèses jusqu'à soutenance et présidence des jurys, dont ceux de doctorat."
+      },
+      {
+        "code": "PROFESSEUR_EMERITE",
+        "libelle": "Professeur Émérite",
+        "famille": "Grades universitaires (CAMES)",
+        "categorie": "Dignité conférée après cessation d'activité",
+        "voie_acces": "Dignité conférée après cessation d'activité",
+        "lieu_exercice": "Interventions ponctuelles : conférences, soutenances, séminaires",
+        "enseignements": "Interventions ponctuelles uniquement",
+        "roles_applicatifs": "FORMATEUR (temporaire, sur invitation)",
+        "description": "Dignité conférée à un professeur après cessation d'activité. À l'INJS, le professeur émérite intervient ponctuellement, sur invitation : conférences, séminaires et participation aux soutenances."
+      },
+      {
+        "code": "PROFESSEUR_ASSOCIE",
+        "libelle": "Professeur Associé",
+        "famille": "Grades universitaires (CAMES)",
+        "categorie": "Qualité contractuelle (personnalité qualifiée)",
+        "voie_acces": "Contrat d'enseignement associé",
+        "lieu_exercice": "Modules professionnels : management du sport, événementiel, droit du sport",
+        "enseignements": "CM ou séminaires ciblés",
+        "roles_applicatifs": "FORMATEUR",
+        "description": "Personnalité qualifiée associée à l'enseignement par contrat, au niveau professoral. À l'INJS, il intervient sur les modules professionnels (management du sport, événementiel, droit du sport) en cours magistraux ou séminaires ciblés, sans que cette qualité vaille inscription sur une liste d'aptitude CAMES."
+      },
+      {
+        "code": "ASSISTANT_ASSOCIE",
+        "libelle": "Assistant Associé",
+        "famille": "Grades universitaires (CAMES)",
+        "categorie": "Qualité contractuelle",
+        "voie_acces": "Contrat d'enseignement associé",
+        "lieu_exercice": "Appui sur des modules spécialisés et des études de cas",
+        "enseignements": "TD, TP, modules ciblés",
+        "roles_applicatifs": "FORMATEUR",
+        "description": "Personnalité associée à l'enseignement par contrat, au niveau assistant. Il appuie les modules spécialisés et les études de cas (TD, TP) sans détenir le grade statutaire d'assistant CAMES."
+      },
+      {
+        "code": "MAITRE_CONFERENCES_ASSOCIE",
+        "libelle": "Maître de Conférences Associé",
+        "famille": "Grades universitaires (CAMES)",
+        "categorie": "Qualité contractuelle",
+        "voie_acces": "Contrat d'enseignement associé",
+        "lieu_exercice": "Appui sur des modules spécialisés et des études de cas",
+        "enseignements": "CM ciblés, TD, TP, modules spécialisés",
+        "roles_applicatifs": "FORMATEUR",
+        "description": "Personnalité qualifiée associée à l'enseignement par contrat, au niveau maître de conférences. Elle assure des enseignements ciblés et des études de cas, sans inscription sur la liste d'aptitude LAFMC ni prérogatives de plein droit du rang magistral (direction de thèse, présidence de jury)."
+      },
+      {
+        "code": "CHARGE_RECHERCHE",
+        "libelle": "Chargé de Recherche",
+        "famille": "Grades universitaires (CAMES)",
+        "categorie": "Carrière de chercheur",
+        "voie_acces": "Liste d'aptitude LAFCR (CAMES)",
+        "lieu_exercice": "DFRC ; formation à la recherche",
+        "enseignements": "Séminaires de recherche, encadrement doctoral",
+        "roles_applicatifs": "FORMATEUR · ENCADRANT",
+        "description": "Premier grade de la carrière de chercheur CAMES, obtenu sur la liste d'aptitude LAFCR. À l'INJS, il est rattaché à la Direction de la Formation Continue et de la Recherche (DFRC) pour la formation à la recherche et l'encadrement doctoral."
+      },
+      {
+        "code": "MAITRE_RECHERCHE",
+        "libelle": "Maître de Recherche",
+        "famille": "Grades universitaires (CAMES)",
+        "categorie": "Carrière de chercheur",
+        "voie_acces": "Liste d'aptitude LAFMR (CAMES)",
+        "lieu_exercice": "DFRC ; formation à la recherche (séminaires, méthodologie)",
+        "enseignements": "Séminaires de recherche, encadrement doctoral",
+        "roles_applicatifs": "FORMATEUR · ENCADRANT",
+        "description": "Grade intermédiaire de la carrière de chercheur CAMES, obtenu sur la liste d'aptitude LAFMR. À l'INJS, il anime à la DFRC les séminaires de recherche et la formation méthodologique des doctorants."
+      },
+      {
+        "code": "DIRECTEUR_RECHERCHE",
+        "libelle": "Directeur de Recherche",
+        "famille": "Grades universitaires (CAMES)",
+        "categorie": "Carrière de chercheur",
+        "voie_acces": "Liste d'aptitude LAFDR (CAMES)",
+        "lieu_exercice": "Direction de la recherche à la DFRC ; formation à la recherche (MRS, séminaires)",
+        "enseignements": "Séminaires de recherche, encadrement doctoral",
+        "roles_applicatifs": "FORMATEUR · ENCADRANT",
+        "description": "Grade le plus élevé de la carrière de chercheur CAMES, obtenu sur la liste d'aptitude LAFDR. À l'INJS, il dirige la recherche à la DFRC et la formation à la recherche (méthodologie, séminaires doctoraux)."
+      },
+      {
+        "code": "MAITRE_EPS",
+        "libelle": "Maître d'Éducation Physique et Sportive",
+        "famille": "Corps de la fonction publique",
+        "categorie": "B3",
+        "voie_acces": "Concours / formation qualifiante ; accessible au BAC et aux instituteurs",
+        "lieu_exercice": "ENSEPS / ENSEP",
+        "enseignements": "Animation des séances d'EPS, appui aux professeurs ; TP de pratique sportive",
+        "roles_applicatifs": "FORMATEUR (pratique sportive)",
+        "description": "Corps de catégorie B3 de la fonction publique, formé à l'INJS par concours ou formation qualifiante (accessible au BAC et aux instituteurs). Le maître d'EPS anime les séances d'éducation physique et sportive et appuie les professeurs ; à l'INJS, il peut assurer des TP de pratique sportive."
+      },
+      {
+        "code": "PC_EPS",
+        "libelle": "Professeur de Collège option EPS (PC-EPS)",
+        "famille": "Corps de la fonction publique",
+        "categorie": "A3",
+        "voie_acces": "Concours direct PC-EPS (3 ans à l'INJS) ou concours professionnel",
+        "lieu_exercice": "ENSEPS",
+        "enseignements": "Enseignement de l'EPS au collège ; TP de pratique sportive et didactique à l'INJS",
+        "roles_applicatifs": "FORMATEUR",
+        "description": "Corps de catégorie A3 formé à l'ENSEPS par le concours direct PC-EPS (3 ans) ou par concours professionnel. Il enseigne l'EPS au collège et intervient à l'INJS en TP de pratique sportive et en didactique."
+      },
+      {
+        "code": "PC_EP",
+        "libelle": "Professeur de Collège option Éducation Permanente (PC-EP)",
+        "famille": "Corps de la fonction publique",
+        "categorie": "A3",
+        "voie_acces": "Concours direct PC-EP (3 ans à l'INJS)",
+        "lieu_exercice": "ENSEP",
+        "enseignements": "Éducation permanente et animation au collège ; interventions en animation à l'INJS",
+        "roles_applicatifs": "FORMATEUR",
+        "description": "Corps de catégorie A3 formé à l'ENSEP par le concours direct PC-EP (3 ans). Il exerce en éducation permanente et en animation auprès des jeunes, au collège et dans les structures de jeunesse."
+      },
+      {
+        "code": "PC_EP_ENT",
+        "libelle": "Professeur de Collège option Éducation Permanente — Entrepreneuriat (PC-EP-ENT)",
+        "famille": "Corps de la fonction publique",
+        "categorie": "A3",
+        "voie_acces": "Concours direct PC-EP-ENT (3 ans à l'INJS)",
+        "lieu_exercice": "ENSEP",
+        "enseignements": "Éducation permanente et entrepreneuriat des jeunes",
+        "roles_applicatifs": "FORMATEUR",
+        "description": "Variante entrepreneuriat du corps des professeurs de collège d'éducation permanente (A3), formée à l'ENSEP par le concours direct PC-EP-ENT (3 ans) : éducation permanente, animation et accompagnement à l'entrepreneuriat des jeunes."
+      },
+      {
+        "code": "PL_EPS",
+        "libelle": "Professeur de Lycée option EPS (PL-EPS)",
+        "famille": "Corps de la fonction publique",
+        "categorie": "A4",
+        "voie_acces": "Concours direct PL-EPS (5 ans à l'INJS) ou concours professionnel",
+        "lieu_exercice": "ENSEPS",
+        "enseignements": "Enseignement de l'EPS au lycée ; encadrement de stagiaires INJS",
+        "roles_applicatifs": "FORMATEUR · ENCADRANT (stage)",
+        "description": "Corps de catégorie A4 formé à l'ENSEPS par le concours direct PL-EPS (5 ans) ou par concours professionnel. Il enseigne l'EPS au lycée et encadre les stagiaires de l'INJS en stage d'enseignement. Son grade A4, grade de corps du secondaire, ne vaut pas grade universitaire CAMES."
+      },
+      {
+        "code": "PL_EP",
+        "libelle": "Professeur de Lycée option Éducation Permanente (PL-EP)",
+        "famille": "Corps de la fonction publique",
+        "categorie": "A4",
+        "voie_acces": "Concours direct PL-EP (5 ans à l'INJS)",
+        "lieu_exercice": "ENSEP",
+        "enseignements": "Éducation permanente au lycée ; conception de programmes d'animation",
+        "roles_applicatifs": "FORMATEUR · ENCADRANT (stage)",
+        "description": "Corps de catégorie A4 formé à l'ENSEP par le concours direct PL-EP (5 ans). Il assure l'éducation permanente au lycée et la conception de programmes d'animation et d'insertion des jeunes."
+      },
+      {
+        "code": "CONSEILLER_EPS",
+        "libelle": "Conseiller d'Éducation Physique et Sportive (CAMEPS)",
+        "famille": "Corps de la fonction publique",
+        "categorie": "A4 / hors catégorie",
+        "voie_acces": "Concours professionnel CP 136 (Conseiller d'EPS) + 3 ans d'expérience",
+        "lieu_exercice": "ENSEPS",
+        "enseignements": "Expertise et animation pédagogiques, formation continue des enseignants d'EPS",
+        "roles_applicatifs": "FORMATEUR · SUPERVISEUR",
+        "description": "Corps d'expertise (A4 / hors catégorie) accessible par le concours professionnel CP 136 après 3 ans d'expérience. Le conseiller d'EPS assure l'expertise et l'animation pédagogiques ainsi que la formation continue des enseignants d'EPS."
+      },
+      {
+        "code": "CONSEILLER_EP",
+        "libelle": "Conseiller d'Éducation Permanente (CAMEP)",
+        "famille": "Corps de la fonction publique",
+        "categorie": "A4 / hors catégorie",
+        "voie_acces": "Concours professionnel + 3 ans d'expérience",
+        "lieu_exercice": "ENSEP",
+        "enseignements": "Expertise et animation pédagogiques, formation continue en éducation permanente",
+        "roles_applicatifs": "FORMATEUR · SUPERVISEUR",
+        "description": "Corps d'expertise (A4 / hors catégorie) accessible par concours professionnel après 3 ans d'expérience. Le conseiller d'éducation permanente assure l'expertise et l'animation pédagogiques et la formation continue dans son champ."
+      },
+      {
+        "code": "INSPECTEUR_JS",
+        "libelle": "Inspecteur de la Jeunesse et des Sports (IJS)",
+        "famille": "Corps de la fonction publique",
+        "categorie": "A (encadrement supérieur)",
+        "voie_acces": "CAPEPS/CAPEP + 3 ans OU DECEPS/DECEP + 5 ans",
+        "lieu_exercice": "Direction générale de l'INJS, inspection",
+        "enseignements": "Inspection, contrôle et évaluation des structures et des personnels",
+        "roles_applicatifs": "SUPERVISEUR",
+        "description": "Corps d'encadrement supérieur accessible aux titulaires du CAPEPS/CAPEP avec 3 ans d'expérience ou du DECEPS/DECEP avec 5 ans. L'inspecteur de la jeunesse et des sports exerce l'inspection, le contrôle et l'évaluation des structures et des personnels, y compris à la direction générale de l'INJS."
+      },
+      {
+        "code": "INSPECTEUR_PEDAGOGIQUE",
+        "libelle": "Inspecteur Pédagogique (IP)",
+        "famille": "Corps de la fonction publique",
+        "categorie": "A (encadrement supérieur)",
+        "voie_acces": "CAPEPS/CAPEP + 3 ans OU DECEPS/DECEP + 5 ans",
+        "lieu_exercice": "Inspection pédagogique",
+        "enseignements": "Inspection et évaluation pédagogiques des enseignements et des enseignants",
+        "roles_applicatifs": "SUPERVISEUR",
+        "description": "Corps d'encadrement supérieur chargé de l'inspection et de l'évaluation pédagogiques des enseignements et des enseignants, accessible dans les mêmes conditions d'ancienneté que l'inspectorat de la jeunesse et des sports."
+      },
+      {
+        "code": "PROF_PRO_EPS",
+        "libelle": "Professorat Professionnel d'EPS (DECEPS)",
+        "famille": "Corps de la fonction publique",
+        "categorie": "A4",
+        "voie_acces": "DECEPS + 3 ans d'expérience",
+        "lieu_exercice": "ENSEPS",
+        "enseignements": "Enseignement professionnel de haut niveau, formation de formateurs",
+        "roles_applicatifs": "FORMATEUR · ENCADRANT",
+        "description": "Corps de catégorie A4 sanctionné par le Diplôme d'Études Complémentaires d'EPS (DECEPS) avec 3 ans d'expérience. Il assure un enseignement professionnel de haut niveau et la formation de formateurs à l'ENSEPS."
+      },
+      {
+        "code": "PROF_PRO_EP",
+        "libelle": "Professorat Professionnel d'Éducation Permanente (DECEP)",
+        "famille": "Corps de la fonction publique",
+        "categorie": "A4",
+        "voie_acces": "DECEP + 3 ans d'expérience",
+        "lieu_exercice": "ENSEP",
+        "enseignements": "Enseignement professionnel de haut niveau, formation de formateurs",
+        "roles_applicatifs": "FORMATEUR · ENCADRANT",
+        "description": "Corps de catégorie A4 sanctionné par le Diplôme d'Études Complémentaires d'Éducation Permanente (DECEP) avec 3 ans d'expérience. Il assure un enseignement professionnel de haut niveau et la formation de formateurs à l'ENSEP."
+      },
+      {
+        "code": "PROF_AGREGE_EPS",
+        "libelle": "Professeur Agrégé d'EPS",
+        "famille": "Corps de la fonction publique",
+        "categorie": "A+ / hors catégorie",
+        "voie_acces": "CAPEPS + 7 ans d'expérience (agrégation)",
+        "lieu_exercice": "ENSEPS",
+        "enseignements": "Enseignement de plus haut niveau et formation des maîtres d'EPS",
+        "roles_applicatifs": "FORMATEUR · ENCADRANT · SUPERVISEUR",
+        "description": "Grade sommital des corps de l'EPS (A+ / hors catégorie), accessible par l'agrégation aux titulaires du CAPEPS comptant 7 ans d'expérience. Il assure l'enseignement de plus haut niveau et la formation des maîtres à l'ENSEPS. Agrégation de corps de la fonction publique, à ne pas confondre avec l'agrégation CAMES."
+      },
+      {
+        "code": "PROF_AGREGE_EP",
+        "libelle": "Professeur Agrégé d'Éducation Permanente",
+        "famille": "Corps de la fonction publique",
+        "categorie": "A+ / hors catégorie",
+        "voie_acces": "CAPEP + 7 ans d'expérience (agrégation)",
+        "lieu_exercice": "ENSEP",
+        "enseignements": "Enseignement de plus haut niveau et formation des maîtres d'EP",
+        "roles_applicatifs": "FORMATEUR · ENCADRANT · SUPERVISEUR",
+        "description": "Grade sommital des corps de l'éducation permanente (A+ / hors catégorie), accessible par l'agrégation aux titulaires du CAPEP comptant 7 ans d'expérience. Il assure l'enseignement de plus haut niveau et la formation des maîtres à l'ENSEP."
+      },
+      {
+        "code": "MEDECIN_SPORT",
+        "libelle": "Médecin du sport (CNMS)",
+        "famille": "Corps de la fonction publique",
+        "categorie": "Corps médical",
+        "voie_acces": "Doctorat en médecine",
+        "lieu_exercice": "CNMS — Centre National de la Médecine du Sport",
+        "enseignements": "Médecine du sport, certificats d'aptitude, traumatologie, secourisme (BNS)",
+        "roles_applicatifs": "FORMATEUR (santé, traumatologie, BNS) · ENCADRANT",
+        "description": "Médecin du Centre National de la Médecine du Sport, docteur en médecine. Il intervient comme enseignant sur la santé du sportif, la traumatologie et le secourisme (BNS), et il est seul habilité à délivrer les certificats médicaux d'aptitude — prérogative médicale hors périmètre applicatif."
+      },
+      {
+        "code": "CADRE_PARAMEDICAL",
+        "libelle": "Cadre paramédical (CNMS)",
+        "famille": "Corps de la fonction publique",
+        "categorie": "Corps paramédical",
+        "voie_acces": "Diplôme paramédical (kinésithérapie, soins)",
+        "lieu_exercice": "CNMS — Centre National de la Médecine du Sport",
+        "enseignements": "Kinésithérapie, soins et suivi médical des sportifs ; interventions santé",
+        "roles_applicatifs": "FORMATEUR (interventions ciblées)",
+        "description": "Personnel paramédical diplômé du CNMS (kinésithérapeutes notamment) assurant les soins, la rééducation et le suivi des sportifs, avec des interventions d'enseignement ciblées sur la santé et la récupération."
+      }
+    ]
+  }
+}

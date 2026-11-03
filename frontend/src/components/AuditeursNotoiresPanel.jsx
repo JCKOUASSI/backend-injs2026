@@ -1,5 +1,5 @@
 /**
- * Absents notoires — inscrits sans pointage ou avec motif_notoire (définition CPFAE unifiée).
+ * Absents notoires — inscrits sans pointage ou avec motif_notoire (définition unifiée héritée).
  * Données API : { total, inscrits, pct, liste[] }
  */
 
@@ -69,14 +69,14 @@ export function AuditeursNotoiresKpiStrip({ data }) {
       border: '1px solid #fecaca', borderRadius: 8,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-        <i className="bi bi-person-x-fill" style={{ fontSize: '1.15rem', color: '#C62828' }}/>
-        <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#C62828' }}>{total}</span>
+        <i className="bi bi-person-x-fill" style={{ fontSize: '1.15rem', color: '#DC3545' }}/>
+        <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#DC3545' }}>{total}</span>
         <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
           absent{total > 1 ? 's' : ''} notoire{total > 1 ? 's' : ''}
         </span>
       </div>
       <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
-        <b style={{ color: '#C62828' }}>{pct}%</b> des inscrits ({inscrits})
+        <b style={{ color: '#DC3545' }}>{pct}%</b> des inscrits ({inscrits})
       </div>
       <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginLeft: 'auto' }}>
         Module démarré · aucune présence enregistrée
@@ -98,7 +98,7 @@ export function AuditeursNotoiresPanel({ data, maxHeight = 360, compact = false 
 
   if (liste.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '1.75rem', color: '#2277C1', fontSize: '0.85rem' }}>
+      <div style={{ textAlign: 'center', padding: '1.75rem', color: '#1267D6', fontSize: '0.85rem' }}>
         <i className="bi bi-check-circle" style={{ fontSize: '2rem', display: 'block', marginBottom: '0.5rem' }}/>
         Aucun absent notoire sur ce périmètre.
       </div>
@@ -170,7 +170,7 @@ export function AuditeursNotoiresPanel({ data, maxHeight = 360, compact = false 
                       fontWeight: c.key === 'nom' ? 700 : 400,
                       fontFamily: c.key === 'matricule' ? 'monospace' : TD.fontFamily,
                       fontSize: c.key === 'matricule' ? '0.68rem' : TD.fontSize,
-                      color: c.key === 'motif' && row.motif && row.motif !== '—' ? '#C62828' : TD.color,
+                      color: c.key === 'motif' && row.motif && row.motif !== '—' ? '#DC3545' : TD.color,
                     }}
                   >
                     {cellValue(row, c.key, i)}

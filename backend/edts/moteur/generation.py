@@ -157,6 +157,41 @@ class GenerationResult:
     #: du budget de recherche.
     finalite: str | None = None
 
+    def __post_init__(self):
+        """Complète les métriques absentes, y compris sur un échec précoce.
+
+        Les sorties anticipées (aucun besoin, canevas vide, calendrier absent)
+        ne calculaient aucun compteur : le dictionnaire restait vide, et tout
+        consommateur qui lit `metrics['seances_attendues']` — l'API, le bilan
+        annuel, les écrans — levait un `KeyError` au lieu d'afficher un échec
+        expliqué. Un échec doit rester un résultat lisible : les compteurs sont
+        donc à zéro, et la raison reste dans `motif_echec` / `detail`.
+        """
+        socle = {
+            'seances_attendues': 0,
+            'seances_placees': 0,
+            'seances_non_placees': 0,
+            'heures_attendues': 0.0,
+            'heures_placees': 0.0,
+            'taux_couverture': 0.0,
+            'score_penalites': 0,
+            'creneaux_explores': 0,
+            'nb_conflits_critiques': 0,
+            'budget_configured': 0,
+            'budget_restant': 0,
+            'nb_placements_effectues': 0,
+            'finalite': self.finalite,
+            # Politique souple : vide tant qu'aucun plan n'a été évalué, mais
+            # la CLÉ existe — un consommateur ne doit jamais avoir à deviner
+            # si l'absence signifie « inactive » ou « bug ».
+            'contraintes_souples': {
+                'politique': None, 'active': False, 'trous': 0,
+                'series_trop_longues': 0, 'journees_surchargees': 0,
+                'detail': [],
+            },
+        }
+        self.metrics = {**socle, **(self.metrics or {})}
+
     @property
     def succes(self):
         return self.status == GENERATION_OK
@@ -191,12 +226,23 @@ def _salles_compatibles(besoin, salles):
     return sorted(compatibles, key=lambda s: (s.capacite or 10 ** 6, s.pk))
 
 
-def _penalites(besoin, creneau, salle, annee_id):
-    """Contraintes SOUPLES (étape K) — jamais bloquantes."""
+def _penalites(besoin, creneau, salle, annee_id, index=None,
+               index_occupations=None, politique_souples=None,
+               souples=None):
+    """Contraintes SOUPLES (étape K) — jamais bloquantes.
+
+    Deux familles :
+      * historiques (préférence enseignant, salle surdimensionnée, contexte
+        incomplet) : toujours évaluées ;
+      * configurables (trous, séries trop longues, surcharge journalière) :
+        évaluées **uniquement** si la politique les active. Par défaut elles
+        sont inactives (``contraintes.SOUPLES_DEFAUT``), donc le plan produit
+        reste identique à ce qu'il était avant leur introduction.
+    """
     penalites = []
     if not C.preference_enseignant(
         besoin.enseignant_id, annee_id, creneau.jour,
-        creneau.heure_debut, creneau.heure_fin,
+        creneau.heure_debut, creneau.heure_fin, index=index,
     ):
         penalites.append(C.Penalite(
             'PREFERENCE_ENSEIGNANT_NON_RESPECTEE',
@@ -216,6 +262,21 @@ def _penalites(besoin, creneau, salle, annee_id):
             'La séance n’est rattachée à aucun semestre.',
             poids=1,
         ))
+    # Contraintes souples configurables — la journée du GROUPE est jugée
+    # (c'est la cohorte qui subit les trous et les journées trop longues).
+    # Aucun effet si la politique est inactive : c'est le cas par défaut.
+    # Contraintes souples : elles ne dépendent QUE du groupe et du créneau,
+    # jamais de la salle. `candidats()` les calcule donc une fois par créneau
+    # et les passe ici — sinon le même calcul serait refait pour chaque salle
+    # éligible (mesuré : +78 % de temps de génération à 3 500 étudiants).
+    if souples is None:
+        souples = C.penalites_souples(
+            index_occupations,
+            prefixe='G', ressource=besoin.groupe_id, jour=creneau.jour,
+            heure_debut=creneau.heure_debut, heure_fin=creneau.heure_fin,
+            politique=politique_souples,
+        )
+    penalites.extend(souples)
     return penalites
 
 
@@ -234,6 +295,9 @@ def candidats(besoin, contexte, occupations):
     semaines = contexte['semaines']
     retenus, ecartees = [], []
     creneaux_testes = salles_testes = 0
+    index = contexte.get('index_disponibilites')
+    index_occupations = contexte.get('index_occupations')
+    politique_souples = contexte.get('politique_souples')
     eligibles = _salles_compatibles(besoin, salles)
 
     for creneau in creneaux:
@@ -242,7 +306,7 @@ def candidats(besoin, contexte, occupations):
         # C5 — indisponibilité enseignant (dure).
         if C.indisponible_enseignant(
             besoin.enseignant_id, annee_id, creneau.jour,
-            creneau.heure_debut, creneau.heure_fin,
+            creneau.heure_debut, creneau.heure_fin, index=index,
         ):
             base.append(C.Violation(
                 C.C5_DISPONIBILITE_ENSEIGNANT,
@@ -256,13 +320,23 @@ def candidats(besoin, contexte, occupations):
                 'Aucune salle compatible avec ce type d’enseignement.',
             ))
 
+        # Une seule évaluation des règles souples par créneau (invariant de salle).
+        souples_creneau = (
+            C.penalites_souples(
+                index_occupations,
+                prefixe='G', ressource=besoin.groupe_id, jour=creneau.jour,
+                heure_debut=creneau.heure_debut, heure_fin=creneau.heure_fin,
+                politique=politique_souples,
+            )
+            if politique_souples and politique_souples.get('actives') else ()
+        )
         for salle in eligibles:
             salles_testes += 1
             violations = list(base)
             # C6 — indisponibilité salle.
             if C.indisponible_salle(
                 salle.pk, annee_id, creneau.jour,
-                creneau.heure_debut, creneau.heure_fin,
+                creneau.heure_debut, creneau.heure_fin, index=index,
             ):
                 violations.append(C.Violation(
                     C.C6_DISPONIBILITE_SALLE,
@@ -278,12 +352,18 @@ def candidats(besoin, contexte, occupations):
                 jour=creneau.jour,
                 heure_debut=creneau.heure_debut,
                 heure_fin=creneau.heure_fin,
+                index=index_occupations,
             ):
                 violations.append(C.Violation(code, message, ressource=salle.nom))
             if violations:
                 ecartees.append(violations)
                 continue
-            penalites = _penalites(besoin, creneau, salle, annee_id)
+            penalites = _penalites(
+                besoin, creneau, salle, annee_id, index=index,
+                index_occupations=index_occupations,
+                politique_souples=politique_souples,
+                souples=list(souples_creneau),
+            )
             retenus.append(Placement(
                 besoin=besoin, creneau=creneau, salle=salle,
                 semaine_debut=semaines[0], semaine_fin=semaines[-1],
@@ -319,10 +399,19 @@ def _backtrack(restes, index, occupations, budget, contexte):
             return None
         budget[0] -= 1
         occupations.append(candidat)
+        index_occupations = contexte.get('index_occupations')
+        if index_occupations is not None:
+            from edts.moteur import contraintes as C
+
+            C.ajouter_occupation(index_occupations, candidat)
         suite = _backtrack(restes, index + 1, occupations, budget, contexte)
         if suite is not None:
             return [candidat] + suite
         occupations.pop()
+        if index_occupations is not None:
+            from edts.moteur import contraintes as C
+
+            C.retirer_occupation(index_occupations, candidat)
     return None
 
 
@@ -332,11 +421,16 @@ def _construire_contexte(creneaux, salles, annee_id, semaines):
     Il est **distinct** des besoins : ceux-ci restent immuables. Aucune donnée
     de résolution n'est donc collée sur l'objet métier.
     """
+    from edts.moteur import contraintes as C
+
     return {
         'creneaux': creneaux,
         'salles': salles,
         'annee_id': annee_id,
         'semaines': list(semaines),
+        # Une seule requête pour toutes les disponibilités de l'année : le
+        # solveur ne fait plus de SQL par candidat.
+        'index_disponibilites': C.indexer_disponibilites(annee_id),
     }
 
 
@@ -433,6 +527,10 @@ def _construire_resultat(resultat_besoins, besoins, placements, occupations,
             'budget_restant': budget_liste[0],
             'nb_placements_effectues': len(placements),
             'finalite': finalite,
+            # Contraintes souples : politique effective + bilan du plan.
+            # Inactives par défaut → le bilan est vide et rien ne change.
+            'contraintes_souples': C.resume_souples(
+                placements, contexte.get('politique_souples')),
         },
         motif_echec=None if placements or not non_places else (
             MOTIF_AUCUNE_SALLE_COMPATIBLE if not placements else None
@@ -457,6 +555,8 @@ def generate_schedule(
     budget=BUDGET_PLACEMENTS_DEFAUT,
     perimetre_injs_seulement=True,
     occupations_initiales=None,
+    besoins=None,
+    contraintes_souples=None,
 ):
     """Génère un plan d'emploi du temps (étape L) — **sans jamais publier**.
 
@@ -484,6 +584,13 @@ def generate_schedule(
     * ``C9_CALENDRIER``                 — aucune période autorisée ;
     * ``AUCUNE_SALLE_COMPATIBLE``       — ni salle ne peut accueillir (C7/C4).
 
+    LOT GET-INJS (additif) — ``besoins`` : liste de ``TeachingNeed`` déjà
+    calculés. Elle permet de planifier des cohortes **importées**, dont les
+    besoins sont dérivés de la maquette (``edts.moteur.besoins_maquette``)
+    plutôt que d'``AffectationPedagogique``. ``None`` (défaut) conserve
+    strictement le comportement historique : les besoins sont alors recalculés
+    depuis les affectations.
+
     Le service n'écrit rien en base : il renvoie un plan. La persistance est
     l'affaire de ``publication.py`` et de la couche API.
     """
@@ -491,16 +598,21 @@ def generate_schedule(
     from formations.models import RefSalle
 
     # 1. Besoins — peut déjà refuser avec un motif explicite.
-    resultat_besoins = calculate_teaching_needs(
-        annee_academique_id=annee_academique_id,
-        ref_formation_id=ref_formation_id,
-        parcours_id=parcours_id,
-        niveau_id=niveau_id,
-        semestre_id=semestre_id,
-        groupe_ids=groupe_ids,
-        duree_seance_heures=duree_seance_heures,
-        perimetre_injs_seulement=perimetre_injs_seulement,
-    )
+    if besoins is not None:
+        from edts.moteur.besoins import BesoinsResult
+
+        resultat_besoins = BesoinsResult(besoins=list(besoins))
+    else:
+        resultat_besoins = calculate_teaching_needs(
+            annee_academique_id=annee_academique_id,
+            ref_formation_id=ref_formation_id,
+            parcours_id=parcours_id,
+            niveau_id=niveau_id,
+            semestre_id=semestre_id,
+            groupe_ids=groupe_ids,
+            duree_seance_heures=duree_seance_heures,
+            perimetre_injs_seulement=perimetre_injs_seulement,
+        )
     if resultat_besoins.vide:
         return GenerationResult(
             status=GENERATION_IMPOSSIBLE,
@@ -550,8 +662,14 @@ def generate_schedule(
     # 5. Résolution. L'état d'occupation initial (LOT 3) précède les placements
     #    de ce run : `_backtrack` n'en retire que ce qu'il ajoute lui-même.
     contexte = _construire_contexte(creneaux, salles, annee_academique_id, semaines)
+    # Politique des contraintes souples : défaut (inactives) sauf réglage
+    # Django ou paramètre explicite de l'appelant.
+    contexte['politique_souples'] = C.politique_souples(contraintes_souples)
     besoins = list(resultat_besoins.besoins)
     occupations = list(occupations_initiales or [])
+    # Index incrémental des occupations : le solveur ne parcourt plus toute la
+    # liste à chaque candidat (facteur déterminant au-delà de 3 500 étudiants).
+    contexte['index_occupations'] = C.indexer_occupations(occupations)
     budget_liste = [budget]
     placements = _backtrack(besoins, 0, occupations, budget_liste, contexte) or []
 

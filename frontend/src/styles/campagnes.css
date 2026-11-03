@@ -1,51 +1,51 @@
 /* STYLE DEDIE : CAMPAGNES D'ADMISSION INJS-LMD 2026 — premium, verre depoli. */
 
 .camp-page { display: flex; flex-direction: column; gap: 1.25rem; color: #0f172a; }
-.camp-hero { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; flex-wrap: wrap; padding: 1.15rem 1.5rem; background: #fff; border: 1px solid #e9ecf2; border-radius: 18px; box-shadow: 0 10px 30px -5px rgba(11,31,58,.05); }
+.camp-hero { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; flex-wrap: wrap; padding: 1.15rem 1.5rem; background: #fff; border: 1px solid #e9ecf2; border-radius: 18px; box-shadow: 0 10px 30px -5px rgba(7, 27, 58, .05); }
 .camp-hero-text { display: flex; flex-direction: column; gap: 0.35rem; }
-.camp-hero-title { font-size: 1.45rem; font-weight: 800; color: #0b1f3a; margin: 0; letter-spacing: -0.02em; line-height: 1.15; display: flex; align-items: center; gap: 0.55rem; }
-.camp-hero-title i { color: #2a7fff; font-size: 1.35rem; }
+.camp-hero-title { font-size: 1.45rem; font-weight: 800; color: var(--injs-navy); margin: 0; letter-spacing: -0.02em; line-height: 1.15; display: flex; align-items: center; gap: 0.55rem; }
+.camp-hero-title i { color: var(--injs-blue-royal); font-size: 1.35rem; }
 .camp-hero-sub { font-size: 0.88rem; color: #475569; margin: 0; font-weight: 500; }
 .camp-hero-side { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .camp-page .plaquette { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.72rem; font-weight: 700; line-height: 1.2; }
-.camp-page .plaquette-primary { background: #dbeafe; color: #2563eb; border: 1px solid #bfdbfe; }
+.camp-page .plaquette-primary { background: var(--injs-blue-pale); color: var(--injs-blue-royal); border: 1px solid var(--injs-border-strong); }
 .camp-page .plaquette-soft { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
 .camp-kpi-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
 .camp-kpi { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 1rem 1.15rem; background: #fff; border: 1px solid #e9ecf2; border-radius: 16px; box-shadow: 0 1px 3px rgba(16,24,40,.06); transition: transform .2s ease, box-shadow .2s ease; }
-.camp-kpi:hover { transform: translateY(-2px); box-shadow: 0 12px 30px -5px rgba(11,31,58,.08); }
+.camp-kpi:hover { transform: translateY(-2px); box-shadow: 0 12px 30px -5px rgba(7, 27, 58, .08); }
 .camp-kpi-label { display: block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; margin-bottom: 0.2rem; }
-.camp-kpi-value { display: block; font-size: 1.6rem; font-weight: 800; line-height: 1; color: #0b1f3a; letter-spacing: -0.02em; }
+.camp-kpi-value { display: block; font-size: 1.6rem; font-weight: 800; line-height: 1; color: var(--injs-navy); letter-spacing: -0.02em; }
 .camp-kpi-icon { width: 42px; height: 42px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; border-radius: 12px; }
-.camp-kpi-icon.is-blue { background: #ebf3ff; color: #2a7fff; }
+.camp-kpi-icon.is-blue { background: #ebf3ff; color: var(--injs-blue-royal); }
 .camp-kpi-icon.is-amber { background: #fffbeb; color: #f59e0b; }
 .camp-kpi-icon.is-green { background: #ecfdf5; color: #10b981; }
 .camp-kpi-icon.is-slate { background: #eef2f7; color: #475569; }
-.camp-panel { background: #fff; border: 1px solid #e9ecf2; border-radius: 18px; box-shadow: 0 10px 30px -5px rgba(11,31,58,.05); overflow: hidden; margin-bottom: 0 !important; }
+.camp-panel { background: #fff; border: 1px solid #e9ecf2; border-radius: 18px; box-shadow: 0 10px 30px -5px rgba(7, 27, 58, .05); overflow: hidden; margin-bottom: 0 !important; }
 .camp-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; padding: 0.9rem 1.4rem; border-bottom: 1px solid #edf1f6; background: rgba(240,246,252,.55); }
-.camp-panel-title { display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; font-weight: 700; color: #0b1f3a; margin: 0; }
-.camp-panel-title i { color: #2a7fff; font-size: 1.05rem; }
+.camp-panel-title { display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; font-weight: 700; color: var(--injs-navy); margin: 0; }
+.camp-panel-title i { color: var(--injs-blue-royal); font-size: 1.05rem; }
 .camp-panel-body { padding: 1.15rem 1.4rem 1.4rem; }
 .camp-form .form-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 0.3rem; }
 .camp-form .form-control, .camp-form .form-select { border-radius: 10px; border-color: #e2e8f0; }
-.camp-form .form-control:focus, .camp-form .form-select:focus { border-color: #2a7fff; box-shadow: 0 0 0 3px rgba(42,127,255,.12); }
+.camp-form .form-control:focus, .camp-form .form-select:focus { border-color: var(--injs-blue-royal); box-shadow: 0 0 0 3px rgba(18, 103, 214, .12); }
 .camp-form .form-text { font-size: 0.75rem; color: #64748b; }
 .camp-fieldset { border: 1px dashed #e2e8f0; border-radius: 12px; padding: 0.85rem 1rem 1rem; height: 100%; }
-.camp-fieldset legend { float: none; width: auto; padding: 0 0.5rem; margin: 0; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #2a7fff; }
-.camp-submit-btn { border-radius: 9999px; font-weight: 700; padding: 0.55rem 1.4rem; background: linear-gradient(135deg,#2563eb 0%,#2a7fff 100%); border-color: transparent; box-shadow: 0 4px 14px rgba(37,99,235,.3); white-space: nowrap; }
+.camp-fieldset legend { float: none; width: auto; padding: 0 0.5rem; margin: 0; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--injs-blue-royal); }
+.camp-submit-btn { border-radius: 9999px; font-weight: 700; padding: 0.55rem 1.4rem; background: linear-gradient(135deg,var(--injs-blue-royal) 0%,var(--injs-blue-royal) 100%); border-color: transparent; box-shadow: 0 4px 14px rgba(18, 103, 214, .3); white-space: nowrap; }
 .camp-filters { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
 .camp-search { position: relative; min-width: 220px; flex: 1 1 220px; max-width: 320px; }
 .camp-search i { position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.85rem; pointer-events: none; }
 .camp-search .form-control { padding-left: 2rem; border-radius: 9999px; border-color: #e2e8f0; }
 .camp-filter-select { border-radius: 9999px !important; border-color: #e2e8f0 !important; font-size: 0.82rem; font-weight: 600; color: #334155; width: auto !important; min-width: 150px; }
-.camp-count-pill { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; background: #ebf3ff; color: #2563eb; font-size: 0.76rem; font-weight: 700; border: 1px solid #bfdbfe; white-space: nowrap; }
+.camp-count-pill { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; background: #ebf3ff; color: var(--injs-blue-royal); font-size: 0.76rem; font-weight: 700; border: 1px solid var(--injs-border-strong); white-space: nowrap; }
 .camp-table { margin-bottom: 0; }
 .camp-table thead th { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 1px solid #edf1f6; white-space: nowrap; }
 .camp-table tbody td { vertical-align: middle; font-size: 0.87rem; }
-.camp-link { font-weight: 700; color: #0b1f3a; text-decoration: none; }
-.camp-link:hover { color: #2563eb; text-decoration: underline; text-underline-offset: 3px; }
+.camp-link { font-weight: 700; color: var(--injs-navy); text-decoration: none; }
+.camp-link:hover { color: var(--injs-blue-royal); text-decoration: underline; text-underline-offset: 3px; }
 .camp-sub { display: block; font-size: 0.76rem; color: #64748b; font-weight: 500; }
 .camp-sub.warn { color: #b45309; font-weight: 700; }
-.camp-candidatures { display: inline-flex; align-items: center; justify-content: center; min-width: 2rem; padding: 0.2rem 0.6rem; border-radius: 9999px; background: #f1f5f9; border: 1px solid #e2e8f0; font-weight: 800; font-size: 0.8rem; color: #0b1f3a; }
+.camp-candidatures { display: inline-flex; align-items: center; justify-content: center; min-width: 2rem; padding: 0.2rem 0.6rem; border-radius: 9999px; background: #f1f5f9; border: 1px solid #e2e8f0; font-weight: 800; font-size: 0.8rem; color: var(--injs-navy); }
 .camp-action-btn { border-radius: 9999px !important; font-weight: 700; font-size: 0.76rem; padding: 0.35rem 0.9rem; }
 .camp-empty { text-align: center; color: #94a3b8; padding: 2.2rem 1rem; font-weight: 500; }
 .camp-empty i { display: block; font-size: 1.8rem; margin-bottom: 0.4rem; color: #cbd5e1; }
@@ -56,3 +56,461 @@
 .parti-filter .camp-filter-select { font-size: 0.78rem; padding: 0.35rem 2rem 0.35rem 0.8rem; }
 @media (max-width: 1100px) { .camp-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .camp-kpi-row { grid-template-columns: minmax(0, 1fr); } .camp-hero { align-items: flex-start; } .camp-search { max-width: none; } }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ÉCRAN CAMPAGNES D'ADMISSION — habillage premium
+   La page s'appuie sur le design system des écrans Scolarité (`.cand-*` :
+   bandeau, tuiles, panneaux, filtres, champs, tableau, état vide, chargement).
+   Ne restent ici que les pièces propres aux campagnes : pastilles du bandeau,
+   groupes « Période / Quotas », dates, quotas et boutons de transition.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Cycle de vie d'une campagne : frise compacte sous le sous-titre du bandeau.
+   Elle remplace une phrase à rallonge qui occupait quatre lignes sur téléphone. */
+.camp-cycle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  margin-top: 0.15rem;
+}
+
+.camp-cycle-etape {
+  padding: 0.12rem 0.45rem;
+  border: 1px solid #E6EDF5;
+  border-radius: 9999px;
+  background: #F4F8FC;
+  color: #64748B;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.camp-cycle i { color: #B7C4D4; font-size: 0.6rem; }
+
+/* Pastilles d'information du bandeau (année, nombre de campagnes). */
+.camp-pastilles {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.camp-pastilles .cand-count-pill { margin-left: 0; }
+
+.camp-pastilles .cand-count-pill i {
+  color: var(--injs-blue-royal);
+  font-size: 0.82rem;
+  margin-right: 0.3rem;
+}
+
+/* Formulaire de création : deux groupes encadrés sous la ligne d'identité. */
+.camp-form-panel .cand-panel-body { padding-top: 1.15rem; }
+
+.cand-champ.camp-groupe {
+  /* fieldset : on rend la main au rendu natif de <legend>. */
+  display: block;
+  min-width: 0;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid #E9ECF2;
+  border-radius: 14px;
+  background: #FBFDFF;
+}
+
+.camp-groupe-titre {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  float: none;
+  width: auto;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--injs-blue-royal);
+}
+
+.camp-groupe-titre i { font-size: 0.85rem; }
+
+.camp-duo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem 0.9rem;
+}
+
+.camp-form-note { padding-top: 0; }
+
+.camp-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.76rem;
+  color: #64748B;
+}
+
+.camp-note i { color: var(--injs-blue-royal); font-size: 0.85rem; margin-top: 0.1rem; }
+
+/* ── Tableau des campagnes ── */
+.cand-table--campagnes { min-width: 1120px; }
+.cand-table--campagnes th:nth-child(2), .cand-table--campagnes td:nth-child(2) { width: 228px; }
+.cand-table--campagnes th:nth-child(3), .cand-table--campagnes td:nth-child(3) { width: 160px; }
+.cand-table--campagnes th:nth-child(4), .cand-table--campagnes td:nth-child(4) { width: 116px; }
+.cand-table--campagnes th:nth-child(5), .cand-table--campagnes td:nth-child(5) { width: 120px; }
+.cand-table--campagnes th:nth-child(6), .cand-table--campagnes td:nth-child(6) { width: 176px; }
+
+.camp-col-formation { min-width: 0; }
+
+/* Une formation tient sur trois lignes : la hauteur des lignes reste
+   régulière et l'intitulé complet demeure accessible par l'infobulle. */
+.camp-link {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-weight: 800;
+  color: var(--injs-navy);
+  text-decoration: none;
+  line-height: 1.3;
+  transition: color 0.16s ease;
+}
+
+.camp-link:hover { color: var(--injs-blue-royal); text-decoration: underline; text-underline-offset: 3px; }
+
+.camp-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  margin-top: 0.18rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748B;
+}
+
+.camp-sub i { font-size: 0.78rem; }
+
+.camp-sub.warn { color: #B45309; font-weight: 700; }
+
+/* Période : chaque borne dans une puce, la flèche matérialise l'intervalle. */
+.camp-periode {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.camp-periode i { color: #94A3B8; font-size: 0.72rem; }
+
+.camp-date {
+  padding: 0.14rem 0.45rem;
+  border: 1px solid #E6EDF5;
+  border-radius: 8px;
+  background: #F4F8FC;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* Quotas : deux compteurs étiquetés, lisibles sans texte courant. */
+.camp-quotas { display: inline-flex; gap: 0.45rem; }
+
+.camp-quota {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  padding: 0.22rem 0.55rem;
+  border: 1px solid #E9ECF2;
+  border-radius: 10px;
+  background: #FBFDFF;
+}
+
+.camp-quota-cle {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #7C8CA1;
+}
+
+.camp-quota-valeur {
+  font-size: 0.86rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--injs-navy);
+  line-height: 1.1;
+}
+
+.camp-candidatures {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  border: 1px solid #E2E8F0;
+  background: #F1F5F9;
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--injs-navy);
+}
+
+.camp-candidatures i { color: #64748B; font-size: 0.82rem; }
+
+/* ── Boutons de transition (libellés courts, icône décorative) ── */
+.camp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.camp-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  background: #FFFFFF;
+  color: #475569;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.camp-action i { font-size: 0.8rem; }
+
+.camp-action:hover:not(:disabled) { background: #F8FAFC; border-color: #CBD5E1; }
+.camp-action:focus-visible { outline: 2px solid var(--injs-blue-royal); outline-offset: 2px; }
+.camp-action:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.camp-action--info { color: var(--injs-blue-royal); border-color: #BFDCF5; background: #F3F8FF; }
+.camp-action--info:hover:not(:disabled) { background: #E6F1FF; border-color: var(--injs-blue-royal); }
+
+.camp-action--succes { color: #0E7A4F; border-color: #B7E7CE; background: #F1FBF6; }
+.camp-action--succes:hover:not(:disabled) { background: #E3F7EC; border-color: #7ED0A6; }
+
+.camp-action--attention { color: #8A5A00; border-color: #F3D49A; background: #FFFBF0; }
+.camp-action--attention:hover:not(:disabled) { background: #FEF3DA; border-color: #E9BE6C; }
+
+.camp-action--neutre { color: #475569; }
+
+.camp-action--danger { color: #991B1B; border-color: #F3B8B8; background: #FFF7F7; }
+.camp-action--danger:hover:not(:disabled) { background: #FDECEC; border-color: #E58A8A; }
+
+@media (max-width: 900px) {
+  .camp-pastilles { width: 100%; }
+  .camp-duo { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .camp-actions { justify-content: flex-start; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ÉCRAN ADMISSIONS — pièces propres au panneau de décision et au tableau.
+   Le reste vient du design system Scolarité (`.cand-*`).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* En-tête du panneau de décision : statut + fermeture, poussés à droite. */
+.camp-entete-fin {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+/* Profil administratif : catégorie, grade, puis le bouton d'enregistrement. */
+.cand-grille-form.camp-grille-profil {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+}
+
+.camp-champ--action { justify-content: flex-end; }
+
+.camp-champ--action .cand-btn-fantome { width: 100%; justify-content: center; }
+
+/* Zone de texte libre (observations) : même habillage que .cand-saisie. */
+.cand-zone-texte {
+  min-height: 62px;
+  padding: 0.6rem 0.9rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+/* Numéro de candidature sous le nom du candidat, dans la colonne « Candidat ». */
+.camp-numero {
+  display: inline-block;
+  margin-top: 0.22rem;
+  font-size: 0.7rem;
+}
+
+/* Décision : pastille de statut et marqueur d'expiration sur une ligne. */
+.camp-decision {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.camp-reference {
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+/* ── Tableau des admissions ── */
+.cand-table--admissions { min-width: 1140px; }
+.cand-table--admissions th:nth-child(1), .cand-table--admissions td:nth-child(1) { width: 190px; }
+.cand-table--admissions th:nth-child(3), .cand-table--admissions td:nth-child(3) { width: 78px; }
+.cand-table--admissions th:nth-child(4), .cand-table--admissions td:nth-child(4) { width: 190px; }
+.cand-table--admissions th:nth-child(5), .cand-table--admissions td:nth-child(5) { width: 132px; }
+.cand-table--admissions th:nth-child(6), .cand-table--admissions td:nth-child(6) { width: 116px; }
+.cand-table--admissions th:nth-child(7), .cand-table--admissions td:nth-child(7) { width: 142px; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ÉCRAN ÉTUDIANTS — pièces propres au registre et à la fiche de création.
+   Le reste vient du design system Scolarité (`.cand-*`).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Recherche et filtres : la recherche prend la première ligne, les listes
+   déroulantes se répartissent la suivante, sans passer à la ligne isolément. */
+.etud-filtres { align-items: center; }
+.etud-filtres .cand-search.etud-recherche { flex: 1 1 340px; max-width: 520px; }
+.etud-filtre { flex: 1 1 180px; min-width: 0; max-width: 260px; }
+.etud-filtre .cand-filter-select { width: 100%; }
+
+/* Barre d'actions : création à gauche, exports à droite, même hauteur. */
+.etud-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #EDF1F6;
+}
+
+.etud-actions .cand-btn-principal,
+.etud-actions .cand-btn-fantome {
+  min-height: 38px;
+  padding: 0 1rem;
+  font-size: 0.82rem;
+}
+
+.etud-btn-export { border: 1px solid #E2E8F0; background: #FFFFFF; }
+.etud-btn-export--pdf { color: #B42318; border-color: #FBD5D5; }
+.etud-btn-export--pdf:hover { background: #FEF2F2; border-color: #F3B4B4; }
+.etud-btn-export--excel { color: #0E7A4F; border-color: #B7E7CE; }
+.etud-btn-export--excel:hover { background: #F1FBF6; border-color: #7ED0A6; }
+
+/* ── Registre ── */
+.cand-table--etudiants { min-width: 940px; }
+.cand-table--etudiants th:nth-child(1), .cand-table--etudiants td:nth-child(1) { width: 148px; }
+.cand-table--etudiants th:nth-child(3), .cand-table--etudiants td:nth-child(3) { width: 128px; }
+.cand-table--etudiants th:nth-child(4), .cand-table--etudiants td:nth-child(4) { width: 92px; }
+.cand-table--etudiants th:nth-child(5), .cand-table--etudiants td:nth-child(5) { width: 154px; }
+.cand-table--etudiants th:nth-child(6), .cand-table--etudiants td:nth-child(6) { width: 146px; }
+
+.etud-col-identite { min-width: 0; }
+
+.etud-sous {
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  margin-top: 0.18rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #64748B;
+}
+
+.etud-sous i { font-size: 0.78rem; }
+
+/* Sexe : pastille teintée avec pictogramme, plutôt qu'un badge de couleur
+   isolé sans sémantique. */
+.etud-sexe {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.etud-sexe i { font-size: 0.82rem; }
+.etud-sexe--f { background: #FDF2F8; border-color: #F6D0E4; color: #A21C6B; }
+.etud-sexe--m { background: #EFF6FF; border-color: #CFE0FB; color: #1D4ED8; }
+
+.etud-tel {
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+}
+
+/* ── Fiche de création / modification ── */
+.etud-modale-titre {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+}
+
+.etud-modale-titre i { color: var(--injs-blue-royal); font-size: 1rem; }
+
+/* Fermeture de la fiche : le glyphe « × » reste le repère attendu par les
+   utilisateurs (et les tests), mis à l'échelle du bouton rond. */
+.etud-fermer-glyphe {
+  font-size: 1.35rem;
+  font-weight: 400;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.etud-modale-corps { padding: 1.15rem 1.4rem 0.4rem; }
+
+.etud-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem 0.9rem;
+}
+
+.etud-plein { grid-column: 1 / -1; }
+
+.etud-modale-pied {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 0.9rem 1.4rem 1.1rem;
+  border-top: 1px solid #EDF1F6;
+}
+
+.etud-modale-pied .cand-btn-principal,
+.etud-modale-pied .cand-btn-fantome { min-height: 40px; padding: 0 1.2rem; }
+
+@media (max-width: 900px) {
+  .etud-filtre { flex: 1 1 45%; max-width: none; }
+}
+
+@media (max-width: 640px) {
+  .etud-filtres .cand-search.etud-recherche { flex: 1 1 100%; max-width: none; }
+  .etud-filtre { flex: 1 1 100%; }
+  .etud-actions .cand-btn-principal,
+  .etud-actions .cand-btn-fantome { flex: 1 1 100%; justify-content: center; }
+  .etud-form { grid-template-columns: minmax(0, 1fr); }
+}

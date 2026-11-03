@@ -8,8 +8,8 @@ import Pagination from '../components/Pagination'
 
 const STATUT_LABELS = { BROUILLON: 'Brouillon', PUBLIE: 'Publié', FERME: 'Fermé' }
 const STATUT_COLORS = {
-  BROUILLON: { background: '#fff8e0', color: '#e69700' },
-  PUBLIE:    { background: '#e8eff5', color: '#125a99' },
+  BROUILLON: { background: '#fff8e0', color: '#D97706' },
+  PUBLIE:    { background: '#e8eff5', color: '#104A8E' },
   FERME:     { background: '#f5f5f5', color: '#616161' },
 }
 
@@ -35,8 +35,8 @@ function StatutBar({ brouillon, publie, ferme }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
       {[
-        { label: 'Brouillon', val: brouillon, color: '#e69700', bg: '#fff8e0' },
-        { label: 'Publié',    val: publie,    color: '#125a99', bg: '#e8eff5' },
+        { label: 'Brouillon', val: brouillon, color: '#D97706', bg: '#fff8e0' },
+        { label: 'Publié',    val: publie,    color: '#104A8E', bg: '#e8eff5' },
         { label: 'Fermé',     val: ferme,     color: '#616161', bg: '#f5f5f5' },
       ].map(({ label, val, color }) => (
         <div key={label}>
@@ -207,9 +207,9 @@ export default function EvaluationDashboard() {
             <>
               {/* KPIs principaux */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                <KpiCard icon="bi-clipboard-check" label="Total questionnaires" value={kpis.total}     color="#4f46e5" />
-                <KpiCard icon="bi-send"            label="Publiés"              value={kpis.publie}    color="#125a99" sub="En cours de réponse" />
-                <KpiCard icon="bi-pencil-square"   label="Brouillons"           value={kpis.brouillon} color="#e69700" sub="En cours de rédaction" />
+                <KpiCard icon="bi-clipboard-check" label="Total questionnaires" value={kpis.total}     color="#283A87" />
+                <KpiCard icon="bi-send"            label="Publiés"              value={kpis.publie}    color="#104A8E" sub="En cours de réponse" />
+                <KpiCard icon="bi-pencil-square"   label="Brouillons"           value={kpis.brouillon} color="#D97706" sub="En cours de rédaction" />
                 <KpiCard icon="bi-lock"            label="Fermés"               value={kpis.ferme}     color="#616161" sub="Réponses clôturées" />
               </div>
 
@@ -340,13 +340,13 @@ export default function EvaluationDashboard() {
                           {STATUT_LABELS[q.statut]}
                         </span>
                         {(q.categories || []).map(c => (
-                          <span key={c} style={{ fontSize: '0.72rem', background: '#f3e5f5', color: '#6a1b9a', padding: '2px 8px', borderRadius: '20px', fontWeight: 600 }}>{c}</span>
+                          <span key={c} style={{ fontSize: '0.72rem', background: '#f3e5f5', color: '#805AD5', padding: '2px 8px', borderRadius: '20px', fontWeight: 600 }}>{c}</span>
                         ))}
                         {(q.grades || []).map(g => (
-                          <span key={g} style={{ fontSize: '0.72rem', background: '#e8eaf6', color: '#283593', padding: '2px 8px', borderRadius: '20px', fontWeight: 600 }}>{g}</span>
+                          <span key={g} style={{ fontSize: '0.72rem', background: '#e8eaf6', color: '#283A87', padding: '2px 8px', borderRadius: '20px', fontWeight: 600 }}>{g}</span>
                         ))}
                         {(q.groupes || []).map(g => (
-                          <span key={g} style={{ fontSize: '0.72rem', background: '#fff8e0', color: '#e69700', padding: '2px 8px', borderRadius: '20px', fontWeight: 600 }}>{g}</span>
+                          <span key={g} style={{ fontSize: '0.72rem', background: '#fff8e0', color: '#D97706', padding: '2px 8px', borderRadius: '20px', fontWeight: 600 }}>{g}</span>
                         ))}
                       </div>
                       <h4 style={{ margin: 0, fontWeight: 700, fontSize: '1.05rem', cursor: 'pointer', color: 'var(--primary)' }}
@@ -437,7 +437,7 @@ export default function EvaluationDashboard() {
                   </label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                     {refCategories.map(c => (
-                      <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '4px 10px', borderRadius: '20px', cursor: 'pointer', border: '1.5px solid', borderColor: form.categories.includes(c.libelle) ? '#6a1b9a' : 'var(--border)', background: form.categories.includes(c.libelle) ? '#f3e5f5' : 'transparent', color: form.categories.includes(c.libelle) ? '#6a1b9a' : 'inherit', fontSize: '0.85rem', fontWeight: form.categories.includes(c.libelle) ? 700 : 400, transition: 'all .15s' }}>
+                      <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '4px 10px', borderRadius: '20px', cursor: 'pointer', border: '1.5px solid', borderColor: form.categories.includes(c.libelle) ? '#805AD5' : 'var(--border)', background: form.categories.includes(c.libelle) ? '#f3e5f5' : 'transparent', color: form.categories.includes(c.libelle) ? '#805AD5' : 'inherit', fontSize: '0.85rem', fontWeight: form.categories.includes(c.libelle) ? 700 : 400, transition: 'all .15s' }}>
                         <input type="checkbox" style={{ display: 'none' }} checked={form.categories.includes(c.libelle)} onChange={() => { toggleItem('categories', c.libelle); setForm(f => ({ ...f, grades: f.grades.filter(g => { const gr = refGrades.find(rg => rg.libelle === g); return gr ? refCategories.find(rc => rc.libelle === c.libelle)?.id !== gr.categorie_id : true }) })) }} />
                         {c.libelle}
                       </label>
@@ -453,7 +453,7 @@ export default function EvaluationDashboard() {
                   </label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                     {refGrades.filter(g => form.categories.length === 0 || refCategories.find(c => form.categories.includes(c.libelle) && c.id === g.categorie_id)).map(g => (
-                      <label key={g.id} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '4px 10px', borderRadius: '20px', cursor: 'pointer', border: '1.5px solid', borderColor: form.grades.includes(g.libelle) ? '#283593' : 'var(--border)', background: form.grades.includes(g.libelle) ? '#e8eaf6' : 'transparent', color: form.grades.includes(g.libelle) ? '#283593' : 'inherit', fontSize: '0.85rem', fontWeight: form.grades.includes(g.libelle) ? 700 : 400, transition: 'all .15s' }}>
+                      <label key={g.id} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '4px 10px', borderRadius: '20px', cursor: 'pointer', border: '1.5px solid', borderColor: form.grades.includes(g.libelle) ? '#283A87' : 'var(--border)', background: form.grades.includes(g.libelle) ? '#e8eaf6' : 'transparent', color: form.grades.includes(g.libelle) ? '#283A87' : 'inherit', fontSize: '0.85rem', fontWeight: form.grades.includes(g.libelle) ? 700 : 400, transition: 'all .15s' }}>
                         <input type="checkbox" style={{ display: 'none' }} checked={form.grades.includes(g.libelle)} onChange={() => toggleItem('grades', g.libelle)} />
                         {g.libelle}
                       </label>
@@ -470,7 +470,7 @@ export default function EvaluationDashboard() {
                   </label>
                   <div style={{ maxHeight: '140px', overflowY: 'auto', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignContent: 'flex-start', padding: '0.25rem' }}>
                     {refGroupes.map(g => (
-                      <label key={g} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '4px 10px', borderRadius: '20px', cursor: 'pointer', border: '1.5px solid', borderColor: form.groupes.includes(g) ? '#e69700' : 'var(--border)', background: form.groupes.includes(g) ? '#fff8e0' : 'transparent', color: form.groupes.includes(g) ? '#e69700' : 'inherit', fontSize: '0.85rem', fontWeight: form.groupes.includes(g) ? 700 : 400, transition: 'all .15s' }}>
+                      <label key={g} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '4px 10px', borderRadius: '20px', cursor: 'pointer', border: '1.5px solid', borderColor: form.groupes.includes(g) ? '#D97706' : 'var(--border)', background: form.groupes.includes(g) ? '#fff8e0' : 'transparent', color: form.groupes.includes(g) ? '#D97706' : 'inherit', fontSize: '0.85rem', fontWeight: form.groupes.includes(g) ? 700 : 400, transition: 'all .15s' }}>
                         <input type="checkbox" style={{ display: 'none' }} checked={form.groupes.includes(g)} onChange={() => toggleItem('groupes', g)} />
                         {g}
                       </label>

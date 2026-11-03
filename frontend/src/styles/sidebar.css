@@ -6,7 +6,7 @@
 /* Fond de la barre latérale */
 .sidebar {
   width: var(--sidebar-width);
-  background: linear-gradient(180deg, #0A1E3F 0%, #06152D 100%) !important;
+  background: linear-gradient(180deg, #071B3A 0%, #0B2D5B 55%, #1D2B66 100%) !important;
   color: #FFFFFF;
   position: fixed;
   top: 0;
@@ -63,12 +63,18 @@
   transform: scale(1.06);
 }
 
+/* Logo officiel INJS : JAMAIS de filtre ni de recoloration (règle projet).
+   Sur fond nuit, on le pose sur une plaque blanche pour garantir sa
+   lisibilité tout en conservant ses couleurs et ses proportions. */
 .sidebar-logo {
   width: 40px;
   height: 40px;
+  padding: 4px;
   object-fit: contain;
-  background: transparent;
-  filter: brightness(0) invert(1);
+  background: #FFFFFF;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.45);
+  flex-shrink: 0;
 }
 
 .sidebar-brand-title {
@@ -82,7 +88,7 @@
 .sidebar-brand-badge {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #38BDF8;
+  color: var(--injs-sky, #35BDF5);
   letter-spacing: 0.03em;
 }
 
@@ -122,13 +128,13 @@
 .sidebar-user .user-role {
   display: inline-block;
   margin-top: 0.25rem;
-  background: rgba(56, 189, 248, 0.18);
+  background: rgba(53, 189, 245, 0.18);
   color: #7DD3FC;
   font-size: 0.7rem;
   font-weight: 600;
   padding: 0.15em 0.55em;
   border-radius: 6px;
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  border: 1px solid rgba(53, 189, 245, 0.3);
 }
 
 /* Badge CURP / Legacy */
@@ -180,7 +186,7 @@
 
 /* Entrée active : Pilule lumineuse bleue dégradée conforme à la maquette */
 .nav-item.active {
-  background: linear-gradient(90deg, #2563EB 0%, #2A7FFF 100%) !important;
+  background: linear-gradient(90deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%) !important;
   color: #FFFFFF !important;
   font-weight: 700;
   box-shadow: 0 4px 16px rgba(30, 112, 235, 0.45);
@@ -226,8 +232,8 @@
 }
 
 .sidebar .nav-item.nav-groupe-tete.active {
-  color: #38BDF8;
-  background: rgba(56, 189, 248, 0.08);
+  color: var(--injs-sky);
+  background: rgba(53, 189, 245, 0.08);
 }
 
 .sidebar .nav-chevron {
@@ -291,8 +297,8 @@
 .sidebar .nav-sous-item.active {
   color: #FFFFFF;
   font-weight: 700;
-  background: rgba(37, 99, 235, 0.25);
-  border: 1px solid rgba(37, 99, 235, 0.4);
+  background: rgba(18, 103, 214, 0.25);
+  border: 1px solid rgba(18, 103, 214, 0.4);
 }
 
 /* Pied de barre latérale */

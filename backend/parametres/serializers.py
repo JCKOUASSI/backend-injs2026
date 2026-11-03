@@ -81,6 +81,7 @@ class ParametreSerializer(serializers.ModelSerializer):
             'choices_json',
             'modifiable',
             'actif',
+            'statut_validation',
             'est_critique',
             'can_edit',
             'can_view',

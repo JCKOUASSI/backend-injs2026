@@ -196,7 +196,7 @@ def admin_dashboard_callback(request, context):
             'label': _('Étudiants mobile'),
             'value': f'{badgeurs_mobile} / {connectes_mobile}',
             'detail': _('badgeage · appareil lié'),
-            'icon': 'smartphone',
+            'icon': 'mobile',
             'link': 'admin:presences_devicebinding_changelist',
         },
     ]

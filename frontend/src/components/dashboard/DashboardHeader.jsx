@@ -1,9 +1,10 @@
 import React from 'react'
+import { anneeAcademiqueAffichee } from '../../utils/anneeAcademique'
 
 export default function DashboardHeader({
   title,
   subtitle,
-  academicYear = '2026–2027',
+  academicYear = anneeAcademiqueAffichee(),
   badgeText = 'Campus INJS Marcory',
   actions,
 }) {

@@ -11,6 +11,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
+from core import validators as validators_pieces
+
 
 def piece_upload_path(instance, filename):
     """Range les pièces par candidature. Le dossier media n'est pas servi publiquement."""
@@ -296,7 +298,10 @@ class PieceCandidature(models.Model):
     candidature = models.ForeignKey(Candidature, on_delete=models.CASCADE, related_name='pieces')
     type_piece = models.ForeignKey(TypePiece, on_delete=models.PROTECT, related_name='pieces')
     obligatoire = models.BooleanField(default=True)
-    fichier = models.FileField(upload_to=piece_upload_path, null=True, blank=True)
+    fichier = models.FileField(
+        upload_to=piece_upload_path, null=True, blank=True,
+        validators=[validators_pieces.valider_piece_candidature],
+    )
     numero_document = models.CharField(max_length=100, blank=True)
     date_delivrance = models.DateField(null=True, blank=True)
     date_expiration = models.DateField(null=True, blank=True)

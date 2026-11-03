@@ -80,11 +80,9 @@ describe('Campagnes — création en brouillon', () => {
     const [comboAnnee, comboFormation] = within(card).getAllByRole('combobox')
     fireEvent.change(comboAnnee, { target: { value: '1' } })
     fireEvent.change(comboFormation, { target: { value: '10' } })
-    // Les deux seuls champs date du formulaire (les selects vides ont aussi
-    // une valeur d'affichage '', donc on les cible par type d'input).
-    const [dateOuverture, dateFermeture] = card.querySelectorAll('input[type="date"]')
-    fireEvent.change(dateOuverture, { target: { value: '2026-03-01' } })
-    fireEvent.change(dateFermeture, { target: { value: '2026-04-30' } })
+    // Dates saisies en JJ/MM/AAAA (champ partagé) : le payload reste en ISO.
+    fireEvent.change(within(card).getByLabelText('Ouverture'), { target: { value: '01/03/2026' } })
+    fireEvent.change(within(card).getByLabelText('Fermeture'), { target: { value: '30/04/2026' } })
     // Quotas (régression §10.11 : ils étaient absents du formulaire au LOT 16).
     const [quotaAdmissibles, quotaAdmis] = card.querySelectorAll('input[type="number"]')
     fireEvent.change(quotaAdmissibles, { target: { value: '30' } })
@@ -196,8 +194,9 @@ describe('Campagnes — transitions de statut restantes', () => {
     await settle()
 
     // SUSPENDUE : Réouvrir sans confirmation.
-    fireEvent.click(within(screen.getByText('Camp suspendue').closest('tr'))
-      .getByRole('button', { name: 'Réouvrir' }))
+    const rowSuspendue = screen.getByText('Camp suspendue').closest('tr')
+    expect(within(rowSuspendue).getByRole('button', { name: 'Clôturer' })).toBeInTheDocument()
+    fireEvent.click(within(rowSuspendue).getByRole('button', { name: 'Réouvrir' }))
     await settle()
 
     // CLOTUREE : Archiver sans confirmation.
@@ -274,6 +273,33 @@ const mountDetail = (role = 'ADMIN', camp = CAMP) => {
 const epreuvesCard = () => screen.getByText('Épreuves de concours').closest('.card')
 const notesCard = () => screen.getByText('Saisie des notes').closest('.card')
 
+describe('Campagnes — annulation d’une campagne non ouverte', () => {
+  it('Annuler proposé en Brouillon et en Planifiée, avec confirmation', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    setupCampagnesRoutes(() => ([
+      { id: 7, libelle: 'Camp brouillon', statut: 'BROUILLON', nb_candidatures: 0 },
+      { id: 8, libelle: 'Camp planifiée', statut: 'PLANIFIEE', nb_candidatures: 0 },
+      { id: 9, libelle: 'Camp ouverte bis', statut: 'OUVERTE', nb_candidatures: 2 },
+    ]))
+    mountCampagnes()
+    await settle()
+
+    const rowBrouillon = screen.getByText('Camp brouillon').closest('tr')
+    fireEvent.click(within(rowBrouillon).getByRole('button', { name: 'Annuler' }))
+    await settle()
+    fireEvent.click(within(screen.getByText('Camp planifiée').closest('tr'))
+      .getByRole('button', { name: 'Annuler' }))
+    await settle()
+
+    const transitions = writes('post').filter(w => w.path.includes('/transition/'))
+    expect(transitions.map(tr => tr.body.statut)).toEqual(['ANNULEE', 'ANNULEE'])
+    expect(confirmSpy).toHaveBeenCalledTimes(2)
+    // Pas d’annulation proposée une fois la campagne ouverte.
+    expect(within(screen.getByText('Camp ouverte bis').closest('tr'))
+      .queryByRole('button', { name: 'Annuler' })).toBeNull()
+  })
+})
+
 describe('CampagneDetail — rendu du concours', () => {
   it('affiche les compteurs, les épreuves, le classement et masque une épreuve verrouillée de la saisie', async () => {
     mountDetail()
@@ -316,7 +342,7 @@ describe('CampagneDetail — ajout d’épreuve', () => {
     fireEvent.change(combos[0], { target: { value: 'ORAL' } })   // type
     fireEvent.change(combos[1], { target: { value: '20' } })    // salle
     fireEvent.change(within(card).getByPlaceholderText('Intitulé'), { target: { value: 'Entretien individuel' } })
-    fireEvent.change(card.querySelector('input[type="date"]'), { target: { value: '2026-03-12' } })
+    fireEvent.change(within(card).getByPlaceholderText('JJ/MM/AAAA'), { target: { value: '12/03/2026' } })
     fireEvent.change(card.querySelector('input[type="time"]'), { target: { value: '14:00' } })
     fireEvent.click(within(card).getByRole('button', { name: '+' }))
     await settle(8)
@@ -339,7 +365,7 @@ describe('CampagneDetail — ajout d’épreuve', () => {
     await screen.findByText('Concours L1 2026')
     const card = epreuvesCard()
     fireEvent.change(within(card).getByPlaceholderText('Intitulé'), { target: { value: 'Épreuve sans salle' } })
-    fireEvent.change(card.querySelector('input[type="date"]'), { target: { value: '2026-03-13' } })
+    fireEvent.change(within(card).getByPlaceholderText('JJ/MM/AAAA'), { target: { value: '13/03/2026' } })
     fireEvent.click(within(card).getByRole('button', { name: '+' }))
     await settle(8)
 
@@ -360,7 +386,7 @@ describe('CampagneDetail — ajout d’épreuve', () => {
     await screen.findByText('Concours L1 2026')
     const card = epreuvesCard()
     fireEvent.change(within(card).getByPlaceholderText('Intitulé'), { target: { value: 'Conflit' } })
-    fireEvent.change(within(card).getByDisplayValue(''), { target: { value: '2026-03-10' } })
+    fireEvent.change(within(card).getByPlaceholderText('JJ/MM/AAAA'), { target: { value: '10/03/2026' } })
     fireEvent.click(within(card).getByRole('button', { name: '+' }))
 
     expect(await screen.findByText(/une épreuve existe déjà/i)).toBeInTheDocument()

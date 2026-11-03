@@ -1,6 +1,11 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Lecture centralisée des variables (assets/app.env + éventuels --dart-define).
+///
+/// Port par défaut : **8000**, comme `arena/lancer-api.sh`, le proxy Vite et
+/// `qr_badge_mobile/.env.example`. Les valeurs de repli étaient restées sur
+/// 8001 alors que l'API écoute sur 8000 : sans fichier `.env`, toutes les
+/// requêtes de l'application mobile partaient vers un port mort.
 class AppEnv {
   AppEnv._();
 
@@ -43,7 +48,7 @@ class AppEnv {
 
   /// URL affichée / stockée par défaut avant toute logique async.
   static String get initialApiBaseUrl =>
-      explicitApiBaseUrl ?? 'http://127.0.0.1:8001';
+      explicitApiBaseUrl ?? 'http://127.0.0.1:8000';
 
   static String get supervisorLogoutCode {
     if (_logoutFromDefine.isNotEmpty) {
@@ -55,7 +60,7 @@ class AppEnv {
   /// Hôte LAN optionnel depuis .env (si pas de --dart-define).
   static String get devApiHostFromDot => _dot('DEV_API_HOST') ?? '';
 
-  static String get devApiPortFromDot => _dot('DEV_API_PORT') ?? '8001';
+  static String get devApiPortFromDot => _dot('DEV_API_PORT') ?? '8000';
 
   /// URL complète de la politique de confidentialité (stores).
   /// Priorité : `--dart-define=PRIVACY_POLICY_URL=` ou `PRIVACY_POLICY_URL` dans app.env,
@@ -75,7 +80,7 @@ class AppEnv {
   static String _privacyUrlDerivedFromApiBase(String apiBaseUrl) {
     var raw = apiBaseUrl.trim();
     if (raw.isEmpty) {
-      raw = 'http://127.0.0.1:8001';
+      raw = 'http://127.0.0.1:8000';
     }
     if (!raw.contains('://')) {
       raw = 'http://$raw';

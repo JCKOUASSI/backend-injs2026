@@ -4,9 +4,9 @@ import api from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 
 const STAT_CARDS = [
-  { key: 'modules', label: 'Modules archivés', icon: 'bi-journal-bookmark', color: '#1565c0' },
-  { key: 'participants', label: 'Étudiants', icon: 'bi-people', color: '#125a99' },
-  { key: 'formateurs', label: 'Enseignants', icon: 'bi-person-video3', color: '#6a1b9a' },
+  { key: 'modules', label: 'Modules archivés', icon: 'bi-journal-bookmark', color: '#104A8E' },
+  { key: 'participants', label: 'Étudiants', icon: 'bi-people', color: '#104A8E' },
+  { key: 'formateurs', label: 'Enseignants', icon: 'bi-person-video3', color: '#805AD5' },
 ]
 
 const DOC_CARDS = [
@@ -15,14 +15,14 @@ const DOC_CARDS = [
     label: 'Listes de note',
     desc: 'Relevés de notes et moyennes par module, catégorie et grade.',
     icon: 'bi-card-checklist',
-    color: '#1565c0',
+    color: '#104A8E',
   },
   {
     to: '/archives/cahiers-appel',
     label: "Cahiers d'appel",
     desc: "Registres de présence (émargement) par séance, avec export PDF/Excel.",
     icon: 'bi-journal-check',
-    color: '#125a99',
+    color: '#104A8E',
   },
 ]
 

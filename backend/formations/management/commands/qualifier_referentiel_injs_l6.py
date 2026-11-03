@@ -26,6 +26,14 @@ from formations.referentiel_injs_l6 import (
 SOURCE_LEGACY = 'A-4.3ter §5.3 (O6)'
 
 
+def _cycle_de_intitule(intitule):
+    """Cycle porté par l'intitulé (« … — LICENCE » → ``LICENCE``), sinon None."""
+    for cycle in ('LICENCE', 'MASTER', 'DOCTORAT'):
+        if intitule.endswith(f' — {cycle}'):
+            return cycle
+    return None
+
+
 class _AnnulationDryRun(Exception):
     """Interrompt la transaction pour simuler sans écrire."""
 
@@ -67,6 +75,7 @@ class Command(BaseCommand):
             if code_filiere:
                 maj = self._ecrire(obj, RefFormation.Perimetre.INJS,
                                    code_filiere, SOURCE_A45)
+                maj += self._completer_metadonnees(obj, code_filiere)
                 if maj:
                     lignes.append(f'QUALIFIÉ  « {obj.intitule} » → INJS ({code_filiere}).')
                     c['QUALIFIE'] += 1
@@ -87,6 +96,42 @@ class Command(BaseCommand):
                     f'INCONNU   « {obj.intitule} » — origine non établie par la source : '
                     'laissé NON_DETERMINE (aucune valeur inventée, §7).',
                 )
+
+    @staticmethod
+    def _completer_metadonnees(obj, code_filiere):
+        """Renseigne les métadonnées ATTESTÉES encore vides (jamais en écrasement).
+
+        Les coquilles créées par l'import structurel A-4.4 portent le bon
+        intitulé mais laissent ``type_diplome``/``duree_annees``/
+        ``nb_semestres``/``nb_credites`` NULL. Le cycle, lui, est attesté par
+        l'intitulé lui-même et par A-4.5 §2/§3 : il peut donc être qualifié.
+        Aucune valeur déjà renseignée n'est modifiée.
+        """
+        attestes = {code: d for code, _s, _l, _e, _d, d in FILIERES_INJS}[code_filiere]
+        domaines = {code: dom for code, _s, _l, _e, dom, _d in FILIERES_INJS}
+        maj = []
+        if not obj.type_diplome:
+            cycle = _cycle_de_intitule(obj.intitule)
+            if cycle in attestes:
+                obj.type_diplome = cycle
+                maj.append('type_diplome')
+        if obj.type_diplome in attestes:
+            duree = 3 if obj.type_diplome == 'LICENCE' else 2
+            if not obj.duree_annees:
+                obj.duree_annees = duree
+                maj.append('duree_annees')
+            if not obj.nb_semestres:
+                obj.nb_semestres = duree * 2
+                maj.append('nb_semestres')
+            if not obj.nb_credites:
+                obj.nb_credites = duree * 60
+                maj.append('nb_credites')
+        if not obj.domaine and domaines[code_filiere]:
+            obj.domaine = domaines[code_filiere]
+            maj.append('domaine')
+        if maj:
+            obj.save(update_fields=maj)
+        return maj
 
     @staticmethod
     def _ecrire(obj, perimetre, filiere_code, source):
@@ -118,30 +163,32 @@ class Command(BaseCommand):
             if RefFormation.objects.filter(intitule=intitule).exists():
                 continue
             attestes = diplomes[code_filiere]
-            # ES/MS/APA/EM sont documentés « Licence + Master » (A-4.5 §3) :
-            # deux cycles. Les filières ENSEP ne le sont pas : une seule
-            # coquille, sans découpage inventé.
-            suffixes = [''] if len(attestes) == 1 else [' — LICENCE', ' — MASTER']
-            for suffixe in suffixes:
-                nouvel_intitule = f'{intitule}{suffixe}'
-                if RefFormation.objects.filter(intitule=nouvel_intitule).exists():
-                    continue
-                type_diplome = attestes[0] if not suffixe else attestes[1 - len(attestes)]
-                duree = 3 if type_diplome == 'LICENCE' else 2
-                RefFormation.objects.create(
-                    intitule=nouvel_intitule,
-                    perimetre=RefFormation.Perimetre.INJS,
-                    filiere_code=code_filiere,
-                    source=SOURCE_A45,
-                    type_diplome=type_diplome,
-                    domaine=domaines[code_filiere],
-                    duree_annees=duree,
-                    nb_semestres=6 if type_diplome == 'LICENCE' else 4,
-                    nb_credites=duree * 60,
-                )
+            # Les intitulés de CORPUS_INJS portent DÉJÀ le cycle quand la
+            # filière en compte plusieurs (« … — LICENCE », « … — MASTER »).
+            # On ne re-suffixe donc jamais : le suffixer une seconde fois
+            # produisait quatre lignes par filière, toutes typées MASTER.
+            type_diplome = _cycle_de_intitule(intitule) or attestes[0]
+            if type_diplome not in attestes:
                 lignes.append(
-                    f'CRÉÉ     « {nouvel_intitule} » ({type_diplome}, {code_filiere}).')
-                c['CREE'] += 1
+                    f'SKIPPED  « {intitule} » — cycle {type_diplome} non attesté '
+                    f'pour {code_filiere}.')
+                c['SKIPPED'] += 1
+                continue
+            duree = 3 if type_diplome == 'LICENCE' else 2
+            RefFormation.objects.create(
+                intitule=intitule,
+                perimetre=RefFormation.Perimetre.INJS,
+                filiere_code=code_filiere,
+                source=SOURCE_A45,
+                type_diplome=type_diplome,
+                domaine=domaines[code_filiere],
+                duree_annees=duree,
+                nb_semestres=6 if type_diplome == 'LICENCE' else 4,
+                nb_credites=duree * 60,
+            )
+            lignes.append(
+                f'CRÉÉ     « {intitule} » ({type_diplome}, {code_filiere}).')
+            c['CREE'] += 1
 
     def _controler(self, c, lignes):
         rapport = signaler_ecarts()

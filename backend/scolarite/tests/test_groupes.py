@@ -443,3 +443,61 @@ class GroupeAPITests(GroupeFixture, TestCase):
             {'type_evenement': 'INEXISTANT'}, format='json',
         )
         self.assertEqual(response.status_code, 400)
+
+    def test_non_affectes_compteur_et_filtres(self):
+        # L'inscription de la fixture est validée sans groupe : 1 non affecté.
+        response = self.client.get('/api/scolarite/groupes/non-affectes/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['non_affectes'], 1)
+        # Après affectation, le compteur retombe à zéro.
+        groupes_services.affecter_groupe(self.inscription, self.groupe_a)
+        response = self.client.get(
+            '/api/scolarite/groupes/non-affectes/',
+            {'annee_academique_id': self.annee.id,
+             'ref_formation_id': self.formation.id,
+             'niveau_id': self.niveau.id},
+        )
+        self.assertEqual(response.json()['non_affectes'], 0)
+        # Un niveau sans inscription validée compte zéro aussi.
+        response = self.client.get(
+            '/api/scolarite/groupes/non-affectes/',
+            {'niveau_id': self.niveau_l2.id},
+        )
+        self.assertEqual(response.json()['non_affectes'], 0)
+
+    def test_export_liste_groupe_pdf_et_excel(self):
+        groupes_services.affecter_groupe(self.inscription, self.groupe_a)
+
+        response = self.client.get(
+            f'/api/scolarite/groupes/{self.groupe_a.id}/liste/pdf/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertTrue(response.content.startswith(b'%PDF'))
+        self.assertIn('liste_groupe_L1-G1_L1.pdf',
+                      response['Content-Disposition'])
+
+        response = self.client.get(
+            f'/api/scolarite/groupes/{self.groupe_a.id}/liste/excel/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('spreadsheetml', response['Content-Type'])
+        # Le classeur s'ouvre et contient l'étudiant affecté.
+        import io
+
+        from openpyxl import load_workbook
+
+        feuille = load_workbook(io.BytesIO(response.content)).active
+        valeurs = {
+            str(cellule.value)
+            for ligne in feuille.iter_rows()
+            for cellule in ligne
+            if cellule.value is not None
+        }
+        self.assertIn(
+            self.inscription.etudiant.participant.matricule, valeurs)
+
+    def test_export_liste_groupe_erreurs(self):
+        response = self.client.get(
+            f'/api/scolarite/groupes/{self.groupe_a.id}/liste/csv/')
+        self.assertEqual(response.status_code, 400)
+        response = self.client.get('/api/scolarite/groupes/99999/liste/pdf/')
+        self.assertEqual(response.status_code, 404)

@@ -1,161 +1,575 @@
-/* ==========================================================================
-   STYLE DEDIE : EQUIVALENCES ET DISPENSES (SCOLARITE) INJS-LMD 2026
-   Rendu premium aligne sur campagnes.css : bandeau blanc, tuiles KPI,
-   panneaux epures, tableau aere, boutons pilules.
-   Tout est prefixe `.equivalences-lmd-container` / `.eq-*` : aucun effet de
-   bord sur les autres ecrans et aucune modification de logique metier.
-   ========================================================================== */
+/* STYLE DÉDIÉ : ÉQUIVALENCES ET DISPENSES — habillage premium.
+ *
+ * La page s'appuie sur le design system Scolarité (`.cand-*` : bandeau,
+ * tuiles KPI, panneaux, champs, tableau, état vide, chargement). Ne restent
+ * ici que les pièces propres à cet écran : pastilles du bandeau, formulaires
+ * (création et décision), puces de type / statut / décision et actions du
+ * cycle de vie.
+ *
+ * Toutes les classes sont préfixées `.eq-` : aucun effet de bord ailleurs.
+ */
 
-/* La colonne et l'espacement viennent de `.camp-page` (importe avec
-   campagnes.css) : cette classe sert surtout de racine de portee pour les
-   ajustements `.eq-*` ci-dessous. */
-.equivalences-lmd-container {
-  min-width: 0;
-}
-
-/* Les panneaux sont espaces par la colonne flex : pas de marge parasite. */
-.equivalences-lmd-container .camp-panel {
-  margin-bottom: 0 !important;
-}
-
-/* -- 1. EN-TETE DE PAGE -- */
-.equivalences-lmd-container .camp-hero-sub {
-  max-width: 62ch;
-}
-
-.eq-hero-flag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  align-self: flex-start;
-  padding: 0.2rem 0.6rem;
-  border-radius: 9999px;
-  background: #eef2f7;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-  font-size: 0.68rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-/* -- 2. TUILES KPI -- */
-.eq-kpi {
-  border-radius: 16px;
-}
-
-.eq-kpi .camp-kpi-value {
-  font-variant-numeric: tabular-nums;
-}
-
-/* -- 3. PANNEAU DE CREATION -- */
-.eq-form-actions {
+/* ── 1. BANDEAU ── */
+.eq-hero-pastilles {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
-  border-top: 1px dashed #e2e8f0;
-  padding-top: 0.9rem;
 }
 
-.eq-hint {
-  font-size: 0.78rem;
-  color: #64748b;
-  max-width: 72ch;
-}
-
-.eq-add-btn {
-  width: 46px;
-  height: 46px;
-  flex: 0 0 auto;
+.eq-pastille {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 0;
-  border-radius: 50% !important;
-  font-size: 1.4rem;
-  font-weight: 700;
-  line-height: 1;
-  background: linear-gradient(135deg, #2563eb 0%, #2a7fff 100%) !important;
-  border-color: transparent !important;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.eq-add-btn:hover,
-.eq-add-btn:focus-visible {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
-}
-
-.eq-add-btn:disabled {
-  opacity: 0.6;
-  box-shadow: none;
-  transform: none;
-}
-
-/* -- 4. CONTROLES DE FORMULAIRE -- */
-.eq-select,
-.eq-input {
-  border-radius: 10px;
-  border-color: #e2e8f0;
-  font-size: 0.88rem;
-}
-
-.eq-select:focus,
-.eq-input:focus {
-  border-color: #2a7fff;
-  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
-}
-
-/* -- 5. TABLEAU DES DEMANDES -- */
-.eq-chip {
+  gap: 0.35rem;
+  padding: 0.28rem 0.75rem;
   font-size: 0.74rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  padding: 0.32rem 0.6rem;
-  border-radius: 999px;
-}
-
-.eq-table tbody td {
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
-}
-
-.eq-table .camp-candidatures {
-  min-width: 2.2rem;
-}
-
-.eq-action-btn {
-  border-radius: 9999px !important;
-  font-weight: 700;
-  font-size: 0.76rem;
-  padding: 0.35rem 0.9rem;
+  line-height: 1.2;
+  border-radius: 9999px;
+  border: 1px solid transparent;
   white-space: nowrap;
 }
 
-/* -- 6. PANNEAU DE DECISION (mis en avant) -- */
-.eq-decision-panel {
-  border: 1px solid #bfdbfe !important;
-  box-shadow: 0 12px 30px -6px rgba(37, 99, 235, 0.18);
+.eq-pastille i { font-size: 0.85rem; }
+
+.eq-pastille--primary {
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border-color: #BFDCF5;
 }
 
-.eq-decision-panel .camp-panel-head {
-  background: rgba(235, 243, 255, 0.7);
+.eq-pastille--neutre {
+  color: #475569;
+  background: #F1F5F9;
+  border-color: #E2E8F0;
 }
 
-.eq-decision-panel .camp-panel-title i {
-  color: #2563eb;
+/* ── 2. PANNEAUX (création et décision) ──
+   Ces deux panneaux portent aussi la classe `.card` attendue par les tests
+   de rendu ; on réaligne donc forme et fond sur le design system. */
+.eq-panneau.card {
+  padding: 0;
+  border: 1px solid #E9ECF2;
+  border-radius: 18px;
+  overflow: hidden;
 }
 
-.eq-decision-foot {
+.eq-panneau--decision.card {
+  border-color: #C7D9FB;
+  box-shadow: 0 12px 32px -8px rgba(18, 103, 214, 0.18);
+}
+
+/* ── 3. FORMULAIRES ── */
+/* Cinq champs courts sur une ligne : type, étudiant, année, formation,
+   niveau. Deux colonnes sous 1100 px, une seule sous 560 px. */
+.eq-form {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: end;
+}
+
+.eq-form--decision { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.eq-form .cand-saisie { min-height: 42px; width: 100%; }
+
+.eq-form-pied {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
+  margin-top: 0.2rem;
+  padding-top: 0.95rem;
+  border-top: 1px solid #EDF1F6;
+}
+
+.eq-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: #64748B;
+  max-width: 78ch;
+}
+
+.eq-hint i { color: var(--injs-blue-royal); font-size: 0.85rem; margin-top: 0.15rem; }
+
+/* Action d'ajout : bouton rond plein, aligné sur la hauteur des champs. */
+.eq-add-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  padding: 0;
+  font-size: 1.15rem;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #2E7FE8 0%, var(--injs-blue-royal) 100%);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 8px 18px -6px rgba(18, 103, 214, 0.55);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.eq-add-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px -6px rgba(18, 103, 214, 0.6);
+  filter: brightness(1.05);
+}
+
+.eq-add-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.eq-add-btn:focus-visible { outline: 2px solid var(--injs-blue-royal); outline-offset: 3px; }
+
+.eq-form-boutons {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* ── 4. TABLEAU ── */
+.eq-table { min-width: 1080px; }
+.eq-table th:nth-child(1), .eq-table td:nth-child(1) { width: 138px; }
+.eq-table th:nth-child(2), .eq-table td:nth-child(2) { width: 116px; }
+.eq-table th:nth-child(4), .eq-table td:nth-child(4) { width: 132px; }
+/* « AVIS_PEDAGOGIQUE » est le statut le plus long : sa colonne doit
+   l'accueillir sans déborder sur les crédits. */
+.eq-table th:nth-child(5), .eq-table td:nth-child(5) { width: 178px; }
+.eq-table th:nth-child(6), .eq-table td:nth-child(6) { width: 96px; }
+.eq-table th:nth-child(7), .eq-table td:nth-child(7) { width: 182px; }
+
+/* Type de demande : puce à icône, bleue pour une équivalence, ardoise pour
+   une dispense. */
+.eq-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.22rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.eq-type i { font-size: 0.8rem; }
+.eq-type--dispense { color: #475569; background: #F1F5F9; border-color: #E2E8F0; }
+.eq-type--equivalence { color: var(--injs-blue-royal); background: var(--injs-blue-pale); border-color: #BFDCF5; }
+
+.eq-matricule {
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #334155;
+  white-space: nowrap;
+}
+
+/* L'intitulé de formation passe sur deux lignes plutôt que d'être tronqué. */
+.eq-formation {
+  display: block;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #0F172A;
+}
+
+.eq-credits {
+  font-size: 0.9rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--injs-navy);
+}
+
+.eq-unite { font-size: 0.72rem; font-weight: 600; color: #8C9AAD; }
+
+/* Statut du cycle de vie : pastille teintée. Les classes `text-bg-*` sont
+   conservées pour le contrat de test ; l'apparence vient d'ici, Bootstrap
+   n'étant pas embarqué. */
+.eq-statut,
+.eq-decision {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.eq-statut.text-bg-secondary,
+.eq-decision.text-bg-secondary { color: #8A5A00; background: #FFF8E8; border-color: #F5DFAE; }
+
+.eq-statut.text-bg-info      { color: #1D4ED8; background: #EEF4FF; border-color: #C7D9FB; }
+.eq-statut.text-bg-warning   { color: #8A5A00; background: #FFF8E8; border-color: #F5DFAE; }
+.eq-statut.text-bg-primary   { color: #4338CA; background: #EEF0FF; border-color: #CFD5FB; }
+.eq-statut.text-bg-success,
+.eq-decision.text-bg-success { color: #0E7A4F; background: #F1FBF6; border-color: #B7E7CE; }
+.eq-statut.text-bg-danger,
+.eq-decision.text-bg-danger  { color: #A3222F; background: #FDF1F2; border-color: #F5C2C7; }
+.eq-statut.text-bg-dark      { color: #475569; background: #F1F5F9; border-color: #DCE3EC; }
+
+/* ── 5. ACTIONS DU CYCLE DE VIE ── */
+.eq-actions { gap: 0.4rem; }
+
+.eq-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  height: 32px;
+  padding: 0 0.65rem;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 9px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.eq-action i { font-size: 0.85rem; }
+.eq-action:hover:not(:disabled) { background: #F5F9FF; border-color: var(--injs-blue-royal); color: var(--injs-blue-royal); }
+.eq-action:disabled { opacity: 0.55; cursor: not-allowed; }
+.eq-action:focus-visible { outline: 2px solid var(--injs-blue-royal); outline-offset: 2px; }
+
+.eq-action--soumettre { color: #1D4ED8; background: #EEF4FF; border-color: #C7D9FB; }
+.eq-action--soumettre:hover:not(:disabled) { background: #E0EBFF; border-color: #9CBEFF; color: #1740B8; }
+
+.eq-action--instruire { color: #0E7490; background: #ECFAFD; border-color: #B6E4EF; }
+.eq-action--instruire:hover:not(:disabled) { background: #DCF4FA; border-color: #8CCFDF; color: #0B5A70; }
+
+.eq-action--avis { color: #4338CA; background: #EEF0FF; border-color: #CFD5FB; }
+.eq-action--avis:hover:not(:disabled) { background: #E2E5FF; border-color: #AEB8F7; color: #3226A8; }
+
+.eq-action--decider { color: #475569; }
+.eq-action--decider:hover:not(:disabled) { background: #F5F9FF; border-color: var(--injs-blue-royal); color: var(--injs-blue-royal); }
+
+.eq-action--appliquer { color: #0E7A4F; background: #F1FBF6; border-color: #B7E7CE; }
+.eq-action--appliquer:hover:not(:disabled) { background: #E3F7EC; border-color: #8FD9B6; color: #0A6440; }
+
+/* ── 6. RESPONSIVE ── */
+@media (max-width: 1100px) {
+  .eq-form,
+  .eq-form--decision { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .eq-hero-pastilles { width: 100%; }
+  .eq-form-pied { flex-direction: column-reverse; align-items: stretch; }
+  .eq-add-btn { align-self: flex-end; }
+  .eq-form-boutons { justify-content: flex-end; }
+}
+
+@media (max-width: 560px) {
+  /* L'étiquette du bandeau est longue : sans retour à la ligne, elle élargit
+     la page au-delà de 390 px. */
+  .eq-page .cand-hero-badge {
+    white-space: normal;
+    font-size: 0.64rem;
+    letter-spacing: 0.04em;
+    line-height: 1.45;
+  }
+
+  .eq-form,
+  .eq-form--decision { grid-template-columns: minmax(0, 1fr); }
+  .eq-pastille { font-size: 0.7rem; }
+  .eq-form-boutons { width: 100%; }
+  .eq-form-boutons > * { flex: 1 1 auto; justify-content: center; }
+}
+
+/* ── 7. PREMIUM : KPI, cycle d'instruction, progression ── */
+.eq-kpi-sub {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #8C9AAD;
+  line-height: 1.25;
+}
+
+.eq-cycle {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.eq-cycle-lien {
+  display: grid;
+  place-items: center;
+  color: #B6C3D4;
+  font-size: 0.8rem;
+}
+
+.eq-etape {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.42rem 0.65rem;
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #475569;
+  background: #FFFFFF;
+  border: 1px solid #E3EAF2;
+  border-radius: 9999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.eq-etape:hover { border-color: var(--injs-blue-royal); }
+.eq-etape:focus-visible { outline: 2px solid var(--injs-blue-royal); outline-offset: 2px; }
+.eq-etape.is-active {
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px #DCEBFC;
+  background: #F5F9FF;
+  color: var(--injs-navy);
+}
+
+.eq-etape i { font-size: 0.85rem; }
+.eq-etape.is-amber i { color: #B8860B; }
+.eq-etape.is-blue i { color: #1D4ED8; }
+.eq-etape.is-cyan i { color: #0E7490; }
+.eq-etape.is-indigo i { color: #4338CA; }
+.eq-etape.is-green i { color: #0E7A4F; }
+.eq-etape.is-slate i { color: #475569; }
+.eq-etape.is-red i { color: #A3222F; }
+
+.eq-etape-nb {
+  padding: 0.05rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--injs-navy);
+  background: #EDF2F8;
+  border-radius: 9999px;
+}
+
+.eq-progression {
   margin-top: 0.85rem;
-  border-top: 1px dashed #e2e8f0;
-  padding-top: 0.75rem;
+  height: 8px;
+  background: #EDF1F6;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.eq-progression-barre {
+  display: block;
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--injs-blue-royal), #10B981);
+  transition: width 0.4s ease;
+}
+
+.eq-alerte {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.85rem 0 0;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.79rem;
+  font-weight: 600;
+  color: #8A5A00;
+  background: #FFF8E8;
+  border: 1px solid #F3DFAE;
+  border-radius: 11px;
+}
+
+/* ── 8. PREMIUM : filtres (segment type + sélecteurs + recherche) ── */
+.eq-filtres {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.9rem 1.1rem;
+  flex-wrap: wrap;
+}
+
+.eq-segment {
+  display: inline-flex;
+  padding: 0.25rem;
+  background: #EFF3F9;
+  border: 1px solid #DEE7F2;
+  border-radius: 12px;
+}
+
+.eq-segment-btn {
+  padding: 0.42rem 0.85rem;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #5B6B80;
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.eq-segment-btn:hover { color: var(--injs-navy); }
+
+.eq-segment-btn.is-active {
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #2E7FE8 0%, var(--injs-blue-royal) 100%);
+  box-shadow: 0 4px 10px -4px rgba(18, 103, 214, 0.55);
+}
+
+.eq-segment-btn:focus-visible { outline: 2px solid var(--injs-blue-royal); outline-offset: 2px; }
+
+.eq-filtre {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+  flex: 0 0 220px;
+  min-width: 0;
+}
+
+.eq-filtre--large { flex: 1 1 260px; }
+
+.eq-filtre .cand-filter-select {
+  width: 100%;
+  flex: 0 0 auto;
+  min-height: 42px;
+}
+
+.eq-recherche { max-width: none; width: 100%; }
+
+/* ── 9. PREMIUM : formulaire de création étendu + bouton libellé ── */
+.eq-form--creation { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.eq-form--decision .eq-champ-large { grid-column: span 2; }
+.eq-form--decision textarea.cand-saisie { min-height: 0; resize: vertical; }
+
+/* Le bouton « + » devient une pilule libellée (aria-label conservé). */
+.eq-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: auto;
+  height: 44px;
+  padding: 0 1.15rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  border-radius: 9999px;
+}
+
+.eq-add-btn i { font-size: 1.05rem; }
+
+/* ── 10. PREMIUM : tableau 11 colonnes, cible, pièces, accents ── */
+.eq-table { min-width: 1560px; }
+.eq-table th:nth-child(1), .eq-table td:nth-child(1) { width: 168px; }
+.eq-table th:nth-child(2), .eq-table td:nth-child(2) { width: 190px; }
+.eq-table th:nth-child(3), .eq-table td:nth-child(3) { width: 130px; }
+.eq-table th:nth-child(5), .eq-table td:nth-child(5) { width: 84px; }
+.eq-table th:nth-child(6), .eq-table td:nth-child(6) { width: 230px; }
+.eq-table th:nth-child(7), .eq-table td:nth-child(7) { width: 104px; }
+.eq-table th:nth-child(8), .eq-table td:nth-child(8) { width: 128px; }
+.eq-table th:nth-child(9), .eq-table td:nth-child(9) { width: 186px; }
+.eq-table th:nth-child(10), .eq-table td:nth-child(10) { width: 86px; }
+.eq-table th:nth-child(11), .eq-table td:nth-child(11) { width: 230px; }
+
+.eq-statut { gap: 0.3rem; }
+.eq-statut i { font-size: 0.72rem; }
+
+.eq-type-ligne {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.eq-exemple {
+  padding: 0.12rem 0.45rem;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6D28B8;
+  background: #F4ECFF;
+  border: 1px solid #DCC9FB;
+  border-radius: 9999px;
+}
+
+.eq-etudiant { font-weight: 700; color: var(--injs-navy); line-height: 1.3; }
+
+.eq-cible {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.eq-cible-principale {
+  font-weight: 600;
+  color: #1F2E44;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.eq-cible-secondaire {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #8C9AAD;
+}
+
+.eq-pieces {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.eq-pieces-nb {
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--injs-navy);
+}
+
+.eq-completude {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.eq-completude.is-ok { color: #0E7A4F; }
+.eq-completude.is-ko { color: #B45309; }
+
+.eq-table tbody tr.eq-ligne--brouillon { box-shadow: inset 3px 0 0 #F59E0B; }
+.eq-table tbody tr.eq-ligne--soumise { box-shadow: inset 3px 0 0 #3B82F6; }
+.eq-table tbody tr.eq-ligne--en_instruction { box-shadow: inset 3px 0 0 #06B6D4; }
+.eq-table tbody tr.eq-ligne--a_completer { box-shadow: inset 3px 0 0 #F97316; }
+.eq-table tbody tr.eq-ligne--avis_pedagogique { box-shadow: inset 3px 0 0 #6366F1; }
+.eq-table tbody tr.eq-ligne--decision { box-shadow: inset 3px 0 0 #8B5CF6; }
+.eq-table tbody tr.eq-ligne--validee { box-shadow: inset 3px 0 0 #22C55E; }
+.eq-table tbody tr.eq-ligne--appliquee { box-shadow: inset 3px 0 0 #64748B; }
+.eq-table tbody tr.eq-ligne--rejetee { box-shadow: inset 3px 0 0 #EF4444; }
+
+/* ── 11. PREMIUM : actions complémentaires ── */
+.eq-action--completer { color: #9A5B00; background: #FFF4E0; border-color: #F3DFAE; }
+.eq-action--completer:hover:not(:disabled) { background: #FDEBC8; border-color: #EBCB84; color: #7A4800; }
+
+.eq-action--rejeter { color: #A3222F; background: #FDF1F2; border-color: #F5C2C7; }
+.eq-action--rejeter:hover:not(:disabled) { background: #FBDCE0; border-color: #EC9AA3; color: #8C1D28; }
+
+/* ── 12. PREMIUM : responsive ── */
+@media (max-width: 1100px) {
+  .eq-form--creation { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .eq-cycle-lien { display: none; }
+  .eq-filtre, .eq-filtre--large { flex: 1 1 100%; }
+  .eq-segment { width: 100%; }
+  .eq-segment-btn { flex: 1 1 auto; }
+  .eq-form--creation { grid-template-columns: minmax(0, 1fr); }
+  .eq-form--decision .eq-champ-large { grid-column: auto; }
 }

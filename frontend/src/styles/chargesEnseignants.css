@@ -25,7 +25,7 @@
 
 .chg-occ-table tbody td:first-child {
   font-weight: 600;
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 .chg-occ-table tbody td.px-num {
@@ -61,7 +61,7 @@
 .chg-aff-table tbody td:nth-child(3) {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 /* Chip neutre pour le type d'enseignement (CM / TD / TP). */
@@ -126,7 +126,7 @@
 
 /* Carte de création : accent bleu sur l'icône, corps aéré. */
 .chg-create .px-panel-title i {
-  color: #2563EB;
+  color: var(--injs-blue-royal);
 }
 
 .chg-create .card-body {

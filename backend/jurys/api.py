@@ -207,7 +207,6 @@ def _has_role_complet(user):
 
 
 @extend_schema(
-    operation_id='jurys_session_list',
     summary='Sessions de délibération (paginées, filtrables)',
     description=(
         'GET : liste paginée des sessions de jury du périmètre autorisé. '
@@ -356,7 +355,6 @@ def session_action(request, pk):
 
 
 @extend_schema(
-    operation_id='jurys_session_membres',
     summary='Composition du jury (lecture) / ajout d’un membre (écriture)',
     description=(
         'GET : liste des membres de la session. '
@@ -487,7 +485,6 @@ def notifications_jury(request):
 
 
 @extend_schema(
-    operation_id='jurys_session_anomalies',
     summary='Anomalies de la session de délibération',
     description=(
         'Anomalies réellement contrôlées par le workflow Jury '
@@ -514,7 +511,6 @@ def session_anomalies(request, pk):
 
 
 @extend_schema(
-    operation_id='jurys_session_statistiques',
     summary='Statistiques agrégées de la session',
     description=(
         'Agrégats calculés à la demande depuis DecisionJury / '
@@ -529,3 +525,127 @@ def session_statistiques(request, pk):
     if session is None:
         return Response({'detail': 'Session introuvable.'}, status=404)
     return Response(services.statistiques_deliberation(session))
+
+
+# ---------- Hub Jurys premium (consultation staff — tâche 34) ----------
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def hub_stats_api(request):
+    """Panorama des jurys : sessions, décisions, taux d'admission."""
+    from django.db.models import Count
+
+    decisions = dict(
+        DecisionJury.objects.values_list('decision')
+        .annotate(n=Count('id')).order_by()
+    )
+    total_decisions = sum(decisions.values())
+    admis = decisions.get('ADMIS', 0) + decisions.get('ADMIS_RESERVES', 0)
+    return Response({
+        'sessions': SessionJury.objects.count(),
+        'par_statut': dict(
+            SessionJury.objects.values_list('statut')
+            .annotate(n=Count('id')).order_by()
+        ),
+        'sessions_publiees': SessionJury.objects.filter(
+            statut=SessionJury.Statut.PUBLIE,
+        ).count(),
+        'pv_generes': PVJury.objects.count(),
+        'membres': MembreJury.objects.count(),
+        'propositions': PropositionJury.objects.count(),
+        'decisions': total_decisions,
+        'par_decision': decisions,
+        'taux_admis': (
+            round(100.0 * admis / total_decisions, 1) if total_decisions else None
+        ),
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def hub_sessions_api(request):
+    """Sessions enrichies (formation, niveau, compteurs, PV)."""
+    from django.db.models import Count
+
+    qs = (
+        SessionJury.objects.select_related(
+            'ref_formation', 'niveau', 'semestre', 'annee_academique',
+        )
+        .annotate(nb_membres=Count('membres', distinct=True),
+                  nb_decisions=Count('decisions', distinct=True))
+        .order_by('-created_at')
+    )
+    if request.GET.get('statut'):
+        qs = qs.filter(statut=request.GET['statut'])
+    if request.GET.get('type_session'):
+        qs = qs.filter(type_session=request.GET['type_session'])
+    if request.GET.get('avec_pv') == '1':
+        qs = qs.filter(pv__isnull=False)
+    return Response({'results': [
+        {
+            'id': s.id, 'libelle': s.libelle,
+            'formation': s.ref_formation.intitule if s.ref_formation_id else '',
+            'niveau': s.niveau.code if s.niveau_id else '',
+            'semestre': s.semestre.libelle if s.semestre_id else '',
+            'annee': str(s.annee_academique) if s.annee_academique_id else '',
+            'type_session': s.type_session,
+            'type_session_display': s.get_type_session_display(),
+            'statut': s.statut,
+            'statut_display': s.get_statut_display(),
+            'nb_membres': s.nb_membres, 'nb_decisions': s.nb_decisions,
+            'pv': hasattr(s, 'pv'),
+            'created_at': s.created_at.isoformat(),
+        } for s in qs
+    ]})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def hub_membres_api(request):
+    """Composition globale des jurys (présidents, secrétaires, membres)."""
+    qs = MembreJury.objects.select_related(
+        'user', 'session__ref_formation', 'session__niveau',
+    ).order_by('session_id', 'fonction')
+    if request.GET.get('fonction'):
+        qs = qs.filter(fonction=request.GET['fonction'])
+    return Response({'results': [
+        {
+            'id': m.id,
+            'nom': m.user.get_full_name() or m.user.username,
+            'fonction': m.fonction,
+            'fonction_display': m.get_fonction_display(),
+            'session': m.session.libelle or f'Session #{m.session_id}',
+            'formation': m.session.ref_formation.intitule,
+            'niveau': m.session.niveau.code,
+        } for m in qs
+    ]})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def hub_decisions_api(request):
+    """Décisions de jury enrichies (étudiant, moyenne, crédits)."""
+    qs = DecisionJury.objects.select_related(
+        'participant', 'session__ref_formation', 'session__niveau',
+        'inscription__etudiant',
+    ).order_by('-decide_le')
+    if request.GET.get('decision'):
+        qs = qs.filter(decision=request.GET['decision'])
+    return Response({'results': [
+        {
+            'id': d.id,
+            'etudiant_id': d.inscription.etudiant_id,
+            'matricule': d.participant.matricule,
+            'nom': f'{d.participant.nom} {d.participant.prenom}'.strip(),
+            'formation': d.session.ref_formation.intitule,
+            'niveau': d.session.niveau.code,
+            'decision': d.decision,
+            'decision_display': d.get_decision_display(),
+            'credits_acquis': d.credits_acquis,
+            'moyenne_generale': (
+                float(d.moyenne_generale) if d.moyenne_generale is not None else None
+            ),
+            'mention': d.mention,
+            'justification': d.justification,
+        } for d in qs
+    ]})

@@ -4,6 +4,7 @@ from django.urls import path
 from . import api
 
 urlpatterns = [
+    path('stats/', api.stats_api, name='stages-stats'),
     # Organismes d'accueil
     path('organismes/', api.organismes_list_api, name='stages-organismes-list'),
     path('organismes/creer/', api.organisme_creer_api, name='stages-organisme-creer'),

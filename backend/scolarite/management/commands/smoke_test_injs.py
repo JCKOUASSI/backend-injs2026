@@ -199,11 +199,16 @@ class Command(BaseCommand):
     def _campagne(self):
         self._referentiels()
         c = self.contexte
+        # Fenêtre glissante autour du jour courant : une date fixe rendait la
+        # commande (et les tests qui l'exécutent) « périmée » du jour au
+        # lendemain, dès que la campagne de démonstration arrivait à échéance.
+        aujourd_hui = timezone.localdate()
         campagne = CampagneAdmission.objects.create(
             libelle='Campagne de démo SMOKE 2026-2027',
             annee_academique=c['annee'], ref_formation=c['ref_formation'],
             parcours=c['parcours'],
-            date_ouverture=date(2026, 9, 1), date_fermeture=date(2026, 10, 31),
+            date_ouverture=aujourd_hui - timedelta(days=30),
+            date_fermeture=aujourd_hui + timedelta(days=30),
             quota_admissibles=100, quota_admis=80,
             statut=CampagneAdmission.Statut.OUVERTE,
         )
@@ -496,13 +501,13 @@ class Command(BaseCommand):
     def _paiement(self):
         c = self.contexte
         ligne = c['echeancier'].lignes.order_by('date_echeance').first()
-        preuve = ContentFile(b'preuve-de-paiement-smoke', name='preuve-smoke.txt')
+        preuve = ContentFile(b'preuve-de-paiement-smoke', name='preuve-smoke.pdf')
         paiement, cree = enregistrer_paiement_idempotent(
             etudiant=c['etudiant'], nature=ligne.nature, montant=ligne.montant,
             devise='XOF', mode='CAISSE', transaction_externe='SMOKE-TX-0001',
             utilisateur=c['acteur'],
         )
-        paiement.preuve.save('preuve-smoke.txt', preuve, save=True)
+        paiement.preuve.save('preuve-smoke.pdf', preuve, save=True)
         # Idempotence : un second envoi avec la même référence renvoie le même paiement.
         _, cree_bis = enregistrer_paiement_idempotent(
             etudiant=c['etudiant'], nature=ligne.nature, montant=ligne.montant,

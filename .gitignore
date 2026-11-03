@@ -41,13 +41,15 @@ project_structure.txt
 
 # Marqueurs locaux du script scripts/start_dev.sh (démo hors Docker/SQLite)
 backend/.seed_ok
+backend/.referentiels_ok
+backend/.lmd_ok
 backend/.venv/.deps_ok
 backend/db.sqlite3
 # P00-02 — données nominatives et classeurs d'import : hors dépôt
-# Supprimé: *.numbers -> fichiers de données inclus dans le dépôt
-# Supprimé: *.xlsx -> fichiers de données inclus dans le dépôt
-# Supprimé: *.xls -> fichiers de données inclus dans le dépôt
-# Supprimé: *.csv -> fichiers de données inclus dans le dépôt
+*.numbers
+*.xlsx
+*.xls
+*.csv
 **/importverif/
 # Exception 1 : modèles vides d'import (en-têtes + 1 ligne fictive)
 !docs/modeles/
@@ -98,5 +100,8 @@ backend/nohup.out
 /arena/previews/
 *.prompt.md
 
-# Fichiers temporaires Office/Excel (~$*)
-~$*
+# SDK Flutter déposé localement (jamais versionné : ~1 Go)
+.sdk/
+
+# Livrable tableur généré (conservé localement, hygiène du dépôt)
+dossier_trvx/Documentation_TableauDeBord_Referentiels_INJS.xlsx

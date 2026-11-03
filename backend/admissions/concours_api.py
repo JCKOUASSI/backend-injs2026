@@ -5,6 +5,7 @@ explicites, permissions IsSecretariatOrDFRC (écriture et consultation
 staff) — même contrat que les autres endpoints de l'app admissions.
 """
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -29,15 +30,20 @@ def _serializer_campagne(campagne):
         'id': campagne.id,
         'libelle': campagne.libelle,
         'annee_academique_id': campagne.annee_academique_id,
+        'annee_academique': campagne.annee_academique.libelle,
         'ref_formation_id': campagne.ref_formation_id,
+        'ref_formation': campagne.ref_formation.intitule,
         'parcours_id': campagne.parcours_id,
         'date_ouverture': campagne.date_ouverture,
         'date_fermeture': campagne.date_fermeture,
         'quota_admissibles': campagne.quota_admissibles,
         'quota_admis': campagne.quota_admis,
         'statut': campagne.statut,
+        'statut_libelle': campagne.get_statut_display(),
         'nb_candidatures': campagne.candidatures.count(),
         'nb_epreuves': campagne.epreuves.count(),
+        'classement_calcule': campagne.classements.exists(),
+        'classement_publie': campagne.classements.filter(publie=True).exists(),
     }
 
 
@@ -46,12 +52,15 @@ def _serializer_epreuve(epreuve):
         'id': epreuve.id,
         'campagne_id': epreuve.campagne_id,
         'type': epreuve.type,
+        'type_libelle': epreuve.get_type_display(),
         'intitule': epreuve.intitule,
         'date': epreuve.date,
         'heure_debut': epreuve.heure_debut,
         'duree_minutes': epreuve.duree_minutes,
         'centre_id': epreuve.centre_id,
+        'centre': epreuve.centre.nom if epreuve.centre_id else None,
         'salle_id': epreuve.salle_id,
+        'salle': epreuve.salle.nom if epreuve.salle_id else None,
         'coefficient': epreuve.coefficient,
         'verrouillee': epreuve.verrouillee,
         'nb_convocations': epreuve.convocations.count(),
@@ -73,10 +82,16 @@ def campagne_list(request):
     if request.method == 'GET':
         queryset = CampagneAdmission.objects.select_related(
             'annee_academique', 'ref_formation',
-        )
+        ).prefetch_related('classements')
         for champ in ('statut', 'annee_academique_id', 'ref_formation_id'):
             if champ in request.query_params:
                 queryset = queryset.filter(**{champ: request.query_params[champ]})
+        recherche = (request.query_params.get('q') or '').strip()
+        if recherche:
+            queryset = queryset.filter(
+                Q(libelle__icontains=recherche)
+                | Q(ref_formation__intitule__icontains=recherche)
+            )
         return Response([_serializer_campagne(c) for c in queryset])
 
     try:
@@ -106,10 +121,18 @@ def campagne_list(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def campagne_detail(request, pk):
+    """Fiche d'une campagne : propriétés + épreuves (avec convocations)."""
     campagne = _get_campagne(pk)
     if campagne is None:
         return Response({'error': 'Introuvable'}, status=404)
     data = _serializer_campagne(campagne)
+    data['epreuves'] = [
+        _serializer_epreuve(epreuve)
+        for epreuve in campagne.epreuves.select_related('centre', 'salle').prefetch_related(
+            'convocations', 'surveillances',
+        )
+    ]
+    return Response(data)
 
 
 @api_view(['POST'])
@@ -267,6 +290,7 @@ def campagne_classement(request, pk):
             'candidat': c.candidature.candidat.nom_complet,
             'score_total': c.score_total,
             'liste': c.liste,
+            'liste_libelle': c.get_liste_display(),
             'publie': c.publie,
         }
         for c in classement

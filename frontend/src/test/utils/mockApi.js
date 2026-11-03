@@ -82,11 +82,14 @@ function makeApiMock() {
 
   const api = {
     get: vi.fn(async (path) => resolve(path)),
+    // `await data` : comme pour GET, une route peut renvoyer une promesse
+    // rejetée pour simuler un refus serveur (409, 403…). Sans cet `await`, un
+    // rejet n'était jamais propagé et un test de refus passait à tort.
     post: vi.fn(async (path, body) => {
       const route = matchRoute(path)
       if (route) {
         const { data, status } = produce(route, path, body)
-        return ok(data ?? body ?? {}, status)
+        return ok((await data) ?? body ?? {}, await status)
       }
       return ok({})
     }),
@@ -94,7 +97,7 @@ function makeApiMock() {
       const route = matchRoute(path)
       if (route) {
         const { data, status } = produce(route, path, body)
-        return ok(data ?? body ?? {}, status)
+        return ok((await data) ?? body ?? {}, await status)
       }
       return ok(body ?? {})
     }),

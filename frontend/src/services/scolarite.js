@@ -19,7 +19,7 @@ export const getRefFormations = () => api.get('/formations/ref/formations/')
 export const getRefCategories = () => api.get('/formations/ref/categories/')
 export const getRefGrades = () => api.get('/formations/ref/grades/')
 export const getRefVagues = () => api.get('/formations/ref/vagues/')
-export const getFormationsOperationnelles = () => api.get('/formations/formations/')
+export const getFormationsOperationnelles = () => api.get('/formations/list/')
 
 // ── Candidatures ────────────────────────────────────────────────────────────
 
@@ -90,6 +90,7 @@ export const retirerEcue = (ligneId) => api.delete(`/scolarite/pedagogie/${ligne
 // ── Groupes, réinscription, événements ──────────────────────────────────────
 
 export const getEffectifsGroupes = (params) => api.get('/scolarite/groupes/effectifs/', { params })
+export const getNonAffectesGroupes = (params) => api.get('/scolarite/groupes/non-affectes/', { params })
 export const getAffectations = (inscriptionId) =>
   api.get(`/scolarite/inscriptions/${inscriptionId}/affectations/`)
 export const affecterGroupe = (inscriptionId, body) =>
@@ -98,10 +99,18 @@ export const retirerGroupe = (inscriptionId, body) =>
   api.post(`/scolarite/inscriptions/${inscriptionId}/retirer-groupe/`, body)
 export const repartirGroupes = (body) => api.post('/scolarite/groupes/repartition/', body)
 export const reinscrire = (body) => api.post('/scolarite/reinscriptions/', body)
+export const getReinscriptions = (params) => api.get('/scolarite/reinscriptions/', { params })
+export const getReinscriptionsStats = (params) =>
+  api.get('/scolarite/reinscriptions/stats/', { params })
 export const getEvenements = (etudiantId) =>
   api.get(`/scolarite/etudiants/${etudiantId}/evenements/`)
 export const createEvenement = (etudiantId, body) =>
   api.post(`/scolarite/etudiants/${etudiantId}/evenements/`, body)
+export const getJournalEvenements = (params) =>
+  api.get('/scolarite/journal/evenements/', { params })
+export const getJournalAudit = (params) =>
+  api.get('/scolarite/journal/audit/', { params })
+export const getJournalStats = () => api.get('/scolarite/journal/stats/')
 
 // ── Passerelle vers les modules opérationnels ───────────────────────────────
 
@@ -141,6 +150,11 @@ export const STATUT_VARIANTS = {
   REFUSEE_PIECE: 'danger',
   EXPIREE: 'danger',
   PREVUE: 'secondary',
+  // Campagnes d'admission : statuts propres à la fenêtre de candidature.
+  PLANIFIEE: 'info',
+  OUVERTE: 'success',
+  CLOTUREE: 'dark',
+  ARCHIVEE: 'dark',
 }
 
 export function statutVariant(statut) {

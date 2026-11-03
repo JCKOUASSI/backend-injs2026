@@ -1,0 +1,4713 @@
+{
+ "meta": {
+  "titre": "Référentiel exhaustif de l'offre de formation — INJS Abidjan",
+  "source_fichier": "INJS D'ABIDJAN — RÉFÉRENTIEL EXHAUSTIF DE L'OFFRE DE FORMATION2.xlsx",
+  "source_type": "xlsx",
+  "source_feuilles": [
+   "Accueil",
+   "1. Filières & Concours",
+   "2. Cycle professionnel",
+   "3. Formations à la carte",
+   "4. Semestres & Grades",
+   "Maquette EM",
+   "Maquette MS",
+   "Maquette ES",
+   "Maquette APA",
+   "5. Organisation",
+   "6. Groupes, Catég., Horaires",
+   "7. Statistiques",
+   "8. Base UE (source TCD)",
+   "9. Analyse dynamique",
+   "Listes",
+   "10. Suivi inscriptions",
+   "11. Suivi des notes",
+   "12. Relevé de notes",
+   "13. Emploi du temps (modèle)"
+  ],
+  "source_feuilles_masquees": [
+   "Listes"
+  ],
+  "extrait_le": "2026-10-29",
+  "extracteur": "scripts/extraire_referentiel_offre_formation.py",
+  "note_codes": "Le référentiel ne publie aucun code officiel d’UE ni d’ECUE. Les codes du jeu de données sont TECHNIQUES, dérivés du rang : ils ne doivent pas être présentés comme officiels. La clé métier du classeur « Filière|Semestre|UE » est conservée telle quelle (cle_source).",
+  "note_volumes": "Les volumes CM/TD/TP ne sont pas publiés : ils restent à 0. Les pondérations CC/Examen du classeur (0,4 / 0,6) sont signalées « à confirmer par le règlement des études » et ne sont pas appliquées."
+ },
+ "mentions": {
+  "STAPS": {
+   "sigle": "STAPS",
+   "libelle": "Sciences et Techniques des Activités Physiques et Sportives",
+   "ecole": "ENSEPS",
+   "domaine": "Sciences et Technologies"
+  },
+  "STASE": {
+   "sigle": "STASE",
+   "libelle": "Sciences et Techniques des Activités Socio-Éducatives",
+   "ecole": "ENSEP",
+   "domaine": "Sciences de l'Éducation"
+  }
+ },
+ "filieres": {
+  "F01": {
+   "code": "F01",
+   "rang": 1,
+   "libelle": "Éducation et Motricité",
+   "sigle": "EM",
+   "sigle_source": "EM",
+   "ecole": "ENSEPS (STAPS)",
+   "mention": "STAPS",
+   "diplomes": "Licence pro STAPS + Master pro STAPS"
+  },
+  "F04": {
+   "code": "F04",
+   "rang": 2,
+   "libelle": "Management du Sport",
+   "sigle": "MS",
+   "sigle_source": "MS",
+   "ecole": "ENSEPS (STAPS)",
+   "mention": "STAPS",
+   "diplomes": "Licence pro STAPS + Master pro STAPS"
+  },
+  "F03": {
+   "code": "F03",
+   "rang": 3,
+   "libelle": "Entraînement Sportif",
+   "sigle": "ES",
+   "sigle_source": "ES",
+   "ecole": "ENSEPS (STAPS)",
+   "mention": "STAPS",
+   "diplomes": "Licence pro STAPS + Master pro STAPS"
+  },
+  "F02": {
+   "code": "F02",
+   "rang": 4,
+   "libelle": "Activités Physiques Adaptées",
+   "sigle": "APA",
+   "sigle_source": "APA / APAS",
+   "ecole": "ENSEPS (STAPS)",
+   "mention": "STAPS",
+   "diplomes": "Licence pro STAPS + Master pro STAPS"
+  },
+  "F05": {
+   "code": "F05",
+   "rang": 5,
+   "libelle": "Andragogie",
+   "sigle": "AND",
+   "sigle_source": "",
+   "ecole": "ENSEP (STASE)",
+   "mention": "STASE",
+   "diplomes": "Licence pro STASE + Master pro STASE"
+  },
+  "F06": {
+   "code": "F06",
+   "rang": 6,
+   "libelle": "Loisir",
+   "sigle": "LOI",
+   "sigle_source": "",
+   "ecole": "ENSEP (STASE)",
+   "mention": "STASE",
+   "diplomes": "Licence pro STASE + Master pro STASE"
+  },
+  "F07": {
+   "code": "F07",
+   "rang": 7,
+   "libelle": "Entrepreneuriat Jeunesse et Conduite de Projets",
+   "sigle": "ECJP",
+   "sigle_source": "ECJP",
+   "ecole": "ENSEP (STASE)",
+   "mention": "STASE",
+   "diplomes": "Licence pro STASE + Master pro STASE"
+  },
+  "F08": {
+   "code": "F08",
+   "rang": 8,
+   "libelle": "Gérontologie",
+   "sigle": "GER",
+   "sigle_source": "",
+   "ecole": "ENSEP (STASE)",
+   "mention": "STASE",
+   "diplomes": "Licence pro STASE + Master pro STASE"
+  }
+ },
+ "concours": [
+  {
+   "sigle": "PC-EPS",
+   "concours": "Professeur de Collège option Éducation Physique et Sportive",
+   "conditions": "BAC 2021-2025, toutes séries",
+   "age": "18-30 ans",
+   "duree_grade": "3 ans (grade Licence)"
+  },
+  {
+   "sigle": "PC-PS",
+   "concours": "Professeur de Collège option Sport",
+   "conditions": "BAC 2021-2025 + pratique attestée d'une discipline : Basketball, Football, Handball, Volleyball, Athlétisme, Judo (ceinture noire), Natation, Taekwondo (+ Rugby selon sessions) ; entretien ; pas de tatouage",
+   "age": "18-30 ans",
+   "duree_grade": "3 ans (grade Licence)"
+  },
+  {
+   "sigle": "PC-EP",
+   "concours": "Professeur de Collège option Éducation Permanente",
+   "conditions": "BAC 2021-2025, toutes séries",
+   "age": "18-30 ans",
+   "duree_grade": "3 ans (grade Licence)"
+  },
+  {
+   "sigle": "PC-EP-ENT",
+   "concours": "Professeur de Collège option Éducation Permanente spécialité Entrepreneuriat",
+   "conditions": "BAC G2 (2021-2025) OU BAC + BTS Gestion commerciale / Finances-Comptabilité / Transport-Logistique OU BAC + Licence en sciences de gestion",
+   "age": "18-30 ans",
+   "duree_grade": "3 ans (grade Licence)"
+  }
+ ],
+ "cycles_professionnels": [
+  {
+   "ecole": "ENSEPS",
+   "cycle": "Maîtrise d'EPS",
+   "condition": "BAC ou diplôme équivalent",
+   "duree": "2 ans"
+  },
+  {
+   "ecole": "ENSEPS",
+   "cycle": "Conseillat d'EPS",
+   "condition": "CAMEPS + 3 ans d'expérience professionnelle",
+   "duree": "2 ans"
+  },
+  {
+   "ecole": "ENSEPS",
+   "cycle": "Inspectorat Jeunesse et Sport (IJS)",
+   "condition": "CAPEPS + 3 ans d'expérience OU DECEPS + 5 ans",
+   "duree": "2 ans"
+  },
+  {
+   "ecole": "ENSEPS",
+   "cycle": "Inspectorat Pédagogique (IP)",
+   "condition": "CAPEPS + 3 ans d'expérience OU DECEPS + 5 ans",
+   "duree": "2 ans"
+  },
+  {
+   "ecole": "ENSEPS",
+   "cycle": "Professorat Professionnel d'EPS",
+   "condition": "DECEPS + 3 ans d'expérience professionnelle",
+   "duree": "2 ans"
+  },
+  {
+   "ecole": "ENSEPS",
+   "cycle": "Agrégation d'Enseignement Général du Secondaire",
+   "condition": "CAPEPS + 7 ans d'expérience professionnelle",
+   "duree": "2 ans"
+  },
+  {
+   "ecole": "ENSEP",
+   "cycle": "Maîtrise Adjointe d'EP",
+   "condition": "BEPC ou diplôme équivalent",
+   "duree": "2 ans"
+  },
+  {
+   "ecole": "ENSEP",
+   "cycle": "Maîtrise d'EP",
+   "condition": "BAC ou équivalent + 3 ans d'expérience",
+   "duree": "2 ans"
+  },
+  {
+   "ecole": "ENSEP",
+   "cycle": "Inspectorat Jeunesse et Sport option EP",
+   "condition": "CAPEP + 3 ans OU DECEP + 5 ans d'expérience",
+   "duree": "2 ans"
+  },
+  {
+   "ecole": "ENSEP",
+   "cycle": "Inspectorat Pédagogique EP",
+   "condition": "CAPEP + 3 ans OU DECEP + 5 ans d'expérience",
+   "duree": "2 ans"
+  },
+  {
+   "ecole": "ENSEP",
+   "cycle": "Conseillat d'EP",
+   "condition": "CAMEP + 3 ans d'expérience professionnelle",
+   "duree": "2 ans"
+  },
+  {
+   "ecole": "ENSEP",
+   "cycle": "Professorat Professionnel d'EP",
+   "condition": "DECEP + 3 ans d'expérience professionnelle",
+   "duree": "2 ans"
+  },
+  {
+   "ecole": "ENSEP",
+   "cycle": "Agrégation d'Enseignement Général du Secondaire (EP)",
+   "condition": "CAPEP + 7 ans d'expérience professionnelle",
+   "duree": "2 ans"
+  }
+ ],
+ "formations_a_la_carte": [
+  {
+   "ecole": "ENSEPS",
+   "formation": "Moniteur Sportif",
+   "categorie": "Sport"
+  },
+  {
+   "ecole": "ENSEPS",
+   "formation": "Officiel de Compétition",
+   "categorie": "Sport"
+  },
+  {
+   "ecole": "ENSEPS",
+   "formation": "Entraîneur Fitness",
+   "categorie": "Sport"
+  },
+  {
+   "ecole": "ENSEPS",
+   "formation": "Maître Nageur",
+   "categorie": "Sport"
+  },
+  {
+   "ecole": "ENSEPS",
+   "formation": "Promoteur d'Événements Sportifs",
+   "categorie": "Management"
+  },
+  {
+   "ecole": "ENSEPS",
+   "formation": "Gestionnaire d'Infrastructures Sportives",
+   "categorie": "Gestion"
+  },
+  {
+   "ecole": "ENSEPS",
+   "formation": "Garde du Corps",
+   "categorie": "Sécurité"
+  },
+  {
+   "ecole": "ENSEPS",
+   "formation": "Fabricant de Matériel Sportif",
+   "categorie": "Artisanat"
+  },
+  {
+   "ecole": "ENSEP",
+   "formation": "Photographie",
+   "categorie": "Arts"
+  },
+  {
+   "ecole": "ENSEP",
+   "formation": "Peinture",
+   "categorie": "Arts"
+  },
+  {
+   "ecole": "ENSEP",
+   "formation": "Entrepreneuriat / Comptabilité",
+   "categorie": "Business"
+  },
+  {
+   "ecole": "ENSEP",
+   "formation": "Broderie",
+   "categorie": "Artisanat"
+  },
+  {
+   "ecole": "ENSEP",
+   "formation": "Aviculture",
+   "categorie": "Agriculture"
+  },
+  {
+   "ecole": "ENSEP",
+   "formation": "Pâtisserie",
+   "categorie": "Cuisine"
+  },
+  {
+   "ecole": "ENSEP",
+   "formation": "Maraîchage",
+   "categorie": "Agriculture"
+  },
+  {
+   "ecole": "ENSEP",
+   "formation": "Coupe / Couture",
+   "categorie": "Artisanat"
+  },
+  {
+   "ecole": "ENSEP",
+   "formation": "Art Floral",
+   "categorie": "Arts"
+  }
+ ],
+ "paliers": [
+  {
+   "palier": "Licence 1",
+   "semestres": "S1 + S2",
+   "credits_an": "60",
+   "sanction": "—"
+  },
+  {
+   "palier": "Licence 2",
+   "semestres": "S3 + S4",
+   "credits_an": "60",
+   "sanction": "—"
+  },
+  {
+   "palier": "Licence 3",
+   "semestres": "S5 + S6",
+   "credits_an": "60",
+   "sanction": "Licence professionnelle — 180 crédits (BAC+3)"
+  },
+  {
+   "palier": "Master 1",
+   "semestres": "S7 (M.S1) + S8 (M.S2)",
+   "credits_an": "60",
+   "sanction": "—"
+  },
+  {
+   "palier": "Master 2",
+   "semestres": "S9 (M.S3) + S10 (M.S4)",
+   "credits_an": "60",
+   "sanction": "Master professionnel — 120 crédits (BAC+5)"
+  },
+  {
+   "palier": "Doctorat 1-3",
+   "semestres": "S11 à S16",
+   "credits_an": "180",
+   "sanction": "Doctorat (BAC+8)"
+  },
+  {
+   "palier": "Cycle professionnel",
+   "semestres": "4 semestres",
+   "credits_an": "—",
+   "sanction": "2 ans par cycle"
+  },
+  {
+   "palier": "Professorat de collège (concours)",
+   "semestres": "6 semestres",
+   "credits_an": "—",
+   "sanction": "3 ans — grade Licence"
+  }
+ ],
+ "grades": [
+  {
+   "grade": "Grades universitaires LMD",
+   "niveau": "",
+   "credits": "",
+   "acces": ""
+  },
+  {
+   "grade": "Grade",
+   "niveau": "Niveau",
+   "credits": "Crédits",
+   "acces": "Accès"
+  },
+  {
+   "grade": "Licence professionnelle (STAPS / STASE)",
+   "niveau": "BAC+3",
+   "credits": "180",
+   "acces": "Concours PC ou filière universitaire"
+  },
+  {
+   "grade": "Master professionnel (STAPS / STASE)",
+   "niveau": "BAC+5",
+   "credits": "120 (+180)",
+   "acces": "Après licence / professorat de lycée"
+  },
+  {
+   "grade": "Doctorat (STAPS / STASE — recherche)",
+   "niveau": "BAC+8",
+   "credits": "—",
+   "acces": "Après master"
+  },
+  {
+   "grade": "Grades de carrière préparés (cycle professionnel)",
+   "niveau": "",
+   "credits": "",
+   "acces": ""
+  },
+  {
+   "grade": "Voie EPS :",
+   "niveau": "Maîtrise d'EPS → Professorat professionnel d'EPS (DECEPS) → Professorat certifié (CAPEPS) → Conseillat d'EPS (CAMEPS) → Inspectorat pédagogique / Inspectorat Jeunesse et Sport → Agrégation",
+   "credits": "",
+   "acces": ""
+  },
+  {
+   "grade": "Voie EP :",
+   "niveau": "Maîtrise adjointe d'EP → Maîtrise d'EP → Professorat professionnel d'EP (DECEP) → Professorat certifié (CAPEP) → Conseillat d'EP (CAMEP) → Inspectorat pédagogique EP / IJS option EP → Agrégation",
+   "credits": "",
+   "acces": ""
+  },
+  {
+   "grade": "Diplômes / certificats :",
+   "niveau": "CAMEPS / CAMEP (Certificat d'Aptitude à la Maîtrise) ; CAPEPS / CAPEP (Certificat d'Aptitude au Professorat) ; DECEPS / DECEP (Diplôme d'Études Certifiées) ; Agrégation de l'enseignement secondaire ; BNS — Brevet National de Secourisme (niveaux 2-3) ; Brevets/diplômes fédéraux d'entraîneur 1, 2, 3 ; Attestation de fin de formation.",
+   "credits": "",
+   "acces": ""
+  }
+ ],
+ "organisation": [
+  {
+   "sigle": "ENSEPS",
+   "intitule": "École Normale Supérieure de l'Éducation Physique et des Sports — filières STAPS (DER/STAPS)"
+  },
+  {
+   "sigle": "ENSEP",
+   "intitule": "École Normale Supérieure de l'Éducation Permanente — filières STASE (DER/STASE)"
+  },
+  {
+   "sigle": "CNSHN",
+   "intitule": "Centre National du Sport de Haut Niveau — détection et perfectionnement des athlètes"
+  },
+  {
+   "sigle": "CNMS",
+   "intitule": "Centre National de la Médecine du Sport — visites médicales, suivi médico-sportif"
+  },
+  {
+   "sigle": "DAAF",
+   "intitule": "Direction des Affaires Administratives et Financières"
+  },
+  {
+   "sigle": "DFCR",
+   "intitule": "Direction de la Formation Continue et de la Recherche — référentiels métiers"
+  },
+  {
+   "sigle": "DIEM",
+   "intitule": "Direction des Infrastructures, de l'Équipement et de la Maintenance"
+  },
+  {
+   "sigle": "DCP",
+   "intitule": "Direction de la Coopération et du Partenariat"
+  }
+ ],
+ "familles_modules": {
+  "SCIENCES-BIOMEDICALES": {
+   "code": "SCIENCES-BIOMEDICALES",
+   "libelle": "Sciences biomédicales"
+  },
+  "SCIENCES-HUMAINES-SOCIALES": {
+   "code": "SCIENCES-HUMAINES-SOCIALES",
+   "libelle": "Sciences humaines & sociales"
+  },
+  "EPS-DIDACTIQUE-PEDAGOGIE": {
+   "code": "EPS-DIDACTIQUE-PEDAGOGIE",
+   "libelle": "EPS / didactique-pédagogie"
+  },
+  "PRATIQUES-SPORTIVES-APS": {
+   "code": "PRATIQUES-SPORTIVES-APS",
+   "libelle": "Pratiques sportives (APS)"
+  },
+  "LANGUES-COMMUNICATION": {
+   "code": "LANGUES-COMMUNICATION",
+   "libelle": "Langues & communication"
+  },
+  "TIC-BUREAUTIQUE": {
+   "code": "TIC-BUREAUTIQUE",
+   "libelle": "TIC / bureautique"
+  },
+  "PROFESSIONNALISATION-STAGES": {
+   "code": "PROFESSIONNALISATION-STAGES",
+   "libelle": "Professionnalisation / stages"
+  },
+  "RECHERCHE-METHODOLOGIE": {
+   "code": "RECHERCHE-METHODOLOGIE",
+   "libelle": "Recherche & méthodologie"
+  },
+  "TRANSVERSAL-CIVIQUE-SECOURISME": {
+   "code": "TRANSVERSAL-CIVIQUE-SECOURISME",
+   "libelle": "Transversal / civique / secourisme"
+  },
+  "MANAGEMENT-DROIT-ECONOMIE": {
+   "code": "MANAGEMENT-DROIT-ECONOMIE",
+   "libelle": "Management / droit / économie"
+  },
+  "ENTRAINEMENT-SPORTIF": {
+   "code": "ENTRAINEMENT-SPORTIF",
+   "libelle": "Entraînement sportif"
+  },
+  "APA-ACTIVITE-PHYSIQUE-ADAPTEE": {
+   "code": "APA-ACTIVITE-PHYSIQUE-ADAPTEE",
+   "libelle": "APA (activité physique adaptée)"
+  }
+ },
+ "listes": {
+  "Cursus": [
+   "Cursus universitaire",
+   "Cycle professionnel",
+   "Formation à la carte",
+   "Concours professorat collège"
+  ],
+  "École": [
+   "ENSEPS",
+   "ENSEP"
+  ],
+  "Filière": [
+   "EM - Éducation et Motricité",
+   "MS - Management du Sport",
+   "ES - Entraînement Sportif",
+   "APA - Activités Physiques Adaptées",
+   "Andragogie",
+   "Loisir",
+   "ECJP - Entrepreneuriat Jeunesse et Conduite de Projets",
+   "Gérontologie",
+   "PC-EPS",
+   "PC-EP",
+   "PC-EP-ENT",
+   "PC-PS",
+   "Maîtrise d'EPS",
+   "Conseillat d'EPS",
+   "Professorat professionnel d'EPS",
+   "Inspectorat J&S",
+   "Inspectorat pédagogique",
+   "Agrégation",
+   "Maîtrise adjointe d'EP",
+   "Maîtrise d'EP",
+   "Conseillat d'EP",
+   "Professorat professionnel d'EP"
+  ],
+  "Sport de spécialité": [
+   "Football",
+   "Handball",
+   "Basketball",
+   "Rugby",
+   "Volleyball",
+   "Athlétisme",
+   "Judo",
+   "Lutte",
+   "Boxe",
+   "Taekwondo",
+   "Natation",
+   "Gymnastique",
+   "Fitness"
+  ],
+  "Année": [
+   "L1",
+   "L2",
+   "L3",
+   "M1",
+   "M2",
+   "Année 1 (cycle pro)",
+   "Année 2 (cycle pro)",
+   "Autre"
+  ],
+  "Statut": [
+   "Pré-inscrit",
+   "Inscrit",
+   "En cours",
+   "Admis(e)",
+   "Redouble",
+   "Ajourné(e)",
+   "Exclu(e)",
+   "Diplômé(e)",
+   "Abandon"
+  ],
+  "Sexe": [
+   "M",
+   "F"
+  ],
+  "Groupe": [
+   "G1",
+   "G2",
+   "G3",
+   "G4",
+   "G5",
+   "G6"
+  ],
+  "Filière (code)": [
+   "EM",
+   "MS",
+   "ES",
+   "APA"
+  ],
+  "Semestre": [
+   "Semestre 1",
+   "Semestre 2",
+   "Semestre 3",
+   "Semestre 4",
+   "Semestre 5",
+   "Semestre 6",
+   "Semestre 1 (M1/S7)",
+   "Semestre 2 (M1/S8)",
+   "Semestre 3 (M2/S9)",
+   "Semestre 4 (M2/S10)"
+  ],
+  "Type de séance": [
+   "CM (cours magistral)",
+   "TD (travaux dirigés)",
+   "TP / Pratique APS",
+   "Stage",
+   "Évaluation",
+   "Séminaire de recherche",
+   "Autre"
+  ]
+ },
+ "plages_horaires": [
+  {
+   "libelle": "07h30 - 09h30",
+   "debut": "07:30",
+   "fin": "09:30"
+  },
+  {
+   "libelle": "09h45 - 11h45",
+   "debut": "09:45",
+   "fin": "11:45"
+  },
+  {
+   "libelle": "13h30 - 15h30",
+   "debut": "13:30",
+   "fin": "15:30"
+  },
+  {
+   "libelle": "15h45 - 17h45",
+   "debut": "15:45",
+   "fin": "17:45"
+  }
+ ],
+ "notation_provisoire": {
+  "statut": "A_CONFIRMER",
+  "source": "feuille 11 « Suivi des notes », cellule F2/G2",
+  "avertissement_source": "Seuil de validation = 10/20 (règle LMD classique — à confirmer avec le règlement intérieur de l’INJS), feuille 12.",
+  "valeurs": {
+   "poids_controle_continu": "0.4",
+   "poids_examen": "0.6",
+   "seuil_validation_ue": "10"
+  }
+ },
+ "maquettes": {
+  "EM": {
+   "1": [
+    {
+     "ue": "Sciences de la vie et de la santé",
+     "ecues": [
+      "Anatomie descriptive du squelette appendiculaire",
+      "Anatomie fonctionnelle du corps humain"
+     ],
+     "credits": 6,
+     "famille": "Sciences biomédicales",
+     "cle_source": "EM|Semestre 1|Sciences de la vie et de la santé",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 1|Sciences de la vie et de la santé »"
+    },
+    {
+     "ue": "Sciences humaines et sociales",
+     "ecues": [
+      "Introduction à la psychologie générale",
+      "Psychologie de l'apprentissage et du développement"
+     ],
+     "credits": 4,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "EM|Semestre 1|Sciences humaines et sociales",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 1|Sciences humaines et sociales »"
+    },
+    {
+     "ue": "Sciences de l'intervention",
+     "ecues": [
+      "Concepts de base en intervention des APS"
+     ],
+     "credits": 2,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 1|Sciences de l'intervention",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 1|Sciences de l'intervention »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du football",
+     "ecues": [
+      "Football : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 1|Initiation aux fondamentaux du football",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 1|Initiation aux fondamentaux du football »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du handball",
+     "ecues": [
+      "Handball : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 1|Initiation aux fondamentaux du handball",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 1|Initiation aux fondamentaux du handball »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux de la gymnastique",
+     "ecues": [
+      "Gymnastique : Fondamentaux"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 1|Initiation aux fondamentaux de la gymnastique",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 1|Initiation aux fondamentaux de la gymnastique »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux de l'athlétisme",
+     "ecues": [
+      "Fondamentaux des courses et des sauts"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 1|Initiation aux fondamentaux de l'athlétisme",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 1|Initiation aux fondamentaux de l'athlétisme »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité (choix d'un sport de spécialité)"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 1|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 1|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Techniques de communication écrite et orale",
+     "ecues": [
+      "Étude des styles de rédaction en langue française",
+      "Anglais : vocabulaire du sport"
+     ],
+     "credits": 4,
+     "famille": "Langues & communication",
+     "cle_source": "EM|Semestre 1|Techniques de communication écrite et orale",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 1|Techniques de communication écrite et orale »"
+    }
+   ],
+   "2": [
+    {
+     "ue": "Sciences de la vie et de la santé",
+     "ecues": [
+      "Physiologie neuromusculaire, métabolisme et APS",
+      "Physiologie des grandes fonctions"
+     ],
+     "credits": 6,
+     "famille": "Sciences biomédicales",
+     "cle_source": "EM|Semestre 2|Sciences de la vie et de la santé",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 2|Sciences de la vie et de la santé »"
+    },
+    {
+     "ue": "Sciences humaines et sociales 1",
+     "ecues": [
+      "Introduction à la sociologie",
+      "Sociologie du jeu et des APS"
+     ],
+     "credits": 4,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "EM|Semestre 2|Sciences humaines et sociales 1",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 2|Sciences humaines et sociales 1 »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du rugby",
+     "ecues": [
+      "Rugby : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 2|Initiation aux fondamentaux du rugby",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 2|Initiation aux fondamentaux du rugby »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du basketball",
+     "ecues": [
+      "Basketball : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 2|Initiation aux fondamentaux du basketball",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 2|Initiation aux fondamentaux du basketball »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux de la gymnastique II",
+     "ecues": [
+      "Gymnastique 2 : fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 2|Initiation aux fondamentaux de la gymnastique II",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 2|Initiation aux fondamentaux de la gymnastique II »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux de l'athlétisme II",
+     "ecues": [
+      "Fondamentaux des courses de vitesse et des lancers"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 2|Initiation aux fondamentaux de l'athlétisme II",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 2|Initiation aux fondamentaux de l'athlétisme II »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité (choix d'un sport de spécialité)"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 2|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 2|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Initiation à l'environnement des TIC",
+     "ecues": [
+      "Formation à Microsoft Office Word"
+     ],
+     "credits": 1,
+     "famille": "TIC / bureautique",
+     "cle_source": "EM|Semestre 2|Initiation à l'environnement des TIC",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 2|Initiation à l'environnement des TIC »"
+    },
+    {
+     "ue": "Techniques de communication écrite et orale",
+     "ecues": [
+      "Anglais : communication orale (People and places)",
+      "Français : expression orale et prise de parole en public"
+     ],
+     "credits": 4,
+     "famille": "Langues & communication",
+     "cle_source": "EM|Semestre 2|Techniques de communication écrite et orale",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « EM|Semestre 2|Techniques de communication écrite et orale »"
+    }
+   ],
+   "3": [
+    {
+     "ue": "Sciences de la vie et de la santé",
+     "ecues": [
+      "Nutrition et APS",
+      "Biomécanique du geste"
+     ],
+     "credits": 4,
+     "famille": "Sciences biomédicales",
+     "cle_source": "EM|Semestre 3|Sciences de la vie et de la santé",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 3|Sciences de la vie et de la santé »"
+    },
+    {
+     "ue": "Sciences humaines et sociales appliquées aux APS",
+     "ecues": [
+      "Histoire du sport : naissance et développement du sport moderne"
+     ],
+     "credits": 2,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "EM|Semestre 3|Sciences humaines et sociales appliquées aux APS",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 3|Sciences humaines et sociales appliquées aux APS »"
+    },
+    {
+     "ue": "Connaissances institutionnelles du sport",
+     "ecues": [
+      "Connaissances institutionnelles et législatives de l'organisation du sport"
+     ],
+     "credits": 2,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "EM|Semestre 3|Connaissances institutionnelles du sport",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 3|Connaissances institutionnelles du sport »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du volleyball",
+     "ecues": [
+      "Volleyball : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 3|Initiation aux fondamentaux du volleyball",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 3|Initiation aux fondamentaux du volleyball »"
+    },
+    {
+     "ue": "Initiation aux sports de combat de préhension",
+     "ecues": [
+      "Judo : Fondamentaux ; Lutte : Fondamentaux"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 3|Initiation aux sports de combat de préhension",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 3|Initiation aux sports de combat de préhension »"
+    },
+    {
+     "ue": "Initiation aux sports de combat de percussion",
+     "ecues": [
+      "Boxe : Fondamentaux ; Taekwondo : Fondamentaux"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 3|Initiation aux sports de combat de percussion",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 3|Initiation aux sports de combat de percussion »"
+    },
+    {
+     "ue": "Initiation aux sports d'entretien et santé",
+     "ecues": [
+      "Fitness et Conditionnement physique"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 3|Initiation aux sports d'entretien et santé",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 3|Initiation aux sports d'entretien et santé »"
+    },
+    {
+     "ue": "Matérialisation des plateaux de pratique des APS et performance",
+     "ecues": [
+      "Techniques de traçage des aires de pratique sportive et utilisation des instruments de mesure de la performance"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 3|Matérialisation des plateaux de pratique des APS et performance",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 3|Matérialisation des plateaux de pratique des APS et performance »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité (choix d'un sport de spécialité)"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 3|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 3|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Pré-professionnalisation",
+     "ecues": [
+      "Stage pédagogique au primaire : animation sportive 1re étape"
+     ],
+     "credits": 3,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "EM|Semestre 3|Pré-professionnalisation",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 3|Pré-professionnalisation »"
+    },
+    {
+     "ue": "Techniques d'expression écrite et orale",
+     "ecues": [
+      "Anglais : communication orale (People and places : sport)",
+      "Français : expression orale et prise de parole en public"
+     ],
+     "credits": 4,
+     "famille": "Langues & communication",
+     "cle_source": "EM|Semestre 3|Techniques d'expression écrite et orale",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 3|Techniques d'expression écrite et orale »"
+    }
+   ],
+   "4": [
+    {
+     "ue": "Connaissances institutionnelles des systèmes éducatifs",
+     "ecues": [
+      "Structure et fonctionnement du système éducatif ivoirien",
+      "Histoire de l'EPS : courants pédagogiques"
+     ],
+     "credits": 4,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 4|Connaissances institutionnelles des systèmes éducatifs",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 4|Connaissances institutionnelles des systèmes éducatifs »"
+    },
+    {
+     "ue": "Intervention en APS",
+     "ecues": [
+      "Apprentissages moteurs",
+      "Conception et planification de séance en animation sportive au primaire"
+     ],
+     "credits": 4,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 4|Intervention en APS",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 4|Intervention en APS »"
+    },
+    {
+     "ue": "Aspects pédagogiques du football",
+     "ecues": [
+      "Pédagogie du football : familiarisation et initiation"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 4|Aspects pédagogiques du football",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 4|Aspects pédagogiques du football »"
+    },
+    {
+     "ue": "Aspects pédagogiques du handball",
+     "ecues": [
+      "Pédagogie du handball : familiarisation et initiation"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 4|Aspects pédagogiques du handball",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 4|Aspects pédagogiques du handball »"
+    },
+    {
+     "ue": "Aspects pédagogiques des sports d'expression corporelle",
+     "ecues": [
+      "Pédagogie de la gymnastique : familiarisation et initiation"
+     ],
+     "credits": 3,
+     "famille": "Langues & communication",
+     "cle_source": "EM|Semestre 4|Aspects pédagogiques des sports d'expression corporelle",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 4|Aspects pédagogiques des sports d'expression corporelle »"
+    },
+    {
+     "ue": "Aspects pédagogiques de l'athlétisme",
+     "ecues": [
+      "Pédagogie de l'athlétisme : familiarisation et initiation"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 4|Aspects pédagogiques de l'athlétisme",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 4|Aspects pédagogiques de l'athlétisme »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 4|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 4|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Pré-professionnalisation",
+     "ecues": [
+      "Stage pédagogique au primaire : animation sportive 2e étape"
+     ],
+     "credits": 3,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "EM|Semestre 4|Pré-professionnalisation",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 4|Pré-professionnalisation »"
+    },
+    {
+     "ue": "Méthodologie et outils",
+     "ecues": [
+      "Introduction à la méthodologie de la recherche scientifique : projet de recherche"
+     ],
+     "credits": 3,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "EM|Semestre 4|Méthodologie et outils",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 4|Méthodologie et outils »"
+    },
+    {
+     "ue": "Techniques d'expression écrite et orale",
+     "ecues": [
+      "Anglais : communication orale (People and places : sport) 2"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "EM|Semestre 4|Techniques d'expression écrite et orale",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « EM|Semestre 4|Techniques d'expression écrite et orale »"
+    }
+   ],
+   "5": [
+    {
+     "ue": "Intervention en APS",
+     "ecues": [
+      "Conception et planification de l'enseignement de l'EPS au secondaire"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 5|Intervention en APS",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 5|Intervention en APS »"
+    },
+    {
+     "ue": "Aspects pédagogiques du handball",
+     "ecues": [
+      "Pédagogie du handball : familiarisation et initiation"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 5|Aspects pédagogiques du handball",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 5|Aspects pédagogiques du handball »"
+    },
+    {
+     "ue": "Aspects pédagogiques du basketball",
+     "ecues": [
+      "Pédagogie du basketball : familiarisation et initiation"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 5|Aspects pédagogiques du basketball",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 5|Aspects pédagogiques du basketball »"
+    },
+    {
+     "ue": "Aspects pédagogiques du rugby",
+     "ecues": [
+      "Pédagogie du rugby : familiarisation et initiation"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 5|Aspects pédagogiques du rugby",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 5|Aspects pédagogiques du rugby »"
+    },
+    {
+     "ue": "Aspects pédagogiques du volleyball",
+     "ecues": [
+      "Pédagogie du volleyball : familiarisation"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 5|Aspects pédagogiques du volleyball",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 5|Aspects pédagogiques du volleyball »"
+    },
+    {
+     "ue": "Aspects pédagogiques de l'athlétisme",
+     "ecues": [
+      "Pédagogie de l'athlétisme : familiarisation et initiation"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 5|Aspects pédagogiques de l'athlétisme",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 5|Aspects pédagogiques de l'athlétisme »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 5|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 5|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Aspects pédagogiques du football",
+     "ecues": [
+      "Pédagogie du football : familiarisation et initiation"
+     ],
+     "credits": 2,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 5|Aspects pédagogiques du football",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 5|Aspects pédagogiques du football »"
+    },
+    {
+     "ue": "Méthodologie",
+     "ecues": [
+      "Initiation à la méthodologie de la recherche scientifique : cadre méthodologique"
+     ],
+     "credits": 3,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "EM|Semestre 5|Méthodologie",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 5|Méthodologie »"
+    },
+    {
+     "ue": "Life Skills",
+     "ecues": [
+      "Adolescence : éthique et morale en milieu scolaire",
+      "Culture civique"
+     ],
+     "credits": 2,
+     "famille": "Transversal / civique / secourisme",
+     "cle_source": "EM|Semestre 5|Life Skills",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 5|Life Skills »"
+    },
+    {
+     "ue": "Techniques d'expression écrite et orale",
+     "ecues": [
+      "Anglais : communication orale"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "EM|Semestre 5|Techniques d'expression écrite et orale",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 5|Techniques d'expression écrite et orale »"
+    }
+   ],
+   "6": [
+    {
+     "ue": "Intervention en APS : interaction",
+     "ecues": [
+      "Analyse des variables de l'interaction en EPS"
+     ],
+     "credits": 2,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 6|Intervention en APS : interaction",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 6|Intervention en APS : interaction »"
+    },
+    {
+     "ue": "Intervention en APS : mesure et évaluation",
+     "ecues": [
+      "Application des théories de mesure et évaluation en EPS"
+     ],
+     "credits": 2,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 6|Intervention en APS : mesure et évaluation",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 6|Intervention en APS : mesure et évaluation »"
+    },
+    {
+     "ue": "Aspects pédagogiques du volleyball",
+     "ecues": [
+      "Pédagogie du volleyball : initiation"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 6|Aspects pédagogiques du volleyball",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 6|Aspects pédagogiques du volleyball »"
+    },
+    {
+     "ue": "Aspects pédagogiques de la gymnastique",
+     "ecues": [
+      "Pédagogie de la gymnastique : initiation"
+     ],
+     "credits": 2,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 6|Aspects pédagogiques de la gymnastique",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 6|Aspects pédagogiques de la gymnastique »"
+    },
+    {
+     "ue": "Aspects pédagogiques de l'athlétisme",
+     "ecues": [
+      "Pédagogie de l'athlétisme : initiation"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 6|Aspects pédagogiques de l'athlétisme",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 6|Aspects pédagogiques de l'athlétisme »"
+    },
+    {
+     "ue": "Aspects pédagogiques du basketball",
+     "ecues": [
+      "Pédagogie du basketball : familiarisation et initiation"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 6|Aspects pédagogiques du basketball",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 6|Aspects pédagogiques du basketball »"
+    },
+    {
+     "ue": "Aspects pédagogiques du rugby",
+     "ecues": [
+      "Pédagogie du rugby : familiarisation et initiation"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 6|Aspects pédagogiques du rugby",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 6|Aspects pédagogiques du rugby »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "Théorie et pratique de l'entraînement de l'APS de spécialité"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "EM|Semestre 6|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 6|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Traumatologie du sport",
+     "ecues": [
+      "Étude des pathologies liées à la pratique du sport et leurs traitements"
+     ],
+     "credits": 2,
+     "famille": "Sciences biomédicales",
+     "cle_source": "EM|Semestre 6|Traumatologie du sport",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 6|Traumatologie du sport »"
+    },
+    {
+     "ue": "Pré-professionnalisation",
+     "ecues": [
+      "Stage pédagogique dans un établissement d'enseignement secondaire"
+     ],
+     "credits": 3,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "EM|Semestre 6|Pré-professionnalisation",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 6|Pré-professionnalisation »"
+    },
+    {
+     "ue": "Formation à la recherche scientifique",
+     "ecues": [
+      "Séminaire de recherche : élaboration de projet de mémoire"
+     ],
+     "credits": 3,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "EM|Semestre 6|Formation à la recherche scientifique",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 6|Formation à la recherche scientifique »"
+    },
+    {
+     "ue": "Techniques d'expression écrite et orale",
+     "ecues": [
+      "Anglais : communication orale"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "EM|Semestre 6|Techniques d'expression écrite et orale",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « EM|Semestre 6|Techniques d'expression écrite et orale »"
+    }
+   ],
+   "7": [
+    {
+     "ue": "Connaissances institutionnelles de l'éducation et du sport",
+     "ecues": [
+      "Systèmes éducatifs : réalités scolaires, éducatives et dispositifs institutionnels"
+     ],
+     "credits": 3,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "EM|Semestre 1 (M1/S7)|Connaissances institutionnelles de l'éducation et du sport",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 1 (M1/S7)|Connaissances institutionnelles de l'éducation et du sport »"
+    },
+    {
+     "ue": "Connaissances psychosociologiques des APS",
+     "ecues": [
+      "Aspects psychosociologiques des APS"
+     ],
+     "credits": 3,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "EM|Semestre 1 (M1/S7)|Connaissances psychosociologiques des APS",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 1 (M1/S7)|Connaissances psychosociologiques des APS »"
+    },
+    {
+     "ue": "Intervention en mesure et évaluation de l'EPS",
+     "ecues": [
+      "Mesure et évaluation de l'EPS"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 1 (M1/S7)|Intervention en mesure et évaluation de l'EPS",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 1 (M1/S7)|Intervention en mesure et évaluation de l'EPS »"
+    },
+    {
+     "ue": "Didactique de l'EPS",
+     "ecues": [
+      "Didactique de l'EPS : conception et analyse des situations d'enseignement-apprentissage"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 1 (M1/S7)|Didactique de l'EPS",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 1 (M1/S7)|Didactique de l'EPS »"
+    },
+    {
+     "ue": "Didactique des sports d'expression corporelle",
+     "ecues": [
+      "Didactique de la gymnastique"
+     ],
+     "credits": 3,
+     "famille": "Langues & communication",
+     "cle_source": "EM|Semestre 1 (M1/S7)|Didactique des sports d'expression corporelle",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 1 (M1/S7)|Didactique des sports d'expression corporelle »"
+    },
+    {
+     "ue": "Didactique des sports collectifs de petit terrain",
+     "ecues": [
+      "Didactique du handball",
+      "Didactique du basketball"
+     ],
+     "credits": 6,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 1 (M1/S7)|Didactique des sports collectifs de petit terrain",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 1 (M1/S7)|Didactique des sports collectifs de petit terrain »"
+    },
+    {
+     "ue": "Méthodologie",
+     "ecues": [
+      "Méthodologie de la recherche scientifique 1"
+     ],
+     "credits": 3,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "EM|Semestre 1 (M1/S7)|Méthodologie",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 1 (M1/S7)|Méthodologie »"
+    },
+    {
+     "ue": "Formation à la recherche",
+     "ecues": [
+      "Séminaire de recherche en Éducation et Motricité"
+     ],
+     "credits": 4,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "EM|Semestre 1 (M1/S7)|Formation à la recherche",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 1 (M1/S7)|Formation à la recherche »"
+    },
+    {
+     "ue": "Technique d'expression écrite et orale",
+     "ecues": [
+      "Anglais professionnel"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "EM|Semestre 1 (M1/S7)|Technique d'expression écrite et orale",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 1 (M1/S7)|Technique d'expression écrite et orale »"
+    }
+   ],
+   "8": [
+    {
+     "ue": "Connaissances psychologiques des APS",
+     "ecues": [
+      "Gestion des émotions et stratégies de motivation dans la conduite des séances d'EPS"
+     ],
+     "credits": 2,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "EM|Semestre 2 (M1/S8)|Connaissances psychologiques des APS",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 2 (M1/S8)|Connaissances psychologiques des APS »"
+    },
+    {
+     "ue": "Intervention en EPS",
+     "ecues": [
+      "Enseignement de l'EPS et connaissances disciplinaires : préparation à l'écrit de pédagogie 1"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 2 (M1/S8)|Intervention en EPS",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 2 (M1/S8)|Intervention en EPS »"
+    },
+    {
+     "ue": "Didactique des sports collectifs de renvoi",
+     "ecues": [
+      "Didactique du volleyball"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 2 (M1/S8)|Didactique des sports collectifs de renvoi",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 2 (M1/S8)|Didactique des sports collectifs de renvoi »"
+    },
+    {
+     "ue": "Didactique des sports athlétiques",
+     "ecues": [
+      "Didactique de l'athlétisme"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 2 (M1/S8)|Didactique des sports athlétiques",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 2 (M1/S8)|Didactique des sports athlétiques »"
+    },
+    {
+     "ue": "Didactique des sports collectifs de grand terrain",
+     "ecues": [
+      "Didactique du football",
+      "Didactique du rugby"
+     ],
+     "credits": 4,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "EM|Semestre 2 (M1/S8)|Didactique des sports collectifs de grand terrain",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 2 (M1/S8)|Didactique des sports collectifs de grand terrain »"
+    },
+    {
+     "ue": "Professionnalisation",
+     "ecues": [
+      "Stage dans un établissement d'enseignement secondaire ou supérieur"
+     ],
+     "credits": 5,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "EM|Semestre 2 (M1/S8)|Professionnalisation",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 2 (M1/S8)|Professionnalisation »"
+    },
+    {
+     "ue": "Méthodologie de la recherche",
+     "ecues": [
+      "Méthodologie de la recherche scientifique 2 : conception des instruments de cueillette de données"
+     ],
+     "credits": 2,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "EM|Semestre 2 (M1/S8)|Méthodologie de la recherche",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 2 (M1/S8)|Méthodologie de la recherche »"
+    },
+    {
+     "ue": "Formation à la recherche",
+     "ecues": [
+      "Séminaire de recherche en Éducation et Motricité"
+     ],
+     "credits": 3,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "EM|Semestre 2 (M1/S8)|Formation à la recherche",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 2 (M1/S8)|Formation à la recherche »"
+    },
+    {
+     "ue": "Technique d'expression écrite et orale",
+     "ecues": [
+      "Anglais professionnel"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "EM|Semestre 2 (M1/S8)|Technique d'expression écrite et orale",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 2 (M1/S8)|Technique d'expression écrite et orale »"
+    },
+    {
+     "ue": "Administration publique et déontologie",
+     "ecues": [
+      "Rédaction et informations administratives"
+     ],
+     "credits": 3,
+     "famille": "Transversal / civique / secourisme",
+     "cle_source": "EM|Semestre 2 (M1/S8)|Administration publique et déontologie",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « EM|Semestre 2 (M1/S8)|Administration publique et déontologie »"
+    }
+   ],
+   "9": [
+    {
+     "ue": "Professionnalisation",
+     "ecues": [
+      "Stage milieu professionnel"
+     ],
+     "credits": 15,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "EM|Semestre 3 (M2/S9)|Professionnalisation",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « EM|Semestre 3 (M2/S9)|Professionnalisation »"
+    },
+    {
+     "ue": "Formation à la recherche",
+     "ecues": [
+      "Séminaire de recherche 3"
+     ],
+     "credits": 7,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "EM|Semestre 3 (M2/S9)|Formation à la recherche",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « EM|Semestre 3 (M2/S9)|Formation à la recherche »"
+    },
+    {
+     "ue": "Méthodologie de la recherche",
+     "ecues": [
+      "Méthodologie de la recherche scientifique 3 : analyse des données et discussion",
+      "Statistiques descriptives et inférentielles 2"
+     ],
+     "credits": 8,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "EM|Semestre 3 (M2/S9)|Méthodologie de la recherche",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « EM|Semestre 3 (M2/S9)|Méthodologie de la recherche »"
+    }
+   ],
+   "10": [
+    {
+     "ue": "Formation à la recherche",
+     "ecues": [
+      "Travaux de recherche : mémoire"
+     ],
+     "credits": 15,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "EM|Semestre 4 (M2/S10)|Formation à la recherche",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « EM|Semestre 4 (M2/S10)|Formation à la recherche »"
+    },
+    {
+     "ue": "Formation professionnelle",
+     "ecues": [
+      "Stage milieu professionnel"
+     ],
+     "credits": 15,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "EM|Semestre 4 (M2/S10)|Formation professionnelle",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « EM|Semestre 4 (M2/S10)|Formation professionnelle »"
+    }
+   ]
+  },
+  "MS": {
+   "1": [
+    {
+     "ue": "Sciences de la vie et de la santé",
+     "ecues": [
+      "Anatomie descriptive du squelette appendiculaire",
+      "Anatomie fonctionnelle du corps humain"
+     ],
+     "credits": 6,
+     "famille": "Sciences biomédicales",
+     "cle_source": "MS|Semestre 1|Sciences de la vie et de la santé",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 1|Sciences de la vie et de la santé »"
+    },
+    {
+     "ue": "Sciences humaines et sociales",
+     "ecues": [
+      "Introduction à la psychologie générale",
+      "Psychologie de l'apprentissage et du développement"
+     ],
+     "credits": 4,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "MS|Semestre 1|Sciences humaines et sociales",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 1|Sciences humaines et sociales »"
+    },
+    {
+     "ue": "Sciences de l'intervention",
+     "ecues": [
+      "Concepts de base en intervention des APS"
+     ],
+     "credits": 2,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "MS|Semestre 1|Sciences de l'intervention",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 1|Sciences de l'intervention »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du football",
+     "ecues": [
+      "Football : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 1|Initiation aux fondamentaux du football",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 1|Initiation aux fondamentaux du football »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du handball",
+     "ecues": [
+      "Handball : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 1|Initiation aux fondamentaux du handball",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 1|Initiation aux fondamentaux du handball »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux de la gymnastique",
+     "ecues": [
+      "Gymnastique : Fondamentaux"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 1|Initiation aux fondamentaux de la gymnastique",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 1|Initiation aux fondamentaux de la gymnastique »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux de l'athlétisme",
+     "ecues": [
+      "Fondamentaux des courses et des sauts"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 1|Initiation aux fondamentaux de l'athlétisme",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 1|Initiation aux fondamentaux de l'athlétisme »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité (choix d'un sport de spécialité)"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 1|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 1|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Techniques de communication écrite et orale",
+     "ecues": [
+      "Étude des styles de rédaction en langue française",
+      "Anglais : vocabulaire du sport"
+     ],
+     "credits": 4,
+     "famille": "Langues & communication",
+     "cle_source": "MS|Semestre 1|Techniques de communication écrite et orale",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 1|Techniques de communication écrite et orale »"
+    }
+   ],
+   "2": [
+    {
+     "ue": "Sciences de la vie et de la santé",
+     "ecues": [
+      "Physiologie neuromusculaire, métabolisme et APS",
+      "Physiologie des grandes fonctions"
+     ],
+     "credits": 6,
+     "famille": "Sciences biomédicales",
+     "cle_source": "MS|Semestre 2|Sciences de la vie et de la santé",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 2|Sciences de la vie et de la santé »"
+    },
+    {
+     "ue": "Sciences humaines et sociales 1",
+     "ecues": [
+      "Introduction à la sociologie",
+      "Sociologie du jeu et des APS"
+     ],
+     "credits": 4,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "MS|Semestre 2|Sciences humaines et sociales 1",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 2|Sciences humaines et sociales 1 »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du rugby",
+     "ecues": [
+      "Rugby : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 2|Initiation aux fondamentaux du rugby",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 2|Initiation aux fondamentaux du rugby »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du basketball",
+     "ecues": [
+      "Basketball : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 2|Initiation aux fondamentaux du basketball",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 2|Initiation aux fondamentaux du basketball »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux de la gymnastique II",
+     "ecues": [
+      "Gymnastique 2 : fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 2|Initiation aux fondamentaux de la gymnastique II",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 2|Initiation aux fondamentaux de la gymnastique II »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux de l'athlétisme II",
+     "ecues": [
+      "Fondamentaux des courses de vitesse et des lancers"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 2|Initiation aux fondamentaux de l'athlétisme II",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 2|Initiation aux fondamentaux de l'athlétisme II »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité (choix d'un sport de spécialité)"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 2|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 2|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Initiation à l'environnement des TIC",
+     "ecues": [
+      "Formation à Microsoft Office Word"
+     ],
+     "credits": 1,
+     "famille": "TIC / bureautique",
+     "cle_source": "MS|Semestre 2|Initiation à l'environnement des TIC",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 2|Initiation à l'environnement des TIC »"
+    },
+    {
+     "ue": "Techniques de communication écrite et orale",
+     "ecues": [
+      "Anglais : communication orale (People and places)",
+      "Français : expression orale et prise de parole en public"
+     ],
+     "credits": 4,
+     "famille": "Langues & communication",
+     "cle_source": "MS|Semestre 2|Techniques de communication écrite et orale",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « MS|Semestre 2|Techniques de communication écrite et orale »"
+    }
+   ],
+   "3": [
+    {
+     "ue": "Sciences de la vie et de la santé",
+     "ecues": [
+      "Nutrition et APS",
+      "Biomécanique du geste"
+     ],
+     "credits": 4,
+     "famille": "Sciences biomédicales",
+     "cle_source": "MS|Semestre 3|Sciences de la vie et de la santé",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 3|Sciences de la vie et de la santé »"
+    },
+    {
+     "ue": "Sciences humaines et sociales appliquées aux APS",
+     "ecues": [
+      "Histoire du sport : naissance et développement du sport moderne"
+     ],
+     "credits": 2,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "MS|Semestre 3|Sciences humaines et sociales appliquées aux APS",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 3|Sciences humaines et sociales appliquées aux APS »"
+    },
+    {
+     "ue": "Connaissances institutionnelles du sport",
+     "ecues": [
+      "Connaissances institutionnelles et législatives de l'organisation du sport"
+     ],
+     "credits": 2,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "MS|Semestre 3|Connaissances institutionnelles du sport",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 3|Connaissances institutionnelles du sport »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du volleyball",
+     "ecues": [
+      "Volleyball : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 3|Initiation aux fondamentaux du volleyball",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 3|Initiation aux fondamentaux du volleyball »"
+    },
+    {
+     "ue": "Initiation aux sports de combat de préhension",
+     "ecues": [
+      "Judo : Fondamentaux ; Lutte : Fondamentaux"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 3|Initiation aux sports de combat de préhension",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 3|Initiation aux sports de combat de préhension »"
+    },
+    {
+     "ue": "Initiation aux sports de combat de percussion",
+     "ecues": [
+      "Boxe : Fondamentaux ; Taekwondo : Fondamentaux"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 3|Initiation aux sports de combat de percussion",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 3|Initiation aux sports de combat de percussion »"
+    },
+    {
+     "ue": "Initiation aux sports d'entretien et santé",
+     "ecues": [
+      "Fitness et Conditionnement physique"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 3|Initiation aux sports d'entretien et santé",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 3|Initiation aux sports d'entretien et santé »"
+    },
+    {
+     "ue": "Matérialisation des plateaux de pratique des APS et performance",
+     "ecues": [
+      "Techniques de traçage des aires de pratique sportive et utilisation des instruments de mesure de la performance"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 3|Matérialisation des plateaux de pratique des APS et performance",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 3|Matérialisation des plateaux de pratique des APS et performance »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité (choix d'un sport de spécialité)"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 3|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 3|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Pré-professionnalisation",
+     "ecues": [
+      "Stage pédagogique au primaire : animation sportive 1re étape"
+     ],
+     "credits": 3,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "MS|Semestre 3|Pré-professionnalisation",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 3|Pré-professionnalisation »"
+    },
+    {
+     "ue": "Techniques d'expression écrite et orale",
+     "ecues": [
+      "Anglais : communication orale (People and places : sport)",
+      "Français : expression orale et prise de parole en public"
+     ],
+     "credits": 4,
+     "famille": "Langues & communication",
+     "cle_source": "MS|Semestre 3|Techniques d'expression écrite et orale",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 3|Techniques d'expression écrite et orale »"
+    }
+   ],
+   "4": [
+    {
+     "ue": "Connaissances institutionnelles du sport",
+     "ecues": [
+      "Organisation et réglementation en sport, loisirs et tourisme sportif"
+     ],
+     "credits": 2,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "MS|Semestre 4|Connaissances institutionnelles du sport",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 4|Connaissances institutionnelles du sport »"
+    },
+    {
+     "ue": "Connaissances juridiques des entreprises sportives",
+     "ecues": [
+      "Introduction au droit",
+      "Droit et législation du travail et des associations sportives"
+     ],
+     "credits": 4,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 4|Connaissances juridiques des entreprises sportives",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 4|Connaissances juridiques des entreprises sportives »"
+    },
+    {
+     "ue": "Économie et marketing du sport",
+     "ecues": [
+      "Comptabilité et gestions financières",
+      "Introduction à l'économie et économie du sport"
+     ],
+     "credits": 6,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 4|Économie et marketing du sport",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 4|Économie et marketing du sport »"
+    },
+    {
+     "ue": "Management et gestion du sport",
+     "ecues": [
+      "Introduction au marketing",
+      "Management d'équipe et gestion des ressources humaines"
+     ],
+     "credits": 6,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 4|Management et gestion du sport",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 4|Management et gestion du sport »"
+    },
+    {
+     "ue": "Gestion et entretien des infrastructures sportives",
+     "ecues": [
+      "Gestion et aménagement des infrastructures et équipements"
+     ],
+     "credits": 2,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 4|Gestion et entretien des infrastructures sportives",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 4|Gestion et entretien des infrastructures sportives »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 4|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 4|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Pré-professionnalisation",
+     "ecues": [
+      "Conduite d'action professionnelle en observation (stage)"
+     ],
+     "credits": 2,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "MS|Semestre 4|Pré-professionnalisation",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 4|Pré-professionnalisation »"
+    },
+    {
+     "ue": "Méthodologie de la recherche",
+     "ecues": [
+      "Introduction à la méthodologie de la recherche scientifique"
+     ],
+     "credits": 3,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "MS|Semestre 4|Méthodologie de la recherche",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 4|Méthodologie de la recherche »"
+    },
+    {
+     "ue": "Technologie de l'information et de la communication",
+     "ecues": [
+      "Initiation à l'informatique et aux techniques de montage audiovisuel : APS et activité récréative"
+     ],
+     "credits": 1,
+     "famille": "TIC / bureautique",
+     "cle_source": "MS|Semestre 4|Technologie de l'information et de la communication",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 4|Technologie de l'information et de la communication »"
+    },
+    {
+     "ue": "Techniques d'expression écrite et orale",
+     "ecues": [
+      "Anglais spécifique au management : gestion des organisations sportives"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "MS|Semestre 4|Techniques d'expression écrite et orale",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « MS|Semestre 4|Techniques d'expression écrite et orale »"
+    }
+   ],
+   "5": [
+    {
+     "ue": "Connaissances sociologiques et managériales du sport",
+     "ecues": [
+      "Sociologie des organisations sportives",
+      "Management des organisations sportives"
+     ],
+     "credits": 4,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "MS|Semestre 5|Connaissances sociologiques et managériales du sport",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 5|Connaissances sociologiques et managériales du sport »"
+    },
+    {
+     "ue": "Droit du sport",
+     "ecues": [
+      "Cadre institutionnel et législatif du sport en Côte d'Ivoire",
+      "Sécurité de l'installation sportive et droit de la responsabilité"
+     ],
+     "credits": 4,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 5|Droit du sport",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 5|Droit du sport »"
+    },
+    {
+     "ue": "Management et marketing stratégique",
+     "ecues": [
+      "Étude de marché"
+     ],
+     "credits": 2,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 5|Management et marketing stratégique",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 5|Management et marketing stratégique »"
+    },
+    {
+     "ue": "Stratégie de communication",
+     "ecues": [
+      "Concepts, techniques et stratégies de communication des organisations sportives"
+     ],
+     "credits": 2,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 5|Stratégie de communication",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 5|Stratégie de communication »"
+    },
+    {
+     "ue": "Finance et comptabilité du sport",
+     "ecues": [
+      "Analyse financière et fiscalité des organisations sportives",
+      "Analyse des modes de financement du sport"
+     ],
+     "credits": 4,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 5|Finance et comptabilité du sport",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 5|Finance et comptabilité du sport »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 5|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 5|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Pratique de l'événementiel sportif",
+     "ecues": [
+      "Management de projet : événement sportif de la planification à la clôture 1",
+      "idem 2"
+     ],
+     "credits": 4,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 5|Pratique de l'événementiel sportif",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 5|Pratique de l'événementiel sportif »"
+    },
+    {
+     "ue": "Méthodologie de la recherche",
+     "ecues": [
+      "Initiation à la méthodologie de la recherche scientifique 3"
+     ],
+     "credits": 2,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "MS|Semestre 5|Méthodologie de la recherche",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 5|Méthodologie de la recherche »"
+    },
+    {
+     "ue": "Technologie de l'information et de la communication",
+     "ecues": [
+      "Introduction à l'informatique : prise en main d'Excel"
+     ],
+     "credits": 2,
+     "famille": "TIC / bureautique",
+     "cle_source": "MS|Semestre 5|Technologie de l'information et de la communication",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 5|Technologie de l'information et de la communication »"
+    },
+    {
+     "ue": "Technique d'expression orale et écrite",
+     "ecues": [
+      "Anglais en marketing et management du sport"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "MS|Semestre 5|Technique d'expression orale et écrite",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 5|Technique d'expression orale et écrite »"
+    },
+    {
+     "ue": "Life Skills",
+     "ecues": [
+      "Culture civique"
+     ],
+     "credits": 1,
+     "famille": "Transversal / civique / secourisme",
+     "cle_source": "MS|Semestre 5|Life Skills",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 5|Life Skills »"
+    }
+   ],
+   "6": [
+    {
+     "ue": "Gestion de l'environnement sportif",
+     "ecues": [
+      "Réglementation et responsabilité en matière de risques et assurances sportives",
+      "Aménagement des territoires sportifs : conception et gestion prospective des équipements sportifs"
+     ],
+     "credits": 6,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 6|Gestion de l'environnement sportif",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 6|Gestion de l'environnement sportif »"
+    },
+    {
+     "ue": "Marketing et économie du sport",
+     "ecues": [
+      "Stratégie marketing : conception de produits et services de loisir sportif",
+      "Sport, loisirs et développement durable : analyse socio-économique"
+     ],
+     "credits": 6,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 6|Marketing et économie du sport",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 6|Marketing et économie du sport »"
+    },
+    {
+     "ue": "Pratique de l'entrepreneuriat et de l'événementiel sportif",
+     "ecues": [
+      "Entrepreneuriat sportif : création de services/entreprises sportives (MS, APAS)"
+     ],
+     "credits": 2,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 6|Pratique de l'entrepreneuriat et de l'événementiel sportif",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 6|Pratique de l'entrepreneuriat et de l'événementiel sportif »"
+    },
+    {
+     "ue": "Gestion administrative du sport",
+     "ecues": [
+      "Administration publique de CI : attributions, organisation et fonctionnement du ministère des Sports",
+      "Élaboration et gestion de projet dans le domaine sportif (GAR)"
+     ],
+     "credits": 4,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 6|Gestion administrative du sport",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 6|Gestion administrative du sport »"
+    },
+    {
+     "ue": "Fonction publique",
+     "ecues": [
+      "Droits et obligations du fonctionnaire"
+     ],
+     "credits": 2,
+     "famille": "Transversal / civique / secourisme",
+     "cle_source": "MS|Semestre 6|Fonction publique",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 6|Fonction publique »"
+    },
+    {
+     "ue": "Spécialisation pratique et théorique dans une APS",
+     "ecues": [
+      "APS de spécialité"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 6|Spécialisation pratique et théorique dans une APS",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 6|Spécialisation pratique et théorique dans une APS »"
+    },
+    {
+     "ue": "Pré-professionnalisation",
+     "ecues": [
+      "Conduite et présentation d'action professionnelle en responsabilité (stage)"
+     ],
+     "credits": 3,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "MS|Semestre 6|Pré-professionnalisation",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 6|Pré-professionnalisation »"
+    },
+    {
+     "ue": "Formation à la recherche scientifique",
+     "ecues": [
+      "Séminaire de recherche : élaboration de projet de mémoire"
+     ],
+     "credits": 3,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "MS|Semestre 6|Formation à la recherche scientifique",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 6|Formation à la recherche scientifique »"
+    },
+    {
+     "ue": "Technique d'expression écrite et orale",
+     "ecues": [
+      "Anglais en organisation d'événements sportifs"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "MS|Semestre 6|Technique d'expression écrite et orale",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « MS|Semestre 6|Technique d'expression écrite et orale »"
+    }
+   ],
+   "7": [
+    {
+     "ue": "Aspects fondamentaux de la gestion",
+     "ecues": [
+      "Événementiel sportif : stratégies de communication des organisations sportives",
+      "Marketing des services : publics associatifs et commerciaux"
+     ],
+     "credits": 4,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 1 (M1/S7)|Aspects fondamentaux de la gestion",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « MS|Semestre 1 (M1/S7)|Aspects fondamentaux de la gestion »"
+    },
+    {
+     "ue": "Analyse stratégique",
+     "ecues": [
+      "Étude de cas marketing : le marché des produits et services de sport et loisirs",
+      "Étude de cas : analyse et évaluation de l'action publique"
+     ],
+     "credits": 6,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 1 (M1/S7)|Analyse stratégique",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « MS|Semestre 1 (M1/S7)|Analyse stratégique »"
+    },
+    {
+     "ue": "Gestion publique",
+     "ecues": [
+      "Rédaction administrative et techniques de conduite de réunion"
+     ],
+     "credits": 3,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 1 (M1/S7)|Gestion publique",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « MS|Semestre 1 (M1/S7)|Gestion publique »"
+    },
+    {
+     "ue": "Finances publiques",
+     "ecues": [
+      "Analyse des procédures d'exécution du budget"
+     ],
+     "credits": 2,
+     "famille": "Management / droit / économie",
+     "cle_source": "MS|Semestre 1 (M1/S7)|Finances publiques",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « MS|Semestre 1 (M1/S7)|Finances publiques »"
+    },
+    {
+     "ue": "Professionnalisation",
+     "ecues": [
+      "Stage professionnel dans une structure du Ministère des Sports : élaboration d'un projet"
+     ],
+     "credits": 4,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "MS|Semestre 1 (M1/S7)|Professionnalisation",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « MS|Semestre 1 (M1/S7)|Professionnalisation »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "MS|Semestre 1 (M1/S7)|Spécialisation théorique et pratique dans une APS",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « MS|Semestre 1 (M1/S7)|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Théorie de la méthodologie de la recherche",
+     "ecues": [
+      "Méthodologie de la recherche scientifique 2 : conception des instruments de collecte de données"
+     ],
+     "credits": 3,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "MS|Semestre 1 (M1/S7)|Théorie de la méthodologie de la recherche",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « MS|Semestre 1 (M1/S7)|Théorie de la méthodologie de la recherche »"
+    },
+    {
+     "ue": "Formation à la recherche",
+     "ecues": [
+      "Séminaire de recherche en management du sport"
+     ],
+     "credits": 3,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "MS|Semestre 1 (M1/S7)|Formation à la recherche",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « MS|Semestre 1 (M1/S7)|Formation à la recherche »"
+    },
+    {
+     "ue": "Technique d'expression écrite et orale",
+     "ecues": [
+      "Anglais professionnel"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "MS|Semestre 1 (M1/S7)|Technique d'expression écrite et orale",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « MS|Semestre 1 (M1/S7)|Technique d'expression écrite et orale »"
+    }
+   ],
+   "9": [
+    {
+     "ue": "Professionnalisation",
+     "ecues": [
+      "Stage milieu professionnel"
+     ],
+     "credits": 15,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "MS|Semestre 3 (M2/S9)|Professionnalisation",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « MS|Semestre 3 (M2/S9)|Professionnalisation »"
+    },
+    {
+     "ue": "Formation à la recherche",
+     "ecues": [
+      "Séminaire de recherche 3"
+     ],
+     "credits": 7,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "MS|Semestre 3 (M2/S9)|Formation à la recherche",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « MS|Semestre 3 (M2/S9)|Formation à la recherche »"
+    },
+    {
+     "ue": "Méthodologie de la recherche",
+     "ecues": [
+      "Méthodologie de la recherche scientifique 3 : analyse des données et discussion",
+      "Statistiques descriptives et inférentielles 2"
+     ],
+     "credits": 8,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "MS|Semestre 3 (M2/S9)|Méthodologie de la recherche",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « MS|Semestre 3 (M2/S9)|Méthodologie de la recherche »"
+    }
+   ],
+   "10": [
+    {
+     "ue": "Formation à la recherche",
+     "ecues": [
+      "Travaux de recherche : mémoire"
+     ],
+     "credits": 15,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "MS|Semestre 4 (M2/S10)|Formation à la recherche",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « MS|Semestre 4 (M2/S10)|Formation à la recherche »"
+    },
+    {
+     "ue": "Formation professionnelle",
+     "ecues": [
+      "Stage milieu professionnel"
+     ],
+     "credits": 15,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "MS|Semestre 4 (M2/S10)|Formation professionnelle",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « MS|Semestre 4 (M2/S10)|Formation professionnelle »"
+    }
+   ]
+  },
+  "ES": {
+   "1": [
+    {
+     "ue": "Sciences de la vie et de la santé",
+     "ecues": [
+      "Anatomie descriptive du squelette appendiculaire",
+      "Anatomie fonctionnelle du corps humain"
+     ],
+     "credits": 6,
+     "famille": "Sciences biomédicales",
+     "cle_source": "ES|Semestre 1|Sciences de la vie et de la santé",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 1|Sciences de la vie et de la santé »"
+    },
+    {
+     "ue": "Sciences humaines et sociales",
+     "ecues": [
+      "Introduction à la psychologie générale",
+      "Psychologie de l'apprentissage et du développement"
+     ],
+     "credits": 4,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "ES|Semestre 1|Sciences humaines et sociales",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 1|Sciences humaines et sociales »"
+    },
+    {
+     "ue": "Sciences de l'intervention",
+     "ecues": [
+      "Concepts de base en intervention des APS"
+     ],
+     "credits": 2,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "ES|Semestre 1|Sciences de l'intervention",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 1|Sciences de l'intervention »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du football",
+     "ecues": [
+      "Football : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 1|Initiation aux fondamentaux du football",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 1|Initiation aux fondamentaux du football »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du handball",
+     "ecues": [
+      "Handball : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 1|Initiation aux fondamentaux du handball",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 1|Initiation aux fondamentaux du handball »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux de la gymnastique",
+     "ecues": [
+      "Gymnastique : Fondamentaux"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 1|Initiation aux fondamentaux de la gymnastique",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 1|Initiation aux fondamentaux de la gymnastique »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux de l'athlétisme",
+     "ecues": [
+      "Fondamentaux des courses et des sauts"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 1|Initiation aux fondamentaux de l'athlétisme",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 1|Initiation aux fondamentaux de l'athlétisme »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité (choix d'un sport de spécialité)"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 1|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 1|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Techniques de communication écrite et orale",
+     "ecues": [
+      "Étude des styles de rédaction en langue française",
+      "Anglais : vocabulaire du sport"
+     ],
+     "credits": 4,
+     "famille": "Langues & communication",
+     "cle_source": "ES|Semestre 1|Techniques de communication écrite et orale",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 1|Techniques de communication écrite et orale »"
+    }
+   ],
+   "2": [
+    {
+     "ue": "Sciences de la vie et de la santé",
+     "ecues": [
+      "Physiologie neuromusculaire, métabolisme et APS",
+      "Physiologie des grandes fonctions"
+     ],
+     "credits": 6,
+     "famille": "Sciences biomédicales",
+     "cle_source": "ES|Semestre 2|Sciences de la vie et de la santé",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 2|Sciences de la vie et de la santé »"
+    },
+    {
+     "ue": "Sciences humaines et sociales 1",
+     "ecues": [
+      "Introduction à la sociologie",
+      "Sociologie du jeu et des APS"
+     ],
+     "credits": 4,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "ES|Semestre 2|Sciences humaines et sociales 1",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 2|Sciences humaines et sociales 1 »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du rugby",
+     "ecues": [
+      "Rugby : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 2|Initiation aux fondamentaux du rugby",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 2|Initiation aux fondamentaux du rugby »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du basketball",
+     "ecues": [
+      "Basketball : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 2|Initiation aux fondamentaux du basketball",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 2|Initiation aux fondamentaux du basketball »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux de la gymnastique II",
+     "ecues": [
+      "Gymnastique 2 : fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 2|Initiation aux fondamentaux de la gymnastique II",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 2|Initiation aux fondamentaux de la gymnastique II »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux de l'athlétisme II",
+     "ecues": [
+      "Fondamentaux des courses de vitesse et des lancers"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 2|Initiation aux fondamentaux de l'athlétisme II",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 2|Initiation aux fondamentaux de l'athlétisme II »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité (choix d'un sport de spécialité)"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 2|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 2|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Initiation à l'environnement des TIC",
+     "ecues": [
+      "Formation à Microsoft Office Word"
+     ],
+     "credits": 1,
+     "famille": "TIC / bureautique",
+     "cle_source": "ES|Semestre 2|Initiation à l'environnement des TIC",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 2|Initiation à l'environnement des TIC »"
+    },
+    {
+     "ue": "Techniques de communication écrite et orale",
+     "ecues": [
+      "Anglais : communication orale (People and places)",
+      "Français : expression orale et prise de parole en public"
+     ],
+     "credits": 4,
+     "famille": "Langues & communication",
+     "cle_source": "ES|Semestre 2|Techniques de communication écrite et orale",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « ES|Semestre 2|Techniques de communication écrite et orale »"
+    }
+   ],
+   "3": [
+    {
+     "ue": "Sciences de la vie et de la santé",
+     "ecues": [
+      "Nutrition et APS",
+      "Biomécanique du geste"
+     ],
+     "credits": 4,
+     "famille": "Sciences biomédicales",
+     "cle_source": "ES|Semestre 3|Sciences de la vie et de la santé",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 3|Sciences de la vie et de la santé »"
+    },
+    {
+     "ue": "Sciences humaines et sociales appliquées aux APS",
+     "ecues": [
+      "Histoire du sport : naissance et développement du sport moderne"
+     ],
+     "credits": 2,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "ES|Semestre 3|Sciences humaines et sociales appliquées aux APS",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 3|Sciences humaines et sociales appliquées aux APS »"
+    },
+    {
+     "ue": "Connaissances institutionnelles du sport",
+     "ecues": [
+      "Connaissances institutionnelles et législatives de l'organisation du sport"
+     ],
+     "credits": 2,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "ES|Semestre 3|Connaissances institutionnelles du sport",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 3|Connaissances institutionnelles du sport »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du volleyball",
+     "ecues": [
+      "Volleyball : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 3|Initiation aux fondamentaux du volleyball",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 3|Initiation aux fondamentaux du volleyball »"
+    },
+    {
+     "ue": "Initiation aux sports de combat de préhension",
+     "ecues": [
+      "Judo : Fondamentaux ; Lutte : Fondamentaux"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 3|Initiation aux sports de combat de préhension",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 3|Initiation aux sports de combat de préhension »"
+    },
+    {
+     "ue": "Initiation aux sports de combat de percussion",
+     "ecues": [
+      "Boxe : Fondamentaux ; Taekwondo : Fondamentaux"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 3|Initiation aux sports de combat de percussion",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 3|Initiation aux sports de combat de percussion »"
+    },
+    {
+     "ue": "Initiation aux sports d'entretien et santé",
+     "ecues": [
+      "Fitness et Conditionnement physique"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 3|Initiation aux sports d'entretien et santé",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 3|Initiation aux sports d'entretien et santé »"
+    },
+    {
+     "ue": "Matérialisation des plateaux de pratique des APS et performance",
+     "ecues": [
+      "Techniques de traçage des aires de pratique sportive et utilisation des instruments de mesure de la performance"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 3|Matérialisation des plateaux de pratique des APS et performance",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 3|Matérialisation des plateaux de pratique des APS et performance »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité (choix d'un sport de spécialité)"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 3|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 3|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Pré-professionnalisation",
+     "ecues": [
+      "Stage pédagogique au primaire : animation sportive 1re étape"
+     ],
+     "credits": 3,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "ES|Semestre 3|Pré-professionnalisation",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 3|Pré-professionnalisation »"
+    },
+    {
+     "ue": "Techniques d'expression écrite et orale",
+     "ecues": [
+      "Anglais : communication orale (People and places : sport)",
+      "Français : expression orale et prise de parole en public"
+     ],
+     "credits": 4,
+     "famille": "Langues & communication",
+     "cle_source": "ES|Semestre 3|Techniques d'expression écrite et orale",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 3|Techniques d'expression écrite et orale »"
+    }
+   ],
+   "4": [
+    {
+     "ue": "Facteurs biologiques de la performance",
+     "ecues": [
+      "Déterminants physiologiques de la performance sportive",
+      "Déterminants biomécaniques de la performance sportive"
+     ],
+     "credits": 4,
+     "famille": "Sciences biomédicales",
+     "cle_source": "ES|Semestre 4|Facteurs biologiques de la performance",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 4|Facteurs biologiques de la performance »"
+    },
+    {
+     "ue": "Facteurs psychosociologiques de la performance",
+     "ecues": [
+      "Déterminants psychologiques de la performance sportive"
+     ],
+     "credits": 2,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "ES|Semestre 4|Facteurs psychosociologiques de la performance",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 4|Facteurs psychosociologiques de la performance »"
+    },
+    {
+     "ue": "Développement des qualités physiques",
+     "ecues": [
+      "Techniques de développement des qualités physiques 1 : vitesse, coordination et endurance",
+      "idem 2 : force"
+     ],
+     "credits": 4,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 4|Développement des qualités physiques",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 4|Développement des qualités physiques »"
+    },
+    {
+     "ue": "Formation au métier d'entraîneur 1",
+     "ecues": [
+      "Préparation du diplôme fédéral d'entraîneur 1 (pédagogie des 8-12 ans)"
+     ],
+     "credits": 3,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 4|Formation au métier d'entraîneur 1",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 4|Formation au métier d'entraîneur 1 »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "Théorie et pratique de l'entraînement de l'APS de spécialité"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 4|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 4|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Pratique des APS et entraînement",
+     "ecues": [
+      "Méthodologie de l'entraînement sportif 1"
+     ],
+     "credits": 3,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 4|Pratique des APS et entraînement",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 4|Pratique des APS et entraînement »"
+    },
+    {
+     "ue": "Pré-professionnalisation",
+     "ecues": [
+      "Stage d'entraîneur dans une structure sportive"
+     ],
+     "credits": 4,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "ES|Semestre 4|Pré-professionnalisation",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 4|Pré-professionnalisation »"
+    },
+    {
+     "ue": "Technologie de l'information et de la communication",
+     "ecues": [
+      "Initiation à l'informatique et application à l'analyse de la performance sportive"
+     ],
+     "credits": 3,
+     "famille": "TIC / bureautique",
+     "cle_source": "ES|Semestre 4|Technologie de l'information et de la communication",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 4|Technologie de l'information et de la communication »"
+    },
+    {
+     "ue": "Méthodologie de la recherche",
+     "ecues": [
+      "Introduction à la méthodologie de la recherche scientifique"
+     ],
+     "credits": 3,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "ES|Semestre 4|Méthodologie de la recherche",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 4|Méthodologie de la recherche »"
+    },
+    {
+     "ue": "Technique de communication écrite et orale",
+     "ecues": [
+      "Anglais spécifique à l'entraînement sportif"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "ES|Semestre 4|Technique de communication écrite et orale",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « ES|Semestre 4|Technique de communication écrite et orale »"
+    }
+   ],
+   "5": [
+    {
+     "ue": "Management des fédérations sportives",
+     "ecues": [
+      "Management des fédérations sportives nationales 1"
+     ],
+     "credits": 2,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 5|Management des fédérations sportives",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 5|Management des fédérations sportives »"
+    },
+    {
+     "ue": "Droit et sport de haut niveau",
+     "ecues": [
+      "Cadre institutionnel et législatif du sport en Côte d'Ivoire"
+     ],
+     "credits": 2,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 5|Droit et sport de haut niveau",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 5|Droit et sport de haut niveau »"
+    },
+    {
+     "ue": "Pratique des APS et entraînement sportif",
+     "ecues": [
+      "Techniques de développement des qualités physiques 3 : étirements, relaxations et massages",
+      "idem 4 : musculation sans charge et avec charge (force)"
+     ],
+     "credits": 4,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 5|Pratique des APS et entraînement sportif",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 5|Pratique des APS et entraînement sportif »"
+    },
+    {
+     "ue": "Formation au métier d'entraîneur 2",
+     "ecues": [
+      "Préparation du diplôme fédéral d'entraîneur 2 (méthodes d'entraînement spécifique)"
+     ],
+     "credits": 3,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 5|Formation au métier d'entraîneur 2",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 5|Formation au métier d'entraîneur 2 »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "Théorie et pratique de l'entraînement de l'APS de spécialité"
+     ],
+     "credits": 5,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 5|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 5|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Entraînement et performance sportive",
+     "ecues": [
+      "Méthodologie de l'entraînement sportif 2",
+      "Intégration des facteurs de la performance sportive"
+     ],
+     "credits": 6,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 5|Entraînement et performance sportive",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 5|Entraînement et performance sportive »"
+    },
+    {
+     "ue": "Brevet National de Secourisme",
+     "ecues": [
+      "Préparation au BNS niveau 3"
+     ],
+     "credits": 2,
+     "famille": "Transversal / civique / secourisme",
+     "cle_source": "ES|Semestre 5|Brevet National de Secourisme",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 5|Brevet National de Secourisme »"
+    },
+    {
+     "ue": "Méthodologie de la recherche",
+     "ecues": [
+      "Initiation à la méthodologie de la recherche scientifique : élaboration de projet de recherche"
+     ],
+     "credits": 2,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "ES|Semestre 5|Méthodologie de la recherche",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 5|Méthodologie de la recherche »"
+    },
+    {
+     "ue": "Technique d'expression écrite et orale",
+     "ecues": [
+      "Anglais spécifique à l'entraînement sportif"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "ES|Semestre 5|Technique d'expression écrite et orale",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 5|Technique d'expression écrite et orale »"
+    },
+    {
+     "ue": "Life Skills",
+     "ecues": [
+      "Adolescence : éthique et morale en milieu sportif",
+      "Culture civique"
+     ],
+     "credits": 2,
+     "famille": "Transversal / civique / secourisme",
+     "cle_source": "ES|Semestre 5|Life Skills",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 5|Life Skills »"
+    }
+   ],
+   "6": [
+    {
+     "ue": "Management des fédérations sportives",
+     "ecues": [
+      "Management des fédérations sportives nationales 2"
+     ],
+     "credits": 2,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 6|Management des fédérations sportives",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 6|Management des fédérations sportives »"
+    },
+    {
+     "ue": "Nutrition du sportif",
+     "ecues": [
+      "Diététique et nutrition appliquées à l'entraînement sportif"
+     ],
+     "credits": 2,
+     "famille": "Sciences biomédicales",
+     "cle_source": "ES|Semestre 6|Nutrition du sportif",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 6|Nutrition du sportif »"
+    },
+    {
+     "ue": "Management de la compétition",
+     "ecues": [
+      "Préparation mentale et coaching d'athlètes en compétition"
+     ],
+     "credits": 3,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 6|Management de la compétition",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 6|Management de la compétition »"
+    },
+    {
+     "ue": "Pratique des APS et entraînement sportif",
+     "ecues": [
+      "Techniques d'analyse de la performance sportive",
+      "Méthodologie de l'entraînement sportif 3"
+     ],
+     "credits": 4,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 6|Pratique des APS et entraînement sportif",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 6|Pratique des APS et entraînement sportif »"
+    },
+    {
+     "ue": "Formation au métier d'entraîneur 3",
+     "ecues": [
+      "Préparation du diplôme fédéral d'entraîneur 3 (méthodes d'entraînement cognitives et psychologiques)"
+     ],
+     "credits": 3,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 6|Formation au métier d'entraîneur 3",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 6|Formation au métier d'entraîneur 3 »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "Théorie et pratique de l'entraînement de l'APS de spécialité"
+     ],
+     "credits": 4,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 6|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 6|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Réathlétisation des athlètes",
+     "ecues": [
+      "Prise en charge d'athlètes en fatigue, surentraînement, blessure et récupération"
+     ],
+     "credits": 3,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 6|Réathlétisation des athlètes",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 6|Réathlétisation des athlètes »"
+    },
+    {
+     "ue": "Pré-professionnalisation",
+     "ecues": [
+      "Stage d'entraînement dans une fédération sportive"
+     ],
+     "credits": 4,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "ES|Semestre 6|Pré-professionnalisation",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 6|Pré-professionnalisation »"
+    },
+    {
+     "ue": "Formation à la recherche scientifique",
+     "ecues": [
+      "Séminaire de recherche : élaboration de projet de mémoire"
+     ],
+     "credits": 3,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "ES|Semestre 6|Formation à la recherche scientifique",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 6|Formation à la recherche scientifique »"
+    },
+    {
+     "ue": "Technique d'expression écrite et orale",
+     "ecues": [
+      "Anglais spécifique à l'entraînement sportif"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "ES|Semestre 6|Technique d'expression écrite et orale",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « ES|Semestre 6|Technique d'expression écrite et orale »"
+    }
+   ],
+   "7": [
+    {
+     "ue": "Sciences humaines et performance sportive",
+     "ecues": [
+      "Déterminants sociologiques de la performance sportive"
+     ],
+     "credits": 2,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "ES|Semestre 1 (M1/S7)|Sciences humaines et performance sportive",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 1 (M1/S7)|Sciences humaines et performance sportive »"
+    },
+    {
+     "ue": "Optimisation de la performance",
+     "ecues": [
+      "Évaluation des qualités physiques et facteurs limitants (endurance, puissance, équilibre, coordination)"
+     ],
+     "credits": 3,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 1 (M1/S7)|Optimisation de la performance",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 1 (M1/S7)|Optimisation de la performance »"
+    },
+    {
+     "ue": "Construction et mise en œuvre du projet de performance",
+     "ecues": [
+      "Détecter, sélectionner et former des sportifs de haut niveau",
+      "Planification et régulation des composantes de la performance sur la saison"
+     ],
+     "credits": 6,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 1 (M1/S7)|Construction et mise en œuvre du projet de performance",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 1 (M1/S7)|Construction et mise en œuvre du projet de performance »"
+    },
+    {
+     "ue": "Formation à l'entraînement",
+     "ecues": [
+      "Préparation au brevet fédéral d'entraîneur 1"
+     ],
+     "credits": 4,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 1 (M1/S7)|Formation à l'entraînement",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 1 (M1/S7)|Formation à l'entraînement »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité"
+     ],
+     "credits": 5,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 1 (M1/S7)|Spécialisation théorique et pratique dans une APS",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 1 (M1/S7)|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Méthodologie de la recherche : aspects théoriques",
+     "ecues": [
+      "Conception d'instruments de collecte de données"
+     ],
+     "credits": 4,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "ES|Semestre 1 (M1/S7)|Méthodologie de la recherche : aspects théoriques",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 1 (M1/S7)|Méthodologie de la recherche : aspects théoriques »"
+    },
+    {
+     "ue": "Formation à la recherche",
+     "ecues": [
+      "Séminaire de recherche en entraînement sportif"
+     ],
+     "credits": 4,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "ES|Semestre 1 (M1/S7)|Formation à la recherche",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 1 (M1/S7)|Formation à la recherche »"
+    },
+    {
+     "ue": "Technique d'expression écrite et orale",
+     "ecues": [
+      "Anglais professionnel"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "ES|Semestre 1 (M1/S7)|Technique d'expression écrite et orale",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 1 (M1/S7)|Technique d'expression écrite et orale »"
+    }
+   ],
+   "8": [
+    {
+     "ue": "Adaptation à l'exercice",
+     "ecues": [
+      "Adaptation cardiovasculaire à l'exercice",
+      "Traumatologie du sport 2"
+     ],
+     "credits": 4,
+     "famille": "Sciences biomédicales",
+     "cle_source": "ES|Semestre 2 (M1/S8)|Adaptation à l'exercice",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 2 (M1/S8)|Adaptation à l'exercice »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "ES|Semestre 2 (M1/S8)|Spécialisation théorique et pratique dans une APS",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 2 (M1/S8)|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Formation à l'entraînement",
+     "ecues": [
+      "Préparation au brevet fédéral d'entraîneur 2"
+     ],
+     "credits": 3,
+     "famille": "Entraînement sportif",
+     "cle_source": "ES|Semestre 2 (M1/S8)|Formation à l'entraînement",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 2 (M1/S8)|Formation à l'entraînement »"
+    },
+    {
+     "ue": "Secourisme",
+     "ecues": [
+      "Préparation au Brevet National de Secourisme 2"
+     ],
+     "credits": 2,
+     "famille": "Transversal / civique / secourisme",
+     "cle_source": "ES|Semestre 2 (M1/S8)|Secourisme",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 2 (M1/S8)|Secourisme »"
+    },
+    {
+     "ue": "Formation professionnelle",
+     "ecues": [
+      "Stage professionnel dans un club sportif : élaboration d'un projet"
+     ],
+     "credits": 5,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "ES|Semestre 2 (M1/S8)|Formation professionnelle",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 2 (M1/S8)|Formation professionnelle »"
+    },
+    {
+     "ue": "Théorie de la méthodologie de la recherche",
+     "ecues": [
+      "Méthodologie de la recherche scientifique 2 : conception des instruments de collecte de données"
+     ],
+     "credits": 3,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "ES|Semestre 2 (M1/S8)|Théorie de la méthodologie de la recherche",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 2 (M1/S8)|Théorie de la méthodologie de la recherche »"
+    },
+    {
+     "ue": "Formation à la recherche",
+     "ecues": [
+      "Séminaire de recherche en entraînement sportif"
+     ],
+     "credits": 4,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "ES|Semestre 2 (M1/S8)|Formation à la recherche",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 2 (M1/S8)|Formation à la recherche »"
+    },
+    {
+     "ue": "Technique d'expression écrite et orale",
+     "ecues": [
+      "Anglais professionnel : analyse d'un système d'entraînement ou de formation"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "ES|Semestre 2 (M1/S8)|Technique d'expression écrite et orale",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 2 (M1/S8)|Technique d'expression écrite et orale »"
+    },
+    {
+     "ue": "Formation administrative",
+     "ecues": [
+      "Droits et devoirs du fonctionnaire",
+      "Rédaction administrative"
+     ],
+     "credits": 4,
+     "famille": "Transversal / civique / secourisme",
+     "cle_source": "ES|Semestre 2 (M1/S8)|Formation administrative",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « ES|Semestre 2 (M1/S8)|Formation administrative »"
+    }
+   ],
+   "9": [
+    {
+     "ue": "Professionnalisation",
+     "ecues": [
+      "Stage professionnel dans un club sportif : conduite d'un projet"
+     ],
+     "credits": 15,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "ES|Semestre 3 (M2/S9)|Professionnalisation",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « ES|Semestre 3 (M2/S9)|Professionnalisation »"
+    },
+    {
+     "ue": "Formation à la recherche",
+     "ecues": [
+      "Séminaire de recherche 3 en entraînement sportif"
+     ],
+     "credits": 7,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "ES|Semestre 3 (M2/S9)|Formation à la recherche",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « ES|Semestre 3 (M2/S9)|Formation à la recherche »"
+    },
+    {
+     "ue": "Méthodologie de la recherche",
+     "ecues": [
+      "MRS 3 : analyse des données et discussion",
+      "Statistiques descriptives et inférentielles 2"
+     ],
+     "credits": 8,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "ES|Semestre 3 (M2/S9)|Méthodologie de la recherche",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « ES|Semestre 3 (M2/S9)|Méthodologie de la recherche »"
+    }
+   ],
+   "10": [
+    {
+     "ue": "Formation à la recherche",
+     "ecues": [
+      "Travaux de recherche : mémoire"
+     ],
+     "credits": 15,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "ES|Semestre 4 (M2/S10)|Formation à la recherche",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « ES|Semestre 4 (M2/S10)|Formation à la recherche »"
+    },
+    {
+     "ue": "Formation professionnelle",
+     "ecues": [
+      "Stage professionnel dans un club sportif : conduite d'un projet"
+     ],
+     "credits": 15,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "ES|Semestre 4 (M2/S10)|Formation professionnelle",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « ES|Semestre 4 (M2/S10)|Formation professionnelle »"
+    }
+   ]
+  },
+  "APA": {
+   "1": [
+    {
+     "ue": "Sciences de la vie et de la santé",
+     "ecues": [
+      "Anatomie descriptive du squelette appendiculaire",
+      "Anatomie fonctionnelle du corps humain"
+     ],
+     "credits": 6,
+     "famille": "Sciences biomédicales",
+     "cle_source": "APA|Semestre 1|Sciences de la vie et de la santé",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 1|Sciences de la vie et de la santé »"
+    },
+    {
+     "ue": "Sciences humaines et sociales",
+     "ecues": [
+      "Introduction à la psychologie générale",
+      "Psychologie de l'apprentissage et du développement"
+     ],
+     "credits": 4,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "APA|Semestre 1|Sciences humaines et sociales",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 1|Sciences humaines et sociales »"
+    },
+    {
+     "ue": "Sciences de l'intervention",
+     "ecues": [
+      "Concepts de base en intervention des APS"
+     ],
+     "credits": 2,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "APA|Semestre 1|Sciences de l'intervention",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 1|Sciences de l'intervention »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du football",
+     "ecues": [
+      "Football : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 1|Initiation aux fondamentaux du football",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 1|Initiation aux fondamentaux du football »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du handball",
+     "ecues": [
+      "Handball : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 1|Initiation aux fondamentaux du handball",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 1|Initiation aux fondamentaux du handball »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux de la gymnastique",
+     "ecues": [
+      "Gymnastique : Fondamentaux"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 1|Initiation aux fondamentaux de la gymnastique",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 1|Initiation aux fondamentaux de la gymnastique »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux de l'athlétisme",
+     "ecues": [
+      "Fondamentaux des courses et des sauts"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 1|Initiation aux fondamentaux de l'athlétisme",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 1|Initiation aux fondamentaux de l'athlétisme »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité (choix d'un sport de spécialité)"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 1|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 1|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Techniques de communication écrite et orale",
+     "ecues": [
+      "Étude des styles de rédaction en langue française",
+      "Anglais : vocabulaire du sport"
+     ],
+     "credits": 4,
+     "famille": "Langues & communication",
+     "cle_source": "APA|Semestre 1|Techniques de communication écrite et orale",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 1|Techniques de communication écrite et orale »"
+    }
+   ],
+   "2": [
+    {
+     "ue": "Sciences de la vie et de la santé",
+     "ecues": [
+      "Physiologie neuromusculaire, métabolisme et APS",
+      "Physiologie des grandes fonctions"
+     ],
+     "credits": 6,
+     "famille": "Sciences biomédicales",
+     "cle_source": "APA|Semestre 2|Sciences de la vie et de la santé",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 2|Sciences de la vie et de la santé »"
+    },
+    {
+     "ue": "Sciences humaines et sociales 1",
+     "ecues": [
+      "Introduction à la sociologie",
+      "Sociologie du jeu et des APS"
+     ],
+     "credits": 4,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "APA|Semestre 2|Sciences humaines et sociales 1",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 2|Sciences humaines et sociales 1 »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du rugby",
+     "ecues": [
+      "Rugby : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 2|Initiation aux fondamentaux du rugby",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 2|Initiation aux fondamentaux du rugby »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du basketball",
+     "ecues": [
+      "Basketball : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 2|Initiation aux fondamentaux du basketball",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 2|Initiation aux fondamentaux du basketball »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux de la gymnastique II",
+     "ecues": [
+      "Gymnastique 2 : fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 2|Initiation aux fondamentaux de la gymnastique II",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 2|Initiation aux fondamentaux de la gymnastique II »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux de l'athlétisme II",
+     "ecues": [
+      "Fondamentaux des courses de vitesse et des lancers"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 2|Initiation aux fondamentaux de l'athlétisme II",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 2|Initiation aux fondamentaux de l'athlétisme II »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité (choix d'un sport de spécialité)"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 2|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 2|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Initiation à l'environnement des TIC",
+     "ecues": [
+      "Formation à Microsoft Office Word"
+     ],
+     "credits": 1,
+     "famille": "TIC / bureautique",
+     "cle_source": "APA|Semestre 2|Initiation à l'environnement des TIC",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 2|Initiation à l'environnement des TIC »"
+    },
+    {
+     "ue": "Techniques de communication écrite et orale",
+     "ecues": [
+      "Anglais : communication orale (People and places)",
+      "Français : expression orale et prise de parole en public"
+     ],
+     "credits": 4,
+     "famille": "Langues & communication",
+     "cle_source": "APA|Semestre 2|Techniques de communication écrite et orale",
+     "palier": "Licence",
+     "annee": "L1",
+     "source": "feuille 8, clé « APA|Semestre 2|Techniques de communication écrite et orale »"
+    }
+   ],
+   "3": [
+    {
+     "ue": "Sciences de la vie et de la santé",
+     "ecues": [
+      "Nutrition et APS",
+      "Biomécanique du geste"
+     ],
+     "credits": 4,
+     "famille": "Sciences biomédicales",
+     "cle_source": "APA|Semestre 3|Sciences de la vie et de la santé",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 3|Sciences de la vie et de la santé »"
+    },
+    {
+     "ue": "Sciences humaines et sociales appliquées aux APS",
+     "ecues": [
+      "Histoire du sport : naissance et développement du sport moderne"
+     ],
+     "credits": 2,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "APA|Semestre 3|Sciences humaines et sociales appliquées aux APS",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 3|Sciences humaines et sociales appliquées aux APS »"
+    },
+    {
+     "ue": "Connaissances institutionnelles du sport",
+     "ecues": [
+      "Connaissances institutionnelles et législatives de l'organisation du sport"
+     ],
+     "credits": 2,
+     "famille": "Sciences humaines & sociales",
+     "cle_source": "APA|Semestre 3|Connaissances institutionnelles du sport",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 3|Connaissances institutionnelles du sport »"
+    },
+    {
+     "ue": "Initiation aux fondamentaux du volleyball",
+     "ecues": [
+      "Volleyball : Fondamentaux"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 3|Initiation aux fondamentaux du volleyball",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 3|Initiation aux fondamentaux du volleyball »"
+    },
+    {
+     "ue": "Initiation aux sports de combat de préhension",
+     "ecues": [
+      "Judo : Fondamentaux ; Lutte : Fondamentaux"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 3|Initiation aux sports de combat de préhension",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 3|Initiation aux sports de combat de préhension »"
+    },
+    {
+     "ue": "Initiation aux sports de combat de percussion",
+     "ecues": [
+      "Boxe : Fondamentaux ; Taekwondo : Fondamentaux"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 3|Initiation aux sports de combat de percussion",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 3|Initiation aux sports de combat de percussion »"
+    },
+    {
+     "ue": "Initiation aux sports d'entretien et santé",
+     "ecues": [
+      "Fitness et Conditionnement physique"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 3|Initiation aux sports d'entretien et santé",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 3|Initiation aux sports d'entretien et santé »"
+    },
+    {
+     "ue": "Matérialisation des plateaux de pratique des APS et performance",
+     "ecues": [
+      "Techniques de traçage des aires de pratique sportive et utilisation des instruments de mesure de la performance"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 3|Matérialisation des plateaux de pratique des APS et performance",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 3|Matérialisation des plateaux de pratique des APS et performance »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité (choix d'un sport de spécialité)"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 3|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 3|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Pré-professionnalisation",
+     "ecues": [
+      "Stage pédagogique au primaire : animation sportive 1re étape"
+     ],
+     "credits": 3,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "APA|Semestre 3|Pré-professionnalisation",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 3|Pré-professionnalisation »"
+    },
+    {
+     "ue": "Techniques d'expression écrite et orale",
+     "ecues": [
+      "Anglais : communication orale (People and places : sport)",
+      "Français : expression orale et prise de parole en public"
+     ],
+     "credits": 4,
+     "famille": "Langues & communication",
+     "cle_source": "APA|Semestre 3|Techniques d'expression écrite et orale",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 3|Techniques d'expression écrite et orale »"
+    }
+   ],
+   "4": [
+    {
+     "ue": "Connaissances historiques, sociologiques et institutionnelles du handicap",
+     "ecues": [
+      "Histoire et sociologie du handicap",
+      "Santé publique et populations spécifiques (handicapés, personnes âgées)"
+     ],
+     "credits": 4,
+     "famille": "APA (activité physique adaptée)",
+     "cle_source": "APA|Semestre 4|Connaissances historiques, sociologiques et institutionnelles du handicap",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 4|Connaissances historiques, sociologiques et institutionnelles du handicap »"
+    },
+    {
+     "ue": "Biologie des populations spéciales",
+     "ecues": [
+      "Biologie des populations spéciales",
+      "Biologie du vieillissement"
+     ],
+     "credits": 4,
+     "famille": "APA (activité physique adaptée)",
+     "cle_source": "APA|Semestre 4|Biologie des populations spéciales",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 4|Biologie des populations spéciales »"
+    },
+    {
+     "ue": "Rééducation fonctionnelle",
+     "ecues": [
+      "Pratique de la rééducation par les APA pour populations spécifiques 1"
+     ],
+     "credits": 2,
+     "famille": "APA (activité physique adaptée)",
+     "cle_source": "APA|Semestre 4|Rééducation fonctionnelle",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 4|Rééducation fonctionnelle »"
+    },
+    {
+     "ue": "Intervention en milieu spécial",
+     "ecues": [
+      "Pratique des activités physiques par les déficients visuels et auditifs",
+      "Pratique du fitness"
+     ],
+     "credits": 5,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "APA|Semestre 4|Intervention en milieu spécial",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 4|Intervention en milieu spécial »"
+    },
+    {
+     "ue": "Prise en charge du handicap",
+     "ecues": [
+      "Pratique des activités physiques par les déficients visuels et auditifs",
+      "Pratique du fitness"
+     ],
+     "credits": 4,
+     "famille": "APA (activité physique adaptée)",
+     "cle_source": "APA|Semestre 4|Prise en charge du handicap",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 4|Prise en charge du handicap »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité"
+     ],
+     "credits": 2,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 4|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 4|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Pré-professionnalisation",
+     "ecues": [
+      "Stage dans un établissement d'accueil spécialisé dans le traitement des handicaps"
+     ],
+     "credits": 3,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "APA|Semestre 4|Pré-professionnalisation",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 4|Pré-professionnalisation »"
+    },
+    {
+     "ue": "Méthodologie de la recherche",
+     "ecues": [
+      "Introduction à la méthodologie de la recherche scientifique"
+     ],
+     "credits": 3,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "APA|Semestre 4|Méthodologie de la recherche",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 4|Méthodologie de la recherche »"
+    },
+    {
+     "ue": "Technologie de l'information et de la communication",
+     "ecues": [
+      "Initiation à l'informatique (bureautique)"
+     ],
+     "credits": 1,
+     "famille": "TIC / bureautique",
+     "cle_source": "APA|Semestre 4|Technologie de l'information et de la communication",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 4|Technologie de l'information et de la communication »"
+    },
+    {
+     "ue": "Technique d'expression écrite et orale",
+     "ecues": [
+      "Anglais professionnel spécifique aux APAS"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "APA|Semestre 4|Technique d'expression écrite et orale",
+     "palier": "Licence",
+     "annee": "L2",
+     "source": "feuille 8, clé « APA|Semestre 4|Technique d'expression écrite et orale »"
+    }
+   ],
+   "5": [
+    {
+     "ue": "Sciences de la vie et de la santé et handicap",
+     "ecues": [
+      "Étiologie et physiopathologie des déficiences",
+      "Analyse neuromusculaire de la posture et du mouvement"
+     ],
+     "credits": 4,
+     "famille": "APA (activité physique adaptée)",
+     "cle_source": "APA|Semestre 5|Sciences de la vie et de la santé et handicap",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 5|Sciences de la vie et de la santé et handicap »"
+    },
+    {
+     "ue": "Protocole de prise en charge par l'APA et déontologie",
+     "ecues": [
+      "APA : bilan et conduite pratique en rééducation",
+      "Morale, éthique du care et bientraitance"
+     ],
+     "credits": 4,
+     "famille": "APA (activité physique adaptée)",
+     "cle_source": "APA|Semestre 5|Protocole de prise en charge par l'APA et déontologie",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 5|Protocole de prise en charge par l'APA et déontologie »"
+    },
+    {
+     "ue": "Diagnostic des incapacités et prise en charge des populations spéciales",
+     "ecues": [
+      "Rééducation par les APA pour populations spécifiques 2",
+      "Mesure et évaluation de la condition physique"
+     ],
+     "credits": 6,
+     "famille": "TIC / bureautique",
+     "cle_source": "APA|Semestre 5|Diagnostic des incapacités et prise en charge des populations spéciales",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 5|Diagnostic des incapacités et prise en charge des populations spéciales »"
+    },
+    {
+     "ue": "Prévention de la santé et traitement des pathologies par les APA",
+     "ecues": [
+      "Conditionnement physique et prévention des pathologies 1",
+      "Programmes d'APA les plus efficients dans le traitement de diverses pathologies"
+     ],
+     "credits": 6,
+     "famille": "APA (activité physique adaptée)",
+     "cle_source": "APA|Semestre 5|Prévention de la santé et traitement des pathologies par les APA",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 5|Prévention de la santé et traitement des pathologies par les APA »"
+    },
+    {
+     "ue": "Brevet National de Secourisme",
+     "ecues": [
+      "Préparation au BNS"
+     ],
+     "credits": 2,
+     "famille": "Transversal / civique / secourisme",
+     "cle_source": "APA|Semestre 5|Brevet National de Secourisme",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 5|Brevet National de Secourisme »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 5|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 5|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Méthodologie et outils",
+     "ecues": [
+      "Méthodologie de la recherche scientifique : élaboration de projet de recherche"
+     ],
+     "credits": 2,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "APA|Semestre 5|Méthodologie et outils",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 5|Méthodologie et outils »"
+    },
+    {
+     "ue": "Technique d'expression écrite et orale",
+     "ecues": [
+      "Anglais spécifique aux APAS"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "APA|Semestre 5|Technique d'expression écrite et orale",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 5|Technique d'expression écrite et orale »"
+    },
+    {
+     "ue": "Life Skills",
+     "ecues": [
+      "Culture civique"
+     ],
+     "credits": 1,
+     "famille": "Transversal / civique / secourisme",
+     "cle_source": "APA|Semestre 5|Life Skills",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 5|Life Skills »"
+    }
+   ],
+   "6": [
+    {
+     "ue": "Entrepreneuriat",
+     "ecues": [
+      "Développement communautaire en APA"
+     ],
+     "credits": 2,
+     "famille": "Management / droit / économie",
+     "cle_source": "APA|Semestre 6|Entrepreneuriat",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 6|Entrepreneuriat »"
+    },
+    {
+     "ue": "Relaxation et massage des populations spéciales",
+     "ecues": [
+      "Techniques de massages et de relaxation des populations spéciales"
+     ],
+     "credits": 2,
+     "famille": "APA (activité physique adaptée)",
+     "cle_source": "APA|Semestre 6|Relaxation et massage des populations spéciales",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 6|Relaxation et massage des populations spéciales »"
+    },
+    {
+     "ue": "Sciences de l'intervention en APAS",
+     "ecues": [
+      "Conception et planification des APA"
+     ],
+     "credits": 3,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "APA|Semestre 6|Sciences de l'intervention en APAS",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 6|Sciences de l'intervention en APAS »"
+    },
+    {
+     "ue": "Prise en charge des populations spéciales 3",
+     "ecues": [
+      "Rééducation par les APA pour populations spécifiques 3"
+     ],
+     "credits": 2,
+     "famille": "APA (activité physique adaptée)",
+     "cle_source": "APA|Semestre 6|Prise en charge des populations spéciales 3",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 6|Prise en charge des populations spéciales 3 »"
+    },
+    {
+     "ue": "Sciences et métiers de la prévention par les APS",
+     "ecues": [
+      "Programme d'Intégration, d'Équilibre Dynamique 1 (PIED)"
+     ],
+     "credits": 3,
+     "famille": "APA (activité physique adaptée)",
+     "cle_source": "APA|Semestre 6|Sciences et métiers de la prévention par les APS",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 6|Sciences et métiers de la prévention par les APS »"
+    },
+    {
+     "ue": "Prévention de la santé par le fitness",
+     "ecues": [
+      "Pratique du fitness et prévention des pathologies"
+     ],
+     "credits": 3,
+     "famille": "APA (activité physique adaptée)",
+     "cle_source": "APA|Semestre 6|Prévention de la santé par le fitness",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 6|Prévention de la santé par le fitness »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 6|Spécialisation théorique et pratique dans une APS",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 6|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Traumatologie du sport",
+     "ecues": [
+      "Pathologies liées à la pratique du sport et leurs traitements"
+     ],
+     "credits": 2,
+     "famille": "Sciences biomédicales",
+     "cle_source": "APA|Semestre 6|Traumatologie du sport",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 6|Traumatologie du sport »"
+    },
+    {
+     "ue": "Pré-professionnalisation",
+     "ecues": [
+      "Stage dans une structure spécialisée dans la prise en charge des populations spéciales"
+     ],
+     "credits": 4,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "APA|Semestre 6|Pré-professionnalisation",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 6|Pré-professionnalisation »"
+    },
+    {
+     "ue": "Formation à la recherche scientifique",
+     "ecues": [
+      "Séminaire de recherche : élaboration de projet de mémoire"
+     ],
+     "credits": 3,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "APA|Semestre 6|Formation à la recherche scientifique",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 6|Formation à la recherche scientifique »"
+    },
+    {
+     "ue": "Technique d'expression écrite et orale",
+     "ecues": [
+      "Anglais spécifique aux APA"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "APA|Semestre 6|Technique d'expression écrite et orale",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 6|Technique d'expression écrite et orale »"
+    },
+    {
+     "ue": "Technologie de l'information et de la communication",
+     "ecues": [
+      "Conception et présentation des travaux avec PowerPoint"
+     ],
+     "credits": 1,
+     "famille": "TIC / bureautique",
+     "cle_source": "APA|Semestre 6|Technologie de l'information et de la communication",
+     "palier": "Licence",
+     "annee": "L3",
+     "source": "feuille 8, clé « APA|Semestre 6|Technologie de l'information et de la communication »"
+    }
+   ],
+   "7": [
+    {
+     "ue": "Sciences de la vie et de la santé et APA",
+     "ecues": [
+      "Physiologie cardiovasculaire et activité physique",
+      "Physiopathologie des maladies chroniques cardio-respiratoires et musculo-squelettiques"
+     ],
+     "credits": 6,
+     "famille": "APA (activité physique adaptée)",
+     "cle_source": "APA|Semestre 1 (M1/S7)|Sciences de la vie et de la santé et APA",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 1 (M1/S7)|Sciences de la vie et de la santé et APA »"
+    },
+    {
+     "ue": "Approche pratique du vieillissement",
+     "ecues": [
+      "Techniques de remise en condition physique des seniors : conditionnement en salle"
+     ],
+     "credits": 3,
+     "famille": "APA (activité physique adaptée)",
+     "cle_source": "APA|Semestre 1 (M1/S7)|Approche pratique du vieillissement",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 1 (M1/S7)|Approche pratique du vieillissement »"
+    },
+    {
+     "ue": "Évaluation de la condition physique des populations spéciales",
+     "ecues": [
+      "Tests d'évaluation de la condition physique des seniors"
+     ],
+     "credits": 3,
+     "famille": "APA (activité physique adaptée)",
+     "cle_source": "APA|Semestre 1 (M1/S7)|Évaluation de la condition physique des populations spéciales",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 1 (M1/S7)|Évaluation de la condition physique des populations spéciales »"
+    },
+    {
+     "ue": "Formation professionnelle",
+     "ecues": [
+      "Pratique du fitness par les populations spéciales"
+     ],
+     "credits": 3,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "APA|Semestre 1 (M1/S7)|Formation professionnelle",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 1 (M1/S7)|Formation professionnelle »"
+    },
+    {
+     "ue": "Intervention en APA",
+     "ecues": [
+      "Variables de l'interaction dans la conduite des séances en APA"
+     ],
+     "credits": 2,
+     "famille": "EPS / didactique-pédagogie",
+     "cle_source": "APA|Semestre 1 (M1/S7)|Intervention en APA",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 1 (M1/S7)|Intervention en APA »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 1 (M1/S7)|Spécialisation théorique et pratique dans une APS",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 1 (M1/S7)|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Méthodologie de la recherche",
+     "ecues": [
+      "Élaboration des instruments de collecte de données"
+     ],
+     "credits": 4,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "APA|Semestre 1 (M1/S7)|Méthodologie de la recherche",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 1 (M1/S7)|Méthodologie de la recherche »"
+    },
+    {
+     "ue": "Formation à la recherche",
+     "ecues": [
+      "Séminaire de recherche"
+     ],
+     "credits": 4,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "APA|Semestre 1 (M1/S7)|Formation à la recherche",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 1 (M1/S7)|Formation à la recherche »"
+    },
+    {
+     "ue": "Technique d'expression écrite et orale",
+     "ecues": [
+      "Anglais professionnel"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "APA|Semestre 1 (M1/S7)|Technique d'expression écrite et orale",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 1 (M1/S7)|Technique d'expression écrite et orale »"
+    }
+   ],
+   "8": [
+    {
+     "ue": "Biomécanique et conditionnement musculaire",
+     "ecues": [
+      "Biomécanique appliquée au vieillissement et au handicap",
+      "Vieillissement des systèmes cardiorespiratoire, nerveux et musculo-squelettique"
+     ],
+     "credits": 4,
+     "famille": "Sciences biomédicales",
+     "cle_source": "APA|Semestre 2 (M1/S8)|Biomécanique et conditionnement musculaire",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 2 (M1/S8)|Biomécanique et conditionnement musculaire »"
+    },
+    {
+     "ue": "Nutrition et APA",
+     "ecues": [
+      "Alimentation et santé cardiovasculaire"
+     ],
+     "credits": 2,
+     "famille": "APA (activité physique adaptée)",
+     "cle_source": "APA|Semestre 2 (M1/S8)|Nutrition et APA",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 2 (M1/S8)|Nutrition et APA »"
+    },
+    {
+     "ue": "Approche pratique du vieillissement",
+     "ecues": [
+      "APA aux seniors : Programme PIED 2",
+      "Évaluation de la condition physique des populations spéciales"
+     ],
+     "credits": 5,
+     "famille": "APA (activité physique adaptée)",
+     "cle_source": "APA|Semestre 2 (M1/S8)|Approche pratique du vieillissement",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 2 (M1/S8)|Approche pratique du vieillissement »"
+    },
+    {
+     "ue": "Spécialisation théorique et pratique dans une APS",
+     "ecues": [
+      "APS de spécialité"
+     ],
+     "credits": 3,
+     "famille": "Pratiques sportives (APS)",
+     "cle_source": "APA|Semestre 2 (M1/S8)|Spécialisation théorique et pratique dans une APS",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 2 (M1/S8)|Spécialisation théorique et pratique dans une APS »"
+    },
+    {
+     "ue": "Professionnalisation",
+     "ecues": [
+      "Stage professionnel dans une structure spécialisée : élaboration d'un projet"
+     ],
+     "credits": 5,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "APA|Semestre 2 (M1/S8)|Professionnalisation",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 2 (M1/S8)|Professionnalisation »"
+    },
+    {
+     "ue": "Méthodologie de la recherche",
+     "ecues": [
+      "MRS 2 : conception des instruments de cueillette de données"
+     ],
+     "credits": 3,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "APA|Semestre 2 (M1/S8)|Méthodologie de la recherche",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 2 (M1/S8)|Méthodologie de la recherche »"
+    },
+    {
+     "ue": "Formation à la recherche",
+     "ecues": [
+      "Séminaire de recherche"
+     ],
+     "credits": 2,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "APA|Semestre 2 (M1/S8)|Formation à la recherche",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 2 (M1/S8)|Formation à la recherche »"
+    },
+    {
+     "ue": "Technique d'expression écrite et orale",
+     "ecues": [
+      "Anglais professionnel"
+     ],
+     "credits": 2,
+     "famille": "Langues & communication",
+     "cle_source": "APA|Semestre 2 (M1/S8)|Technique d'expression écrite et orale",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 2 (M1/S8)|Technique d'expression écrite et orale »"
+    },
+    {
+     "ue": "Formation administrative",
+     "ecues": [
+      "Droits et devoirs du fonctionnaire",
+      "Rédaction administrative"
+     ],
+     "credits": 4,
+     "famille": "Transversal / civique / secourisme",
+     "cle_source": "APA|Semestre 2 (M1/S8)|Formation administrative",
+     "palier": "Master",
+     "annee": "M1",
+     "source": "feuille 8, clé « APA|Semestre 2 (M1/S8)|Formation administrative »"
+    }
+   ],
+   "9": [
+    {
+     "ue": "Professionnalisation",
+     "ecues": [
+      "Stage milieu professionnel"
+     ],
+     "credits": 15,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "APA|Semestre 3 (M2/S9)|Professionnalisation",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « APA|Semestre 3 (M2/S9)|Professionnalisation »"
+    },
+    {
+     "ue": "Formation à la recherche",
+     "ecues": [
+      "Séminaire de recherche 3"
+     ],
+     "credits": 7,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "APA|Semestre 3 (M2/S9)|Formation à la recherche",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « APA|Semestre 3 (M2/S9)|Formation à la recherche »"
+    },
+    {
+     "ue": "Méthodologie de la recherche",
+     "ecues": [
+      "Méthodologie de la recherche scientifique 3 : analyse des données et discussion",
+      "Statistiques descriptives et inférentielles 2"
+     ],
+     "credits": 8,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "APA|Semestre 3 (M2/S9)|Méthodologie de la recherche",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « APA|Semestre 3 (M2/S9)|Méthodologie de la recherche »"
+    }
+   ],
+   "10": [
+    {
+     "ue": "Formation à la recherche",
+     "ecues": [
+      "Travaux de recherche : mémoire"
+     ],
+     "credits": 15,
+     "famille": "Recherche & méthodologie",
+     "cle_source": "APA|Semestre 4 (M2/S10)|Formation à la recherche",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « APA|Semestre 4 (M2/S10)|Formation à la recherche »"
+    },
+    {
+     "ue": "Formation professionnelle",
+     "ecues": [
+      "Stage milieu professionnel"
+     ],
+     "credits": 15,
+     "famille": "Professionnalisation / stages",
+     "cle_source": "APA|Semestre 4 (M2/S10)|Formation professionnelle",
+     "palier": "Master",
+     "annee": "M2",
+     "source": "feuille 8, clé « APA|Semestre 4 (M2/S10)|Formation professionnelle »"
+    }
+   ]
+  }
+ },
+ "filiere_du_sigle": {
+  "EM": "F01",
+  "MS": "F04",
+  "ES": "F03",
+  "APA": "F02"
+ },
+ "anomalies": [
+  {
+   "type": "SEMESTRE_ABSENT",
+   "filiere": "MS",
+   "semestre": 8,
+   "detail": "Le référentiel ne contient aucune UE pour MS S8. Aucune UE inventée."
+  }
+ ]
+}

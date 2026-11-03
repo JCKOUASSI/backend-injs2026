@@ -1,0 +1,606 @@
+/* MODULE RÉFÉRENTIELS — mise en forme premium.
+ *
+ * Repose sur le design system Scolarité (`.cand-*`) déjà embarqué par
+ * `candidatures.css`. Ce fichier n'ajoute que les pièces propres au module :
+ * pastilles du bandeau, filtres, catégories, cartes de référence, tableau,
+ * badges de fiabilité et modale. Tous les sélecteurs sont préfixés `.ref-`.
+ */
+
+.ref-page { min-width: 0; }
+
+/* ── 1. BANDEAU ── */
+.ref-hero-pastilles {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ref-pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.75rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.2;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.ref-pastille i { font-size: 0.85rem; }
+
+.ref-pastille--primary {
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border-color: #BFDCF5;
+}
+
+.ref-pastille--neutre {
+  color: #475569;
+  background: #F1F5F9;
+  border-color: #E2E8F0;
+}
+
+.ref-fil {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: inherit;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.ref-fil:hover { text-decoration: underline; }
+
+/* ── 2. FILTRES ── */
+.ref-filtres {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.9rem 1.2rem;
+  flex-wrap: wrap;
+}
+
+.ref-champ-recherche { flex: 0 0 320px; max-width: 320px; }
+.ref-champ-etat { flex: 0 0 190px; max-width: 250px; }
+
+/* `.cand-search` est un conteneur ligne (flex: 1 1 280px) : dans un champ en
+   colonne, cette base s'applique à la hauteur et creuse un vide. On la
+   neutralise ici, uniquement dans ce contexte. */
+.ref-champ-recherche .cand-search {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: none;
+}
+
+.ref-filtres > .cand-champ { min-width: 0; }
+
+.ref-categories {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  flex: 1 1 320px;
+}
+
+.ref-categorie-puce {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.8rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #475569;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.ref-categorie-puce:hover { background: #F1F5F9; color: var(--injs-navy); }
+
+.ref-categorie-puce.is-active {
+  color: #FFFFFF;
+  background: var(--injs-blue-royal);
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 4px 12px -4px rgba(28, 92, 199, 0.5);
+}
+
+.ref-categorie-puce i { font-size: 0.8rem; }
+
+/* ── 3. CATÉGORIES ET CARTES ── */
+.ref-categorie {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.ref-categorie-entete {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0 0.15rem;
+}
+
+.ref-categorie-icone {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  font-size: 1rem;
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border: 1px solid #D7E8F8;
+  border-radius: 11px;
+  flex: 0 0 auto;
+}
+
+.ref-categorie-titre {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+}
+
+.ref-categorie-desc {
+  margin: 0.1rem 0 0;
+  font-size: 0.78rem;
+  color: #64748B;
+}
+
+.ref-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.85rem;
+}
+
+.ref-carte {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.95rem 1rem;
+  background: #FFFFFF;
+  border: 1px solid #E9ECF2;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px -18px rgba(7, 27, 58, 0.5);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.ref-carte:hover {
+  transform: translateY(-2px);
+  border-color: #C9DCFC;
+  box-shadow: 0 14px 30px -20px rgba(7, 27, 58, 0.6);
+}
+
+.ref-carte-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.ref-carte-icone {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  font-size: 0.9rem;
+  color: var(--injs-blue-royal);
+  background: #EEF4FF;
+  border: 1px solid #D7E8F8;
+  border-radius: 10px;
+  flex: 0 0 auto;
+}
+
+.ref-carte-titres { min-width: 0; }
+
+.ref-carte-titre {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+  line-height: 1.25;
+}
+
+.ref-carte-desc {
+  margin: 0.15rem 0 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: #64748B;
+}
+
+.ref-carte-mesures {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  padding: 0.45rem 0;
+  border-top: 1px dashed #E9ECF2;
+  border-bottom: 1px dashed #E9ECF2;
+}
+
+.ref-mesure {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: #64748B;
+}
+
+.ref-mesure strong {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+  font-variant-numeric: tabular-nums;
+}
+
+.ref-mesure--alerte strong { color: #B45309; }
+.ref-mesure--douce strong { color: #94A3B8; }
+
+.ref-carte-pied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.ref-etat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.ref-etat i { font-size: 0.8rem; }
+.ref-etat--complet { color: #0E7A4F; }
+.ref-etat--partiel { color: #B45309; }
+.ref-etat--vide { color: #B91C1C; }
+.ref-etat--neutre { color: #64748B; font-weight: 600; }
+
+.ref-lien {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--injs-blue-royal);
+  text-decoration: none;
+}
+
+.ref-lien:hover { text-decoration: underline; }
+.ref-lien--douce { color: #64748B; font-weight: 700; }
+
+/* ── 4. NOTE DE PROVENANCE ── */
+.ref-note { background: #F8FAFC; }
+
+.ref-note-texte {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.ref-note-texte i { color: var(--injs-blue-royal); margin-top: 0.15rem; }
+
+.ref-note-bandeau {
+  margin: 0 0 0.9rem;
+  padding: 0.6rem 0.8rem;
+  background: #F8FAFC;
+  border: 1px dashed #D7DFEA;
+  border-radius: 10px;
+}
+
+/* ── 5. BADGES DE FIABILITÉ ── */
+.ref-fiab {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.ref-fiab--officiel { color: #0E7A4F; background: #F1FBF6; border-color: #B7E7CE; }
+.ref-fiab--modelise { color: #1D4ED8; background: #EEF4FF; border-color: #C7D9FB; }
+.ref-fiab--cadrage { color: #8A5A00; background: #FFF8E8; border-color: #F5DFAE; }
+.ref-fiab--a_renseigner { color: #B91C1C; background: #FEF2F2; border-color: #F6C9C9; }
+
+/* ── 6. TABLEAU ── */
+.ref-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.ref-table { min-width: 940px; }
+
+/* Colonnes de libellés issus d'un sélecteur : une ligne, tronquée avec
+   infobulle — les descriptions longues ne doivent pas étirer la ligne. */
+.ref-table td[data-colonne$='_libelle'] {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ref-table thead th {
+  white-space: normal;
+  line-height: 1.25;
+  vertical-align: bottom;
+}
+
+.ref-table tbody td {
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
+.ref-table tbody tr.is-archive { opacity: 0.55; }
+
+.ref-table td[data-colonne='code'] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--injs-blue-royal);
+}
+
+.ref-action {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 0.78rem;
+  color: #475569;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.ref-action:hover { background: #EEF2F7; color: var(--injs-navy); }
+.ref-action--statut.is-actif { color: #0E7A4F; border-color: #B7E7CE; background: #F1FBF6; }
+.ref-action--archiver:hover { color: #B91C1C; border-color: #F6C9C9; background: #FEF2F2; }
+.ref-action--reactiver:hover { color: #1D4ED8; border-color: #C7D9FB; background: #EEF4FF; }
+
+/* Tableau large : le conteneur fait défiler horizontalement plutôt que
+   d'écraser la colonne des libellés. */
+.ref-page .cand-table-wrap { overflow-x: auto; }
+
+.ref-table--lecture { min-width: 960px; }
+
+/* La pastille de fiabilité ne doit jamais être rognée : elle porte
+   l'information de traçabilité la plus sensible du module. */
+.ref-table--lecture th[data-colonne='fiabilite'],
+.ref-table--lecture td[data-colonne='fiabilite'] {
+  max-width: none;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+/* Tables importées : valeurs courtes, une seule ligne, infobulle au survol. */
+.ref-table--lecture tbody td {
+  max-width: 230px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ref-table--lecture th[data-colonne='libelle'],
+.ref-table--lecture td[data-colonne='libelle'],
+.ref-table--lecture th[data-colonne='intitule_module'],
+.ref-table--lecture td[data-colonne='intitule_module'] {
+  width: 28%;
+  /* Le libellé est la donnée utile : il passe sur deux lignes plutôt que
+     d'être tronqué comme les colonnes de contexte. */
+  min-width: 280px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  font-weight: 600;
+  color: var(--injs-navy);
+}
+
+.ref-table--lecture th[data-colonne='formation_intitule'],
+.ref-table--lecture td[data-colonne='formation_intitule'] {
+  width: 20%;
+  max-width: 260px;
+  /* Le cycle de rattachement est un intitulé long : deux lignes maximum, le
+     reste masqué — l'intitulé complet reste disponible en infobulle. */
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: clip;
+  max-height: 3.1em;
+  line-height: 1.35;
+}
+
+.ref-table--lecture tbody td[data-colonne='filiere_code'] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 700;
+  color: var(--injs-blue-royal);
+}
+
+/* ── 7. MODALE ── */
+.ref-modale-voile {
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(7, 27, 58, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.ref-modale {
+  width: min(720px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  background: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 30px 60px -20px rgba(7, 27, 58, 0.45);
+}
+
+.ref-modale--etroite { width: min(460px, 100%); }
+
+.ref-modale-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.15rem 0.75rem;
+  border-bottom: 1px solid #EDF1F6;
+}
+
+.ref-modale-titre {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+}
+
+.ref-modale-titre span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748B;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ref-modale-fermer {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 0.75rem;
+  color: #64748B;
+  background: #F1F5F9;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.ref-modale-fermer:hover { background: #E2E8F0; color: var(--injs-navy); }
+
+.ref-modale-corps { padding: 1rem 1.15rem; font-size: 0.82rem; line-height: 1.6; color: #334155; }
+
+.ref-modale-corps p { margin: 0; }
+
+.ref-modale--etroite .ref-modale-head { padding-bottom: 0.6rem; }
+
+.ref-modale--etroite .ref-modale-corps { padding: 0.9rem 1.15rem 1.1rem; }
+
+.ref-modale--etroite .ref-modale-pied {
+  margin-top: 0;
+  padding: 0 1.15rem 1.1rem;
+  border-top: 0;
+  justify-content: flex-end;
+}
+
+.ref-form { padding: 1rem 1.15rem 1.1rem; }
+
+.ref-champ-large { grid-column: 1 / -1; }
+
+.ref-requis { color: #B91C1C; font-weight: 800; }
+
+.ref-aide {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.68rem;
+  color: #8C9AAD;
+}
+
+.ref-erreur {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #B91C1C;
+}
+
+.ref-erreur--general {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.6rem 0 0;
+  padding: 0.55rem 0.7rem;
+  background: #FEF2F2;
+  border: 1px solid #F6C9C9;
+  border-radius: 9px;
+}
+
+.ref-case {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+
+.ref-case input { width: 16px; height: 16px; accent-color: var(--injs-blue-royal); }
+
+.ref-modale-pied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #EDF1F6;
+}
+
+.ref-modale-boutons { display: flex; align-items: center; gap: 0.5rem; }
+
+.ref-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 1rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  background: #B91C1C;
+  border: 1px solid #B91C1C;
+  border-radius: 9999px;
+  cursor: pointer;
+}
+
+.ref-btn-danger:hover { background: #991B1B; }
+.ref-btn-danger:disabled { opacity: 0.6; cursor: progress; }
+
+/* ── 8. RESPONSIVE ── */
+@media (max-width: 760px) {
+  .ref-hero-pastilles { width: 100%; }
+  .ref-champ-recherche { flex: 1 1 100%; max-width: none; }
+  .ref-champ-etat { flex: 1 1 100%; }
+  .ref-grille { grid-template-columns: minmax(0, 1fr); }
+  .ref-modale-pied { flex-direction: column; align-items: stretch; }
+  .ref-modale-boutons { justify-content: flex-end; }
+}
+
+@media (max-width: 560px) {
+  .ref-page .cand-hero-badge {
+    white-space: normal;
+    line-height: 1.45;
+  }
+  .ref-page .cand-hero-identite { align-items: flex-start; }
+  .ref-page .cand-hero-title { font-size: 1.28rem; }
+  .ref-categorie-puce { font-size: 0.7rem; padding: 0.3rem 0.65rem; }
+}

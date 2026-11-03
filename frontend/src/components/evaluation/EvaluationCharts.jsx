@@ -1,5 +1,5 @@
-const CHART_COLORS = ['#4f46e5', '#e69700', '#0f4fbd', '#6a1b9a', '#1565c0', '#c62828', '#0f70ab', '#ffbf00']
-const NOTE_COLORS = ['#ef5350', '#ffbf00', '#fde135', '#4895d9', '#0f4fbd']
+const CHART_COLORS = ['#283A87', '#1267D6', '#35BDF5', '#0D9488', '#16A36A', '#D97706', '#805AD5', '#DC3545']
+const NOTE_COLORS = ['#283A87', '#1267D6', '#35BDF5', '#0D9488', '#16A36A']
 
 export function ChartEmpty({ label = 'Aucune donnée' }) {
   return (
@@ -68,7 +68,7 @@ export function DonutChart({ data, labelKey = 'label', valueKey = 'value', size 
 }
 
 /** Histogramme vertical */
-export function HistogramChart({ data, labelKey = 'label', valueKey = 'value', color = '#4f46e5', height = 150, unit = '' }) {
+export function HistogramChart({ data, labelKey = 'label', valueKey = 'value', color = '#283A87', height = 150, unit = '' }) {
   if (!data?.length) return <ChartEmpty />
   const max = Math.max(...data.map(d => d[valueKey] || 0), 1)
   const barW = Math.max(22, Math.min(48, Math.floor(480 / data.length) - 10))
@@ -133,7 +133,7 @@ export function HorizontalBarChart({ data, labelKey = 'label', valueKey = 'value
 }
 
 /** Tendance temporelle (soumissions par jour) */
-export function TrendChart({ data, valueKey = 'nb', color = '#0f4fbd', height = 140 }) {
+export function TrendChart({ data, valueKey = 'nb', color = '#104A8E', height = 140 }) {
   if (!data?.length) return <ChartEmpty label="Pas encore de tendance (soumissions)" />
 
   const max = Math.max(...data.map(d => d[valueKey] || 0), 1)
@@ -179,7 +179,7 @@ export function NoteHistogram({ distribution, total }) {
     color: NOTE_COLORS[n - 1],
   }))
   if (!total) return <ChartEmpty label="Aucune note" />
-  return <HistogramChart data={data} color="#4f46e5" height={130} />
+  return <HistogramChart data={data} color="#283A87" height={130} />
 }
 
 /** Distribution des notes 1-5 en disque */

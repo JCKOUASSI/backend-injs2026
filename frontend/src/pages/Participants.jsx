@@ -17,6 +17,10 @@ import { canCreateParticipant, canManageParticipant, canViewPresences as canView
 import Pagination from '../components/Pagination'
 import { parsePaginatedResponse } from '../utils/paginatedResponse'
 import ParticipantDetailModal from '../components/ParticipantDetailModal'
+import '../styles/candidatures.css'
+import '../styles/admissions.css'
+import '../styles/etudiants.css'
+import '../styles/modale-premium.css'
 import '../styles/campagnes.css'
 
 const emptyForm = {
@@ -42,6 +46,7 @@ export default function Participants() {
   const [page, setPage] = useState(() => parseListPage(searchParams))
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+  const [stats, setStats] = useState(null)
   const [search, setSearch] = useState(initialFilters.search)
   const [sexeFilter, setSexeFilter] = useState(initialFilters.sexe)
   const [secretariatFilter, setSecretariatFilter] = useState(initialFilters.secretariat)
@@ -151,6 +156,13 @@ export default function Participants() {
     }
   }, [showDetail, canViewPresences])
 
+  const loadStats = async () => {
+    try {
+      const res = await api.get('/formations/participants/stats/')
+      setStats(res.data && !Array.isArray(res.data) && typeof res.data.total === 'number' ? res.data : null)
+    } catch { setStats(null) }
+  }
+
   const loadParticipants = async () => {
     setLoading(true)
     try {
@@ -169,6 +181,7 @@ export default function Participants() {
       setTotalCount(count)
       const payload = Array.isArray(response.data) ? {} : response.data
       setFilterOptions(payload.filter_options || { secretariats: [], grades: [], groupes: [], types_concours: [] })
+      loadStats()
     } catch (err) {
       setError('Erreur lors du chargement des étudiants')
       console.error(err)
@@ -248,7 +261,23 @@ export default function Participants() {
   }
 
   const sexeLabel = (s) => ({ MASCULIN: 'Masculin', FEMININ: 'Féminin' }[s] || '-')
-  const sexeBadge = (s) => s === 'MASCULIN' ? 'badge-bg-info' : s === 'FEMININ' ? 'badge-bg-warning' : ''
+
+  /* Retour à la liste complète : un seul geste plutôt que sept remises à zéro. */
+  const reinitialiserFiltres = () => {
+    setSearch('')
+    setSexeFilter('')
+    setSecretariatFilter('')
+    setGradeFilter('')
+    setGroupeFilter('')
+    setTypeConcoursFilter('')
+    setVagueFilter('')
+    setPage(1)
+  }
+
+  /* Nombre de filtres réellement posés : sert de repère dans l'en-tête du
+     panneau, l'utilisateur n'a pas à recompter les listes déroulantes. */
+  const filtresActifs = [sexeFilter, secretariatFilter, gradeFilter, groupeFilter,
+    typeConcoursFilter, vagueFilter].filter(Boolean).length
 
   const canManage = canManageParticipant(user)
   const canCreate = canCreateParticipant(user)
@@ -291,29 +320,106 @@ export default function Participants() {
   }
 
   return (
-    <div className="camp-page">
-      {/* Hero premium */}
-      <div className="camp-hero">
-        <div className="camp-hero-text">
-          <h1 className="camp-hero-title"><i className="bi bi-people"></i>Étudiants</h1>
-          <p className="camp-hero-sub">Registre des étudiants · recherche, filtres par secrétariat, grade, groupe, concours, sexe et vague.</p>
+    <div className="cand-page">
+      {/* ── Bandeau d'accueil, même matière que les autres écrans Scolarité ── */}
+      <div className="cand-hero">
+        <div className="cand-hero-identite">
+          <span className="cand-hero-icone" aria-hidden="true">
+            <i className="bi bi-people"></i>
+          </span>
+          <div className="cand-hero-text">
+            <span className="cand-hero-badge">Scolarité — Étudiants</span>
+            <h1 className="cand-hero-title">Étudiants</h1>
+            <p className="cand-hero-sub">Registre, recherche et filtres des étudiants</p>
+          </div>
         </div>
-        <div className="camp-hero-side">
-          <span className="plaquette plaquette-soft"><i className="bi bi-list-ul"></i>{totalCount} étudiant{totalCount > 1 ? 's' : ''}</span>
+        <div className="camp-pastilles">
+          <span className="cand-count-pill">
+            <i className="bi bi-person-badge" aria-hidden="true"></i>
+            {totalCount} étudiant{totalCount > 1 ? 's' : ''}
+          </span>
         </div>
       </div>
 
-      {/* Search + Filter bar */}
-      <div className="camp-panel card">
-        <div className="camp-panel-body">
-          <div className="parti-filters">
-            <div className="camp-search parti-search">
-              <i className="bi bi-search"></i>
-              <input type="text" className="form-control" placeholder="Nom, prénom, matricule, e-mail, concours…"
-                value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} />
+      {stats && (
+        <>
+          <div className="cand-kpi-row">
+            <div className="cand-kpi">
+              <span className="cand-kpi-icon is-blue" aria-hidden="true"><i className="bi bi-people"></i></span>
+              <div>
+                <span className="cand-kpi-value">{stats.total.toLocaleString('fr-FR')}</span>
+                <span className="cand-kpi-label">Effectif</span>
+                <span className="adm-kpi-sous">étudiants au registre</span>
+              </div>
             </div>
-            <div className="parti-filter">
-              <select className="form-select camp-filter-select w-100" value={secretariatFilter}
+            <div className="cand-kpi">
+              <span className="cand-kpi-icon is-rose" aria-hidden="true"><i className="bi bi-gender-female"></i></span>
+              <div>
+                <span className="cand-kpi-value">{(stats.par_sexe?.FEMININ || 0).toLocaleString('fr-FR')}</span>
+                <span className="cand-kpi-label">Femmes</span>
+                <span className="adm-kpi-sous">
+                  {stats.total ? Math.round(((stats.par_sexe?.FEMININ || 0) / stats.total) * 100) : 0} % de l’effectif
+                </span>
+              </div>
+            </div>
+            <div className="cand-kpi">
+              <span className="cand-kpi-icon is-amber" aria-hidden="true"><i className="bi bi-gender-male"></i></span>
+              <div>
+                <span className="cand-kpi-value">{(stats.par_sexe?.MASCULIN || 0).toLocaleString('fr-FR')}</span>
+                <span className="cand-kpi-label">Hommes</span>
+                <span className="adm-kpi-sous">
+                  {stats.total ? Math.round(((stats.par_sexe?.MASCULIN || 0) / stats.total) * 100) : 0} % de l’effectif
+                </span>
+              </div>
+            </div>
+            <div className="cand-kpi">
+              <span className="cand-kpi-icon is-green" aria-hidden="true"><i className="bi bi-award"></i></span>
+              <div>
+                <span className="cand-kpi-value">{(stats.avec_grade || 0).toLocaleString('fr-FR')}</span>
+                <span className="cand-kpi-label">Avec grade</span>
+                <span className="adm-kpi-sous">
+                  {(stats.inscrits_annee_courante || 0).toLocaleString('fr-FR')} inscrits cette année
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="etud-parite" role="img"
+            aria-label={`Parité : ${stats.par_sexe?.FEMININ || 0} femmes, ${stats.par_sexe?.MASCULIN || 0} hommes`}>
+            <span className="etud-parite-f" style={{
+              width: `${stats.total ? ((stats.par_sexe?.FEMININ || 0) / stats.total) * 100 : 50}%`,
+            }}></span>
+            <span className="etud-parite-m"></span>
+          </div>
+        </>
+      )}
+
+      {/* ── Recherche, filtres et actions ── */}
+      <section className="cand-panel" aria-labelledby="titre-filtres-etudiants">
+        <header className="cand-panel-head">
+          <h2 className="cand-panel-title" id="titre-filtres-etudiants">
+            <i className="bi bi-funnel" aria-hidden="true"></i>Recherche et filtres
+          </h2>
+          {filtresActifs > 0 && (
+            <span className="cand-count-pill">
+              <i className="bi bi-sliders" aria-hidden="true"></i>
+              {filtresActifs} filtre{filtresActifs > 1 ? 's' : ''} actif{filtresActifs > 1 ? 's' : ''}
+            </span>
+          )}
+        </header>
+        <div className="cand-panel-body">
+          <div className="cand-filters etud-filtres">
+            <div className="cand-search etud-recherche">
+              <i className="bi bi-search"></i>
+              <input
+                type="search" className="cand-input"
+                placeholder="Nom, prénom, matricule, e-mail, concours…"
+                aria-label="Rechercher un étudiant"
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+              />
+            </div>
+            <div className="etud-filtre">
+              <select className="cand-filter-select" aria-label="Filtrer par secrétariat" value={secretariatFilter}
                 onChange={(e) => { setSecretariatFilter(e.target.value); setPage(1) }}>
                 <option value="">Tous (secrétariat)</option>
                 {filterOptions.secretariats.map((s) => (
@@ -321,8 +427,8 @@ export default function Participants() {
                 ))}
               </select>
             </div>
-            <div className="parti-filter">
-              <select className="form-select camp-filter-select w-100" value={gradeFilter}
+            <div className="etud-filtre">
+              <select className="cand-filter-select" aria-label="Filtrer par grade" value={gradeFilter}
                 onChange={(e) => { setGradeFilter(e.target.value); setPage(1) }}>
                 <option value="">Tous (grade)</option>
                 {filterOptions.grades.map((g) => (
@@ -330,8 +436,8 @@ export default function Participants() {
                 ))}
               </select>
             </div>
-            <div className="parti-filter">
-              <select className="form-select camp-filter-select w-100" value={groupeFilter}
+            <div className="etud-filtre">
+              <select className="cand-filter-select" aria-label="Filtrer par groupe" value={groupeFilter}
                 onChange={(e) => { setGroupeFilter(e.target.value); setPage(1) }}>
                 <option value="">Tous (groupe)</option>
                 {filterOptions.groupes.map((g) => (
@@ -339,8 +445,8 @@ export default function Participants() {
                 ))}
               </select>
             </div>
-            <div className="parti-filter">
-              <select className="form-select camp-filter-select w-100" value={typeConcoursFilter}
+            <div className="etud-filtre">
+              <select className="cand-filter-select" aria-label="Filtrer par type de concours" value={typeConcoursFilter}
                 onChange={(e) => { setTypeConcoursFilter(e.target.value); setPage(1) }}>
                 <option value="">Tous (type concours)</option>
                 {filterOptions.types_concours.map((t) => (
@@ -348,8 +454,8 @@ export default function Participants() {
                 ))}
               </select>
             </div>
-            <div className="parti-filter">
-              <select className="form-select camp-filter-select w-100" value={sexeFilter}
+            <div className="etud-filtre">
+              <select className="cand-filter-select" aria-label="Filtrer par sexe" value={sexeFilter}
                 onChange={(e) => { setSexeFilter(e.target.value); setPage(1) }}>
                 <option value="">Tous (sexe)</option>
                 <option value="MASCULIN">Masculin</option>
@@ -357,8 +463,8 @@ export default function Participants() {
               </select>
             </div>
             {refs.vagues && refs.vagues.length > 0 && (
-              <div className="parti-filter">
-                <select className="form-select camp-filter-select w-100" value={vagueFilter}
+              <div className="etud-filtre">
+                <select className="cand-filter-select" aria-label="Filtrer par vague" value={vagueFilter}
                   onChange={(e) => { setVagueFilter(e.target.value); setPage(1) }}>
                   <option value="">Toutes les vagues</option>
                   {refs.vagues.map(v => (
@@ -367,100 +473,182 @@ export default function Participants() {
                 </select>
               </div>
             )}
+          </div>
+
+          <div className="etud-actions">
             {canCreate && (
-              <button onClick={openCreate} className="camp-submit-btn btn btn-primary btn-sm">
-                <i className="bi bi-plus-lg me-1"></i>Nouvel étudiant
+              <button type="button" onClick={openCreate} className="cand-btn-principal">
+                <i className="bi bi-plus-lg" aria-hidden="true"></i>
+                Nouvel étudiant
               </button>
             )}
             {canExportListeClasse && (
               <>
                 <button
                   type="button"
-                  className="btn btn-outline-danger btn-sm camp-action-btn"
+                  className="cand-btn-fantome etud-btn-export etud-btn-export--pdf"
                   disabled={exportingListeClasse}
                   onClick={() => handleExportListeClasse('pdf')}
                   title={groupeFilter ? `Liste de classe PDF — ${groupeFilter}` : 'Liste de classe PDF — tous les groupes'}
                 >
-                  <i className="bi bi-file-earmark-pdf me-1"></i>
+                  <i className="bi bi-file-earmark-pdf" aria-hidden="true"></i>
                   {groupeFilter ? 'Liste de classe PDF' : 'Listes de classe PDF'}
                 </button>
                 <button
                   type="button"
-                  className="btn btn-outline-success btn-sm camp-action-btn"
+                  className="cand-btn-fantome etud-btn-export etud-btn-export--excel"
                   disabled={exportingListeClasse}
                   onClick={() => handleExportListeClasse('excel')}
                   title={groupeFilter ? `Liste de classe Excel — ${groupeFilter}` : 'Liste de classe Excel — tous les groupes'}
                 >
-                  <i className="bi bi-file-earmark-excel me-1"></i>
+                  <i className="bi bi-file-earmark-excel" aria-hidden="true"></i>
                   {groupeFilter ? 'Liste de classe Excel' : 'Listes de classe Excel'}
                 </button>
               </>
             )}
+            {(filtresActifs > 0 || search) && (
+              <button type="button" className="cand-btn-fantome etud-btn-reset" onClick={reinitialiserFiltres}>
+                <i className="bi bi-x-circle" aria-hidden="true"></i>
+                Réinitialiser
+              </button>
+            )}
           </div>
         </div>
-      </div>
+      </section>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && <div className="cand-alerte" role="alert">{error}</div>}
 
-      {/* Table */}
-      <div className="camp-panel card">
-        <div className="camp-panel-head">
-          <h2 className="camp-panel-title"><i className="bi bi-people"></i>Liste des étudiants</h2>
-          <span className="camp-count-pill">{totalCount} résultat(s)</span>
-        </div>
-        <div className="camp-panel-body">
-          {loading ? <div className="loading"><div className="spinner"></div></div> : (
+      {/* ── Registre ── */}
+      <section className="cand-panel" aria-labelledby="titre-liste-etudiants">
+        <header className="cand-panel-head">
+          <h2 className="cand-panel-title" id="titre-liste-etudiants">
+            <i className="bi bi-person-lines-fill" aria-hidden="true"></i>Liste des étudiants
+          </h2>
+          <span className="cand-count-pill">{totalCount} résultat(s)</span>
+        </header>
+        <div className="cand-panel-body">
+          {loading ? (
+            <div className="cand-chargement">
+              <span className="spinner-border" aria-hidden="true"></span>Chargement des étudiants…
+            </div>
+          ) : (
             <>
-              <div className="table-responsive">
-                <table className="table table-hover align-middle mb-0 camp-table">
-                  <thead className="table-light">
+              <div className="cand-table-wrap">
+                <table className="cand-table cand-table--etudiants">
+                  <thead>
                     <tr>
-                      <th>N° d'inscription</th>
-                      <th>Nom &amp; Prénom</th>
-                      <th>Sexe</th>
-                      <th>Grade</th>
-                      <th>Téléphone</th>
-                      <th className="text-end">Actions</th>
+                      <th scope="col">N° d&apos;inscription</th>
+                      <th scope="col">Nom &amp; Prénom</th>
+                      <th scope="col">Sexe</th>
+                      <th scope="col">Grade</th>
+                      <th scope="col">Téléphone</th>
+                      <th scope="col" className="cand-th-actions">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {participants.length > 0 ? participants.map((p) => (
                       <tr key={p.id}>
-                        <td><span className="camp-candidatures">{p.matricule || '-'}</span></td>
-                        <td>
-                          <span className="camp-link">{p.nom} {p.prenom}</span>
-                          </td>
+                        <td className="cand-col-etroit">
+                          {p.matricule
+                            ? <span className="cand-numero">{p.matricule}</span>
+                            : <span className="cand-texte-doux">-</span>}
+                        </td>
+                        <td className="etud-col-identite">
+                          <div className="etud-identite">
+                            <span className="etud-avatar" aria-hidden="true">
+                              {`${p.nom || ''} ${p.prenom || ''}`.trim().split(/\s+/)
+                                .slice(0, 2).map((m) => m[0]).join('').toUpperCase() || '?'}
+                            </span>
+                            <span className="etud-identite-textes">
+                              <span className="cand-etudiant">{p.nom} {p.prenom}</span>
+                              {p.formation_actuelle && (
+                                <span className="etud-sous etud-formation">
+                                  {p.formation_actuelle}
+                                  {p.niveau_actuel ? ` · ${p.niveau_actuel}` : ''}
+                                </span>
+                              )}
+                              {(p.secretariat_nom || (typeof p.secretariat === 'string' && p.secretariat)) && (
+                                <span className="etud-sous">
+                                  <i className="bi bi-geo-alt" aria-hidden="true"></i>
+                                  {p.secretariat_nom || p.secretariat}
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                        </td>
                         <td>
                           {p.sexe
-                            ? <span className={sexeBadge(p.sexe)}>{sexeLabel(p.sexe)}</span>
-                            : <span className="text-muted">-</span>}
+                            ? (
+                              <span className={`etud-sexe etud-sexe--${p.sexe === 'FEMININ' ? 'f' : 'm'}`}>
+                                <i className={`bi ${p.sexe === 'FEMININ' ? 'bi-gender-female' : 'bi-gender-male'}`} aria-hidden="true"></i>
+                                {sexeLabel(p.sexe)}
+                              </span>
+                            )
+                            : <span className="cand-texte-doux">-</span>}
                         </td>
-                        <td>{p.grade || '-'}</td>
-                        <td><small className="text-muted">{p.telephone || '-'}</small></td>
-                        <td className="text-end">
-                          <div className="btn-group btn-group-sm">
-                            <button onClick={() => setShowDetail(p)} className="btn btn-outline-secondary camp-action-btn" title="Visualiser">
-                              <i className="bi bi-eye me-1"></i>Visualiser
+                        <td>
+                          {p.grade
+                            ? <span className="cand-badge-neutre">{p.grade}</span>
+                            : <span className="cand-texte-doux">-</span>}
+                          {p.groupe && <span className="etud-sous">{p.groupe}</span>}
+                        </td>
+                        <td>
+                          {p.telephone
+                            ? <span className="etud-tel">{p.telephone}</span>
+                            : <span className="cand-texte-doux">-</span>}
+                        </td>
+                        <td className="cand-col-actions">
+                          <div className="cand-actions">
+                            <button
+                              type="button" onClick={() => setShowDetail(p)}
+                              className="cand-action cand-action--ouvrir" title="Visualiser"
+                              aria-label={`Visualiser ${p.nom} ${p.prenom}`}
+                            >
+                              <i className="bi bi-eye" aria-hidden="true"></i>
                             </button>
                             {canManage && (
-                              <button onClick={() => openEdit(p)} className="btn btn-outline-primary camp-action-btn" title="Modifier">
-                                <i className="bi bi-pencil me-1"></i>Modifier
+                              <button
+                                type="button" onClick={() => openEdit(p)}
+                                className="cand-action" title="Modifier"
+                                aria-label={`Modifier ${p.nom} ${p.prenom}`}
+                              >
+                                <i className="bi bi-pencil" aria-hidden="true"></i>
                               </button>
                             )}
                             {canManage && (
-                              <button onClick={() => handleDelete(p.id)} className="btn btn-outline-danger camp-action-btn" title="Supprimer">
-                                <i className="bi bi-trash me-1"></i>Supprimer
+                              <button
+                                type="button" onClick={() => handleDelete(p.id)}
+                                className="cand-action cand-action--danger" title="Supprimer"
+                                aria-label={`Supprimer ${p.nom} ${p.prenom}`}
+                              >
+                                <i className="bi bi-trash" aria-hidden="true"></i>
                               </button>
                             )}
                           </div>
                         </td>
                       </tr>
                     )) : (
-                      <tr><td colSpan="6"><div className="camp-empty"><i className="bi bi-inbox"></i>Aucun étudiant trouvé</div></td></tr>
+                      <tr>
+                        <td colSpan="6">
+                          <div className="cand-vide">
+                            <span className="cand-vide-icone" aria-hidden="true">
+                              <i className="bi bi-person-x"></i>
+                            </span>
+                            <p className="cand-vide-titre">Aucun étudiant trouvé</p>
+                            <p className="cand-vide-texte">
+                              Aucun étudiant ne correspond à la recherche ou aux filtres sélectionnés.
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
                     )}
                   </tbody>
                 </table>
               </div>
+              <p className="cand-defile" aria-hidden="true">
+                <i className="bi bi-arrow-left-right"></i>
+                Faites défiler le tableau horizontalement
+              </p>
               <Pagination
                 page={page}
                 totalPages={totalPages}
@@ -471,7 +659,7 @@ export default function Participants() {
             </>
           )}
         </div>
-      </div>
+      </section>
 
       {confirmDialog && (
         <ConfirmModal
@@ -499,181 +687,185 @@ export default function Participants() {
       {/* Create / Edit Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" style={{ maxWidth: '680px' }} onClick={e => e.stopPropagation()}>
+          <div className="modal-content etud-modale" style={{ maxWidth: '720px' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h5><i className="bi bi-person-plus me-2"></i>{editingId ? "Modifier l'étudiant" : 'Nouvel étudiant'}</h5>
-              <button className="btn-close" onClick={() => setShowModal(false)}>&times;</button>
+              <h2 className="etud-modale-titre">
+                <i className="bi bi-person-plus" aria-hidden="true"></i>
+                {editingId ? "Modifier l'étudiant" : 'Nouvel étudiant'}
+              </h2>
+              <button type="button" className="mp-fermer" onClick={() => setShowModal(false)} aria-label="Fermer">
+                <span className="etud-fermer-glyphe" aria-hidden="true">×</span>
+              </button>
             </div>
             <form onSubmit={handleSubmit}>
-              <div className="modal-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
-                {formError && <div className="alert alert-danger" style={{ whiteSpace: 'pre-line' }}>{formError}</div>}
+              <div className="modal-body etud-modale-corps" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
+                {formError && <div className="cand-alerte" role="alert" style={{ whiteSpace: 'pre-line' }}>{formError}</div>}
 
-                {/* Identité */}
-                <p className="text-muted small" style={{ fontWeight: 600, marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Identité</p>
-                <div className="form-group">
-                  <label className="form-label">N° d'inscription *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Ex : P0042"
-                    required
-                    value={form.matricule}
-                    onChange={f('matricule')}
-                  />
-                </div>
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Nom *</label>
-                    <input type="text" className="form-control" required value={form.nom} onChange={f('nom')} />
+                <h3 className="cand-section-titre">
+                  <i className="bi bi-person-vcard" aria-hidden="true"></i>Identité
+                </h3>
+                <div className="etud-form">
+                  <div className="cand-champ form-group etud-plein">
+                    <label className="cand-etiquette">N° d&apos;inscription *</label>
+                    <input
+                      type="text" className="cand-saisie" placeholder="Ex : P0042" required
+                      value={form.matricule} onChange={f('matricule')}
+                    />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Prénom *</label>
-                    <input type="text" className="form-control" required value={form.prenom} onChange={f('prenom')} />
+                  <div className="cand-champ form-group">
+                    <label className="cand-etiquette">Nom *</label>
+                    <input type="text" className="cand-saisie" required value={form.nom} onChange={f('nom')} />
                   </div>
-                </div>
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Sexe</label>
-                    <select className="form-control" value={form.sexe} onChange={f('sexe')}>
+                  <div className="cand-champ form-group">
+                    <label className="cand-etiquette">Prénom *</label>
+                    <input type="text" className="cand-saisie" required value={form.prenom} onChange={f('prenom')} />
+                  </div>
+                  <div className="cand-champ form-group">
+                    <label className="cand-etiquette">Sexe</label>
+                    <select className="cand-saisie" value={form.sexe} onChange={f('sexe')}>
                       <option value="">-- Sélectionner --</option>
                       <option value="MASCULIN">Masculin</option>
                       <option value="FEMININ">Féminin</option>
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Date de naissance</label>
-                    <input type="date" className="form-control" value={form.date_naissance} onChange={f('date_naissance')} />
+                  <div className="cand-champ form-group">
+                    <label className="cand-etiquette">Date de naissance</label>
+                    <input type="date" className="cand-saisie" value={form.date_naissance} onChange={f('date_naissance')} />
                   </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Lieu de naissance</label>
-                  <input type="text" className="form-control" value={form.lieu_naissance} onChange={f('lieu_naissance')} />
-                </div>
-
-                {/* Coordonnées */}
-                <p className="text-muted small" style={{ fontWeight: 600, margin: '1rem 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Coordonnées</p>
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Adresse e-mail</label>
-                    <input type="email" className="form-control" value={form.email} onChange={f('email')} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Téléphone 1</label>
-                    <input type="text" className="form-control" value={form.telephone} onChange={f('telephone')} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Téléphone 2</label>
-                    <input type="text" className="form-control" value={form.telephone2} onChange={f('telephone2')} />
+                  <div className="cand-champ form-group etud-plein">
+                    <label className="cand-etiquette">Lieu de naissance</label>
+                    <input type="text" className="cand-saisie" value={form.lieu_naissance} onChange={f('lieu_naissance')} />
                   </div>
                 </div>
 
-                {/* Concours */}
-                <p className="text-muted small" style={{ fontWeight: 600, margin: '1rem 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Concours</p>
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Type concours</label>
-                    <input type="text" className="form-control" value={form.type_concours} onChange={f('type_concours')} />
+                <h3 className="cand-section-titre">
+                  <i className="bi bi-telephone" aria-hidden="true"></i>Coordonnées
+                </h3>
+                <div className="etud-form">
+                  <div className="cand-champ form-group">
+                    <label className="cand-etiquette">Adresse e-mail</label>
+                    <input type="email" className="cand-saisie" value={form.email} onChange={f('email')} />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Libellé concours</label>
-                    <input type="text" className="form-control" value={form.libelle_concours} onChange={f('libelle_concours')} />
+                  <div className="cand-champ form-group">
+                    <label className="cand-etiquette">Téléphone 1</label>
+                    <input type="text" className="cand-saisie" value={form.telephone} onChange={f('telephone')} />
+                  </div>
+                  <div className="cand-champ form-group">
+                    <label className="cand-etiquette">Téléphone 2</label>
+                    <input type="text" className="cand-saisie" value={form.telephone2} onChange={f('telephone2')} />
                   </div>
                 </div>
 
-                {/* Administratif */}
-                <p className="text-muted small" style={{ fontWeight: 600, margin: '1rem 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Administratif</p>
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Catégorie</label>
+                <h3 className="cand-section-titre">
+                  <i className="bi bi-trophy" aria-hidden="true"></i>Concours
+                </h3>
+                <div className="etud-form">
+                  <div className="cand-champ form-group">
+                    <label className="cand-etiquette">Type concours</label>
+                    <input type="text" className="cand-saisie" value={form.type_concours} onChange={f('type_concours')} />
+                  </div>
+                  <div className="cand-champ form-group">
+                    <label className="cand-etiquette">Libellé concours</label>
+                    <input type="text" className="cand-saisie" value={form.libelle_concours} onChange={f('libelle_concours')} />
+                  </div>
+                </div>
+
+                <h3 className="cand-section-titre">
+                  <i className="bi bi-clipboard-data" aria-hidden="true"></i>Administratif
+                </h3>
+                <div className="etud-form">
+                  <div className="cand-champ form-group">
+                    <label className="cand-etiquette">Catégorie</label>
                     {refs.categories.length > 0 ? (
-                      <select className="form-control" value={form.categorie}
+                      <select className="cand-saisie" value={form.categorie}
                         onChange={e => setForm(prev => ({ ...prev, categorie: e.target.value, grade: '' }))}>
                         <option value="">-- Choisir --</option>
                         {refs.categories.map(c => <option key={c.id} value={c.libelle}>{c.libelle}</option>)}
                       </select>
                     ) : (
-                      <input type="text" className="form-control" placeholder="A, B, C…" value={form.categorie} onChange={f('categorie')} />
+                      <input type="text" className="cand-saisie" placeholder="A, B, C…" value={form.categorie} onChange={f('categorie')} />
                     )}
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Grade</label>
+                  <div className="cand-champ form-group">
+                    <label className="cand-etiquette">Grade</label>
                     {refs.grades.length > 0 ? (() => {
                       const catObj = refs.categories.find(c => c.libelle === form.categorie)
                       const filteredGrades = catObj
                         ? refs.grades.filter(g => g.categorie_id === catObj.id)
                         : refs.grades
                       return (
-                        <select className="form-control" value={form.grade}
+                        <select className="cand-saisie" value={form.grade}
                           onChange={e => setForm(prev => ({ ...prev, grade: e.target.value }))}>
                           <option value="">-- Choisir --</option>
                           {filteredGrades.map(g => <option key={g.id} value={g.libelle}>{g.libelle}</option>)}
                         </select>
                       )
                     })() : (
-                      <input type="text" className="form-control" value={form.grade} onChange={f('grade')} />
+                      <input type="text" className="cand-saisie" value={form.grade} onChange={f('grade')} />
                     )}
                   </div>
-                </div>
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Groupe</label>
-                    <input type="text" className="form-control" value={form.groupe} onChange={f('groupe')} />
+                  <div className="cand-champ form-group">
+                    <label className="cand-etiquette">Groupe</label>
+                    <input type="text" className="cand-saisie" value={form.groupe} onChange={f('groupe')} />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Grade-Groupe</label>
-                    <input type="text" className="form-control" value={form.grade_groupe} onChange={f('grade_groupe')} />
+                  <div className="cand-champ form-group">
+                    <label className="cand-etiquette">Grade-Groupe</label>
+                    <input type="text" className="cand-saisie" value={form.grade_groupe} onChange={f('grade_groupe')} />
                   </div>
-                </div>
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Vague</label>
+                  <div className="cand-champ form-group">
+                    <label className="cand-etiquette">Vague</label>
                     {refs.vagues && refs.vagues.length > 0 ? (
-                      <select className="form-control" value={form.vague} onChange={f('vague')}>
+                      <select className="cand-saisie" value={form.vague} onChange={f('vague')}>
                         <option value="">-- Choisir --</option>
                         {refs.vagues.map(v => <option key={v.id} value={v.libelle}>{v.libelle}</option>)}
                       </select>
                     ) : (
-                      <input type="text" className="form-control" value={form.vague} onChange={f('vague')} />
+                      <input type="text" className="cand-saisie" value={form.vague} onChange={f('vague')} />
                     )}
                   </div>
-                </div>
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Site</label>
+                  <div className="cand-champ form-group">
+                    <label className="cand-etiquette">Site</label>
                     {refs.sites && refs.sites.length > 0 ? (
-                      <select className="form-control" value={form.site}
+                      <select className="cand-saisie" value={form.site}
                         onChange={e => setForm(prev => ({ ...prev, site: e.target.value, salle: '' }))}>
                         <option value="">-- Choisir --</option>
                         {refs.sites.map(s => <option key={s.id} value={s.nom}>{s.nom}</option>)}
                       </select>
                     ) : (
-                      <input type="text" className="form-control" value={form.site} onChange={f('site')} />
+                      <input type="text" className="cand-saisie" value={form.site} onChange={f('site')} />
                     )}
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Salle</label>
+                  <div className="cand-champ form-group">
+                    <label className="cand-etiquette">Salle</label>
                     {refs.salles && refs.salles.length > 0 ? (() => {
                       const siteObj = refs.sites && refs.sites.find(s => s.nom === form.site)
                       const filteredSalles = siteObj
                         ? refs.salles.filter(s => s.site_id === siteObj.id)
                         : refs.salles
                       return (
-                        <select className="form-control" value={form.salle}
+                        <select className="cand-saisie" value={form.salle}
                           onChange={e => setForm(prev => ({ ...prev, salle: e.target.value }))}>
                           <option value="">-- Choisir --</option>
                           {filteredSalles.map(s => <option key={s.id} value={s.nom}>{s.nom}</option>)}
                         </select>
                       )
                     })() : (
-                      <input type="text" className="form-control" value={form.salle} onChange={f('salle')} />
+                      <input type="text" className="cand-saisie" value={form.salle} onChange={f('salle')} />
                     )}
                   </div>
                 </div>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
-                <button type="submit" className="btn btn-dfrc" disabled={saving}>
-                  {saving ? 'Enregistrement…' : (editingId ? 'Enregistrer' : 'Créer')}
+              <div className="modal-footer etud-modale-pied">
+                <button type="button" className="cand-btn-fantome" onClick={() => setShowModal(false)}>Annuler</button>
+                <button type="submit" className="cand-btn-principal" disabled={saving}>
+                  {saving
+                    ? 'Enregistrement…'
+                    : (
+                      <>
+                        <i className="bi bi-check2" aria-hidden="true"></i>
+                        {editingId ? 'Enregistrer' : 'Créer'}
+                      </>
+                    )}
                 </button>
               </div>
             </form>

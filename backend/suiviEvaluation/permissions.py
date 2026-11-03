@@ -84,6 +84,28 @@ class IsGestionNotesOrReadOnly(BasePermission):
         return _can_manage_notes(request.user)
 
 
+class IsConsultationFiche(BasePermission):
+    """Consultation d'une fiche individuelle (auditeur ou enseignant).
+
+    Les fiches portent des notes et des assiduités nominatives : elles suivent
+    la même liste de rôles que le reste de la consultation évaluation
+    (`ROLES_CONSULTATION`), jamais l'accès authentifié nu.
+    """
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and _can_consult_evaluation(request.user)
+
+
+class IsFicheExport(BasePermission):
+    """Export d'une fiche : rôles de consultation + archiviste (`ROLES_FICHE_EXPORT`)."""
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return (
+            user_has_perm(request.user, 'authentication.consult_evaluation')
+            or get_user_role(request.user) in ROLES_FICHE_EXPORT
+        )
+
+
 class IsDecisionValidator(BasePermission):
     """Direction/encadrants peuvent valider les décisions pédagogiques."""
     def has_permission(self, request, view):

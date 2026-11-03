@@ -22,8 +22,12 @@ class ParametreAdmin(admin.ModelAdmin):
         'valeur_display',
         'modifiable_badge',
         'actif_badge',
+        'statut_validation',
     ]
-    list_filter = ['categorie', 'type', 'modifiable', 'actif', 'modifie_le']
+    list_filter = [
+        'categorie', 'type', 'modifiable', 'actif', 'statut_validation',
+        'modifie_le',
+    ]
     search_fields = ['cle', 'libelle', 'description']
     readonly_fields = [
         'cle',

@@ -13,7 +13,7 @@ export default function FicheFormateur() {
     const fetch = async () => {
       setLoading(true)
       try {
-        const { data } = await api.get(`/suiviEvaluation/formateurs/${formateurId}/modules/${moduleId}/fiche/`)
+        const { data } = await api.get(`/evaluations/formateurs/${formateurId}/modules/${moduleId}/fiche/`)
         setFiche(data)
       } catch (err) {
         showToast(err?.response?.data?.detail || 'Erreur chargement fiche', 'error')
@@ -25,8 +25,8 @@ export default function FicheFormateur() {
 
   const download = async (type) => {
     const path = type === 'pdf'
-      ? `/suiviEvaluation/formateurs/${formateurId}/modules/${moduleId}/fiche/export/pdf/`
-      : `/suiviEvaluation/formateurs/${formateurId}/modules/${moduleId}/fiche/export/xlsx/`
+      ? `/evaluations/formateurs/${formateurId}/modules/${moduleId}/fiche/export/pdf/`
+      : `/evaluations/formateurs/${formateurId}/modules/${moduleId}/fiche/export/xlsx/`
     try {
       const { blob, fileName } = await api.getBlob(path)
       const url = URL.createObjectURL(blob)

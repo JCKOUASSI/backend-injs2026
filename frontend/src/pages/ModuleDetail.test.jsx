@@ -33,7 +33,7 @@ const TODAY = new Date().toISOString().slice(0, 10)
 const fullPath = `/formations/${F}/modules/${M}/full/`
 const presencesPath = `/formations/${F}/modules/${M}/presences/`
 const forcePath = `/formations/${F}/force-pointage/`
-const bulkPath = `/formations/${F}/force-badgeage-étudiants-bulk/`
+const bulkPath = `/formations/${F}/force-badgeage-auditeurs-bulk/`
 
 const PARTICIPANTS = [
   { id: 101, nom: 'Koné', prenom: 'Awa', matricule: 'MAT-001', grade: 'L1' },

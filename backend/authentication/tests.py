@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.core import mail
 from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import RefreshToken
 from .role_groups import ROLE_GROUP_NAMES, ensure_role_groups
 
 User = get_user_model()
@@ -949,3 +950,31 @@ class RoleContextTests(TestCase):
         self.assertFalse(ctx['can_mutate_users'])
         self.assertTrue(len(ctx['staff_filter_roles']) > 0)
 
+
+
+class EnTeteJwtDeSecoursTests(TestCase):
+    """Aperçu en iframe : la passerelle supprime « Authorization ».
+
+    Le frontend envoie donc aussi « X-JWT-Access ». Sans la classe
+    d'authentification flexible (FlexibleJWTAuthentication) branchée dans
+    DEFAULT_AUTHENTICATION_CLASSES, tous les appels du tableau de bord
+    répondaient 401 « Informations d'authentification non fournies ».
+    """
+
+    def setUp(self):
+        self.user = make_user()
+        self.client = APIClient()
+        self.refresh = RefreshToken.for_user(self.user)
+        self.access = str(self.refresh.access_token)
+
+    def test_en_tete_de_secours_authentifie(self):
+        resp = self.client.get(ME_URL, HTTP_X_JWT_ACCESS=self.access)
+        self.assertEqual(resp.status_code, 200, resp.content[:200])
+        self.assertEqual(resp.data['username'], self.user.username)
+
+    def test_en_tete_standard_toujours_accepte(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.access}')
+        self.assertEqual(self.client.get(ME_URL).status_code, 200)
+
+    def test_sans_aucun_jeton_reste_401(self):
+        self.assertEqual(self.client.get(ME_URL).status_code, 401)

@@ -29,8 +29,8 @@ const DECISION_LABELS = {
 
 const DECISION_COLORS = {
   ADMIS: { background: '#e8eff5', color: '#093f70' },
-  AJOURNE: { background: '#fff8e0', color: '#e69700' },
-  EXCLUSION: { background: '#ffebee', color: '#b71c1c' },
+  AJOURNE: { background: '#fff8e0', color: '#D97706' },
+  EXCLUSION: { background: '#ffebee', color: '#A3222F' },
   EN_ATTENTE: { background: '#f5f5f5', color: '#616161' },
 }
 

@@ -4,6 +4,8 @@ import api from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { useAuth } from '../context/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
+import DeplacerSeance from '../components/edt/DeplacerSeance'
+import AnnulerSeance from '../components/edt/AnnulerSeance'
 import {
   ROLES_PLANIFICATION, ROLES_VALIDATION,
   construireMatriceGrille, classeBadgeStatut, formatDuree, formatHeure,
@@ -251,6 +253,10 @@ export default function Edts() {
     [edtsAffiches, selectedId, detail],
   )
   const gele = selectedEdt ? ['VALIDE', 'PUBLIE', 'ARCHIVE', 'EN_VALIDATION'].includes(selectedEdt.statut) : true
+  // Modales de modification réglementée (déplacement revalidé / annulation motivée).
+  const [aDeplacer, setADeplacer] = useState(null)
+  const [aAnnuler, setAAnnuler] = useState(null)
+  const [aReactiver, setAReactiver] = useState(null)
   const modifiable = peutPlanifier && !gele
   const matrice = useMemo(() => construireMatriceGrille(grille, conflits), [grille, conflits])
   const nbSemaines = selectedEdt ? (selectedEdt.semaine_fin || 1) - (selectedEdt.semaine_debut || 1) + 1 : 0
@@ -288,20 +294,34 @@ export default function Edts() {
     }
   }
 
-  const exporterCsv = async () => {
+  /**
+   * Exports de l'emploi du temps (LOT 9) : CSV, XLSX, PDF.
+   *
+   * Les trois documents sont produits par le serveur à partir de la même
+   * donnée (séances actives, filtres courants) : l'interface ne recompose
+   * jamais le contenu, ce qui garantit que l'imprimé et l'écran ne divergent
+   * pas. Un refus serveur (404, 403) s'affiche comme une erreur, pas comme un
+   * fichier vide.
+   */
+  const exporter = async (format) => {
+    const suffixe = semaine ? `?semaine=${semaine}` : ''
+    const chemin = format === 'csv'
+      ? `/edts/emplois/${selectedId}/export.csv/`
+      : `/edts/lmd/${selectedId}/export.${format}/${suffixe}`
+    const libelle = { csv: 'CSV', xlsx: 'Excel', pdf: 'PDF' }[format]
     try {
-      const { blob, fileName } = await api.getBlob(`/edts/emplois/${selectedId}/export.csv/`)
+      const { blob, fileName } = await api.getBlob(chemin)
       const url = URL.createObjectURL(blob)
       const lien = document.createElement('a')
       lien.href = url
-      lien.download = fileName || `edt-${selectedId}.csv`
+      lien.download = fileName || `edt-${selectedId}.${format}`
       document.body.appendChild(lien)
       lien.click()
       lien.remove()
       URL.revokeObjectURL(url)
-      showToast('Export CSV téléchargé')
+      showToast(`Export ${libelle} téléchargé`)
     } catch (err) {
-      showToast(messageErreurApi(err, 'Export impossible'), 'error')
+      showToast(messageErreurApi(err, `Export ${libelle} impossible`), 'error')
     }
   }
 
@@ -387,7 +407,10 @@ export default function Edts() {
                         onClick={() => selectionner(edt.id)}>
                   <span className="text-truncate text-start">
                     <span className="d-block fw-semibold">{edt.titre || edt.population_label}</span>
-                    <small className={selectedId === edt.id ? 'opacity-75' : 'text-muted d-block'}>
+                    {/* `d-block` doit rester dans les deux branches : sans lui, la
+                        ligne sélectionnée collait l'année au titre (« … DEMO-G4DEMO-2026-2027 »),
+                        défaut constaté à la capture d'écran réelle. */}
+                    <small className={selectedId === edt.id ? 'd-block opacity-75' : 'text-muted d-block'}>
                       {edt.annee_academique} · s{edt.semaine_debut}–s{edt.semaine_fin} · {edt.affectations_count ?? '—'} créneaux
                     </small>
                   </span>
@@ -446,8 +469,16 @@ export default function Edts() {
                         <i className="bi bi-plus-circle" /> Créneau
                       </Link>
                     )}
-                    <button className="btn btn-sm btn-outline-success" onClick={exporterCsv}>
+                    <button className="btn btn-sm btn-outline-success" onClick={() => exporter('csv')}>
                       <i className="bi bi-filetype-csv" /> Export
+                    </button>
+                    <button className="btn btn-sm btn-outline-secondary" onClick={() => exporter('xlsx')}
+                            title="Tableau Excel des séances (mêmes filtres que l'écran)">
+                      <i className="bi bi-filetype-xlsx" /> Excel
+                    </button>
+                    <button className="btn btn-sm btn-outline-secondary" onClick={() => exporter('pdf')}
+                            title="Grille imprimable (PDF) générée côté serveur">
+                      <i className="bi bi-filetype-pdf" /> PDF
                     </button>
                   </div>
                 </div>
@@ -594,6 +625,37 @@ export default function Edts() {
                                                 {[a.enseignant_nom, a.groupe, a.salle_nom && `salle ${a.salle_nom}`].filter(Boolean).join(' · ')}
                                               </div>
                                               <div className="small text-muted">s{a.semaine_debut}–s{a.semaine_fin}</div>
+                                              {modifiable && (
+                                                <div className="d-flex gap-1 mt-1">
+                                                  <button
+                                                    type="button"
+                                                    className="btn btn-sm btn-outline-primary py-0 px-1"
+                                                    title="Déplacer (revalidation C1→C10)"
+                                                    onClick={(e) => { e.stopPropagation(); setADeplacer(a) }}
+                                                  >
+                                                    <i className="bi bi-arrows-move" />
+                                                  </button>
+                                                  {a.actif === false ? (
+                                                    <button
+                                                      type="button"
+                                                      className="btn btn-sm btn-outline-success py-0 px-1"
+                                                      title="Réactiver la séance"
+                                                      onClick={(e) => { e.stopPropagation(); setAReactiver(a) }}
+                                                    >
+                                                      <i className="bi bi-arrow-counterclockwise" />
+                                                    </button>
+                                                  ) : (
+                                                    <button
+                                                      type="button"
+                                                      className="btn btn-sm btn-outline-danger py-0 px-1"
+                                                      title="Annuler la séance (motif requis)"
+                                                      onClick={(e) => { e.stopPropagation(); setAAnnuler(a) }}
+                                                    >
+                                                      <i className="bi bi-slash-circle" />
+                                                    </button>
+                                                  )}
+                                                </div>
+                                              )}
                                             </div>
                                           ))}
                                         </>
@@ -640,6 +702,11 @@ export default function Edts() {
                                 <>
                                   <button className="btn btn-sm btn-outline-primary me-1" title="Modifier" onClick={() => setEdition(aff)}>
                                     <i className="bi bi-pencil" />
+                                  </button>
+                                  <button className="btn btn-sm btn-outline-info me-1"
+                                          title="Déplacer (revalidation C1→C10 par le serveur)"
+                                          onClick={() => setADeplacer(aff)}>
+                                    <i className="bi bi-arrows-move" />
                                   </button>
                                   <button className="btn btn-sm btn-outline-secondary me-1" title="Désactiver / réactiver" onClick={() => basculerAffectation(aff)}>
                                     <i className={`bi ${aff.actif ? 'bi-pause-circle' : 'bi-play-circle'}`} />
@@ -720,6 +787,32 @@ export default function Edts() {
           )}
         </div>
       </div>
+
+      {aDeplacer && (
+        <DeplacerSeance
+          affectation={aDeplacer}
+          onClose={() => setADeplacer(null)}
+          onMoved={() => {
+            setADeplacer(null)
+            showToast('Séance déplacée : position revalidée C1→C10')
+            chargerDetail(selectedId, vue === 'grille' ? semaine : null)
+          }}
+        />
+      )}
+      {(aAnnuler || aReactiver) && (
+        <AnnulerSeance
+          affectation={aAnnuler || aReactiver}
+          reactiver={!!aReactiver}
+          onClose={() => { setAAnnuler(null); setAReactiver(null) }}
+          onDone={() => {
+            const reactivee = !!aReactiver
+            setAAnnuler(null)
+            setAReactiver(null)
+            showToast(reactivee ? 'Séance réactivée' : 'Séance annulée (motif journalisé)')
+            chargerDetail(selectedId, vue === 'grille' ? semaine : null)
+          }}
+        />
+      )}
 
       {edition && (
         <ModalEditionAffectation

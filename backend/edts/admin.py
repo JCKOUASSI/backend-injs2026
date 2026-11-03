@@ -5,7 +5,14 @@ Lecture/écriture pour planification (Secrétariat, Chef Secrétariat, DFRC, DIR
 
 from django.contrib import admin
 
-from .models import AffectationCreneau, CreneauTemplate, ConflitCreneau, EmploiDuTemps
+from .models import (
+    AffectationCreneau,
+    CreneauTemplate,
+    ConflitCreneau,
+    EmploiDuTemps,
+    InscriptionImportee,
+    PolitiqueContraintesSouples,
+)
 
 admin.site.register(CreneauTemplate)
 
@@ -50,3 +57,104 @@ class ConflitCreneauAdmin(admin.ModelAdmin):
     list_filter = ['type_conflit', 'actif']
     readonly_fields = ['emploi_du_temps', 'recalcule_le', 'created_at']
     date_hierarchy = 'created_at'
+
+
+@admin.register(InscriptionImportee)
+class InscriptionImporteeAdmin(admin.ModelAdmin):
+    """Consultation des inscrits lus dans un fichier externe (GET-INJS).
+
+    L'import se fait par l'écran « Génération annuelle » ou par l'API : l'admin
+    est **en lecture seule**. Une inscription importée est la trace d'un
+    fichier source ; la corriger à la main romprait la traçabilité
+    (``fichier``, ``empreinte``, ``ligne_source``) et fausserait l'effectif
+    réel utilisé comme contrainte de capacité. Pour corriger : réimporter un
+    fichier rectifié (l'import est idempotent sur année + matricule).
+    """
+
+    list_display = [
+        'matricule', 'nom', 'prenoms', 'annee_academique', 'ref_formation',
+        'niveau', 'groupe', 'vague', 'statut',
+    ]
+    list_filter = ['statut', 'annee_academique', 'ref_formation', 'niveau', 'groupe']
+    search_fields = ['matricule', 'nom', 'prenoms']
+    date_hierarchy = 'created_at'
+    ordering = ['annee_academique__libelle', 'nom', 'prenoms']
+    list_select_related = ['annee_academique', 'ref_formation', 'niveau', 'groupe', 'vague']
+    readonly_fields = [
+        'annee_academique', 'matricule', 'nom', 'prenoms', 'sexe', 'date_naissance',
+        'filiere_code', 'ref_formation', 'parcours', 'niveau', 'semestre', 'groupe',
+        'vague', 'statut', 'fichier', 'empreinte', 'ligne_source',
+        'created_at', 'updated_at',
+    ]
+    fieldsets = (
+        ('Identité', {'fields': ('matricule', 'nom', 'prenoms', 'sexe', 'date_naissance')}),
+        ('Cohorte', {
+            'fields': ('annee_academique', 'filiere_code', 'ref_formation', 'parcours',
+                       'niveau', 'semestre', 'groupe', 'vague'),
+        }),
+        ('Traçabilité du fichier', {
+            'fields': ('statut', 'fichier', 'empreinte', 'ligne_source',
+                       'created_at', 'updated_at'),
+        }),
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(PolitiqueContraintesSouples)
+class PolitiqueContraintesSouplesAdmin(admin.ModelAdmin):
+    """Réglage des contraintes souples, sans redéploiement.
+
+    L'écran est volontairement une **ligne unique** : on ne peut ni en ajouter
+    une seconde, ni la supprimer (ce qui effacerait la trace de la décision).
+    L'auteur et la date de la dernière modification sont renseignés par l'admin
+    elle-même, jamais saisis à la main.
+    """
+
+    list_display = [
+        'actives', 'max_heures_consecutives', 'max_heures_par_jour',
+        'tolerance_minutes', 'modifie_par', 'modifie_le',
+    ]
+    # `modifie_par` est une FK affichée en liste : sans cela, une requête par
+    # ligne (N+1) — le contrôle automatique de l'admin le refuse.
+    list_select_related = ('modifie_par',)
+    readonly_fields = ['modifie_par', 'modifie_le', 'created_at']
+    fieldsets = (
+        ('État', {
+            'fields': ('actives',),
+            'description': 'Décoché (par défaut) : le moteur applique exactement '
+                           'les règles historiques. Coché : les règles ci-dessous '
+                           'produisent des pénalités, jamais des refus.',
+        }),
+        ('Bornes pédagogiques', {
+            'fields': ('max_heures_consecutives', 'max_heures_par_jour',
+                       'tolerance_minutes'),
+        }),
+        ('Trous et pause institutionnelle', {
+            'fields': ('penaliser_trous', 'pause_debut', 'pause_fin'),
+            'description': 'Laissez la pause vide si aucun horaire officiel '
+                           'n’est arrêté : le moteur n’en suppose aucune.',
+        }),
+        ('Poids des pénalités', {
+            'fields': ('poids_trou', 'poids_consecutif', 'poids_surcharge'),
+        }),
+        ('Traçabilité', {
+            'fields': ('motif', 'modifie_par', 'modifie_le', 'created_at'),
+        }),
+    )
+
+    def has_add_permission(self, request):
+        return not PolitiqueContraintesSouples.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def save_model(self, request, obj, form, change):
+        # Ligne unique : la clé primaire est forcée ici et dans le modèle.
+        obj.pk = 1
+        obj.modifie_par = request.user if request.user.is_authenticated else None
+        super().save_model(request, obj, form, change)

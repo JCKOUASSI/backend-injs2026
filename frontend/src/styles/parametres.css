@@ -26,7 +26,7 @@
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid #E9ECF2;
   border-radius: 18px;
-  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px -5px rgba(7, 27, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
 }
 
 .par-hero-text {
@@ -47,9 +47,9 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.2;
-  background: #DBEAFE;
-  color: #2563EB;
-  border: 1px solid #BFDBFE;
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal);
+  border: 1px solid var(--injs-border-strong);
 }
 
 .par-hero-title {
@@ -58,14 +58,14 @@
   gap: 0.55rem;
   font-size: 1.45rem;
   font-weight: 800;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   margin: 0;
   letter-spacing: -0.02em;
   line-height: 1.15;
 }
 
 .par-hero-title i {
-  color: #2A7FFF;
+  color: var(--injs-blue-royal);
   font-size: 1.3rem;
 }
 
@@ -80,9 +80,9 @@
 .par-hero-pill {
   padding: 0.35rem 0.85rem;
   border-radius: 9999px;
-  background: #EFF6FF;
-  color: #2563EB;
-  border: 1px solid #BFDBFE;
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal);
+  border: 1px solid var(--injs-border-strong);
   font-size: 0.76rem;
   font-weight: 700;
   white-space: nowrap;
@@ -120,13 +120,13 @@
 
 .par-tab:hover {
   background: rgba(255, 255, 255, 0.95);
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 .par-tab.is-active {
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
   color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 12px rgba(18, 103, 214, 0.3);
 }
 
 .par-tab-count {
@@ -174,7 +174,7 @@
 
 .par-kpi:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 30px -5px rgba(11, 31, 58, 0.08);
+  box-shadow: 0 12px 30px -5px rgba(7, 27, 58, 0.08);
 }
 
 .par-kpi-label {
@@ -192,7 +192,7 @@
   font-size: 1.6rem;
   font-weight: 800;
   line-height: 1.1;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   letter-spacing: -0.02em;
 }
 
@@ -211,7 +211,7 @@
   font-size: 1.1rem;
 }
 
-.par-kpi-icon.is-blue  { background: #EBF3FF; color: #2A7FFF; }
+.par-kpi-icon.is-blue  { background: #EBF3FF; color: var(--injs-blue-royal); }
 .par-kpi-icon.is-green { background: #ECFDF5; color: #10B981; }
 .par-kpi-icon.is-amber { background: #FFFBEB; color: #F59E0B; }
 .par-kpi-icon.is-slate { background: #EEF2F7; color: #475569; }
@@ -221,7 +221,7 @@
   background: #FFFFFF;
   border: 1px solid #E9ECF2;
   border-radius: 18px;
-  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px -5px rgba(7, 27, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
   overflow: hidden;
   margin-bottom: 0 !important;
 }
@@ -243,12 +243,12 @@
   gap: 0.5rem;
   font-size: 1rem;
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   margin: 0;
 }
 
 .par-panel-title i {
-  color: #2A7FFF;
+  color: var(--injs-blue-royal);
   font-size: 1.05rem;
 }
 
@@ -283,16 +283,16 @@
 
 .par-search .form-control:focus {
   background-color: #FFFFFF;
-  border-color: #2A7FFF;
-  box-shadow: 0 0 0 3px rgba(42, 127, 255, 0.12);
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
 }
 
 .par-count-pill {
   padding: 0.3rem 0.75rem;
   border-radius: 9999px;
-  background: #EFF6FF;
-  color: #2563EB;
-  border: 1px solid #BFDBFE;
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal);
+  border: 1px solid var(--injs-border-strong);
   font-size: 0.74rem;
   font-weight: 700;
   white-space: nowrap;
@@ -360,7 +360,7 @@
 
 .par-libelle {
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 .par-desc {
@@ -376,9 +376,9 @@
   margin-top: 0.4rem;
   padding: 0.25rem 0.65rem;
   border-radius: 9999px;
-  background: #EFF6FF;
-  color: #1D4ED8;
-  border: 1px solid #DBEAFE;
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue);
+  border: 1px solid var(--injs-blue-pale);
   font-size: 0.78rem;
   font-weight: 700;
   text-align: left;
@@ -486,18 +486,21 @@
   width: 1.3rem;
   height: 1.3rem;
   border-width: 2px;
-  border-color: #2A7FFF;
+  border-color: var(--injs-blue-royal);
 }
 
 /* -- 8. MODALES -- */
-.par-modal .modal-content {
-  border-radius: 18px;
+/* La classe .par-modal est portée PAR l'élément .modal-content
+   (cf. Parametres.jsx) : le sélecteur descendant ne matchait jamais.
+   On cible donc les deux classes sur le même élément. */
+.modal-content.par-modal {
+  border-radius: var(--injs-radius-lg);
 }
 
 .par-modal .modal-title {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 
 .par-modal-hist .table thead th {
@@ -522,15 +525,15 @@
 }
 
 .par-modal .btn-dfrc {
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
   border-color: transparent;
   color: #FFFFFF;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 14px rgba(18, 103, 214, 0.3);
 }
 
 .par-modal .btn-dfrc:hover:not(:disabled) {
-  background: linear-gradient(135deg, #1D4ED8 0%, #256FD0 100%);
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+  background: linear-gradient(135deg, var(--injs-blue) 0%, var(--injs-blue-royal) 100%);
+  box-shadow: 0 6px 18px rgba(18, 103, 214, 0.45);
 }
 
 .par-old-value {

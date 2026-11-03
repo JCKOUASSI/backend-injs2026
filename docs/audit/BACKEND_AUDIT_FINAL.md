@@ -1,0 +1,669 @@
+# Audit intégral — Backend INJS Abidjan
+
+**Dépôt** : `JCKOUASSI/backend-injs2026`
+**Branche auditée** : `arena/d40e4a41-backend-injs2026` (HEAD au démarrage : `66517c8`)
+**Date d'exécution** : 27 octobre 2026
+**Périmètre** : `backend/` (Django 5.1.4 + DRF 3.15.2), `frontend/src/` (React 18 + Vite 7),
+`qr_badge_mobile/` (tests Dart uniquement — SDK Flutter indisponible, voir §9).
+
+> Toutes les affirmations de ce document s'appuient sur une commande réellement
+> exécutée dans le dépôt. Les cases non vérifiables dans cet environnement sont
+> explicitement marquées **NON EXÉCUTÉ** (§9) — elles ne sont jamais présentées
+> comme conformes.
+
+---
+
+## 1. Environnement d'exécution
+
+| Élément | Valeur constatée |
+|---|---|
+| Python | 3.11.2 |
+| Django | 5.1.4 |
+| Django REST Framework | 3.15.2 |
+| Base de données utilisée | SQLite (`backend/db.sqlite3`) |
+| PostgreSQL | **absent** du bac à sable (`psql`/`postgres` introuvables) — la suite a toutefois été exécutée sur PostgreSQL 16 **via la CI GitHub Actions** (§7.7) |
+| Docker | **absent** |
+| Node / npm | présents, `frontend/node_modules` installé |
+
+Conséquence assumée : les contrôles de base de données menés **localement**
+(transactions, contraintes, requêtes, migrations) l'ont été sur SQLite. Le
+moteur de production a depuis été exercé par la CI (`.github/workflows/ci.yml`,
+service `postgres:16`) : **2 451 tests verts sur PostgreSQL** (§7.7). Restent
+non couverts : tests de charge et volumétrie réelle.
+
+---
+
+## 2. Inventaire technique
+
+### 2.1 Applications installées
+
+`manage.py` → `settings.INSTALLED_APPS` : **33 entrées**
+(23 applications projet + 4 paquets tiers + `django.contrib.*`).
+
+Applications projet : `authentication`, `formations`, `presences`, `exports`,
+`dashboard`, `statistiques`, `suiviEvaluation`, `evaluations`, `scolarite`,
+`admissions`, `parametres`, `referentiels`, `equivalences`, `jurys`,
+`graduation`, `finances_etudiantes`, `stages`, `administrations`,
+`ressources_humaines`, `patrimoine`, `edts`, `core`, `habilitations`.
+
+**178 classes de modèles** réparties sur ces applications (script d'inventaire
+via `django.apps`).
+
+### 2.2 Routes
+
+Script de parcours du `URLconf` (`django.urls.get_resolver()`) :
+
+| Catégorie | Nombre |
+|---|---|
+| Motifs d'URL totaux | **1 773** |
+| Vues DRF (`APIView` et dérivées) | **910** |
+| Vues Django classiques (admin, gabarits, exports fichier) | 863 |
+| Routes sous `api/` (préfixes `api/` et `api/v1/`) | 909 |
+
+Principaux préfixes d'API : `api/v1` (287), `api/formations` (96),
+`api/referentiels` (70), `api/habilitations` (54), `api/scolarite` (50),
+`api/edts` (35), `api/timetable` (35), `api/admissions` (29),
+`api/administrations` (21), `api/statistiques` (15), `api/auth` (13).
+
+Le doublon de préfixes `api/…` et `api/v1/…` est **volontaire** (compatibilité
+des clients existants) : les deux familles pointent vers les mêmes vues.
+
+### 2.3 Dette d'architecture relevée (non corrigée)
+
+* `backend/referentiel_injs/` contient des modèles et une migration
+  `0001_initial` mais **n'est pas dans `INSTALLED_APPS`** : application morte,
+  doublon de `referentiels`. Aucune donnée n'y est stockée. Suppression à
+  décider par l'équipe (hors périmètre d'un correctif de sécurité).
+* Les collisions d'`operationId` OpenAPI (1 032 avertissements) ont été
+  **corrigées** en cours d'audit — voir §7.6.
+
+---
+
+## 3. Contrôles Django exécutés
+
+| Commande | Résultat |
+|---|---|
+| `manage.py check` | `System check identified no issues (0 silenced).` |
+| `manage.py makemigrations --check --dry-run` (avant correctif) | **ÉCHEC** — dérive `formations/0098` |
+| `manage.py makemigrations --check --dry-run` (après correctif) | `No changes detected` |
+| `manage.py showmigrations` | **255 migrations appliquées, 0 en attente** |
+| `manage.py check --deploy` (profil production simulé) | 1 033 avertissements, dont **1 seul de sécurité** (`security.W008`) |
+
+Les 1 032 autres avertissements sont des `drf_spectacular.W002` (vues sans
+`serializer_class`) : ils concernent la documentation, pas la sécurité.
+
+`security.W008` (`SECURE_SSL_REDIRECT`) est **volontairement désactivé** et
+justifié dans `config/settings.py` (redirection TLS assurée par le frontal).
+HSTS, cookies `Secure` et `SECURE_PROXY_SSL_HEADER` sont bien configurés.
+
+---
+
+## 4. Identité INJS — références SYGEP / CPFAE
+
+Recherche exhaustive (`grep -ri "sygep\|cpfae"`, hors `node_modules`, `.venv`,
+`.git`) : **70 fichiers** contenaient une occurrence. Ils ont été classés en
+trois catégories.
+
+### 4.1 Références opérationnelles supprimées (correctif)
+
+| Fichier | Nature | Correctif appliqué |
+|---|---|---|
+| `backend/authentication/permissions.py` | Message d'erreur d'API affiché à l'utilisateur (« Chef CPFAE Admin », « CPFAE Admin ») | Remplacé par « Chef INJS Admin », « Administrateur INJS » |
+| `backend/authentication/models.py` | Méthode `is_chef_cpfae_admin()` (aucun appelant) | Renommée `is_chef_injs_admin()` |
+| `backend/authentication/emails.py` | Commentaire sur un logo `logo-sygepcpfae.png` | Supprimé |
+| `backend/config/urls.py` | Commentaire « Web dashboard CPFAE » | Remplacé par « Web dashboard INJS » |
+| `backend/formations/tests/test_referentiel_injs_l6.py` | Variable de test `cpfae` | Renommée `intruse_obj` |
+| `backend/formations/test_finance_recap.py` | Pied de page d'exemple « CPFAE Bouaké » | Remplacé par « INJS Abidjan » |
+| `frontend/src/pages/Statistiques.jsx` | En-tête « SYGEP-CPFAE » + import `PointJournalierCPFAE` | En-tête « INJS-LMD », composant renommé |
+| `frontend/src/components/PointJournalierCPFAE.jsx` (+ `.test.jsx`) | Nom de composant hérité de l'ancien référentiel | Renommés `PointJournalierINJS.*`, export `PointJournalierTableauINJS` |
+| `qr_badge_mobile/test/session_provider_heartbeat_test.dart` | URL de test `api.sygepcpfae.org` | Remplacée par `api.injs.ci` |
+| `qr_badge_mobile/test/user_facing_error_test.dart` | Sonde d'erreur citant `sygepcpfae` | Remplacée par `injs.ci` |
+
+Preuve d'exécution après correctif :
+
+```
+$ grep -rn -i "sygep\|cpfae" frontend/src --include=*.jsx --include=*.js | grep -v "\.test\."
+(aucun résultat hors commentaires historiques listés en §4.2)
+```
+
+### 4.2 Mentions historiques conservées et justifiées
+
+| Emplacement | Justification |
+|---|---|
+| `backend/authentication/migrations/0008…0024` | Les migrations sont un **journal immuable** : réécrire des `choices` historiques casserait la reproductibilité. Les libellés affichés sont déjà en terminologie INJS (`migrations/0022_migration_roles_injs`). |
+| `backend/authentication/models.py` (docstring), `role_groups.py` (commentaire) | Documentent la **rétrocompatibilité** de la chaîne `CPFAE_ADMIN` (rôle historique) et son refus de persistance. |
+| `backend/statistiques/point_journalier.py` (`titre` « …_POINT DES PRÉSENCES_CPFAE ») | **Format de rapport officiel** attendu par les destinataires historiques ; le libellé est un intitulé de document, pas une référence système. **À faire trancher par la direction** (voir §8.2). |
+| `backend/dashboard/views_legacy.py` | Application Django historique montrant les libellés legacy ; messages déjà annotés « ancien périmètre, hors INJS actuel ». |
+| `backend/scripts/generate_test_*.py`, `build_import_from_donnees.py` | Générateurs de **fichiers d'import de démonstration** : la valeur `CPFAE` y est une donnée d'exemple (site d'origine), pas une dépendance d'exécution. |
+| `dossier_trvx/*.txt` | Documents de travail historiques. |
+
+Aucune URL, aucun domaine de repli, aucune variable d'environnement, aucun
+paramètre applicatif ne dépend de SYGEP-CPFAE : le backend est **exclusivement
+INJS Abidjan** en exécution.
+
+---
+
+## 5. Sécurité
+
+### 5.1 Authentification et permissions par défaut
+
+`REST_FRAMEWORK` : `DEFAULT_AUTHENTICATION_CLASSES` = JWT (en-tête
+`Authorization` **et** `X-JWT-Access`) + session ; `DEFAULT_PERMISSION_CLASSES`
+= `IsAuthenticated`. Une vue qui oublie ses permissions est donc fermée par
+défaut.
+
+Analyse statique des 910 vues DRF :
+
+* vues **sans aucune permission** : **2** — `/api/auth/token/refresh/` et
+  `/api/v1/auth/token/refresh/` (renouvellement de jeton : `AllowAny` par
+  conception, le refresh token est lui-même vérifié) ;
+* vues **explicitement sans authentification** : **12** — `login` (×2),
+  `token/refresh` (×2), `scan` (×2), `scan/offline-data` (×2),
+  `formations/<uuid:token>/offline-data` (×2), `scan/check-status` (×2).
+  Chacune est protégée par un throttle dédié et par un jeton opaque.
+
+Vérification des endpoints publics `offline-data` (qui exposent des noms de
+participants) : le service refuse un jeton inconnu (`404`), expiré (`400`),
+désactivé (`400`) ou rattaché à une séance terminée (`400`)
+(`presences/views.py:3089-3125`). Le payload se limite à `numero`, `nom`,
+`prenom`, ce qui est le minimum nécessaire au pointage hors ligne.
+
+### 5.2 Contrôle d'accès au niveau objet (IDOR)
+
+Sonde exécutée sur le serveur réel (`:8000`) avec trois comptes distincts
+(`p001` auditeur, `p002` auditeur, `superviseur1`) :
+
+| Requête (jeton `p001`, participant `1` = DIALLO) | Cible | Réponse |
+|---|---|---|
+| `GET /api/participant/2/historique/` | participant `2` (TRAORE) | **403** |
+| `GET /api/participant/2/fiche-admin/` | participant `2` | **403** |
+| `GET /api/participant/2/notes-fiche/` | participant `2` | **403** |
+| `GET /api/scolarite/etudiants/` | liste scolarité | **403** |
+| `GET /api/scolarite/etudiants/1/` | dossier | **403** |
+| `GET /api/auth/users/` | comptes | **403** |
+| `GET /api/statistiques/rapports/` | rapports | **403** |
+| `GET /api/me/fiche/` | **son** dossier | 200 |
+
+Le contrôle objet est donc effectif : un auditeur n'accède qu'à ses propres
+données, et les endpoints d'administration lui sont fermés. Aucun IDOR n'a été
+trouvé sur le périmètre testé.
+
+Analyse statique complémentaire : seules **8** vues exposent
+`Model.objects.all()` sans filtrage — toutes des nomenclatures (`RefTypeEvaluation`,
+`RefTypeDocument`, `RefGradeEnseignant`, `RefTypeFrais`, `RefModePaiement`,
+`RefTypeDecision`, `RefTypeNotification`, `RefTypeEspaceSportif`), c'est-à-dire
+des référentiels non nominatifs.
+
+### 5.3 Fichiers téléversés — faille corrigée
+
+**Constat.** Aucun champ fichier du projet n'imposait de limite de taille ni de
+liste d'extensions. `deposer_piece()` affectait directement le fichier reçu.
+Un exécutable, une page HTML (contenu actif) ou un fichier de plusieurs
+centaines de Mio étaient acceptés.
+
+**Correctif.** Nouveau module `backend/core/validators.py` :
+
+* extensions autorisées : `.pdf`, `.jpg`, `.jpeg`, `.png` ;
+* taille maximale : 10 Mio (pièce de candidature), 5 Mio (preuve de paiement) ;
+* appliqué **au modèle** (`validators=[…]`, donc admin et formulaires) **et
+  dans les services** (`admissions/services.deposer_piece`,
+  `finances_etudiantes/services.confirmer_paiement`), car les validateurs de
+  champ ne s'exécutent pas sur `Model.save()`.
+
+Migrations associées (métadonnées seulement, aucune donnée touchée) :
+`admissions/0003_alter_piececandidature_fichier`,
+`finances_etudiantes/0002_alter_paiement_preuve`.
+
+**Preuve avant/après** (test `core.tests.test_validators_fichiers`) :
+
+```
+avec correctif      : Ran 9 tests — OK
+sans le contrôle de service (neutralisé) : FAIL test_le_service_refuse_un_executable
+```
+
+Le test de paiement existant qui téléversait `preuve.txt` a été aligné sur
+`preuve.pdf` : il encodait l'absence de tout contrôle et non une règle métier.
+
+### 5.4 Déni de service — garde-fou rétabli
+
+`DATA_UPLOAD_MAX_NUMBER_FIELDS` valait **`None`** (protection de Django
+désactivée : un POST multipart avec des dizaines de milliers de champs pouvait
+saturer un worker). Remplacé par une valeur bornée, configurable par
+environnement, `5 000` par défaut — très au-dessus des formulaires métier.
+
+### 5.5 Secrets et configuration
+
+* Aucun `.env` versionné ; seuls des `.env.example` le sont (5 fichiers).
+* Recherche de secrets en dur (`SECRET_KEY|API_KEY|PASSWORD|TOKEN = "…"`) :
+  **aucun résultat** hors fichiers de test/exemple.
+* `DEBUG` : valeur par défaut **False** (`_env_flag('DJANGO_DEBUG', 'DEBUG', default=False)`).
+* `SECRET_KEY` : lue depuis l'environnement, aucune valeur de repli en dur.
+* `ALLOWED_HOSTS` : résolution explicite, `'*'` filtré, aucun hôte de
+  production implicite.
+* CORS : `CORS_ALLOW_ALL_ORIGINS = False`, origines en liste blanche.
+* Cookies : `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, HSTS 1 an avec
+  sous-domaines et preload (bloc production).
+
+### 5.6 Limitation de débit
+
+`login` 20/min, `scan` 60/min, `offline-data` 60/min (surchargeables par
+variables d'environnement). **Vérifié en exécution** : une rafale de connexions
+depuis le même client a renvoyé `HTTP 429`.
+
+---
+
+## 6. Conformité métier LMD / INJS
+
+### 6.1 Référentiel des filières
+
+`backend/formations/referentiel_injs_l6.py` déclare les **8 filières** avec
+traçabilité de la source métier (`docs/audits/A-4.5-DOSSIER-VALIDATION-METIER-INJS-LMD-2026-09-27.md` §2) :
+
+| Code | Sigle | Libellé | École | Diplômes attestés |
+|---|---|---|---|---|
+| F01 | EM | Éducation et Motricité | ENSEPS | Licence, Master |
+| F02 | APA | Activités Physiques Adaptées | ENSEPS | Licence, Master |
+| F03 | ES | Entraînement Sportif | ENSEPS | Licence, Master |
+| F04 | MS | Management du Sport | ENSEPS | Licence, Master |
+| F05 | AND | Andragogie | ENSEP | Licence |
+| F06 | LOI | Loisir | ENSEP | Licence |
+| F07 | ECJP | Entrepreneuriat Jeunesse et Conduite de Projets | ENSEP | Licence |
+| F08 | GER | Gérontologie | ENSEP | Licence |
+
+Aucun intitulé n'a été inventé : le module cite sa source et exclut
+explicitement le corpus étranger (périmètre `LEGACY`) sans le supprimer.
+
+### 6.2 Structure LMD
+
+`backend/scolarite/pedagogie_validateur.py` fixe les constantes attendues :
+
+```
+ECTS_SEMESTRE = 30   ECTS_NIVEAU = 60   ECTS_LICENCE = 180
+ECTS_MASTER  = 120   ECTS_CYCLE  = 300
+NIVEAUX = {L1…M2} ; SEMESTRES = {S1…S10} ; NIVEAU_PAR_SEMESTRE S1→L1 … S10→M2
+```
+
+La commande `init_referentiels_lmd` crée L1→M2 avec les semestres S1→S10 dans
+l'ordre attendu (Licence S1–S6, Master S7–S10).
+
+### 6.3 Étapes du parcours — vérifiées par test
+
+Les quatre étapes (admission → inscription administrative → validation →
+inscription pédagogique) sont **disjointes**. Le fichier
+`backend/scolarite/tests/test_frontieres_metier.py` (9 tests, tous verts)
+démontre que :
+
+1. une inscription **validée** ne crée **aucune** ligne pédagogique ;
+2. la génération pédagogique est **explicite** et **idempotente** ;
+3. la conversion d'admission est **idempotente** (voir §7.1) ;
+4. une **radiation** n'est jamais déduite d'une anomalie technique : elle exige
+   un appel explicite, un acteur, un motif, et produit une entrée
+   `EvenementScolarite` + `JournalScolarite` ;
+5. une inscription non validée ne peut pas être radiée.
+
+### 6.4 Emplois du temps
+
+`edts/services.detecter_conflits()` couvre les conflits internes **et**
+inter-EDT, réactive/clôture les conflits automatiques et **ne touche jamais**
+aux signalements manuels (`type_conflit = MANUEL`). La génération n'écrit que
+les EDT demandés : aucune publication implicite.
+
+---
+
+## 7. Défauts corrigés (avec preuve d'exécution)
+
+### 7.1 Conversion d'admission non idempotente — **critique**
+
+**Constat.** `convertir_admission_en_inscription()` ne vérifiait pas si une
+inscription existait déjà pour l'admission. Un double clic ou un rejeu réseau
+créait :
+
+* avec `valider=True` : une exception de validation (500/409 côté API) ;
+* avec `valider=False` : **une seconde inscription `BROUILLON` silencieuse**
+  (aucune contrainte d'unicité en base).
+
+**Correctif.** Recherche préalable d'une inscription vivante (hors `ANNULEE` /
+`REJETEE`) pour la même admission : elle est retournée telle quelle ; un rejeu
+« avec validation » la fait progresser jusqu'à `VALIDEE` sans jamais réactiver
+un dossier suspendu.
+
+**Preuve.**
+
+```
+avec correctif : Ran 9 tests — OK
+garde-fou neutralisé :
+  ERROR test_conversion_rejouee_ne_cree_pas_de_seconde_inscription
+  FAIL  test_rejeu_sans_validation_ne_cree_pas_de_doublon_silencieux
+        AssertionError: 2 != 3      (deux inscriptions créées)
+```
+
+### 7.2 Dérive de schéma / migrations
+
+`makemigrations --check` échouait : `formations/0098` manquait (métadonnées
+`help_text`/`choices` et index `db_index` sur `refformation.perimetre`).
+Migration générée et appliquée : plus aucune migration en attente (255/255).
+
+### 7.3 Requête N+1 sur la liste des comptes — **performance**
+
+`GET /api/auth/users/` exécutait une requête de groupes **par utilisateur**
+(21 requêtes pour 20 comptes). Correctif : `select_related('secretariat')` +
+`prefetch_related('groups')` sur les deux querysets concernés.
+
+```
+avant : 21 requêtes SQL pour 20 comptes
+après :  4 requêtes SQL (3 via /api/v1/)
+```
+
+Test de non-régression ajouté (`authentication/test_performance_comptes.py`) :
+le nombre de requêtes est identique pour 5 et pour 40 comptes.
+
+### 7.4 Preuve de paiement `.txt` dans le scénario de fumée — détectée par le correctif
+
+Le contrôle de fichiers du §5.3 a immédiatement révélé une utilisation
+incorrecte préexistante : la commande `smoke_test_injs` (scénario de bout en
+bout en 23 étapes) téléversait une preuve de paiement nommée
+`preuve-smoke.txt`, donc un format qui n'aurait jamais dû être accepté pour une
+pièce justificative. Après bascule sur `preuve-smoke.pdf`, les 5 tests de
+`scolarite.tests.test_smoke_command` repassent au vert. Cela confirme que le
+contrôle s'applique bien au chemin réel (service) et pas seulement au modèle.
+
+### 7.5 Références d'identité SYGEP/CPFAE
+
+Voir §4.1.
+
+### 7.6 Schéma OpenAPI : 1 032 collisions d'`operationId` — corrigé
+
+**Constat.** `manage.py spectacular` émettait 1 032 avertissements
+`operationId … has collisions`. Cause : `AutoSchema._tokenize_path()` supprime
+les paramètres de chemin, si bien que `/formations/{id}/formateurs/` et
+`/formations/formateurs/{id}/` recevaient le même identifiant. Quatre routes de
+`jurys` fixaient en outre un `operation_id` manuel, alors que l'URLconf est
+monté deux fois (`api/juries/` et `api/jurys/`). Un client généré (SDK,
+collection) ne conservait donc qu'une opération sur deux.
+
+**Correctif.** `backend/config/schema.py` : classe `INJSAutoSchema` qui
+conserve les paramètres sous la forme `by_<nom>` ; les quatre `operation_id`
+manuels de `jurys/api.py` sont retirés. Test de non-régression :
+`core/tests/test_schema_openapi.py`.
+
+**Preuve.**
+
+```
+avant : 1 032 avertissements « collisions »
+après :       0 avertissement, 1 099 opérations, 0 operationId dupliqué
+```
+
+### 7.7 Absence totale d'intégration continue — corrigée
+
+Le dépôt n'avait **aucun** workflow `.github/workflows/`. C'est la cause racine
+de la dérive du §7.2 : rien ne vérifiait `makemigrations --check`. Ajout de
+`.github/workflows/ci.yml` :
+
+| Job | Étapes |
+|---|---|
+| Backend (service PostgreSQL 16) | `check`, `makemigrations --check --dry-run`, `check_repo_hygiene`, `collectstatic`, `manage.py test` |
+| Frontend | `npm ci`, `npm run lint`, `npx vitest run` |
+
+Le job backend tourne sur **PostgreSQL**, pas sur SQLite : c'est le moteur de
+production et le seul moyen de vérifier les comportements qui en dépendent.
+Les cinq commandes backend ont été rejouées localement avec l'environnement du
+workflow (`DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY`, `POSTGRES_*`) : elles passent.
+**Exécution réelle du workflow** (PR #1) :
+
+| Run | Commit | Frontend | Backend (PostgreSQL 16) |
+|---|---|---|---|
+| 1 | `9c5dbc0` | ❌ (test en course, voir ci-dessous) | ❌ (échec non diagnostiqué, journaux inaccessibles) |
+| 2 | `ba01cbd` | ✅ | ✅ **2 451 tests verts sur PostgreSQL** |
+| 3 | `96bdffa` | ✅ | ✅ |
+| relance | `9309449` | ✅ | ✅ |
+
+Le premier passage a révélé un **test instable réel** :
+`src/pages/Modules.test.jsx › filtre par secrétariat, vague, grade et groupe`
+interrogeait un `<select>` alimenté par une requête distincte de celle de la
+liste ; en CI la liste répond plus vite, le select n'était pas encore monté
+(`TestingLibraryElementError: Unable to find … "Tous les secrétariats"`).
+Corrigé par une attente explicite de l'option (aucune assertion retirée).
+
+En revanche, l'échec du job backend au run 1 **n'a pas pu être diagnostiqué** :
+les journaux d'exécution ne sont pas accessibles depuis l'environnement d'audit
+et le workflow n'était pas encore instrumenté. Le code backend est identique
+entre les runs 1, 2 et 3 (seuls un test frontend et le workflow ont changé) : il
+s'agit donc d'un test instable sur PostgreSQL, **non identifié à ce jour** —
+**trois exécutions complètes consécutives sont néanmoins vertes** (runs 2, 3 et
+la relance sur `9309449`), sur PostgreSQL 16 comme sur SQLite. Le
+workflow publie désormais le détail des échecs en annotations et le journal
+complet en artefact (`backend-tests-log`, 7 jours) pour rendre la prochaine
+occurrence diagnosticable. Ce point est ouvert (§8.3).
+
+---
+
+## 8. Points ouverts
+
+### 8.1 Non exécuté dans cet environnement (**NON EXÉCUTÉ**)
+
+| Contrôle | Raison |
+|---|---|
+| Vérification PostgreSQL | **faite en CI** : suite complète verte sur PostgreSQL 16 (§7.7). Non exécutée localement (pas de serveur) |
+| Migration sur base de production | Interdit sans autorisation explicite |
+| Suite de tests Flutter (`qr_badge_mobile`) | SDK Flutter indisponible, `pub.dev` inaccessible |
+| Parcours de paiement réel (mobile money, passerelles) | Pas d'accès aux fournisseurs |
+| Test de charge / volumétrie réelle | Pas d'outil de charge, base de démonstration vide |
+
+### 8.2 Décisions à faire trancher (non tranchées par l'audit)
+
+1. **Intitulé du rapport « POINT DES PRÉSENCES_CPFAE »** : format historique
+   conservé. Faut-il le renommer pour l'INJS ? Cela change un **livrable
+   officiel** : décision institutionnelle, non technique.
+2. **Périmètre des rôles historiques** : `CPFAE_ADMIN` reste accepté en lecture
+   pour la rétrocompatibilité des données ; faut-il le supprimer définitivement
+   (migration de données) ?
+3. **Application `referentiel_injs`** : code mort à supprimer ou à fusionner
+   avec `referentiels` ?
+4. **Données de démonstration** : la base du bac à sable ne contient aucun
+   `RefFormation` LMD ; aucune conclusion n'est tirée sur le volume ou la
+   qualité des données réelles.
+
+### 8.3 Recommandations non bloquantes
+
+* ~~Ajouter une étape `makemigrations --check` en CI~~ → fait (§7.7).
+* ~~Résorber les collisions d'`operationId` OpenAPI~~ → fait (§7.6).
+* Supprimer `backend/referentiel_injs/` ou l'enregistrer réellement (décision
+  d'équipe, non prise ici).
+* **Identifier le test instable sur PostgreSQL** à l'origine de l'échec du
+  run 1 (le journal sera désormais conservé en artefact).
+* Faire tourner la suite plusieurs fois de suite en CI pour mesurer la
+  stabilité avant de déclarer le backend « toujours vert ».
+
+---
+
+## 9. Résultats des suites de tests
+
+| Suite | Commande | Résultat |
+|---|---|---|
+| Backend | `USE_SQLITE=1 .venv/bin/python manage.py test` | **2 464 tests — 0 échec, 9 ignorés** (voir §9.1) |
+| Frontend | `npx vitest run` | **101 fichiers / 1 912 tests — OK** (3 cas retirés avec les pages mortes, §11.5) |
+| Build frontend | `npm run build` | **OK** (5,3 s) |
+| ESLint | `npm run lint` | 0 erreur, 0 avertissement |
+| Hygiène dépôt | `check_repo_hygiene` | CONFORME |
+| CI (GitHub Actions) | workflow `CI` sur la PR #1 | run **40637703852** (`dae2d94`) : **frontend ✅ (2 min 06 s)** / **backend PostgreSQL ✅** |
+
+Tests ajoutés par cet audit (22) :
+
+* `scolarite/tests/test_frontieres_metier.py` — 10 tests (frontières métier,
+  idempotence y compris via l'API, radiation) ;
+* `core/tests/test_validators_fichiers.py` — 9 tests (extensions, taille,
+  application par les services) ;
+* `authentication/test_performance_comptes.py` — 1 test (N+1) ;
+* `core/tests/test_schema_openapi.py` — 2 tests (unicité des `operationId`) ;
+* `core/tests/test_admin_complet.py` — 6 tests (couverture, ouverture des
+  178 listes, lecture seule, recherche, préchargement) — §11 ;
+* `suiviEvaluation/tests/test_fiches_api.py` — 13 tests (fiches auditeur et
+  enseignant, exports PDF/XLSX, contrôle d'accès) — §11.5.
+
+### 9.1 Résultat exact de la suite backend
+
+```
+Ran 2464 tests in 732.257s
+
+OK (skipped=9)
+```
+
+Rejeu effectué **après** les correctifs de la §11 (un premier passage, lancé
+avant ces correctifs, avait donné 2464 tests OK en 753 s sur un code
+intermédiaire) : `/tmp/suite-finale-3.log`.
+
+Le run CI PostgreSQL 40637703852 est **vert** sur le même code. Le nombre exact
+de tests côté PostgreSQL n'est pas cité ici : l'artefact de journal n'était pas
+téléchargeable depuis le bac à sable (seuls les hôtes GitHub sont accessibles),
+et aucun chiffre n'est avancé sans pièce.
+
+---
+
+## 10. Conclusion
+
+Le backend est **fonctionnel, correctement cloisonné et conforme au référentiel
+INJS-LMD** sur le périmètre vérifiable ici. Trois défauts réels ont été trouvés
+**et corrigés** avec preuve d'exécution : idempotence de l'inscription
+(doublons silencieux), absence totale de contrôle des fichiers téléversés, et
+requête N+1 sur la liste des comptes. La dérive de migrations est résorbée.
+
+Les limites de cet audit sont explicites : aucune vérification PostgreSQL, ni
+Flutter, ni charge, ni production.
+
+---
+
+## 11. Remise à niveau de l'administration et alignement frontend ↔ backend
+
+Second passage d'audit, ciblé sur deux questions : **l'administration permet-elle
+réellement de gérer tout le domaine métier ?** et **le site appelle-t-il des
+adresses qui existent ?** Chaque constat ci-dessous est adossé à une commande
+exécutée dans le bac à sable (SQLite, données de démonstration
+`seed_injs_complet` + lots 1.2 / 3.1 / 4.1).
+
+### 11.1 Couverture de l'administration : 137/178 → 178/178
+
+Constat mesuré (`admin.site.is_registered` sur les 178 modèles des 21
+applications métier) : **41 modèles n'étaient pas inscrits**, alors que
+certains portent des objets pilotés depuis le site (campagnes d'admission,
+épreuves, sessions de jury, affectations pédagogiques, organigramme, demandes
+d'accès). L'administrateur ne pouvait pas les corriger : deux sources de
+vérité incohérentes.
+
+Correctif : `backend/core/admin_completion.py`, branché depuis
+`core/apps.py::ready()`, inscrit ces 41 modèles de façon homogène —
+18 **opérationnels** (éditables, avec recherche, filtres bornés, préchargement)
+et 23 **en lecture seule** (historiques, notifications, valeurs calculées : on
+les consulte, on ne les édite pas). Aucun modèle déjà inscrit n'est remplacé.
+
+Preuve : `core/tests/test_admin_complet.py` — les **178** listes sont ouvertes
+en HTTP avec un compte administrateur ; toute liste mal configurée (champ
+inexistant, `list_display` erroné) échouerait.
+
+### 11.2 Performances des listes : 3 064 → 1 850 requêtes (‑40 %)
+
+Mesure : ouverture des 178 listes d'administration, requêtes comptées par
+`CaptureQueriesContext`.
+
+| Indicateur | Avant | Après |
+|---|---|---|
+| Requêtes cumulées (178 listes) | 3 064 | **1 850** |
+| Maximum sur une liste | 337 (`correctionnotemodule`) | **46** (`inscriptionpedagogique`) |
+| Médiane | 10 | 9 |
+
+Trois causes distinctes, toutes corrigées :
+
+1. **50 listes exposaient une clé étrangère sans `select_related`** → une
+   requête par ligne. Sur 12 écrans représentatifs : **306 → 177 requêtes
+   (‑42 %)**, par exemple `inscriptionadministrative` 41 → 17, `affectationcreneau`
+   37 → 11.
+2. **Les `__str__` remontent des relations** : `select_related('inscription')`
+   ne suffit pas quand `InscriptionAdministrative.__str__` lit
+   `etudiant.matricule` ; le préchargement suit désormais un niveau de plus
+   (borné à 20 jointures).
+3. **Filtres de barre latérale coûteux** : les filtres sur clé étrangère à
+   forte cardinalité rendaient `str()` de chaque objet lié (337 requêtes pour
+   une liste **vide**). Les modèles ajoutés automatiquement n'utilisent plus
+   que des filtres bornés (choix énumérés, booléens).
+
+### 11.3 Recherche et filtres : 53 listes sans recherche → 0
+
+`enrichir_listes()` complète les listes vides, sans jamais retirer un champ
+existant. Une liste sans colonne texte reste cherchable via la première colonne
+texte de sa relation (`candidat__nom`). Restent **8 listes sans filtre** faute
+de champ à cardinalité bornée (Formation, Echéancier, Quittance, etc.) : un
+filtre sur clé étrangère non bornée chargerait toute la table liée.
+
+### 11.4 Défauts réels révélés par les tests
+
+* **`QRTokenAdmin.etat_validite`** levait `AttributeError: 'NoneType' object has
+  no attribute 'est_terminee'` : `QRToken.session` est nullable. Corrigé.
+* **`ReferentielJournal.cible`** est une `GenericForeignKey` : l'inclure dans
+  `select_related` provoque un `FieldError`. La détection ne retient désormais
+  que les `ForeignKey` concrètes.
+
+### 11.5 Alignement frontend ↔ backend : 40 appels sans route → 0
+
+Script d'analyse : extraction des appels `api.*` du site, substitution des
+gabarits (`${…}` → `1`, `urlParams()` → `1`), résolution par `django.urls.resolve`.
+**308 appels distincts, 40 sans route** au départ.
+
+Corrigés côté **site** (le backend était correct) :
+
+| Écran | Appel (avant) | Appel (après) |
+|---|---|---|
+| Mon espace | `/scan/me/fiche/` | `/me/fiche/` (route `presences`, 200) |
+| Scolarité — formations | `/formations/formations/` | `/formations/list/` |
+| Tableau de bord scolarité | `/referentiels/parcours/` | `/scolarite/ref/parcours/` |
+| Module — badgeage forcé | `force-badgeage-étudiants-bulk` | `force-badgeage-auditeurs-bulk` |
+
+Corrigés côté **backend** (fonctionnalité réelle, absente) :
+
+* **Fiche étudiant et fiche enseignant** : les écrans
+  `/auditeurs/:id/formations/:id/fiche` et `/formateurs/:id/modules/:id/fiche`
+  sont routés et accessibles, mais leur préfixe `/suiviEvaluation/…` ne
+  correspondait à aucun montage (l'application est montée sous
+  `/api/evaluations/`) **et aucune vue n'existait** → « Erreur chargement
+  fiche ». Création de `suiviEvaluation/fiches_api.py` (4 routes JSON + PDF +
+  XLSX) qui réutilise le moteur existant (`services.py`, `MoyenneModule`,
+  `DecisionPedagogique`) : aucune règle de calcul n'est réinventée. La fiche
+  distingue explicitement le **verdict pédagogique interne** de la **décision
+  officielle du jury** (`jurys.DecisionJury`) — l'écran ne peut plus les
+  confondre. Accès contrôlé par rôle (`IsConsultationFiche`, `IsFicheExport`),
+  pas par simple authentification. 13 tests.
+* **Création d'une séance depuis la formation** : l'écran postait sur
+  `/formations/:id/sessions/new/`, qui n'existe pas (une séance appartient
+  obligatoirement à un module). Le formulaire demande désormais le module et
+  poste sur `/formations/:id/modules/:mid/sessions/new/`.
+
+Reste **12 appels** signalés par le script : tous sont des **gabarits**
+(`${endpoint}?${params}`, `${url}${id}/`, `${cfg.endpoint}`, `${verbe}`,
+`urlParams(filtres)`) dont les routes cibles existent — vérifié une par une.
+**Aucun appel frontend ne pointe plus vers le vide.**
+
+Code mort retiré : `QuizList.jsx`, `QuizTake.jsx`, `EvaluationAcademique.jsx`
+n'étaient importés nulle part et visaient une API jamais implémentée
+(`/evaluations/quiz/`, `/evaluations/epreuves/`, `/evaluations/mes-quiz/`).
+L'écran réellement en service est `/evaluations/questionnaires` (application
+`suiviEvaluation`, montée et testée). Le test de fumée a été ajusté.
+
+### 11.6 Tests alignés (et non affaiblis)
+
+Les corrections de route ont rendu obsolètes les attentes de 9 tests
+frontend qui mockaient les anciennes adresses (`/scan/me/fiche/`,
+`/formations/formations/`, `/suiviEvaluation/…`, `/formations/:id/sessions/new/`).
+Ils ont été alignés sur les routes réelles — aucune assertion supprimée, deux
+assertions ajoutées (module obligatoire, distinction verdict/décision
+officielle).
+
+Nouveaux tests backend : `core/tests/test_admin_complet.py` (6) et
+`suiviEvaluation/tests/test_fiches_api.py` (13).
+
+### 11.7 Limites de ce passage
+
+* Mesures faites sur **SQLite** avec données de démonstration ; un volume de
+  production peut modifier les seuils (les ordres de grandeur restent).
+* Aucune vérification visuelle des deux fiches dans un navigateur : elles sont
+  validées par API (200, 404, exports binaires valides) et par tests.
+* `satisfaction_auditeurs` reste `None` tant qu'aucune réponse de questionnaire
+  n'est rattachée au module ; `appreciation_pedagogique` reste vide : aucun
+  modèle ne la porte — la donnée n'est pas inventée.

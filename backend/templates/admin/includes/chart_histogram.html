@@ -1,7 +1,8 @@
-{% load i18n %}
+{% load i18n l10n %}
 {% if chart %}
 <div class="dfrc-chart-svg-scroll dfrc-chart-svg-scroll--histogram">
-    <svg
+    {% localize off %}
+        <svg
         class="dfrc-chart-svg dfrc-chart-svg--histogram"
         viewBox="0 0 {{ chart.width }} {{ chart.height }}"
         width="100%"
@@ -25,7 +26,7 @@
                 x="{{ bar.text_x }}"
                 y="{{ bar.value_y }}"
                 text-anchor="middle"
-                font-size="10"
+                font-size="{{ chart.value_font|default:9 }}"
                 fill="#1e293b"
                 font-weight="600"
             >{{ bar.value }}</text>
@@ -34,12 +35,13 @@
                 x="{{ bar.text_x }}"
                 y="{{ bar.label_y }}"
                 text-anchor="middle"
-                font-size="9"
+                font-size="{{ chart.label_font|default:7.5 }}"
                 fill="#64748b"
-            >{{ bar.label_short }}</text>
+            >{% for ligne in bar.label_lines %}<tspan x="{{ bar.text_x }}" dy="{% if forloop.first %}0{% else %}{{ chart.label_line_gap|default:8 }}{% endif %}">{{ ligne }}</tspan>{% endfor %}</text>
         </g>
         {% endfor %}
     </svg>
+        {% endlocalize %}
 </div>
 {% else %}
 <p class="dfrc-chart-empty">{% trans "Aucune donnée sur la période." %}</p>

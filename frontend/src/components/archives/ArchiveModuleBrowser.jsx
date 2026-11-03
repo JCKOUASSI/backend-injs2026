@@ -250,10 +250,10 @@ export default function ArchiveModuleBrowser({
                     <i className="bi bi-mortarboard me-1"></i>{m.formation}
                   </div>
                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                    {m.grade && <span style={badgeStyle('#e8eaf6', '#283593')}>{m.grade}</span>}
+                    {m.grade && <span style={badgeStyle('#e8eaf6', '#283A87')}>{m.grade}</span>}
                     {m.groupe && <span style={badgeStyle('#e0f2f1', '#082961')}>{m.groupe}</span>}
-                    {m.vague && <span style={badgeStyle('#fff8e0', '#e69700')}>{m.vague}</span>}
-                    {m.secretariat_nom && <span style={badgeStyle('#f3e5f5', '#6a1b9a')}><i className="bi bi-building me-1"></i>{m.secretariat_nom}</span>}
+                    {m.vague && <span style={badgeStyle('#fff8e0', '#D97706')}>{m.vague}</span>}
+                    {m.secretariat_nom && <span style={badgeStyle('#f3e5f5', '#805AD5')}><i className="bi bi-building me-1"></i>{m.secretariat_nom}</span>}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
                     <span><i className="bi bi-people me-1"></i>{m.nb_participants ?? 0} étudiant{(m.nb_participants ?? 0) !== 1 ? 's' : ''}</span>

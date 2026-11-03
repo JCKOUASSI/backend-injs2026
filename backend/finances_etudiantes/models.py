@@ -6,6 +6,8 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 import uuid
 
+from core import validators as validators_pieces
+
 NATURE_FRAIS = [
     ('DOSSIER', 'Frais de dossier'),
     ('INSCRIPTION', "Frais d'inscription"),
@@ -196,7 +198,8 @@ class Paiement(models.Model):
         upload_to='finances_proofs/',
         null=True,
         blank=True,
-        help_text="Pièce justificative du paiement (obligatoire pour CONFIRME)"
+        help_text="Pièce justificative du paiement (obligatoire pour CONFIRME)",
+        validators=[validators_pieces.valider_preuve_paiement],
     )
     utilisateur = models.ForeignKey(
         'authentication.User',

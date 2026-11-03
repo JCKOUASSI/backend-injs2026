@@ -15,6 +15,22 @@
  * `ecran` dans `menu/arborescence.js` et d'ajouter sa route.
  */
 
+import {
+  anneeAcademiqueCourante,
+  anneeAcademiquePrecedente,
+} from '../utils/anneeAcademique'
+
+/**
+ * Options du filtre « Année » : année courante et précédente, calculées.
+ * Les valeurs restent des libellés `AAAA-AAAA` (format attendu par le filtre
+ * backend) — seule la génération change, pour ne plus devenir obsolète.
+ */
+export function anneesAcademiquesFiltre(date = new Date()) {
+  return [anneeAcademiqueCourante(date), anneeAcademiquePrecedente(date)].map(
+    (annee) => ({ valeur: annee, libelle: annee.replace('-', ' – ') }),
+  )
+}
+
 /** Ressources référentielles partagées (options de filtres et de documents). */
 export const RESSOURCES = {
   formations: {
@@ -101,6 +117,140 @@ const FILTRES_AUDIT = [
   { param: 'acteur_id', libelle: 'Auteur (id)', type: 'nombre' },
 ]
 
+/**
+ * Schémas de saisie des référentiels socle (CRUD des écrans « Référentiels »
+ * et « Formations », rendus par `components/generique/FormulaireRessource.jsx`).
+ *
+ * Chaque champ correspond à une colonne réellement acceptée par l'API
+ * (`/api/scolarite/ref/<ressource>/`) ; les listes de choix pointent vers un
+ * endpoint existant, jamais vers une liste codée en dur qui divergerait de la
+ * base. Un champ marqué `requis` est contrôlé deux fois : ici pour guider la
+ * saisie, et par le serveur, qui reste seul juge.
+ */
+export const FORMULAIRE_TYPES_FORMATION = {
+  libelleCreation: 'Nouvelle filière',
+  titreCreation: 'Créer un type de formation (filière)',
+  titreModification: 'Modifier le type de formation',
+  champs: [
+    { cle: 'code', libelle: 'Code', requis: true, maxLength: 20,
+      aide: 'Code court et stable (ex. F01). Il identifie la filière dans les maquettes.' },
+    { cle: 'libelle', libelle: 'Libellé', requis: true, maxLength: 200 },
+    { cle: 'actif', libelle: 'Actif', type: 'booleen', defaut: true },
+  ],
+  creation: { chemin: '/scolarite/ref/types-formation/' },
+  modification: (l) => ({ chemin: `/scolarite/ref/types-formation/${l.id}/` }),
+  suppression: (l) => `/scolarite/ref/types-formation/${l.id}/`,
+  messageSuppression: 'Supprimer ce type de formation ? Les parcours, groupes et '
+    + 'maquettes qui le référencent s’y opposeront : le serveur refusera alors.',
+};
+
+export const FORMULAIRE_PARCOURS = {
+  libelleCreation: 'Nouveau parcours',
+  titreCreation: 'Créer un parcours',
+  titreModification: 'Modifier le parcours',
+  champs: [
+    { cle: 'code', libelle: 'Code', requis: true, maxLength: 50 },
+    { cle: 'intitule', libelle: 'Intitulé', requis: true, maxLength: 255 },
+    { cle: 'ref_formation_id', libelle: 'Formation', type: 'select-nombre', requis: true,
+      optionsEndpoint: '/formations/ref/formations/', valeur: 'id', libelleOption: 'intitule',
+      vide: 'Choisir une formation' },
+    { cle: 'type_formation_id', libelle: 'Type de formation (filière)', type: 'select-nombre',
+      optionsEndpoint: '/scolarite/ref/types-formation/', valeur: 'id', libelleOption: 'libelle',
+      vide: 'Choisir une filière' },
+    { cle: 'actif', libelle: 'Actif', type: 'booleen', defaut: true },
+  ],
+  creation: { chemin: '/scolarite/ref/parcours/' },
+  modification: (l) => ({ chemin: `/scolarite/ref/parcours/${l.id}/` }),
+  suppression: (l) => `/scolarite/ref/parcours/${l.id}/`,
+  messageSuppression: 'Supprimer ce parcours ? Les groupes, maquettes et étudiants '
+    + 'rattachés s’y opposeront : le serveur refusera alors.',
+};
+
+export const FORMULAIRE_NIVEAUX = {
+  libelleCreation: 'Nouveau niveau',
+  titreCreation: 'Créer un niveau',
+  titreModification: 'Modifier le niveau',
+  champs: [
+    { cle: 'code', libelle: 'Code', requis: true, maxLength: 20, aide: 'Ex. L1, M2.' },
+    { cle: 'libelle', libelle: 'Libellé', requis: true, maxLength: 100 },
+    { cle: 'cycle', libelle: 'Cycle', type: 'select', requis: true,
+      options: [
+        { valeur: 'LICENCE', libelle: 'Licence' },
+        { valeur: 'MASTER', libelle: 'Master' },
+      ], vide: 'Choisir un cycle' },
+    { cle: 'ordre', libelle: 'Ordre', type: 'nombre', requis: true, min: 1,
+      aide: 'Position dans le cursus (1 = première année).' },
+    { cle: 'credits_requis', libelle: 'Crédits requis', type: 'nombre', min: 0,
+      aide: 'Total de crédits exigé pour valider ce niveau ; laisser vide si non fixé.' },
+    { cle: 'actif', libelle: 'Actif', type: 'booleen', defaut: true },
+  ],
+  creation: { chemin: '/scolarite/ref/niveaux/' },
+  modification: (l) => ({ chemin: `/scolarite/ref/niveaux/${l.id}/` }),
+  suppression: (l) => `/scolarite/ref/niveaux/${l.id}/`,
+  messageSuppression: 'Supprimer ce niveau ? Les semestres, groupes et maquettes '
+    + 'qui le référencent s’y opposeront : le serveur refusera alors.',
+};
+
+export const FORMULAIRE_SEMESTRES = {
+  libelleCreation: 'Nouveau semestre',
+  titreCreation: 'Créer un semestre',
+  titreModification: 'Modifier le semestre',
+  champs: [
+    { cle: 'niveau_id', libelle: 'Niveau', type: 'select-nombre', requis: true,
+      optionsEndpoint: '/scolarite/ref/niveaux/', valeur: 'id', libelleOption: 'libelle',
+      vide: 'Choisir un niveau' },
+    { cle: 'numero', libelle: 'Numéro', type: 'nombre', requis: true, min: 1,
+      aide: 'Numéro du semestre dans le niveau (1 ou 2).' },
+    { cle: 'libelle', libelle: 'Libellé', requis: true, maxLength: 100 },
+    { cle: 'actif', libelle: 'Actif', type: 'booleen', defaut: true },
+  ],
+  creation: { chemin: '/scolarite/ref/semestres/' },
+  modification: (l) => ({ chemin: `/scolarite/ref/semestres/${l.id}/` }),
+  suppression: (l) => `/scolarite/ref/semestres/${l.id}/`,
+  messageSuppression: 'Supprimer ce semestre ? Les UE et maquettes qui le '
+    + 'référencent s’y opposeront : le serveur refusera alors.',
+};
+
+/**
+ * Référentiel des **formations** (cycles LMD) : endpoint dédié
+ * `/api/formations/ref/formations/`, qui valide le code unique, l'intitulé
+ * obligatoire et la liste fermée des types de diplôme. La modification passe
+ * par `PUT` (l'API de ce référentiel ne sert pas PATCH) : le formulaire déclare
+ * donc sa méthode, il ne la devine pas.
+ */
+export const FORMULAIRE_FORMATIONS = {
+  libelleCreation: 'Nouvelle formation',
+  titreCreation: 'Créer un cycle de formation',
+  titreModification: 'Modifier le cycle de formation',
+  methodeModification: 'put',
+  champs: [
+    { cle: 'code', libelle: 'Code', maxLength: 50,
+      aide: 'Identifiant court du cycle (facultatif, mais unique s’il est renseigné).' },
+    { cle: 'intitule', libelle: 'Intitulé', requis: true, maxLength: 255 },
+    { cle: 'type_diplome', libelle: 'Type de diplôme', type: 'select', requis: true,
+      options: [
+        { valeur: 'LICENCE', libelle: 'Licence' },
+        { valeur: 'MASTER', libelle: 'Master' },
+        { valeur: 'DOCTORAT', libelle: 'Doctorat' },
+        { valeur: 'DUT', libelle: 'DUT / BTS' },
+        { valeur: 'PROFESSIONNALISANT', libelle: 'Cycle professionnalisant' },
+        { valeur: 'AUTRE', libelle: 'Autre' },
+      ], vide: 'Choisir un type de diplôme' },
+    { cle: 'domaine', libelle: 'Domaine', maxLength: 100 },
+    { cle: 'mention', libelle: 'Mention', maxLength: 100 },
+    { cle: 'duree_annees', libelle: 'Durée (années)', type: 'nombre', min: 1, max: 8 },
+    { cle: 'nb_semestres', libelle: 'Nombre de semestres', type: 'nombre', min: 1, max: 16 },
+    { cle: 'nb_credites', libelle: 'Crédits ECTS', type: 'nombre', min: 0,
+      aide: 'Laisser vide si la source officielle ne fixe pas le total : aucune valeur n’est inventée.' },
+    { cle: 'actif', libelle: 'Actif', type: 'booleen', defaut: true },
+  ],
+  creation: { chemin: '/formations/ref/formations/' },
+  modification: (l) => ({ chemin: `/formations/ref/formations/${l.id}/` }),
+  suppression: (l) => `/formations/ref/formations/${l.id}/`,
+  messageSuppression: 'Supprimer ce cycle ? Le serveur refuse si des sessions de '
+    + 'formation s’appuient dessus : désactivez-le plutôt que de le supprimer.',
+};
+
 export const ECRANS = {
 
   // ---------------------------------------------------------------- SCOLARITÉ
@@ -110,17 +260,150 @@ export const ECRANS = {
     titreListe: 'Dossiers de candidature',
     fil: 'Scolarité',
     icone: 'bi-folder-check',
-    introduction: 'Dossiers de candidature et pièces déposées : consulter, '
-      + 'vérifier la conformité puis valider ou rejeter chaque pièce.',
+    introduction: 'File de contrôle des dossiers de candidature : ouvrez un '
+      + 'dossier pour consulter chaque pièce déposée, la télécharger, puis la '
+      + 'valider ou la refuser. La complétude du dossier et la liste se '
+      + 'mettent à jour après chaque décision.',
     endpoint: '/admissions/candidatures/',
-    recherche: { param: 'search', libelle: 'Rechercher un dossier', placeholder: 'N°, nom, courriel…' },
-    priorite: ['numero', 'candidat', 'statut', 'formation', 'type_candidature', 'date_creation'],
+    // L'API lit le paramètre `q` (pas `search`) : avec `search`, la
+    // recherche était silencieusement ignorée par le serveur.
+    recherche: { param: 'q', libelle: 'Rechercher un dossier', placeholder: 'N°, nom…' },
+    filtres: [
+      {
+        param: 'statut', libelle: 'Statut', type: 'select',
+        options: [
+          { valeur: 'BROUILLON', libelle: 'Brouillon' },
+          { valeur: 'SOUMISE', libelle: 'Soumise' },
+          { valeur: 'EN_ATTENTE_DE_VERIFICATION', libelle: 'En attente de vérification' },
+          { valeur: 'PIECES_INCOMPLETES', libelle: 'Pièces incomplètes' },
+          { valeur: 'PIECES_VALIDEES', libelle: 'Pièces validées' },
+          { valeur: 'EN_ETUDE', libelle: 'En étude' },
+          { valeur: 'ADMISSIBLE', libelle: 'Admissible' },
+          { valeur: 'ADMIS', libelle: 'Admis' },
+          { valeur: 'ADMIS_SOUS_RESERVE', libelle: 'Admis sous réserve' },
+          { valeur: 'LISTE_ATTENTE', libelle: "Liste d'attente" },
+          { valeur: 'REFUSE', libelle: 'Refusé' },
+          { valeur: 'ANNULE', libelle: 'Annulé' },
+        ],
+      },
+      {
+        param: 'ref_formation_id', libelle: 'Formation', type: 'select',
+        optionsEndpoint: '/formations/ref/formations/',
+        optionsCleValeur: 'id',
+        optionsCleLibelle: 'intitule',
+      },
+      {
+        param: 'niveau_id', libelle: 'Niveau', type: 'select',
+        optionsEndpoint: '/scolarite/ref/niveaux/',
+        optionsCleValeur: 'id',
+        optionsCleLibelle: 'code',
+      },
+    ],
+    // Colonnes explicites alignées sur le sérialiseur de l'API : la
+    // dérivation automatique affichait les codes de statut bruts.
+    colonnes: [
+      { cle: 'numero', libelle: 'N° dossier' },
+      { cle: 'candidat', libelle: 'Candidat' },
+      { cle: 'ref_formation', libelle: 'Formation' },
+      { cle: 'niveau', libelle: 'Niveau' },
+      { cle: 'annee_academique', libelle: 'Année' },
+      {
+        cle: 'statut', libelle: 'Statut', format: 'badge',
+        badges: {
+          BROUILLON: 'Brouillon', SOUMISE: 'Soumise',
+          EN_ATTENTE_DE_VERIFICATION: 'En attente de vérification',
+          PIECES_INCOMPLETES: 'Pièces incomplètes',
+          PIECES_VALIDEES: 'Pièces validées', EN_ETUDE: 'En étude',
+          ADMISSIBLE: 'Admissible', ADMIS: 'Admis',
+          ADMIS_SOUS_RESERVE: 'Admis sous réserve',
+          LISTE_ATTENTE: "Liste d'attente", REFUSE: 'Refusé', ANNULE: 'Annulé',
+        },
+        couleurs: {
+          BROUILLON: 'text-bg-secondary', SOUMISE: 'text-bg-info',
+          EN_ATTENTE_DE_VERIFICATION: 'text-bg-info',
+          PIECES_INCOMPLETES: 'text-bg-warning',
+          PIECES_VALIDEES: 'text-bg-primary', EN_ETUDE: 'text-bg-primary',
+          ADMISSIBLE: 'text-bg-primary', ADMIS: 'text-bg-success',
+          ADMIS_SOUS_RESERVE: 'text-bg-success',
+          LISTE_ATTENTE: 'text-bg-warning', REFUSE: 'text-bg-danger',
+          ANNULE: 'text-bg-dark',
+        },
+      },
+      {
+        cle: 'taux_completude', libelle: 'Complétude',
+        valeur: (l) => `${l.pieces_validees ?? 0}/${l.pieces_obligatoires ?? 0} pièces · ${l.taux_completude ?? 0} %`,
+      },
+      { cle: 'date_candidature', libelle: 'Déposée le', format: 'date' },
+    ],
     detail: {
       titre: (l) => `Pièces du dossier ${l.numero || l.id}`,
-      sousTitre: 'Pièces déposées',
+      sousTitre: 'Contrôle des pièces justificatives',
       endpoint: (l) => `/admissions/candidatures/${l.id}/pieces/`,
-      priorite: ['type_piece', 'statut', 'date_depot', 'obligatoire', 'motif'],
+      // La réponse est un objet : tableau sous `pieces`, synthèse à la racine.
+      racine: 'pieces',
+      resume: [
+        { cle: 'pieces_validees', libelle: 'Pièces validées' },
+        { cle: 'pieces_obligatoires', libelle: 'Pièces obligatoires' },
+        { cle: 'taux_completude', libelle: 'Complétude', format: 'pourcentage' },
+        { cle: 'dossier_complet', libelle: 'Dossier complet', format: 'booleen' },
+      ],
+      colonnes: [
+        { cle: 'type_piece', libelle: 'Pièce' },
+        { cle: 'obligatoire', libelle: 'Obligatoire', format: 'booleen' },
+        {
+          cle: 'statut', libelle: 'Statut', format: 'badge',
+          badges: {
+            MANQUANTE: 'Manquante', FOURNIE: 'Fournie',
+            EN_VERIFICATION: 'En vérification', VALIDEE: 'Validée',
+            REFUSEE: 'Refusée', EXPIREE: 'Expirée',
+          },
+          couleurs: {
+            MANQUANTE: 'text-bg-secondary', FOURNIE: 'text-bg-info',
+            EN_VERIFICATION: 'text-bg-info', VALIDEE: 'text-bg-success',
+            REFUSEE: 'text-bg-danger', EXPIREE: 'text-bg-danger',
+          },
+        },
+        { cle: 'numero_document', libelle: 'N° document' },
+        { cle: 'date_delivrance', libelle: 'Délivrée le', format: 'date' },
+        { cle: 'date_expiration', libelle: 'Expire le', format: 'date' },
+        { cle: 'verifie_par', libelle: 'Vérifiée par' },
+      ],
+      // Le contrôle s'effectue ici, pièce par pièce (miroir du panneau
+      // Dossier de l'écran Candidatures) : télécharger le fichier déposé,
+      // valider ou refuser — une pièce sans fichier ne peut pas être statuée.
+      actions: [
+        {
+          libelle: 'Télécharger la pièce', icone: 'bi-download',
+          telechargement: true,
+          chemin: (p) => `/admissions/pieces/${p.id}/fichier/`,
+          visible: (p) => Boolean(p.a_fichier),
+          apparence: 'btn-outline-secondary',
+          succes: 'Pièce téléchargée.',
+        },
+        {
+          libelle: 'Valider la pièce', icone: 'bi-check2', methode: 'POST',
+          chemin: (p) => `/admissions/pieces/${p.id}/verifier/`,
+          corps: { statut: 'VALIDEE' },
+          visible: (p) => Boolean(p.a_fichier) && p.statut !== 'VALIDEE',
+          apparence: 'btn-outline-success',
+          succes: 'Pièce validée.',
+          erreur: 'Validation refusée par le serveur.',
+        },
+        {
+          libelle: 'Refuser la pièce', icone: 'bi-x-lg', methode: 'POST',
+          chemin: (p) => `/admissions/pieces/${p.id}/verifier/`,
+          corps: { statut: 'REFUSEE' },
+          visible: (p) => Boolean(p.a_fichier) && p.statut !== 'REFUSEE',
+          apparence: 'btn-outline-danger',
+          confirmation: (p) => `Refuser la pièce « ${p.type_piece} » ? `
+            + 'Le candidat devra la redéposer.',
+          succes: 'Pièce refusée.',
+          erreur: 'Refus rejeté par le serveur.',
+        },
+      ],
     },
+    vide: 'Aucun dossier ne correspond à ces critères. Les dossiers '
+      + 'apparaissent ici dès leur dépôt depuis l’écran Candidatures.',
     note: 'Source : /api/admissions/candidatures/ + /pieces/',
   },
 
@@ -130,16 +413,14 @@ export const ECRANS = {
     titreListe: 'Résultats',
     fil: 'Scolarité',
     icone: 'bi-trophy',
-    introduction: 'Campagnes de concours : classement calculé puis publié. '
-      + 'Le calcul et la publication sont des actes tracés côté serveur.',
+    introduction: 'Campagnes de concours : ouvrez une campagne pour voir son '
+      + 'classement (rang, score, liste), calculez-le à partir des notes '
+      + 'saisies, puis publiez-le. Le calcul et la publication sont des '
+      + 'actes tracés côté serveur.',
     endpoint: '/admissions/campagnes/',
-    // La colonne « Libellé » (donnée de test « Debug ») est volontairement
-    // exclue : la campagne est identifiée par sa formation + son année.
-    exclure: ['libelle', 'code'],
-    priorite: ['ref_formation_id', 'annee_academique_id', 'statut', 'nb_candidatures', 'nb_epreuves', 'date_ouverture', 'date_fermeture', 'quota_admissibles'],
-    // 8 colonnes explicites : `colonnesPour` renvoie `ecran.colonnes` tel quel
-    // quand il est renseigné (aucune troncature `maxColonnes`, aucune déduction).
-    recherche: { param: 'search', libelle: 'Rechercher une campagne', placeholder: 'Formation, statut…' },
+    // L'API lit le paramètre `q` (recherche sur le libellé et la formation) :
+    // avec `search`, la recherche était silencieusement ignorée.
+    recherche: { param: 'q', libelle: 'Rechercher une campagne', placeholder: 'Libellé, formation…' },
     filtres: [
       {
         param: 'statut', libelle: 'Statut', type: 'select',
@@ -155,23 +436,32 @@ export const ECRANS = {
       },
       {
         param: 'ref_formation_id', libelle: 'Formation', type: 'select',
-        optionsEndpoint: '/scolarite/ref/formations/',
+        optionsEndpoint: '/formations/ref/formations/',
         optionsCleValeur: 'id',
         optionsCleLibelle: 'intitule',
       },
       {
         param: 'annee_academique_id', libelle: 'Année', type: 'select',
-        options: [
-          { valeur: '2026-2027', libelle: '2026 – 2027' },
-          { valeur: '2025-2026', libelle: '2025 – 2026' },
-        ],
+        optionsEndpoint: '/scolarite/ref/annees/',
+        optionsCleValeur: 'id',
+        optionsCleLibelle: 'libelle',
       },
     ],
+    // Colonnes explicites alignées sur le sérialiseur : les clés `*_id`
+    // affichaient des identifiants bruts (« Formation 10 », « Année 1 ») et
+    // le statut apparaissait en code. La colonne « Classement » distingue
+    // les trois états utiles de cet écran (non calculé / calculé / publié).
     colonnes: [
-      { cle: 'ref_formation_id', libelle: 'Formation' },
-      { cle: 'annee_academique_id', libelle: 'Année' },
+      { cle: 'libelle', libelle: 'Campagne' },
+      { cle: 'ref_formation', libelle: 'Formation' },
+      { cle: 'annee_academique', libelle: 'Année' },
       {
         cle: 'statut', libelle: 'Statut', format: 'badge',
+        badges: {
+          BROUILLON: 'Brouillon', PLANIFIEE: 'Planifiée', OUVERTE: 'Ouverte',
+          SUSPENDUE: 'Suspendue', CLOTUREE: 'Clôturée', ANNULEE: 'Annulée',
+          ARCHIVEE: 'Archivée',
+        },
         couleurs: {
           BROUILLON: 'text-bg-secondary', PLANIFIEE: 'text-bg-info',
           OUVERTE: 'text-bg-success', SUSPENDUE: 'text-bg-warning',
@@ -179,18 +469,48 @@ export const ECRANS = {
           ARCHIVEE: 'text-bg-dark',
         },
       },
+      {
+        cle: 'classement_publie', libelle: 'Classement', format: 'badge',
+        valeur: (l) => (l.classement_publie ? 'PUBLIE'
+          : l.classement_calcule ? 'CALCULE' : 'NON_CALCULE'),
+        badges: { PUBLIE: 'Publié', CALCULE: 'Calculé', NON_CALCULE: 'Non calculé' },
+        couleurs: {
+          PUBLIE: 'text-bg-success', CALCULE: 'text-bg-info',
+          NON_CALCULE: 'text-bg-secondary',
+        },
+      },
       { cle: 'nb_candidatures', libelle: 'Candidatures' },
       { cle: 'nb_epreuves', libelle: 'Épreuves' },
       { cle: 'date_ouverture', libelle: 'Ouverture', format: 'date' },
       { cle: 'date_fermeture', libelle: 'Fermeture', format: 'date' },
-      { cle: 'quota_admissibles', libelle: 'Quota admis.' },
+      { cle: 'quota_admissibles', libelle: 'Quota admissibles' },
+      { cle: 'quota_admis', libelle: 'Quota admis' },
     ],
     vide: 'Aucune campagne de concours pour ces critères.',
     detail: {
-      titre: (l) => `Classement — ${l.ref_formation || l.annee_academique || `campagne ${l.id}`}`,
-      sousTitre: 'Candidats classés',
+      titre: (l) => `Classement — ${l.libelle}`,
+      sousTitre: 'Candidats classés par rang de mérite',
       endpoint: (l) => `/admissions/campagnes/${l.id}/classement/`,
-      priorite: ['rang', 'candidat', 'note', 'total', 'admissible', 'decision'],
+      vide: 'Aucun classement pour cette campagne : saisissez les notes '
+        + 'des épreuves, puis utilisez « Calculer le classement ».',
+      colonnes: [
+        { cle: 'rang', libelle: 'Rang' },
+        { cle: 'candidature', libelle: 'N° dossier' },
+        { cle: 'candidat', libelle: 'Candidat' },
+        { cle: 'score_total', libelle: 'Score' },
+        {
+          cle: 'liste', libelle: 'Liste', format: 'badge',
+          badges: {
+            ADMISSIBLE: 'Admissible', LISTE_ATTENTE: "Liste d'attente",
+            NON_ADMIS: 'Non admis',
+          },
+          couleurs: {
+            ADMISSIBLE: 'text-bg-success', LISTE_ATTENTE: 'text-bg-warning',
+            NON_ADMIS: 'text-bg-secondary',
+          },
+        },
+        { cle: 'publie', libelle: 'Publié', format: 'booleen' },
+      ],
     },
     actions: [
       {
@@ -199,8 +519,10 @@ export const ECRANS = {
         apparence: 'btn-outline-primary',
         methode: 'POST',
         chemin: (l) => `/admissions/campagnes/${l.id}/classement/calculer/`,
+        // Inutile sans candidat, interdit une fois les résultats publiés.
+        visible: (l) => !l.classement_publie && l.nb_candidatures > 0,
         confirmation: 'Calculer le classement de cette campagne ?',
-        detail: 'Les notes des épreuves sont agrégées et les rangs recalculés.',
+        detail: 'Les notes des épreuves sont agrégées (note × coefficient) et les rangs recalculés.',
         succes: 'Classement calculé.',
       },
       {
@@ -209,8 +531,10 @@ export const ECRANS = {
         apparence: 'btn-outline-success',
         methode: 'POST',
         chemin: (l) => `/admissions/campagnes/${l.id}/classement/publier/`,
+        // Un classement doit exister et ne pas être déjà publié.
+        visible: (l) => l.classement_calcule && !l.classement_publie,
         confirmation: 'Publier les résultats de cette campagne ?',
-        detail: 'Acte officiel : la publication est journalisée et notifiée.',
+        detail: 'Acte officiel : la publication est journalisée et le classement publié ne peut plus être recalculé.',
         variant: 'danger',
         succes: 'Résultats publiés.',
       },
@@ -218,125 +542,16 @@ export const ECRANS = {
     note: 'Source : /api/admissions/campagnes/ + /classement/',
   },
 
-  reinscriptions: {
-    id: 'reinscriptions',
-    titre: 'Réinscriptions & transferts',
-    fil: 'Scolarité',
-    icone: 'bi-arrow-repeat',
-    introduction: 'Demandes de réinscription, transferts et passerelles entre '
-      + 'parcours, telles que déposées dans le cycle de vie de scolarité.',
-    endpoint: '/scolarite/reinscriptions/',
-    recherche: { param: 'search', libelle: 'Rechercher', placeholder: 'Matricule, nom…' },
-    priorite: [
-      'matricule',
-      'etudiant',
-      'type_inscription_libelle',
-      'ref_formation',
-      'niveau',
-      'annee_academique',
-      'statut_libelle',
-      'date_inscription',
-    ],
-    exclure: [
-      'etudiant_id',
-      'annee_academique_id',
-      'ref_formation_id',
-      'parcours_id',
-      'niveau_id',
-      'vague_id',
-      'categorie_id',
-      'grade_id',
-      'regime_id',
-      'admission_id',
-      'type_inscription',
-      'statut',
-      'date_validation',
-    ],
-    vide: 'Aucune réinscription, transfert ou réorientation enregistré pour le moment.',
-    note: 'Source : /api/scolarite/reinscriptions/',
-  },
-
-  journal_scolarite: {
-    id: 'journal_scolarite',
-    titre: 'Journal de scolarité',
-    fil: 'Scolarité',
-    icone: 'bi-journal-text',
-    introduction: 'Événements du cycle de vie de chaque dossier étudiant '
-      + '(inscriptions, transferts, radiations, décisions).',
-    endpoint: '/scolarite/etudiants/',
-    recherche: { param: 'search', libelle: 'Rechercher un étudiant', placeholder: 'Matricule, nom…' },
-    priorite: ['matricule', 'nom', 'prenoms', 'statut', 'niveau', 'parcours'],
-    detail: {
-      titre: (l) => `Journal — ${l.nom || ''} ${l.prenoms || ''}`.trim(),
-      sousTitre: 'Événements du dossier',
-      endpoint: (l) => `/scolarite/etudiants/${l.id}/evenements/`,
-      priorite: ['horodatage', 'type_evenement', 'libelle', 'auteur', 'motif'],
-    },
-    note: 'Source : /api/scolarite/etudiants/ + /evenements/',
-  },
-
-  documents_scolaires: {
-    id: 'documents_scolaires',
-    type: 'documents',
-    titre: 'Documents scolaires',
-    fil: 'Scolarité',
-    icone: 'bi-file-earmark-text',
-    introduction: 'Documents produits par le serveur (listes de classe, fiches '
-      + 'de notes, relevés). Le droit de générer chaque document est vérifié '
-      + 'côté backend à chaque appel.',
-    documents: [
-      {
-        id: 'liste_classe',
-        libelle: 'Liste de classe',
-        icone: 'bi-people',
-        description: 'Auditeurs par groupe pédagogique (PDF ou Excel).',
-        parametres: [
-          { cle: 'groupe', libelle: 'Groupe (facultatif)', type: 'select', requis: false, ...RESSOURCES.groupes },
-          { cle: 'annee_academique_id', libelle: 'Année académique', type: 'select', requis: false, ...RESSOURCES.annees },
-        ],
-        formats: [
-          { id: 'pdf', libelle: 'PDF', suffixe: 'pdf', icone: 'bi-file-earmark-pdf' },
-          { id: 'excel', libelle: 'Excel', suffixe: 'xlsx', icone: 'bi-file-earmark-excel' },
-        ],
-        chemin: (v, f) => `/exports/participants/liste-classe/${f.id}/?${new URLSearchParams(
-          Object.fromEntries(Object.entries(v).filter(([, x]) => x)),
-        ).toString()}`,
-      },
-      {
-        id: 'fiche_notes_module',
-        libelle: 'Fiche de notes d\'un module',
-        icone: 'bi-card-checklist',
-        description: 'Fiche de notes par formation et module.',
-        parametres: [
-          { cle: 'formation', libelle: 'Formation', type: 'select', ...RESSOURCES.formations },
-          { cle: 'module', libelle: 'Module (id)', type: 'nombre' },
-        ],
-        formats: [{ id: 'pdf', libelle: 'PDF', suffixe: 'pdf', icone: 'bi-file-earmark-pdf' }],
-        chemin: (v) => `/formations/${v.formation}/modules/${v.module}/notes/fiche/pdf/`,
-      },
-      {
-        id: 'releve_etudiant',
-        libelle: "Relevé d'un étudiant",
-        icone: 'bi-person-lines-fill',
-        description: 'Fiche de notes individuelle (relevé).',
-        parametres: [{ cle: 'etudiant', libelle: 'Étudiant', type: 'select', ...RESSOURCES.etudiants }],
-        formats: [
-          { id: 'pdf', libelle: 'PDF', suffixe: 'pdf', icone: 'bi-file-earmark-pdf' },
-          { id: 'excel', libelle: 'Excel', suffixe: 'xlsx', icone: 'bi-file-earmark-excel' },
-        ],
-        chemin: (v, f) => `/participant/${v.etudiant}/notes-fiche/export/${f.id}/`,
-      },
-    ],
-    note: 'Sources : /api/exports/, /api/formations/, /api/participant/',
-  },
 
   // --------------------------------------------------------------- FORMATIONS
   filieres: {
     id: 'filieres',
-    titre: 'Filières',
+    titre: 'Types de formation',
     fil: 'Formations',
     icone: 'bi-signpost-split',
-    introduction: 'Types de formation (filières) du référentiel LMD.',
+    introduction: 'Cycles de formation du référentiel LMD (licence, master, '
+      + 'formation initiale ou continue). Les 8 filières métier F01–F08 sont '
+      + 'portées par les cycles, sur l’écran « Formations » (colonne Filière).',
     endpoint: '/scolarite/ref/types-formation/',
     colonnes: [
       { cle: 'code', libelle: 'Code', largeur: '26%' },
@@ -344,6 +559,7 @@ export const ECRANS = {
       { cle: 'actif', libelle: 'Actif', format: 'booleen', largeur: '150px' },
     ],
     note: 'Source : /api/scolarite/ref/types-formation/',
+    formulaire: FORMULAIRE_TYPES_FORMATION,
   },
 
   parcours: {
@@ -365,6 +581,7 @@ export const ECRANS = {
       { cle: 'actif', libelle: 'Actif', format: 'booleen' },
     ],
     note: 'Source : /api/scolarite/ref/parcours/',
+    formulaire: FORMULAIRE_PARCOURS,
   },
 
   niveaux: {
@@ -387,6 +604,7 @@ export const ECRANS = {
       { cle: 'actif', libelle: 'Actif', format: 'booleen' },
     ],
     note: 'Source : /api/scolarite/ref/niveaux/',
+    formulaire: FORMULAIRE_NIVEAUX,
   },
 
   semestres: {
@@ -404,16 +622,19 @@ export const ECRANS = {
       { cle: 'actif', libelle: 'Actif', format: 'booleen' },
     ],
     note: 'Source : /api/scolarite/ref/semestres/',
+    formulaire: FORMULAIRE_SEMESTRES,
   },
 
   ue_ecue: {
     id: 'ue_ecue',
+    type: 'ue_ecue',
     titre: 'UE / ECUE',
     fil: 'Formations',
     icone: 'bi-collection',
-    introduction: "Unités d'enseignement et éléments constitutifs, lus depuis "
-      + 'les maquettes LMD validées. Sélectionner une maquette pour dérouler '
-      + 'ses UE, puis une UE pour ses ECUE.',
+    introduction: "Unités d'enseignement et éléments constitutifs des maquettes "
+      + 'LMD : sélectionner une maquette, puis une UE. Chaque élément se crée, '
+      + 'se modifie et se supprime en brouillon, et suit le cycle '
+      + 'Brouillon → Activé → Désactivé.',
     endpoint: '/scolarite/maquettes/',
     priorite: ['code', 'intitule', 'statut', 'annee_academique', 'niveau', 'version'],
     detail: {
@@ -585,69 +806,7 @@ export const ECRANS = {
   },
 
   // --------------------------------------------------------------- ÉVALUATIONS
-  saisie_notes: {
-    id: 'saisie_notes',
-    titre: 'Saisie des notes',
-    fil: 'Évaluations',
-    icone: 'bi-pencil-square',
-    introduction: 'Modules du catalogue : ouvrir la grille de saisie des notes '
-      + "d'un module pour une formation. La saisie elle-même reste sur l'écran "
-      + 'dédié, gardé par le backend.',
-    endpoint: '/formations/ref/modules/',
-    recherche: { param: 'search', libelle: 'Rechercher un module', placeholder: 'Intitulé…' },
-    colonnes: [
-      { cle: 'intitule', libelle: 'Module' },
-      {
-        cle: 'formations',
-        libelle: 'Formations',
-        valeur: (l) => (l.formations || []).map((f) => f.intitule).join(', '),
-      },
-      { cle: 'volume_horaire', libelle: 'Volume horaire' },
-      { cle: 'actif', libelle: 'Actif', format: 'booleen' },
-    ],
-    actions: [
-      {
-        libelle: 'Saisir les notes',
-        icone: 'bi-pencil-square',
-        apparence: 'btn-outline-primary',
-        vers: (l) => ((l.formation_ids || [])[0]
-          ? `/formations/${l.formation_ids[0]}/modules/${l.id}/notes`
-          : null),
-      },
-    ],
-    note: 'Source : /api/formations/ref/modules/',
-  },
 
-  controle_notes: {
-    id: 'controle_notes',
-    titre: 'Contrôle des notes',
-    fil: 'Évaluations',
-    icone: 'bi-clipboard-data',
-    introduction: 'Contrôle et validation des notes saisies : historique et '
-      + 'workflow de validation par module.',
-    endpoint: '/formations/ref/modules/',
-    recherche: { param: 'search', libelle: 'Rechercher un module', placeholder: 'Intitulé…' },
-    colonnes: [
-      { cle: 'intitule', libelle: 'Module' },
-      {
-        cle: 'formations',
-        libelle: 'Formations',
-        valeur: (l) => (l.formations || []).map((f) => f.intitule).join(', '),
-      },
-      { cle: 'actif', libelle: 'Actif', format: 'booleen' },
-    ],
-    actions: [
-      {
-        libelle: 'Ouvrir le contrôle',
-        icone: 'bi-box-arrow-up-right',
-        apparence: 'btn-outline-secondary',
-        vers: (l) => ((l.formation_ids || [])[0]
-          ? `/formations/${l.formation_ids[0]}/modules/${l.id}/notes`
-          : null),
-      },
-    ],
-    note: 'Source : /api/formations/ref/modules/ + workflow de notes',
-  },
 
   // NOTE — `deliberations_notes` et `resultats_notes` ont été SUPPRIMÉS.
   // Ces descripteurs pointaient sur `/formations/list/` (des formations, pas
@@ -658,534 +817,82 @@ export const ECRANS = {
   //   - Délibérations → `/api/jurys/` (moteur LMD/ECTS, source de vérité) ;
   //   - Résultats    → `/api/evaluations-academiques/resultats/{ecue,ue,semestre}/`.
 
-  releves_notes: {
-    id: 'releves_notes',
-    type: 'documents',
-    titre: 'Relevés de notes',
-    fil: 'Évaluations',
-    icone: 'bi-file-earmark-ruled',
-    introduction: 'Relevés individuels produits par le serveur. Un étudiant '
-      + 'doit être sélectionné : le fichier est généré puis téléchargé.',
-    documents: [
-      {
-        id: 'releve_individuel',
-        libelle: 'Relevé individuel',
-        icone: 'bi-person-lines-fill',
-        description: 'Fiche de notes complète (PDF ou Excel).',
-        parametres: [{ cle: 'etudiant', libelle: 'Étudiant', type: 'select', ...RESSOURCES.etudiants }],
-        formats: [
-          { id: 'pdf', libelle: 'PDF', suffixe: 'pdf', icone: 'bi-file-earmark-pdf' },
-          { id: 'excel', libelle: 'Excel', suffixe: 'xlsx', icone: 'bi-file-earmark-excel' },
-        ],
-        chemin: (v, f) => `/participant/${v.etudiant}/notes-fiche/export/${f.id}/`,
-      },
-      {
-        id: 'liste_classe_notes',
-        libelle: 'Liste de classe',
-        icone: 'bi-people',
-        description: 'Liste des auditeurs par groupe (PDF ou Excel).',
-        parametres: [
-          { cle: 'groupe', libelle: 'Groupe (facultatif)', type: 'select', requis: false, ...RESSOURCES.groupes },
-        ],
-        formats: [
-          { id: 'pdf', libelle: 'PDF', suffixe: 'pdf', icone: 'bi-file-earmark-pdf' },
-          { id: 'excel', libelle: 'Excel', suffixe: 'xlsx', icone: 'bi-file-earmark-excel' },
-        ],
-        chemin: (v, f) => `/exports/participants/liste-classe/${f.id}/?${new URLSearchParams(
-          Object.fromEntries(Object.entries(v).filter(([, x]) => x)),
-        ).toString()}`,
-      },
-    ],
-    note: 'Sources : /api/participant/, /api/exports/',
-  },
 
   // -------------------------------------------------------------------- JURYS
-  jury_composition: {
-    id: 'jury_composition',
-    titre: 'Composition des jurys',
-    fil: 'Jurys',
-    icone: 'bi-people',
-    introduction: 'Membres de chaque session de jury (président, membres, '
-      + 'suppléants) et leur rôle.',
-    endpoint: '/juries/sessions/',
-    // Priorités alignées sur le CONTRAT RÉEL de `_serializer_session` :
-    // SessionJury n'a pas de `reference`/`date_debut`/`date_fin`.
-    priorite: ['libelle', 'statut', 'type_session', 'annee_academique_id', 'niveau_id', 'ref_formation_id'],
-    detail: {
-      titre: (l) => `Composition — ${l.libelle || l.id}`,
-      sousTitre: 'Membres du jury',
-      endpoint: (l) => `/juries/sessions/${l.id}/membres/`,
-      // Contrat réel de `_serializer_membre` (nom + nom_affiche + fonction).
-      priorite: ['nom', 'nom_affiche', 'fonction', 'user_id'],
-    },
-    note: 'Source : /api/juries/sessions/ + /membres/',
-  },
 
-  jury_deliberations: {
-    id: 'jury_deliberations',
-    titre: 'Délibérations de jury',
-    fil: 'Jurys',
-    icone: 'bi-chat-square-text',
-    introduction: 'Propositions calculées et décisions prises en délibération. '
-      + 'Les propositions et décisions ne sont jamais supprimées (append-only).',
-    endpoint: '/juries/sessions/',
-    priorite: ['libelle', 'statut', 'type_session', 'annee_academique_id', 'niveau_id', 'ref_formation_id'],
-    detail: {
-      titre: (l) => `Délibération — ${l.libelle || l.id}`,
-      sousTitre: 'Décisions de la session',
-      // `/decisions/` est une saisie (POST) : la consultation passe par le
-      // détail de session, qui expose déjà `decisions` et `propositions`.
-      endpoint: (l) => `/juries/sessions/${l.id}/`,
-      // Champs réels de `_serializer_session(detail=True)`.
-      priorite: ['matricule', 'nom', 'decision', 'moyenne_generale', 'credits_acquis', 'mention', 'decision_manuelle', 'justification'],
-    },
-    actions: [
-      {
-        libelle: 'Calculer les propositions',
-        icone: 'bi-calculator',
-        apparence: 'btn-outline-primary',
-        methode: 'POST',
-        chemin: (l) => `/juries/sessions/${l.id}/action/`,
-        corps: { action: 'calcul' },
-        confirmation: 'Calculer les propositions de cette session ?',
-        succes: 'Propositions calculées.',
-      },
-    ],
-    note: 'Source : /api/juries/sessions/ + /decisions/ + /action/',
-  },
 
-  jury_pv: {
-    id: 'jury_pv',
-    titre: 'PV de jury',
-    fil: 'Jurys',
-    icone: 'bi-file-earmark-text',
-    introduction: 'Procès-verbaux : génération, signature et publication. Actes '
-      + 'réservés au personnel autorisé et tracés côté serveur.',
-    endpoint: '/juries/sessions/',
-    priorite: ['libelle', 'statut', 'type_session', 'annee_academique_id', 'niveau_id', 'ref_formation_id'],
-    detail: {
-      titre: (l) => `PV — ${l.libelle || l.id}`,
-      sousTitre: 'Procès-verbal',
-      // `/pv/` renvoie un FICHIER (FileResponse) : il ne peut pas alimenter
-      // un tableau de détail JSON. Le PV est exposé par le détail de session.
-      endpoint: (l) => `/juries/sessions/${l.id}/`,
-      // Champs réels de `_serializer_pv` (exposés sous `pv`).
-      priorite: ['sha256', 'genere_le', 'fichier'],
-    },
-    actions: [
-      {
-        libelle: 'Générer le PV',
-        icone: 'bi-file-earmark-plus',
-        apparence: 'btn-outline-primary',
-        methode: 'POST',
-        chemin: (l) => `/juries/sessions/${l.id}/action/`,
-        corps: { action: 'generer_pv' },
-        confirmation: 'Générer le procès-verbal de cette session ?',
-        detail: 'Réservé au personnel autorisé (contrôle serveur).',
-        succes: 'PV généré.',
-      },
-    ],
-    note: 'Source : /api/juries/sessions/ + /pv/ + /action/',
-  },
 
-  jury_validation: {
-    id: 'jury_validation',
-    titre: 'Validation des résultats',
-    fil: 'Jurys',
-    icone: 'bi-patch-check',
-    introduction: 'Transition, vérification des décisions puis publication des '
-      + 'résultats de la session.',
-    endpoint: '/juries/sessions/',
-    priorite: ['libelle', 'statut', 'type_session', 'annee_academique_id', 'niveau_id', 'ref_formation_id'],
-    actions: [
-      {
-        libelle: 'Vérifier les décisions',
-        icone: 'bi-list-check',
-        apparence: 'btn-outline-secondary',
-        methode: 'POST',
-        chemin: (l) => `/juries/sessions/${l.id}/action/`,
-        corps: { action: 'verifier_decisions' },
-        succes: 'Décisions vérifiées.',
-      },
-      {
-        libelle: 'Transition',
-        icone: 'bi-arrow-right-circle',
-        apparence: 'btn-outline-primary',
-        methode: 'POST',
-        chemin: (l) => `/juries/sessions/${l.id}/action/`,
-        corps: { action: 'transition' },
-        confirmation: 'Faire avancer la session à l\'étape suivante ?',
-        succes: 'Session mise à jour.',
-      },
-      {
-        libelle: 'Publier',
-        icone: 'bi-megaphone',
-        apparence: 'btn-outline-success',
-        methode: 'POST',
-        chemin: (l) => `/juries/sessions/${l.id}/action/`,
-        corps: { action: 'publier' },
-        confirmation: 'Publier les résultats de cette session ?',
-        detail: 'Acte officiel : publication journalisée, réservée au personnel autorisé.',
-        variant: 'danger',
-        succes: 'Résultats publiés.',
-      },
-    ],
-    note: 'Source : /api/juries/sessions/ + /action/',
-  },
 
   // -------------------------------------------------------------- DIPLÔMATION
-  eligibilite_diplome: {
-    id: 'eligibilite_diplome',
-    titre: 'Éligibilité aux diplômes',
-    fil: 'Diplômation',
-    icone: 'bi-person-check',
-    introduction: 'Dossiers de diplôme constitués et leur état de validation '
-      + '(crédits acquis, décisions de jury, pièces).',
-    endpoint: '/graduation/diplomes/',
-    recherche: { param: 'search', libelle: 'Rechercher', placeholder: 'Nom, matricule…' },
-    priorite: ['reference', 'etudiant', 'diplome', 'statut', 'annee_academique', 'date_validation'],
-    note: 'Source : /api/graduation/diplomes/',
-  },
 
-  attestations: {
-    id: 'attestations',
-    titre: 'Attestations',
-    fil: 'Diplômation',
-    icone: 'bi-file-earmark-check',
-    introduction: 'Attestations de réussite produites à partir des diplômes '
-      + 'validés (édition PDF serveur).',
-    endpoint: '/graduation/diplomes/',
-    priorite: ['reference', 'etudiant', 'diplome', 'statut', 'date_validation'],
-    actions: [
-      {
-        libelle: 'Attestation PDF',
-        icone: 'bi-file-earmark-pdf',
-        apparence: 'btn-outline-primary',
-        telechargement: true,
-        chemin: (l) => `/graduation/diplomes/${l.id}/pdf/`,
-        succes: 'Attestation téléchargée.',
-      },
-    ],
-    note: 'Source : /api/graduation/diplomes/ + /pdf/',
-  },
 
-  certificats: {
-    id: 'certificats',
-    titre: 'Certificats & modèles',
-    fil: 'Diplômation',
-    icone: 'bi-patch-plus',
-    introduction: 'Modèles de documents officiels (diplômes, attestations, '
-      + 'certificats) utilisés pour la génération.',
-    endpoint: '/graduation/modeles/',
-    priorite: ['code', 'libelle', 'type', 'actif', 'version'],
-    note: 'Source : /api/graduation/modeles/',
-  },
 
-  registres_diplomes: {
-    id: 'registres_diplomes',
-    titre: 'Registres des diplômes',
-    fil: 'Diplômation',
-    icone: 'bi-journals',
-    introduction: 'Registres officiels de délivrance (numérotation, mentions, '
-      + 'vérification par jeton).',
-    endpoint: '/graduation/registres/',
-    priorite: ['reference', 'libelle', 'annee_academique', 'statut', 'nombre_diplomes'],
-    note: 'Source : /api/graduation/registres/',
-  },
 
   // ------------------------------------------------------- FINANCES ÉTUDIANTES
-  frais_scolarite: {
-    id: 'frais_scolarite',
-    titre: 'Frais de scolarité',
-    fil: 'Finances étudiantes',
-    icone: 'bi-receipt',
-    introduction: 'Échéanciers de frais par étudiant : montants, échéances et '
-      + 'soldes.',
-    endpoint: '/finances-etudiantes/echeanciers/',
-    recherche: { param: 'search', libelle: 'Rechercher', placeholder: 'Étudiant, référence…' },
-    priorite: ['reference', 'etudiant', 'montant_total', 'montant_paye', 'statut', 'annee_academique'],
-    detail: {
-      titre: (l) => `Échéances — ${l.reference || l.id}`,
-      sousTitre: 'Lignes de l\'échéancier',
-      endpoint: (l) => `/finances-etudiantes/echeanciers/${l.id}/lignes/`,
-      priorite: ['libelle', 'montant', 'date_echeance', 'statut', 'paye'],
-    },
-    note: 'Source : /api/finances-etudiantes/echeanciers/ + /lignes/',
-  },
 
-  factures: {
-    id: 'factures',
-    titre: 'Factures',
-    fil: 'Finances étudiantes',
-    icone: 'bi-file-earmark-plus',
-    introduction: 'Facturation des échéanciers : la facture est générée par le '
-      + 'serveur à partir des lignes de l\'échéancier.',
-    endpoint: '/finances-etudiantes/echeanciers/',
-    priorite: ['reference', 'etudiant', 'montant_total', 'statut', 'annee_academique'],
-    actions: [
-      {
-        libelle: 'Générer la facture',
-        icone: 'bi-receipt-cutoff',
-        apparence: 'btn-outline-primary',
-        methode: 'POST',
-        chemin: (l) => `/finances-etudiantes/echeanciers/${l.id}/facture/`,
-        confirmation: 'Générer la facture de cet échéancier ?',
-        succes: 'Facture générée.',
-      },
-    ],
-    note: 'Source : /api/finances-etudiantes/echeanciers/ + /facture/',
-  },
 
-  paiements: {
-    id: 'paiements',
-    titre: 'Paiements',
-    fil: 'Finances étudiantes',
-    icone: 'bi-cash-stack',
-    introduction: 'Paiements enregistrés et leur confirmation (validation '
-      + 'serveur, acte tracé).',
-    endpoint: '/finances-etudiantes/paiements/',
-    recherche: { param: 'search', libelle: 'Rechercher', placeholder: 'Référence, étudiant…' },
-    filtres: [
-      { param: 'date_debut', libelle: 'Depuis le', type: 'date' },
-      { param: 'date_fin', libelle: 'Jusqu\'au', type: 'date' },
-    ],
-    priorite: ['reference', 'etudiant', 'montant', 'mode_paiement', 'date_paiement', 'statut'],
-    actions: [
-      {
-        libelle: 'Confirmer',
-        icone: 'bi-check2-circle',
-        apparence: 'btn-outline-success',
-        methode: 'POST',
-        chemin: (l) => `/finances-etudiantes/paiements/${l.id}/confirmer/`,
-        confirmation: 'Confirmer ce paiement ?',
-        detail: 'La confirmation met à jour l\'échéancier et le reçu.',
-        succes: 'Paiement confirmé.',
-      },
-    ],
-    note: 'Source : /api/finances-etudiantes/paiements/ + /confirmer/',
-  },
 
-  recus: {
-    id: 'recus',
-    titre: 'Reçus & quittances',
-    fil: 'Finances étudiantes',
-    icone: 'bi-receipt-cutoff',
-    introduction: 'Quittances émises pour les paiements confirmés.',
-    endpoint: '/finances-etudiantes/quittances/',
-    recherche: { param: 'search', libelle: 'Rechercher', placeholder: 'N° de quittance…' },
-    priorite: ['numero', 'etudiant', 'paiement', 'montant', 'date_emission'],
-    note: 'Source : /api/finances-etudiantes/quittances/',
-  },
 
-  bourses: {
-    id: 'bourses',
-    titre: 'Bourses & remboursements',
-    fil: 'Finances étudiantes',
-    icone: 'bi-gift',
-    introduction: 'Remboursements et régularisations (bourses, trop-perçus, '
-      + 'annulations).',
-    endpoint: '/finances-etudiantes/remboursements/',
-    priorite: ['reference', 'etudiant', 'montant', 'motif', 'statut', 'date_creation'],
-    note: 'Source : /api/finances-etudiantes/remboursements/',
-  },
 
-  situation_financiere: {
-    id: 'situation_financiere',
-    titre: 'Situation financière',
-    fil: 'Finances étudiantes',
-    icone: 'bi-clipboard-data',
-    introduction: 'Suivi des impayés (relances) et rapprochements bancaires.',
-    onglets: [
-      {
-        id: 'relances',
-        libelle: 'Relances',
-        icone: 'bi-bell',
-        endpoint: '/finances-etudiantes/relances/',
-        priorite: ['reference', 'etudiant', 'niveau', 'montant_du', 'date_envoi', 'statut'],
-        note: 'Source : /api/finances-etudiantes/relances/',
-      },
-      {
-        id: 'rapprochements',
-        libelle: 'Rapprochements',
-        icone: 'bi-bank',
-        endpoint: '/finances-etudiantes/rapprochements/',
-        priorite: ['reference', 'date', 'montant', 'statut', 'banque'],
-        note: 'Source : /api/finances-etudiantes/rapprochements/',
-      },
-    ],
-  },
 
   // ------------------------------------------------------------------- STAGES
-  stages_conventions: {
-    id: 'stages_conventions',
-    titre: 'Conventions de stage',
-    fil: 'Stages',
-    icone: 'bi-file-earmark-text',
-    introduction: 'Conventions : création, validation, signature et édition PDF.',
-    endpoint: '/stages/conventions/',
-    recherche: { param: 'search', libelle: 'Rechercher', placeholder: 'Étudiant, structure…' },
-    priorite: ['reference', 'etudiant', 'organisme', 'date_debut', 'date_fin', 'statut'],
-    actions: [
-      {
-        libelle: 'Étape suivante',
-        icone: 'bi-arrow-right-circle',
-        apparence: 'btn-outline-primary',
-        methode: 'POST',
-        chemin: (l) => `/stages/conventions/${l.id}/transition/`,
-        confirmation: 'Faire avancer cette convention ?',
-        succes: 'Convention mise à jour.',
-      },
-      {
-        libelle: 'PDF',
-        icone: 'bi-file-earmark-pdf',
-        apparence: 'btn-outline-secondary',
-        telechargement: true,
-        chemin: (l) => `/stages/conventions/${l.id}/pdf/`,
-        succes: 'Convention téléchargée.',
-      },
-    ],
-    note: 'Source : /api/stages/conventions/',
-  },
-
-  stages_organismes: {
-    id: 'stages_organismes',
-    titre: "Structures d'accueil",
-    fil: 'Stages',
-    icone: 'bi-building',
-    introduction: 'Structures d\'accueil référencées (entreprises, clubs, '
-      + 'administrations).',
-    endpoint: '/stages/organismes/',
-    recherche: { param: 'search', libelle: 'Rechercher', placeholder: 'Raison sociale…' },
-    priorite: ['nom', 'raison_sociale', 'type', 'ville', 'contact', 'actif'],
-    note: 'Source : /api/stages/organismes/',
-  },
-
-  stages_affectations: {
-    id: 'stages_affectations',
-    titre: 'Affectations & tuteurs',
-    fil: 'Stages',
-    icone: 'bi-person-badge',
-    introduction: 'Tuteurs (pédagogiques et professionnels) et affectations des '
-      + 'stagiaires.',
-    endpoint: '/stages/tuteurs/',
-    priorite: ['nom', 'prenoms', 'type', 'organisme', 'email', 'telephone'],
-    note: 'Source : /api/stages/tuteurs/',
-  },
-
-  stages_suivi: {
-    id: 'stages_suivi',
-    titre: 'Suivi des stages',
-    fil: 'Stages',
-    icone: 'bi-eye',
-    introduction: 'Conventions en cours : suivi des périodes, des validations '
-      + 'et des alertes.',
-    endpoint: '/stages/conventions/',
-    recherche: { param: 'search', libelle: 'Rechercher', placeholder: 'Étudiant, structure…' },
-    priorite: ['reference', 'etudiant', 'organisme', 'date_debut', 'date_fin', 'statut'],
-    note: 'Source : /api/stages/conventions/',
-  },
-
-  stages_evaluations: {
-    id: 'stages_evaluations',
-    titre: 'Évaluations de stage',
-    fil: 'Stages',
-    icone: 'bi-star',
-    introduction: 'Évaluations renseignées par les tuteurs et les jurys de stage.',
-    endpoint: '/stages/evaluations/',
-    priorite: ['convention', 'etudiant', 'evaluateur', 'note', 'statut', 'date_evaluation'],
-    note: 'Source : /api/stages/evaluations/',
-  },
-
   // ----------------------------------------------------------------- PERSONNEL
-  rh_agents: {
-    id: 'rh_agents',
-    titre: 'Personnel administratif',
-    fil: 'Personnel',
-    icone: 'bi-person-badge',
-    introduction: 'Agents de l\'établissement : fonctions, services et '
-      + 'affectations.',
-    endpoint: '/rh/agents/',
-    recherche: { param: 'search', libelle: 'Rechercher', placeholder: 'Nom, matricule…' },
-    priorite: ['matricule', 'nom', 'prenoms', 'fonction', 'service', 'statut'],
-    detail: {
-      titre: (l) => `Disponibilités — ${l.nom || ''} ${l.prenoms || ''}`.trim(),
-      sousTitre: 'Disponibilités déclarées',
-      endpoint: (l) => `/rh/agents/${l.id}/disponibilites/`,
-      priorite: ['date', 'jour', 'heure_debut', 'heure_fin', 'type', 'motif'],
-    },
-    actions: [
-      {
-        libelle: 'Affecter',
-        icone: 'bi-arrow-left-right',
-        apparence: 'btn-outline-primary',
-        methode: 'POST',
-        chemin: (l) => `/rh/agents/${l.id}/affecter/`,
-        confirmation: 'Ouvrir l\'affectation de cet agent ?',
-        detail: 'L\'affectation effective est enregistrée par le serveur après contrôle.',
-        erreur: 'Affectation refusée par le serveur.',
-        succes: 'Affectation enregistrée.',
-      },
-    ],
-    note: 'Source : /api/rh/agents/ + /disponibilites/',
-  },
 
-  rh_affectations: {
-    id: 'rh_affectations',
-    titre: 'Affectations du personnel',
-    fil: 'Personnel',
-    icone: 'bi-diagram-2',
-    introduction: 'Services et fonctions du référentiel RH utilisés pour les '
-      + 'affectations.',
-    onglets: [
-      {
-        id: 'services',
-        libelle: 'Services',
-        icone: 'bi-building',
-        endpoint: '/rh/services/',
-        recherche: { param: 'q', libelle: 'Rechercher un service' },
-        note: 'Source : /api/rh/services/',
-      },
-      {
-        id: 'fonctions',
-        libelle: 'Fonctions',
-        icone: 'bi-briefcase',
-        endpoint: '/rh/fonctions/',
-        note: 'Source : /api/rh/fonctions/',
-      },
-    ],
-  },
 
-  rh_disponibilites: {
-    id: 'rh_disponibilites',
-    titre: 'Disponibilités des agents',
-    fil: 'Personnel',
-    icone: 'bi-calendar-check',
-    introduction: 'Disponibilités déclarées par agent (sélectionner un agent '
-      + 'pour voir ses créneaux).',
-    endpoint: '/rh/agents/',
-    recherche: { param: 'search', libelle: 'Rechercher', placeholder: 'Nom, matricule…' },
-    priorite: ['matricule', 'nom', 'prenoms', 'fonction', 'service'],
-    detail: {
-      titre: (l) => `Disponibilités — ${l.nom || ''} ${l.prenoms || ''}`.trim(),
-      sousTitre: 'Créneaux déclarés',
-      endpoint: (l) => `/rh/agents/${l.id}/disponibilites/`,
-      priorite: ['date', 'jour', 'heure_debut', 'heure_fin', 'type', 'motif'],
-    },
-    note: 'Source : /api/rh/agents/ + /disponibilites/',
-  },
 
-  rh_documents: {
-    id: 'rh_documents',
-    titre: 'Documents RH',
-    fil: 'Personnel',
-    icone: 'bi-folder-symlink',
-    introduction: 'Documents administratifs du personnel déposés et classés.',
-    endpoint: '/rh/documents/',
-    priorite: ['reference', 'type', 'agent', 'date_depot', 'statut'],
-    note: 'Source : /api/rh/documents/',
-  },
 
   // ------------------------------------------------------------ ADMINISTRATION
+
+
+
+
+
+  // -------------------------------------------------------------- STATISTIQUES
+  organisation_services: {
+    id: 'organisation_services',
+    titre: 'Services',
+    fil: 'Administration',
+    icone: 'bi-building',
+    introduction: 'Services et secrétariats, hiérarchisés sous les départements.',
+    endpoint: '/habilitations/organisation/services/',
+    recherche: { param: 'q', libelle: 'Rechercher un service' },
+    filtres: [{ param: 'departement', libelle: 'Département', type: 'select', ...RESSOURCES.departements }],
+    colonnes: [
+      { cle: 'numero', libelle: 'Numéro' },
+      { cle: 'nom', libelle: 'Nom' },
+      { cle: 'departement_libelle', libelle: 'Département' },
+      { cle: 'actif', libelle: 'Actif', format: 'booleen' },
+    ],
+    detail: {
+      titre: (l) => `Comptes rattachés — ${l.nom || l.numero}`,
+      sousTitre: 'Comptes utilisateurs',
+      endpoint: (l) => `/habilitations/organisation/services/${l.id}/comptes/`,
+      priorite: ['username', 'nom', 'prenoms', 'statut', 'roles'],
+    },
+    note: 'Source : /api/habilitations/organisation/services/',
+  },
+  organisation_departements: {
+    id: 'organisation_departements',
+    titre: 'Départements',
+    fil: 'Administration',
+    icone: 'bi-diagram-3',
+    introduction: 'Départements rattachés aux directions.',
+    endpoint: '/habilitations/organisation/departements/',
+    filtres: [{ param: 'direction', libelle: 'Direction', type: 'select', ...RESSOURCES.directions }],
+    colonnes: [
+      { cle: 'code', libelle: 'Code' },
+      { cle: 'libelle', libelle: 'Libellé' },
+      { cle: 'direction_libelle', libelle: 'Direction' },
+      { cle: 'actif', libelle: 'Actif', format: 'booleen' },
+    ],
+    detail: {
+      titre: (l) => `Comptes rattachés — ${l.libelle || l.code}`,
+      sousTitre: 'Comptes utilisateurs',
+      endpoint: (l) => `/habilitations/organisation/departements/${l.id}/comptes/`,
+      priorite: ['username', 'nom', 'prenoms', 'statut', 'roles'],
+    },
+    note: 'Source : /api/habilitations/organisation/departements/',
+  },
   organisation_directions: {
     id: 'organisation_directions',
     titre: 'Directions',
@@ -1212,130 +919,6 @@ export const ECRANS = {
     },
     note: 'Source : /api/habilitations/organisation/directions/',
   },
-
-  organisation_departements: {
-    id: 'organisation_departements',
-    titre: 'Départements',
-    fil: 'Administration',
-    icone: 'bi-diagram-3',
-    introduction: 'Départements rattachés aux directions.',
-    endpoint: '/habilitations/organisation/departements/',
-    filtres: [{ param: 'direction', libelle: 'Direction', type: 'select', ...RESSOURCES.directions }],
-    colonnes: [
-      { cle: 'code', libelle: 'Code' },
-      { cle: 'libelle', libelle: 'Libellé' },
-      { cle: 'direction_libelle', libelle: 'Direction' },
-      { cle: 'actif', libelle: 'Actif', format: 'booleen' },
-    ],
-    detail: {
-      titre: (l) => `Comptes rattachés — ${l.libelle || l.code}`,
-      sousTitre: 'Comptes utilisateurs',
-      endpoint: (l) => `/habilitations/organisation/departements/${l.id}/comptes/`,
-      priorite: ['username', 'nom', 'prenoms', 'statut', 'roles'],
-    },
-    note: 'Source : /api/habilitations/organisation/departements/',
-  },
-
-  organisation_services: {
-    id: 'organisation_services',
-    titre: 'Services',
-    fil: 'Administration',
-    icone: 'bi-building',
-    introduction: 'Services et secrétariats, hiérarchisés sous les départements.',
-    endpoint: '/habilitations/organisation/services/',
-    recherche: { param: 'q', libelle: 'Rechercher un service' },
-    filtres: [{ param: 'departement', libelle: 'Département', type: 'select', ...RESSOURCES.departements }],
-    colonnes: [
-      { cle: 'numero', libelle: 'Numéro' },
-      { cle: 'nom', libelle: 'Nom' },
-      { cle: 'departement_libelle', libelle: 'Département' },
-      { cle: 'actif', libelle: 'Actif', format: 'booleen' },
-    ],
-    detail: {
-      titre: (l) => `Comptes rattachés — ${l.nom || l.numero}`,
-      sousTitre: 'Comptes utilisateurs',
-      endpoint: (l) => `/habilitations/organisation/services/${l.id}/comptes/`,
-      priorite: ['username', 'nom', 'prenoms', 'statut', 'roles'],
-    },
-    note: 'Source : /api/habilitations/organisation/services/',
-  },
-
-  courrier_documents: {
-    id: 'courrier_documents',
-    titre: 'Courrier / Documents',
-    fil: 'Administration',
-    icone: 'bi-envelope-paper',
-    introduction: 'Courriers entrants/sortants et documents officiels, avec '
-      + 'leurs circuits de validation.',
-    onglets: [
-      {
-        id: 'courriers',
-        libelle: 'Courriers',
-        icone: 'bi-envelope',
-        endpoint: '/administrations/courriers/',
-        priorite: ['reference', 'objet', 'sens', 'date', 'statut', 'destinataire'],
-        actions: [
-          {
-            libelle: 'Étape suivante',
-            icone: 'bi-arrow-right-circle',
-            apparence: 'btn-outline-primary',
-            methode: 'POST',
-            chemin: (l) => `/administrations/courriers/${l.id}/transition/`,
-            confirmation: 'Faire avancer ce courrier ?',
-            succes: 'Courrier mis à jour.',
-          },
-        ],
-        note: 'Source : /api/administrations/courriers/',
-      },
-      {
-        id: 'documents',
-        libelle: 'Documents officiels',
-        icone: 'bi-file-earmark-text',
-        endpoint: '/administrations/documents/',
-        priorite: ['reference', 'titre', 'type', 'date', 'statut', 'version'],
-        actions: [
-          {
-            libelle: 'Étape suivante',
-            icone: 'bi-arrow-right-circle',
-            apparence: 'btn-outline-primary',
-            methode: 'POST',
-            chemin: (l) => `/administrations/documents/${l.id}/transition/`,
-            confirmation: 'Faire avancer ce document ?',
-            succes: 'Document mis à jour.',
-          },
-        ],
-        note: 'Source : /api/administrations/documents/',
-      },
-    ],
-  },
-
-  reunions_missions: {
-    id: 'reunions_missions',
-    titre: 'Réunions & missions',
-    fil: 'Administration',
-    icone: 'bi-calendar-event',
-    introduction: 'Réunions institutionnelles et ordres de mission.',
-    onglets: [
-      {
-        id: 'reunions',
-        libelle: 'Réunions',
-        icone: 'bi-people',
-        endpoint: '/administrations/reunions/',
-        priorite: ['objet', 'date', 'lieu', 'statut', 'organisateur'],
-        note: 'Source : /api/administrations/reunions/',
-      },
-      {
-        id: 'missions',
-        libelle: 'Missions',
-        icone: 'bi-airplane',
-        endpoint: '/administrations/missions/',
-        priorite: ['objet', 'agent', 'date_debut', 'date_fin', 'lieu', 'statut'],
-        note: 'Source : /api/administrations/missions/',
-      },
-    ],
-  },
-
-  // -------------------------------------------------------------- STATISTIQUES
   stats_candidatures: {
     id: 'stats_candidatures',
     type: 'indicateurs',
@@ -1534,9 +1117,12 @@ export const ECRANS = {
     introduction: 'Référentiel des formations LMD.',
     endpoint: '/formations/ref/formations/',
     colonnes: [
-      { cle: 'id', libelle: 'ID' },
       { cle: 'code', libelle: 'Code' },
       { cle: 'intitule', libelle: 'Intitulé' },
+      // Qualification officielle : elle vient de la source métier, en lecture
+      // seule (elle ne s'édite pas depuis l'écran).
+      { cle: 'filiere_code', libelle: 'Filière' },
+      { cle: 'perimetre', libelle: 'Périmètre' },
       { cle: 'type_diplome', libelle: 'Diplôme' },
       { cle: 'domaine', libelle: 'Domaine' },
       { cle: 'mention', libelle: 'Mention' },
@@ -1545,14 +1131,18 @@ export const ECRANS = {
       { cle: 'actif', libelle: 'Actif', format: 'booleen' },
     ],
     note: 'Source : /api/formations/ref/formations/ — descripteur de cycle (modèle 04.4).',
+    formulaire: FORMULAIRE_FORMATIONS,
   },
 
   ref_filieres: {
     id: 'ref_filieres',
-    titre: 'Filières (référentiel)',
+    titre: 'Types de formation (référentiel)',
     fil: 'Référentiels',
     icone: 'bi-signpost-split',
-    introduction: 'Types de formation du référentiel.',
+    introduction: 'Cycles du référentiel LMD (licence, master, formation '
+      + 'initiale ou continue). Les filières métier F01–F08 ne sont pas des '
+      + 'types de formation : elles qualifient les cycles, cf. écran '
+      + '« Formations ».',
     endpoint: '/scolarite/ref/types-formation/',
     colonnes: [
       { cle: 'code', libelle: 'Code', largeur: '26%' },
@@ -1560,14 +1150,18 @@ export const ECRANS = {
       { cle: 'actif', libelle: 'Actif', format: 'booleen', largeur: '150px' },
     ],
     note: 'Source : /api/scolarite/ref/types-formation/',
+    formulaire: FORMULAIRE_TYPES_FORMATION,
   },
 
   ref_ue_ecue: {
     id: 'ref_ue_ecue',
+    type: 'ue_ecue',
     titre: 'UE / ECUE (référentiel)',
     fil: 'Référentiels',
     icone: 'bi-collection',
-    introduction: "Unités d'enseignement et ECUE portés par les maquettes LMD.",
+    introduction: "Unités d'enseignement et ECUE des maquettes LMD, avec "
+      + 'création, modification, suppression et cycle de vie '
+      + 'Brouillon → Activé → Désactivé.',
     endpoint: '/scolarite/maquettes/',
     priorite: ['code', 'intitule', 'statut', 'niveau', 'annee_academique'],
     detail: {
@@ -1596,6 +1190,7 @@ export const ECRANS = {
       { cle: 'actif', libelle: 'Actif', format: 'booleen' },
     ],
     note: 'Source : /api/scolarite/ref/niveaux/',
+    formulaire: FORMULAIRE_NIVEAUX,
   },
 
   ref_semestres: {
@@ -1614,6 +1209,7 @@ export const ECRANS = {
       { cle: 'actif', libelle: 'Actif', format: 'booleen' },
     ],
     note: 'Source : /api/scolarite/ref/semestres/',
+    formulaire: FORMULAIRE_SEMESTRES,
   },
 
   ref_types_cours: {

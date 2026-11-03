@@ -229,6 +229,31 @@ def audit_api(request):
         ajouter(OK, 'CANEVAS_HORAIRE_OK',
                 f'{nb_creneaux} créneau(x) type(s) — durée moyenne '
                 f'{duree_canevas_heures()} h.')
+        # Le canevas existe, mais est-il CELUI du référentiel ? Un canevas qui
+        # dérive produit des plannings plausibles et faux : le dire ici, c'est
+        # le dire là où l'utilisateur pose la question « puis-je générer ? ».
+        from edts.moteur import canevas_officiel as CO
+
+        comparaison = CO.comparer_canevas([
+            (c.jour, c.heure_debut, c.heure_fin)
+            for c in CreneauTemplate.objects.all()
+        ])
+        if comparaison['chevauchements']:
+            ajouter(WARNING, 'CANEVAS_CHEVAUCHEMENT',
+                    f'{len(comparaison["chevauchements"])} paire(s) de créneaux se '
+                    'recouvrent : les contrôles de conflit (C1/C2/C3) ne sont pas '
+                    'garantis sur les intervalles communs.',
+                    'Supprimer ou corriger les créneaux qui se chevauchent.',
+                    {'chevauchements': comparaison['chevauchements'][:10]})
+        if comparaison['manquants'] or comparaison['non_prevus']:
+            ajouter(WARNING, 'CANEVAS_HORS_REFERENTIEL',
+                    f'Le canevas diffère du référentiel officiel : '
+                    f'{len(comparaison["manquants"])} créneau(x) officiel(s) '
+                    f'manquant(s), {len(comparaison["non_prevus"])} non prévu(s).',
+                    'Aligner les créneaux sur le canevas officiel '
+                    '(manage.py verifier_canevas).',
+                    {'manquants': comparaison['manquants'][:10],
+                     'non_prevus': comparaison['non_prevus'][:10]})
 
     salles = list(RefSalle.objects.filter(actif=True))
     if not salles:
@@ -394,11 +419,47 @@ def slots_api(request):
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def contraintes_api(request):
-    """GET /api/edts/lmd/constraints/ — C1→C10, séparées des préférences."""
+    """GET /api/edts/lmd/constraints/ — C1→C10, souples et préférences.
+
+    Expose la **politique effective** des contraintes souples : l'utilisateur
+    voit si elles sont actives, avec quelles bornes et quels poids. Aucune
+    valeur n'est appliquée sans être affichée ici.
+    """
+    from edts.moteur import contraintes as C
+
+    effectif = C.politique_effective()
     return Response({
         'dures': [{'code': code, 'libelle': libelle}
                   for code, libelle in LIBELLES_CONTRAINTES.items()],
         'avertissements': [LIBELLE_PREFERENCES],
+        'souples': {
+            'politique': C.politique_lisible(effectif['politique']),
+            # D'où viennent réellement les règles appliquées : sans cette
+            # information, un utilisateur ne peut pas savoir si le moteur suit
+            # les défauts du code, un réglage de déploiement ou SA décision.
+            'origine': effectif['origine'],
+            'reglage': (
+                {**effectif['reglage'],
+                 'politique': C.politique_lisible(
+                     effectif['reglage']['politique'])}
+                if effectif['reglage'] else None
+            ),
+            'actives_par_defaut': C.SOUPLES_DEFAUT['actives'],
+            'explication': (
+                'Contraintes souples (trous, séries de plus de '
+                'max_heures_consecutives, journées de plus de '
+                'max_heures_par_jour). Désactivées par défaut : aucune '
+                'pondération officielle n’est fournie par le référentiel, donc '
+                'les activer revient à une décision explicite de l’INJS. '
+                'Elles ne bloquent jamais un placement : elles produisent des '
+                'pénalités visibles (score).'),
+            'activation': (
+                'Admin Django › « GET-INJS – Politique des contraintes '
+                'souples » (sans redéploiement). Le réglage de déploiement '
+                'EDTS_CONTRAINTES_SOUPLES reste possible ; il est alors '
+                'surchargé par la ligne enregistrée.'),
+            'codes': list(C.CODES_SOUPLES),
+        },
         'capacite_inconnue': (
             'Une salle sans capacité renseignée (NULL) n’est jamais considérée '
             'comme « capacité suffisante » : C4 n’est pas vérifiable et le '
@@ -691,10 +752,15 @@ class _BesoinAffectation:
     TeachingNeed → AffectationPedagogique est préservée.
     """
 
+    # ``ecue_id`` est nécessaire : la validation (C8) distingue deux ancrages
+    # pédagogiques — l'affectation pédagogique, ou l'ECUE pour les cohortes
+    # importées. Sans cet attribut, rejouer la validation sur un EDT persisté
+    # levait un AttributeError (500) au lieu de rendre un verdict.
     __slots__ = ('affectation_pedagogique_id', 'annee_academique_id',
                  'ref_formation_id', 'groupe_id', 'enseignant_id', 'nature',
                  'type_enseignement', 'intitule', 'effectif', 'nb_seances',
-                 'duree_seance_heures', 'credits', 'volume_horaire')
+                 'duree_seance_heures', 'credits', 'volume_horaire',
+                 'ecue_id')
 
     def __init__(self, affectation, duree_heures, effectif):
         ap = affectation.affectation_pedagogique
@@ -713,6 +779,9 @@ class _BesoinAffectation:
         self.duree_seance_heures = duree_heures
         self.credits = 0
         self.volume_horaire = duree_heures
+        # Ancrage ECUE : connu via l'affectation pédagogique quand elle existe ;
+        # sinon `None` et C8 tranchera sur l'absence d'ancrage — jamais deviné.
+        self.ecue_id = ap.ecue_id if ap else None
 
 
 class _PlacementAffectation:
@@ -810,11 +879,34 @@ def _candidats_deplacement(affectation):
                     'salle_id': salle.pk, 'salle_nom': salle.nom,
                     'salle_capacite': salle.capacite,
                 })
-    return Response({
+    # Le plan EXISTANT est validé pour lui-même : quand il est déjà en
+    # violation, aucun déplacement ne peut être accepté (le candidat serait
+    # rejeté à cause d'une faute qu'il n'a pas causée). On renvoie donc la
+    # cause réelle au lieu d'une liste vide sans explication.
+    rapport_plan = V.validate_schedule(occupation)
+    violations_plan = [v.as_dict() for v in rapport_plan.violations]
+    reponse = {
         'affectation_id': affectation.pk,
         'nb_candidats': len(propositions),
         'candidats': propositions,
-    })
+        'plan_valide': rapport_plan.valide,
+        'violations_plan': violations_plan,
+        'warnings_plan': rapport_plan.warnings,
+    }
+    if not rapport_plan.valide:
+        codes = sorted({v['contrainte'] for v in violations_plan})
+        reponse['explication'] = (
+            'Le plan actuel de cet emploi du temps viole déjà '
+            f'{len(violations_plan)} contrainte(s) ({", ".join(codes)}). '
+            'Aucun déplacement ne peut être validé tant que ces points ne sont '
+            'pas corrigés : la position demandée serait refusée pour une faute '
+            'qu’elle n’a pas causée.'
+        )
+        reponse['action_recommandee'] = (
+            'Corrigez d’abord les séances signalées (ancrage pédagogique, salle '
+            'compatible, conflits), puis relancez le déplacement.'
+        )
+    return Response(reponse)
 
 
 @api_view(['GET', 'POST'])
@@ -1027,6 +1119,49 @@ def _contexte_pedagogique(a):
     }
 
 
+def _seances_filtrees(request, edt):
+    """Séances actives d'un EDT, filtrées par la requête — source unique.
+
+    Utilisée par la restitution JSON (``result_api``) ET par l'export XLSX :
+    un export ne peut donc pas contenir autre chose que ce que l'écran affiche
+    pour les mêmes filtres.
+    """
+    from edts.models import AffectationCreneau
+
+    qp = request.query_params
+    # Toutes les relations lues à l'affichage sont jointes ici : sans elles,
+    # `_contexte_pedagogique` (parcours, niveau, semestre, UE, ECUE, enseignant)
+    # émettait SIX requêtes par séance dans l'export XLSX (mesuré : 14 requêtes
+    # pour 2 séances, 134 pour 22 — `manage.py compteur_sql_getinjs`).
+    qs = (AffectationCreneau.objects
+          .filter(emploi_du_temps=edt, actif=True)
+          .select_related(
+              'creneau_template', 'salle', 'groupe', 'formation',
+              'groupe__annee_academique', 'affectation_pedagogique',
+              'affectation_pedagogique__parcours',
+              'affectation_pedagogique__niveau',
+              'affectation_pedagogique__semestre',
+              'affectation_pedagogique__ue',
+              'affectation_pedagogique__ecue',
+              'affectation_pedagogique__enseignant',
+          ))
+    for champ in ('groupe_id', 'salle_id', 'formation_id'):
+        valeur = _int(qp.get(champ))
+        if valeur:
+            qs = qs.filter(**{champ: valeur})
+    semaine = _int(qp.get('semaine'))
+    if semaine:
+        qs = qs.filter(semaine_debut__lte=semaine, semaine_fin__gte=semaine)
+    if qp.get('jour'):
+        qs = qs.filter(creneau_template__jour=qp['jour'])
+    enseignant = _int(qp.get('enseignant_id'))
+    if enseignant:
+        qs = qs.filter(affectation_pedagogique__enseignant_id=enseignant)
+    return qs.order_by('creneau_template__jour',
+                       'creneau_template__heure_debut', 'semaine_debut',
+                       'intitule')
+
+
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def result_api(request, pk):
@@ -1042,27 +1177,10 @@ def result_api(request, pk):
     if edt is None:
         return Response({'detail': 'EDT introuvable'},
                         status=status.HTTP_404_NOT_FOUND)
-    qp = request.query_params
-    qs = (AffectationCreneau.objects
-          .filter(emploi_du_temps=edt, actif=True)
-          .select_related('creneau_template', 'salle', 'groupe', 'formation',
-                          'affectation_pedagogique'))
-    for champ in ('groupe_id', 'salle_id', 'formation_id'):
-        valeur = _int(qp.get(champ))
-        if valeur:
-            qs = qs.filter(**{champ: valeur})
-    semaine = _int(qp.get('semaine'))
-    if semaine:
-        qs = qs.filter(semaine_debut__lte=semaine, semaine_fin__gte=semaine)
-    if qp.get('jour'):
-        qs = qs.filter(creneau_template__jour=qp['jour'])
-    enseignant = _int(qp.get('enseignant_id'))
-    if enseignant:
-        qs = qs.filter(affectation_pedagogique__enseignant_id=enseignant)
+    qs = _seances_filtrees(request, edt)
 
     seances = []
-    for a in qs.order_by('creneau_template__jour',
-                         'creneau_template__heure_debut', 'semaine_debut'):
+    for a in qs:
         ct = a.creneau_template
         ligne = {
             'id': a.pk,
@@ -1087,7 +1205,7 @@ def result_api(request, pk):
         'version': edt.version,
         'statut': edt.statut,
         'jours': [j for j, _ in JOUR_CHOICES],
-        'filtres': dict(qp),
+        'filtres': dict(request.query_params),
         'nb_seances': len(seances),
         'seances': seances,
     })
@@ -1124,6 +1242,283 @@ def grille_api(request, pk):
         'grille': grille_hebdomadaire(edt, semaine),
         'source': 'edts.services.grille_hebdomadaire (logique existante conservée)',
     })
+
+
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def export_xlsx_api(request, pk):
+    """GET /api/edts/lmd/{id}/export.xlsx/ — export tabulaire (Excel).
+
+    Même source de vérité que ``result_api`` (``_seances_filtrees``) : un
+    export ne peut pas montrer autre chose que l'écran pour les mêmes filtres
+    (``groupe_id``, ``salle_id``, ``formation_id``, ``enseignant_id``,
+    ``semaine``, ``jour``).
+
+    Deux feuilles sont produites :
+      - « Séances » : une ligne par séance active, en-têtes figés et filtres ;
+      - « Synthèse » : métadonnées de l'EDT et **décompte réel** des lignes.
+    Aucune ligne n'est ajoutée pour « remplir » un groupe absent, et un EDT
+    vide produit un classeur avec ses en-têtes et zéro ligne de données.
+    """
+    from io import BytesIO
+
+    from django.http import HttpResponse
+    from django.utils import timezone
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    from edts.models import EmploiDuTemps, JOUR_CHOICES
+
+    edt = EmploiDuTemps.objects.select_related('annee_academique').filter(pk=pk).first()
+    if edt is None:
+        return Response({'detail': 'EDT introuvable'},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    seances = list(_seances_filtrees(request, edt))
+    noms_jours = dict(JOUR_CHOICES)
+
+    classeur = Workbook()
+    feuille = classeur.active
+    feuille.title = 'Séances'
+
+    colonnes = [
+        ('Jour', 14), ('Début', 9), ('Fin', 9), ('Semaines', 11),
+        ('Nature', 12), ('Intitulé', 42), ('UE', 26), ('ECUE', 26),
+        ('Enseignant', 24), ('Groupe', 22), ('Parcours', 14),
+        ('Niveau', 10), ('Semestre', 12), ('Salle', 22),
+        ('Capacité', 10), ('Formation', 34), ('Statut', 10),
+    ]
+    entete_font = Font(bold=True, color='FFFFFF')
+    entete_fond = PatternFill('solid', fgColor='1F3B63')
+    for index, (libelle, largeur) in enumerate(colonnes, start=1):
+        cellule = feuille.cell(row=1, column=index, value=libelle)
+        cellule.font = entete_font
+        cellule.fill = entete_fond
+        cellule.alignment = Alignment(vertical='center', wrap_text=True)
+        feuille.column_dimensions[get_column_letter(index)].width = largeur
+    feuille.freeze_panes = 'A2'
+
+    for ligne, a in enumerate(seances, start=2):
+        ct = a.creneau_template
+        contexte = _contexte_pedagogique(a)
+        feuille.cell(row=ligne, column=1,
+                     value=noms_jours.get(ct.jour, ct.jour) if ct else '')
+        feuille.cell(row=ligne, column=2,
+                     value=ct.heure_debut.strftime('%H:%M') if ct else '')
+        feuille.cell(row=ligne, column=3,
+                     value=ct.heure_fin.strftime('%H:%M') if ct else '')
+        feuille.cell(row=ligne, column=4,
+                     value=f'S{a.semaine_debut}–S{a.semaine_fin}')
+        feuille.cell(row=ligne, column=5, value=a.get_nature_display())
+        feuille.cell(row=ligne, column=6, value=a.intitule)
+        feuille.cell(row=ligne, column=7, value=contexte['ue'])
+        feuille.cell(row=ligne, column=8, value=contexte['ecue'])
+        feuille.cell(row=ligne, column=9,
+                     value=a.enseignant_nom or contexte['enseignant'])
+        feuille.cell(row=ligne, column=10,
+                     value=a.groupe.nom if a.groupe_id else '')
+        feuille.cell(row=ligne, column=11, value=contexte['parcours'])
+        feuille.cell(row=ligne, column=12, value=contexte['niveau'])
+        feuille.cell(row=ligne, column=13, value=contexte['semestre'])
+        feuille.cell(row=ligne, column=14, value=a.salle_nom)
+        capacite = a.salle.capacite if a.salle_id else None
+        feuille.cell(row=ligne, column=15, value=capacite)  # NULL reste NULL
+        feuille.cell(row=ligne, column=16,
+                     value=a.formation.intitule if a.formation_id else '')
+        feuille.cell(row=ligne, column=17, value='ACTIVE' if a.actif else 'ANNULEE')
+
+    if seances:
+        feuille.auto_filter.ref = f'A1:{get_column_letter(len(colonnes))}{len(seances) + 1}'
+
+    synthese = classeur.create_sheet('Synthèse')
+    lignes_synthese = [
+        ('Emploi du temps', edt.titre or edt.population_label or f'EDT #{edt.pk}'),
+        ('Année académique', edt.annee_academique.libelle),
+        ('Version', f'V{edt.version}'),
+        ('Statut', edt.get_statut_display()),
+        ('Nombre de séances exportées', len(seances)),
+        ('Filtres appliqués', ' · '.join(
+            f'{cle}={valeur}' for cle, valeur in request.query_params.items()
+        ) or 'aucun'),
+        ('Exporté le', timezone.localtime().strftime('%d/%m/%Y à %H:%M')),
+        ('Source', 'GET /api/edts/lmd/<id>/export.xlsx/ — même filtre que /result/'),
+    ]
+    for ligne, (cle, valeur) in enumerate(lignes_synthese, start=1):
+        synthese.cell(row=ligne, column=1, value=cle).font = Font(bold=True)
+        synthese.cell(row=ligne, column=2, value=valeur)
+    synthese.column_dimensions['A'].width = 32
+    synthese.column_dimensions['B'].width = 64
+
+    flux = BytesIO()
+    classeur.save(flux)
+    contenu = flux.getvalue()
+    flux.close()
+
+    reponse = HttpResponse(
+        contenu,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    reponse['Content-Disposition'] = f'attachment; filename="edt-{edt.pk}-v{edt.version}.xlsx"'
+    reponse['Content-Length'] = str(len(contenu))
+    return reponse
+
+
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def export_pdf_api(request, pk):
+    """GET /api/edts/lmd/{id}/export.pdf/ — emploi du temps imprimable (PDF).
+
+    Réutilise ``edts.services.grille_hebdomadaire`` : la même logique de grille
+    que l'écran et l'API JSON, donc aucune divergence possible entre ce que
+    l'on voit et ce que l'on imprime.
+
+    Le PDF est une grille hebdomadaire : colonnes = jours réellement utilisés,
+    lignes = plages horaires réellement utilisées, cellules = séances. Un EDT
+    sans séance produit un document qui le dit (« aucune séance ») — aucune
+    ligne, aucun créneau et aucun enseignant ne sont inventés.
+    """
+    from io import BytesIO
+
+    from django.http import HttpResponse
+    from django.utils import timezone
+
+    from edts.models import EmploiDuTemps
+    from edts.services import grille_hebdomadaire
+
+    # reportlab est déjà une dépendance du dépôt (exports institutionnels).
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import cm
+    from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer,
+                                    Table, TableStyle)
+
+    edt = EmploiDuTemps.objects.select_related('annee_academique').filter(pk=pk).first()
+    if edt is None:
+        return Response({'detail': 'EDT introuvable'},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    semaine = _int(request.query_params.get('semaine'))
+    grille = grille_hebdomadaire(edt, semaine)
+
+    # ── Colonnes (jours) et lignes (plages horaires) réellement occupées ─────
+    jours, plages = [], []
+    for bloc in grille.get('jours', []):
+        for creneau in bloc.get('creneaux', []):
+            seances = creneau.get('affectations') or []
+            if not seances:
+                continue
+            if bloc['jour'] not in jours:
+                jours.append(bloc['jour'])
+            libelle_plage = f"{creneau['heure_debut'][:5]}–{creneau['heure_fin'][:5]}"
+            if libelle_plage not in plages:
+                plages.append(libelle_plage)
+    plages.sort()
+    # Libellés de jours : source unique = le modèle (JOUR_CHOICES).
+    from edts.models import JOUR_CHOICES
+    noms_jours = dict(JOUR_CHOICES)
+
+    # Index (jour, plage) -> liste de séances
+    index = {}
+    for bloc in grille.get('jours', []):
+        for creneau in bloc.get('creneaux', []):
+            plage = f"{creneau['heure_debut'][:5]}–{creneau['heure_fin'][:5]}"
+            for seance in creneau.get('affectations') or []:
+                index.setdefault((bloc['jour'], plage), []).append(seance)
+
+    # ── Styles ──────────────────────────────────────────────────────────────
+    styles = getSampleStyleSheet()
+    style_titre = ParagraphStyle(
+        'TitreEDT', parent=styles['Title'], fontSize=15, leading=18, spaceAfter=2)
+    style_sous_titre = ParagraphStyle(
+        'SousTitreEDT', parent=styles['Normal'], fontSize=9, leading=12,
+        textColor=colors.HexColor('#444444'))
+    style_entete = ParagraphStyle(
+        'Entete', parent=styles['Normal'], fontSize=8.5, leading=10,
+        fontName='Helvetica-Bold', textColor=colors.white)
+    style_cellule = ParagraphStyle(
+        'Cellule', parent=styles['Normal'], fontSize=7.4, leading=9)
+    style_vide = ParagraphStyle(
+        'Vide', parent=styles['Normal'], fontSize=7.4, leading=9,
+        textColor=colors.HexColor('#999999'))
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=landscape(A4),
+        leftMargin=1.2 * cm, rightMargin=1.2 * cm,
+        topMargin=1.1 * cm, bottomMargin=1.1 * cm,
+        title=f'Emploi du temps V{edt.version}',
+        author='INJS d’Abidjan — GET INJS APP',
+    )
+    flux = [
+        Paragraph('INJS d’Abidjan — Emploi du temps', style_titre),
+        Paragraph(edt.titre or edt.population_label or f'EDT #{edt.pk}', style_sous_titre),
+        Paragraph(
+            f'Année académique : {edt.annee_academique.libelle} · '
+            f'Version : V{edt.version} · Statut : {edt.get_statut_display()} · '
+            + (f'Semaine : {semaine} · ' if semaine else '')
+            + f'Édité le {timezone.localtime().strftime("%d/%m/%Y à %H:%M")}',
+            style_sous_titre),
+        Spacer(1, 8),
+    ]
+
+    if not index:
+        flux.append(Paragraph(
+            'Aucune séance active dans cet emploi du temps : '
+            'la grille est donc vide (aucune séance n’est ajoutée pour remplir le document).',
+            style_sous_titre))
+    else:
+        entete = [Paragraph('Horaire', style_entete)]
+        entete += [Paragraph(noms_jours.get(j, j), style_entete) for j in jours]
+        donnees = [entete]
+        for plage in plages:
+            ligne = [Paragraph(f'<b>{plage}</b>', style_cellule)]
+            for jour in jours:
+                seances = index.get((jour, plage), [])
+                if not seances:
+                    ligne.append(Paragraph('—', style_vide))
+                else:
+                    textes = []
+                    for s in seances:
+                        morceaux = [f"<b>{s['intitule']}</b>"]
+                        if s.get('salle_nom'):
+                            morceaux.append(s['salle_nom'])
+                        if s.get('enseignant_nom'):
+                            morceaux.append(s['enseignant_nom'])
+                        if s.get('groupe'):
+                            morceaux.append(f"Gr. {s['groupe']}")
+                        textes.append(' — '.join(morceaux))
+                    ligne.append(Paragraph('<br/>'.join(textes), style_cellule))
+            donnees.append(ligne)
+
+        largeur_utile = landscape(A4)[0] - 2.4 * cm
+        largeur_horaire = 2.6 * cm
+        largeur_jour = (largeur_utile - largeur_horaire) / max(len(jours), 1)
+        table = Table(
+            donnees, colWidths=[largeur_horaire] + [largeur_jour] * len(jours),
+            repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f3b63')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('GRID', (0, 0), (-1, -1), 0.4, colors.HexColor('#9aa7b8')),
+            ('BACKGROUND', (0, 1), (0, -1), colors.HexColor('#eef2f7')),
+            ('LEFTPADDING', (0, 0), (-1, -1), 3),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+            ('TOPPADDING', (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ]))
+        flux.append(table)
+
+    doc.build(flux)
+    contenu = buffer.getvalue()
+    buffer.close()
+
+    nom = f"edt-{edt.pk}-v{edt.version}.pdf"
+    reponse = HttpResponse(contenu, content_type='application/pdf')
+    reponse['Content-Disposition'] = f'attachment; filename="{nom}"'
+    reponse['Content-Length'] = str(len(contenu))
+    return reponse
 
 
 @api_view(['GET'])

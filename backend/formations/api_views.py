@@ -9,7 +9,7 @@ import calendar
 import re
 from django.core.cache import cache
 from django.http import HttpResponse
-from django.db.models import Count, Q, F, Prefetch, Case, When, Value, IntegerField
+from django.db.models import Count, Q, F, Prefetch, Case, When, Value, IntegerField, OuterRef, Subquery
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes, parser_classes
@@ -917,8 +917,21 @@ def participant_list_api(request):
     if vague:
         queryset = queryset.filter(vague__iexact=vague)
 
+    # Formation et niveau de l'inscription validée la plus récente
+    # (affichés dans le registre : filière et niveau de chaque étudiant).
+    from scolarite.models import InscriptionAdministrative as _InscAdm
+
+    _insc_recentes = _InscAdm.objects.filter(
+        etudiant__participant=OuterRef('pk'),
+        statut=_InscAdm.Statut.VALIDEE,
+    ).order_by('-date_inscription', '-id')
+    queryset = queryset.annotate(
+        formation_actuelle=Subquery(_insc_recentes.values('ref_formation__intitule')[:1]),
+        niveau_actuel=Subquery(_insc_recentes.values('niveau__code')[:1]),
+    )
+
     queryset = queryset.order_by('nom', 'prenom')
-    
+
     # Pagination
     total_count = queryset.count()
     start = (page - 1) * page_size
@@ -977,6 +990,93 @@ def participant_formations_api(request, pk):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
+def formateur_stats_api(request):
+    """Panorama du corps enseignant LMD pour l'écran « Enseignants ».
+
+    Avant cette vue, rien ne permettait de savoir combien d'ECUE des
+    maquettes actives avaient un enseignant (réponse : aucune). Elle expose
+    la couverture réelle des enseignements de l'année courante, la
+    répartition par grade académique et la liste des grades disponibles
+    (filtres et formulaire).
+    """
+    from django.db.models import Count as _Count, Sum as _Sum
+
+    from referentiels.models import RefGradeEnseignant
+    from scolarite.models import (
+        AffectationPedagogique, AnneeAcademique, ECUE, Maquette,
+    )
+
+    base = formateurs_queryset_for_user(request.user)
+    grades_disponibles = list(
+        RefGradeEnseignant.objects.filter(actif=True)
+        .order_by('code').values('id', 'code', 'libelle')
+    )
+    par_grade = []
+    comptes = {
+        ligne['grade_ref_id']: ligne['total']
+        for ligne in base.values('grade_ref_id').annotate(total=_Count('id'))
+    }
+    for grade in grades_disponibles:
+        par_grade.append({**grade, 'total': comptes.get(grade['id'], 0)})
+    par_statut = {
+        (ligne['statut_enseignant'] or 'Non renseigné'): ligne['total']
+        for ligne in base.values('statut_enseignant').annotate(total=_Count('id'))
+    }
+
+    couverture = {
+        'annee_academique': None, 'ecue_total': 0, 'ecue_couvertes': 0,
+        'taux_couverture': 0, 'formations_total': 0, 'formations_couvertes': 0,
+        'filieres_total': 0, 'filieres_couvertes': 0,
+        'affectations': 0, 'heures_affectees': 0.0,
+    }
+    annee = AnneeAcademique.objects.filter(courante=True).first()
+    if annee is not None:
+        maquettes = Maquette.objects.filter(
+            statut=Maquette.Statut.ACTIVE, annee_academique=annee,
+        )
+        ecues = ECUE.objects.filter(ue__maquette__in=maquettes)
+        affectations = AffectationPedagogique.objects.filter(
+            annee_academique=annee,
+        ).exclude(statut=AffectationPedagogique.Statut.ANNULEE)
+        ecue_couvertes = affectations.exclude(
+            ecue__isnull=True,
+        ).values('ecue').distinct().count()
+        couverture = {
+            'annee_academique': annee.libelle,
+            'ecue_total': ecues.count(),
+            'ecue_couvertes': ecue_couvertes,
+            'taux_couverture': (
+                round(100 * ecue_couvertes / ecues.count(), 1)
+                if ecues.exists() else 0
+            ),
+            'formations_total': maquettes.values('ref_formation').distinct().count(),
+            'formations_couvertes': affectations.values(
+                'ref_formation',
+            ).distinct().count(),
+            'filieres_total': maquettes.values(
+                'ref_formation__filiere',
+            ).distinct().count(),
+            'filieres_couvertes': affectations.values(
+                'ref_formation__filiere',
+            ).distinct().count(),
+            'affectations': affectations.count(),
+            'heures_affectees': float(
+                affectations.aggregate(total=_Sum('volume_horaire'))['total'] or 0
+            ),
+        }
+
+    return Response({
+        'enseignants': base.count(),
+        'sans_grade': base.filter(grade_ref__isnull=True).count(),
+        'grades_disponibles': grades_disponibles,
+        'par_grade': par_grade,
+        'par_statut': par_statut,
+        'couverture': couverture,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def formateur_list_api(request):
     """
     List formateurs with optional search.
@@ -1006,8 +1106,20 @@ def formateur_list_api(request):
         queryset = queryset.filter(
             Q(nom__icontains=search) |
             Q(prenom__icontains=search) |
-            Q(specialite__icontains=search)
+            Q(specialite__icontains=search) |
+            Q(numerobadge__icontains=search)
         )
+
+    # Filtres de l'écran Enseignants premium : grade académique et filière
+    # (via les affectations pédagogiques de l'année courante).
+    grade_code = request.query_params.get('grade')
+    if grade_code:
+        queryset = queryset.filter(grade_ref__code=grade_code)
+    filiere_id = request.query_params.get('filiere')
+    if filiere_id:
+        queryset = queryset.filter(
+            affectations_pedagogiques__ref_formation__filiere_id=filiere_id,
+        ).distinct()
 
     queryset = queryset.order_by('nom', 'prenom')
 
@@ -1019,6 +1131,43 @@ def formateur_list_api(request):
 
     serializer = FormateurSerializer(formateurs, many=True, context={'request': request})
     results = serializer.data
+    if not target_module:
+        # Charge LMD réelle de chaque enseignant (affectations pédagogiques
+        # de l'année courante) : remplace l'ancien compteur de « modules »
+        # qui affichait en fait le nombre de formations continues.
+        from django.db.models import Count as _Count, Sum as _Sum
+
+        from scolarite.models import AffectationPedagogique, AnneeAcademique
+
+        ids_page = [f.pk for f in formateurs]
+        synthese = {}
+        annee_cour = AnneeAcademique.objects.filter(courante=True).first()
+        if annee_cour is not None and ids_page:
+            base_aff = AffectationPedagogique.objects.filter(
+                enseignant_id__in=ids_page, annee_academique=annee_cour,
+            ).exclude(statut=AffectationPedagogique.Statut.ANNULEE)
+            for ligne in base_aff.values('enseignant_id').annotate(
+                nb_ecue=_Count('ecue', distinct=True),
+                heures=_Sum('volume_horaire'),
+            ):
+                synthese[ligne['enseignant_id']] = {
+                    'nb_ecue': ligne['nb_ecue'],
+                    'heures': float(ligne['heures'] or 0),
+                    'formations': [],
+                }
+            # distinct() seul est trompé par le tri par défaut du modèle
+            # (semestre, UE…) : tri explicite sur les deux colonnes + garde.
+            for ligne in base_aff.values(
+                'enseignant_id', 'ref_formation__intitule',
+            ).order_by('enseignant_id', 'ref_formation__intitule').distinct():
+                entree = synthese.get(ligne['enseignant_id'])
+                libelle = ligne['ref_formation__intitule']
+                if entree is not None and libelle not in entree['formations']:
+                    entree['formations'].append(libelle)
+        for row in results:
+            row['enseignements'] = synthese.get(row['id'], {
+                'nb_ecue': 0, 'heures': 0.0, 'formations': [],
+            })
     if target_module:
         enriched = []
         for row, formateur in zip(results, formateurs):
@@ -3087,8 +3236,21 @@ _REF_FORMATION_CHAMPS = ('code', 'type_diplome', 'domaine', 'mention', 'duree_an
 
 
 def _ref_formation_payload(obj):
+    """Cycle de formation tel que l'API le restitue.
+
+    Les champs de **qualification** (`filiere_code`, `perimetre`, `source`) sont
+    exposés en lecture : sans eux, un écran ne peut pas dire à quelle filière
+    officielle (F01–F08) un cycle appartient, ni s'il relève du référentiel INJS.
+    Ils ne sont volontairement PAS dans `_REF_FORMATION_CHAMPS` : ils ne
+    s'écrivent pas depuis cet endpoint. La qualification est décidée par la
+    commande `qualifier_referentiel_injs_l6` (source officielle), pas par une
+    saisie d'écran — c'est ce qui empêche un second système de qualification.
+    """
     return {'id': obj.id, 'intitule': obj.intitule, 'actif': obj.actif,
             'prix_heure_realisee': obj.prix_heure_realisee,
+            'filiere_code': obj.filiere_code,
+            'perimetre': obj.perimetre,
+            'source': obj.source,
             **{c: getattr(obj, c) for c in _REF_FORMATION_CHAMPS}}
 
 
@@ -5042,3 +5204,48 @@ def refvague_detail_api(request, pk):
     obj.actif = request.data.get('actif', obj.actif)
     obj.save()
     return Response({'id': obj.id, 'libelle': obj.libelle, 'ordre': obj.ordre, 'actif': obj.actif})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, CanListParticipants])
+def participant_stats_api(request):
+    """Indicateurs du registre des étudiants (même périmètre que la liste).
+
+    Sert les cartes KPI de l'écran Étudiants : effectif total, parité
+    femmes/hommes, étudiants porteurs d'un grade (fonctionnaires),
+    répartitions par grade, vague et type de concours, et nombre
+    d'étudiants régulièrement inscrits sur l'année courante.
+    """
+    queryset = participants_queryset_for_user(request.user)
+
+    def repartition(champ):
+        return {
+            (ligne[champ] or 'Non renseigné'): ligne['total']
+            for ligne in queryset.values(champ).annotate(total=Count('id')).order_by()
+        }
+
+    inscrits_annee = 0
+    try:
+        from scolarite.models import AnneeAcademique, InscriptionAdministrative
+
+        courante = AnneeAcademique.objects.filter(courante=True).first()
+        if courante is not None:
+            inscrits_annee = (
+                InscriptionAdministrative.objects.filter(
+                    annee_academique=courante,
+                    statut=InscriptionAdministrative.Statut.VALIDEE,
+                    etudiant__participant__in=queryset.values('pk'),
+                ).values('etudiant__participant').distinct().count()
+            )
+    except Exception:  # l'indicateur reste facultatif
+        inscrits_annee = 0
+
+    return Response({
+        'total': queryset.count(),
+        'par_sexe': repartition('sexe'),
+        'avec_grade': queryset.exclude(grade='').count(),
+        'par_grade': repartition('grade'),
+        'par_vague': repartition('vague'),
+        'par_type_concours': repartition('type_concours'),
+        'inscrits_annee_courante': inscrits_annee,
+    })

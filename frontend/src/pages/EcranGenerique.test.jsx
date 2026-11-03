@@ -132,10 +132,13 @@ describe('rendu des variantes de descripteur', () => {
   })
 
   it('documents : cartes de génération avec leurs formats', async () => {
-    monter('documents_scolaires', { chemin: '/scolarite/documents-scolaires' })
-    expect(await screen.findByTestId('ecran-documents_scolaires')).toBeTruthy()
-    expect(screen.getByText('Liste de classe')).toBeTruthy()
-    expect(screen.getByTestId('doc-liste_classe-pdf')).toBeTruthy()
-    expect(screen.getByTestId('doc-liste_classe-excel')).toBeTruthy()
+    // « Relevés de notes » est désormais une page dédiée (hub
+    // Évaluations) ; la famille générique « documents » reste exercée
+    // via l'export des emplois du temps.
+    monter('export_edt', { chemin: '/edt/export' })
+    expect(await screen.findByTestId('ecran-export_edt')).toBeTruthy()
+    expect(screen.getByText('Groupes (CSV)')).toBeTruthy()
+    expect(screen.getByTestId('doc-groupes-csv')).toBeTruthy()
+    expect(screen.getByTestId('doc-etudiants-csv')).toBeTruthy()
   })
 })

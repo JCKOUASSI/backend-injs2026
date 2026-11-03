@@ -23,8 +23,12 @@ import ImportExcel from './pages/ImportExcel'
 import Secretariats from './pages/Secretariats'
 import Organigramme from './pages/Organigramme'
 import Referentiels from './pages/Referentiels'
+import TableauDeBordReferentiels from './pages/referentiels/TableauDeBordReferentiels'
+import ReferentielGenerique from './pages/referentiels/ReferentielGenerique'
 import Parametres from './pages/Parametres'
 import FeatureFlags from './pages/FeatureFlags'
+// Planche de style : documentation vivante du socle visuel (lecture seule).
+import PlancheDeStyle from './pages/design/PlancheDeStyle'
 // U4 — console CURP d'administration des comptes (derrière le drapeau
 // CURP_UI_ADMIN : sans la capacité habilitations_admin.gerer, rien n'apparaît).
 import HabilitationsLayout from './pages/habilitations/HabilitationsLayout'
@@ -63,6 +67,10 @@ import Edts from './pages/Edts'
 import EdtPresences from './pages/EdtPresences'
 import CoursLmd from './pages/CoursLmd'
 import EdtNew from './pages/EdtNew'
+import GenerationAnnuelle from './pages/getinjs/GenerationAnnuelle'
+import CampagnesGeneration from './pages/getinjs/CampagnesGeneration'
+import VersionsPublication from './pages/getinjs/VersionsPublication'
+import AuditDonnees from './pages/getinjs/AuditDonnees'
 import AffectationNew from './pages/AffectationNew'
 
 import FicheAuditeur from './pages/FicheAuditeur'
@@ -108,6 +116,16 @@ const AdmissionsPage = lazy(() => import('./pages/scolarite/Admissions'))
 const Inscriptions = lazy(() => import('./pages/scolarite/Inscriptions'))
 const FicheEtudiant = lazy(() => import('./pages/scolarite/FicheEtudiant'))
 const GroupesPedagogiques = lazy(() => import('./pages/scolarite/Groupes'))
+const DocumentsScolaires = lazy(() => import('./pages/scolarite/DocumentsScolaires'))
+const Reinscriptions = lazy(() => import('./pages/scolarite/Reinscriptions'))
+const JournalScolarite = lazy(() => import('./pages/scolarite/JournalScolarite'))
+const StagesHub = lazy(() => import('./pages/stages/StagesHub'))
+const AdministrationHub = lazy(() => import('./pages/administration/AdministrationHub'))
+const PersonnelHub = lazy(() => import('./pages/personnel/PersonnelHub'))
+const JurysHub = lazy(() => import('./pages/jurys/JurysHub'))
+const DiplomationHub = lazy(() => import('./pages/diplomation/DiplomationHub'))
+const EvaluationsHub = lazy(() => import('./pages/evaluations/EvaluationsHub'))
+const FinancesHub = lazy(() => import('./pages/finances/FinancesHub'))
 const Maquettes = lazy(() => import('./pages/scolarite/Maquettes'))
 const MaquetteDetail = lazy(() => import('./pages/scolarite/MaquetteDetail'))
 const Campagnes = lazy(() => import('./pages/scolarite/Campagnes'))
@@ -344,6 +362,285 @@ function App() {
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/scolarite">Scolarité</Link></li><li className="separator">/</li><li>Groupes</li></>}>
                 <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
                   <GroupesPedagogiques />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/scolarite/documents-scolaires" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/scolarite">Scolarité</Link></li><li className="separator">/</li><li>Documents scolaires</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <DocumentsScolaires />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/scolarite/reinscriptions" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/scolarite">Scolarité</Link></li><li className="separator">/</li><li>Réinscriptions &amp; transferts</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <Reinscriptions />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/scolarite/journal" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/scolarite">Scolarité</Link></li><li className="separator">/</li><li>Journal de scolarité</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <JournalScolarite />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/finances-etudiantes/frais" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Finances étudiantes</li><li className="separator">/</li><li>Frais de scolarité</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <FinancesHub ongletInitial="bareme" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/finances-etudiantes/factures" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Finances étudiantes</li><li className="separator">/</li><li>Factures</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <FinancesHub ongletInitial="factures" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/finances-etudiantes/paiements" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Finances étudiantes</li><li className="separator">/</li><li>Paiements</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <FinancesHub ongletInitial="paiements" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/finances-etudiantes/recus" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Finances étudiantes</li><li className="separator">/</li><li>Reçus</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <FinancesHub ongletInitial="recus" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/finances-etudiantes/bourses" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Finances étudiantes</li><li className="separator">/</li><li>Bourses &amp; remboursements</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <FinancesHub ongletInitial="bourses" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/finances-etudiantes/situation" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Finances étudiantes</li><li className="separator">/</li><li>Situation financière</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <FinancesHub ongletInitial="situation" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/evaluations/saisie" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Evaluations</li><li className="separator">/</li><li>Saisie des notes</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <EvaluationsHub ongletInitial="notes" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/evaluations/controle" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Evaluations</li><li className="separator">/</li><li>Contrôle des notes</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <EvaluationsHub ongletInitial="controle" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/evaluations/releves" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Evaluations</li><li className="separator">/</li><li>Relevés de notes</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <EvaluationsHub ongletInitial="releves" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/diplomation/eligibilite" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Diplômation</li><li className="separator">/</li><li>Éligibilité</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <DiplomationHub ongletInitial="eligibilite" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/diplomation/attestations" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Diplômation</li><li className="separator">/</li><li>Attestations</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <DiplomationHub ongletInitial="attestations" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/diplomation/certificats" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Diplômation</li><li className="separator">/</li><li>Certificats</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <DiplomationHub ongletInitial="certificats" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/diplomation/registres" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Diplômation</li><li className="separator">/</li><li>Registres &amp; modèles</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <DiplomationHub ongletInitial="registres" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/jurys/composition" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Jurys</li><li className="separator">/</li><li>Composition</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <JurysHub ongletInitial="composition" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/jurys/deliberations" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Jurys</li><li className="separator">/</li><li>Délibérations &amp; décisions</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <JurysHub ongletInitial="decisions" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/jurys/pv" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Jurys</li><li className="separator">/</li><li>PV &amp; publications</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <JurysHub ongletInitial="pv" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/jurys/validation" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Jurys</li><li className="separator">/</li><li>Validation</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <JurysHub ongletInitial="sessions" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/personnel/agents" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Personnel</li><li className="separator">/</li><li>Agents</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <PersonnelHub ongletInitial="agents" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/personnel/affectations" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Personnel</li><li className="separator">/</li><li>Affectations</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <PersonnelHub ongletInitial="affectations" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/personnel/disponibilites" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Personnel</li><li className="separator">/</li><li>Disponibilités</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <PersonnelHub ongletInitial="disponibilites" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/personnel/documents" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Personnel</li><li className="separator">/</li><li>Documents RH</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <PersonnelHub ongletInitial="documents" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/administration/courrier" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Administration</li><li className="separator">/</li><li>Courrier</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <AdministrationHub ongletInitial="courrier" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/administration/reunions" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Administration</li><li className="separator">/</li><li>Réunions &amp; commissions</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <AdministrationHub ongletInitial="reunions" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/stages/conventions" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Stages</li><li className="separator">/</li><li>Conventions</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <StagesHub ongletInitial="conventions" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/stages/organismes" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Stages</li><li className="separator">/</li><li>Organismes d’accueil</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <StagesHub ongletInitial="organismes" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/stages/affectations" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Stages</li><li className="separator">/</li><li>Affectations &amp; tuteurs</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <StagesHub ongletInitial="tuteurs" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/stages/suivi" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Stages</li><li className="separator">/</li><li>Suivi des stages</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <StagesHub ongletInitial="suivi" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/stages/evaluations" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Stages</li><li className="separator">/</li><li>Évaluations</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <StagesHub ongletInitial="evaluations" />
                 </Suspense>
               </Layout>
             </ProtectedRoute>
@@ -605,7 +902,21 @@ function App() {
           <Route path="/referentiels" element={
             <ProtectedRoute allowedRoles={ADMIN_LEVEL_ROLES}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Référentiels</li></>}>
+                <TableauDeBordReferentiels />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/referentiels/edition" element={
+            <ProtectedRoute allowedRoles={ADMIN_LEVEL_ROLES}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/referentiels">Référentiels</Link></li><li className="separator">/</li><li>Édition des tables</li></>}>
                 <Referentiels />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/referentiels/gestion/:slug" element={
+            <ProtectedRoute allowedRoles={ADMIN_LEVEL_ROLES}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/referentiels">Référentiels</Link></li><li className="separator">/</li><li>Gestion</li></>}>
+                <ReferentielGenerique />
               </Layout>
             </ProtectedRoute>
           } />
@@ -620,6 +931,13 @@ function App() {
             <ProtectedRoute allowedRoles={ADMIN_LEVEL_ROLES}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/parametres">Paramètres</Link></li><li className="separator">/</li><li>Fonctionnalités</li></>}>
                 <FeatureFlags />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/referentiels/planche-de-style" element={
+            <ProtectedRoute allowedRoles={ADMIN_LEVEL_ROLES}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/referentiels">Référentiels</Link></li><li className="separator">/</li><li>Planche de style</li></>}>
+                <PlancheDeStyle />
               </Layout>
             </ProtectedRoute>
           } />
@@ -678,6 +996,34 @@ function App() {
             <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Nouvel EDT</li></>}>
                 <EdtNew />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/edt/generation-annuelle" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Génération annuelle</li></>}>
+                <GenerationAnnuelle />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/edt/campagnes" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Campagnes de génération</li></>}>
+                <CampagnesGeneration />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/edt/versions" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Versions &amp; publication</li></>}>
+                <VersionsPublication />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/edt/audit" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Audit des données</li></>}>
+                <AuditDonnees />
               </Layout>
             </ProtectedRoute>
           } />

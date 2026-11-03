@@ -269,3 +269,37 @@ class AdmissionAPITests(AdmissionFixture, TestCase):
         client = APIClient()
         client.force_authenticate(make_user('auditeur_admission', role='AUDITEUR'))
         self.assertEqual(client.get('/api/admissions/admissions/').status_code, 403)
+
+    def test_recherche_q_et_champs_inscription(self):
+        self.amener_a_admissible()
+        admission = admission_services.creer_admission(
+            self.candidature, acteur=self.acteur)
+        admission_services.prononcer_decision(
+            admission, Admission.Decision.ADMIS, acteur=self.acteur,
+            reference='DEC-TEST-001')
+
+        for requete in ('Koné', self.candidature.numero[-4:], 'DEC-TEST'):
+            res = self.client.get('/api/admissions/admissions/', {'q': requete})
+            self.assertEqual([a['id'] for a in res.data], [admission.id], requete)
+        res = self.client.get('/api/admissions/admissions/', {'q': 'zzz-rien'})
+        self.assertEqual(res.data, [])
+
+        res = self.client.get('/api/admissions/admissions/')
+        ligne = res.data[0]
+        self.assertFalse(ligne['inscrit'])
+        self.assertIsNone(ligne['matricule'])
+        self.assertIsNone(ligne['etudiant_id'])
+
+    def test_stats_chaine_inscription(self):
+        self.amener_a_admissible()
+        admission = admission_services.creer_admission(
+            self.candidature, acteur=self.acteur)
+        res = self.client.get('/api/admissions/admissions/stats/')
+        self.assertEqual(res.data['par_decision'], {'EN_ATTENTE': 1})
+        self.assertEqual(res.data['a_inscrire'], 0)
+        self.assertEqual(res.data['inscrits'], 0)
+        admission_services.prononcer_decision(
+            admission, Admission.Decision.ADMIS, acteur=self.acteur)
+        res = self.client.get('/api/admissions/admissions/stats/')
+        self.assertEqual(res.data['a_inscrire'], 1)
+        self.assertEqual(res.data['inscrits'], 0)

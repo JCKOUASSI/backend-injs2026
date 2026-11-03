@@ -10,18 +10,18 @@ void main() {
       context: UserErrorContext.badgeStatus,
     );
     expect(msg, contains('badgeage'));
-    expect(msg, isNot(contains('sygepcpfae')));
+    expect(msg, isNot(contains('injs.ci')));
     expect(msg, isNot(contains(':443')));
     expect(msg, isNot(contains('app.env')));
   });
 
   test('erreur brute avec URL est masquée', () {
     final msg = userFacingErrorMessage(
-      Exception('SocketException: failed host lookup api.sygepcpfae.org'),
+      Exception('SocketException: failed host lookup api.injs.ci'),
       context: UserErrorContext.login,
     );
     expect(msg, contains('connexion'));
-    expect(msg, isNot(contains('sygepcpfae')));
+    expect(msg, isNot(contains('injs.ci')));
   });
 
   test('message métier court de l’API est conservé', () {

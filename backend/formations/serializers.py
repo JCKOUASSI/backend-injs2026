@@ -143,6 +143,10 @@ class SessionSerializer(serializers.ModelSerializer):
 
 class ParticipantSerializer(serializers.ModelSerializer):
     secretariat_nom = serializers.CharField(source='secretariat.nom', read_only=True)
+    # Formation et niveau de l'inscription administrative validée la plus
+    # récente — renseignés par annotation dans la vue liste (None sinon).
+    formation_actuelle = serializers.SerializerMethodField()
+    niveau_actuel = serializers.SerializerMethodField()
 
     class Meta:
         model = Participant
@@ -154,8 +158,15 @@ class ParticipantSerializer(serializers.ModelSerializer):
             'categorie', 'grade', 'groupe', 'grade_groupe', 'vague',
             'site', 'salle', 'motif_notoire',
             'secretariat', 'secretariat_nom', 'created_at',
+            'formation_actuelle', 'niveau_actuel',
         ]
         read_only_fields = ['id', 'created_at']
+
+    def get_formation_actuelle(self, obj):
+        return getattr(obj, 'formation_actuelle', None) or None
+
+    def get_niveau_actuel(self, obj):
+        return getattr(obj, 'niveau_actuel', None) or None
 
     def validate_matricule(self, value):
         from formations.participant_matricule import normalize_matricule, validate_participant_matricule
@@ -182,12 +193,14 @@ class FormateurSerializer(serializers.ModelSerializer):
     )
     secretariats_noms = serializers.SerializerMethodField()
     nb_formations = serializers.SerializerMethodField()
+    grade = serializers.SerializerMethodField()
 
     class Meta:
         model = Formateur
         fields = [
             'id', 'numerobadge', 'nom', 'prenom', 'email',
             'telephone', 'specialite', 'organisation',
+            'grade_ref', 'grade', 'fonction', 'statut_enseignant',
             'numero_piece_identite', 'numero_compte_bancaire',
             'observations',
             'secretariats', 'secretariats_noms', 'nb_formations', 'created_at',
@@ -211,6 +224,17 @@ class FormateurSerializer(serializers.ModelSerializer):
             attrs.pop('numero_piece_identite', None)
             attrs.pop('numero_compte_bancaire', None)
         return super().validate(attrs)
+
+    def get_grade(self, obj):
+        # Grade académique (referentiels.RefGradeEnseignant) — distinct des
+        # grades administratifs d'admission portés par les inscriptions.
+        if obj.grade_ref_id is None:
+            return None
+        try:
+            grade = obj.grade_ref
+        except Exception:  # noqa: BLE001 - jamais bloquant en lecture
+            return None
+        return {'id': grade.id, 'code': grade.code, 'libelle': grade.libelle}
 
     def get_secretariats_noms(self, obj):
         return [f"{s.nom} ({s.numero})" for s in obj.secretariats.all()]

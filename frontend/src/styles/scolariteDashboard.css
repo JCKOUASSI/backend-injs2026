@@ -24,7 +24,7 @@
 .scolarite-main-title {
   font-size: 1.65rem;
   font-weight: 800;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   margin: 0 0 0.25rem 0;
   letter-spacing: -0.02em;
 }
@@ -51,7 +51,7 @@
   border: 1px solid rgba(226, 232, 240, 0.9);
   border-radius: 9999px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(11, 31, 58, 0.04);
+  box-shadow: 0 2px 8px rgba(7, 27, 58, 0.04);
 }
 
 .export-pill-btn {
@@ -74,12 +74,12 @@
 
 .export-pill-btn:hover {
   background: #ffffff;
-  color: #2563EB;
+  color: var(--injs-blue-royal);
 }
 
 /* Bouton bleu + Nouvelle inscription */
 .btn-nouvelle-inscription {
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
   color: #ffffff !important;
   font-size: 0.85rem;
   font-weight: 700;
@@ -88,13 +88,13 @@
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 4px 14px rgba(18, 103, 214, 0.35);
   transition: all 0.15s ease;
 }
 
 .btn-nouvelle-inscription:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+  box-shadow: 0 6px 18px rgba(18, 103, 214, 0.45);
 }
 
 /* ── 2. GRILLE DE RACCOURCIS (PILLS) ── */
@@ -119,21 +119,21 @@
   font-weight: 600;
   color: #334155;
   text-decoration: none !important;
-  box-shadow: 0 2px 8px rgba(11, 31, 58, 0.04);
+  box-shadow: 0 2px 8px rgba(7, 27, 58, 0.04);
   transition: all 0.15s ease;
 }
 
 .quick-pill-btn:hover {
   background: #ffffff;
-  border-color: #2A7FFF;
-  color: #2563EB;
+  border-color: var(--injs-blue-royal);
+  color: var(--injs-blue-royal);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 4px 12px rgba(18, 103, 214, 0.15);
 }
 
 .quick-pill-btn i {
   font-size: 1.05rem;
-  color: #2A7FFF;
+  color: var(--injs-blue-royal);
 }
 
 .quick-pill-admissions {
@@ -157,13 +157,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px -5px rgba(7, 27, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .kpi-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 35px -5px rgba(11, 31, 58, 0.08);
+  box-shadow: 0 12px 35px -5px rgba(7, 27, 58, 0.08);
 }
 
 .kpi-info {
@@ -183,7 +183,7 @@
 .kpi-value {
   font-size: 2rem;
   font-weight: 800;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   line-height: 1;
 }
 
@@ -199,7 +199,7 @@
 
 .kpi-icon-box.kpi-blue {
   background: #EBF3FF;
-  color: #2A7FFF;
+  color: var(--injs-blue-royal);
 }
 
 .kpi-icon-box.kpi-teal {
@@ -223,7 +223,7 @@
   backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.85);
   border-radius: 18px;
-  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05);
+  box-shadow: 0 10px 30px -5px rgba(7, 27, 58, 0.05);
   margin-bottom: 1.5rem;
   overflow: hidden;
 }
@@ -240,7 +240,7 @@
 .scolarite-card-title {
   font-size: 1.02rem;
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   margin: 0;
   display: flex;
   align-items: center;
@@ -264,7 +264,7 @@
 /* Pastilles d'état des icônes KPI.
    Le composant s'appuie sur `.kpi-icon-box` (déclaré ci-dessus) et n'ajoute
    qu'un modificateur de teinte. */
-.kpi-icon-box.icon-box-blue  { background: #EBF3FF; color: #2A7FFF; }
+.kpi-icon-box.icon-box-blue  { background: #EBF3FF; color: var(--injs-blue-royal); }
 .kpi-icon-box.icon-box-slate { background: #EEF2F7; color: #475569; }
 .kpi-icon-box.icon-box-peach { background: #FFF1E6; color: #EA580C; }
 .kpi-icon-box.icon-box-amber { background: #FFFBEB; color: #F59E0B; }
@@ -276,7 +276,7 @@
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.85);
   border-radius: 18px;
-  box-shadow: 0 10px 30px -5px rgba(11, 31, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px -5px rgba(7, 27, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
   padding: 1.15rem 1.4rem;
   margin-bottom: 1.5rem;
 }
@@ -303,7 +303,7 @@
 .section-title {
   font-size: 1.05rem;
   font-weight: 800;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   margin: 0;
   letter-spacing: -0.01em;
 }
@@ -316,7 +316,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
   color: #ffffff;
   font-size: 0.8rem;
   font-weight: 700;
@@ -324,13 +324,13 @@
   border: none;
   border-radius: 9999px;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 4px 14px rgba(18, 103, 214, 0.35);
   transition: all 0.15s ease;
 }
 .btn-ouvrir-presences:hover,
 .btn-ouvrir-finances:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+  box-shadow: 0 6px 18px rgba(18, 103, 214, 0.45);
 }
 
 /* Les quatre compteurs deviennent de petites cartes alignées sur la
@@ -357,7 +357,7 @@
 .pres-stat-item strong {
   font-size: 1.3rem;
   font-weight: 800;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   line-height: 1;
 }
 
@@ -365,12 +365,12 @@
    déjà utilisés pour les icônes KPI. */
 .presences-empty-note {
   background: #EBF3FF;
-  border: 1px solid rgba(42, 127, 255, 0.18);
+  border: 1px solid rgba(18, 103, 214, 0.18);
   border-radius: 12px;
   padding: 0.65rem 0.9rem;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #1D4ED8;
+  color: var(--injs-blue);
 }
 
 /* ── GRAPHIQUE EN BARRES ── */
@@ -387,10 +387,10 @@
    une présentation SVG a une spécificité inférieure à toute règle CSS, donc
    cette règle s'applique bien et la barre adopte le bleu INJS. */
 .barchart-svg .barchart-rect {
-  fill: #2A7FFF;
+  fill: var(--injs-blue-royal);
   transition: fill 0.2s ease;
 }
-.barchart-svg .barchart-rect:hover { fill: #1D4ED8; }
+.barchart-svg .barchart-rect:hover { fill: var(--injs-blue); }
 
 /* ── SPÉCIALITÉS STAPS ── */
 .specialites-legend-row {
@@ -418,7 +418,7 @@
   display: inline-block;
 }
 /* Teintes issues de la palette INJS (bleu / sarcelle / ardoise / ambre). */
-.color-apas { background: #2A7FFF; }
+.color-apas { background: var(--injs-blue-royal); }
 .color-em   { background: #10B981; }
 .color-es   { background: #475569; }
 .color-ms   { background: #0284C7; }
@@ -455,7 +455,7 @@
 .session-item-title {
   font-size: 0.88rem;
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
 }
 .session-meta {
   font-size: 0.75rem;
@@ -502,7 +502,7 @@
 .finance-kv-value {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #0B1F3A;
+  color: var(--injs-navy);
   white-space: nowrap;
 }
 .finance-card-action {

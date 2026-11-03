@@ -41,13 +41,19 @@ def appliquer(demande, utilisateur=None, commentaire=''):
         raise ApplicationImpossible('La dispense/équivalence a expiré.')
 
     # 1) Inscriptions pédagogiques existantes correspondantes → DISPENSEE.
-    lignes = InscriptionPedagogique.objects.filter(
-        inscription__etudiant=demande.etudiant,
-    ).select_related('inscription')
+    # Sans UE/ECUE cible, la reconnaissance est globale (crédits) : on ne
+    # dispense AUCUNE inscription pédagogique — jamais « toutes celles de
+    # l'étudiant » par défaut.
+    lignes = InscriptionPedagogique.objects.none()
     if demande.ecue_id:
-        lignes = lignes.filter(ecue=demande.ecue)
+        lignes = InscriptionPedagogique.objects.filter(
+            inscription__etudiant=demande.etudiant, ecue=demande.ecue,
+        )
     elif demande.ue_id:
-        lignes = lignes.filter(ecue__ue=demande.ue)
+        lignes = InscriptionPedagogique.objects.filter(
+            inscription__etudiant=demande.etudiant, ecue__ue=demande.ue,
+        )
+    lignes = list(lignes.select_related('inscription'))
     for ligne in lignes:
         if ligne.statut != InscriptionPedagogique.Statut.DISPENSEE:
             ligne.statut = InscriptionPedagogique.Statut.DISPENSEE

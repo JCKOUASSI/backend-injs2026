@@ -18,7 +18,12 @@ import apiMock, { apiController } from '@/test/utils/mockApi'
 import { renderWithProviders } from '@/test/utils/renderWithProviders'
 import { flushPromises } from '@/test/utils/async'
 import { makeUser } from '@/test/utils/factories'
-import Candidatures from '@/pages/scolarite/Candidatures'
+import Candidatures, {
+  MOIS_FR,
+  dateFrancaiseVersIso,
+  erreurDateNaissance,
+  masquerDateFrancaise,
+} from '@/pages/scolarite/Candidatures'
 
 const listCalls = () =>
   apiMock.get.mock.calls
@@ -79,11 +84,22 @@ const mount = () => {
     initialEntries: ['/scolarite/candidatures'],
   })
 }
+/* Panneau de dépôt ouvert : le titre porte le formulaire et sert d'ancre. */
+const formOuvert = () => {
+  const titre = screen.getByRole('heading', { level: 2, name: /nouvelle candidature/i })
+  return titre.closest('.cand-panel')
+}
 const settle = async (n = 5) => {
   await act(async () => { await flushPromises(n) })
 }
 
 const rowOf = (numero) => screen.getByText(numero).closest('tr')
+/* Le panneau « Dossier » s'ouvre par le bouton d'action de la ligne ; son
+   libellé accessible nomme le dossier concerné. */
+const ouvrirDossier = (numero) => {
+  const bouton = within(rowOf(numero)).getByRole('button', { name: /ouvrir le dossier/i })
+  fireEvent.click(bouton)
+}
 
 beforeEach(() => {
   apiController.reset()
@@ -119,7 +135,7 @@ describe('pages/scolarite/Candidatures — panneau Dossier (écritures)', () => 
   it('applique une transition de statut puis recharge et notifie', async () => {
     mount()
     await screen.findByText('C-005')
-    fireEvent.click(within(rowOf('C-005')).getByRole('button', { name: 'Ouvrir' }))
+    ouvrirDossier('C-005')
 
     const panel = await screen.findByText('Pièces justificatives')
     expect(panel).toBeInTheDocument()
@@ -137,11 +153,11 @@ describe('pages/scolarite/Candidatures — panneau Dossier (écritures)', () => 
   it('valide une pièce fournie (POST verifier) ; le bouton reste désactivé sans fichier', async () => {
     mount()
     await screen.findByText('C-005')
-    fireEvent.click(within(rowOf('C-005')).getByRole('button', { name: 'Ouvrir' }))
+    ouvrirDossier('C-005')
     await screen.findByText('CNI')
 
     const pieceRow = screen.getByText('CNI').closest('tr')
-    fireEvent.click(within(pieceRow).getByRole('button', { name: 'Valider' }))
+    fireEvent.click(within(pieceRow).getByRole('button', { name: 'Valider la pièce' }))
     await settle()
 
     const v = posts((p) => p.includes('/verifier/'))
@@ -151,14 +167,14 @@ describe('pages/scolarite/Candidatures — panneau Dossier (écritures)', () => 
 
     // La pièce sans fichier (Diplôme) ne peut pas être validée.
     const missingRow = screen.getByText('Diplôme').closest('tr')
-    expect(within(missingRow).getByRole('button', { name: 'Valider' })).toBeDisabled()
-    expect(within(missingRow).getByRole('button', { name: 'Refuser' })).toBeDisabled()
+    expect(within(missingRow).getByRole('button', { name: 'Valider la pièce' })).toBeDisabled()
+    expect(within(missingRow).getByRole('button', { name: 'Refuser la pièce' })).toBeDisabled()
   })
 
   it('ouvre une admission pour une candidature admissible', async () => {
     mount()
     await screen.findByText('C-006')
-    fireEvent.click(within(rowOf('C-006')).getByRole('button', { name: 'Ouvrir' }))
+    ouvrirDossier('C-006')
     await screen.findByText('Suite du parcours')
 
     fireEvent.click(screen.getByRole('button', { name: /ouvrir une admission/i }))
@@ -177,7 +193,7 @@ describe('pages/scolarite/Candidatures — panneau Dossier (écritures)', () => 
     })
     mount()
     await screen.findByText('C-005')
-    fireEvent.click(within(rowOf('C-005')).getByRole('button', { name: 'Ouvrir' }))
+    ouvrirDossier('C-005')
     await screen.findByText('Pièces justificatives')
 
     fireEvent.click(screen.getByRole('button', { name: 'En attente de vérification' }))
@@ -189,7 +205,7 @@ describe('pages/scolarite/Candidatures — panneau Dossier (écritures)', () => 
   it('dépose un fichier pour une pièce (POST FormData multipart)', async () => {
     mount()
     await screen.findByText('C-005')
-    fireEvent.click(within(rowOf('C-005')).getByRole('button', { name: 'Ouvrir' }))
+    ouvrirDossier('C-005')
     await screen.findByText('CNI')
 
     const input = screen
@@ -216,19 +232,14 @@ describe('pages/scolarite/Candidatures — création', () => {
     await screen.findByText('C-005')
 
     fireEvent.click(screen.getByRole('button', { name: /nouvelle candidature/i }))
-    const cardTitle = screen.getByText(
-      (_c, el) => el.tagName === 'STRONG' && el.textContent === 'Nouvelle candidature',
-    )
-    const card = cardTitle.closest('.card')
+    const card = formOuvert()
 
-    const inputs = within(card).getAllByRole('textbox').filter((el) => el.tagName === 'INPUT')
-    fireEvent.change(inputs[0], { target: { value: 'Traoré' } }) // nom
-    fireEvent.change(inputs[1], { target: { value: 'Mariam' } }) // prénoms
-    const combos = within(card).getAllByRole('combobox')
-    fireEvent.change(combos[1], { target: { value: '10' } }) // formation
-    fireEvent.change(combos[2], { target: { value: '2' } }) // niveau
+    fireEvent.change(within(card).getByLabelText('Nom'), { target: { value: 'Traoré' } })
+    fireEvent.change(within(card).getByLabelText('Prénoms'), { target: { value: 'Mariam' } })
+    fireEvent.change(within(card).getByLabelText('Formation demandée'), { target: { value: '10' } })
+    fireEvent.change(within(card).getByLabelText('Niveau demandé'), { target: { value: '2' } })
 
-    const enregistrer = within(card).getByRole('button', { name: 'Enregistrer' })
+    const enregistrer = within(card).getByRole('button', { name: /enregistrer la candidature/i })
     await waitFor(() => expect(enregistrer).not.toBeDisabled())
     fireEvent.click(enregistrer)
     await settle()
@@ -261,22 +272,209 @@ describe('pages/scolarite/Candidatures — création', () => {
     await screen.findByText('C-005')
 
     fireEvent.click(screen.getByRole('button', { name: /nouvelle candidature/i }))
-    const cardTitle = screen.getByText(
-      (_c, el) => el.tagName === 'STRONG' && el.textContent === 'Nouvelle candidature',
-    )
-    const card = cardTitle.closest('.card')
+    const card = formOuvert()
 
-    const inputs = within(card).getAllByRole('textbox').filter((el) => el.tagName === 'INPUT')
-    fireEvent.change(inputs[0], { target: { value: 'Traoré' } })
-    fireEvent.change(inputs[1], { target: { value: 'Mariam' } })
-    const combos = within(card).getAllByRole('combobox')
-    fireEvent.change(combos[1], { target: { value: '10' } })
-    fireEvent.change(combos[2], { target: { value: '2' } })
-    fireEvent.click(within(card).getByRole('button', { name: 'Enregistrer' }))
+    fireEvent.change(within(card).getByLabelText('Nom'), { target: { value: 'Traoré' } })
+    fireEvent.change(within(card).getByLabelText('Prénoms'), { target: { value: 'Mariam' } })
+    fireEvent.change(within(card).getByLabelText('Formation demandée'), { target: { value: '10' } })
+    fireEvent.change(within(card).getByLabelText('Niveau demandé'), { target: { value: '2' } })
+    fireEvent.click(within(card).getByRole('button', { name: /enregistrer la candidature/i }))
     await settle()
 
     expect(await within(card).findByText(/nom : ce champ est obligatoire/i)).toBeInTheDocument()
     // Aucune candidature n'a été créée (le candidat a échoué).
     expect(posts((p) => p === '/admissions/candidatures/')).toHaveLength(0)
+  })
+})
+
+describe('pages/scolarite/Candidatures — saisie manuelle de la date de naissance', () => {
+  it('masque JJ/MM/AAAA : séparateurs automatiques pendant la frappe', () => {
+    expect(masquerDateFrancaise('')).toBe('')
+    expect(masquerDateFrancaise('0')).toBe('0')
+    expect(masquerDateFrancaise('021')).toBe('02/1')
+    expect(masquerDateFrancaise('02112007')).toBe('02/11/2007')
+    // Idempotent (collage déjà formaté) et borné à 8 chiffres.
+    expect(masquerDateFrancaise('02/11/2007')).toBe('02/11/2007')
+    expect(masquerDateFrancaise('02112007999')).toBe('02/11/2007')
+    expect(masquerDateFrancaise('02-11-2007')).toBe('02/11/2007')
+  })
+
+  it('convertit JJ/MM/AAAA en ISO et refuse les dates inexistantes', () => {
+    expect(dateFrancaiseVersIso('02/11/2007')).toBe('2007-11-02')
+    expect(dateFrancaiseVersIso('29/02/2024')).toBe('2024-02-29')
+    expect(dateFrancaiseVersIso('29/02/2023')).toBeNull()
+    expect(dateFrancaiseVersIso('31/02/2007')).toBeNull()
+    expect(dateFrancaiseVersIso('2/11/2007')).toBeNull()
+    expect(dateFrancaiseVersIso('')).toBeNull()
+  })
+
+  it('valide : absente admise, invalide et futur refusés', () => {
+    expect(erreurDateNaissance('')).toBe('')
+    expect(erreurDateNaissance('14/03/2007')).toBe('')
+    expect(erreurDateNaissance('31/02/2007')).toMatch(/invalide/i)
+    expect(erreurDateNaissance('14/03/')).toMatch(/invalide/i)
+    const demain = new Date(Date.now() + 24 * 3600 * 1000)
+    const jj = String(demain.getDate()).padStart(2, '0')
+    const mm = String(demain.getMonth() + 1).padStart(2, '0')
+    expect(erreurDateNaissance(`${jj}/${mm}/${demain.getFullYear()}`)).toMatch(/futur/i)
+  })
+
+  const remplirIdentite = (card) => {
+    fireEvent.change(within(card).getByLabelText('Nom'), { target: { value: 'Traoré' } })
+    fireEvent.change(within(card).getByLabelText('Prénoms'), { target: { value: 'Mariam' } })
+    fireEvent.change(within(card).getByLabelText('Formation demandée'), { target: { value: '10' } })
+    fireEvent.change(within(card).getByLabelText('Niveau demandé'), { target: { value: '2' } })
+  }
+
+  it('le champ accepte la frappe libre et envoie la date en ISO', async () => {
+    mount()
+    await screen.findByText('C-005')
+    fireEvent.click(screen.getByRole('button', { name: /nouvelle candidature/i }))
+    const card = formOuvert()
+    remplirIdentite(card)
+
+    const champDate = within(card).getByLabelText('Date de naissance')
+    expect(champDate).toHaveAttribute('placeholder', 'JJ/MM/AAAA')
+    expect(champDate).toHaveAttribute('inputmode', 'numeric')
+
+    fireEvent.change(champDate, { target: { value: '14032007' } })
+    expect(champDate).toHaveValue('14/03/2007')
+
+    fireEvent.click(within(card).getByRole('button', { name: /enregistrer la candidature/i }))
+    await settle()
+
+    const candidats = posts((p) => p === '/admissions/candidats/')
+    expect(candidats).toHaveLength(1)
+    expect(candidats[0].body).toMatchObject({ date_naissance: '2007-03-14' })
+    expect(await screen.findByText('Candidature enregistrée')).toBeInTheDocument()
+  })
+
+  it('une date inexistante bloque l’enregistrement avec un message clair', async () => {
+    mount()
+    await screen.findByText('C-005')
+    fireEvent.click(screen.getByRole('button', { name: /nouvelle candidature/i }))
+    const card = formOuvert()
+    remplirIdentite(card)
+
+    fireEvent.change(within(card).getByLabelText('Date de naissance'), {
+      target: { value: '31022007' },
+    })
+    fireEvent.click(within(card).getByRole('button', { name: /enregistrer la candidature/i }))
+    await settle()
+
+    expect(await within(card).findByText(/date de naissance invalide/i)).toBeInTheDocument()
+    expect(posts((p) => p === '/admissions/candidats/')).toHaveLength(0)
+    expect(posts((p) => p === '/admissions/candidatures/')).toHaveLength(0)
+  })
+
+  it('sans date saisie, l’enregistrement envoie une valeur vide', async () => {
+    mount()
+    await screen.findByText('C-005')
+    fireEvent.click(screen.getByRole('button', { name: /nouvelle candidature/i }))
+    const card = formOuvert()
+    remplirIdentite(card)
+
+    fireEvent.click(within(card).getByRole('button', { name: /enregistrer la candidature/i }))
+    await settle()
+
+    const candidats = posts((p) => p === '/admissions/candidats/')
+    expect(candidats).toHaveLength(1)
+    expect(candidats[0].body).toMatchObject({ date_naissance: '' })
+  })
+})
+
+describe('pages/scolarite/Candidatures — calendrier premium de la date de naissance', () => {
+  const ouvrirFormulaire = async () => {
+    mount()
+    await screen.findByText('C-005')
+    fireEvent.click(screen.getByRole('button', { name: /nouvelle candidature/i }))
+    return formOuvert()
+  }
+
+  const remplir = (card) => {
+    fireEvent.change(within(card).getByLabelText('Nom'), { target: { value: 'Traoré' } })
+    fireEvent.change(within(card).getByLabelText('Prénoms'), { target: { value: 'Mariam' } })
+    fireEvent.change(within(card).getByLabelText('Formation demandée'), { target: { value: '10' } })
+    fireEvent.change(within(card).getByLabelText('Niveau demandé'), { target: { value: '2' } })
+  }
+
+  const ouvrirCalendrier = async (card) => {
+    fireEvent.click(within(card).getByRole('button', { name: /ouvrir le calendrier/i }))
+    return screen.findByRole('dialog', { name: /choisir une date de naissance/i })
+  }
+
+  it('s’ouvre une vingtaine d’années en arrière quand le champ est vide', async () => {
+    const card = await ouvrirFormulaire()
+    const dialogue = await ouvrirCalendrier(card)
+    const maintenant = new Date()
+    expect(within(dialogue).getByLabelText('Année affichée'))
+      .toHaveValue(String(maintenant.getFullYear() - 20))
+    expect(within(dialogue).getByLabelText('Mois affiché'))
+      .toHaveValue(String(maintenant.getMonth()))
+  })
+
+  it('sélectionne un jour après navigation mois/année et envoie la date en ISO', async () => {
+    const card = await ouvrirFormulaire()
+    remplir(card)
+    const dialogue = await ouvrirCalendrier(card)
+
+    fireEvent.change(within(dialogue).getByLabelText('Mois affiché'), { target: { value: '2' } })
+    fireEvent.change(within(dialogue).getByLabelText('Année affichée'), { target: { value: '2007' } })
+    fireEvent.click(within(dialogue).getByRole('button', { name: '14 mars 2007' }))
+
+    expect(within(card).getByLabelText('Date de naissance')).toHaveValue('14/03/2007')
+    expect(screen.queryByRole('dialog', { name: /choisir une date de naissance/i }))
+      .not.toBeInTheDocument()
+
+    fireEvent.click(within(card).getByRole('button', { name: /enregistrer la candidature/i }))
+    await settle()
+    const candidats = posts((p) => p === '/admissions/candidats/')
+    expect(candidats).toHaveLength(1)
+    expect(candidats[0].body).toMatchObject({ date_naissance: '2007-03-14' })
+  })
+
+  it('rouvre sur le mois de la date déjà saisie et marque le jour choisi', async () => {
+    const card = await ouvrirFormulaire()
+    fireEvent.change(within(card).getByLabelText('Date de naissance'), {
+      target: { value: '14032007' },
+    })
+    const dialogue = await ouvrirCalendrier(card)
+    expect(within(dialogue).getByLabelText('Mois affiché')).toHaveValue('2')
+    expect(within(dialogue).getByLabelText('Année affichée')).toHaveValue('2007')
+    expect(within(dialogue).getByRole('button', { name: '14 mars 2007' }))
+      .toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('désactive les dates futures', async () => {
+    const card = await ouvrirFormulaire()
+    const dialogue = await ouvrirCalendrier(card)
+    const maintenant = new Date()
+    fireEvent.change(within(dialogue).getByLabelText('Mois affiché'), {
+      target: { value: String(maintenant.getMonth()) },
+    })
+    fireEvent.change(within(dialogue).getByLabelText('Année affichée'), {
+      target: { value: String(maintenant.getFullYear()) },
+    })
+    const demain = new Date(Date.now() + 24 * 3600 * 1000)
+    const libelle = `${demain.getDate()} ${MOIS_FR[demain.getMonth()]} ${demain.getFullYear()}`
+    expect(within(dialogue).getByRole('button', { name: libelle })).toBeDisabled()
+  })
+
+  it('Échap ferme le calendrier ; Effacer vide le champ', async () => {
+    const card = await ouvrirFormulaire()
+    const champDate = within(card).getByLabelText('Date de naissance')
+    fireEvent.change(champDate, { target: { value: '14032007' } })
+
+    let dialogue = await ouvrirCalendrier(card)
+    fireEvent.keyDown(dialogue, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: /choisir une date de naissance/i }))
+      .not.toBeInTheDocument()
+    expect(champDate).toHaveValue('14/03/2007')
+
+    dialogue = await ouvrirCalendrier(card)
+    fireEvent.click(within(dialogue).getByRole('button', { name: /effacer/i }))
+    expect(champDate).toHaveValue('')
+    expect(screen.queryByRole('dialog', { name: /choisir une date de naissance/i }))
+      .not.toBeInTheDocument()
   })
 })

@@ -262,6 +262,41 @@ class TestRessourcesLMD(BaseLMD):
         self.assertEqual(corps['nb_creneaux'], 2)
         self.assertEqual(corps['creneaux'][0]['jour_libelle'], 'Lundi')
 
+    def test_canevas_conforme_ne_produit_aucun_avertissement(self):
+        """Les 24 créneaux officiels : aucun écart signalé."""
+        from edts.moteur import canevas_officiel as CO
+
+        for jour, debut, fin in CO.grille_officielle():
+            CreneauTemplate.objects.create(jour=jour, heure_debut=debut,
+                                           heure_fin=fin)
+        corps = self.client_api.get('/api/edts/lmd/audit/').json()
+        codes = [c['code'] for c in corps['controles']]
+        self.assertIn('CANEVAS_HORAIRE_OK', codes)
+        self.assertNotIn('CANEVAS_HORS_REFERENTIEL', codes)
+        self.assertNotIn('CANEVAS_CHEVAUCHEMENT', codes)
+
+    def test_canevas_hors_referentiel_signale(self):
+        """Deux créneaux valides mais absents du référentiel : c'est un écart."""
+        self.f.creer_creneaux(jours=('LUNDI',), heures=((8, 10), (10, 12)))
+        corps = self.client_api.get('/api/edts/lmd/audit/').json()
+        controles = {c['code']: c for c in corps['controles']}
+        self.assertIn('CANEVAS_HORS_REFERENTIEL', controles)
+        self.assertEqual(controles['CANEVAS_HORS_REFERENTIEL']['niveau'], 'WARNING')
+        self.assertNotIn('CANEVAS_CHEVAUCHEMENT', controles)
+
+    def test_canevas_chevauche_signale(self):
+        """08:00–12:00 contient 08:00–10:00 : C1/C2/C3 ne sont plus garantis."""
+        CreneauTemplate.objects.create(jour='LUNDI', heure_debut=time(8, 0),
+                                       heure_fin=time(12, 0))
+        CreneauTemplate.objects.create(jour='LUNDI', heure_debut=time(8, 0),
+                                       heure_fin=time(10, 0))
+        corps = self.client_api.get('/api/edts/lmd/audit/').json()
+        controles = {c['code']: c for c in corps['controles']}
+        self.assertIn('CANEVAS_CHEVAUCHEMENT', controles)
+        self.assertEqual(controles['CANEVAS_CHEVAUCHEMENT']['niveau'], 'WARNING')
+        self.assertEqual(
+            len(controles['CANEVAS_CHEVAUCHEMENT']['detail']['chevauchements']), 1)
+
     def test_contraintes_separe_dures_et_preferences(self):
         """Les dures C1→C10 sont exposées ; une préférence n'est jamais dure."""
         corps = self.client_api.get('/api/edts/lmd/constraints/').json()
@@ -626,3 +661,178 @@ class TestRegressionGenerateurHistorique(BaseLMD):
         edt = self.creer_edt(statut='VALIDE')
         r = self.client_api.post(f'/api/edts/emplois/{edt.pk}/generer/')
         self.assertEqual(r.status_code, 409)
+
+
+class TestExportPdfEmploiDuTemps(BaseLMD):
+    """`GET /api/edts/lmd/{id}/export.pdf/` — document imprimable réel.
+
+    Le PDF est produit par ``reportlab`` (dépendance déjà présente) à partir de
+    ``grille_hebdomadaire`` : la même grille que l'écran et que l'API JSON.
+    Aucune séance n'est inventée, et un EDT vide le dit dans le document.
+    """
+
+    def test_pdf_genere_depuis_la_grille_reelle(self):
+        self.connecter('SECRETARIAT')
+        edt, _gen = self.generer_et_persister()
+        r = self.client_api.get(f'/api/edts/lmd/{edt.pk}/export.pdf/')
+        self.assertEqual(r.status_code, 200, r.content[:200])
+        self.assertEqual(r['Content-Type'], 'application/pdf')
+        self.assertIn('attachment', r['Content-Disposition'])
+        self.assertIn(f'edt-{edt.pk}-v{edt.version}.pdf', r['Content-Disposition'])
+        contenu = r.content
+        self.assertTrue(contenu.startswith(b'%PDF-'), 'signature PDF absente')
+        self.assertGreater(len(contenu), 1000)
+        # Le document contient bien la grille réelle (texte extrait du PDF).
+        self.assertIn(b'/Type /Page', contenu)
+
+    def test_pdf_d_un_edt_vide_ne_fabrique_aucune_seance(self):
+        self.connecter('SECRETARIAT')
+        edt = self.creer_edt(titre='EDT volontairement vide')
+        r = self.client_api.get(f'/api/edts/lmd/{edt.pk}/export.pdf/')
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.content.startswith(b'%PDF-'))
+        # Aucune affectation n'existe : la grille ne peut pas en contenir.
+        self.assertEqual(edt.affectations.count(), 0)
+
+    def test_pdf_edt_introuvable(self):
+        self.connecter('SECRETARIAT')
+        r = self.client_api.get('/api/edts/lmd/999999/export.pdf/')
+        self.assertEqual(r.status_code, 404)
+
+    def test_pdf_refuse_sans_authentification(self):
+        edt = self.creer_edt()
+        client = APIClient()
+        r = client.get(f'/api/edts/lmd/{edt.pk}/export.pdf/')
+        self.assertIn(r.status_code, (401, 403))
+
+
+class TestExportXlsxEmploiDuTemps(BaseLMD):
+    """`GET /api/edts/lmd/{id}/export.xlsx/` — classeur Excel réel.
+
+    Le classeur est produit depuis `_seances_filtrees`, la même source que la
+    restitution JSON : le fichier ne peut pas diverger de l'écran.
+    """
+
+    def _classeur(self, reponse):
+        from io import BytesIO
+
+        from openpyxl import load_workbook
+
+        return load_workbook(BytesIO(reponse.content))
+
+    def test_xlsx_contient_les_seances_reelles(self):
+        self.connecter('SECRETARIAT')
+        edt, _gen = self.generer_et_persister()
+        r = self.client_api.get(f'/api/edts/lmd/{edt.pk}/export.xlsx/')
+        self.assertEqual(r.status_code, 200, r.content[:200])
+        self.assertIn('spreadsheetml', r['Content-Type'])
+        self.assertIn(f'edt-{edt.pk}-v{edt.version}.xlsx', r['Content-Disposition'])
+
+        classeur = self._classeur(r)
+        self.assertEqual(classeur.sheetnames, ['Séances', 'Synthèse'])
+        feuille = classeur['Séances']
+        entetes = [c.value for c in feuille[1]]
+        self.assertEqual(entetes[0], 'Jour')
+        self.assertIn('Intitulé', entetes)
+        self.assertIn('Enseignant', entetes)
+
+        attendues = edt.affectations.filter(actif=True).count()
+        self.assertGreaterEqual(attendues, 1)
+        # 1 ligne d'en-tête + exactement autant de lignes que de séances actives.
+        self.assertEqual(feuille.max_row, attendues + 1)
+        self.assertEqual(classeur['Synthèse']['B5'].value, attendues)
+
+    def test_xlsx_respecte_les_filtres_et_ne_complete_rien(self):
+        self.connecter('SECRETARIAT')
+        edt, _gen = self.generer_et_persister()
+        r = self.client_api.get(
+            f'/api/edts/lmd/{edt.pk}/export.xlsx/?groupe_id=999999')
+        self.assertEqual(r.status_code, 200)
+        feuille = self._classeur(r)['Séances']
+        # En-têtes conservés, aucune ligne inventée pour un groupe inexistant.
+        self.assertEqual(feuille.max_row, 1)
+
+    def test_xlsx_edt_vide_et_introuvable(self):
+        self.connecter('SECRETARIAT')
+        vide = self.creer_edt(titre='EDT vide export')
+        r = self.client_api.get(f'/api/edts/lmd/{vide.pk}/export.xlsx/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(self._classeur(r)['Séances'].max_row, 1)
+        r2 = self.client_api.get('/api/edts/lmd/999999/export.xlsx/')
+        self.assertEqual(r2.status_code, 404)
+
+    def test_xlsx_refuse_sans_authentification(self):
+        edt = self.creer_edt()
+        r = APIClient().get(f'/api/edts/lmd/{edt.pk}/export.xlsx/')
+        self.assertIn(r.status_code, (401, 403))
+
+
+class TestCandidatsDeplacement(BaseLMD):
+    """`GET /api/edts/lmd/items/<id>/move/` — propositions + cause réelle.
+
+    La route ne doit jamais renvoyer « 0 candidat » sans explication : quand le
+    plan existant est déjà en violation, c'est cette violation qui bloque, et
+    elle est renvoyée telle quelle.
+    """
+
+    def test_plan_valide_propose_des_positions(self):
+        self.connecter('SECRETARIAT')
+        edt, _gen = self.generer_et_persister()
+        seance = edt.affectations.filter(actif=True).first()
+        r = self.client_api.get(f'/api/edts/lmd/items/{seance.pk}/move/')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        corps = r.json()
+        self.assertTrue(corps['plan_valide'], corps.get('violations_plan'))
+        self.assertGreater(corps['nb_candidats'], 0)
+        candidat = corps['candidats'][0]
+        for cle in ('creneau_template_id', 'jour', 'heure_debut',
+                    'heure_fin', 'salle_id', 'salle_nom', 'salle_capacite'):
+            self.assertIn(cle, candidat)
+
+    def test_plan_deja_invalide_explique_la_cause(self):
+        """Séance sans ancrage pédagogique → C8 bloque TOUT déplacement."""
+        self.connecter('SECRETARIAT')
+        edt = self.creer_edt()
+        self.f.creer_creneaux(heures=((8, 10), (10, 12)))
+        creneau = CreneauTemplate.objects.first()
+        self.f.creer_affectation(volume=2, groupe=self.groupe)
+        # Séance volontairement posée sans affectation pédagogique ni ECUE.
+        from edts.models import AffectationCreneau
+
+        orpheline = AffectationCreneau.objects.create(
+            emploi_du_temps=edt, creneau_template=creneau, semaine_debut=1,
+            semaine_fin=10, salle=None, salle_nom='', formation=self.f.cycle,
+            groupe=self.groupe, affectation_pedagogique=None,
+            nature='COURS', intitule='Séance non ancrée', actif=True)
+        # Une SECONDE séance non ancrée reste dans le plan pendant le
+        # déplacement : c'est elle qui rend le plan invalide (la séance déplacée
+        # est exclue de la validation, puisqu'elle change de position).
+        autre_creneau = CreneauTemplate.objects.exclude(pk=creneau.pk).first()
+        AffectationCreneau.objects.create(
+            emploi_du_temps=edt, creneau_template=autre_creneau, semaine_debut=1,
+            semaine_fin=10, salle=None, salle_nom='', formation=self.f.cycle,
+            groupe=self.groupe, affectation_pedagogique=None,
+            nature='COURS', intitule='Autre séance non ancrée', actif=True)
+        r = self.client_api.get(f'/api/edts/lmd/items/{orpheline.pk}/move/')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        corps = r.json()
+        self.assertFalse(corps['plan_valide'])
+        self.assertTrue(corps['violations_plan'])
+        codes = {v['contrainte'] for v in corps['violations_plan']}
+        self.assertIn('C8_COHERENCE_PEDAGOGIQUE', codes)
+        self.assertIn('explication', corps)
+        self.assertIn('action_recommandee', corps)
+
+    def test_l_adaptateur_expose_ecue_id(self):
+        """Régression : sans `ecue_id`, la revalidation levait un 500."""
+        from edts.api_lmd import _BesoinAffectation
+
+        self.connecter('SECRETARIAT')
+        edt, _gen = self.generer_et_persister()
+        seance = (edt.affectations.filter(actif=True)
+                  .select_related('affectation_pedagogique', 'emploi_du_temps')
+                  .first())
+        besoin = _BesoinAffectation(seance, 2.0, 30)
+        self.assertTrue(hasattr(besoin, 'ecue_id'))
+        self.assertEqual(besoin.ecue_id,
+                         seance.affectation_pedagogique.ecue_id)

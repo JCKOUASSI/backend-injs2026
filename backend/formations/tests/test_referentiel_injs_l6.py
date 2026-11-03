@@ -152,12 +152,12 @@ class TestBAAucuneFormationEtrange(BaseL6TestCase):
         """Les formations d'exploitation étrangères restent en base mais
         hors du périmètre fonctionnel INJS."""
         intruse = 'Formation Administration de Base (FAB) — Vague 1'
-        cpfae = Formation.objects.create(formation=intruse)
-        self.assertTrue(Formation.objects.filter(pk=cpfae.pk).exists())
+        intruse_obj = Formation.objects.create(formation=intruse)
+        self.assertTrue(Formation.objects.filter(pk=intruse_obj.pk).exists())
         payload = self.get_api()
-        self.assertNotIn(cpfae.formation, self.intitules_injs(payload))
+        self.assertNotIn(intruse_obj.formation, self.intitules_injs(payload))
         self.assertNotIn(
-            cpfae.formation,
+            intruse_obj.formation,
             formations_injs().values_list('intitule', flat=True),
         )
 
@@ -384,9 +384,9 @@ class TestFPasDeRegressionL1L5(BaseL6TestCase):
 
     def test_les_donnees_legacy_ne_sont_pas_supprimees(self):
         """L6 §9 : les données CPFAE restent en base, hors périmètre."""
-        cpfae = Formation.objects.create(formation='Formation en Finances Publiques')
+        intruse_obj = Formation.objects.create(formation='Formation en Finances Publiques')
         call_command('qualifier_referentiel_injs_l6', stdout=StringIO())
-        self.assertTrue(Formation.objects.filter(pk=cpfae.pk).exists())
+        self.assertTrue(Formation.objects.filter(pk=intruse_obj.pk).exists())
         self.assertTrue(RefFormation.objects.exists())
 
     def test_la_commande_ne_cree_aucune_ue_ni_ecue(self):

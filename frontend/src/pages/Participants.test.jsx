@@ -817,3 +817,59 @@ describe('pages/Participants.jsx — P00-06 (capacités backend)', () => {
     expect(within(row).queryByTitle('Supprimer')).not.toBeInTheDocument()
   })
 })
+
+describe('pages/Participants.jsx — registre premium (indicateurs et filière)', () => {
+  beforeEach(() => {
+    apiController.reset()
+    window.localStorage.clear()
+    window.sessionStorage.clear()
+    apiController.setRoute(LIST, listHandler)
+    apiController.setRoute(REFS, referentiels)
+  })
+
+  it('affiche les indicateurs du registre et la parité femmes/hommes', async () => {
+    apiController.setRoute('/formations/participants/stats/', () => ({
+      total: 3500,
+      par_sexe: { FEMININ: 1750, MASCULIN: 1750 },
+      avec_grade: 852,
+      par_grade: { A3: 127 },
+      par_vague: { 'PREMIERE VAGUE': 900 },
+      par_type_concours: { 'Concours direct': 2600 },
+      inscrits_annee_courante: 3400,
+    }))
+    mount()
+    await waitForTable()
+    await settle()
+    expect(screen.getByText('Effectif')).toBeInTheDocument()
+    expect(screen.getByText('3 500')).toBeInTheDocument()
+    expect(screen.getByText('Femmes')).toBeInTheDocument()
+    expect(screen.getByText('Hommes')).toBeInTheDocument()
+    expect(screen.getAllByText('1 750')).toHaveLength(2)
+    expect(screen.getAllByText('50 % de l’effectif')).toHaveLength(2)
+    expect(screen.getByText('852')).toBeInTheDocument()
+    expect(screen.getByText(/3 400 inscrits cette année/)).toBeInTheDocument()
+  })
+
+  it('affiche la filière et le niveau actuels sous le nom de l’étudiant', async () => {
+    // La première route enregistrée gagne : on repart d'un registre vierge.
+    apiController.reset()
+    apiController.setRoute(REFS, referentiels)
+    apiController.setRoute(LIST, () => ({
+      count: 1,
+      total_pages: 1,
+      results: [{
+        id: 900, nom: 'DIALLO', prenom: 'Fatoumata', matricule: 'INJS26-0004',
+        sexe: 'FEMININ', grade: 'B3', telephone: '07 42 12 60 02',
+        groupe: 'Groupe A', secretariat_nom: 'Secrétariat des Études — Licence (exemple)',
+        formation_actuelle: 'ACTIVITÉS PHYSIQUES ADAPTÉES — LICENCE',
+        niveau_actuel: 'L1',
+      }],
+      filter_options: { secretariats: [], grades: [], groupes: [], types_concours: [] },
+    }))
+    mount()
+    const ligne = (await screen.findByText('DIALLO Fatoumata')).closest('tr')
+    expect(within(ligne).getByText(/ACTIVITÉS PHYSIQUES ADAPTÉES — LICENCE · L1/)).toBeInTheDocument()
+    expect(within(ligne).getByText('Groupe A')).toBeInTheDocument()
+    expect(within(ligne).getByText(/Secrétariat des Études — Licence/)).toBeInTheDocument()
+  })
+})

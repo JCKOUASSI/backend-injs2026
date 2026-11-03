@@ -991,8 +991,12 @@ def emploi_du_temps_export_api(request, pk):
     if e is None:
         return Response({'detail': 'Emploi du temps introuvable'}, status=status.HTTP_404_NOT_FOUND)
     jours = dict(JOUR_CHOICES)
+    # `groupe` est écrit par son __str__, qui lit `annee_academique` : sans la
+    # jointure, l'export CSV émettait une requête par séance (mesuré : 4 pour
+    # 2 séances, 24 pour 22 — `manage.py compteur_sql_getinjs`).
     affectations = (e.affectations.filter(actif=True)
-                    .select_related('creneau_template', 'groupe', 'formation')
+                    .select_related('creneau_template', 'groupe', 'formation',
+                                    'groupe__annee_academique')
                     .order_by('creneau_template__jour', 'creneau_template__heure_debut', 'semaine_debut'))
     reponse = HttpResponse(content_type='text/csv; charset=utf-8')
     nom = f"edt-{e.pk}-{(e.titre or e.population_label).casefold().replace(' ', '-')[:40]}.csv"

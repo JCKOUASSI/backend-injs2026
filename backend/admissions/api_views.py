@@ -380,7 +380,7 @@ ADMISSION_CHAMPS_CREATION = [
 
 
 def _serialize_admission(admission):
-    return {
+    data = {
         'id': admission.id,
         'candidature_id': admission.candidature_id,
         'candidature_numero': admission.candidature.numero,
@@ -407,12 +407,28 @@ def _serialize_admission(admission):
         'observations': admission.observations,
         'decide_par': admission.decide_par.username if admission.decide_par else None,
     }
+    inscription = _inscription_active(admission)
+    data.update({
+        'inscrit': inscription is not None,
+        'matricule': inscription.etudiant.matricule if inscription else None,
+        'etudiant_id': inscription.etudiant_id if inscription else None,
+        'inscription_statut': inscription.get_statut_display() if inscription else None,
+    })
+    return data
+
+
+def _inscription_active(admission):
+    """Inscription vivante issue de l'admission (hors annulées/rejetées)."""
+    for inscription in admission.inscriptions.all():
+        if inscription.statut not in ('ANNULEE', 'REJETEE'):
+            return inscription
+    return None
 
 
 def _admission_queryset():
     return Admission.objects.select_related(
         'candidature', 'candidat', 'annee_academique', 'ref_formation', 'niveau', 'decide_par',
-    )
+    ).prefetch_related('inscriptions__etudiant')
 
 
 @api_view(['GET', 'POST'])
@@ -423,6 +439,14 @@ def admission_list(request):
         for champ in ('decision', 'annee_academique_id', 'ref_formation_id', 'niveau_id', 'candidat_id'):
             if champ in request.query_params:
                 queryset = queryset.filter(**{champ: request.query_params[champ]})
+        recherche = (request.query_params.get('q') or '').strip()
+        if recherche:
+            queryset = queryset.filter(
+                Q(candidat__nom__icontains=recherche)
+                | Q(candidat__prenom__icontains=recherche)
+                | Q(candidature__numero__icontains=recherche)
+                | Q(reference_decision__icontains=recherche)
+            )
         return Response([_serialize_admission(a) for a in queryset[:500]])
 
     candidature = Candidature.objects.select_related(
@@ -505,7 +529,7 @@ def admission_annuler(request, pk):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def admission_stats(request):
-    """Répartition des admissions par décision."""
+    """Répartition des admissions par décision + chaîne d'inscription."""
     queryset = Admission.objects.all()
     if 'annee_academique_id' in request.query_params:
         queryset = queryset.filter(annee_academique_id=request.query_params['annee_academique_id'])
@@ -513,7 +537,21 @@ def admission_stats(request):
         ligne['decision']: ligne['total']
         for ligne in queryset.values('decision').annotate(total=Count('id'))
     }
-    return Response({'total': sum(repartition.values()), 'par_decision': repartition})
+    # « À inscrire » = permis d'inscription sans inscription vivante ;
+    # « inscrits » = admissions déjà converties en dossiers étudiants.
+    inscrits = 0
+    a_inscrire = 0
+    for admission in queryset.prefetch_related('inscriptions'):
+        if _inscription_active(admission) is not None:
+            inscrits += 1
+        elif admission.permet_inscription:
+            a_inscrire += 1
+    return Response({
+        'total': sum(repartition.values()),
+        'par_decision': repartition,
+        'a_inscrire': a_inscrire,
+        'inscrits': inscrits,
+    })
 
 
 @api_view(['GET'])

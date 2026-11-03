@@ -13,7 +13,7 @@ from scolarite.models import (
     Maquette, UE, ECUE, Groupe, AffectationPedagogique,
 )
 from admissions.models import CampagneAdmission, Candidature, Epreuve, Admission
-from formations.models import RefFormation, Formateur, Module, SessionModule
+from formations.models import RefFormation, Formateur, Module, ModuleParticipant, SessionModule
 from jurys.models import SessionJury, DecisionJury, PVJury
 from graduation.models import Diplome
 from presences.models import Pointage
@@ -40,6 +40,16 @@ def _supervision_du_jour(date=None):
 
 def get_current_academic_year():
     return AnneeAcademique.courante_ou_none() or AnneeAcademique.objects.order_by('-libelle').first()
+
+
+def libelle_annee_courante():
+    """Libellé de l'année académique réellement enregistrée, sinon ``None``.
+
+    Aucune année n'est inventée : une constante « 2026-2027 » servait de repli
+    et affichait une année qui n'existait pas dans le référentiel.
+    """
+    annee = get_current_academic_year()
+    return annee.libelle if annee else None
 
 
 def get_direction_overview():
@@ -141,7 +151,7 @@ def get_direction_overview():
     ]
 
     return {
-        'annee_academique': annee.libelle if annee else '2026-2027',
+        'annee_academique': annee.libelle if annee else None,
         'kpis': {
             'etudiants_inscrits': nb_inscrits,
             'candidats': nb_candidats,
@@ -191,7 +201,7 @@ def get_admissions_dashboard():
         })
 
     return {
-        'annee_academique': annee.libelle if annee else '2026-2027',
+        'annee_academique': annee.libelle if annee else None,
         'kpis': {
             'campagnes_actives': campagnes.filter(statut=CampagneAdmission.Statut.OUVERTE).count(),
             'total_candidatures': total_candidatures,
@@ -212,48 +222,86 @@ def get_admissions_dashboard():
 
 
 def get_etudiant_dashboard(user):
-    """Dashboard personnalisé pour l'étudiant / auditeur connecté."""
-    dossier = DossierEtudiant.objects.filter(participant__user=user).first() if user else None
-    if not dossier:
-        # Fallback pour démonstration / utilisateur de test
-        dossier = DossierEtudiant.objects.first()
+    """Dashboard personnalisé de l'étudiant connecté.
 
+    Deux règles :
+      * **aucune donnée d'un autre étudiant** — l'ancien repli
+        ``DossierEtudiant.objects.first()`` servait le dossier d'un tiers au
+        compte qui n'en avait pas ;
+      * **aucune valeur inventée** — moyennes, crédits, assiduité et solde
+        proviennent des modèles (``DecisionJury``, ``Diplome``, …) ou restent
+        ``None`` (l'interface affiche « — »).
+    """
+    dossier = (
+        DossierEtudiant.objects.select_related('participant').filter(participant__user=user).first()
+        if user else None
+    )
     inscription = dossier.inscription_courante if dossier else None
-    credits_valides = 30 if inscription else 0
-    moyenne = "13.38 / 20"
-    nom = dossier.nom_complet if dossier else 'Étudiant INJS'
-    formation = inscription.ref_formation.intitule if inscription and getattr(inscription, 'ref_formation', None) else 'Licence STAPS'
-    niveau = inscription.niveau.code if inscription and getattr(inscription, 'niveau', None) else 'L3'
+    decision = None
+    if dossier is not None:
+        # `jurys.services.decision_officielle_pour` : source unique de vérité.
+        from jurys.services import decision_officielle_pour
+        decision = decision_officielle_pour(dossier.participant)
+
+    diplome = None
+    if dossier is not None:
+        diplome = Diplome.objects.filter(etudiant=dossier).order_by('-created_at').first()
+
+    nb_modules = (
+        ModuleParticipant.objects.filter(participant=dossier.participant).count()
+        if dossier else None
+    )
+
+    # 60 = deux semestres de 30 ECTS (règle LMD du référentiel).
+    credits_requis = 60
+    credits_valides = decision.credits_acquis if decision else None
+    moyenne = None
+    if decision and decision.moyenne_generale is not None:
+        moyenne = f"{decision.moyenne_generale} / 20"
 
     return {
-        'annee_academique': (get_current_academic_year().libelle if get_current_academic_year() else '2026-2027'),
-        'etudiant': nom,
-        'matricule': dossier.matricule if dossier else 'INJS26-0001',
-        'formation': formation,
-        'niveau': niveau,
+        'annee_academique': libelle_annee_courante(),
+        'etudiant': dossier.nom_complet if dossier else None,
+        'matricule': dossier.matricule if dossier else None,
+        'formation': (
+            inscription.ref_formation.intitule
+            if inscription and getattr(inscription, 'ref_formation', None) else None
+        ),
+        'niveau': inscription.niveau.code if inscription and getattr(inscription, 'niveau', None) else None,
         'credits_valides': credits_valides,
-        'credits_requis': 60,
+        'credits_requis': credits_requis,
         'moyenne_generale': moyenne,
-        'taux_presence': '96%',
-        'solde_finance': '0 FCFA (À jour)',
+        'taux_presence': None,
+        'solde_finance': None,
         # KPIs normalisés pour le Dashboard Engine
         'kpis': {
             'credits_obtenus': credits_valides,
-            'credits_restants': max(0, 60 - credits_valides),
+            'credits_restants': (
+                max(0, credits_requis - credits_valides) if credits_valides is not None else None
+            ),
             'moyenne_generale': moyenne,
-            'assiduite': '96%',
-            'ue_validees': 4,
-            'ue_a_valider': 2,
-            'solde_finance': '0 FCFA',
-            'stage_statut': 'À planifier',
+            'assiduite': None,
+            'ue_validees': None,
+            'ue_a_valider': None,
+            'solde_finance': None,
+            'stage_statut': None,
         },
         'pipeline': [
-            {'label': 'Admission', 'value': 'Validée', 'active': True, 'icon': 'bi-check2'},
-            {'label': 'Inscription LMD', 'value': 'Inscrit', 'active': True, 'icon': 'bi-card-checklist'},
-            {'label': 'Enseignements', 'value': 'En cours', 'active': True, 'icon': 'bi-book'},
-            {'label': 'Évaluations', 'value': '36 notes', 'active': True, 'icon': 'bi-pencil'},
-            {'label': 'Jury', 'value': 'Admis S1', 'active': True, 'icon': 'bi-balance-scale'},
-            {'label': 'Diplômation', 'value': 'En attente', 'active': False, 'icon': 'bi-award'},
+            {'label': 'Admission', 'value': 'Validée' if inscription else None,
+             'active': inscription is not None, 'icon': 'bi-check2'},
+            {'label': 'Inscription LMD',
+             'value': inscription.get_statut_display() if inscription else None,
+             'active': inscription is not None, 'icon': 'bi-card-checklist'},
+            {'label': 'Enseignements',
+             'value': f"{nb_modules} module(s)" if nb_modules else None,
+             'active': bool(nb_modules), 'icon': 'bi-book'},
+            {'label': 'Évaluations', 'value': None, 'active': False, 'icon': 'bi-pencil'},
+            {'label': 'Jury',
+             'value': decision.get_decision_display() if decision else None,
+             'active': decision is not None, 'icon': 'bi-balance-scale'},
+            {'label': 'Diplômation',
+             'value': diplome.get_statut_display() if diplome else None,
+             'active': diplome is not None, 'icon': 'bi-award'},
         ],
         'quick_actions': [
             {'label': 'Mon emploi du temps', 'to': '/edt', 'icon': 'bi-calendar3'},
@@ -265,27 +313,43 @@ def get_etudiant_dashboard(user):
 
 
 def get_enseignant_dashboard(user):
-    """Dashboard Enseignant / Formateur."""
-    formateur = Formateur.objects.filter(user=user).first() if user else None
-    if not formateur:
-        formateur = Formateur.objects.first()
+    """Dashboard Enseignant / Formateur.
 
-    nb_modules = Module.objects.filter(formateur=formateur).count() if formateur else 0
+    Même règle : jamais le profil d'un autre enseignant (ancien repli
+    ``Formateur.objects.first()``), jamais de volume horaire ou d'effectif
+    inventé (120 h, 85 h, 96 étudiants, 3 groupes…).
+    """
+    formateur = Formateur.objects.filter(user=user).first() if user else None
+
+    modules = Module.objects.filter(formateur=formateur) if formateur else Module.objects.none()
+    nb_modules = modules.count() if formateur else None
+    groupes = (
+        modules.exclude(groupe='').values('groupe').distinct().count() if formateur else None
+    )
+    etudiants = (
+        ModuleParticipant.objects.filter(module__formateur=formateur)
+        .values('participant').distinct().count() if formateur else None
+    )
+    heures_prevues = None
+    if formateur:
+        # Somme réelle des volumes prévus de SES modules (0 s'il n'en a aucun).
+        heures_prevues = float(modules.aggregate(total=Sum('duree_prevue_heures'))['total'] or 0)
+
     return {
-        'annee_academique': (get_current_academic_year().libelle if get_current_academic_year() else '2026-2027'),
-        'enseignant': f"{formateur.nom} {formateur.prenom}" if formateur else "Enseignant INJS",
-        'specialite': getattr(formateur, 'specialite', None) or "STAPS",
+        'annee_academique': libelle_annee_courante(),
+        'enseignant': f"{formateur.nom} {formateur.prenom}" if formateur else None,
+        'specialite': (formateur.specialite or None) if formateur else None,
         'kpis': {
-            'cours_assignes': nb_modules or 4,
-            'heures_prevues': 120,
-            'heures_realisees': 85,
-            'heures_cm': 42,
-            'heures_td': 28,
-            'heures_tp': 16,
-            'groupes': 3,
-            'etudiants': 96,
-            'evaluations_en_attente': 1,
-            'absences_a_traiter': 2,
+            'cours_assignes': nb_modules,
+            'heures_prevues': heures_prevues,
+            'heures_realisees': None,
+            'heures_cm': None,
+            'heures_td': None,
+            'heures_tp': None,
+            'groupes': groupes,
+            'etudiants': etudiants,
+            'evaluations_en_attente': None,
+            'absences_a_traiter': None,
         },
         'quick_actions': [
             {'label': 'Mes groupes', 'to': '/scolarite/groupes', 'icon': 'bi-people'},
@@ -324,7 +388,7 @@ def get_scolarite_dashboard():
         par_formation.append({'label': f.intitule[:20], 'value': nb})
 
     return {
-        'annee_academique': annee.libelle if annee else '2026-2027',
+        'annee_academique': annee.libelle if annee else None,
         'kpis': {
             'total_inscrits': total_inscrits,
             'inscriptions_validees': total_validees,
@@ -364,7 +428,7 @@ def get_pedagogie_dashboard():
     vh = heures_prevues or 310
 
     return {
-        'annee_academique': annee.libelle if annee else '2026-2027',
+        'annee_academique': annee.libelle if annee else None,
         'kpis': {
             'enseignants_actifs': nb_enseignants,
             'modules_ouverts': nb_modules,

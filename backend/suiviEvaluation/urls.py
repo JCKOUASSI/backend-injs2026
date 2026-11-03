@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from . import academic_views
+from . import academic_views, fiches_api
 
 urlpatterns = [
     # ── Questionnaires (superviseurs) ────────────────────────────────
@@ -28,5 +28,23 @@ urlpatterns = [
     path('formations/<int:formation_pk>/decisions/', academic_views.formation_decisions_list, name='eval-formation-decisions'),
     path('formations/<int:formation_pk>/decisions/recalculer/', academic_views.formation_decisions_recalc, name='eval-formation-decisions-recalc'),
     path('decisions/<int:pk>/', academic_views.decision_detail, name='eval-decision-detail'),
+
+    # ── Fiches individuelles (écrans « fiche étudiant » / « fiche enseignant »)
+    path(
+        'auditeurs/<int:participant_pk>/formations/<int:formation_pk>/fiche/',
+        fiches_api.fiche_auditeur, name='eval-fiche-auditeur',
+    ),
+    path(
+        'auditeurs/<int:participant_pk>/formations/<int:formation_pk>/fiche/export/<str:fmt>/',
+        fiches_api.exporter_fiche_auditeur, name='eval-fiche-auditeur-export',
+    ),
+    path(
+        'formateurs/<int:formateur_pk>/modules/<int:module_pk>/fiche/',
+        fiches_api.fiche_formateur, name='eval-fiche-formateur',
+    ),
+    path(
+        'formateurs/<int:formateur_pk>/modules/<int:module_pk>/fiche/export/<str:fmt>/',
+        fiches_api.exporter_fiche_formateur, name='eval-fiche-formateur-export',
+    ),
 ]
 

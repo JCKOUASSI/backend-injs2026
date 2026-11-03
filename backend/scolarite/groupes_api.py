@@ -1,7 +1,7 @@
 """API des affectations de groupe, réinscriptions et événements de scolarité."""
 
 from django.core.exceptions import ValidationError
-from django.db.models import Q
+from django.db.models import Count, Q
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -53,7 +53,14 @@ def _serialize_evenement(evenement):
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def groupe_effectifs(request):
     """Effectifs et places restantes par groupe."""
-    queryset = Groupe.objects.select_related('annee_academique', 'ref_formation', 'niveau')
+    queryset = (
+        Groupe.objects
+        .select_related('annee_academique', 'ref_formation', 'niveau')
+        # Effectif annoté en une seule requête (le registre compte plus
+        # d'une centaine de groupes : éviter deux requêtes par groupe).
+        .annotate(effectif=Count(
+            'affectations', filter=Q(affectations__active=True)))
+    )
     for champ in ('annee_academique_id', 'ref_formation_id', 'niveau_id', 'parcours_id', 'actif'):
         if champ in request.query_params:
             valeur = request.query_params[champ]
@@ -68,8 +75,11 @@ def groupe_effectifs(request):
             'ref_formation': groupe.ref_formation.intitule,
             'niveau': groupe.niveau.code,
             'capacite_max': groupe.capacite_max,
-            'effectif': groupes_services.effectif_groupe(groupe),
-            'places_restantes': groupes_services.places_restantes(groupe),
+            'effectif': groupe.effectif,
+            'places_restantes': (
+                None if groupe.capacite_max is None
+                else max(groupe.capacite_max - groupe.effectif, 0)
+            ),
             'actif': groupe.actif,
         }
         for groupe in queryset
@@ -173,7 +183,39 @@ def reinscrire(request):
                 | Q(etudiant__participant__nom__icontains=recherche)
                 | Q(etudiant__participant__prenom__icontains=recherche)
             )
-        return Response([_serialize_inscription(i) for i in queryset[:500]])
+        # Tri déterministe : sans lui, des pages successives peuvent se
+        # chevaucher (même convention que la liste des dossiers étudiants).
+        queryset = queryset.order_by(
+            'etudiant__participant__nom', 'etudiant__participant__prenom',
+            'etudiant__participant__matricule', 'pk',
+        )
+        # Compatibilité : sans paramètres de pagination, la liste historique
+        # (plafond 500) est conservée. L'écran dédié demande des pages et
+        # obtient le total réel des flux (1 867 en 2026-2027, pas 500).
+        if 'page' not in request.query_params and 'page_size' not in request.query_params:
+            return Response([_serialize_inscription(i) for i in queryset[:500]])
+        try:
+            page = int(request.query_params.get('page', 1))
+            page_size = int(request.query_params.get('page_size', 50))
+        except (TypeError, ValueError):
+            return Response(
+                {'error': 'Les paramètres page et page_size doivent être numériques.'},
+                status=400,
+            )
+        if page < 1 or page_size < 1 or page_size > 100:
+            return Response(
+                {'error': 'page doit être >= 1 et page_size compris entre 1 et 100.'},
+                status=400,
+            )
+        total = queryset.count()
+        start = (page - 1) * page_size
+        return Response({
+            'results': [_serialize_inscription(i) for i in queryset[start:start + page_size]],
+            'count': total,
+            'total_pages': (total + page_size - 1) // page_size,
+            'page': page,
+            'page_size': page_size,
+        })
 
     etudiant = DossierEtudiant.objects.select_related('statut', 'participant').filter(
         pk=request.data.get('etudiant_id'),
@@ -209,6 +251,59 @@ def reinscrire(request):
     return Response(_serialize_inscription(inscription, detail=True), status=201)
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def reinscriptions_stats(request):
+    """Panorama des flux de continuité d'une année (hors premières inscriptions).
+
+    Sert les indicateurs de l'écran « Réinscriptions & transferts » sans
+    dépendre d'une liste plafonnée : répartition par type de flux
+    (réinscription, redoublement, reprise, réorientation, transfert), par
+    statut et par niveau, et part de continuité parmi les inscrits validés.
+    """
+    annee_id = request.query_params.get('annee_academique_id')
+    if annee_id:
+        annee = AnneeAcademique.objects.filter(pk=annee_id).first()
+        if annee is None:
+            return Response({'error': 'Année académique introuvable.'}, status=400)
+    else:
+        annee = (
+            AnneeAcademique.objects.filter(courante=True).first()
+            or AnneeAcademique.objects.order_by('-libelle').first()
+        )
+    base = (
+        InscriptionAdministrative.objects.filter(annee_academique=annee)
+        if annee is not None else InscriptionAdministrative.objects.none()
+    )
+    flux = base.exclude(type_inscription=InscriptionAdministrative.Type.PREMIERE)
+    validees = base.filter(statut=InscriptionAdministrative.Statut.VALIDEE)
+    flux_valides = flux.filter(statut=InscriptionAdministrative.Statut.VALIDEE)
+
+    par_type = {choix: 0 for choix in InscriptionAdministrative.Type.values}
+    for ligne in base.values('type_inscription').annotate(total=Count('id')):
+        par_type[ligne['type_inscription']] = ligne['total']
+
+    return Response({
+        'annee_academique_id': annee.id if annee else None,
+        'annee_academique': annee.libelle if annee else None,
+        'total_inscriptions': base.count(),
+        'total_flux': flux.count(),
+        'taux_continuite': (
+            round(100 * flux_valides.count() / validees.count(), 1)
+            if validees.exists() else 0
+        ),
+        'par_type': par_type,
+        'par_statut': {
+            ligne['statut']: ligne['total']
+            for ligne in flux.values('statut').annotate(total=Count('id'))
+        },
+        'par_niveau': {
+            (ligne['niveau__code'] or 'Non renseigné'): ligne['total']
+            for ligne in flux.values('niveau__code').annotate(total=Count('id'))
+        },
+    })
+
+
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def etudiant_evenements(request, pk):
@@ -233,3 +328,66 @@ def etudiant_evenements(request, pk):
 
     evenements = etudiant.evenements.select_related('enregistre_par')
     return Response([_serialize_evenement(e) for e in evenements])
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def groupe_non_affectes(request):
+    """Nombre d'inscriptions validées sans affectation de groupe active.
+
+    Sert d'alerte sur l'écran Groupes pédagogiques : tant qu'il reste des
+    étudiants non affectés sur le périmètre filtré, la répartition
+    automatique a du travail.
+    """
+    inscriptions = (
+        InscriptionAdministrative.objects
+        .filter(statut=InscriptionAdministrative.Statut.VALIDEE)
+        .exclude(affectations__active=True)
+    )
+    for champ in ('annee_academique_id', 'ref_formation_id', 'niveau_id'):
+        if request.query_params.get(champ):
+            inscriptions = inscriptions.filter(
+                **{champ: request.query_params[champ]})
+    return Response({'non_affectes': inscriptions.count()})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def groupe_liste_export(request, pk, fmt):
+    """Liste nominative d'un groupe TD/TP (affectations actives), PDF ou Excel.
+
+    Équivalent LMD de la « liste de classe » de la formation continue,
+    qui repose sur le champ libre `Participant.groupe` et ignore donc
+    les sections `scolarite.Groupe`.
+    """
+    from django.http import HttpResponse
+
+    from . import groupes_export
+
+    if fmt not in ('pdf', 'excel'):
+        return Response({'error': 'Format inconnu (pdf ou excel).'}, status=400)
+    groupe = (
+        Groupe.objects
+        .select_related('annee_academique', 'ref_formation', 'niveau')
+        .filter(pk=pk)
+        .first()
+    )
+    if groupe is None:
+        return Response({'error': 'Groupe introuvable.'}, status=404)
+    try:
+        buffer = (
+            groupes_export.export_groupe_pdf(groupe)
+            if fmt == 'pdf'
+            else groupes_export.export_groupe_excel(groupe)
+        )
+    except RuntimeError as exc:
+        return Response({'detail': str(exc)}, status=503)
+    type_contenu = (
+        'application/pdf' if fmt == 'pdf'
+        else 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response = HttpResponse(buffer.getvalue(), content_type=type_contenu)
+    nom_fichier = groupes_export.groupe_liste_filename(groupe, fmt)
+    response['Content-Disposition'] = f'attachment; filename="{nom_fichier}"'
+    return response

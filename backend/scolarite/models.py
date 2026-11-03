@@ -10,8 +10,9 @@ import uuid
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import F, Q
 from django.db.models.functions import Lower
 from django.utils import timezone
 
@@ -45,6 +46,7 @@ class JournalScolarite(models.Model):
         MATRICULE_GENERE = 'MATRICULE_GENERE', 'Matricule généré'
         INSCRIPTION_PEDAGOGIQUE_GENEREE = 'INSCRIPTION_PEDAGOGIQUE_GENEREE', 'Inscriptions pédagogiques générées'
         INSCRIPTION_PEDAGOGIQUE_MANUELLE = 'INSCRIPTION_PEDAGOGIQUE_MANUELLE', 'Modification pédagogique manuelle'
+        INSCRIPTION_PEDAGOGIQUE_DIFFEREE = 'INSCRIPTION_PEDAGOGIQUE_DIFFEREE', 'Inscriptions pédagogiques non générées (maquette indisponible)'
         GROUPE_AFFECTATION = 'GROUPE_AFFECTATION', 'Affectation à un groupe'
         GROUPE_CHANGEMENT = 'GROUPE_CHANGEMENT', 'Changement de groupe'
         REINSCRIPTION = 'REINSCRIPTION', 'Réinscription'
@@ -127,9 +129,31 @@ def journaliser(action, objet=None, acteur=None, **champs):
 
 
 class AnneeAcademique(models.Model):
-    """Année académique LMD (ex: 2026-2027)."""
+    """Année académique LMD (ex: 2026-2027).
 
-    libelle = models.CharField(max_length=20, unique=True, help_text='Format attendu : 2026-2027')
+    Cadre temporel de toute opération (inscriptions, barèmes, campagnes,
+    diplômes) : du 1er octobre au 31 juillet. La provenance est suivie
+    comme pour les autres référentiels (source, fiabilité, description) :
+    le calendrier est arrêté par la Direction des études — les années
+    planifiées restent des prévisions tant qu'elles ne sont pas ouvertes.
+    """
+
+    class Fiabilite(models.TextChoices):
+        OFFICIEL = 'OFFICIEL', 'Officiel (attesté par la source)'
+        MODELISE = 'MODELISE', 'Modélisé dans la source (proposition)'
+        CADRAGE = 'CADRAGE', 'Cadrage fonctionnel (à valider par l’INJS)'
+        A_RENSEIGNER = 'A_RENSEIGNER', 'À renseigner'
+
+    libelle = models.CharField(
+        max_length=20,
+        unique=True,
+        help_text='Format attendu : 2026-2027',
+        validators=[RegexValidator(
+            r'^\d{4}-\d{4}$',
+            "Libellé d'année académique invalide : format AAAA-AAAA attendu "
+            "(ex. 2026-2027).",
+        )],
+    )
     date_debut = models.DateField()
     date_fin = models.DateField()
     courante = models.BooleanField(
@@ -143,6 +167,15 @@ class AnneeAcademique(models.Model):
         help_text="Une année clôturée n'accepte plus de nouvelle inscription.",
     )
     date_cloture = models.DateField(null=True, blank=True)
+    # Provenance suivie, comme les référentiels du socle : la carte du
+    # module Référentiels présente ces trois zones pour chaque année.
+    description = models.TextField(blank=True, default='')
+    source_document = models.CharField(max_length=255, blank=True, default='')
+    fiabilite = models.CharField(
+        max_length=20,
+        choices=Fiabilite.choices,
+        default=Fiabilite.A_RENSEIGNER,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -155,11 +188,27 @@ class AnneeAcademique(models.Model):
                 condition=Q(courante=True),
                 name='uniq_annee_academique_courante',
             ),
+            # Garde-fous de processus, y compris hors des formulaires qui
+            # appellent clean() : une année finit après son début, et une
+            # année clôturée n'est jamais l'année courante (workflow de
+            # clôture : annee_services.cloturer_annee).
+            models.CheckConstraint(
+                condition=Q(date_fin__gt=F('date_debut')),
+                name='annee_fin_apres_debut',
+            ),
+            models.CheckConstraint(
+                condition=~(Q(cloturee=True) & Q(courante=True)),
+                name='annee_cloturee_non_courante',
+            ),
         ]
 
     def clean(self):
         if self.date_debut and self.date_fin and self.date_fin <= self.date_debut:
             raise ValidationError({'date_fin': 'La date de fin doit être postérieure à la date de début.'})
+        if self.cloturee and self.courante:
+            raise ValidationError({
+                'courante': "Une année clôturée ne peut pas être l'année courante."
+            })
 
     def __str__(self):
         return self.libelle
@@ -905,6 +954,105 @@ class Maquette(models.Model):
                         ref_modules_vus[ecue.ref_module_id] = ecue.code
         return problemes
 
+    # ── Complétude du référentiel (contrôle non bloquant) ────────────────────
+    #: Cible institutionnelle confirmée : 30 crédits ECTS par semestre.
+    CREDITS_PAR_SEMESTRE = 30
+
+    def controler_completude(self):
+        """Décrit, semestre par semestre, ce que la maquette documente vraiment.
+
+        Ce contrôle est **informatif** : il ne modifie rien et ne bloque aucune
+        opération. Il existe pour rendre visible une incomplétude de la source
+        officielle au lieu de la laisser se traduire par des totaux faux.
+
+        Cas réel visé : la maquette M1 de la filière MS ne documente que le
+        semestre S7 (30 ECTS) — le référentiel officiel ne contient aucune UE
+        pour S8. Le niveau affiche donc 30 crédits au lieu de 60, sans qu'aucune
+        donnée n'ait été inventée pour combler l'écart.
+
+        Retourne un dictionnaire sérialisable tel quel en JSON.
+        """
+        from django.db.models import Count, Sum
+
+        semestres = list(
+            Semestre.objects.filter(niveau=self.niveau).order_by('numero')
+        )
+        lignes = []
+        semestres_vides = []
+        total_niveau = 0
+        for semestre in semestres:
+            agregat = self.unites_enseignement.filter(semestre=semestre).aggregate(
+                total=Sum('credits'), nb=Count('id'),
+            )
+            total = agregat['total'] or 0
+            nb_ue = agregat['nb'] or 0
+            total_niveau += total
+            if nb_ue == 0:
+                semestres_vides.append(semestre.numero)
+            lignes.append({
+                'semestre_id': semestre.pk,
+                'numero': semestre.numero,
+                'libelle': semestre.libelle,
+                'nb_ue': nb_ue,
+                'credits': total,
+                'credits_attendus': self.CREDITS_PAR_SEMESTRE,
+                'ecart': total - self.CREDITS_PAR_SEMESTRE,
+            })
+
+        attendu_niveau = self.CREDITS_PAR_SEMESTRE * len(semestres)
+        complet = (
+            bool(semestres)
+            and not semestres_vides
+            and total_niveau == attendu_niveau
+        )
+        return {
+            'maquette_id': self.pk,
+            'niveau': self.niveau.code if self.niveau_id else None,
+            'filiere_code': (
+                self.ref_formation.filiere_code
+                if self.ref_formation_id and self.ref_formation
+                else None
+            ),
+            'semestres': lignes,
+            'semestres_vides': semestres_vides,
+            'credits_documentes': total_niveau,
+            'credits_attendus': attendu_niveau,
+            'credits_manquants': max(attendu_niveau - total_niveau, 0),
+            'complet': complet,
+            'statut': self.statut,
+        }
+
+    def repartir_credits_ecue(self):
+        """Ventile les crédits des UE entre leurs ECUE, à parts égales.
+
+        Le référentiel officiel INJS publie l'ECTS au niveau UE, jamais par
+        ECUE : à l'import, les ECUE restent donc à 0 crédit, ce que
+        ``verifier_coherence`` sanctionne (somme ECUE ≠ crédits UE) — aucune
+        maquette importée n'est validable en l'état. Cette ventilation
+        **technique** débloque la validation sans modifier les crédits
+        officiels des UE : parts égales entre les ECUE de l'UE (dans l'ordre
+        d'affichage), le reliquat (+1) allant aux premières.
+
+        Garde-fous : maquette BROUILLON uniquement, et seules les UE dont
+        **toutes** les ECUE sont à 0 crédit sont touchées (jamais une saisie
+        pédagogique existante). Retourne le nombre d'ECUE mises à jour.
+        """
+        if self.statut != self.Statut.BROUILLON:
+            return 0
+        maj = 0
+        for ue in self.unites_enseignement.prefetch_related('ecues'):
+            ecues = sorted(ue.ecues.all(), key=lambda e: (e.ordre, e.code))
+            if not ecues or ue.credits < len(ecues):
+                continue
+            if any(e.credits for e in ecues):
+                continue
+            base, reste = divmod(ue.credits, len(ecues))
+            for rang, ecue in enumerate(ecues):
+                ecue.credits = base + (1 if rang < reste else 0)
+                ecue.save(update_fields=['credits'])
+                maj += 1
+        return maj
+
     # ── Lot L1 — clonage de version (correctif d'une maquette aboutie) ────────
     def cloner(self, utilisateur=None):
         """Crée une nouvelle version BROUILLON copiée de cette maquette.
@@ -941,6 +1089,10 @@ class Maquette(models.Model):
                 credits=ue.credits,
                 caractere=ue.caractere,
                 ordre=ue.ordre,
+                # La famille officielle fait partie de l'identité pédagogique de
+                # l'UE : un clonage qui la perdrait rendrait la nouvelle version
+                # inexploitable pour l'analyse des crédits par domaine.
+                famille=ue.famille,
             )
             for ecue in ue.ecues.all():
                 if ecue.archive:
@@ -966,6 +1118,32 @@ class Maquette(models.Model):
         return clone
 
 
+class FamilleModule(models.Model):
+    """Famille de modules du référentiel INJS (« Sciences biomédicales », …).
+
+    Le classeur officiel attribue à chaque UE une famille (feuille 8, colonne
+    « Famille de modules », 12 valeurs). Cette famille est un axe d'analyse
+    (répartition des crédits par domaine) : elle est donc portée par un
+    référentiel et non par un simple texte libre.
+
+    Le code est **technique** (slug du libellé officiel) : le classeur ne publie
+    aucun code de famille. Le libellé, lui, est repris mot pour mot.
+    """
+
+    code = models.CharField(max_length=60, unique=True)
+    libelle = models.CharField(max_length=150, unique=True)
+    ordre = models.PositiveSmallIntegerField(default=1)
+    actif = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['ordre', 'libelle']
+        verbose_name = 'LMD – Famille de modules'
+        verbose_name_plural = 'LMD – Familles de modules'
+
+    def __str__(self):
+        return self.libelle
+
+
 class UE(models.Model):
     """Unité d'enseignement d'une maquette, rattachée à un semestre."""
 
@@ -973,6 +1151,23 @@ class UE(models.Model):
         OBLIGATOIRE = 'OBLIGATOIRE', 'Obligatoire'
         OPTIONNELLE = 'OPTIONNELLE', 'Optionnelle'
         LIBRE = 'LIBRE', 'Libre'
+
+    class Statut(models.TextChoices):
+        """Cycle de vie de l'élément pédagogique lui-même.
+
+        Distinct du statut de la **maquette** (qui gèle l'ensemble) : ici, on
+        dit si *cette* unité est en cours de rédaction, publiée, ou retirée.
+
+        - ``BROUILLON``  : modifiable et supprimable ;
+        - ``ACTIVE``     : publiée — plus modifiable, il faut repasser par un
+          brouillon (la donnée pédagogique publiée ne se réécrit pas en place) ;
+        - ``DESACTIVEE`` : retirée de l'usage courant, conservée pour l'historique
+          (notes, jurys, archives) — jamais effacée.
+        """
+
+        BROUILLON = 'BROUILLON', 'Brouillon'
+        ACTIVE = 'ACTIVE', 'Activé'
+        DESACTIVEE = 'DESACTIVEE', 'Désactivé'
 
     maquette = models.ForeignKey(
         Maquette, on_delete=models.CASCADE, related_name='unites_enseignement',
@@ -983,6 +1178,15 @@ class UE(models.Model):
     credits = models.PositiveSmallIntegerField(default=0, verbose_name='Crédits ECTS')
     caractere = models.CharField(max_length=20, choices=Caractere.choices, default=Caractere.OBLIGATOIRE)
     ordre = models.PositiveSmallIntegerField(default=1)
+    statut = models.CharField(
+        max_length=20, choices=Statut.choices, default=Statut.BROUILLON,
+        db_index=True,
+    )
+    famille = models.ForeignKey(
+        FamilleModule, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='unites_enseignement',
+        help_text='Famille officielle du référentiel (axe d’analyse des crédits).',
+    )
 
     class Meta:
         ordering = ['semestre__numero', 'ordre', 'code']
@@ -1008,13 +1212,47 @@ class UE(models.Model):
         self._verifier_maquette_modifiable()
         super().save(*args, **kwargs)
 
+    def ecues_non_supprimables(self):
+        """ECUE qui empêcheraient la suppression de cette UE."""
+        return self.ecues.exclude(statut=self.Statut.BROUILLON)
+
     def delete(self, *args, **kwargs):
+        """Suppression réservée au brouillon, et sans cascade silencieuse.
+
+        Supprimer une UE emporte ses ECUE par ``CASCADE`` : c'est exactement le
+        genre d'effacement de masse qu'un référentiel ne doit jamais faire par
+        mégarde. On refuse donc tant que l'UE n'est pas en brouillon ou qu'elle
+        porte encore des ECUE, et on dit combien — la suppression reste possible,
+        mais elle se fait en connaissance de cause, ligne par ligne.
+        """
         self._verifier_maquette_modifiable()
+        if self.statut != self.Statut.BROUILLON:
+            raise ValidationError(
+                f"L'UE {self.code} est {self.get_statut_display().lower()} : "
+                "repassez-la en brouillon avant de la supprimer."
+            )
+        nombre = self.ecues.count()
+        if nombre:
+            raise ValidationError(
+                f"L'UE {self.code} porte {nombre} ECUE : supprimez-les d'abord "
+                "(aucune suppression en cascade n'est autorisée)."
+            )
         return super().delete(*args, **kwargs)
 
 
 class ECUE(models.Model):
     """Élément constitutif d'une UE. Passerelle possible vers un RefModule opérationnel."""
+
+    class Statut(models.TextChoices):
+        """Même cycle de vie que l'UE (brouillon / activé / désactivé).
+
+        ``archive`` reste un drapeau distinct et plus fort : une ECUE archivée
+        ne peut entrer dans aucune nouvelle version de maquette.
+        """
+
+        BROUILLON = 'BROUILLON', 'Brouillon'
+        ACTIVE = 'ACTIVE', 'Activé'
+        DESACTIVEE = 'DESACTIVEE', 'Désactivé'
 
     ue = models.ForeignKey(UE, on_delete=models.CASCADE, related_name='ecues')
     code = models.CharField(max_length=30)
@@ -1038,6 +1276,10 @@ class ECUE(models.Model):
     # Lot L1 — une ECUE archivée ne peut pas entrer dans une nouvelle maquette
     archive = models.BooleanField(default=False, db_index=True)
     ordre = models.PositiveSmallIntegerField(default=1)
+    statut = models.CharField(
+        max_length=20, choices=Statut.choices, default=Statut.BROUILLON,
+        db_index=True,
+    )
 
     class Meta:
         ordering = ['ordre', 'code']
@@ -1068,7 +1310,13 @@ class ECUE(models.Model):
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
+        """Même règle que l'UE : on ne supprime qu'un brouillon."""
         self._verifier_maquette_modifiable()
+        if self.statut != self.Statut.BROUILLON:
+            raise ValidationError(
+                f"L'ECUE {self.code} est {self.get_statut_display().lower()} : "
+                "repassez-la en brouillon avant de la supprimer."
+            )
         return super().delete(*args, **kwargs)
 
 

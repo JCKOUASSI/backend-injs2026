@@ -157,7 +157,6 @@ export const ARBORESCENCE = [
         id: 'scolarite.documents',
         libelle: 'Documents scolaires',
         chemin: '/scolarite/documents-scolaires',
-        ecran: 'documents_scolaires',
         droit: {
           curp: [
             'exports.export.generer',
@@ -189,7 +188,6 @@ export const ARBORESCENCE = [
         id: 'scolarite.reinscriptions',
         libelle: 'Réinscriptions & transferts',
         chemin: '/scolarite/reinscriptions',
-        ecran: 'reinscriptions',
         droit: {
           curp: [
             'scolarite.transfert.consulter',
@@ -202,7 +200,6 @@ export const ARBORESCENCE = [
         id: 'scolarite.journal',
         libelle: 'Journal de scolarité',
         chemin: '/scolarite/journal',
-        ecran: 'journal_scolarite',
         droit: {
           curp: ['scolarite.journal_scolarite.consulter'],
           legacy: [['scolarite', 'voir']],
@@ -229,7 +226,7 @@ export const ARBORESCENCE = [
       },
       {
         id: 'formations.filieres',
-        libelle: 'Filières',
+        libelle: 'Types de formation',
         chemin: '/formations/filieres',
         ecran: 'filieres',
         droit: {
@@ -333,6 +330,48 @@ export const ARBORESCENCE = [
         chemin: '/edt/nouveau',
         droit: {
           curp: ['edt.emploi_du_temps.generer', 'edt.emploi_du_temps.creer'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        // Demande 21 : entrée d'échelle annuelle — import du fichier des
+        // inscrits puis EDT de TOUTES les cohortes de l'année en une passe.
+        id: 'get_injs.generation_annuelle',
+        libelle: 'Génération annuelle & import',
+        chemin: '/edt/generation-annuelle',
+        droit: {
+          curp: ['edt.emploi_du_temps.generer'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        // LOT 2 — campagnes de génération : trace persistante (périmètre,
+        // bilan, anomalies, durée, historique) et publication contrôlée.
+        id: 'get_injs.campagnes',
+        libelle: 'Campagnes de génération',
+        chemin: '/edt/campagnes',
+        droit: {
+          curp: ['edt.emploi_du_temps.generer'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        // Écran « vérifier » : contrôle des données AVANT génération, et
+        // mémoire des versions avec les gestes valider / publier.
+        id: 'get_injs.audit',
+        libelle: 'Audit des données',
+        chemin: '/edt/audit',
+        droit: {
+          curp: ['edt.emploi_du_temps.generer', 'edt.contrainte.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        id: 'get_injs.versions',
+        libelle: 'Versions & publication',
+        chemin: '/edt/versions',
+        droit: {
+          curp: ['edt.emploi_du_temps.valider', 'edt.emploi_du_temps.publier'],
           legacy: [['web', 'operationnel']],
         },
       },
@@ -449,7 +488,6 @@ export const ARBORESCENCE = [
         id: 'evaluations.saisie_notes',
         libelle: 'Saisie des notes',
         chemin: '/evaluations/saisie',
-        ecran: 'saisie_notes',
         droit: {
           curp: ['evaluations.note.saisir'],
           legacy: [['evaluations', 'consulter']],
@@ -459,7 +497,6 @@ export const ARBORESCENCE = [
         id: 'evaluations.controle_notes',
         libelle: 'Contrôle des notes',
         chemin: '/evaluations/controle',
-        ecran: 'controle_notes',
         droit: {
           curp: [
             'evaluations.note.valider',
@@ -494,7 +531,6 @@ export const ARBORESCENCE = [
         id: 'evaluations.releves',
         libelle: 'Relevés de notes',
         chemin: '/evaluations/releves',
-        ecran: 'releves_notes',
         droit: {
           curp: ['diplomation.releve_notes.consulter'],
           legacy: [['notes', 'gerer'], ['exports', 'liste_classe']],
@@ -523,7 +559,6 @@ export const ARBORESCENCE = [
         id: 'jurys.composition',
         libelle: 'Composition',
         chemin: '/jurys/composition',
-        ecran: 'jury_composition',
         droit: {
           curp: ['jurys.membre_jury.consulter'],
           legacy: [['scolarite', 'voir']],
@@ -533,7 +568,6 @@ export const ARBORESCENCE = [
         id: 'jurys.deliberations',
         libelle: 'Délibérations',
         chemin: '/jurys/deliberations',
-        ecran: 'jury_deliberations',
         droit: {
           curp: ['jurys.deliberation.consulter', 'jurys.decision.consulter'],
           legacy: [['scolarite', 'voir']],
@@ -543,7 +577,6 @@ export const ARBORESCENCE = [
         id: 'jurys.pv',
         libelle: 'PV de jury',
         chemin: '/jurys/pv',
-        ecran: 'jury_pv',
         droit: {
           curp: ['jurys.pv.generer', 'jurys.pv.signer', 'jurys.pv.publier'],
           legacy: [['scolarite', 'voir']],
@@ -553,7 +586,6 @@ export const ARBORESCENCE = [
         id: 'jurys.validation',
         libelle: 'Validation',
         chemin: '/jurys/validation',
-        ecran: 'jury_validation',
         droit: {
           curp: ['jurys.resultat.publier', 'jurys.decision.valider'],
           legacy: [['scolarite', 'voir']],
@@ -573,7 +605,6 @@ export const ARBORESCENCE = [
         id: 'diplomation.eligibilite',
         libelle: 'Éligibilité',
         chemin: '/diplomation/eligibilite',
-        ecran: 'eligibilite_diplome',
         droit: {
           curp: ['diplomation.diplome.consulter'],
           legacy: [['scolarite', 'voir']],
@@ -592,7 +623,6 @@ export const ARBORESCENCE = [
         id: 'diplomation.attestations',
         libelle: 'Attestations',
         chemin: '/diplomation/attestations',
-        ecran: 'attestations',
         droit: {
           curp: ['diplomation.attestation.consulter', 'diplomation.attestation.imprimer'],
           legacy: [['scolarite', 'voir']],
@@ -602,7 +632,6 @@ export const ARBORESCENCE = [
         id: 'diplomation.certificats',
         libelle: 'Certificats',
         chemin: '/diplomation/certificats',
-        ecran: 'certificats',
         droit: {
           curp: ['diplomation.modele_document.consulter'],
           legacy: [['scolarite', 'voir']],
@@ -612,7 +641,6 @@ export const ARBORESCENCE = [
         id: 'diplomation.registres',
         libelle: 'Registres & modèles',
         chemin: '/diplomation/registres',
-        ecran: 'registres_diplomes',
         droit: {
           curp: ['diplomation.registre.consulter'],
           legacy: [['scolarite', 'voir']],
@@ -651,7 +679,6 @@ export const ARBORESCENCE = [
         id: 'finances_etudiantes.frais',
         libelle: 'Frais de scolarité',
         chemin: '/finances-etudiantes/frais',
-        ecran: 'frais_scolarite',
         droit: {
           curp: ['finances_etud.tarification.consulter', 'finances_etud.echeancier.consulter'],
           legacy: [['scolarite', 'voir'], ['finance', 'voir']],
@@ -661,7 +688,6 @@ export const ARBORESCENCE = [
         id: 'finances_etudiantes.factures',
         libelle: 'Factures',
         chemin: '/finances-etudiantes/factures',
-        ecran: 'factures',
         droit: {
           curp: ['finances_etud.facture.consulter'],
           legacy: [['scolarite', 'voir'], ['finance', 'voir']],
@@ -671,7 +697,6 @@ export const ARBORESCENCE = [
         id: 'finances_etudiantes.paiements',
         libelle: 'Paiements',
         chemin: '/finances-etudiantes/paiements',
-        ecran: 'paiements',
         droit: {
           curp: ['finances_etud.paiement.saisir', 'finances_etud.paiement.valider'],
           legacy: [['scolarite', 'voir'], ['finance', 'voir']],
@@ -681,7 +706,6 @@ export const ARBORESCENCE = [
         id: 'finances_etudiantes.recus',
         libelle: 'Reçus',
         chemin: '/finances-etudiantes/recus',
-        ecran: 'recus',
         droit: {
           curp: ['finances_etud.quittance.editer', 'finances_etud.paiement.valider'],
           legacy: [['scolarite', 'voir'], ['finance', 'voir']],
@@ -691,7 +715,6 @@ export const ARBORESCENCE = [
         id: 'finances_etudiantes.bourses',
         libelle: 'Bourses & remboursements',
         chemin: '/finances-etudiantes/bourses',
-        ecran: 'bourses',
         droit: {
           curp: ['finances_etud.remboursement.consulter'],
           legacy: [['scolarite', 'voir'], ['finance', 'voir']],
@@ -701,7 +724,6 @@ export const ARBORESCENCE = [
         id: 'finances_etudiantes.situation',
         libelle: 'Situation financière',
         chemin: '/finances-etudiantes/situation',
-        ecran: 'situation_financiere',
         droit: {
           curp: ['finances_etud.relance.consulter', 'finances_etud.rapprochement.consulter'],
           legacy: [['scolarite', 'voir'], ['finance', 'voir']],
@@ -739,7 +761,6 @@ export const ARBORESCENCE = [
         id: 'stages.conventions',
         libelle: 'Conventions',
         chemin: '/stages/conventions',
-        ecran: 'stages_conventions',
         droit: {
           curp: ['stages.convention.creer', 'stages.convention.signer', 'stages.convention.valider'],
           legacy: [['scolarite', 'voir']],
@@ -749,7 +770,6 @@ export const ARBORESCENCE = [
         id: 'stages.organismes',
         libelle: "Structures d'accueil",
         chemin: '/stages/organismes',
-        ecran: 'stages_organismes',
         droit: {
           curp: ['stages.organisme.consulter'],
           legacy: [['scolarite', 'voir']],
@@ -759,7 +779,6 @@ export const ARBORESCENCE = [
         id: 'stages.affectations',
         libelle: 'Affectations & tuteurs',
         chemin: '/stages/affectations',
-        ecran: 'stages_affectations',
         droit: {
           curp: ['stages.tuteur.consulter'],
           legacy: [['scolarite', 'voir']],
@@ -769,7 +788,6 @@ export const ARBORESCENCE = [
         id: 'stages.suivi',
         libelle: 'Suivi des stages',
         chemin: '/stages/suivi',
-        ecran: 'stages_suivi',
         droit: {
           curp: ['stages.convention.valider', 'stages.convention.signer'],
           legacy: [['scolarite', 'voir']],
@@ -779,7 +797,6 @@ export const ARBORESCENCE = [
         id: 'stages.evaluations',
         libelle: 'Évaluations',
         chemin: '/stages/evaluations',
-        ecran: 'stages_evaluations',
         droit: {
           curp: ['stages.evaluation_stage.consulter'],
           legacy: [['scolarite', 'voir']],
@@ -808,7 +825,6 @@ export const ARBORESCENCE = [
         id: 'personnel.agents',
         libelle: 'Personnel administratif',
         chemin: '/personnel/agents',
-        ecran: 'rh_agents',
         droit: {
           curp: ['rh.agent.consulter'],
           legacy: [['web', 'operationnel']],
@@ -818,7 +834,6 @@ export const ARBORESCENCE = [
         id: 'personnel.affectations',
         libelle: 'Affectations',
         chemin: '/personnel/affectations',
-        ecran: 'rh_affectations',
         droit: {
           curp: ['rh.affectation_rh.consulter'],
           legacy: [['web', 'operationnel']],
@@ -837,7 +852,6 @@ export const ARBORESCENCE = [
         id: 'personnel.disponibilites',
         libelle: 'Disponibilités agents',
         chemin: '/personnel/disponibilites',
-        ecran: 'rh_disponibilites',
         droit: {
           curp: ['rh.disponibilite_agent.consulter'],
           legacy: [['web', 'operationnel']],
@@ -847,7 +861,6 @@ export const ARBORESCENCE = [
         id: 'personnel.documents',
         libelle: 'Documents RH',
         chemin: '/personnel/documents',
-        ecran: 'rh_documents',
         droit: {
           curp: ['rh.document_rh.consulter', 'rh.document_rh.deposer'],
           legacy: [['web', 'operationnel']],
@@ -933,7 +946,6 @@ export const ARBORESCENCE = [
         id: 'administration.courrier',
         libelle: 'Courrier / Documents',
         chemin: '/administration/courrier',
-        ecran: 'courrier_documents',
         droit: {
           curp: [
             'administrations.courrier.consulter',
@@ -946,7 +958,6 @@ export const ARBORESCENCE = [
         id: 'administration.reunions',
         libelle: 'Réunions & missions',
         chemin: '/administration/reunions',
-        ecran: 'reunions_missions',
         droit: {
           curp: ['administrations.reunion.consulter', 'administrations.mission.consulter'],
           legacy: [['web', 'operationnel']],
@@ -1350,8 +1361,18 @@ export const ARBORESCENCE = [
     enfants: [
       {
         id: 'referentiels.tous',
-        libelle: 'Tous les référentiels',
+        libelle: 'Tableau de bord',
         chemin: '/referentiels',
+        droit: {
+          curp: ['referentiels.referentiel.consulter'],
+          legacy: [['web', 'operationnel']],
+          roles: ['ADMIN', 'CHEF_INJS_ADMIN', 'INJS_ADMIN'],
+        },
+      },
+      {
+        id: 'referentiels.edition',
+        libelle: 'Édition des tables',
+        chemin: '/referentiels/edition',
         droit: {
           curp: ['referentiels.referentiel.consulter'],
           legacy: [['web', 'operationnel']],
@@ -1390,7 +1411,7 @@ export const ARBORESCENCE = [
       },
       {
         id: 'referentiels.filieres',
-        libelle: 'Filières',
+        libelle: 'Types de formation',
         chemin: '/referentiels/filieres',
         ecran: 'ref_filieres',
         droit: {
@@ -1454,6 +1475,19 @@ export const ARBORESCENCE = [
         chemin: '/parametres/flags',
         droit: {
           curp: ['parametres.parametre.administrer'],
+          legacy: [['web', 'operationnel']],
+          roles: ['ADMIN', 'CHEF_INJS_ADMIN', 'INJS_ADMIN'],
+        },
+      },
+      {
+        // Planche de style : documentation vivante du socle visuel, en lecture
+        // seule. Même garde que « Paramètres LMD » (trio d'administration) :
+        // l'écran ne modifie rien, mais il expose l'apparence de référence.
+        id: 'referentiels.planche_style',
+        libelle: 'Planche de style',
+        chemin: '/referentiels/planche-de-style',
+        droit: {
+          curp: ['parametres.parametre.consulter'],
           legacy: [['web', 'operationnel']],
           roles: ['ADMIN', 'CHEF_INJS_ADMIN', 'INJS_ADMIN'],
         },

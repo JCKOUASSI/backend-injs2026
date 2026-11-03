@@ -22,9 +22,9 @@ const RAPPORT_TYPES = [
 const STATUT_META = {
   BROUILLON: { label: 'Brouillon', bg: '#f1f5f9', color: '#475569' },
   EN_VALIDATION: { label: 'En validation', bg: '#fffae1', color: '#f5b417' },
-  VALIDE: { label: 'Validé', bg: '#e8eff5', color: '#125a99' },
-  PUBLIE: { label: 'Publié', bg: '#e3f2fd', color: '#1565c0' },
-  REJETE: { label: 'Rejeté', bg: '#ffebee', color: '#c62828' },
+  VALIDE: { label: 'Validé', bg: '#e8eff5', color: '#104A8E' },
+  PUBLIE: { label: 'Publié', bg: '#e3f2fd', color: '#104A8E' },
+  REJETE: { label: 'Rejeté', bg: '#ffebee', color: '#DC3545' },
 }
 
 function fmtDate(d) {
@@ -263,7 +263,7 @@ export default function RapportsWorkflowPanel({
         marginBottom: '0.75rem',
       }}>
         <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#1e293b', flex: 1 }}>
-          <i className="bi bi-file-earmark-check me-2" style={{ color: '#125a99' }}/>
+          <i className="bi bi-file-earmark-check me-2" style={{ color: '#104A8E' }}/>
           Rapports périodiques — validation
         </h3>
         <button type="button" className="btn btn-sm btn-outline-secondary" onClick={fetchList} disabled={loading}>

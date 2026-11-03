@@ -73,7 +73,7 @@
 .scolarite-card:hover,
 .stat-card:hover,
 .kpi-card:hover {
-  box-shadow: 0 12px 35px -5px rgba(11, 31, 58, 0.08), 0 0 1px 1px rgba(255, 255, 255, 1) !important;
+  box-shadow: 0 12px 35px -5px rgba(7, 27, 58, 0.08), 0 0 1px 1px rgba(255, 255, 255, 1) !important;
 }
 
 /* ── En-têtes de page : même gabarit que « Bonjour, <utilisateur> » ── */
@@ -117,7 +117,7 @@ h2.page-title {
   color: var(--navy);
 }
 
-/* ── Boîtes d'icônes KPI : 32px, fond #EFF6FF (réf. LMD2026) ── */
+/* ── Boîtes d'icônes KPI : 32px, fond var(--injs-blue-pale) (réf. LMD2026) ── */
 .kpi-icon-box,
 .stat-icon,
 .finance-kpi-card-icon {
@@ -166,7 +166,7 @@ h2.page-title {
 .form-control:focus,
 .form-select:focus {
   border-color: var(--primary) !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.15) !important;
   outline: none;
 }
 
@@ -186,11 +186,11 @@ h2.page-title {
   border-radius: var(--radius-pill) !important;
   font-weight: 600;
   border-width: 1.5px !important;
-  box-shadow: 0 2px 6px rgba(11, 31, 58, 0.04);
+  box-shadow: 0 2px 6px rgba(7, 27, 58, 0.04);
   transition: all 0.2s ease;
 }
-.btn-outline-primary { color: var(--primary) !important; border-color: #BFDBFE !important; }
-.btn-outline-primary:hover { background: #EFF6FF !important; border-color: var(--primary) !important; transform: translateY(-1px); }
+.btn-outline-primary { color: var(--primary) !important; border-color: var(--injs-border-strong) !important; }
+.btn-outline-primary:hover { background: var(--injs-blue-pale) !important; border-color: var(--primary) !important; transform: translateY(-1px); }
 .btn-outline-secondary { color: var(--secondary) !important; border-color: var(--border) !important; }
 .btn-outline-secondary:hover { background: #F8FAFC !important; border-color: #CBD5E1 !important; transform: translateY(-1px); }
 .btn-outline-danger { color: #DC2626 !important; border-color: #FECACA !important; }
@@ -305,19 +305,19 @@ h2.page-title {
 
 /* ══════════════════════════════════════════════════════════════════════
    PALETTE FINANCIÈRE — Raccordée à l'identité visuelle INJS
-   Le module Finance utilisait un bleu nuit (#001a33) et un orange (#e69700)
+   Le module Finance utilisait un bleu nuit (var(--injs-navy)) et un orange (#e69700)
    absents du design system INJS. On le raccorde aux tokens officiels.
    La sémantique métier (encours / prévision / plan / délai / taux)
    et toutes les valeurs affichées restent inchangées : seule la
    teinte de fond change.
    ══════════════════════════════════════════════════════════════════════ */
 .finance-page {
-  --fin-accent: #0B1F3A;
-  --fin-accent-soft: #EFF6FF;
+  --fin-accent: var(--injs-navy);
+  --fin-accent-soft: var(--injs-blue-pale);
   --fin-orange: #F59E0B;
   --fin-orange-soft: #FFFBEB;
-  --fin-blue: #2563EB;
-  --fin-blue-soft: #EFF6FF;
+  --fin-blue: var(--injs-blue-royal);
+  --fin-blue-soft: var(--injs-blue-pale);
   --fin-purple: #7B1FA2;
   --fin-purple-soft: #F3E8FF;
   --fin-radius: 12px;
@@ -325,8 +325,8 @@ h2.page-title {
 }
 
 .finance-hero {
-  background: linear-gradient(135deg, #0B1F3A 0%, #123E6A 55%, #2563EB 100%);
-  box-shadow: 0 8px 24px rgba(11, 31, 58, 0.24);
+  background: linear-gradient(135deg, var(--injs-navy) 0%, var(--injs-blue) 55%, var(--injs-blue-royal) 100%);
+  box-shadow: 0 8px 24px rgba(7, 27, 58, 0.24);
 }
 
 /* ==========================================================================
@@ -371,13 +371,13 @@ h2.page-title {
    actif et .pagination-num--active), afin que boutons, pastilles et
    pagination partagent le même bleu INJS. */
 .page-content .btn-primary {
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
   border-color: transparent;
   color: #FFFFFF;
 }
 .page-content .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%);
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.32);
+  background: linear-gradient(135deg, var(--injs-blue) 0%, var(--injs-blue-royal) 100%);
+  box-shadow: 0 4px 14px rgba(18, 103, 214, 0.32);
 }
 
 /* Variante secondaire : pastille claire, cohérente avec .pagination-btn. */
@@ -395,17 +395,17 @@ h2.page-title {
 }
 
 /* Cartes KPI finance : dégradés alignés sur la palette INJS */
-.finance-hero-kpi--money    { background: linear-gradient(135deg, #0B1F3A, #123E6A); }
-.finance-hero-kpi--forecast { background: linear-gradient(135deg, #123E6A, #2563EB); }
-.finance-hero-kpi--plan     { background: linear-gradient(135deg, #123E6A, #2A7FFF); }
-.finance-hero-kpi--time     { background: linear-gradient(135deg, #2563EB, #2A7FFF); }
+.finance-hero-kpi--money    { background: linear-gradient(135deg, var(--injs-navy), var(--injs-blue)); }
+.finance-hero-kpi--forecast { background: linear-gradient(135deg, var(--injs-blue), var(--injs-blue-royal)); }
+.finance-hero-kpi--plan     { background: linear-gradient(135deg, var(--injs-blue), var(--injs-blue-royal)); }
+.finance-hero-kpi--time     { background: linear-gradient(135deg, var(--injs-blue-royal), var(--injs-blue-royal)); }
 .finance-hero-kpi--rate     { background: linear-gradient(135deg, #D97706, #F59E0B); }
 
 /* Filtre période finance : pastilles cohérentes avec les boutons premium */
 .finance-filter-panel {
-  --fin-accent: #0B1F3A;
-  --fin-accent-soft: #EFF6FF;
-  --fin-blue-soft: #EFF6FF;
+  --fin-accent: var(--injs-navy);
+  --fin-accent-soft: var(--injs-blue-pale);
+  --fin-blue-soft: var(--injs-blue-pale);
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(14px) saturate(170%);
   -webkit-backdrop-filter: blur(14px) saturate(170%);
@@ -418,14 +418,14 @@ h2.page-title {
   transition: all 0.2s ease;
 }
 .finance-preset-pill:hover {
-  background: #EFF6FF;
+  background: var(--injs-blue-pale);
   border-color: var(--primary);
   color: var(--primary);
 }
 .finance-preset-pill.active {
-  background: linear-gradient(135deg, #2563EB 0%, #2A7FFF 100%);
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
   border-color: transparent;
   color: #FFFFFF;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.32);
+  box-shadow: 0 4px 14px rgba(18, 103, 214, 0.32);
 }
 

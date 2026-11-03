@@ -5,6 +5,8 @@ from django.utils import timezone
 
 from scolarite.models import JournalScolarite, journaliser
 
+from core.validators import valider_piece_candidature
+
 from .models import Candidature, PieceCandidature, ReglePiece, TypePiece
 
 
@@ -68,6 +70,10 @@ def deposer_piece(piece, fichier=None, acteur=None, **champs):
         if champ in champs:
             setattr(piece, champ, champs[champ])
     if fichier is not None:
+        # Les validateurs de champ ne s'exécutent pas sur ``save()`` :
+        # on les applique ici pour que l'API refuse réellement les fichiers
+        # hors format ou trop volumineux.
+        valider_piece_candidature(fichier)
         piece.fichier = fichier
     piece.statut = PieceCandidature.Statut.EN_VERIFICATION
     piece.verifie_par = None

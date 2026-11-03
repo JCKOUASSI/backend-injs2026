@@ -277,4 +277,55 @@ class ConcoursAPITests(ConcoursBase):
             'candidature_id': self.candidatures[0].pk, 'note': '19',
         }, format='json')
         self.assertEqual(res.status_code, 400)
+
+
+    def test_detail_campagne_retourne_epreuves_et_libelles(self):
+        """Régression : campagne_detail ne retournait rien (HTTP 500)."""
+        self.client.force_authenticate(make_user('sec_api_detail', role='SECRETARIAT'))
+        res = self.client.get(f'/api/admissions/campagnes/{self.campagne.pk}/')
+        self.assertEqual(res.status_code, 200, getattr(res, 'data', None))
+        self.assertEqual(res.data['statut_libelle'], self.campagne.get_statut_display())
+        self.assertEqual(res.data['ref_formation'], self.formation.intitule)
+        epreuves = res.data['epreuves']
+        self.assertEqual(len(epreuves), self.campagne.epreuves.count())
+        self.assertGreaterEqual(len(epreuves), 1)
+        self.assertEqual(epreuves[0]['type_libelle'], self.ecrit.get_type_display())
+        self.assertIn('nb_convocations', epreuves[0])
+
+    def test_detail_campagne_introuvable(self):
+        self.client.force_authenticate(make_user('sec_api_404', role='SECRETARIAT'))
+        res = self.client.get('/api/admissions/campagnes/999999/')
+        self.assertEqual(res.status_code, 404)
+
+    def test_classement_expose_le_libelle_de_liste(self):
+        self.client.force_authenticate(make_user('sec_api_class', role='SECRETARIAT'))
+        res = self.client.get(f'/api/admissions/campagnes/{self.campagne.pk}/classement/')
+        self.assertEqual(res.status_code, 200)
+        for ligne in res.data:
+            self.assertIn(ligne['liste_libelle'], ('Admissible', "Liste d'attente", 'Non admis'))
+
+
+    def test_liste_recherche_q_et_etat_du_classement(self):
+        """q filtre par libellé/formation ; l'état du classement suit son cycle."""
+        self.client.force_authenticate(make_user('sec_api_q', role='SECRETARIAT'))
+        res = self.client.get('/api/admissions/campagnes/', {'q': 'introuvable-xyz'})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data, [])
+        res = self.client.get('/api/admissions/campagnes/',
+                              {'q': self.campagne.libelle[:6]})
+        self.assertEqual([c['id'] for c in res.data], [self.campagne.pk])
+        ligne = res.data[0]
+        self.assertFalse(ligne['classement_calcule'])
+        self.assertFalse(ligne['classement_publie'])
+
+        self._noter_tout()
+        concours_services.calculer_classement(self.campagne)
+        res = self.client.get(f'/api/admissions/campagnes/{self.campagne.pk}/')
+        self.assertTrue(res.data['classement_calcule'])
+        self.assertFalse(res.data['classement_publie'])
+        concours_services.publier_classement(self.campagne)
+        res = self.client.get(f'/api/admissions/campagnes/{self.campagne.pk}/')
+        self.assertTrue(res.data['classement_publie'])
+
+
 S = CampagneAdmission.Statut

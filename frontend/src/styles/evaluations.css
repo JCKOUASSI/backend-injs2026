@@ -9,8 +9,8 @@
 
 /* ── 1. Jetons locaux : les couleurs institutionnelles INJS-LMD ── */
 .ev-scope {
-  --ev-navy: #0B1F3A;
-  --ev-blue: #1E62D0;
+  --ev-navy: var(--injs-navy);
+  --ev-blue: var(--injs-blue-royal);
   --ev-blue-light: #2F80ED;
   --ev-bg: #F5F8FC;
   --ev-surface: #FFFFFF;
@@ -28,9 +28,9 @@
   --ev-danger: #B91C1C;
   --ev-danger-bg: #FEF2F2;
   --ev-danger-bd: #FECACA;
-  --ev-info: #1D4ED8;
-  --ev-info-bg: #EFF6FF;
-  --ev-info-bd: #BFDBFE;
+  --ev-info: var(--injs-blue);
+  --ev-info-bg: var(--injs-blue-pale);
+  --ev-info-bd: var(--injs-border-strong);
 
   background: var(--ev-bg);
   color: var(--ev-text);
@@ -65,7 +65,7 @@
   background: var(--ev-surface);
   border: 1px solid var(--ev-border);
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(11, 31, 58, 0.06);
+  box-shadow: 0 8px 24px rgba(7, 27, 58, 0.06);
 }
 
 .ev-stat-icone {
@@ -184,7 +184,7 @@
   background: var(--ev-surface);
   border: 1px solid var(--ev-border);
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(11, 31, 58, 0.06);
+  box-shadow: 0 8px 24px rgba(7, 27, 58, 0.06);
 }
 
 .ev-carte-ecue {
@@ -318,13 +318,13 @@
 .ev-erreur--404 {
   border-color: var(--ev-info-bd);
   border-left-color: var(--ev-blue);
-  background: linear-gradient(135deg, #EFF6FF 0%, #F7FBFF 100%);
+  background: linear-gradient(135deg, var(--injs-blue-pale) 0%, #F7FBFF 100%);
   color: #1E3A8A;
 }
 
 .ev-erreur--401 .ev-erreur-titre,
 .ev-erreur--403 .ev-erreur-titre,
-.ev-erreur--404 .ev-erreur-titre { color: #1D4ED8; }
+.ev-erreur--404 .ev-erreur-titre { color: var(--injs-blue); }
 
 .ev-erreur--401 .ev-erreur-detail,
 .ev-erreur--403 .ev-erreur-detail,
@@ -343,7 +343,7 @@
   background: var(--ev-surface);
   border: 1px solid var(--ev-border);
   border-radius: 18px;
-  box-shadow: 0 8px 24px rgba(11, 31, 58, 0.06);
+  box-shadow: 0 8px 24px rgba(7, 27, 58, 0.06);
 }
 
 .ev-indisponible-icone {
@@ -429,7 +429,7 @@
 .ev-segment[aria-pressed='true'] {
   background: var(--ev-surface);
   color: var(--ev-blue);
-  box-shadow: 0 2px 6px rgba(11, 31, 58, 0.08);
+  box-shadow: 0 2px 6px rgba(7, 27, 58, 0.08);
 }
 
 .ev-segment:focus-visible,
@@ -474,7 +474,7 @@
 }
 
 .ev-btn--ghost:hover:not(:disabled) {
-  border-color: #BFDBFE;
+  border-color: var(--injs-border-strong);
   color: var(--ev-blue);
   background: var(--ev-info-bg);
 }

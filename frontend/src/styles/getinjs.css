@@ -1,0 +1,83 @@
+/* GET-INJS — écran « Génération annuelle & import des inscrits ».
+   Feuille dédiée : aucune règle globale n'est modifiée. Les couleurs
+   proviennent des tokens du socle (designSystem.css). */
+
+.getinjs .card {
+  border-radius: 12px;
+}
+
+.getinjs .card-header {
+  background: var(--surface-2, #f7f8fb);
+  border-bottom: 1px solid var(--border-color, #e4e7ef);
+}
+
+/* Bandeau de compteurs : lisible de 360 px à 1920 px, sans débordement
+   horizontal ni texte tronqué (WCAG 2.2 AA — 1.4.10 Reflow). */
+.getinjs-comptes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.getinjs-compte {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 8.5rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--border-color, #e4e7ef);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.getinjs-compte-valeur {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--primary, #283a87);
+  font-variant-numeric: tabular-nums;
+}
+
+.getinjs-compte-libelle {
+  font-size: 0.78rem;
+  line-height: 1.25;
+  color: var(--text-muted, #5b6478);
+}
+
+/* Les rapports peuvent être longs (fichiers de plusieurs milliers de
+   lignes) : la zone défile sans pousser la page. */
+.getinjs .table-responsive {
+  max-height: 26rem;
+  overflow-y: auto;
+}
+
+.getinjs table caption {
+  caption-side: top;
+  padding-bottom: 0.35rem;
+}
+
+/* Respect de « prefers-reduced-motion » : aucune animation décorative. */
+@media (prefers-reduced-motion: no-preference) {
+  .getinjs .getinjs-compte {
+    transition: border-color 0.15s ease-in-out;
+  }
+  .getinjs .getinjs-compte:hover {
+    border-color: var(--primary, #283a87);
+  }
+}
+
+@media (max-width: 575.98px) {
+  .getinjs-compte {
+    flex: 1 1 calc(50% - 0.75rem);
+    min-width: 0;
+  }
+  .getinjs .table-responsive {
+    max-height: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .getinjs-compte {
+    border: 1px solid CanvasText;
+  }
+}

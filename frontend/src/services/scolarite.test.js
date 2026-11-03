@@ -37,7 +37,7 @@ describe('services/scolarite.js — construction des appels', () => {
     ['getRefCategories', [], 'get', '/formations/ref/categories/'],
     ['getRefGrades', [], 'get', '/formations/ref/grades/'],
     ['getRefVagues', [], 'get', '/formations/ref/vagues/'],
-    ['getFormationsOperationnelles', [], 'get', '/formations/formations/'],
+    ['getFormationsOperationnelles', [], 'get', '/formations/list/'],
     ['listCandidatures', [{ q: 'a' }], 'get', '/admissions/candidatures/'],
     ['getCandidature', [9], 'get', '/admissions/candidatures/9/'],
     ['createCandidature', [{ nom: 'x' }], 'post', '/admissions/candidatures/'],

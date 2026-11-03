@@ -105,9 +105,13 @@ def _serialize_inscription(inscription, detail=False):
         'niveau': inscription.niveau.code,
         'cycle': inscription.niveau.get_cycle_display(),
         'vague_id': inscription.vague_id,
+        'vague': inscription.vague.libelle if inscription.vague_id else None,
         'categorie_id': inscription.categorie_id,
+        'categorie': inscription.categorie.libelle if inscription.categorie_id else None,
         'grade_id': inscription.grade_id,
+        'grade': inscription.grade.libelle if inscription.grade_id else None,
         'regime_id': inscription.regime_id,
+        'regime': inscription.regime.libelle if inscription.regime_id else None,
         'type_inscription': inscription.type_inscription,
         'type_inscription_libelle': inscription.get_type_inscription_display(),
         'statut': inscription.statut,
@@ -524,7 +528,10 @@ def inscrire_depuis_admission(request):
         return Response({'error': erreur.messages[0]}, status=409)
     except ValidationError as erreur:
         return Response(getattr(erreur, 'message_dict', {'error': str(erreur)}), status=400)
-    return Response(_serialize_inscription(inscription, detail=True), status=201)
+    # Un rejeu idempotent ne crée rien : 200 (et non 201) pour ne pas laisser
+    # croire au client qu'une seconde inscription vient d'être ouverte.
+    statut_http = 200 if getattr(inscription, 'rejeu_idempotent', False) else 201
+    return Response(_serialize_inscription(inscription, detail=True), status=statut_http)
 
 
 @api_view(['GET'])

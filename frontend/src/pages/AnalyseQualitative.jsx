@@ -8,8 +8,8 @@ import {
 } from '../components/evaluation/EvaluationCharts'
 
 const STATUT_COLORS = {
-  BROUILLON: { background: '#fff8e0', color: '#e69700' },
-  PUBLIE:    { background: '#e8eff5', color: '#125a99' },
+  BROUILLON: { background: '#fff8e0', color: '#D97706' },
+  PUBLIE:    { background: '#e8eff5', color: '#104A8E' },
   FERME:     { background: '#f5f5f5', color: '#616161' },
 }
 const STATUT_LABELS = { BROUILLON: 'Brouillon', PUBLIE: 'Publié', FERME: 'Fermé' }
@@ -21,7 +21,7 @@ const TYPE_ICONS    = { NOTE: 'bi-star', CHOIX_UN: 'bi-ui-radios', CHOIX_MUL: 'b
 function ScoreGauge({ score }) {
   if (score == null) return <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>—</span>
   const pct = (score / 5) * 100
-  const color = score >= 4 ? '#0f4fbd' : score >= 3 ? '#4895d9' : score >= 2 ? '#fde135' : '#ef5350'
+  const color = score >= 4 ? '#104A8E' : score >= 3 ? '#35BDF5' : score >= 2 ? '#F8D66D' : '#E05B6A'
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
       <div style={{ position: 'relative', width: 80, height: 80, flexShrink: 0 }}>
@@ -52,7 +52,7 @@ function StarMini({ value }) {
     <span>
       {[1, 2, 3, 4, 5].map(i => (
         <i key={i} className={`bi bi-star${i <= Math.round(value) ? '-fill' : ''}`}
-          style={{ color: i <= Math.round(value) ? '#ffbf00' : '#ddd', fontSize: '0.75rem' }} />
+          style={{ color: i <= Math.round(value) ? '#F59E0B' : '#ddd', fontSize: '0.75rem' }} />
       ))}
     </span>
   )
@@ -159,7 +159,7 @@ export default function AnalyseQualitative() {
   const comparaisonGroupes = (data.comparaison_groupes || []).map(g => ({
     label: g.groupe,
     value: g.nb_soumissions,
-    color: g.groupe === filterGroupe ? '#e69700' : '#4f46e5',
+    color: g.groupe === filterGroupe ? '#D97706' : '#283A87',
   }))
 
   const scoresParGroupe = (data.comparaison_groupes || [])
@@ -167,13 +167,13 @@ export default function AnalyseQualitative() {
     .map(g => ({
       label: g.groupe,
       value: g.score_global,
-      color: g.groupe === filterGroupe ? '#0f4fbd' : '#4895d9',
+      color: g.groupe === filterGroupe ? '#104A8E' : '#35BDF5',
     }))
 
   const moyennesChart = (data.moyennes_par_question || []).map((q, i) => ({
     label: `Q${i + 1}`,
     value: q.moyenne,
-    color: q.moyenne >= 4 ? '#0f4fbd' : q.moyenne >= 3 ? '#4895d9' : q.moyenne >= 2 ? '#fde135' : '#ef5350',
+    color: q.moyenne >= 4 ? '#104A8E' : q.moyenne >= 3 ? '#35BDF5' : q.moyenne >= 2 ? '#F8D66D' : '#E05B6A',
   }))
 
   const gradesChart = Object.entries(data.distribution_grades || {}).map(([grade, nb], i) => ({
@@ -206,7 +206,7 @@ export default function AnalyseQualitative() {
               <span style={{ ...STATUT_COLORS[data.statut], fontSize: '0.72rem', fontWeight: 700, padding: '2px 10px', borderRadius: '20px' }}>
                 {STATUT_LABELS[data.statut]}
               </span>
-              <span style={{ fontSize: '0.72rem', background: '#e3f2fd', color: '#1565c0', padding: '2px 10px', borderRadius: '20px', fontWeight: 600 }}>
+              <span style={{ fontSize: '0.72rem', background: '#e3f2fd', color: '#104A8E', padding: '2px 10px', borderRadius: '20px', fontWeight: 600 }}>
                 <i className={`bi bi-${data.cible === 'COURS' ? 'book' : 'person-video3'} me-1`}></i>
                 {data.cible === 'COURS' ? 'Évaluation du module' : "Évaluation de l'enseignant"}
               </span>
@@ -218,7 +218,7 @@ export default function AnalyseQualitative() {
                 <span> sur {data.nb_soumissions_total} au total</span>
               )}
               {filterGroupe && (
-                <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', background: '#fff8e0', color: '#e69700', padding: '2px 8px', borderRadius: '20px', fontWeight: 600 }}>
+                <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', background: '#fff8e0', color: '#D97706', padding: '2px 8px', borderRadius: '20px', fontWeight: 600 }}>
                   {filterGroupe}
                 </span>
               )}
@@ -274,9 +274,9 @@ export default function AnalyseQualitative() {
                 style={{
                   padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '0.85rem',
                   fontWeight: actif ? 700 : 500,
-                  border: actif ? '2px solid #e69700' : '1px solid var(--border)',
+                  border: actif ? '2px solid #D97706' : '1px solid var(--border)',
                   background: actif ? '#fff8e0' : 'transparent',
-                  color: actif ? '#e69700' : 'inherit',
+                  color: actif ? '#D97706' : 'inherit',
                 }}
               >
                 {g} <span style={{ opacity: 0.75 }}>({nb})</span>
@@ -321,7 +321,7 @@ export default function AnalyseQualitative() {
               <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
                 <i className="bi bi-question-circle me-1"></i>Questions
               </div>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#4f46e5' }}>{data.questions.length}</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#283A87' }}>{data.questions.length}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 {questionsNote.length} notes · {questionsChoix.length} choix · {questionsTexte.length} textes
               </div>
@@ -355,7 +355,7 @@ export default function AnalyseQualitative() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
                   {Object.entries(data.distribution_grades).map(([grade, nb]) => (
                     <div key={grade} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                      <span style={{ width: 36, textAlign: 'center', padding: '2px 0', borderRadius: '6px', background: '#e8eaf6', color: '#283593', fontWeight: 700, fontSize: '0.82rem' }}>{grade}</span>
+                      <span style={{ width: 36, textAlign: 'center', padding: '2px 0', borderRadius: '6px', background: '#e8eaf6', color: '#283A87', fontWeight: 700, fontSize: '0.82rem' }}>{grade}</span>
                       <div style={{ flex: 1, height: '8px', borderRadius: '4px', background: '#eee', overflow: 'hidden' }}>
                         <div style={{ width: `${(nb / totalGrades) * 100}%`, height: '100%', background: '#3f51b5', borderRadius: '4px', transition: 'width .4s' }} />
                       </div>
@@ -383,7 +383,7 @@ export default function AnalyseQualitative() {
                           <span>{nb} <span style={{ color: 'var(--text-muted)' }}>({pct}%)</span></span>
                         </div>
                         <div style={{ height: '8px', borderRadius: '4px', background: '#eee', overflow: 'hidden' }}>
-                          <div style={{ width: `${pct}%`, height: '100%', background: '#6a1b9a', borderRadius: '4px', transition: 'width .4s' }} />
+                          <div style={{ width: `${pct}%`, height: '100%', background: '#805AD5', borderRadius: '4px', transition: 'width .4s' }} />
                         </div>
                       </div>
                     )
@@ -396,7 +396,7 @@ export default function AnalyseQualitative() {
             {Object.keys(data.distribution_groupes || {}).length > 0 && (
               <div className="card" style={{ padding: '1.25rem' }}>
                 <h6 style={{ fontWeight: 700, marginBottom: '1rem' }}>
-                  <i className="bi bi-people me-2" style={{ color: '#e69700' }}></i>
+                  <i className="bi bi-people me-2" style={{ color: '#D97706' }}></i>
                   Participation par groupe
                 </h6>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
@@ -407,14 +407,14 @@ export default function AnalyseQualitative() {
                       onClick={() => selectGroupe(filterGroupe === groupe ? groupesDisponibles[0] || '' : groupe)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: '0.6rem',
-                        border: filterGroupe === groupe ? '2px solid #e69700' : '1px solid var(--border)',
+                        border: filterGroupe === groupe ? '2px solid #D97706' : '1px solid var(--border)',
                         borderRadius: '8px', padding: '0.35rem 0.5rem', background: filterGroupe === groupe ? '#fff8e0' : 'transparent',
                         cursor: 'pointer', width: '100%', textAlign: 'left',
                       }}
                     >
-                      <span style={{ width: 90, fontWeight: 700, fontSize: '0.82rem', color: '#e69700' }}>{groupe}</span>
+                      <span style={{ width: 90, fontWeight: 700, fontSize: '0.82rem', color: '#D97706' }}>{groupe}</span>
                       <div style={{ flex: 1, height: '8px', borderRadius: '4px', background: '#eee', overflow: 'hidden' }}>
-                        <div style={{ width: `${(nb / totalGroupes) * 100}%`, height: '100%', background: '#e69700', borderRadius: '4px', transition: 'width .4s' }} />
+                        <div style={{ width: `${(nb / totalGroupes) * 100}%`, height: '100%', background: '#D97706', borderRadius: '4px', transition: 'width .4s' }} />
                       </div>
                       <span style={{ width: 24, textAlign: 'right', fontWeight: 700, fontSize: '0.85rem' }}>{nb}</span>
                     </button>
@@ -427,7 +427,7 @@ export default function AnalyseQualitative() {
             {questionsNote.length > 0 && (
               <div className="card" style={{ padding: '1.25rem', gridColumn: Object.keys(data.distribution_grades).length === 0 ? 'span 2' : '' }}>
                 <h6 style={{ fontWeight: 700, marginBottom: '1rem' }}>
-                  <i className="bi bi-star me-2" style={{ color: '#ffbf00' }}></i>
+                  <i className="bi bi-star me-2" style={{ color: '#F59E0B' }}></i>
                   Classement des questions notées
                 </h6>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
@@ -447,7 +447,7 @@ export default function AnalyseQualitative() {
                           {q.intitule}
                         </span>
                         <StarMini value={q.moyenne} />
-                        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: q.moyenne >= 4 ? '#0f4fbd' : q.moyenne >= 3 ? '#4895d9' : '#ef5350', marginLeft: '0.25rem' }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: q.moyenne >= 4 ? '#104A8E' : q.moyenne >= 3 ? '#35BDF5' : '#E05B6A', marginLeft: '0.25rem' }}>
                           {q.moyenne}
                         </span>
                       </div>
@@ -474,14 +474,14 @@ export default function AnalyseQualitative() {
             {/* Comparaison nb réponses par groupe */}
             <div className="card" style={{ padding: '1.25rem' }}>
               <h6 style={{ fontWeight: 700, marginBottom: '0.35rem' }}>
-                <i className="bi bi-people me-2" style={{ color: '#e69700' }}></i>
+                <i className="bi bi-people me-2" style={{ color: '#D97706' }}></i>
                 Nombre de réponses par groupe
               </h6>
               <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
                 Comparaison de la participation entre groupes
               </p>
               {comparaisonGroupes.length > 0 ? (
-                <HistogramChart data={comparaisonGroupes} color="#e69700" height={140} />
+                <HistogramChart data={comparaisonGroupes} color="#D97706" height={140} />
               ) : (
                 <ChartEmpty />
               )}
@@ -490,14 +490,14 @@ export default function AnalyseQualitative() {
             {/* Score moyen par groupe */}
             <div className="card" style={{ padding: '1.25rem' }}>
               <h6 style={{ fontWeight: 700, marginBottom: '0.35rem' }}>
-                <i className="bi bi-trophy me-2" style={{ color: '#0f4fbd' }}></i>
+                <i className="bi bi-trophy me-2" style={{ color: '#104A8E' }}></i>
                 Score moyen par groupe
               </h6>
               <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
                 Moyenne des questions notées (/5) — tendance par groupe
               </p>
               {scoresParGroupe.length > 0 ? (
-                <HistogramChart data={scoresParGroupe} color="#0f4fbd" height={140} unit="" />
+                <HistogramChart data={scoresParGroupe} color="#104A8E" height={140} unit="" />
               ) : (
                 <ChartEmpty label="Pas encore de notes" />
               )}
@@ -507,13 +507,13 @@ export default function AnalyseQualitative() {
             {filterGroupe && (
               <div className="card" style={{ padding: '1.25rem' }}>
                 <h6 style={{ fontWeight: 700, marginBottom: '0.35rem' }}>
-                  <i className="bi bi-graph-up-arrow me-2" style={{ color: '#1565c0' }}></i>
+                  <i className="bi bi-graph-up-arrow me-2" style={{ color: '#104A8E' }}></i>
                   Tendance des réponses — {filterGroupe}
                 </h6>
                 <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
                   Soumissions par jour
                 </p>
-                <TrendChart data={data.tendance || []} color="#1565c0" />
+                <TrendChart data={data.tendance || []} color="#104A8E" />
               </div>
             )}
 
@@ -521,7 +521,7 @@ export default function AnalyseQualitative() {
             {filterGroupe && (
               <div className="card" style={{ padding: '1.25rem' }}>
                 <h6 style={{ fontWeight: 700, marginBottom: '0.35rem' }}>
-                  <i className="bi bi-pie-chart me-2" style={{ color: '#ffbf00' }}></i>
+                  <i className="bi bi-pie-chart me-2" style={{ color: '#F59E0B' }}></i>
                   Répartition des notes — {filterGroupe}
                 </h6>
                 <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
@@ -535,7 +535,7 @@ export default function AnalyseQualitative() {
             {filterGroupe && moyennesChart.length > 0 && (
               <div className="card" style={{ padding: '1.25rem', gridColumn: '1 / -1' }}>
                 <h6 style={{ fontWeight: 700, marginBottom: '0.35rem' }}>
-                  <i className="bi bi-bar-chart me-2" style={{ color: '#4f46e5' }}></i>
+                  <i className="bi bi-bar-chart me-2" style={{ color: '#283A87' }}></i>
                   Moyenne par question — {filterGroupe}
                 </h6>
                 <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
@@ -556,7 +556,7 @@ export default function AnalyseQualitative() {
             {filterGroupe && gradesChart.length > 0 && (
               <div className="card" style={{ padding: '1.25rem' }}>
                 <h6 style={{ fontWeight: 700, marginBottom: '1rem' }}>
-                  <i className="bi bi-pie-chart me-2" style={{ color: '#283593' }}></i>
+                  <i className="bi bi-pie-chart me-2" style={{ color: '#283A87' }}></i>
                   Réponses par grade
                 </h6>
                 <DonutChart data={gradesChart} />
@@ -566,7 +566,7 @@ export default function AnalyseQualitative() {
             {filterGroupe && categoriesChart.length > 0 && (
               <div className="card" style={{ padding: '1.25rem' }}>
                 <h6 style={{ fontWeight: 700, marginBottom: '1rem' }}>
-                  <i className="bi bi-pie-chart me-2" style={{ color: '#6a1b9a' }}></i>
+                  <i className="bi bi-pie-chart me-2" style={{ color: '#805AD5' }}></i>
                   Réponses par catégorie
                 </h6>
                 <DonutChart data={categoriesChart} />
@@ -608,7 +608,7 @@ export default function AnalyseQualitative() {
                   <div>
                     <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Moyenne · {q.total_reponses} rép.</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                      <div style={{ fontSize: '2.5rem', fontWeight: 800, color: q.moyenne >= 4 ? '#0f4fbd' : q.moyenne >= 3 ? '#4895d9' : q.moyenne != null ? '#ef5350' : 'var(--text-muted)', lineHeight: 1 }}>
+                      <div style={{ fontSize: '2.5rem', fontWeight: 800, color: q.moyenne >= 4 ? '#104A8E' : q.moyenne >= 3 ? '#35BDF5' : q.moyenne != null ? '#E05B6A' : 'var(--text-muted)', lineHeight: 1 }}>
                         {q.moyenne ?? '—'}
                       </div>
                       {q.moyenne && <StarMini value={q.moyenne} />}
@@ -663,7 +663,7 @@ export default function AnalyseQualitative() {
                         <div key={i} style={{ background: '#f8f9fa', borderRadius: '8px', padding: '0.75rem 1rem', borderLeft: '3px solid var(--primary)' }}>
                           <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.5 }}>{v.texte}</p>
                           {v.grade && (
-                            <span style={{ display: 'inline-block', marginTop: '0.4rem', fontSize: '0.72rem', background: '#e8eaf6', color: '#283593', padding: '1px 8px', borderRadius: '20px', fontWeight: 600 }}>
+                            <span style={{ display: 'inline-block', marginTop: '0.4rem', fontSize: '0.72rem', background: '#e8eaf6', color: '#283A87', padding: '1px 8px', borderRadius: '20px', fontWeight: 600 }}>
                               {v.grade}
                             </span>
                           )}
@@ -717,8 +717,8 @@ export default function AnalyseQualitative() {
                           <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.6, color: '#134e4a' }}>{v.texte}</p>
                           {v.grade && (
                             <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                              <span style={{ fontSize: '0.72rem', background: '#e8eaf6', color: '#283593', padding: '1px 8px', borderRadius: '20px', fontWeight: 600 }}>{v.grade}</span>
-                              {v.categorie && <span style={{ fontSize: '0.72rem', background: '#f3e5f5', color: '#6a1b9a', padding: '1px 8px', borderRadius: '20px', fontWeight: 600 }}>Cat. {v.categorie}</span>}
+                              <span style={{ fontSize: '0.72rem', background: '#e8eaf6', color: '#283A87', padding: '1px 8px', borderRadius: '20px', fontWeight: 600 }}>{v.grade}</span>
+                              {v.categorie && <span style={{ fontSize: '0.72rem', background: '#f3e5f5', color: '#805AD5', padding: '1px 8px', borderRadius: '20px', fontWeight: 600 }}>Cat. {v.categorie}</span>}
                             </div>
                           )}
                         </div>
