@@ -29,6 +29,8 @@ import './styles/erreurFatale.css'
 // dans les chunks paresseux des pages Jurys — sinon le bandeau premium
 // pouvait ne jamais atteindre le navigateur (capture 12:54).
 import './styles/jurys.css'
+// Design premium Diplômation (même mécanisme, chargé d'office).
+import './styles/diplomation.css'
 
 /**
  * Erreurs hors rendu React : promesses rejetées, erreurs d'événement, échec

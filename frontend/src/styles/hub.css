@@ -293,3 +293,91 @@
 /* Onglets v2 : rail verre, actif indigo→bleu + point doré */
 .hub-jurys .hub-onglets { background:rgba(255,255,255,.78); backdrop-filter:blur(10px); }
 .hub-jurys .hub-onglet.is-active { background:linear-gradient(120deg,#1D2B66,#283A87 55%,#1267D6) !important; color:#fff !important; }
+
+/* STYLE DÉDIÉ : DIPLÔMATION & DOCUMENTS OFFICIELS INJS — premium « sceau doré ».
+   Même identité que l'écran « Sessions de jury LMD » (.jury-*) et le hub Jurys
+   (.hub-jurys) : dégradé navy → indigo logo #283A87, halos ciel, accent doré
+   renforcé (diplômes, certificats, registres). Classes scopées .hub-diplomation
+   sur le kit partagé ModuleHub (.cand-/.hub-) : aucun impact sur les autres hubs. */
+
+/* Bandeau héros : dégradé institutionnel, valeurs en dur (chargement garanti) */
+.hub-diplomation .cand-hero {
+  position: relative; overflow: hidden; border: none; border-radius: 20px;
+  padding: 1.35rem 1.6rem; color: #fff !important;
+  background:
+    radial-gradient(700px 260px at 88% -30%, rgba(53,189,245,.42), transparent 60%),
+    radial-gradient(520px 220px at 8% 120%, rgba(245,158,11,.34), transparent 55%),
+    linear-gradient(120deg, #071B3A 0%, #1D2B66 48%, #283A87 78%, #104A8E 100%) !important;
+  box-shadow: 0 22px 44px -16px rgba(7,27,58,.55), inset 0 1px 0 rgba(255,255,255,.22) !important;
+}
+.hub-diplomation .cand-hero::after { content:""; position:absolute; inset:auto -60px -90px auto; width:260px; height:260px;
+  border:1px solid rgba(255,255,255,.14); border-radius:50%; pointer-events:none;
+  box-shadow:0 0 0 26px rgba(255,255,255,.045), 0 0 0 58px rgba(255,255,255,.03); }
+.hub-diplomation .cand-hero-identite, .hub-diplomation .cand-hero-actions { position:relative; z-index:1; }
+.hub-diplomation .cand-hero-icone { background:linear-gradient(145deg, rgba(245,158,11,.35), rgba(255,255,255,.08)) !important;
+  border:1px solid rgba(245,158,11,.5) !important; color:#FDE68A !important;
+  box-shadow:0 12px 24px -10px rgba(0,0,0,.45) !important; width:52px; height:52px; flex-basis:52px; border-radius:16px; }
+.hub-diplomation .cand-hero-badge { color:#FDE68A !important; background:rgba(245,158,11,.18) !important; border-color:rgba(245,158,11,.45) !important; }
+.hub-diplomation .cand-hero-title { color:#fff !important; font-size:1.55rem; letter-spacing:-.02em; text-shadow:0 2px 14px rgba(0,0,0,.25); }
+.hub-diplomation .cand-hero-sub { color:#DBEAFE !important; max-width:72ch; }
+.hub-diplomation .hub-pastille--primary, .hub-diplomation .hub-pastille--neutre {
+  color:#E0F2FE !important; background:rgba(255,255,255,.12) !important; border-color:rgba(255,255,255,.25) !important; backdrop-filter:blur(6px); }
+.hub-diplomation .hub-pastille i { color:#FBBF24; }
+
+/* Tuiles KPI : chiffre en dégradé, liseré doré, relevé au survol */
+.hub-diplomation .cand-kpi { border-radius:16px; border-color:#e6edf5; position:relative; overflow:hidden;
+  box-shadow:0 8px 22px -12px rgba(7,27,58,.18); }
+.hub-diplomation .cand-kpi::before { content:""; position:absolute; inset:0 auto 0 0; width:4px;
+  background:linear-gradient(180deg, #F59E0B, #283A87); }
+.hub-diplomation .cand-kpi:hover { transform:translateY(-2px); box-shadow:0 14px 28px -12px rgba(7,27,58,.25); }
+.hub-diplomation .cand-kpi-value { background:linear-gradient(120deg,#1D2B66,#1267D6);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.hub-diplomation .cand-kpi-icon { box-shadow:0 10px 20px -10px rgba(7,27,58,.4); }
+
+/* Barre d'onglets : rail verre, onglet actif en dégradé indigo */
+.hub-diplomation .hub-onglets { background:rgba(255,255,255,.78); backdrop-filter:blur(10px);
+  border:1px solid #e6edf5; border-radius:16px; padding:.5rem; gap:.4rem;
+  box-shadow:0 8px 22px -14px rgba(7,27,58,.25); }
+.hub-diplomation .hub-onglet { border-color:transparent; border-radius:11px; background:transparent; }
+.hub-diplomation .hub-onglet:hover { background:#f1f7ff; border-color:transparent; }
+.hub-diplomation .hub-onglet.is-active {
+  background:linear-gradient(120deg,#1D2B66,#283A87 55%,#1267D6) !important; color:#fff !important;
+  box-shadow:0 10px 20px -10px rgba(40,58,135,.65); }
+.hub-diplomation .hub-onglet.is-active i { color:#FBBF24; }
+
+/* Panneaux par onglet : en-têtes teintés selon la fonction */
+.hub-diplomation .cand-panel { border-radius:18px; border-color:#e6edf5; overflow:hidden;
+  box-shadow:0 10px 28px -16px rgba(7,27,58,.22); }
+.hub-diplomation .cand-panel-head { background:linear-gradient(180deg,#f8fbff,#fff); border-bottom-color:#edf1f6; }
+.hub-diplomation .cand-panel-title { color:var(--injs-navy); }
+.hub-diplomation .cand-panel-title i { color:var(--injs-blue-royal); }
+.hub-diplomation .cand-count-pill { background:var(--injs-blue-pale); color:var(--injs-indigo); border-color:var(--injs-border-strong); }
+.hub-diplomation .hub-panel--eligibilite .cand-panel-head {
+  background:linear-gradient(90deg, rgba(40,58,135,.10), rgba(53,189,245,.10) 55%, #fff) !important; }
+.hub-diplomation .hub-panel--attestations .cand-panel-head {
+  background:linear-gradient(90deg, rgba(245,158,11,.18), rgba(53,189,245,.08) 55%, #fff) !important; }
+.hub-diplomation .hub-panel--attestations .cand-count-pill { background:#FFF4DF; color:#8A5A00; border-color:#F5DFAE; }
+.hub-diplomation .hub-panel--certificats .cand-panel-head {
+  background:linear-gradient(90deg, rgba(128,90,213,.12), rgba(53,189,245,.08) 55%, #fff) !important; }
+.hub-diplomation .hub-panel--registres .cand-panel-head {
+  background:linear-gradient(90deg, rgba(22,163,106,.14), rgba(53,189,245,.08) 55%, #fff) !important; }
+.hub-diplomation .hub-note { background:#FFF4DF; border:1px solid #F5DFAE; color:#8A5A00;
+  border-radius:11px; padding:.6rem .8rem; }
+.hub-diplomation .hub-note i { color:#D97706; }
+
+/* Tableaux : en-têtes capitales, survol bleu pâle, badges pilules */
+.hub-diplomation .cand-table thead th { background:#f8fbff; color:#64748b; font-size:.66rem;
+  letter-spacing:.07em; text-transform:uppercase; }
+.hub-diplomation .cand-table tbody tr:hover { background:#f6faff; }
+.hub-diplomation .hub-badge { padding:.28rem .7rem; }
+.hub-diplomation .hub-lien:hover { color:var(--injs-blue-royal); }
+
+/* État vide premium (aucun fin-de-cycle / diplôme / gabarit / registre) */
+.hub-diplomation .cand-vide-icone { width:76px; height:76px; border-radius:22px; font-size:2rem;
+  color:#B45309; background:linear-gradient(145deg,#FEF3C7,#F4F8FD);
+  border:1px solid #F5DFAE; box-shadow:inset 0 1px 0 #fff, 0 12px 24px -14px rgba(180,83,9,.45); }
+.hub-diplomation .cand-vide-titre { font-size:1.05rem; color:var(--injs-navy); }
+
+/* Pagination : boutons en pilules */
+.hub-diplomation .cand-btn-fantome { border-radius:999px; }
+.hub-diplomation .cand-btn-fantome:hover:not(:disabled) { border-color:var(--injs-indigo); color:var(--injs-indigo); }
