@@ -3,8 +3,10 @@ import api from '../../services/api'
 import { useToast } from '../../context/ToastContext'
 import { formatDate } from '../../utils/dates'
 import ArchiveModuleBrowser from '../../components/archives/ArchiveModuleBrowser'
+import '../../styles/archives.css'
 
 const ACCENT = '#001a33'
+const SET_VIDE = new Set()
 
 function _downloadBlob(blob, fileName) {
   const url = window.URL.createObjectURL(blob)
@@ -15,6 +17,18 @@ function _downloadBlob(blob, fileName) {
   a.click()
   a.remove()
   window.URL.revokeObjectURL(url)
+}
+
+/** Libellé de séance sans le suffixe « (archivée) » : tout le cahier est archivé. */
+function sessionLabel(s) {
+  const brut = (s.intitule || `Séance ${s.numero}`).replace(/\s*\((?:archivée?|archive)\)\s*$/i, '').trim()
+  return brut || `Séance ${s.numero}`
+}
+
+function tauxClasse(taux) {
+  if (taux >= 80) return 'archives-taux--bon'
+  if (taux >= 50) return 'archives-taux--moyen'
+  return 'archives-taux--faible'
 }
 
 /** Vue cahier d'appel : grille d'émargement (auditeurs × séances) + exports. */
@@ -82,111 +96,171 @@ function CahierAppelDocument({ module, onBack }) {
     (p.matricule || '').toLowerCase().includes(search.toLowerCase())
   )
 
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-        <div>
-          <button className="btn btn-outline-secondary btn-sm" onClick={onBack} style={{ marginBottom: '0.6rem' }}>
-            <i className="bi bi-arrow-left me-1"></i>Retour aux modules
-          </button>
-          <h2 style={{ margin: 0, fontWeight: 700 }}>
-            <i className="bi bi-journal-check me-2" style={{ color: ACCENT }}></i>Cahier d'appel
-          </h2>
-          <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            <strong>{module.module}</strong> · {module.formation}
-            {module.grade && <> · {module.grade}</>}{module.groupe && <> · {module.groupe}</>}
-            {module.secretariat_nom && <> · {module.secretariat_nom}</>}
-          </p>
-          <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-            {participants.length} étudiant{participants.length !== 1 ? 's' : ''} · {sessions.length} séance{sessions.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button className="btn btn-outline-danger btn-sm" onClick={() => handleExport('pdf')} disabled={exporting === 'pdf'}>
-            {exporting === 'pdf' ? <span className="spinner-border spinner-border-sm me-1"></span> : <i className="bi bi-file-earmark-pdf me-1"></i>}PDF
-          </button>
-          <button className="btn btn-outline-success btn-sm" onClick={() => handleExport('excel')} disabled={exporting === 'excel'}>
-            {exporting === 'excel' ? <span className="spinner-border spinner-border-sm me-1"></span> : <i className="bi bi-file-earmark-excel me-1"></i>}Excel
-          </button>
-        </div>
-      </div>
+  // Indicateurs calculés sur les données réelles du cahier
+  const nbSeances = sessions.length
+  const totalPresences = participants.reduce(
+    (acc, p) => acc + sessions.filter(s => (presenceIndex[p.id] || SET_VIDE).has(s.id)).length,
+    0,
+  )
+  const attendues = participants.length * nbSeances
+  const tauxGlobal = attendues ? Math.round((totalPresences / attendues) * 100) : 0
+  const presentsParSeance = sessions.map(s =>
+    participants.filter(p => (presenceIndex[p.id] || SET_VIDE).has(s.id)).length,
+  )
+  const periode = nbSeances
+    ? `${sessions[0].date ? formatDate(sessions[0].date) : '—'} → ${sessions[nbSeances - 1].date ? formatDate(sessions[nbSeances - 1].date) : '—'}`
+    : null
 
-      <div style={{ marginBottom: '1rem' }}>
-        <input
-          className="form-control"
-          placeholder="Rechercher un étudiant…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ maxWidth: 360 }}
-        />
+  return (
+    <div className="archives-cahier">
+      <section className="archives-cahier-hero">
+        <button type="button" className="archives-cahier-retour" onClick={onBack}>
+          <i className="bi bi-arrow-left"></i>Retour aux modules
+        </button>
+        <div className="archives-cahier-hero-main">
+          <span className="archives-cahier-icone"><i className="bi bi-journal-check"></i></span>
+          <div className="archives-cahier-titres">
+            <span className="archives-hero-badge"><i className="bi bi-archive"></i>Archives · Émargement</span>
+            <h2>Cahier d'appel</h2>
+            <p>
+              <strong>{module.module}</strong> · {module.formation}
+              {module.grade && <> · {module.grade}</>}{module.groupe && <> · {module.groupe}</>}
+              {module.secretariat_nom && <> · {module.secretariat_nom}</>}
+            </p>
+          </div>
+          <div className="archives-cahier-exports">
+            <button type="button" className="archives-export archives-export--pdf" onClick={() => handleExport('pdf')} disabled={exporting === 'pdf'}>
+              {exporting === 'pdf' ? <span className="spinner-border spinner-border-sm"></span> : <i className="bi bi-file-earmark-pdf"></i>}PDF
+            </button>
+            <button type="button" className="archives-export archives-export--excel" onClick={() => handleExport('excel')} disabled={exporting === 'excel'}>
+              {exporting === 'excel' ? <span className="spinner-border spinner-border-sm"></span> : <i className="bi bi-file-earmark-excel"></i>}Excel
+            </button>
+          </div>
+        </div>
+        <div className="archives-cahier-kpis">
+          <div className="archives-cahier-kpi">
+            <i className="bi bi-people"></i>
+            <div><strong>{participants.length}</strong><span>étudiant{participants.length !== 1 ? 's' : ''}</span></div>
+          </div>
+          <div className="archives-cahier-kpi">
+            <i className="bi bi-calendar3-week"></i>
+            <div><strong>{nbSeances}</strong><span>séance{nbSeances !== 1 ? 's' : ''}{periode ? ` · ${periode}` : ''}</span></div>
+          </div>
+          <div className="archives-cahier-kpi">
+            <i className="bi bi-check2-square"></i>
+            <div><strong>{totalPresences}/{attendues}</strong><span>présences émargées</span></div>
+          </div>
+          <div className="archives-cahier-kpi archives-cahier-kpi--taux">
+            <div className="archives-cahier-taux-tete">
+              <i className="bi bi-graph-up"></i>
+              <div><strong>{tauxGlobal}%</strong><span>taux de présence global</span></div>
+            </div>
+            <div className="archives-cahier-jauge" role="progressbar" aria-valuenow={tauxGlobal} aria-valuemin={0} aria-valuemax={100} aria-label="Taux de présence global">
+              <span style={{ width: `${tauxGlobal}%` }}></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="archives-cahier-toolbar">
+        <label className="archives-cahier-recherche">
+          <i className="bi bi-search"></i>
+          <input
+            className="form-control"
+            placeholder="Rechercher un étudiant…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            aria-label="Rechercher un étudiant"
+          />
+        </label>
+        <span className="archives-cahier-compteur">
+          {filtered.length} étudiant{filtered.length !== 1 ? 's' : ''} affiché{filtered.length !== 1 ? 's' : ''}
+        </span>
+        <div className="archives-cahier-legende">
+          <span><span className="archives-presence archives-presence--oui"><i className="bi bi-check"></i></span>Présent</span>
+          <span><span className="archives-presence--non">—</span>Absent</span>
+        </div>
       </div>
 
       {loading ? (
         <div className="loading"><div className="spinner"></div></div>
       ) : participants.length === 0 ? (
-        <div className="empty-state">
-          <i className="bi bi-people" style={{ fontSize: '3rem', color: 'var(--text-muted)' }}></i>
+        <div className="empty-state archives-cahier-vide">
+          <i className="bi bi-people"></i>
           <p>Aucun étudiant inscrit à ce module.</p>
         </div>
       ) : sessions.length === 0 ? (
-        <div className="empty-state">
-          <i className="bi bi-calendar-x" style={{ fontSize: '3rem', color: 'var(--text-muted)' }}></i>
+        <div className="empty-state archives-cahier-vide">
+          <i className="bi bi-calendar-x"></i>
           <p>Aucune séance enregistrée pour ce module.</p>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="empty-state archives-cahier-vide">
+          <i className="bi bi-search"></i>
+          <p>Aucun étudiant ne correspond à « {search} ».</p>
+        </div>
       ) : (
-        <div className="card" style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
+        <div className="archives-cahier-carte">
+          <table className="archives-cahier-table">
             <thead>
-              <tr style={{ borderBottom: '2px solid var(--border)', background: 'var(--bg-secondary, #f9fafb)' }}>
-                <th style={{ ...thStyle('left'), position: 'sticky', left: 0, background: 'var(--bg-secondary, #f9fafb)', zIndex: 1 }}>#</th>
-                <th style={{ ...thStyle('left'), position: 'sticky', left: 36, background: 'var(--bg-secondary, #f9fafb)', zIndex: 1 }}>Étudiant</th>
+              <tr>
+                <th className="col-rang">#</th>
+                <th className="col-etudiant">Étudiant</th>
                 {sessions.map(s => (
-                  <th key={s.id} style={{ ...thStyle('center'), minWidth: 64 }} title={s.intitule || `Séance ${s.numero}`}>
-                    <div style={{ fontSize: '0.72rem' }}>{s.date ? formatDate(s.date) : `S${s.numero}`}</div>
-                    <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', fontWeight: 500 }}>{s.intitule || `Séance ${s.numero}`}</div>
+                  <th key={s.id} className="col-seance" title={s.intitule || `Séance ${s.numero}`}>
+                    <span className="seance-date">{s.date ? formatDate(s.date) : `S${s.numero}`}</span>
+                    <span className="seance-libelle">{sessionLabel(s)}</span>
                   </th>
                 ))}
-                <th style={thStyle('center')}>Présences</th>
-                <th style={thStyle('center')}>Taux</th>
+                <th className="col-total">Présences</th>
+                <th className="col-total">Taux</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((p, idx) => {
-                const set = presenceIndex[p.id] || new Set()
+                const set = presenceIndex[p.id] || SET_VIDE
                 const nbPres = sessions.filter(s => set.has(s.id)).length
-                const taux = sessions.length ? Math.round((nbPres / sessions.length) * 100) : 0
+                const taux = nbSeances ? Math.round((nbPres / nbSeances) * 100) : 0
                 return (
-                  <tr key={p.id} style={{ borderBottom: '1px solid var(--border)', background: idx % 2 === 0 ? 'transparent' : 'var(--bg-secondary, #fafafa)' }}>
-                    <td style={{ ...tdStyle, position: 'sticky', left: 0, background: idx % 2 === 0 ? '#fff' : 'var(--bg-secondary, #fafafa)' }}>{idx + 1}</td>
-                    <td style={{ ...tdStyle, fontWeight: 600, whiteSpace: 'nowrap', position: 'sticky', left: 36, background: idx % 2 === 0 ? '#fff' : 'var(--bg-secondary, #fafafa)' }}>
-                      {p.nom} {p.prenom}
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 400 }}>{p.matricule}</div>
+                  <tr key={p.id} className="archives-cahier-ligne" style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}>
+                    <td className="col-rang">{idx + 1}</td>
+                    <td className="col-etudiant">
+                      <span className="etudiant-nom">{p.nom} {p.prenom}</span>
+                      <span className="etudiant-matricule">{p.matricule}</span>
                     </td>
                     {sessions.map(s => {
                       const present = set.has(s.id)
                       return (
-                        <td key={s.id} style={{ ...tdStyle, textAlign: 'center' }}>
+                        <td key={s.id} className="col-seance">
                           {present
-                            ? <i className="bi bi-check-circle-fill" style={{ color: '#104A8E' }} title="Présent"></i>
-                            : <span style={{ color: '#cfcfcf' }} title="Absent">—</span>}
+                            ? <span className="archives-presence archives-presence--oui" title="Présent"><i className="bi bi-check"></i></span>
+                            : <span className="archives-presence--non" title="Absent">—</span>}
                         </td>
                       )
                     })}
-                    <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 600 }}>{nbPres}/{sessions.length}</td>
-                    <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 700, color: taux >= 80 ? '#104A8E' : (taux >= 50 ? '#f5b417' : '#A3222F') }}>{taux}%</td>
+                    <td className="col-total"><span className="archives-presences-nb">{nbPres}/{nbSeances}</span></td>
+                    <td className="col-total"><span className={`archives-taux ${tauxClasse(taux)}`}>{taux}%</span></td>
                   </tr>
                 )
               })}
             </tbody>
+            <tfoot>
+              <tr>
+                <td className="col-rang"></td>
+                <td className="col-etudiant">Présents par séance</td>
+                {presentsParSeance.map((n, i) => (
+                  <td key={sessions[i].id} className="col-seance">{n}/{participants.length}</td>
+                ))}
+                <td className="col-total">{totalPresences}/{attendues}</td>
+                <td className="col-total"><span className={`archives-taux ${tauxClasse(tauxGlobal)}`}>{tauxGlobal}%</span></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       )}
     </div>
   )
 }
-
-const thStyle = (align) => ({ padding: '0.65rem 0.5rem', textAlign: align, fontWeight: 700, whiteSpace: 'nowrap' })
-const tdStyle = { padding: '0.55rem 0.5rem' }
 
 export default function ArchiveCahiersAppel() {
   return (
