@@ -33,6 +33,8 @@ import './styles/jurys.css'
 import './styles/diplomation.css'
 // Design premium Feature flags (chargé d'office, comme jurys/diplomation).
 import './styles/featureFlags.css'
+// Design premium sobre Statistiques & Bilans (chargé d'office).
+import './styles/statistiques.css'
 
 /**
  * Erreurs hors rendu React : promesses rejetées, erreurs d'événement, échec
