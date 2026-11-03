@@ -252,6 +252,28 @@ describe('pages/EvaluationsModule — comportement', () => {
       expect(await screen.findByText('Tableau de bord des évaluations')).toBeInTheDocument()
       expect(screen.getByText('Examen final S1')).toBeInTheDocument()
     })
+
+    it('rendu premium : thème dédié, dates JJ/MM/AAAA, chip type et parts en % (capture 03/11)', async () => {
+      installFetch({
+        'GET /api/evaluations-academiques/evaluations/': {
+          count: 1, next: null, previous: null,
+          results: [{ ...EVALUATION, date_prevue: '2026-12-07', statut: 'PUBLIEE' }],
+        },
+        'GET /api/evaluations-academiques/sessions/':
+          { count: 0, next: null, previous: null, results: [] },
+      })
+      const { container } = rendre(<TableauDeBordEvaluations />)
+      expect(await screen.findByText('Examen final S1')).toBeInTheDocument()
+      // Thème premium scopé au tableau de bord.
+      expect(container.querySelector('.ev-dash')).toBeTruthy()
+      // Jamais la date ISO brute : JJ/MM/AAAA.
+      expect(screen.getByText('07/12/2026')).toBeInTheDocument()
+      expect(container.textContent).not.toContain('2026-12-07')
+      // Type en chip monospace et répartition avec part explicite en %.
+      expect(container.querySelector('.ev-code-chip').textContent).toBe('EXAMEN')
+      expect(screen.getByText('100 %')).toBeInTheDocument()
+      expect(container.querySelector('.ev-jauge--warn')).toBeTruthy()
+    })
   })
 
   describe('3. SaisieNotes — cycle complet', () => {

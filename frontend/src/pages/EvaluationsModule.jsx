@@ -28,6 +28,13 @@ function affichage(v) {
   return v
 }
 
+/** Date ISO → JJ/MM/AAAA (affichage seul ; aucun calcul académique). */
+function affichageDate(v) {
+  if (v === null || v === undefined || v === '') return 'Non renseigné'
+  const [annee, mois, jour] = String(v).slice(0, 10).split('-')
+  return annee && mois && jour ? `${jour}/${mois}/${annee}` : affichage(v)
+}
+
 /**
  * Volumétrie d'une page paginée DRF.
  *
@@ -153,9 +160,9 @@ function EtatVide({ icone, titre, message, action }) {
  * Le hero reste visible même en cas d'erreur : l'utilisateur garde le titre
  * et le fil du sous-module.
  */
-function Page({ titre, icone, sousTitre, actions, chargement, erreur, reessayer, children, skeleton }) {
+function Page({ titre, icone, sousTitre, actions, chargement, erreur, reessayer, children, skeleton, classePage }) {
   return (
-    <div className="page-container ev-scope">
+    <div className={`page-container ev-scope${classePage ? ` ${classePage}` : ''}`}>
       <header className="px-hero">
         <span className="px-hero-icon" aria-hidden="true">
           <i className={`bi ${icone}`} />
@@ -227,8 +234,8 @@ function CellulesEvaluations({ l, navigate, peutSaisir }) {
   return (
     <>
       <td><span className="ev-note-bareme">{affichage(l.ecue_code)}</span></td>
-      <td>{affichage(l.type_code)}</td>
-      <td>{affichage(l.date_prevue)}</td>
+      <td><span className="ev-code-chip">{affichage(l.type_code)}</span></td>
+      <td>{affichageDate(l.date_prevue)}</td>
       <td><BadgeEtat valeur={l.statut} /></td>
       <td><BandeauVerrou verrouille={Boolean(l.composition_verrouillee)} /></td>
       <td>
@@ -254,8 +261,8 @@ function CellulesSessions({ l }) {
     <>
       <td>{affichage(l.annee_libelle)}</td>
       <td>{affichage(l.type_session)}</td>
-      <td>{affichage(l.date_debut)}</td>
-      <td>{affichage(l.date_fin)}</td>
+      <td>{affichageDate(l.date_debut)}</td>
+      <td>{affichageDate(l.date_fin)}</td>
       <td><BadgeEtat valeur={l.statut} /></td>
       <td className="px-num">{affichage(l.nb_evaluations)}</td>
     </>
@@ -558,8 +565,8 @@ function PanneauActivite({ lignes, total, pagine, peutSaisir, navigate }) {
                   <tr key={l.id}>
                     <td style={{ fontWeight: 600 }}>{affichage(l.libelle)}</td>
                     <td><span className="ev-note-bareme">{affichage(l.ecue_code)}</span></td>
-                    <td>{affichage(l.type_code)}</td>
-                    <td>{affichage(l.date_prevue)}</td>
+                    <td><span className="ev-code-chip">{affichage(l.type_code)}</span></td>
+                    <td>{affichageDate(l.date_prevue)}</td>
                     <td><BadgeEtat valeur={l.statut} /></td>
                     <td>
                       {peutSaisir ? (
@@ -620,9 +627,10 @@ function LigneRepartition({ nom, compte, total, variante }) {
         <span className={`ev-dot${variante ? ` ev-dot--${variante}` : ''}`} aria-hidden="true" />
         {nom}
       </span>
-      <span className="ev-jauge" role="img" aria-label={`${nom} : ${compte} sur ${total}`}>
+      <span className={`ev-jauge ev-jauge--${variante}`} role="img" aria-label={`${nom} : ${compte} sur ${total}`}>
         <span className="ev-jauge-valeur" style={{ width: `${part}%` }} />
       </span>
+      <span className="ev-repartition-part">{part} %</span>
       <span className="ev-repartition-compte">{compte}</span>
     </div>
   )
@@ -657,6 +665,7 @@ export function TableauDeBordEvaluations() {
 
   return (
     <Page
+      classePage="ev-dash"
       titre="Tableau de bord des évaluations"
       icone="bi-speedometer2"
       sousTitre="Vue synthétique de l'activité évaluative"
