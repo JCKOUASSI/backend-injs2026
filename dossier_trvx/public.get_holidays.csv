@@ -1,0 +1,9 @@
+id,academic_year_id,day,label,source
+"1","1","2026-08-07","Fête de l'Indépendance","fixe_ci"
+"2","1","2026-11-15","Journée nationale de la paix","fixe_ci"
+"3","1","2026-12-25","Noël","fixe"
+"4","1","2027-01-01","Jour de l'an","fixe"
+"5","1","2027-03-29","Lundi de Pâques","calcule_2027"
+"6","1","2027-05-01","Fête du Travail","fixe"
+"7","1","2027-05-06","Ascension","calcule_2027"
+"8","1","2027-05-17","Lundi de Pentecôte","calcule_2027"
