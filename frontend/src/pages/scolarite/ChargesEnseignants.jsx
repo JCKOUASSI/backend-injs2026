@@ -1,10 +1,30 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import api from '../../services/api'
 import { canActScolarite } from '../../utils/roles'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import '../../styles/premiumCommun.css'
 import '../../styles/chargesEnseignants.css'
+
+const PAGE_TAILLE = 20
+const SEUIL_DEFAUT = 192
+
+const formatH = (n) => `${new Intl.NumberFormat('fr-FR').format(Math.round(Number(n) || 0))} h`
+
+function initiales(nomComplet) {
+  return String(nomComplet || '')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((mot) => mot[0])
+    .join('')
+    .toUpperCase() || '—'
+}
+
+const sansAccents = (v) => String(v ?? '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
 
 export default function ChargesEnseignants() {
   const { user } = useAuth()
@@ -19,6 +39,9 @@ export default function ChargesEnseignants() {
   const [affectations, setAffectations] = useState([])
   const [chargement, setChargement] = useState(true)
   const [enCours, setEnCours] = useState(false)
+  const [rechercheOcc, setRechercheOcc] = useState('')
+  const [triOcc, setTriOcc] = useState(null)
+  const [pageOcc, setPageOcc] = useState(1)
   const [form, setForm] = useState({
     ref_formation_id: '', niveau_id: '', semestre_id: '', ecue_id: '',
     groupe_id: '', enseignant_id: '', type_enseignement: 'CM', volume_horaire: '',
@@ -132,6 +155,46 @@ export default function ChargesEnseignants() {
     }
   }
 
+  // ── Occupation : synthèse, recherche, tri et pagination (client) ──
+  const seuil = occupation.find((o) => o.seuil)?.seuil || SEUIL_DEFAUT
+  const synthese = useMemo(() => {
+    const totalAffectee = occupation.reduce((s, o) => s + (Number(o.affectee) || 0), 0)
+    return {
+      totalAffectee,
+      moyenne: occupation.length ? totalAffectee / occupation.length : 0,
+      surcharges: occupation.filter((o) => o.surcharge).length,
+      nbAffectations: occupation.reduce((s, o) => s + (Number(o.nb_affectations) || 0), 0),
+    }
+  }, [occupation])
+
+  const occupationAffichee = useMemo(() => {
+    const terme = sansAccents(rechercheOcc).trim()
+    let liste = occupation.filter(
+      (o) => !terme || sansAccents(o.enseignant).includes(terme),
+    )
+    if (triOcc) {
+      const { cle, dir } = triOcc
+      liste = [...liste].sort((a, b) => (cle === 'enseignant'
+        ? dir * String(a.enseignant).localeCompare(String(b.enseignant), 'fr')
+        : dir * ((Number(a[cle]) || 0) - (Number(b[cle]) || 0))))
+    }
+    return liste
+  }, [occupation, rechercheOcc, triOcc])
+
+  const pagesOcc = Math.max(1, Math.ceil(occupationAffichee.length / PAGE_TAILLE))
+  const pageOccSure = Math.min(pageOcc, pagesOcc)
+  const lignesOcc = occupationAffichee.slice(
+    (pageOccSure - 1) * PAGE_TAILLE, pageOccSure * PAGE_TAILLE)
+
+  const basculerTri = (cle) => {
+    setTriOcc((t) => (t?.cle === cle
+      ? { cle, dir: -t.dir }
+      : { cle, dir: cle === 'enseignant' ? 1 : -1 }))
+    setPageOcc(1)
+  }
+  const flecheTri = (cle) => (triOcc?.cle !== cle
+    ? <i className="bi bi-arrow-down-up chg-tri-neutre" aria-hidden="true"></i>
+    : <i className={`bi bi-arrow-${triOcc.dir === 1 ? 'up' : 'down'}`} aria-hidden="true"></i>)
 
   if (chargement) {
     return <div className="container-fluid py-4"><div className="spinner-border" /></div>
@@ -174,34 +237,115 @@ export default function ChargesEnseignants() {
           </div>
         </div>
         <div className="card-body">
+          {occupation.length > 0 && (
+            <>
+              <div className="chg-kpis">
+                <div className="chg-kpi">
+                  <span className="chg-kpi-icon is-blue"><i className="bi bi-people"></i></span>
+                  <div><strong>{occupation.length}</strong><span>enseignants occupés</span></div>
+                </div>
+                <div className="chg-kpi">
+                  <span className="chg-kpi-icon is-indigo"><i className="bi bi-journal-check"></i></span>
+                  <div><strong>{formatH(synthese.totalAffectee)}</strong><span>{synthese.nbAffectations} affectations validées</span></div>
+                </div>
+                <div className="chg-kpi">
+                  <span className="chg-kpi-icon is-cyan"><i className="bi bi-speedometer2"></i></span>
+                  <div><strong>{formatH(synthese.moyenne)}</strong><span>charge moyenne (seuil {seuil} h)</span></div>
+                </div>
+                <div className="chg-kpi">
+                  <span className={`chg-kpi-icon ${synthese.surcharges ? 'is-red' : 'is-green'}`}><i className="bi bi-exclamation-octagon"></i></span>
+                  <div><strong>{synthese.surcharges}</strong><span>{synthese.surcharges ? 'surcharge(s) à rééquilibrer' : 'surcharge — aucune'}</span></div>
+                </div>
+              </div>
+              <div className="chg-occ-tools">
+                <label className="chg-recherche">
+                  <i className="bi bi-search"></i>
+                  <input
+                    type="search"
+                    placeholder="Rechercher un enseignant…"
+                    aria-label="Rechercher un enseignant"
+                    value={rechercheOcc}
+                    onChange={(e) => { setRechercheOcc(e.target.value); setPageOcc(1) }}
+                  />
+                </label>
+                <span className="chg-occ-compteur">
+                  {occupationAffichee.length} enseignant(s) affiché(s)
+                </span>
+              </div>
+            </>
+          )}
           <div className="table-responsive">
             <table className="table table-sm table-hover mb-0 px-table chg-occ-table">
               <thead className="table-light">
                 <tr>
-                  <th>Enseignant</th><th>Prévue (h)</th><th>Affectée (h)</th>
-                  <th>Planifiée (h)</th><th>Réalisée (h)</th><th>Charge</th>
+                  <th><button type="button" className="chg-tri" onClick={() => basculerTri('enseignant')}>Enseignant {flecheTri('enseignant')}</button></th>
+                  <th><button type="button" className="chg-tri" onClick={() => basculerTri('prevue')}>Prévue (h) {flecheTri('prevue')}</button></th>
+                  <th><button type="button" className="chg-tri" onClick={() => basculerTri('affectee')}>Affectée (h) {flecheTri('affectee')}</button></th>
+                  <th><button type="button" className="chg-tri" onClick={() => basculerTri('planifiee')}>Planifiée (h) {flecheTri('planifiee')}</button></th>
+                  <th><button type="button" className="chg-tri" onClick={() => basculerTri('realisee')}>Réalisée (h) {flecheTri('realisee')}</button></th>
+                  <th>Charge</th>
                 </tr>
               </thead>
               <tbody>
                 {occupation.length === 0 ? (
                   <tr><td colSpan={6} className="text-muted">Aucune affectation.</td></tr>
-                ) : occupation.map((o) => (
-                  <tr key={o.enseignant_id} style={{ cursor: 'pointer' }}
-                      className={o.enseignant_id === Number(enseignantChoisi) ? 'table-active' : ''}
-                      onClick={() => choisirEnseignant(o.enseignant_id)}>
-                    <td>{o.enseignant}</td>
-                    <td className="px-num">{o.prevue}</td>
-                    <td className="px-num">{o.affectee}</td>
-                    <td className="px-num">{o.planifiee}</td>
-                    <td className="px-num">{o.realisee}</td>
-                    <td>{o.surcharge
-                      ? <span className="badge text-bg-danger px-state px-state--danger">Surcharge</span>
-                      : <span className="badge text-bg-success px-state px-state--ok">OK</span>}</td>
-                  </tr>
-                ))}
+                ) : lignesOcc.length === 0 ? (
+                  <tr><td colSpan={6} className="text-muted">Aucun enseignant ne correspond à « {rechercheOcc} ».</td></tr>
+                ) : lignesOcc.map((o) => {
+                  const seuilO = o.seuil || seuil
+                  const pct = Math.min(100, Math.round(((Number(o.affectee) || 0) / seuilO) * 100))
+                  const tonJauge = o.surcharge ? 'is-danger' : pct >= 85 ? 'is-amber' : 'is-ok'
+                  return (
+                    <tr key={o.enseignant_id} style={{ cursor: 'pointer' }}
+                        className={`${o.enseignant_id === Number(enseignantChoisi) ? 'table-active ' : ''}chg-ligne`}
+                        onClick={() => choisirEnseignant(o.enseignant_id)}>
+                      <td>
+                        <span className="chg-ens">
+                          <span className="chg-avatar" aria-hidden="true">{initiales(o.enseignant)}</span>
+                          <span className="chg-ens-txt">
+                            <span className="chg-ens-nom">{o.enseignant}</span>
+                            {o.nb_affectations != null && (
+                              <span className="chg-ens-sub">{o.nb_affectations} affectation(s)</span>
+                            )}
+                          </span>
+                        </span>
+                      </td>
+                      <td className="px-num chg-prevue">{o.prevue}</td>
+                      <td className="px-num">
+                        <span className="chg-aff">
+                          <span className="chg-aff-val">{o.affectee}</span>
+                          <span className="chg-jauge" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`Charge de ${o.enseignant} : ${pct} % du seuil`}>
+                            <span className={tonJauge} style={{ width: `${pct}%` }}></span>
+                          </span>
+                          <span className="chg-aff-pct">{pct} % du seuil</span>
+                        </span>
+                      </td>
+                      <td className="px-num">{o.planifiee ? o.planifiee : <span className="chg-zero">0</span>}</td>
+                      <td className="px-num">{o.realisee ? o.realisee : <span className="chg-zero">0</span>}</td>
+                      <td>{o.surcharge
+                        ? <span className="badge text-bg-danger px-state px-state--danger">Surcharge</span>
+                        : <span className="badge text-bg-success px-state px-state--ok">OK</span>}</td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
+          {occupation.length > 0 && pagesOcc > 1 && (
+            <div className="chg-pagination">
+              <span>Page <strong>{pageOccSure}</strong> sur <strong>{pagesOcc}</strong> — {occupationAffichee.length} enseignant(s)</span>
+              <div className="chg-pagination-actions">
+                <button type="button" className="chg-page-btn" disabled={pageOccSure <= 1}
+                        onClick={() => setPageOcc((p) => Math.max(1, p - 1))}>
+                  <i className="bi bi-chevron-left"></i>Précédent
+                </button>
+                <button type="button" className="chg-page-btn" disabled={pageOccSure >= pagesOcc}
+                        onClick={() => setPageOcc((p) => Math.min(pagesOcc, p + 1))}>
+                  Suivant<i className="bi bi-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -218,8 +362,10 @@ export default function ChargesEnseignants() {
           </div>
           <div className="card-body">
             <ul className="list-unstyled mb-2 chg-recap">
-              <li>Prévue : {charge.prevue} h · Affectée : {charge.affectee} h ·
-                Planifiée : {charge.planifiee} h · Réalisée : {charge.realisee} h</li>
+              <li>Prévue : {charge.prevue} h</li>
+              <li>Affectée : {charge.affectee} h</li>
+              <li>Planifiée : {charge.planifiee} h</li>
+              <li>Réalisée : {charge.realisee} h</li>
             </ul>
             <table className="table table-sm mb-0 px-table chg-aff-table">
               <thead className="table-light">
@@ -229,7 +375,7 @@ export default function ChargesEnseignants() {
                 {affectations.map((a) => (
                   <tr key={a.id}>
                     <td>{a.ecue || '—'}</td>
-                    <td><span className="chg-type">{a.type_enseignement}</span></td>
+                    <td><span className={`chg-type chg-type--${String(a.type_enseignement || 'CM').toLowerCase()}`}>{a.type_enseignement}</span></td>
                     <td className="px-num">{a.volume_horaire}</td>
                     <td className="chg-statut">{a.statut}</td>
                   </tr>
