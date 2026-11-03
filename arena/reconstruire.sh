@@ -197,6 +197,14 @@ log "Évaluations : sessions et notes brouillons d'exemple…"
 (cd "$BACKEND" && "$VENV/bin/python" manage.py seed_evaluations_demo) \
   && touch "$BACKEND/.evaluations_demo_ok"
 
+# Finances étudiantes d'exemple (tâche 34) : barème INACTIF (inutilisable
+# pour facturer), échéanciers/factures brouillons, paiements jamais
+# confirmés, aucune quittance. Idempotent ; retrait :
+# seed_finances_demo --purger.
+log "Finances étudiantes : barème inactif et échéanciers d'exemple…"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py seed_finances_demo) \
+  && touch "$BACKEND/.finances_demo_ok"
+
 # ── 6. Site web ──────────────────────────────────────────────────────────────
 if [ ! -d "$FRONTEND/node_modules" ]; then
   log "Installation des dépendances npm…"

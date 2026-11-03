@@ -135,7 +135,7 @@ describe('descripteurs : chaque chemin appelé existe côté backend', () => {
     // Les modules promus en pages dédiées premium (hubs de la tâche 34)
     // consomment leurs endpoints directement ; le périmètre générique
     // diminue d'autant — le seuil reste significatif.
-    expect(tousChemins.length).toBeGreaterThan(70)
+    expect(tousChemins.length).toBeGreaterThan(60)
   })
 
   it('aucun endpoint inventé (tous résolus par le catalogue d\'URL)', () => {

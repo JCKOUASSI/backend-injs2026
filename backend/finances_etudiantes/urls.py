@@ -1,5 +1,6 @@
 """URLs API Finances Étudiantes (L6)."""
 from django.urls import path
+from . import hub_api
 from .api import (
     echeanciers_list_api, echeancier_detail_api,
     lignes_echeancier_api, facture_generer_api,
@@ -9,6 +10,15 @@ from .api import (
 )
 
 urlpatterns = [
+    # Hub premium (consultation consolidée — tâche 34)
+    path('hub/stats/', hub_api.stats_api, name='fe-hub-stats'),
+    path('hub/tarifications/', hub_api.tarifications_api, name='fe-hub-tarifications'),
+    path('hub/echeanciers/', hub_api.echeanciers_api, name='fe-hub-echeanciers'),
+    path('hub/factures/', hub_api.factures_api, name='fe-hub-factures'),
+    path('hub/paiements/', hub_api.paiements_api, name='fe-hub-paiements'),
+    path('hub/quittances/', hub_api.quittances_api, name='fe-hub-quittances'),
+    path('hub/remboursements/', hub_api.remboursements_api, name='fe-hub-remboursements'),
+    path('hub/relances/', hub_api.relances_api, name='fe-hub-relances'),
     # Échéanciers
     path('echeanciers/', echeanciers_list_api, name='echeanciers-list'),
     path('echeanciers/<int:pk>/', echeancier_detail_api, name='echeancier-detail'),

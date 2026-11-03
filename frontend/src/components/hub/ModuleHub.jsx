@@ -81,7 +81,9 @@ function Cellule({ colonne, ligne }) {
         : <span className="hub-badge is-slate">Non</span>
     case 'badge': {
       if (brut === null || brut === undefined || brut === '') return <span className="hub-vide">—</span>
-      const libelle = colonne.libelleCle ? ligne[colonne.libelleCle] : affichable
+      const libelle = colonne.libelleCle
+        ? ligne[colonne.libelleCle]
+        : colonne.libelleTexte?.[brut] ?? affichable
       const ton = (colonne.tons && colonne.tons[brut]) || TONS_DEFAUT[brut] || 'slate'
       return <span className={`hub-badge is-${ton}`}>{libelle || brut}</span>
     }

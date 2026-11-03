@@ -679,7 +679,6 @@ export const ARBORESCENCE = [
         id: 'finances_etudiantes.frais',
         libelle: 'Frais de scolarité',
         chemin: '/finances-etudiantes/frais',
-        ecran: 'frais_scolarite',
         droit: {
           curp: ['finances_etud.tarification.consulter', 'finances_etud.echeancier.consulter'],
           legacy: [['scolarite', 'voir'], ['finance', 'voir']],
@@ -689,7 +688,6 @@ export const ARBORESCENCE = [
         id: 'finances_etudiantes.factures',
         libelle: 'Factures',
         chemin: '/finances-etudiantes/factures',
-        ecran: 'factures',
         droit: {
           curp: ['finances_etud.facture.consulter'],
           legacy: [['scolarite', 'voir'], ['finance', 'voir']],
@@ -699,7 +697,6 @@ export const ARBORESCENCE = [
         id: 'finances_etudiantes.paiements',
         libelle: 'Paiements',
         chemin: '/finances-etudiantes/paiements',
-        ecran: 'paiements',
         droit: {
           curp: ['finances_etud.paiement.saisir', 'finances_etud.paiement.valider'],
           legacy: [['scolarite', 'voir'], ['finance', 'voir']],
@@ -709,7 +706,6 @@ export const ARBORESCENCE = [
         id: 'finances_etudiantes.recus',
         libelle: 'Reçus',
         chemin: '/finances-etudiantes/recus',
-        ecran: 'recus',
         droit: {
           curp: ['finances_etud.quittance.editer', 'finances_etud.paiement.valider'],
           legacy: [['scolarite', 'voir'], ['finance', 'voir']],
@@ -719,7 +715,6 @@ export const ARBORESCENCE = [
         id: 'finances_etudiantes.bourses',
         libelle: 'Bourses & remboursements',
         chemin: '/finances-etudiantes/bourses',
-        ecran: 'bourses',
         droit: {
           curp: ['finances_etud.remboursement.consulter'],
           legacy: [['scolarite', 'voir'], ['finance', 'voir']],
@@ -729,7 +724,6 @@ export const ARBORESCENCE = [
         id: 'finances_etudiantes.situation',
         libelle: 'Situation financière',
         chemin: '/finances-etudiantes/situation',
-        ecran: 'situation_financiere',
         droit: {
           curp: ['finances_etud.relance.consulter', 'finances_etud.rapprochement.consulter'],
           legacy: [['scolarite', 'voir'], ['finance', 'voir']],

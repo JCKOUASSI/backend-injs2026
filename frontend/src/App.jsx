@@ -125,6 +125,7 @@ const PersonnelHub = lazy(() => import('./pages/personnel/PersonnelHub'))
 const JurysHub = lazy(() => import('./pages/jurys/JurysHub'))
 const DiplomationHub = lazy(() => import('./pages/diplomation/DiplomationHub'))
 const EvaluationsHub = lazy(() => import('./pages/evaluations/EvaluationsHub'))
+const FinancesHub = lazy(() => import('./pages/finances/FinancesHub'))
 const Maquettes = lazy(() => import('./pages/scolarite/Maquettes'))
 const MaquetteDetail = lazy(() => import('./pages/scolarite/MaquetteDetail'))
 const Campagnes = lazy(() => import('./pages/scolarite/Campagnes'))
@@ -388,6 +389,60 @@ function App() {
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/scolarite">Scolarité</Link></li><li className="separator">/</li><li>Journal de scolarité</li></>}>
                 <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
                   <JournalScolarite />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/finances-etudiantes/frais" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Finances étudiantes</li><li className="separator">/</li><li>Frais de scolarité</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <FinancesHub ongletInitial="bareme" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/finances-etudiantes/factures" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Finances étudiantes</li><li className="separator">/</li><li>Factures</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <FinancesHub ongletInitial="factures" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/finances-etudiantes/paiements" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Finances étudiantes</li><li className="separator">/</li><li>Paiements</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <FinancesHub ongletInitial="paiements" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/finances-etudiantes/recus" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Finances étudiantes</li><li className="separator">/</li><li>Reçus</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <FinancesHub ongletInitial="recus" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/finances-etudiantes/bourses" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Finances étudiantes</li><li className="separator">/</li><li>Bourses &amp; remboursements</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <FinancesHub ongletInitial="bourses" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/finances-etudiantes/situation" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Finances étudiantes</li><li className="separator">/</li><li>Situation financière</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <FinancesHub ongletInitial="situation" />
                 </Suspense>
               </Layout>
             </ProtectedRoute>
