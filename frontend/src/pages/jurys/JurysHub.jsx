@@ -4,6 +4,7 @@
  * PV) reste dans l’écran « Jurys » de la scolarité.
  */
 import ModuleHub from '@/components/hub/ModuleHub'
+import '../../styles/jurys.css'
 
 const TONS_STATUT = {
   PREPARATION: 'slate', CONTROLE: 'cyan', CALCUL: 'cyan',
@@ -27,25 +28,25 @@ export default function JurysHub({ ongletInitial = 'sessions' }) {
   return (
     <ModuleHub
       titre="Jurys de délibération"
-      badge="Jurys"
-      icone="gavel"
+      badge="Jurys · Délibérations LMD"
+      icone="bi-clipboard-check"
       introduction="Sessions de jury par formation et par niveau, compositions et décisions. Les données d’exemple ([Exemple]) sont des décisions manuelles de démonstration : les propositions officielles restent le produit du moteur de calcul ECTS à partir de notes réelles."
       statsEndpoint="/juries/hub/stats/"
       pastilles={(s) => [
-        { icone: 'gavel', texte: `${s.sessions ?? 0} sessions · ${s.sessions_publiees ?? 0} publiée(s)` },
-        { icone: 'users', texte: `${s.membres ?? 0} membres de jury` },
-        { icone: 'trendingUp', texte: s.taux_admis != null ? `Admission : ${String(s.taux_admis).replace('.', ',')} % des décisions` : 'Aucune décision pour le moment' },
-        { icone: 'info', texte: 'Calcul, délibération et PV : écran Jurys de la scolarité.' },
+        { icone: 'bi-clipboard-check', texte: `${s.sessions ?? 0} sessions · ${s.sessions_publiees ?? 0} publiée(s)` },
+        { icone: 'bi-people', texte: `${s.membres ?? 0} membres de jury` },
+        { icone: 'bi-graph-up-arrow', texte: s.taux_admis != null ? `Admission : ${String(s.taux_admis).replace('.', ',')} % des décisions` : 'Aucune décision pour le moment' },
+        { icone: 'bi-info-circle', texte: 'Calcul, délibération et PV : écran Jurys de la scolarité.' },
       ]}
       tuiles={(s) => [
-        { valeur: s.sessions, libelle: 'Sessions de jury', sub: `${s.sessions_publiees ?? 0} publiées`, icone: 'gavel', ton: 'blue' },
-        { valeur: s.decisions, libelle: 'Décisions', sub: `${s.par_decision?.ADMIS ?? 0} admis · ${s.par_decision?.AJOURNE ?? 0} ajournés`, icone: 'scale', ton: 'indigo' },
-        { valeur: s.membres, libelle: 'Membres de jury', sub: 'présidents, secrétaires, membres', icone: 'users', ton: 'cyan' },
-        { valeur: s.pv_generes, libelle: 'PV générés', sub: 'PDF horodatés et hachés', icone: 'fileLock2', ton: 'violet' },
+        { valeur: s.sessions, libelle: 'Sessions de jury', sub: `${s.sessions_publiees ?? 0} publiées`, icone: 'bi-clipboard-check', ton: 'blue' },
+        { valeur: s.decisions, libelle: 'Décisions', sub: `${s.par_decision?.ADMIS ?? 0} admis · ${s.par_decision?.AJOURNE ?? 0} ajournés`, icone: 'bi-clipboard2-pulse', ton: 'indigo' },
+        { valeur: s.membres, libelle: 'Membres de jury', sub: 'présidents, secrétaires, membres', icone: 'bi-people', ton: 'cyan' },
+        { valeur: s.pv_generes, libelle: 'PV générés', sub: 'PDF horodatés et hachés', icone: 'bi-file-earmark-lock', ton: 'violet' },
       ]}
       onglets={[
         {
-          id: 'sessions', libelle: 'Sessions', icone: 'gavel',
+          id: 'sessions', libelle: 'Sessions', icone: 'bi-clipboard-check',
           endpoint: '/juries/hub/sessions/',
           rechercheLocale: ['libelle', 'formation', 'niveau'],
           recherchePlaceholder: 'Formation, niveau…',
@@ -70,7 +71,7 @@ export default function JurysHub({ ongletInitial = 'sessions' }) {
           videTexte: 'Les sessions créées depuis l’écran Jurys de la scolarité apparaîtront ici.',
         },
         {
-          id: 'composition', libelle: 'Composition', icone: 'users',
+          id: 'composition', libelle: 'Composition', icone: 'bi-people',
           endpoint: '/juries/hub/membres/',
           rechercheLocale: ['nom', 'session', 'formation'],
           recherchePlaceholder: 'Membre ou formation…',
@@ -90,7 +91,7 @@ export default function JurysHub({ ongletInitial = 'sessions' }) {
           videTexte: 'Les compositions des sessions apparaîtront ici.',
         },
         {
-          id: 'decisions', libelle: 'Décisions', icone: 'scale',
+          id: 'decisions', libelle: 'Décisions & délibérations', icone: 'bi-clipboard2-pulse',
           endpoint: '/juries/hub/decisions/',
           rechercheLocale: ['nom', 'matricule', 'formation', 'mention'],
           recherchePlaceholder: 'Étudiant, matricule…',
@@ -114,7 +115,7 @@ export default function JurysHub({ ongletInitial = 'sessions' }) {
           videTexte: 'Les décisions officielles des délibérations apparaîtront ici.',
         },
         {
-          id: 'pv', libelle: 'PV & publications', icone: 'fileLock2',
+          id: 'pv', libelle: 'PV & publications', icone: 'bi-file-earmark-lock',
           endpoint: '/juries/hub/sessions/',
           paramsBase: { avec_pv: '1' },
           rechercheLocale: ['libelle', 'formation'],
@@ -132,6 +133,7 @@ export default function JurysHub({ ongletInitial = 'sessions' }) {
         },
       ]}
       ongletInitial={ongletInitial}
+      classePage="hub-jurys"
     />
   )
 }

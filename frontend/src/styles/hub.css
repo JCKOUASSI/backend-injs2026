@@ -177,3 +177,119 @@
   .hub-pagination { flex-direction: column; align-items: stretch; }
   .hub-pagination-actions { justify-content: space-between; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HUB JURYS PREMIUM — Composition, Décisions & délibérations, PV & publications
+   Surcouche scopée `.hub-jurys` sur le kit partagé ModuleHub (.cand-/.hub-) :
+   même identité que l'écran « Sessions de jury LMD » (.jury-*), aucun impact
+   sur les autres hubs (Stages, Finances, Diplomation…).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Bandeau héros : dégradé institutionnel (identique à .jury-hero) */
+.hub-jurys .cand-hero {
+  position: relative; overflow: hidden; color: #fff; border: none; border-radius: 20px;
+  padding: 1.35rem 1.6rem;
+  background:
+    radial-gradient(700px 260px at 88% -30%, rgba(53,189,245,.38), transparent 60%),
+    radial-gradient(520px 220px at 8% 120%, rgba(245,158,11,.22), transparent 55%),
+    linear-gradient(120deg, var(--injs-navy) 0%, var(--injs-indigo-dark) 48%, var(--injs-indigo) 78%, var(--injs-blue) 100%);
+  box-shadow: 0 18px 38px -14px rgba(7,27,58,.45);
+}
+.hub-jurys .cand-hero::after { content:""; position:absolute; inset:auto -60px -90px auto; width:260px; height:260px;
+  border:1px solid rgba(255,255,255,.14); border-radius:50%; pointer-events:none;
+  box-shadow:0 0 0 26px rgba(255,255,255,.045), 0 0 0 58px rgba(255,255,255,.03); }
+.hub-jurys .cand-hero-identite, .hub-jurys .cand-hero-actions { position:relative; z-index:1; }
+.hub-jurys .cand-hero-icone { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25);
+  color:#7dd3fc; backdrop-filter:blur(6px); box-shadow:none; width:52px; height:52px; flex-basis:52px; border-radius:16px; }
+.hub-jurys .cand-hero-badge { color:#fde68a; background:rgba(245,158,11,.16); border-color:rgba(245,158,11,.4); }
+.hub-jurys .cand-hero-title { color:#fff; font-size:1.55rem; letter-spacing:-.02em; }
+.hub-jurys .cand-hero-sub { color:#dbeafe; max-width:72ch; }
+.hub-jurys .hub-pastille--primary, .hub-jurys .hub-pastille--neutre {
+  color:#e0f2fe; background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.22); backdrop-filter:blur(6px); }
+.hub-jurys .hub-pastille i { color:#fbbf24; }
+
+/* Tuiles KPI : relevé au survol + liseré supérieur coloré selon le ton */
+.hub-jurys .cand-kpi { border-radius:16px; border-color:#e6edf5; position:relative; overflow:hidden;
+  box-shadow:0 8px 22px -12px rgba(7,27,58,.18); }
+.hub-jurys .cand-kpi::before { content:""; position:absolute; inset:0 auto 0 0; width:4px; background:var(--injs-blue-royal); }
+.hub-jurys .cand-kpi:hover { transform:translateY(-2px); box-shadow:0 14px 28px -12px rgba(7,27,58,.25); }
+
+/* Barre d'onglets : pilules dans un rail, onglet actif en dégradé indigo */
+.hub-jurys .hub-onglets { background:#fff; border:1px solid #e6edf5; border-radius:16px;
+  padding:.5rem; gap:.4rem; box-shadow:0 8px 22px -14px rgba(7,27,58,.25); }
+.hub-jurys .hub-onglet { border-color:transparent; border-radius:11px; background:transparent; }
+.hub-jurys .hub-onglet:hover { background:#f1f7ff; border-color:transparent; }
+.hub-jurys .hub-onglet.is-active {
+  background:linear-gradient(120deg, var(--injs-indigo-dark), var(--injs-indigo) 60%, var(--injs-blue));
+  box-shadow:0 10px 20px -10px rgba(40,58,135,.65); }
+.hub-jurys .hub-onglet.is-active i { color:#7dd3fc; }
+
+/* Panneaux (Composition / Décisions / PV) : en-tête dégradé, compteurs indigo */
+.hub-jurys .cand-panel { border-radius:18px; border-color:#e6edf5; overflow:hidden;
+  box-shadow:0 10px 28px -16px rgba(7,27,58,.22); }
+.hub-jurys .cand-panel-head { background:linear-gradient(180deg,#f8fbff,#fff); border-bottom-color:#edf1f6; }
+.hub-jurys .cand-panel-title { color:var(--injs-navy); }
+.hub-jurys .cand-panel-title i { color:var(--injs-blue-royal); }
+.hub-jurys .cand-count-pill { background:var(--injs-blue-pale); color:var(--injs-indigo); border-color:var(--injs-border-strong); }
+.hub-jurys .hub-note { background:var(--injs-warning-soft); border:1px solid #f5dfae; color:#8a5a00;
+  border-radius:11px; padding:.6rem .8rem; }
+.hub-jurys .hub-note i { color:#d97706; }
+
+/* Tableaux : en-têtes capitales, survol bleu pâle, badges en pilules douces */
+.hub-jurys .cand-table thead th { background:#f8fbff; color:#64748b; font-size:.66rem;
+  letter-spacing:.07em; text-transform:uppercase; }
+.hub-jurys .cand-table tbody tr:hover { background:#f6faff; }
+.hub-jurys .hub-badge { padding:.28rem .7rem; }
+.hub-jurys .hub-lien:hover { color:var(--injs-blue-royal); }
+
+/* État vide premium (aucun membre / aucune décision / aucun PV) */
+.hub-jurys .cand-vide-icone { width:76px; height:76px; border-radius:22px; font-size:2rem;
+  color:var(--injs-indigo); background:linear-gradient(145deg,#e8edfb,#f4f8fd);
+  border:1px solid #dbe5f0; box-shadow:inset 0 1px 0 #fff, 0 12px 24px -14px rgba(40,58,135,.45); }
+.hub-jurys .cand-vide-titre { font-size:1.05rem; color:var(--injs-navy); }
+
+/* Pagination : boutons en pilules */
+.hub-jurys .cand-btn-fantome { border-radius:999px; }
+.hub-jurys .cand-btn-fantome:hover:not(:disabled) { border-color:var(--injs-indigo); color:var(--injs-indigo); }
+
+/* ── V2 PREMIUM RENFORCÉE (Composition & hub) ──────────────────────────────
+   Valeurs en dur + !important sur le bandeau : le dégradé ne dépend plus
+   d'aucune variable ni d'aucun ordre de cascade (retour capture 12:46 :
+   l'aperçu affichait encore l'ancien bandeau blanc). */
+.hub-jurys { background:
+  radial-gradient(900px 300px at 100% -80px, rgba(53,189,245,.10), transparent 55%),
+  radial-gradient(700px 260px at -80px 220px, rgba(40,58,135,.08), transparent 55%); border-radius:20px; }
+.hub-jurys .cand-hero {
+  background:
+    radial-gradient(700px 260px at 88% -30%, rgba(53,189,245,.42), transparent 60%),
+    radial-gradient(520px 220px at 8% 120%, rgba(245,158,11,.28), transparent 55%),
+    linear-gradient(120deg, #071B3A 0%, #1D2B66 48%, #283A87 78%, #104A8E 100%) !important;
+  color:#fff !important; border:none !important;
+  box-shadow:0 22px 44px -16px rgba(7,27,58,.55), inset 0 1px 0 rgba(255,255,255,.22) !important;
+}
+.hub-jurys .cand-hero-title { color:#fff !important; text-shadow:0 2px 14px rgba(0,0,0,.25); }
+.hub-jurys .cand-hero-sub { color:#DBEAFE !important; }
+.hub-jurys .cand-hero-badge { color:#FDE68A !important; background:rgba(245,158,11,.18) !important; border-color:rgba(245,158,11,.45) !important; }
+.hub-jurys .cand-hero-icone { background:linear-gradient(145deg, rgba(255,255,255,.22), rgba(255,255,255,.06)) !important;
+  color:#7DD3FC !important; border:1px solid rgba(255,255,255,.35) !important; box-shadow:0 12px 24px -10px rgba(0,0,0,.45) !important; }
+.hub-jurys .hub-pastille { color:#E0F2FE !important; background:rgba(255,255,255,.12) !important; border-color:rgba(255,255,255,.25) !important; }
+
+/* KPI v2 : valeur en dégradé indigo, icône en tuile dégradée */
+.hub-jurys .cand-kpi-value { background:linear-gradient(120deg,#1D2B66,#1267D6);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.hub-jurys .cand-kpi-icon { box-shadow:0 10px 20px -10px rgba(7,27,58,.4); }
+
+/* Composition : panneau dédié (présidents / secrétaires / membres) */
+.hub-jurys .hub-panel--composition .cand-panel-head {
+  background:linear-gradient(90deg, rgba(40,58,135,.10), rgba(53,189,245,.10) 55%, #fff) !important; }
+.hub-jurys .hub-panel--composition .cand-table tbody td:first-child { font-weight:700; color:#071B3A; }
+.hub-jurys .hub-panel--composition .hub-badge { box-shadow:inset 0 0 0 1px rgba(255,255,255,.35), 0 4px 10px -6px rgba(7,27,58,.35); }
+.hub-jurys .hub-panel--decisions .cand-panel-head {
+  background:linear-gradient(90deg, rgba(128,90,213,.12), rgba(53,189,245,.08) 55%, #fff) !important; }
+.hub-jurys .hub-panel--pv .cand-panel-head {
+  background:linear-gradient(90deg, rgba(245,158,11,.16), rgba(53,189,245,.08) 55%, #fff) !important; }
+.hub-jurys .hub-panel--pv .cand-count-pill { background:#FFF4DF; color:#8A5A00; border-color:#F5DFAE; }
+
+/* Onglets v2 : rail verre, actif indigo→bleu + point doré */
+.hub-jurys .hub-onglets { background:rgba(255,255,255,.78); backdrop-filter:blur(10px); }
+.hub-jurys .hub-onglet.is-active { background:linear-gradient(120deg,#1D2B66,#283A87 55%,#1267D6) !important; color:#fff !important; }

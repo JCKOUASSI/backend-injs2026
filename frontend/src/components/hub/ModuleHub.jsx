@@ -185,7 +185,7 @@ function OngletTable({ onglet, actif }) {
   if (!actif) return null
 
   return (
-    <section className="cand-panel" aria-label={onglet.libelle}>
+    <section className={`cand-panel hub-panel hub-panel--${onglet.id}`} aria-label={onglet.libelle}>
       <header className="cand-panel-head">
         <h2 className="cand-panel-title">
           <i className={`bi ${onglet.icone || 'bi-table'}`} aria-hidden="true"></i>{onglet.libelle}
@@ -308,7 +308,7 @@ function OngletTable({ onglet, actif }) {
 
 export default function ModuleHub({
   titre, badge, icone, introduction, pastilles,
-  statsEndpoint, tuiles, onglets, ongletInitial,
+  statsEndpoint, tuiles, onglets, ongletInitial, classePage,
 }) {
   const [ongletActif, setOngletActif] = useState(ongletInitial || onglets[0]?.id)
   const [stats, setStats] = useState(null)
@@ -337,7 +337,7 @@ export default function ModuleHub({
   )
 
   return (
-    <div className="cand-page hub-page">
+    <div className={`cand-page hub-page${classePage ? ` ${classePage}` : ''}`}>
       <div className="cand-hero">
         <div className="cand-hero-identite">
           <span className="cand-hero-icone" aria-hidden="true">

@@ -24,6 +24,11 @@ import './styles/designSystem.css'
 import './styles/getinjs.css'
 // Garde-fous d'affichage (page blanche → message lisible).
 import './styles/erreurFatale.css'
+// Design premium Jurys (Sessions LMD + hub Composition/Décisions/PV) :
+// importé ICI, dans le chunk principal toujours chargé, et non seulement
+// dans les chunks paresseux des pages Jurys — sinon le bandeau premium
+// pouvait ne jamais atteindre le navigateur (capture 12:54).
+import './styles/jurys.css'
 
 /**
  * Erreurs hors rendu React : promesses rejetées, erreurs d'événement, échec
