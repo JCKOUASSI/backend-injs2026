@@ -216,9 +216,24 @@ export function colonnesPour(ecran, lignes) {
     })
 }
 
+/** Cellule « référence » : résout un identifiant vers le libellé du référentiel. */
+function CelluleReference({ ligne, colonne }) {
+  const { data: options } = useOptionsFiltre(colonne)
+  const valeur = colonne.valeur ? colonne.valeur(ligne) : lireChemin(ligne, colonne.cle)
+  const option = (options || []).find((o) => o.valeur === String(valeur))
+  if (!option) return <>{formater(valeur, undefined, colonne)}</>
+  return <span className="gen-ref-pill">{option.libelle}</span>
+}
+
 function Cellule({ ligne, colonne }) {
+  if (colonne.format === 'reference') {
+    return <CelluleReference ligne={ligne} colonne={colonne} />
+  }
   const valeur = colonne.valeur ? colonne.valeur(ligne) : lireChemin(ligne, colonne.cle)
   const texte = formater(valeur, colonne.format, colonne)
+  if (colonne.format === 'chip' && texte !== '—') {
+    return <span className="gen-code-chip">{texte}</span>
+  }
   if (colonne.format === 'badge' && colonne.couleurs) {
     const cle = String(valeur ?? '').toUpperCase()
     return <span className={`badge ${colonne.couleurs[cle] || 'text-bg-secondary'}`}>{texte}</span>
@@ -260,6 +275,15 @@ function useOptionsFiltre(filtre) {
   })
 }
 
+/** Pluriel français simple pour « Tous les … » (niveau→niveaux, mois→mois). */
+export function pluriel(mot) {
+  const minuscule = String(mot || '').toLowerCase()
+  if (/[sx]$/.test(minuscule)) return minuscule
+  if (/eau$/.test(minuscule)) return `${minuscule}x`
+  if (/al$/.test(minuscule)) return minuscule.replace(/al$/, 'aux')
+  return `${minuscule}s`
+}
+
 function Filtre({ filtre, valeur, onChange }) {
   const { data: options } = useOptionsFiltre(filtre)
   if (filtre.type === 'select') {
@@ -271,7 +295,7 @@ function Filtre({ filtre, valeur, onChange }) {
         onChange={(e) => onChange(e.target.value)}
         aria-label={filtre.libelle}
       >
-        <option value="">{filtre.tous || `Tous les ${filtre.libelle.toLowerCase()}`}</option>
+        <option value="">{filtre.tous || `Tous les ${pluriel(filtre.libelle)}`}</option>
         {choix.map((o) => (
           <option key={o.valeur} value={o.valeur}>{o.libelle}</option>
         ))}

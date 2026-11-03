@@ -617,8 +617,10 @@ export const ECRANS = {
     filtres: [{ param: 'niveau_id', libelle: 'Niveau', type: 'select', ...RESSOURCES.niveaux }],
     colonnes: [
       { cle: 'numero', libelle: 'N°' },
-      { cle: 'libelle', libelle: 'Libellé' },
-      { cle: 'niveau_id', libelle: 'Niveau' },
+      { cle: 'libelle', libelle: 'Libellé', format: 'chip' },
+      // L'identifiant du niveau est résolu vers son code référentiel (L1, L2…)
+      // via la ressource `niveaux` : jamais l'id brut dans le tableau.
+      { cle: 'niveau_id', libelle: 'Niveau', format: 'reference', ...RESSOURCES.niveaux, optionsCleLibelle: 'code' },
       { cle: 'actif', libelle: 'Actif', format: 'booleen' },
     ],
     note: 'Source : /api/scolarite/ref/semestres/',
@@ -1219,8 +1221,10 @@ export const ECRANS = {
     filtres: [{ param: 'niveau_id', libelle: 'Niveau', type: 'select', ...RESSOURCES.niveaux }],
     colonnes: [
       { cle: 'numero', libelle: 'N°' },
-      { cle: 'libelle', libelle: 'Libellé' },
-      { cle: 'niveau_id', libelle: 'Niveau' },
+      { cle: 'libelle', libelle: 'Libellé', format: 'chip' },
+      // L'identifiant du niveau est résolu vers son code référentiel (L1, L2…)
+      // via la ressource `niveaux` : jamais l'id brut dans le tableau.
+      { cle: 'niveau_id', libelle: 'Niveau', format: 'reference', ...RESSOURCES.niveaux, optionsCleLibelle: 'code' },
       { cle: 'actif', libelle: 'Actif', format: 'booleen' },
     ],
     note: 'Source : /api/scolarite/ref/semestres/',

@@ -22,7 +22,7 @@ vi.mock('@/services/api', async (importOriginal) => {
 import { apiController } from '@/test/utils/mockApi'
 import { AllProviders } from '@/test/utils/renderWithProviders'
 import { makeUser } from '@/test/utils/factories'
-import EcranRessource, { formater } from './EcranRessource'
+import EcranRessource, { pluriel } from './EcranRessource'
 import { ECRANS } from '@/menu/ecrans'
 
 /** Réponse de la liste, mutable : chaque test peut la remplacer avant montage. */
@@ -649,5 +649,42 @@ describe('Résultats / bilans (régression capture 03/11 : « Élément » rép�
     expect(document.body.textContent).not.toContain('Élément')
     expect(document.body.textContent).not.toContain('"periodes"')
     expect(document.body.textContent).not.toContain('module_id')
+  })
+})
+
+describe('Semestres (régression capture 03/11 : niveau en id brut, « Tous les niveau »)', () => {
+  it('résout le niveau vers son code référentiel et pluralise le filtre', async () => {
+    apiController.setRoute('/scolarite/ref/semestres/', () => ({
+      count: 2,
+      results: [
+        { id: 1, numero: 1, libelle: 'S1', niveau_id: 1, actif: true },
+        { id: 2, numero: 3, libelle: 'S3', niveau_id: 2, actif: true },
+      ],
+    }))
+    apiController.setRoute('/scolarite/ref/niveaux/', () => ({
+      count: 2,
+      results: [
+        { id: 1, code: 'L1', libelle: 'Licence 1', cycle: 'LICENCE', ordre: 1, actif: true },
+        { id: 2, code: 'L2', libelle: 'Licence 2', cycle: 'LICENCE', ordre: 2, actif: true },
+      ],
+    }))
+    monter(ECRANS.semestres, { chemin: '/formations/semestres' })
+
+    // Libellés semestres en chips, niveaux résolus en codes (L1/L2), jamais l'id brut.
+    expect(await screen.findByText('S1')).toBeTruthy()
+    expect(await screen.findByText('L1')).toBeTruthy()
+    const pastilles = [...document.querySelectorAll('.gen-ref-pill')].map((n) => n.textContent)
+    expect(pastilles).toEqual(expect.arrayContaining(['L1', 'L2']))
+    // Le filtre affiche le libellé complet et le pluriel correct.
+    expect(screen.getByText('Tous les niveaux')).toBeTruthy()
+    expect(screen.getByText('Licence 1')).toBeTruthy()
+    expect(screen.queryByText('Tous les niveau')).toBeNull()
+  })
+
+  it('pluriel : -eau→-eaux, -s/-x inchangés, défaut +s', () => {
+    expect(pluriel('Niveau')).toBe('niveaux')
+    expect(pluriel('Mois')).toBe('mois')
+    expect(pluriel('Statut')).toBe('statuts')
+    expect(pluriel('Semestre')).toBe('semestres')
   })
 })
