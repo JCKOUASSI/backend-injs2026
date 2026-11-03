@@ -174,6 +174,18 @@ export default function DashboardEngineView() {
   const totalFormations = repartitionFormations.reduce((acc, d) => acc + Number(d.value), 0)
   const palette = ['#1E40AF', '#1267D6', '#35BDF5', '#0D9488', '#8B5CF6', '#F59E0B']
 
+  // Indicateurs et séries consolidés par l'API à partir de tous les
+  // modules (évaluations, scolarité, charges, finances, journal) :
+  // un widget sans donnée garde son état « non mesuré », jamais un repli.
+  const indicateurs = data?.indicateurs || {}
+  const evolutionEffectifs = data?.charts?.evolution_effectifs || {}
+  const repartitionSexe = (data?.charts?.repartition_sexe || [])
+    .filter((d) => Number(d.value) > 0)
+  const totalSexe = repartitionSexe.reduce((acc, d) => acc + Number(d.value), 0)
+  const chargesCycle = data?.charts?.charges_par_cycle || {}
+  const activiteRecente = data?.activite_recente || []
+  const situationFinanciere = data?.situation_financiere || {}
+
   return (
     <div className="dash-engine-container">
       {/* ── 1. Rangée de Salutation & Plaquette Campus Hero ── */}
@@ -290,7 +302,13 @@ export default function DashboardEngineView() {
                 <LmdPipeline steps={data.pipeline || []} />
                 <VectorSplineAreaChart
                   title="Évolution des effectifs"
-                  period="6 ans"
+                  period={`${(evolutionEffectifs.annees || []).length || 6} ans`}
+                  years={evolutionEffectifs.annees || []}
+                  series={(evolutionEffectifs.series || []).map((s) => ({
+                    name: s.nom,
+                    color: s.couleur,
+                    data: s.donnees || [],
+                  }))}
                 />
               </div>
 
@@ -309,15 +327,31 @@ export default function DashboardEngineView() {
                   }))}
                 />
 
-                {/* Gauge 1 : Taux de réussite */}
-                {/* Taux non calculés par l'API : affichés « — », jamais inventés. */}
-                <RadialGaugeCard title="Taux de réussite" value={null} color="#16A36A" />
+                {/* Gauges calculées par l'API depuis les modules réels
+                    (notes, dossiers étudiants, diplômes) ; « — » si la
+                    base de calcul est absente. */}
+                <RadialGaugeCard
+                  title="Taux de réussite"
+                  value={indicateurs.taux_reussite ?? null}
+                  color="#16A36A"
+                  trendComparison={indicateurs.notes_evaluees ? `${indicateurs.notes_evaluees} notes évaluées` : null}
+                />
 
                 {/* Gauge 2 : Taux d'abandon */}
-                <RadialGaugeCard title="Taux d'abandon" value={null} color="#1267D6" />
+                <RadialGaugeCard
+                  title="Taux d'abandon"
+                  value={indicateurs.taux_abandon ?? null}
+                  color="#1267D6"
+                  trendComparison={indicateurs.dossiers_etudiants ? `${indicateurs.dossiers_etudiants} dossiers étudiants` : null}
+                />
 
                 {/* Gauge 3 : Taux de diplomation */}
-                <RadialGaugeCard title="Taux de diplomation" value={null} color="#16A36A" />
+                <RadialGaugeCard
+                  title="Taux de diplomation"
+                  value={indicateurs.taux_diplomation ?? null}
+                  color="#16A36A"
+                  trendComparison={`${indicateurs.diplomes_delivres ?? 0} diplômes délivrés`}
+                />
 
                 {/* Alertes institutionnelles */}
                 <AlertPanel alerts={data.alerts || []} />
@@ -325,15 +359,48 @@ export default function DashboardEngineView() {
 
               {/* ── 5. Activité, Sexe, Charge, Finances ── */}
               <div className="row-activity-finance">
-                <RecentActivityTimeline title="Activité récente" />
+                <RecentActivityTimeline
+                  title="Activité récente"
+                  items={activiteRecente.map((a) => ({
+                    time: a.heure,
+                    icon: a.icone,
+                    color: a.couleur,
+                    text: a.texte,
+                  }))}
+                />
 
-                {/* Le sexe n'est pas qualifié dans les données : aucune part inventée. */}
-                <VectorDonutChart title="Répartition par sexe" totalLabel="Étudiants" data={[]} />
+                {/* Sexe des participants rattachés aux dossiers étudiants. */}
+                <VectorDonutChart
+                  title="Répartition par sexe"
+                  totalLabel="Étudiants"
+                  centerTotal={totalSexe}
+                  data={repartitionSexe.map((d, i) => ({
+                    label: d.label,
+                    value: Number(d.value) || 0,
+                    display: String(d.value),
+                    color: i === 0 ? '#EC4899' : '#1267D6',
+                  }))}
+                />
 
-                <TeachingLoadBarChart title="Charge d'enseignement" />
+                <TeachingLoadBarChart
+                  title="Charge d'enseignement"
+                  categories={chargesCycle.categories || []}
+                  series={(chargesCycle.series || []).map((s) => ({
+                    name: s.nom,
+                    color: s.couleur,
+                    values: s.valeurs || [],
+                  }))}
+                />
 
-                {/* Aucun montant n'est fourni par l'API : ne rien afficher plutôt qu'inventer. */}
-                <FinancialSituationCard title="Situation financière" />
+                {/* Montants du module Finances étudiantes (facturé, encaissé
+                    confirmé, restant dû) ; « — » sans facture enregistrée. */}
+                <FinancialSituationCard
+                  title="Situation financière"
+                  rate={situationFinanciere.taux_recouvrement ?? null}
+                  recettes={situationFinanciere.facture}
+                  paiements={situationFinanciere.encaisse}
+                  impayes={situationFinanciere.impayes}
+                />
               </div>
 
               {/* ── Actions Rapides ── */}

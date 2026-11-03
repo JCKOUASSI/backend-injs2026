@@ -48,6 +48,14 @@ const mockOverviewData = {
     { id: 'jury', label: 'Jurys', value: 2, icon: 'bi-balance-scale', active: true },
     { id: 'diplome', label: 'Diplômation', value: 85, icon: 'bi-award', active: true },
   ],
+  indicateurs: {
+    taux_reussite: 65.1,
+    notes_evaluees: 800,
+    taux_abandon: 0,
+    dossiers_etudiants: 3727,
+    taux_diplomation: 0,
+    diplomes_delivres: 0,
+  },
   charts: {
     inscriptions_par_formation: [
       { label: 'Licence STAPS', value: 80 },
@@ -57,6 +65,34 @@ const mockOverviewData = {
       { label: 'Vague 1', value: 60, color: '#10B981' },
       { label: 'Vague 2', value: 40, color: '#2F80ED' },
     ],
+    evolution_effectifs: {
+      annees: ['2025-2026', '2026-2027'],
+      series: [
+        { nom: 'Candidatures', couleur: '#35BDF5', donnees: [6, 990] },
+        { nom: 'Inscrits', couleur: '#1267D6', donnees: [0, 3716] },
+      ],
+    },
+    repartition_sexe: [
+      { label: 'Femmes', value: 1862 },
+      { label: 'Hommes', value: 1865 },
+    ],
+    charges_par_cycle: {
+      categories: ['Licence', 'Master'],
+      series: [
+        { nom: 'CM', couleur: '#1265D6', valeurs: [9016, 4012] },
+        { nom: 'TD', couleur: '#0E9BB5', valeurs: [0, 0] },
+        { nom: 'TP', couleur: '#283A87', valeurs: [2910, 840] },
+      ],
+    },
+  },
+  activite_recente: [
+    { heure: '20:05', icone: 'bi-file-earmark-text', couleur: '#1267D6', texte: 'Candidature mise à jour — CAND-2026-2027-0990' },
+  ],
+  situation_financiere: {
+    taux_recouvrement: 0,
+    facture: '6 150 000 XOF',
+    encaisse: '0 XOF',
+    impayes: '6 150 000 XOF',
   },
   alerts: [
     { type: 'warning', message: '2 conventions en attente de signature.', link: '/scolarite' },
@@ -275,5 +311,35 @@ describe('pages/DashboardEngineView.jsx — Rendu et Pilotage LMD 2026', () => {
     expect(screen.getByText('Awa Koné')).toBeInTheDocument()
     expect(screen.getByText('Cours affectés')).toBeInTheDocument()
     expect(screen.getByText('Évaluations en attente')).toBeInTheDocument()
+  })
+})
+
+describe('vue d’ensemble consolidée (indicateurs de tous les modules)', () => {
+  beforeEach(() => {
+    apiController.reset()
+    apiController.setRoute('/dashboard/overview/', () => mockOverviewData)
+  })
+
+  it('affiche les taux, la répartition par sexe, les charges, l’activité et les finances', async () => {
+    mountDashboardEngine(makeUser('ADMIN', { username: 'admin' }))
+    // Jauges calculées : réussite issue des notes, bases affichées.
+    expect(await screen.findByText('65.1%')).toBeInTheDocument()
+    expect(screen.getByText(/800 notes évaluées/)).toBeInTheDocument()
+    expect(screen.getByText(/3727 dossiers étudiants/)).toBeInTheDocument()
+    expect(screen.getByText(/0 diplômes délivrés/)).toBeInTheDocument()
+    // Répartition par sexe réelle.
+    expect(screen.getByText('Femmes')).toBeInTheDocument()
+    expect(screen.getByText('Hommes')).toBeInTheDocument()
+    // Évolution des effectifs : plus d'état vide, années affichées.
+    expect(screen.queryByText(/Aucun historique d’effectifs/)).not.toBeInTheDocument()
+    expect(screen.getByText('2025-2026')).toBeInTheDocument()
+    // Charges d'enseignement par cycle.
+    expect(screen.getByText('Licence')).toBeInTheDocument()
+    expect(screen.getByText('Master')).toBeInTheDocument()
+    expect(screen.queryByText(/Aucun volume horaire/)).not.toBeInTheDocument()
+    // Activité récente issue du journal.
+    expect(screen.getByText(/Candidature mise à jour/)).toBeInTheDocument()
+    // Situation financière réelle (facturé = impayés tant que rien n'est encaissé).
+    expect(screen.getAllByText('6 150 000 XOF').length).toBe(2)
   })
 })
