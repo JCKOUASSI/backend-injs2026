@@ -104,6 +104,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+.ev-stat-sous {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ev-muted);
+  line-height: 1.25;
+}
+
+.ev-stat--info .ev-stat-icone { background: #E0E7FF; border-color: #C7D2FE; color: var(--ev-blue); }
+
 .ev-stat--ok .ev-stat-icone { background: var(--ev-ok-bg); border-color: var(--ev-ok-bd); color: var(--ev-ok); }
 .ev-stat--warn .ev-stat-icone { background: var(--ev-warn-bg); border-color: var(--ev-warn-bd); color: var(--ev-warn); }
 
@@ -155,10 +164,17 @@
 }
 
 .ev-jauge-valeur {
+  display: block;
   height: 100%;
   border-radius: 9999px;
   background: linear-gradient(90deg, var(--ev-blue) 0%, var(--ev-blue-light) 100%);
+  transition: width 0.45s ease;
 }
+
+.ev-jauge-valeur--ok { background: linear-gradient(90deg, var(--ev-ok) 0%, #34d399 100%); }
+.ev-jauge-valeur--warn { background: linear-gradient(90deg, var(--ev-warn) 0%, #f59e0b 100%); }
+.ev-jauge-valeur--info { background: linear-gradient(90deg, var(--ev-blue) 0%, var(--ev-blue-light) 100%); }
+.ev-jauge-valeur--danger { background: linear-gradient(90deg, var(--ev-danger) 0%, #f87171 100%); }
 
 .ev-repartition-compte {
   font-size: 0.8rem;
@@ -566,4 +582,28 @@
   .ev-scope h1.ev-titre { font-size: 1.3rem; }
   .ev-repartition-ligne { grid-template-columns: 1fr; gap: 0.3rem; }
   .ev-repartition-compte { text-align: left; }
+}
+
+/* ── Type d'évaluation : libellé métier + code discret ── */
+.ev-type { display: inline-flex; flex-direction: column; gap: 0.1rem; }
+.ev-type-libelle { font-weight: 600; color: var(--ev-navy); }
+.ev-type-code {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--ev-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ── Suivi de la saisie des notes (tableau de bord) ── */
+.ev-raccourcis { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.ev-suivi-resume { margin: 0 0 0.9rem; color: var(--ev-muted); font-weight: 500; }
+.ev-suivi-resume strong { color: var(--ev-navy); font-variant-numeric: tabular-nums; }
+.ev-suivi-indispo {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  color: var(--ev-muted);
+  font-weight: 500;
 }

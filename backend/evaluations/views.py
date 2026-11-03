@@ -193,12 +193,20 @@ def session_detail(request, pk):
                 parameters=[
     OpenApiParameter('session_id', int), OpenApiParameter('ecue_id', int),
     OpenApiParameter('type_evaluation_id', int), OpenApiParameter('statut', str),
+    OpenApiParameter('tri', str),
 ])
 @api_view(['GET'])
 @permission_classes([perms.EstConsultantEvaluations])
 def evaluations_list(request):
-    """Évaluations du périmètre autorisé."""
+    """Évaluations du périmètre autorisé.
+
+    `tri=recent` trie par création décroissante (tableau de bord
+    « Dernières évaluations ») ; le tri par défaut reste celui du
+    modèle (session, code ECUE), adapté au registre.
+    """
     qs = _filtres_evaluations(request, _evaluations_visibles(request.user))
+    if request.query_params.get('tri') == 'recent':
+        qs = qs.order_by('-created_at', '-id')
     return _paginer(request, qs, EvaluationSerializer)
 
 

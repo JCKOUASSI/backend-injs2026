@@ -55,6 +55,16 @@ export async function getEvaluations(params = {}) {
   return res.data ?? {}
 }
 
+/**
+ * Panorama du suivi de saisie (consultation consolidée) : compteurs de
+ * sessions, évaluations, participations et notes par statut, calculés
+ * côté backend. Aucun agrégat n'est produit ici.
+ */
+export async function getHubStats() {
+  const res = await api.get(`${BASE}/hub/stats/`)
+  return res.data ?? {}
+}
+
 export async function getEvaluation(pk) {
   const res = await api.get(`${BASE}/evaluations/${pk}/`)
   return res.data

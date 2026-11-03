@@ -72,6 +72,12 @@ class SessionEvaluationSerializer(serializers.ModelSerializer):
     annee_libelle = serializers.CharField(source='annee_academique.libelle', read_only=True)
     niveau_code = serializers.CharField(source='niveau.code', read_only=True)
     maquette_version = serializers.IntegerField(source='maquette.version', read_only=True)
+    statut_display = serializers.CharField(
+        source='get_statut_display', read_only=True,
+    )
+    type_session_display = serializers.CharField(
+        source='get_type_session_display', read_only=True,
+    )
     nb_evaluations = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
@@ -79,8 +85,10 @@ class SessionEvaluationSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'annee_academique', 'annee_libelle', 'ref_formation', 'parcours',
             'niveau', 'niveau_code', 'semestre', 'maquette', 'maquette_version',
-            'type_session', 'session_origine', 'libelle', 'date_debut', 'date_fin',
-            'statut', 'verrouillee', 'regle_version', 'nb_evaluations', 'created_at',
+            'type_session', 'type_session_display', 'session_origine', 'libelle',
+            'date_debut', 'date_fin',
+            'statut', 'statut_display', 'verrouillee', 'regle_version',
+            'nb_evaluations', 'created_at',
         ]
         read_only_fields = ['verrouillee', 'created_at', 'updated_at']
 
@@ -111,14 +119,24 @@ class EvaluationSerializer(serializers.ModelSerializer):
     )
     ecue_code = serializers.CharField(source='ecue.code', read_only=True)
     type_code = serializers.CharField(source='type_evaluation.code', read_only=True)
+    # Libellés métier pour l'affichage : l'écran ne doit montrer ni le code
+    # du type (`EX-CC`) ni le code brut du statut (`PUBLIEE`).
+    type_libelle = serializers.CharField(
+        source='type_evaluation.libelle', read_only=True,
+    )
+    statut_display = serializers.CharField(
+        source='get_statut_display', read_only=True,
+    )
     composants = EvaluationComponentSerializer(source='components', many=True, read_only=True)
 
     class Meta:
         model = Evaluation
         fields = [
             'id', 'session', 'ecue', 'ecue_code', 'affectation_pedagogique',
-            'type_evaluation', 'type_code', 'libelle', 'description', 'bareme',
-            'poids', 'date_prevue', 'statut', 'composition_verrouillee',
+            'type_evaluation', 'type_code', 'type_libelle', 'libelle',
+            'description', 'bareme',
+            'poids', 'date_prevue', 'statut', 'statut_display',
+            'composition_verrouillee',
             'regle_version', 'composants', 'created_at',
         ]
 

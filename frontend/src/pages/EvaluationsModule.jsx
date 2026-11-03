@@ -6,8 +6,9 @@ import {
   getEvaluations, getSessions, getEvaluation, getComposants,
   getParticipants, getResultatsEcue, getResultatsUe, getResultatsSemestre,
   getJurySessions, getJuryAnomalies, getJuryStatistiques,
-  saisirNotes, getReleves, getReleve, getPassageNiveau,
+  saisirNotes, getReleves, getReleve, getPassageNiveau, getHubStats,
 } from '../services/evaluations'
+import { formatDate } from '../utils/dates'
 import '../styles/evaluations.css'
 
 /**
@@ -176,15 +177,76 @@ function Page({ titre, icone, sousTitre, actions, chargement, erreur, reessayer,
   )
 }
 
+/**
+ * Libellés métier des états réellement émis par l'API (codes sans accents).
+ * `statut_display` du backend prime quand il est fourni ; cette table est le
+ * repli pour les payloads anciens — sans elle, « PUBLIEE » s'affichait tel
+ * quel, en gris neutre (le code n'était présent dans aucune variante).
+ */
+const LIBELLES_ETAT = {
+  BROUILLON: 'Brouillon',
+  PLANIFIEE: 'Planifiée',
+  PUBLIEE: 'Publiée',
+  OUVERTE: 'Ouverte',
+  CLOTUREE: 'Clôturée',
+  ANNULEE: 'Annulée',
+  CALCULS: 'Calculs effectués',
+  RESULTATS_VALIDES: 'Résultats validés',
+  VERROUILLEE: 'Verrouillée',
+  ARCHIVEE: 'Archivée',
+  EN_COURS: 'En cours',
+  CORRIGEE: 'Corrigée',
+  VALIDEE: 'Validée',
+  TERMINEE: 'Terminée',
+  SOUMISE: 'Soumise',
+  CORRECTION_DEMANDEE: 'Correction demandée',
+  PRESENT: 'Présent',
+  ABSENT: 'Absent',
+  EN_ATTENTE: 'En attente',
+}
+
 /** Badge d'état : toujours accompagné d'un texte (jamais la couleur seule). */
 function BadgeEtat({ valeur, libelle }) {
   const v = String(valeur ?? '').toUpperCase()
   let variante = ''
-  if (['PLANIFIEE', 'PLANIFIÉE', 'BROUILLON', 'PREVU', 'PRÉVU'].includes(v)) variante = ' ev-badge--info'
-  else if (['EN_COURS', 'COURS'].includes(v)) variante = ' ev-badge--warn'
-  else if (['CORRIGEE', 'CORRIGÉE', 'VALIDE', 'VALIDÉ', 'PUBLIE', 'TERMINEE', 'TERMINÉE'].includes(v)) variante = ' ev-badge--ok'
-  else if (['VERROUILLE', 'VERROUILLEE', 'ARCHIVE', 'ARCHIVEE'].includes(v)) variante = ' ev-badge--danger'
-  return <span className={`ev-badge${variante}`}>{libelle ?? v.replace(/_/g, ' ')}</span>
+  if (['BROUILLON', 'EN_ATTENTE', 'SOUMISE', 'PLANIFIEE'].includes(v)) variante = ' ev-badge--info'
+  else if (['EN_COURS', 'CALCULS', 'CLOTUREE'].includes(v)) variante = ' ev-badge--warn'
+  else if (['PUBLIEE', 'OUVERTE', 'CORRIGEE', 'VALIDEE', 'RESULTATS_VALIDES', 'TERMINEE', 'PRESENT'].includes(v)) variante = ' ev-badge--ok'
+  else if (['VERROUILLEE', 'ARCHIVEE', 'ANNULEE', 'ABSENT', 'CORRECTION_DEMANDEE'].includes(v)) variante = ' ev-badge--danger'
+  return (
+    <span className={`ev-badge${variante}`}>
+      {libelle ?? LIBELLES_ETAT[v] ?? v.replace(/_/g, ' ')}
+    </span>
+  )
+}
+
+/** Date au format métier JJ/MM/AAAA ; jamais d'ISO brut à l'écran. */
+function dateAffichee(v) {
+  if (v === null || v === undefined || v === '') return 'Non renseignée'
+  const f = formatDate(v)
+  return f === '-' || f === '—' ? 'Non renseignée' : f
+}
+
+/**
+ * Une composition est « ouverte à la saisie » si elle n'est ni verrouillée
+ * ni dans un état terminal (clôturée / annulée).
+ *
+ * Avant ce correctif, l'écran ne regardait que le verrou : une évaluation
+ * CLÔTURÉE apparaissait « ouverte à la saisie » avec un bouton « Saisir »
+ * actif, alors que la saisie y est refusée côté métier. Le verrouillage
+ * reste l'autorité affichée par `BandeauVerrou` ; l'état terminal ferme
+ * aussi la saisie, comme le fait le backend (C1).
+ */
+function saisieOuverte(l) {
+  return !l.composition_verrouillee && l.statut !== 'CLOTUREE' && l.statut !== 'ANNULEE'
+}
+
+/** Motif lu à voix haute quand le bouton « Saisir » n'est pas offert. */
+function motifSaisieFermee(l) {
+  if (l.composition_verrouillee) return 'Composition verrouillée, saisie impossible'
+  if (l.statut === 'CLOTUREE') return 'Saisie clôturée'
+  if (l.statut === 'ANNULEE') return 'Évaluation annulée'
+  return 'Saisie indisponible'
 }
 
 /** Bandeau de verrouillage — champ réel : `composition_verrouillee`. */
@@ -223,16 +285,33 @@ function ColonnesSessions() {
   )
 }
 
+/**
+ * Type d'évaluation en langue métier (« Contrôle continu »), pas en code
+ * (« EX-CC »). Le marqueur « [Exemple] » du libellé de démonstration est
+ * omis ici : le libellé de l'évaluation elle-même le porte déjà.
+ */
+function TypeEvaluation({ l }) {
+  const libelle = String(l.type_libelle ?? '').replace(/^\[Exemple\]\s*/, '')
+  if (!libelle) return <>{affichage(l.type_code)}</>
+  return (
+    <span className="ev-type">
+      <span className="ev-type-libelle">{libelle}</span>
+      {l.type_code ? <span className="ev-type-code">{l.type_code}</span> : null}
+    </span>
+  )
+}
+
 function CellulesEvaluations({ l, navigate, peutSaisir }) {
+  const ouverte = saisieOuverte(l)
   return (
     <>
       <td><span className="ev-note-bareme">{affichage(l.ecue_code)}</span></td>
-      <td>{affichage(l.type_code)}</td>
-      <td>{affichage(l.date_prevue)}</td>
-      <td><BadgeEtat valeur={l.statut} /></td>
+      <td><TypeEvaluation l={l} /></td>
+      <td>{dateAffichee(l.date_prevue)}</td>
+      <td><BadgeEtat valeur={l.statut} libelle={l.statut_display ?? undefined} /></td>
       <td><BandeauVerrou verrouille={Boolean(l.composition_verrouillee)} /></td>
       <td>
-        {peutSaisir ? (
+        {peutSaisir && ouverte ? (
           <button
             type="button"
             className="ev-btn ev-btn--ghost"
@@ -242,7 +321,12 @@ function CellulesEvaluations({ l, navigate, peutSaisir }) {
             Saisir
           </button>
         ) : (
-          <span className="px-dash" aria-label="Saisie non autorisée">—</span>
+          <span
+            className="px-dash"
+            aria-label={peutSaisir ? motifSaisieFermee(l) : 'Saisie non autorisée'}
+          >
+            —
+          </span>
         )}
       </td>
     </>
@@ -253,10 +337,10 @@ function CellulesSessions({ l }) {
   return (
     <>
       <td>{affichage(l.annee_libelle)}</td>
-      <td>{affichage(l.type_session)}</td>
-      <td>{affichage(l.date_debut)}</td>
-      <td>{affichage(l.date_fin)}</td>
-      <td><BadgeEtat valeur={l.statut} /></td>
+      <td>{affichage(l.type_session_display ?? l.type_session)}</td>
+      <td>{dateAffichee(l.date_debut)}</td>
+      <td>{dateAffichee(l.date_fin)}</td>
+      <td><BadgeEtat valeur={l.statut} libelle={l.statut_display ?? undefined} /></td>
       <td className="px-num">{affichage(l.nb_evaluations)}</td>
     </>
   )
@@ -494,11 +578,22 @@ function PanneauActivite({ lignes, total, pagine, peutSaisir, navigate }) {
   }
 
   const verrouillees = lignes.filter((l) => l.composition_verrouillee).length
-  const ouvertes = lignes.length - verrouillees
-  const parStatut = (v) => lignes.filter((l) => String(l.statut ?? '').toUpperCase() === v).length
-  const corrigees = parStatut('CORRIGEE') + parStatut('CORRIGÉE')
+  // Catégories disjointes (somme = total de la page) : une évaluation
+  // verrouillée compte dans « Verrouillées », jamais dans les ouvertes ni
+  // les clôturées. « Corrigées » a été retirée : ce statut n'existe pas
+  // pour une évaluation (il vaut pour les épreuves), la jauge restait
+  // donc éternellement à zéro.
+  const ouvertes = lignes.filter((l) => saisieOuverte(l)).length
+  const parStatut = (v) => lignes.filter(
+    (l) => !l.composition_verrouillee && String(l.statut ?? '').toUpperCase() === v,
+  ).length
+  const cloturees = parStatut('CLOTUREE')
+  const annulees = parStatut('ANNULEE')
   // Les jauges se rapportent toujours à la page affichée : le ratio reste exact.
   const base = lignes.length
+  // « Dernières » : les 10 plus récentes (l'API est appelée avec
+  // `tri=recent`), pas l'intégralité du registre.
+  const recentes = lignes.slice(0, 10)
 
   return (
     <>
@@ -517,9 +612,12 @@ function PanneauActivite({ lignes, total, pagine, peutSaisir, navigate }) {
         </div>
         <div className="card-body">
           <div className="ev-repartition">
-            <LigneRepartition nom="Ouvertes à la saisie" compte={ouvertes} total={base} variante="warn" />
-            <LigneRepartition nom="Verrouillées" compte={verrouillees} total={base} variante="ok" />
-            <LigneRepartition nom="Corrigées" compte={corrigees} total={base} variante="info" />
+            <LigneRepartition nom="Ouvertes à la saisie" compte={ouvertes} total={base} variante="ok" />
+            <LigneRepartition nom="Clôturées" compte={cloturees} total={base} variante="warn" />
+            <LigneRepartition nom="Verrouillées" compte={verrouillees} total={base} variante="info" />
+            {annulees > 0 && (
+              <LigneRepartition nom="Annulées" compte={annulees} total={base} variante="danger" />
+            )}
           </div>
         </div>
       </div>
@@ -532,11 +630,12 @@ function PanneauActivite({ lignes, total, pagine, peutSaisir, navigate }) {
               Dernières évaluations
             </h2>
             <p className="px-panel-sub">
-              Évaluations de votre périmètre pédagogique, de la plus récente à la plus ancienne.
+              Évaluations de votre périmètre pédagogique, par ordre de création,
+              de la plus récente à la plus ancienne.
             </p>
           </div>
           <div className="px-panel-tools">
-            <span className="px-count-pill">{base}</span>
+            <span className="px-count-pill">{recentes.length} sur {total}</span>
           </div>
         </div>
         <div className="card-body-flush">
@@ -546,35 +645,14 @@ function PanneauActivite({ lignes, total, pagine, peutSaisir, navigate }) {
               <thead>
                 <tr>
                   <th scope="col">Évaluation</th>
-                  <th scope="col">ECUE</th>
-                  <th scope="col">Type</th>
-                  <th scope="col">Date prévue</th>
-                  <th scope="col">État</th>
-                  <th scope="col"><span className="visually-hidden">Actions</span></th>
+                  <ColonnesEvaluations />
                 </tr>
               </thead>
               <tbody>
-                {lignes.map((l) => (
+                {recentes.map((l) => (
                   <tr key={l.id}>
                     <td style={{ fontWeight: 600 }}>{affichage(l.libelle)}</td>
-                    <td><span className="ev-note-bareme">{affichage(l.ecue_code)}</span></td>
-                    <td>{affichage(l.type_code)}</td>
-                    <td>{affichage(l.date_prevue)}</td>
-                    <td><BadgeEtat valeur={l.statut} /></td>
-                    <td>
-                      {peutSaisir ? (
-                        <button
-                          type="button"
-                          className="ev-btn ev-btn--ghost"
-                          onClick={() => navigate(`/evaluations/saisie/${l.id}`)}
-                          aria-label={`Saisir les notes de ${affichage(l.libelle)}`}
-                        >
-                          Saisir
-                        </button>
-                      ) : (
-                        <span className="px-dash" aria-label="Saisie non autorisée">—</span>
-                      )}
-                    </td>
+                    <CellulesEvaluations l={l} navigate={navigate} peutSaisir={peutSaisir} />
                   </tr>
                 ))}
               </tbody>
@@ -592,7 +670,7 @@ function PanneauActivite({ lignes, total, pagine, peutSaisir, navigate }) {
  * Tuile d'indicateur. Si la donnée n'est pas fournie par l'API, elle affiche
  * « Non disponible » — jamais un chiffre plausible inventé (E1.3 §8).
  */
-function Tuile({ icone, label, valeur, disponible = true, variante = '' }) {
+function Tuile({ icone, label, valeur, disponible = true, variante = '', sous }) {
   return (
     <div className={`ev-stat${variante ? ` ev-stat--${variante}` : ''}`}>
       <span className="ev-stat-icone" aria-hidden="true">
@@ -605,6 +683,7 @@ function Tuile({ icone, label, valeur, disponible = true, variante = '' }) {
         ) : (
           <span className="ev-stat-indisponible">Non disponible</span>
         )}
+        {sous ? <span className="ev-stat-sous">{sous}</span> : null}
       </span>
     </div>
   )
@@ -621,16 +700,101 @@ function LigneRepartition({ nom, compte, total, variante }) {
         {nom}
       </span>
       <span className="ev-jauge" role="img" aria-label={`${nom} : ${compte} sur ${total}`}>
-        <span className="ev-jauge-valeur" style={{ width: `${part}%` }} />
+        <span
+          className={`ev-jauge-valeur${variante ? ` ev-jauge-valeur--${variante}` : ''}`}
+          style={{ width: `${part}%` }}
+        />
       </span>
       <span className="ev-repartition-compte">{compte}</span>
     </div>
   )
 }
 
+/** Statuts de notes suivis dans le panorama (libellés du contrat B.1 §8). */
+const STATUTS_NOTES = [
+  ['BROUILLON', 'Brouillons', 'info'],
+  ['SOUMISE', 'Soumises', 'warn'],
+  ['CORRECTION_DEMANDEE', 'Corrections demandées', 'danger'],
+  ['VALIDEE', 'Validées', 'ok'],
+]
+
+/**
+ * Suivi de la saisie des notes (panorama backend `/hub/stats/`).
+ *
+ * Panne tolérée : si le panorama ne répond pas, le panneau affiche
+ * « Non disponible » sans masquer le reste du tableau de bord — même
+ * doctrine que la tuile des sessions. Aucun chiffre n'est fabriqué.
+ */
+function PanneauSuiviNotes({ suivi, navigate }) {
+  const stats = suivi.donnees
+  const indisponible = Boolean(suivi.erreur) || !stats
+  const parStatut = stats?.notes_par_statut ?? {}
+  const totalNotes = stats?.notes ?? 0
+  const avancement = stats?.avancement_validation
+  return (
+    <div className="card px-panel">
+      <div className="px-panel-head">
+        <div className="px-panel-headtext">
+          <h2 className="px-panel-title">
+            <i className="bi bi-pencil-square" aria-hidden="true" />
+            Suivi de la saisie des notes
+          </h2>
+          <p className="px-panel-sub">
+            Avancement réel de la saisie et de la validation, toutes sessions confondues.
+          </p>
+        </div>
+        <div className="px-panel-tools">
+          <div className="ev-raccourcis">
+            <button type="button" className="ev-btn ev-btn--ghost" onClick={() => navigate('/evaluations/controle')}>
+              Contrôle des notes
+            </button>
+            <button type="button" className="ev-btn ev-btn--ghost" onClick={() => navigate('/evaluations/releves')}>
+              Relevés
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="card-body">
+        {indisponible ? (
+          <p className="ev-suivi-indispo">
+            <i className="bi bi-cloud-slash" aria-hidden="true" />
+            Suivi de saisie non disponible pour le moment.
+          </p>
+        ) : (
+          <>
+            <p className="ev-suivi-resume">
+              <strong>{totalNotes}</strong> note{totalNotes > 1 ? 's' : ''} suivie{totalNotes > 1 ? 's' : ''}
+              {' · '}<strong>{stats.participants ?? 0}</strong> participation{(stats.participants ?? 0) > 1 ? 's' : ''}
+              {' · '}<strong>{stats.releves ?? 0}</strong> relevé{(stats.releves ?? 0) > 1 ? 's' : ''} émis
+              {avancement !== null && avancement !== undefined && (
+                <> · validation : <strong>{String(avancement).replace('.', ',')} %</strong></>
+              )}
+            </p>
+            <div className="ev-repartition">
+              {STATUTS_NOTES.map(([code, nom, variante]) => (
+                <LigneRepartition
+                  key={code}
+                  nom={nom}
+                  compte={parStatut[code] ?? 0}
+                  total={totalNotes}
+                  variante={variante}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function TableauDeBordEvaluations() {
-  const ev = useCharge(getEvaluations)
+  // `tri=recent` : le panneau « Dernières évaluations » reçoit la page
+  // triée par création décroissante — sans ce paramètre, l'ordre modèle
+  // (session, code ECUE) rendait l'intitulé du panneau faux.
+  const ev = useCharge(() => getEvaluations({ tri: 'recent' }))
   const se = useCharge(getSessions)
+  const suivi = useCharge(getHubStats)
   const navigate = useNavigate()
   const { peut } = useDroits()
   const { lignes, total } = volumetrie(ev.donnees)
@@ -639,7 +803,7 @@ export function TableauDeBordEvaluations() {
   // annoncés comme tel que si l'API renvoie effectivement une page partielle.
   const pagine = total > lignes.length
   const verrouillees = lignes.filter((l) => l.composition_verrouillee).length
-  const ouvertes = lignes.length - verrouillees
+  const ouvertes = lignes.filter((l) => saisieOuverte(l)).length
   // La saisie est une autorité backend distincte de la consultation
   // (`evaluations.permissions.peut_saisir_notes` → capacité `notes.gerer`).
   // Un profil « lecture seule » ne doit pas voir d'action de saisie.
@@ -650,10 +814,12 @@ export function TableauDeBordEvaluations() {
   // rechargement porte donc bien sur l'ENSEMBLE des sources du tableau de bord.
   const reessayerEvaluations = ev.reessayer
   const reessayerSessions = se.reessayer
+  const reessayerSuivi = suivi.reessayer
   const reessayer = useCallback(() => {
     reessayerEvaluations()
     reessayerSessions()
-  }, [reessayerEvaluations, reessayerSessions])
+    reessayerSuivi()
+  }, [reessayerEvaluations, reessayerSessions, reessayerSuivi])
 
   return (
     <Page
@@ -685,14 +851,15 @@ export function TableauDeBordEvaluations() {
       )}
     >
       <div className="ev-stats">
-        <Tuile icone="bi-clipboard-check" label="Évaluations" valeur={total} />
-        <Tuile icone="bi-unlock" label="Ouvertes à la saisie" valeur={ouvertes} variante="warn" />
-        <Tuile icone="bi-lock" label="Verrouillées" valeur={verrouillees} variante="ok" />
+        <Tuile icone="bi-clipboard-check" label="Évaluations" valeur={total} sous="compositions suivies" />
+        <Tuile icone="bi-unlock" label="Ouvertes à la saisie" valeur={ouvertes} variante="ok" sous="ni clôturées ni verrouillées" />
+        <Tuile icone="bi-lock" label="Verrouillées" valeur={verrouillees} variante="info" sous="composition figée" />
         <Tuile
           icone="bi-calendar3"
           label="Sessions d’évaluation"
           valeur={totalSessions}
           disponible={!se.erreur}
+          sous="périmètre pédagogique"
         />
       </div>
       <PanneauActivite
@@ -702,6 +869,7 @@ export function TableauDeBordEvaluations() {
         peutSaisir={peutSaisir}
         navigate={navigate}
       />
+      <PanneauSuiviNotes suivi={suivi} navigate={navigate} />
     </Page>
   )
 }
@@ -840,7 +1008,7 @@ function SaisieContextuelle({
         </div>
         <div className="ev-contexte-item">
           <span className="ev-contexte-label">Date prévue</span>
-          <span className="ev-contexte-valeur">{affichage(evaluation.date_prevue)}</span>
+          <span className="ev-contexte-valeur">{dateAffichee(evaluation.date_prevue)}</span>
         </div>
         <div className="ev-contexte-item">
           <span className="ev-contexte-label">Libellé</span>
@@ -1014,7 +1182,7 @@ function ChoixEvaluation({ evaluations, total, peutSaisir }) {
                 <div className="ev-carte-meta">
                   <span>{affichage(e.libelle)}</span>
                   <span>Type : {affichage(e.type_code)}</span>
-                  <span>Date prévue : {affichage(e.date_prevue)}</span>
+                  <span>Date prévue : {dateAffichee(e.date_prevue)}</span>
                 </div>
                 <div className="ev-carte-pied">
                   <BandeauVerrou verrouille={estVerrouillee} />
@@ -1188,7 +1356,7 @@ export function ControleNotes() {
                   <div className="ev-carte-meta">
                     <span>{affichage(l.libelle)}</span>
                     <span>Type : {affichage(l.type_code)}</span>
-                    <span>Date prévue : {affichage(l.date_prevue)}</span>
+                    <span>Date prévue : {dateAffichee(l.date_prevue)}</span>
                     <span>État : {affichage(l.statut)}</span>
                   </div>
                   <div className="ev-carte-pied">
