@@ -138,16 +138,27 @@ def archives_cahier_appel_api(request, formation_pk, module_pk):
     pointages = Pointage.objects.filter(
         session__module=module,
         participant_id__isnull=False,
-    ).values('participant_id', 'session_id').distinct()
+    ).values('participant_id', 'session_id', 'statut', 'statut_assiduite')
 
-    presences = [
-        {
-            'type_personne': 'participant',
-            'participant_id': row['participant_id'],
-            'session_id': row['session_id'],
-        }
-        for row in pointages
-    ]
+    # Assiduité effective — même définition que presences.stats_services :
+    # une ligne de pointage ne vaut présence que si l'assiduité effective est
+    # PRESENT ou RETARD. Les lignes d'absence (ABSENT_NON_BADGE…) existent en
+    # base pour tracer les absents : les compter gonflait le cahier à 100 %.
+    _presents = (Pointage.StatutAssiduite.PRESENT, Pointage.StatutAssiduite.RETARD)
+    _mapping = Pointage.MAPPING_ASSIDUITE()
+    presences = []
+    _vus = set()
+    for row in pointages:
+        assiduite = row['statut_assiduite'] or _mapping.get(
+            row['statut'], Pointage.StatutAssiduite.NON_RENSEIGNE)
+        cle = (row['participant_id'], row['session_id'])
+        if assiduite in _presents and cle not in _vus:
+            _vus.add(cle)
+            presences.append({
+                'type_personne': 'participant',
+                'participant_id': row['participant_id'],
+                'session_id': row['session_id'],
+            })
 
     return Response({
         'sessions': sessions_data,

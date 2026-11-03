@@ -50,11 +50,13 @@ from formations.models import (
     ModuleParticipant,
     NoteModule,
     NoteModuleColonne,
+    NoteModuleSynthese,
     Participant,
     Secretariat,
     SessionModule,
 )
 from presences.models import Pointage
+from suiviEvaluation.services import _get_parametres, _mention_pour_moyenne
 from ressources_humaines.models import (
     AffectationRH, Agent, DisponibiliteAgent, DocumentRH, Fonction, Service,
 )
@@ -582,7 +584,7 @@ class Command(BaseCommand):
             ('Sciences de la Vie et de la Santé — S1 (archivé)', formateurs[0]),
             ('Initiation aux fondamentaux du Football — S1 (archivé)', formateurs[1]),
         ]
-        nb_notes = nb_pointages = 0
+        nb_notes = nb_pointages = nb_syntheses = 0
         for intitule, formateur in modules_specs:
             module, _ = Module.objects.update_or_create(
                 formation=formation, intitule=intitule,
@@ -590,7 +592,10 @@ class Command(BaseCommand):
                     'cycle': formation.formation, 'statut': Module.Statut.TERMINEE,
                     'secretariat': secretariat, 'formateur': formateur,
                     'date_debut': date(2025, 9, 15), 'date_fin': date(2026, 1, 30),
-                    'duree_prevue_heures': Decimal('30'),
+                    # Volume prévu = séances réellement planifiées ci-dessous
+                    # (6 séances × 2 h). À 30 h, le « temps de cours effectué »
+                    # plafonnait à 33 % et rendait tout le monde non admis.
+                    'duree_prevue_heures': Decimal('12'),
                     'archived': True, 'archived_at': timezone.now(),
                     'archived_by': archiviste,
                 },
@@ -635,6 +640,7 @@ class Command(BaseCommand):
                     module=module, libelle=libelle, defaults={'ordre': ordre, 'note_max': Decimal('20')},
                 )
                 colonnes.append(colonne)
+            notes_par_participant = {}
             for j, p in enumerate(participants):
                 for k, colonne in enumerate(colonnes):
                     note = Decimal('8') + Decimal(((j * 3 + k * 2) % 11)) + Decimal('0.5') * (k)
@@ -645,6 +651,20 @@ class Command(BaseCommand):
                                   'verrouillee': True, 'validation_par': archiviste,
                                   'validation_le': timezone.now()},
                     )
+                    notes_par_participant.setdefault(p.id, []).append(float(note))
                     nb_notes += 1
+            # Synthèses : mention dérivée de la moyenne par la règle officielle
+            # (sinon la colonne « Mention » des listes de notes reste vide).
+            parametres = _get_parametres(formation)
+            for p in participants:
+                valeurs = notes_par_participant.get(p.id) or []
+                moyenne = sum(valeurs) / len(valeurs) if valeurs else None
+                NoteModuleSynthese.objects.update_or_create(
+                    module=module, participant=p,
+                    defaults={'mention': _mention_pour_moyenne(moyenne, parametres),
+                              'saisie_par': formateur.user},
+                )
+                nb_syntheses += 1
         return {'modules_archives': len(modules_specs), 'etudiants_demo': len(participants),
-                'notes_archivees': nb_notes, 'pointages_archives': nb_pointages}
+                'notes_archivees': nb_notes, 'pointages_archives': nb_pointages,
+                'syntheses_archivees': nb_syntheses}

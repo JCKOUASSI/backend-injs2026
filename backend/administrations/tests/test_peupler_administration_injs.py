@@ -13,7 +13,8 @@ from administrations.models import (
 )
 from authentication.models import User
 from formations.models import (
-    Module, NoteModule, Participant, Secretariat, SessionModule,
+    Module, NoteModule, NoteModuleSynthese, Participant, Secretariat,
+    SessionModule,
 )
 from presences.models import Pointage
 from ressources_humaines.models import Agent, Service
@@ -61,6 +62,21 @@ class PeuplerAdministrationInjsTests(TestCase):
         self.assertEqual(notes.count(), 48)
         self.assertEqual(notes.filter(verrouillee=True,
                                       statut_validation='VALIDEE').count(), 48)
+
+        # Cohérence archives : le volume prévu égale les séances planifiées
+        # (6 × 2 h) — sinon le temps de cours effectué plafonne à 33 % et
+        # aucun étudiant ne peut être admis — et chaque étudiant a une
+        # synthèse avec mention (colonne « Mention » jamais vide).
+        for module in modules:
+            self.assertEqual(float(module.duree_prevue_heures), 12.0)
+        syntheses = NoteModuleSynthese.objects.filter(module__in=modules)
+        self.assertEqual(syntheses.count(), 24)
+        self.assertEqual(syntheses.exclude(mention='').count(), 24)
+        # Émargement déterministe : 5 présences sur 6 séances par étudiant.
+        presents = Pointage.objects.filter(
+            session__module__in=modules,
+            statut_assiduite=Pointage.StatutAssiduite.PRESENT)
+        self.assertEqual(presents.count(), 120)
 
     def test_personnels_coherents_avec_organigramme(self):
         """Régression : pas d'« Archiviste » par défaut, contrats variés."""

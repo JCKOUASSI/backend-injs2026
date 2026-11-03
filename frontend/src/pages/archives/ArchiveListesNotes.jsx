@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import api from '../../services/api'
 import { useToast } from '../../context/ToastContext'
 import ArchiveModuleBrowser from '../../components/archives/ArchiveModuleBrowser'
+import '../../styles/archives.css'
 
 const ACCENT = '#104A8E'
 
@@ -9,20 +10,20 @@ const MENTION_LABELS = {
   TRES_BIEN: 'Très bien', BIEN: 'Bien', ASSEZ_BIEN: 'Assez bien',
   PASSABLE: 'Passable', INSUFFISANT: 'Insuffisant', '': '—',
 }
-const MENTION_COLORS = {
-  TRES_BIEN: { background: '#e8eff5', color: '#093f70' },
-  BIEN: { background: '#e3f2fd', color: '#0d47a1' },
-  ASSEZ_BIEN: { background: '#e8eaf6', color: '#283A87' },
-  PASSABLE: { background: '#fffae1', color: '#92600E' },
-  INSUFFISANT: { background: '#ffebee', color: '#A3222F' },
-  '': { background: '#f5f5f5', color: '#9e9e9e' },
+const MENTION_CLASSES = {
+  TRES_BIEN: 'archives-mention--tres-bien',
+  BIEN: 'archives-mention--bien',
+  ASSEZ_BIEN: 'archives-mention--assez-bien',
+  PASSABLE: 'archives-mention--passable',
+  INSUFFISANT: 'archives-mention--insuffisant',
+  '': 'archives-mention--vide',
 }
 
 function MentionBadge({ mention }) {
-  const style = MENTION_COLORS[mention] || MENTION_COLORS['']
+  const cle = MENTION_CLASSES[mention] ? mention : ''
   return (
-    <span style={{ ...style, fontSize: '0.72rem', fontWeight: 700, padding: '2px 9px', borderRadius: 20, whiteSpace: 'nowrap' }}>
-      {MENTION_LABELS[mention] || '—'}
+    <span className={`archives-mention ${MENTION_CLASSES[cle]}`}>
+      {MENTION_LABELS[cle] || '—'}
     </span>
   )
 }
@@ -38,7 +39,12 @@ function downloadBlob(blob, filename) {
   URL.revokeObjectURL(url)
 }
 
-/** Vue lecture seule d'une liste de notes (modèle « LISTE DE NOTE » des archives). */
+function formatTaux(taux) {
+  const n = Number(taux)
+  return Number.isNaN(n) ? '—' : `${Math.round(n * 100) / 100}%`
+}
+
+/** Vue lecture seule d'une liste de notes (relevé archivé d'un module). */
 function ListeNoteDocument({ module, onBack }) {
   const { showToast } = useToast()
   const formationId = module.id
@@ -99,76 +105,133 @@ function ListeNoteDocument({ module, onBack }) {
     (n.grade || '').toLowerCase().includes(search.toLowerCase())
   )
 
+  // Indicateurs calculés sur les données réelles du relevé
   const nbSaisies = rows.filter(n => Object.values(n.notes || {}).some(c => c?.note != null)).length
+  const moyennes = rows
+    .map(n => (n.moyenne != null && n.moyenne !== '' ? parseFloat(n.moyenne) : null))
+    .filter(v => v != null && !Number.isNaN(v))
+  const moyenneClasse = moyennes.length
+    ? moyennes.reduce((a, b) => a + b, 0) / moyennes.length
+    : null
+  const evalues = rows.filter(n => n.moyenne != null && n.taux_presence != null)
+  const nbAdmis = evalues.filter(n => n.admissible).length
+  const moyenneParColonne = colonnes.map(c => {
+    const valeurs = rows
+      .map(n => n.notes?.[String(c.id)]?.note)
+      .filter(v => v != null)
+    return valeurs.length ? valeurs.reduce((a, b) => a + Number(b), 0) / valeurs.length : null
+  })
+  const tauxMoyen = rows.filter(n => n.taux_presence != null).length
+    ? rows.reduce((a, n) => a + (n.taux_presence != null ? Number(n.taux_presence) : 0), 0)
+      / rows.filter(n => n.taux_presence != null).length
+    : null
+
+  const tauxClasse = (taux) => {
+    if (taux >= criteres.taux_presence_min) return 'archives-taux--bon'
+    if (taux >= 50) return 'archives-taux--moyen'
+    return 'archives-taux--faible'
+  }
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-        <div>
-          <button className="btn btn-outline-secondary btn-sm" onClick={onBack} style={{ marginBottom: '0.6rem' }}>
-            <i className="bi bi-arrow-left me-1"></i>Retour aux modules
-          </button>
-          <h2 style={{ margin: 0, fontWeight: 700 }}>
-            <i className="bi bi-card-checklist me-2" style={{ color: ACCENT }}></i>Liste de notes
-          </h2>
-          <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            <strong>{module.module}</strong> · {module.formation}
-            {module.grade && <> · {module.grade}</>}{module.groupe && <> · {module.groupe}</>}
-            {module.secretariat_nom && <> · {module.secretariat_nom}</>}
-          </p>
-          <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-            {rows.length} étudiant{rows.length !== 1 ? 's' : ''} · {nbSaisies} noté{nbSaisies !== 1 ? 's' : ''} ·
-            Admis si moyenne ≥ <strong>{criteres.seuil_admission}/20</strong> et présence au module ≥ <strong>{criteres.taux_presence_min}%</strong>
-          </p>
-        </div>
-        <button
-          className="btn btn-outline-secondary btn-sm"
-          onClick={() => handlePrintFiche()}
-          disabled={printing !== null || rows.length === 0}
-          title="Imprimer la fiche de notes du module (tous les étudiants)"
-        >
-          {printing === 'module'
-            ? <><span className="spinner-border spinner-border-sm me-1"></span>Génération…</>
-            : <><i className="bi bi-printer me-1"></i>Imprimer la fiche</>}
+    <div className="archives-notes">
+      <section className="archives-notes-hero">
+        <button type="button" className="archives-cahier-retour" onClick={onBack}>
+          <i className="bi bi-arrow-left"></i>Retour aux modules
         </button>
-      </div>
+        <div className="archives-notes-hero-main">
+          <span className="archives-cahier-icone"><i className="bi bi-card-checklist"></i></span>
+          <div className="archives-notes-titres">
+            <span className="archives-hero-badge"><i className="bi bi-archive"></i>Archives · Relevé de notes</span>
+            <h2>Liste de notes</h2>
+            <p>
+              <strong>{module.module}</strong> · {module.formation}
+              {module.grade && <> · {module.grade}</>}{module.groupe && <> · {module.groupe}</>}
+              {module.secretariat_nom && <> · {module.secretariat_nom}</>}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="archives-export archives-notes-print"
+            onClick={() => handlePrintFiche()}
+            disabled={printing !== null || rows.length === 0}
+            title="Imprimer la fiche de notes du module (tous les étudiants)"
+          >
+            {printing === 'module'
+              ? <><span className="spinner-border spinner-border-sm"></span>Génération…</>
+              : <><i className="bi bi-printer"></i>Imprimer la fiche</>}
+          </button>
+        </div>
+        <div className="archives-notes-kpis">
+          <div className="archives-cahier-kpi">
+            <i className="bi bi-people"></i>
+            <div><strong>{rows.length}</strong><span>étudiant{rows.length !== 1 ? 's' : ''}</span></div>
+          </div>
+          <div className="archives-cahier-kpi">
+            <i className="bi bi-pencil-square"></i>
+            <div><strong>{nbSaisies}</strong><span>noté{nbSaisies !== 1 ? 's' : ''} sur {rows.length}</span></div>
+          </div>
+          <div className="archives-cahier-kpi">
+            <i className="bi bi-calculator"></i>
+            <div><strong>{moyenneClasse != null ? `${moyenneClasse.toFixed(2)}/20` : '—'}</strong><span>moyenne de la classe</span></div>
+          </div>
+          <div className="archives-cahier-kpi">
+            <i className="bi bi-patch-check"></i>
+            <div><strong>{nbAdmis}</strong><span>admis sur {evalues.length} évalué{evalues.length !== 1 ? 's' : ''}</span></div>
+          </div>
+        </div>
+        <p className="archives-notes-criteres">
+          <i className="bi bi-info-circle"></i>
+          Admis si moyenne ≥ <strong>{criteres.seuil_admission}/20</strong> et temps de cours effectué ≥ <strong>{criteres.taux_presence_min}%</strong>
+        </p>
+      </section>
 
-      <div style={{ marginBottom: '1rem' }}>
-        <input
-          className="form-control"
-          placeholder="Rechercher par nom, matricule, grade…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ maxWidth: 360 }}
-        />
+      <div className="archives-cahier-toolbar">
+        <label className="archives-cahier-recherche">
+          <i className="bi bi-search"></i>
+          <input
+            className="form-control"
+            placeholder="Rechercher par nom, matricule, grade…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            aria-label="Rechercher un étudiant"
+          />
+        </label>
+        <span className="archives-cahier-compteur">
+          {filtered.length} étudiant{filtered.length !== 1 ? 's' : ''} affiché{filtered.length !== 1 ? 's' : ''}
+        </span>
       </div>
 
       {loading ? (
         <div className="loading"><div className="spinner"></div></div>
       ) : rows.length === 0 ? (
-        <div className="empty-state">
-          <i className="bi bi-people" style={{ fontSize: '3rem', color: 'var(--text-muted)' }}></i>
+        <div className="empty-state archives-cahier-vide">
+          <i className="bi bi-people"></i>
           <p>Aucun étudiant inscrit à ce module.</p>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="empty-state archives-cahier-vide">
+          <i className="bi bi-search"></i>
+          <p>Aucun étudiant ne correspond à « {search} ».</p>
+        </div>
       ) : (
-        <div className="card" style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+        <div className="archives-cahier-carte">
+          <table className="archives-cahier-table archives-notes-table">
             <thead>
-              <tr style={{ borderBottom: '2px solid var(--border)', background: 'var(--bg-secondary, #f9fafb)' }}>
-                <th style={thStyle('left')}>#</th>
-                <th style={thStyle('left')}>N° inscription</th>
-                <th style={thStyle('left')}>Nom & Prénoms</th>
-                <th style={thStyle('left')}>Grade</th>
+              <tr>
+                <th className="col-rang">#</th>
+                <th className="col-etudiant">Étudiant</th>
+                <th className="col-grade">Grade</th>
                 {colonnes.map(c => (
-                  <th key={c.id} style={thStyle('center')}>
-                    {c.libelle}<div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>/ {c.note_max}</div>
+                  <th key={c.id} className="col-note">
+                    <span className="seance-date">{c.libelle}</span>
+                    <span className="seance-libelle">/ {c.note_max}</span>
                   </th>
                 ))}
-                <th style={thStyle('center')}>Moy. /20</th>
-                <th style={thStyle('center')}>Mention</th>
-                <th style={thStyle('center')}>Présence au module</th>
-                <th style={thStyle('center')}>Admis</th>
-                <th style={thStyle('center')}>Fiche</th>
+                <th className="col-total">Moy. /20</th>
+                <th className="col-total">Mention</th>
+                <th className="col-total">Temps de cours effectué</th>
+                <th className="col-total">Admis</th>
+                <th className="col-total">Fiche</th>
               </tr>
             </thead>
             <tbody>
@@ -176,45 +239,51 @@ function ListeNoteDocument({ module, onBack }) {
                 const moyNum = n.moyenne != null && n.moyenne !== '' ? parseFloat(n.moyenne) : null
                 const taux = n.taux_presence
                 return (
-                  <tr key={n.participant_id} style={{ borderBottom: '1px solid var(--border)', background: idx % 2 === 0 ? 'transparent' : 'var(--bg-secondary, #fafafa)' }}>
-                    <td style={tdStyle}>{idx + 1}</td>
-                    <td style={{ ...tdStyle, fontSize: '0.78rem', color: 'var(--text-muted)' }}>{n.matricule || '—'}</td>
-                    <td style={{ ...tdStyle, fontWeight: 600, whiteSpace: 'nowrap' }}>{n.nom} {n.prenom}</td>
-                    <td style={tdStyle}>
-                      {n.grade && <span style={{ fontSize: '0.78rem', background: '#e8eaf6', color: '#283A87', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{n.grade}</span>}
+                  <tr key={n.participant_id} className="archives-cahier-ligne" style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}>
+                    <td className="col-rang">{idx + 1}</td>
+                    <td className="col-etudiant">
+                      <span className="etudiant-nom">{n.nom} {n.prenom}</span>
+                      <span className="etudiant-matricule">{n.matricule || '—'}</span>
+                    </td>
+                    <td className="col-grade">
+                      {n.grade && <span className="archives-notes-grade">{n.grade}</span>}
                     </td>
                     {colonnes.map(c => {
                       const cell = n.notes?.[String(c.id)]
                       return (
-                        <td key={c.id} style={{ ...tdStyle, textAlign: 'center', fontWeight: 600 }}>
-                          {cell?.note != null ? cell.note : '—'}
+                        <td key={c.id} className="col-note">
+                          {cell?.note != null
+                            ? <span className="archives-notes-valeur">{cell.note}</span>
+                            : <span className="archives-presence--non">—</span>}
                         </td>
                       )
                     })}
-                    <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 700, color: moyNum != null ? (moyNum >= criteres.seuil_admission ? '#104A8E' : '#A3222F') : 'var(--text-muted)' }}>
-                      {moyNum != null && !isNaN(moyNum) ? moyNum.toFixed(2) : '—'}
+                    <td className="col-total">
+                      {moyNum != null && !Number.isNaN(moyNum)
+                        ? <span className={`archives-taux ${moyNum >= criteres.seuil_admission ? 'archives-taux--bon archives-moyenne--ok' : 'archives-taux--faible'}`}>{moyNum.toFixed(2)}</span>
+                        : <span className="archives-presence--non">—</span>}
                     </td>
-                    <td style={{ ...tdStyle, textAlign: 'center' }}><MentionBadge mention={n.mention || ''} /></td>
-                    <td style={{ ...tdStyle, textAlign: 'center' }}>
-                      {taux != null ? (
-                        <span style={{ fontWeight: 600, color: taux >= criteres.taux_presence_min ? '#104A8E' : '#A3222F' }}>{taux}%</span>
-                      ) : '—'}
+                    <td className="col-total"><MentionBadge mention={n.mention || ''} /></td>
+                    <td className="col-total">
+                      {taux != null
+                        ? <span className={`archives-taux ${tauxClasse(Number(taux))}`}>{formatTaux(taux)}</span>
+                        : <span className="archives-presence--non">—</span>}
                     </td>
-                    <td style={{ ...tdStyle, textAlign: 'center' }}>
+                    <td className="col-total">
                       {moyNum != null && taux != null ? (
                         n.admissible
-                          ? <span style={{ color: '#104A8E', fontWeight: 700 }}><i className="bi bi-check-circle-fill"></i> Oui</span>
-                          : <span style={{ color: '#A3222F', fontWeight: 600 }}><i className="bi bi-x-circle"></i> Non</span>
-                      ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                          ? <span className="archives-admis archives-admis--oui"><i className="bi bi-check-circle-fill"></i>Oui</span>
+                          : <span className="archives-admis archives-admis--non"><i className="bi bi-x-circle"></i>Non</span>
+                      ) : <span className="archives-presence--non">—</span>}
                     </td>
-                    <td style={{ ...tdStyle, textAlign: 'center' }}>
+                    <td className="col-total">
                       <button
                         type="button"
-                        className="btn btn-sm btn-outline-secondary"
-                        style={{ padding: '2px 8px' }}
+                        className="archives-notes-fiche"
                         onClick={() => handlePrintFiche(n)}
                         disabled={printing !== null}
                         title={`Imprimer la fiche de notes de ${n.nom} ${n.prenom}`}
+                        aria-label={`Imprimer la fiche de notes de ${n.nom} ${n.prenom}`}
                       >
                         {printing === `p-${n.participant_id}`
                           ? <span className="spinner-border spinner-border-sm"></span>
@@ -225,15 +294,29 @@ function ListeNoteDocument({ module, onBack }) {
                 )
               })}
             </tbody>
+            <tfoot>
+              <tr>
+                <td className="col-rang"></td>
+                <td className="col-etudiant">Moyenne de la classe</td>
+                <td className="col-grade"></td>
+                {moyenneParColonne.map((moy, i) => (
+                  <td key={colonnes[i].id} className="col-note">
+                    {moy != null ? moy.toFixed(2) : '—'}
+                  </td>
+                ))}
+                <td className="col-total">{moyenneClasse != null ? moyenneClasse.toFixed(2) : '—'}</td>
+                <td className="col-total">—</td>
+                <td className="col-total">{tauxMoyen != null ? formatTaux(tauxMoyen) : '—'}</td>
+                <td className="col-total">{nbAdmis}/{evalues.length} admis</td>
+                <td className="col-total"></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       )}
     </div>
   )
 }
-
-const thStyle = (align) => ({ padding: '0.7rem 0.6rem', textAlign: align, fontWeight: 700, whiteSpace: 'nowrap' })
-const tdStyle = { padding: '0.6rem' }
 
 export default function ArchiveListesNotes() {
   return (

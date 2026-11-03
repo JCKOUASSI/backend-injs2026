@@ -260,6 +260,51 @@ class ModuleAPITest(TestCase):
         module_ids = [row['module_id'] for row in res.data['results']]
         self.assertIn(self.m.pk, module_ids)
 
+    def test_archives_cahier_ne_compte_que_les_presents(self):
+        """Le cahier d'appel archivé ignore les lignes d'absence.
+
+        Une ligne Pointage ABSENT/ABSENT_NON_BADGE trace un absent : elle ne
+        doit pas être comptée comme présence (assiduité effective, comme
+        presences.stats_services), sinon le cahier affiche 100 % partout.
+        """
+        from presences.models import Pointage
+
+        self.m.archived = True
+        self.m.save(update_fields=['archived'])
+        session = SessionModule.objects.create(
+            module=self.m, numero=1, date_journee=timezone.localdate(),
+            heure_debut_prevue=dt_time(8, 0), heure_fin_prevue=dt_time(10, 0),
+        )
+        present = make_participant('P001', 'Present', 'Paul')
+        absent = make_participant('A001', 'Absent', 'Alice')
+        ModuleParticipant.objects.create(module=self.m, participant=present)
+        ModuleParticipant.objects.create(module=self.m, participant=absent)
+        now = timezone.now()
+        Pointage.objects.create(
+            participant=present, session=session,
+            statut=Pointage.Statut.TERMINE,
+            statut_assiduite=Pointage.StatutAssiduite.PRESENT,
+            date_journee=session.date_journee,
+            timestamp_entree=now, timestamp_sortie=now + timedelta(hours=2),
+            duree_presence_minutes=120,
+        )
+        Pointage.objects.create(
+            participant=absent, session=session,
+            statut=Pointage.Statut.ABSENT_NON_BADGE,
+            statut_assiduite=Pointage.StatutAssiduite.ABSENT,
+            date_journee=session.date_journee,
+            timestamp_entree=now,
+        )
+        res = self.client.get(
+            f'/api/formations/{self.f.pk}/modules/{self.m.pk}/archives/cahier/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data['participants']), 2)
+        self.assertEqual(res.data['presences'], [{
+            'type_personne': 'participant',
+            'participant_id': present.pk,
+            'session_id': session.pk,
+        }])
+
     def test_archive_forbidden_for_encadrant(self):
         enc = make_user('enc_archive', role='ENCADRANT')
         self.client.force_authenticate(enc)
