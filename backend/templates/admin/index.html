@@ -70,12 +70,12 @@
             <header class="dfrc-chart-header">
                 <span class="material-symbols-outlined dfrc-chart-icon dfrc-chart-icon--nav">event</span>
                 <div>
-                    <h2 class="dfrc-chart-title">{% trans "Séances par mois" %}</h2>
-                    <p class="dfrc-chart-subtitle">{% trans "Histogramme — séances comptabilisables" %}</p>
+                    <h2 class="dfrc-chart-title">{% trans "Séances EDT par mois" %}</h2>
+                    <p class="dfrc-chart-subtitle">{% trans "Histogramme — occurrences planifiées (EDT LMD)" %}</p>
                 </div>
             </header>
             <div class="dfrc-chart-body dfrc-chart-body--histogram">
-                {% include "admin/includes/chart_histogram.html" with chart=admin_charts.sessions_mensuelles title=_("Séances par mois") %}
+                {% include "admin/includes/chart_histogram.html" with chart=admin_charts.sessions_mensuelles title=_("Séances EDT par mois") %}
             </div>
         </article>
     </section>

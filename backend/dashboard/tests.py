@@ -298,3 +298,109 @@ class VueEnsembleCoherenceTests(TestCase):
         self.assertIsNone(log['installations_sportives'])
         self.assertEqual(
             log['organismes_partenaires'], OrganismeAccueil.objects.count())
+
+
+class AccueilAdminAlignementLMDTests(TestCase):
+    """Accueil admin Django aligné sur la chaîne LMD (Capture 2026-11-03).
+
+    Défauts corrigés : les cartes comptaient les modèles hérités
+    (``Formation``/``Module`` — 0 et 0 sur une base LMD) pendant que le
+    tableau de bord web affiche 16 formations, 779 ECUE et 3 516
+    inscrits ; le taux de présence mensuel affichait « 0,0 % » pour des
+    mois sans aucun pointage (dénominateur absent présenté comme une
+    mesure) ; les « séances » venaient des SessionModule héritées.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        from formations.models import RefFormation
+        from scolarite.models import (
+            AnneeAcademique, ECUE, Maquette, Niveau, Semestre, UE,
+        )
+
+        cls.user = User.objects.create_user(
+            username='admin_accueil', password='password123',
+            role=User.Role.ADMIN, is_staff=True, is_superuser=True,
+        )
+        cls.formation = RefFormation.objects.create(
+            intitule='ANDRAGOGIE — LICENCE')
+        cls.annee = AnneeAcademique.objects.create(
+            libelle='2026-2027', date_debut='2026-10-01',
+            date_fin='2027-07-31', courante=True,
+        )
+        cls.niveau = Niveau.objects.create(
+            code='L1', libelle='Licence 1', ordre=1)
+        cls.semestre = Semestre.objects.create(niveau=cls.niveau, numero=1)
+        cls.maquette = Maquette.objects.create(
+            annee_academique=cls.annee, ref_formation=cls.formation,
+            niveau=cls.niveau, statut=Maquette.Statut.BROUILLON,
+        )
+        cls.ue = UE.objects.create(
+            maquette=cls.maquette, semestre=cls.semestre,
+            code='UE1', intitule='Fondamentaux', credits=6,
+        )
+        ECUE.objects.create(ue=cls.ue, code='EC1', intitule='A', credits=3)
+        ECUE.objects.create(ue=cls.ue, code='EC2', intitule='B', credits=3)
+        # Maquette ACTIVE immuable : activation après création des ECUE.
+        cls.maquette.statut = Maquette.Statut.ACTIVE
+        cls.maquette.save(update_fields=['statut'])
+
+    def _contexte(self):
+        from django.test import RequestFactory
+
+        from config.admin_dashboard import admin_dashboard_callback
+
+        requete = RequestFactory().get('/admin/')
+        requete.user = self.user
+        return admin_dashboard_callback(requete, {})
+
+    def test_cartes_alignees_sur_la_chaine_lmd(self):
+        from formations.models import RefFormation
+
+        stats = {str(s['label']): s['value']
+                 for s in self._contexte()['admin_stats']}
+        self.assertEqual(
+            stats['Formations LMD'],
+            RefFormation.objects.filter(actif=True).count(),
+        )
+        self.assertEqual(stats['ECUE enseignés'], 2)
+        self.assertIn('Étudiants inscrits', stats)
+
+    def test_taux_presence_sans_pointage_est_non_mesure(self):
+        taux = self._contexte()['admin_charts']['taux_presence']
+        self.assertTrue(all(r['display'] == '—' for r in taux))
+        # Histogrammes vides → état vide du gabarit, pas de barres fantômes.
+        charts = self._contexte()['admin_charts']
+        self.assertIsNone(charts['pointages_mensuels'])
+        self.assertIsNone(charts['sessions_mensuelles'])
+
+    def test_taux_presence_calcule_sur_statut_assiduite(self):
+        from django.utils import timezone
+
+        from formations.models import Participant
+        from presences.models import Pointage
+
+        participant = Participant.objects.create(
+            matricule='INJS-T-PRES', nom='Diallo', prenom='Awa')
+        aujourdhui = timezone.localdate()
+        for statut in ('PRESENT', 'RETARD', 'ABSENT'):
+            Pointage.objects.create(
+                participant=participant, date_journee=aujourdhui,
+                timestamp_entree=timezone.now(), statut_assiduite=statut,
+            )
+        taux = self._contexte()['admin_charts']['taux_presence']
+        courant = taux[-1]
+        # Présent + retard = présents (2) ; absent = 1 → 66,7 %.
+        self.assertEqual(courant['presents'], 2)
+        self.assertEqual(courant['absents'], 1)
+        self.assertEqual(courant['display'], '66,7%')
+
+    def test_index_admin_affiche_les_cartes_lmd(self):
+        from django.urls import reverse
+
+        self.client.force_login(self.user)
+        res = self.client.get(reverse('admin:index'))
+        self.assertContains(res, 'Formations LMD')
+        self.assertContains(res, 'ECUE enseignés')
+        self.assertContains(res, 'Séances EDT par mois')
+        self.assertNotContains(res, '0,0%')

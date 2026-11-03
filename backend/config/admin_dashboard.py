@@ -1,6 +1,18 @@
-"""Contexte enrichi pour la page d'accueil admin (style dashboard)."""
+"""Contexte enrichi pour la page d'accueil admin (style dashboard).
+
+Sources alignées sur la chaîne LMD — les mêmes compteurs que le tableau de
+bord web (formations du référentiel, ECUE des maquettes actives, inscrits
+validés de l'année). Les anciennes cartes lisaient les modèles hérités
+``Formation``/``Module`` et les graphiques les séances ``SessionModule`` :
+sur une base LMD, l'accueil admin affichait 0 formation, 0 module et des
+taux de présence à 0,0 % (dénominateur absent) alors que le frontend
+montre 16 formations, 779 ECUE et 3 516 inscrits.
+"""
+
+from datetime import date, timedelta
 
 from django.db.models import Count
+from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -19,6 +31,24 @@ _STATUT_COLORS = {
     'HORS_LIGNE_SUSPECT': '#dc2626',
     'SORTIE_AUTO': '#f9b116',
 }
+
+
+def _six_derniers_mois():
+    """[(clé 'AAAA-MM', 1er jour), …] des 6 derniers mois, courant inclus."""
+    aujourdhui = timezone.localdate()
+    cles = []
+    annee, mois = aujourdhui.year, aujourdhui.month
+    for _ in range(6):
+        cles.append((f'{annee:04d}-{mois:02d}', date(annee, mois, 1)))
+        mois -= 1
+        if mois == 0:
+            mois, annee = 12, annee - 1
+    return list(reversed(cles))
+
+
+def _cle_mois(valeur):
+    d = valeur.date() if hasattr(valeur, 'date') else valeur
+    return f'{d.year:04d}-{d.month:02d}'
 
 
 def _mois_label(cle_mois):
@@ -87,40 +117,100 @@ def _build_auditeurs_mobile_donut():
 
 
 def _build_admin_charts():
+    from edts.models import AffectationCreneau
     from presences.models import Pointage
-    from statistiques.views import _historique_mensuel
 
-    historique = _historique_mensuel(mois=6)
+    mois_liste = _six_derniers_mois()
+    debut_periode = mois_liste[0][1]
+    cles = [cle for cle, _ in mois_liste]
 
-    pointages_mensuels = build_histogram([
-        {
-            'label': _mois_label(item['mois']),
-            'value': item['total'],
-        }
-        for item in historique['pointages_par_mois']
-    ], color='#0b478a')
+    pointages_periode = Pointage.objects.filter(date_journee__gte=debut_periode)
 
-    taux_presence = build_stacked_bars([
-        {
-            'label': _mois_label(item['mois']),
-            'presents': item['presents'],
-            'absents': item['absents'],
-            'display': f"{item['total']:.1f}".replace('.', ',') + '%',
-            'detail': _('{p} présents / {a} absents').format(
-                p=item['presents'],
-                a=item['absents'],
-            ),
-        }
-        for item in historique['taux_presence_par_mois']
-    ])
+    # Pointages par mois (chaîne de présence unique).
+    par_mois = {cle: 0 for cle in cles}
+    for row in (pointages_periode.annotate(mois=TruncMonth('date_journee'))
+                .values('mois').annotate(n=Count('id'))):
+        par_mois[_cle_mois(row['mois'])] = row['n']
+    items_pointages = [
+        {'label': _mois_label(cle), 'value': par_mois[cle]} for cle in cles
+    ]
+    # Aucune donnée → None : le gabarit affiche « Aucune donnée sur la
+    # période. » plutôt qu'un histogramme vide sans explication.
+    pointages_mensuels = (
+        build_histogram(items_pointages, color='#0b478a')
+        if any(i['value'] for i in items_pointages) else None
+    )
 
-    sessions_mensuelles = build_histogram([
-        {
-            'label': _mois_label(item['mois']),
-            'value': item['total'],
-        }
-        for item in historique['sessions_par_mois']
-    ], color='#0369a1')
+    # Présents / absents par mois, depuis `statut_assiduite` (catégories de
+    # la supervision LMD : présent ou en retard = présent ; absence
+    # justifiée/excusée = absent ; NON_RENSEIGNE exclu du dénominateur).
+    # Un mois sans pointage qualifié affiche « — » : JAMAIS « 0,0 % », qui
+    # prétendrait que personne n'était présent.
+    presence = {cle: {'presents': 0, 'absents': 0} for cle in cles}
+    for row in (pointages_periode.annotate(mois=TruncMonth('date_journee'))
+                .values('mois', 'statut_assiduite').annotate(n=Count('id'))):
+        cellule = presence.get(_cle_mois(row['mois']))
+        if cellule is None:
+            continue
+        if row['statut_assiduite'] in ('PRESENT', 'RETARD'):
+            cellule['presents'] += row['n']
+        elif row['statut_assiduite'] in ('ABSENT', 'ABSENCE_JUSTIFIEE', 'EXCUSE'):
+            cellule['absents'] += row['n']
+
+    lignes_taux = []
+    for cle in cles:
+        presents = presence[cle]['presents']
+        absents = presence[cle]['absents']
+        denominateur = presents + absents
+        if denominateur:
+            taux = round(presents / denominateur * 100, 1)
+            display = f'{taux:.1f}'.replace('.', ',') + '%'
+            detail = _('{p} présents / {a} absents').format(
+                p=presents, a=absents)
+        else:
+            display = '—'
+            detail = _('Aucun pointage qualifié ce mois-ci')
+        lignes_taux.append({
+            'label': _mois_label(cle),
+            'presents': presents,
+            'absents': absents,
+            'display': display,
+            'detail': detail,
+        })
+    taux_presence = build_stacked_bars(lignes_taux)
+
+    # Séances EDT par mois (chaîne LMD) : occurrences réelles des créneaux
+    # actifs, avec la même règle que la supervision des présences
+    # (`presences.seances_edt_services.est_seance_du_jour`) — numéro de
+    # semaine académique relatif au début de l'année + jour du créneau type.
+    _jours_semaine = {'LUNDI': 0, 'MARDI': 1, 'MERCREDI': 2, 'JEUDI': 3,
+                      'VENDREDI': 4, 'SAMEDI': 5, 'DIMANCHE': 6}
+    compte_seances = {cle: 0 for cle in cles}
+    for aff in (AffectationCreneau.objects.filter(actif=True)
+                .select_related('creneau_template',
+                                'emploi_du_temps__annee_academique')):
+        annee_aca = getattr(aff.emploi_du_temps, 'annee_academique', None)
+        if annee_aca is None or annee_aca.date_debut is None:
+            continue
+        jour = _jours_semaine.get(getattr(aff.creneau_template, 'jour', None))
+        if jour is None:
+            continue
+        semaine_min = aff.semaine_debut or 1
+        semaine_max = aff.semaine_fin or semaine_min
+        for semaine in range(semaine_min, semaine_max + 1):
+            debut_semaine = annee_aca.date_debut + timedelta(weeks=semaine - 1)
+            occurrence = debut_semaine + timedelta(
+                days=(jour - debut_semaine.weekday()) % 7)
+            cle = f'{occurrence.year:04d}-{occurrence.month:02d}'
+            if cle in compte_seances:
+                compte_seances[cle] += 1
+    items_creneaux = [
+        {'label': _mois_label(cle), 'value': compte_seances[cle]} for cle in cles
+    ]
+    sessions_mensuelles = (
+        build_histogram(items_creneaux, color='#0369a1')
+        if any(i['value'] for i in items_creneaux) else None
+    )
 
     statut_labels = dict(Pointage.Statut.choices)
     statut_rows = list(
@@ -150,8 +240,11 @@ def _build_admin_charts():
 
 
 def admin_dashboard_callback(request, context):
-    from formations.models import Formation, Module, Participant
+    from formations.models import RefFormation
     from presences.models import Pointage
+    from scolarite.models import (
+        AnneeAcademique, ECUE, InscriptionAdministrative, Maquette,
+    )
 
     user = request.user
     first_name = (user.first_name or user.get_username()).split('@')[0]
@@ -166,25 +259,38 @@ def admin_dashboard_callback(request, context):
 
     badgeurs_mobile, connectes_mobile = auditeurs_mobile_counts()
 
+    # Mêmes définitions que le tableau de bord web (« Vue d'ensemble ») :
+    # formations ACTIVES du référentiel, ECUE des maquettes ACTIVES de
+    # l'année courante, inscriptions VALIDÉES de l'année courante. Les
+    # modèles hérités (Formation, Module) restent dans la navigation.
+    annee = (AnneeAcademique.courante_ou_none()
+             or AnneeAcademique.objects.order_by('-libelle').first())
+    ecues_qs = ECUE.objects.filter(ue__maquette__statut=Maquette.Statut.ACTIVE)
+    inscrits_qs = InscriptionAdministrative.objects.filter(
+        statut=InscriptionAdministrative.Statut.VALIDEE)
+    if annee is not None:
+        ecues_qs = ecues_qs.filter(ue__maquette__annee_academique=annee)
+        inscrits_qs = inscrits_qs.filter(annee_academique=annee)
+
     stats = [
         {
-            'label': _('Formations'),
-            'value': Formation.objects.count(),
+            'label': _('Formations LMD'),
+            'value': RefFormation.objects.filter(actif=True).count(),
             'icon': 'school',
-            'link': 'admin:formations_formation_changelist',
+            'link': 'admin:formations_refformation_changelist',
             'highlight': True,
         },
         {
-            'label': _('Modules'),
-            'value': Module.objects.count(),
+            'label': _('ECUE enseignés'),
+            'value': ecues_qs.distinct().count(),
             'icon': 'menu_book',
-            'link': 'admin:formations_module_changelist',
+            'link': 'admin:scolarite_ecue_changelist',
         },
         {
-            'label': _('Étudiants'),
-            'value': Participant.objects.count(),
+            'label': _('Étudiants inscrits'),
+            'value': inscrits_qs.count(),
             'icon': 'groups',
-            'link': 'admin:formations_participant_changelist',
+            'link': 'admin:scolarite_inscriptionadministrative_changelist',
         },
         {
             'label': _('Pointages'),
