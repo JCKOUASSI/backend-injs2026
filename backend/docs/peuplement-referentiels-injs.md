@@ -67,3 +67,34 @@ traçabilité 100 % (identique au PDF de référence du 02/11/2026).
   correspondent aux maquettes **[Exemple]** que `finaliser_maquettes_injs`
   génère pour F05–F08 — données de démonstration, volontairement non créées
   ici pour ne pas fabriquer un référentiel non publié.
+
+---
+
+# Annexe — Peuplement du module Administration (03/11/2026)
+
+Commande dédiée, idempotente et étiquetée « [Démo fictive] » :
+
+```bash
+cd backend
+.venv/bin/python manage.py peupler_administration_injs [--dry-run]
+```
+
+| Zone de la fiche Administration | Résultat |
+|---|---|
+| Directions du processus LMD | 8 (DG, SG, DENSEPS, DENSEP, DEF, DAFB, DRH, DLPIS) |
+| Départements | 15, rattachés aux directions |
+| Services | 16, rattachés aux départements |
+| Secrétariats pédagogiques | 3 (ENSEPS, ENSEP, Concours & Scolarité Centrale) |
+| Comptes utilisateurs fictifs | 47 `demo.*` — rôles DIRECTION (8), INJS_ADMIN (21), CHEF_SECRETARIAT (7), SECRETARIAT (3), FINANCE (2), ARCHIVE (2), ENCADRANT (2), FORMATEUR (2), groupes de permissions synchronisés ; mot de passe de démonstration `DemoInjs2026!` (à désactiver hors démo) |
+| Personnels (RH) | 45 agents `PERS-DEMO-*`, 17 fonctions, affectations au 01/09/2026 |
+| Courriers / Documents | 14 courriers (dont 3 archivés, fichiers PDF fictifs joints), 10 documents officiels versionnés (dont 1 archivé) |
+| Réunions & missions | 10 réunions/commissions (PV pour les tenues), 8 missions (budget 0 : aucun montant inventé) |
+| Archives (administratives) | courriers/documents au statut ARCHIVE + service des archives institutionnelles |
+| Listes de notes archivées | 2 modules archivés, 48 notes VALIDÉES et verrouillées (Contrôle continu + Examen, 12 étudiants fictifs) |
+| Cahiers d'appel archivés | 12 séances, 144 pointages (présents/absents) sur les 2 modules archivés |
+
+Contrôles : `GET /api/administrations/stats/` (14 courriers, 10 documents,
+10 réunions, 8 missions, 8/15/16 unités), `archives/stats` (2 modules,
+12 participants, 2 formateurs), cahier d'appel (6 séances, 72 présences par
+module), connexion réussie des comptes fictifs, seconde exécution sans
+doublon, tests `administrations` ciblés OK.
