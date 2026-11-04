@@ -187,3 +187,66 @@ describe('GET INJS APP — tableau de bord d’accueil', () => {
     expect(screen.getByTestId('kpi-seances-publiees')).toHaveTextContent('0')
   })
 })
+
+describe('GetInjsApp — séances publiées : recherche et pagination', () => {
+  function brancher15Seances() {
+    apiController.reset()
+    apiController.setRoute('/scolarite/ref/annees/', [
+      { id: 1, libelle: '2026-2027', courante: true },
+    ])
+    apiController.setRoute('/edts/emplois/', [])
+    apiController.setRoute('/edts/interop/seances-publiees/', {
+      count: 15, page: 1, page_size: 100,
+      results: Array.from({ length: 15 }, (_, i) => ({
+        ...SEANCE_PUBLIEE,
+        seance_uuid: `uuid-seance-${String(i + 1).padStart(2, '0')}`,
+        placement: {
+          ...SEANCE_PUBLIEE.placement,
+          jour: i % 2 ? 'MARDI' : 'LUNDI',
+          enseignant: `Enseignant ${String(i + 1).padStart(2, '0')}`,
+        },
+      })),
+    })
+    apiController.setRoute('/edts/interop/evenements/', { count: 0, results: [] })
+    apiController.setRoute('/edts/conflits/', [])
+    apiController.setRoute('/health/', { status: 'ok', database: 'ok' })
+    apiController.setRoute('/edts/campagnes/', { count: 0, results: [] })
+    apiController.setRoute('/edts/referentiel-enseignants/', [])
+    apiController.setRoute('/scolarite/ref/salles/', [])
+    apiController.setRoute('/edts/lmd/import/inscrits/synthese/', {
+      annee_academique_id: 1, effectif_total: 0, nb_cohortes: 0, cohortes: [],
+    })
+    apiController.setRoute('/edts/lmd/import/inscrits/journal/', {
+      annee_academique_id: 1, nb_lots: 0, lots: [],
+    })
+  }
+
+  it('pagine par 10 et filtre par recherche et par jour', async () => {
+    const user = userEvent.setup()
+    brancher15Seances()
+    monter()
+    expect(await screen.findByText('Enseignant 01')).toBeInTheDocument()
+    expect(screen.getByText(/15 séance\(s\) · 1 à 10 affichée\(s\)/)).toBeInTheDocument()
+    expect(screen.getByText('Page 1 sur 2')).toBeInTheDocument()
+    expect(screen.queryByText('Enseignant 11')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Suivant/ }))
+    expect(screen.getByText('Enseignant 11')).toBeInTheDocument()
+    expect(screen.getByText('Enseignant 15')).toBeInTheDocument()
+    expect(screen.getByText('Page 2 sur 2')).toBeInTheDocument()
+    expect(screen.queryByText('Enseignant 01')).not.toBeInTheDocument()
+
+    // Recherche instantanée : retour page 1, une seule séance.
+    await user.type(screen.getByLabelText('Rechercher une séance publiée'), 'Enseignant 15')
+    expect(screen.getByText(/1 séance\(s\)/)).toBeInTheDocument()
+    expect(screen.getByText('Enseignant 15')).toBeInTheDocument()
+
+    // Filtre par jour combiné à un critère incompatible : état vide + reset.
+    await user.clear(screen.getByLabelText('Rechercher une séance publiée'))
+    await user.type(screen.getByLabelText('Rechercher une séance publiée'), 'Enseignant 15')
+    await user.selectOptions(screen.getByLabelText('Filtrer par jour'), 'MARDI')
+    expect(await screen.findByText(/Aucune séance ne correspond à ces critères/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Réinitialiser les filtres/ }))
+    expect(await screen.findByText('Enseignant 01')).toBeInTheDocument()
+  })
+})

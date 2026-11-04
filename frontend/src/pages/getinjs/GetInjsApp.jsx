@@ -107,6 +107,9 @@ export default function GetInjsApp() {
   const [synthese, setSynthese] = useState(null)
   const [campagnes, setCampagnes] = useState([])
   const [journal, setJournal] = useState([])
+  const [rechercheSeance, setRechercheSeance] = useState('')
+  const [jourSeance, setJourSeance] = useState('')
+  const [pageSeances, setPageSeances] = useState(1)
 
   useEffect(() => {
     let annule = false
@@ -185,6 +188,24 @@ export default function GetInjsApp() {
 
   const kpi = (v) => (chargement ? '…' : formaterNombre(v))
   const charge = chargeParSemestre(seances)
+
+  // Séances publiées : recherche instantanée, filtre par jour et
+  // pagination par 10 (la liste complète reste consultable, page par page).
+  const PAR_PAGE_SEANCES = 10
+  const joursDisponibles = [...new Set(
+    seances.map((x) => x.placement?.jour).filter(Boolean))]
+  const texteRecherche = rechercheSeance.trim().toLowerCase()
+  const seancesFiltrees = seances.filter((x) => {
+    if (jourSeance && x.placement?.jour !== jourSeance) return false
+    if (!texteRecherche) return true
+    const cible = [x.placement?.formation, x.placement?.ue, x.placement?.ecue,
+      x.placement?.enseignant, x.seance_uuid].filter(Boolean).join(' ').toLowerCase()
+    return cible.includes(texteRecherche)
+  })
+  const pagesSeancesTotal = Math.max(1, Math.ceil(seancesFiltrees.length / PAR_PAGE_SEANCES))
+  const pageSeancesSure = Math.min(pageSeances, pagesSeancesTotal)
+  const debutSeances = (pageSeancesSure - 1) * PAR_PAGE_SEANCES
+  const seancesAffichees = seancesFiltrees.slice(debutSeances, debutSeances + PAR_PAGE_SEANCES)
   const heuresPlanifiees = Math.round(
     seances.reduce((total, s) => total + (s.placement?.duree_prevue_minutes || 0), 0) / 60,
   )
@@ -503,6 +524,41 @@ export default function GetInjsApp() {
             permanent, prêtes à ouvrir des sessions de présence.
           </p>
         ) : (
+          <>
+          <div className="giapp-seances-outils">
+            <input
+              type="search"
+              className="input"
+              aria-label="Rechercher une séance publiée"
+              placeholder="Rechercher (enseignant, UE, ECUE, formation…)"
+              value={rechercheSeance}
+              onChange={(e) => { setRechercheSeance(e.target.value); setPageSeances(1) }}
+            />
+            <select
+              className="input"
+              aria-label="Filtrer par jour"
+              value={jourSeance}
+              onChange={(e) => { setJourSeance(e.target.value); setPageSeances(1) }}
+            >
+              <option value="">Tous les jours</option>
+              {joursDisponibles.map((j) => <option key={j} value={j}>{j}</option>)}
+            </select>
+            <span className="giapp-seances-compteur">
+              {seancesFiltrees.length} séance(s)
+              {pagesSeancesTotal > 1
+                ? ` · ${debutSeances + 1} à ${debutSeances + seancesAffichees.length} affichée(s)`
+                : ''}
+            </span>
+          </div>
+          {seancesAffichees.length === 0 ? (
+            <p className="giapp-vide">
+              Aucune séance ne correspond à ces critères.
+              <button type="button" className="giapp-btn giapp-btn--petit ms-2"
+                      onClick={() => { setRechercheSeance(''); setJourSeance(''); setPageSeances(1) }}>
+                Réinitialiser les filtres
+              </button>
+            </p>
+          ) : (
           <div className="giapp-table-wrap">
             <table className="giapp-table">
               <thead>
@@ -517,7 +573,7 @@ export default function GetInjsApp() {
                 </tr>
               </thead>
               <tbody>
-                {seances.slice(0, 10).map((s) => (
+                {seancesAffichees.map((s) => (
                   <tr key={s.seance_uuid}>
                     <td><code className="giapp-uuid">{String(s.seance_uuid).slice(0, 8)}…</code></td>
                     <td>{s.placement?.formation || '—'}</td>
@@ -535,6 +591,23 @@ export default function GetInjsApp() {
               </tbody>
             </table>
           </div>
+          )}
+          {pagesSeancesTotal > 1 && (
+            <nav className="giapp-seances-pagination" aria-label="Pagination des séances publiées">
+              <button type="button" className="giapp-btn giapp-btn--petit"
+                      disabled={pageSeancesSure <= 1}
+                      onClick={() => setPageSeances(pageSeancesSure - 1)}>
+                <i className="bi bi-chevron-left"></i> Précédent
+              </button>
+              <span className="giapp-seances-page">Page {pageSeancesSure} sur {pagesSeancesTotal}</span>
+              <button type="button" className="giapp-btn giapp-btn--petit"
+                      disabled={pageSeancesSure >= pagesSeancesTotal}
+                      onClick={() => setPageSeances(pageSeancesSure + 1)}>
+                Suivant <i className="bi bi-chevron-right"></i>
+              </button>
+            </nav>
+          )}
+          </>
         )}
         <p className="giapp-note">
           Chaque séance publiée possède un identifiant unique permanent (UUID) :

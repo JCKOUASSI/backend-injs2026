@@ -643,3 +643,18 @@ a.giapp-pill:hover { background: rgba(234, 243, 255, 0.2); color: #ffffff; }
 .giapp-mini-titre { font-size: 0.84rem; font-weight: 700; }
 
 .giapp-mini-lien { font-size: 0.76rem; font-weight: 800; color: var(--giapp-bleu); }
+
+/* — Séances publiées : recherche, filtre jour, pagination ——————————————— */
+.giapp-seances-outils {
+  display: flex; flex-wrap: wrap; gap: .6rem; align-items: center;
+  padding: .8rem .2rem .2rem;
+}
+.giapp-seances-outils .input { max-width: 340px; }
+.giapp-seances-outils select.input { max-width: 190px; width: auto; }
+.giapp-seances-compteur { margin-left: auto; font-size: .8rem; color: #54677e; font-weight: 600; }
+.giapp-seances-pagination {
+  display: flex; align-items: center; justify-content: center; gap: 1rem;
+  padding: .85rem .2rem .2rem;
+}
+.giapp-seances-page { font-size: .83rem; font-weight: 700; color: var(--giapp-bleu-fonce); }
+.giapp-seances-pagination .giapp-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
