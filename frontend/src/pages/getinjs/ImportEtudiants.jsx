@@ -49,30 +49,12 @@ function telechargerBlob(contenu, nom, type = 'text/csv;charset=utf-8') {
 }
 
 const COLONNES_ACCEPTEES = [
-  {
-    titre: 'Matricule', obligatoire: true,
-    alias: 'matricule, code_etudiant, identifiant, numero_matricule',
-  },
-  {
-    titre: 'Identité',
-    alias: 'nom, prenoms, sexe, date_naissance',
-  },
-  {
-    titre: 'Cursus',
-    alias: 'formation, filiere_code, code_filiere',
-  },
-  {
-    titre: 'Parcours',
-    alias: 'parcours, specialite, option',
-  },
-  {
-    titre: 'Classement',
-    alias: 'niveau, semestre, groupe, vague',
-  },
-  {
-    titre: 'Scolarité',
-    alias: 'statut, statut_inscription, etat',
-  },
+  { titre: 'Matricule', alias: 'matricule, code_etudiant, numero_matricule' },
+  { titre: 'Identité', alias: 'nom, prenoms, sexe, date_naissance' },
+  { titre: 'Contact', alias: 'email, telephone' },
+  { titre: 'Parcours', alias: 'formation, filiere_code, parcours' },
+  { titre: 'Classement', alias: 'niveau, groupe, vague' },
+  { titre: 'Scolarité', alias: 'semestre, statut' },
 ]
 
 export default function ImportEtudiants() {
@@ -189,17 +171,6 @@ export default function ImportEtudiants() {
     }
   }
 
-  const exporterJournal = () => {
-    const lignes = [
-      'fichier;date;lignes;importes;ignores;formations;groupes;vagues',
-      ...journal.map((lot) => [
-        lot.fichier, formatDateJournal(lot.recu_le), lot.lignes, lot.inscrits,
-        lot.ignores, lot.formations, lot.groupes, lot.vagues,
-      ].join(';')),
-    ]
-    telechargerBlob(`${lignes.join('\n')}\n`, 'journal-imports.csv')
-  }
-
   const anneeChoisie = useMemo(
     () => annees.find((a) => String(a.id) === String(anneeId)),
     [annees, anneeId],
@@ -212,10 +183,10 @@ export default function ImportEtudiants() {
           <span className="imp-sur">Situation 2 · Fichier externe</span>
           <h2 className="imp-titre">Importer les étudiants inscrits</h2>
           <p className="imp-sous">
-            Recevoir un fichier d'inscrits produit hors application (scolarité,
-            rectorat, partenaire) et générer malgré tout les emplois du temps
-            de l'année. Le module reconnaît filière, formation, niveau, groupe
-            et vague lorsque le parcours LMD n'existe pas encore.
+            Recevez un fichier d'inscrits produit hors application (scolarité,
+            rectorat, partenaire) et générez malgré tout tous les emplois du
+            temps de l'année : le module rattache filière, formation, vague et
+            groupe au parcours LMD lorsqu'il n'existe pas encore.
           </p>
         </div>
         <div className="imp-actions">
@@ -229,7 +200,7 @@ export default function ImportEtudiants() {
           </button>
           <Link to="/edt/generation-annuelle" className="btn btn-dark btn-sm gen-btn-lancer">
             <i className="bi bi-gear me-1" aria-hidden="true"></i>
-            Tableau de génération
+            Moteur de génération
           </Link>
         </div>
       </div>
@@ -255,7 +226,7 @@ export default function ImportEtudiants() {
                   Déposez ou sélectionnez le fichier des inscrits
                 </span>
                 <span className="imp-dropzone-sous">
-                  CSV, XLSX ou XLS · 20 Mo maximum
+                  CSV ou XLSX · 20 Mo maximum
                 </span>
                 {fichier && (
                   <span className="imp-fichier-choisi">
@@ -268,7 +239,7 @@ export default function ImportEtudiants() {
               <div className="d-flex flex-wrap align-items-center gap-2 mt-3">
                 <button
                   type="button"
-                  className="btn btn-dark btn-sm gen-btn-lancer"
+                  className="btn btn-outline-primary btn-sm"
                   onClick={() => inputFichier.current?.click()}
                 >
                   <i className="bi bi-folder2-open me-1" aria-hidden="true"></i>
@@ -276,7 +247,7 @@ export default function ImportEtudiants() {
                 </button>
                 <button
                   type="button"
-                  className="btn btn-link btn-sm imp-modele"
+                  className="btn btn-outline-secondary btn-sm"
                   onClick={() => telechargerBlob(MODELE_CSV, 'modele-inscrits.csv')}
                 >
                   Télécharger le modèle CSV
@@ -312,7 +283,7 @@ export default function ImportEtudiants() {
                   {enCours === 'analyse' ? 'Analyse…' : 'Analyser sans importer'}
                 </button>
                 <span className="text-muted small">
-                  Automatique : un matricule déjà présent n'est jamais dupliqué
+                  Idempotent : un matricule déjà présent n'est jamais dupliqué
                 </span>
               </div>
             </div>
@@ -337,32 +308,38 @@ export default function ImportEtudiants() {
                 ))}
               </select>
 
-              <div className="form-check mb-1">
-                <input
-                  className="form-check-input" type="checkbox" id="imp-reconstruire"
-                  checked={reconstruire}
-                  onChange={(e) => setReconstruire(e.target.checked)}
-                />
-                <label className="form-check-label fw-semibold" htmlFor="imp-reconstruire">
-                  Reconstruire le parcours
-                </label>
-                <div className="small text-muted ms-4">
-                  Créer groupes et vagues manquants au besoin — formations et
-                  niveaux doivent exister au référentiel.
+              <div className="imp-option">
+                <div className="form-check">
+                  <input
+                    className="form-check-input" type="checkbox" id="imp-reconstruire"
+                    checked={reconstruire}
+                    onChange={(e) => setReconstruire(e.target.checked)}
+                  />
+                  <label className="form-check-label fw-semibold" htmlFor="imp-reconstruire">
+                    Reconstruire le parcours
+                  </label>
+                  <div className="small text-muted">
+                    Créer groupes et vagues manquants au besoin — formations et
+                    niveaux doivent exister au référentiel.
+                  </div>
                 </div>
               </div>
 
-              <div className="form-check mb-3">
-                <input
-                  className="form-check-input" type="checkbox" id="imp-generer"
-                  checked={genererApres}
-                  onChange={(e) => setGenererApres(e.target.checked)}
-                />
-                <label className="form-check-label fw-semibold" htmlFor="imp-generer">
-                  Générer les EDT après import
-                </label>
-                <div className="small text-muted ms-4">
-                  Enchaîner la génération annuelle dès que l'import est terminé
+              <div className="imp-option">
+                <div className="form-check">
+                  <input
+                    className="form-check-input" type="checkbox" id="imp-generer"
+                    checked={genererApres}
+                    onChange={(e) => setGenererApres(e.target.checked)}
+                  />
+                  <label className="form-check-label fw-semibold" htmlFor="imp-generer">
+                    Générer les EDT après import
+                  </label>
+                  <div className="small text-muted">
+                    Enchaîner la génération annuelle dès que l'import est
+                    terminé : un emploi du temps par parcours, groupe et
+                    semestre détecté.
+                  </div>
                 </div>
               </div>
 
@@ -374,7 +351,7 @@ export default function ImportEtudiants() {
                 onChange={(e) => setSemestreGenere(e.target.value)}
                 disabled={!genererApres}
               >
-                <option value="">Tous / année</option>
+                <option value="">Toute l'année</option>
                 {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((n) => (
                   <option key={n} value={n}>{`Semestre ${n} (S${n})`}</option>
                 ))}
@@ -485,19 +462,17 @@ export default function ImportEtudiants() {
               <div className="imp-colonnes">
                 {COLONNES_ACCEPTEES.map((colonne) => (
                   <div key={colonne.titre} className="imp-colonne">
-                    <span className="imp-colonne-titre">
-                      {colonne.titre}
-                      {colonne.obligatoire && <span className="imp-obligatoire">obligatoire</span>}
-                    </span>
+                    <span className="imp-colonne-titre">{colonne.titre}</span>
                     <span className="imp-colonne-alias">{colonne.alias}</span>
                   </div>
                 ))}
               </div>
               <p className="imp-note">
-                Les colonnes restantes sont ignorées (elles sont listées dans le
-                rapport). Sans matricule, la ligne est rejetée avec son motif :
-                aucun identifiant n'est inventé. Colonnes obligatoires :
-                matricule, nom, formation et niveau.
+                Les colonnes inconnues sont tracées mais ignorées. Un
+                matricule absent rejette la ligne avec son motif — aucun
+                identifiant n'est inventé, et aucune ligne n'est perdue
+                silencieusement. Colonnes obligatoires : matricule, nom,
+                formation et niveau.
               </p>
             </div>
           </div>
@@ -508,7 +483,7 @@ export default function ImportEtudiants() {
             <div className="card-header">
               <strong>Situations couvertes</strong>
               <div className="text-muted small">
-                Deux parcours, un seul moteur de planification
+                Avec ou sans parcours académique préalable
               </div>
             </div>
             <div className="card-body">
@@ -518,9 +493,9 @@ export default function ImportEtudiants() {
                   Situation 1 — Inscrits dans l'application
                 </span>
                 <p>
-                  Les inscriptions administratives validées dans INJS2026
-                  (filière, groupes, vagues et étudiants déjà rattachés à un
-                  parcours LMD) alimentent directement le moteur.
+                  Les inscriptions proviennent du processus LMD d'INJS2026 :
+                  groupes, vagues et étudiants sont déjà cohérents. Il suffit
+                  de lancer la génération.
                 </p>
               </div>
               <div className="imp-situation">
@@ -529,11 +504,11 @@ export default function ImportEtudiants() {
                   Situation 2 — Fichier externe sans parcours
                 </span>
                 <p>
-                  Le fichier arrive sans parcours dans l'application : le
-                  module rattache chaque ligne au référentiel INJS 2026 et
-                  crée au besoin les groupes et vagues manquants. Une
-                  formation ou un niveau inconnu est rejeté, ligne par ligne,
-                  avec son motif.
+                  Le fichier arrive sans parcours : le module rattache
+                  chaque ligne au référentiel INJS 2026, crée au besoin les
+                  groupes et vagues manquants, dérive les besoins de la
+                  maquette active, puis génère les emplois du temps. Une
+                  formation ou un niveau inconnu est rejeté avec son motif.
                 </p>
               </div>
               <div className="imp-situation">
@@ -543,8 +518,8 @@ export default function ImportEtudiants() {
                 </span>
                 <p>
                   Réimporter le même fichier ne duplique ni étudiant ni
-                  inscription. Le matricule est la clé d'unicité, complétée
-                  par l'étudiant, la formation et l'année académique.
+                  inscription. Le matricule est la clé d'unicité ;
+                  l'inscription est unique par étudiant, année et semestre.
                 </p>
               </div>
             </div>
@@ -557,19 +532,13 @@ export default function ImportEtudiants() {
           <div>
             <strong>Journal des imports</strong>
             <div className="text-muted small">
-              Chaque réception laisse une trace auditable : seuls les lots
-              rattachés sont conservés, aucun rejet n'est inventé.
+              Chaque fichier est journalisé avec ses volumes, erreurs et
+              référentiels créés.
             </div>
           </div>
-          <button
-            type="button"
-            className="btn btn-outline-primary btn-sm ms-auto"
-            onClick={exporterJournal}
-            disabled={journal.length === 0}
-          >
-            <i className="bi bi-download me-1" aria-hidden="true"></i>
-            Exporter
-          </button>
+          <span className="imp-journal-count ms-auto">
+            {journal.length} import(s)
+          </span>
         </div>
         <div className="table-responsive">
           <table className="table table-hover align-middle mb-0 gen-table">
@@ -607,7 +576,7 @@ export default function ImportEtudiants() {
                   <td>{lot.formations}</td>
                   <td>{lot.groupes}</td>
                   <td>{lot.vagues}</td>
-                  <td><span className="text-muted">—</span></td>
+                  <td><span className="gen-conflits">—</span></td>
                   <td><span className="text-muted">—</span></td>
                 </tr>
               ))}
@@ -617,8 +586,8 @@ export default function ImportEtudiants() {
       </div>
 
       <p className="imp-pied">
-        GET INJS APP · Module intégré à INJS2026 — Institut National de la
-        Jeunesse et des Sports (INJS) Marcory · Moteur LMD déterministe
+        GET INJS APP · module intégré à INJS2026 · Institut National de la
+        Jeunesse et des Sports (INJS) - Marcory · Moteur LMD déterministe
       </p>
     </div>
   )

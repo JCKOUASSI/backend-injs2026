@@ -73,6 +73,8 @@ SYNONYMES = {
     'prenoms': ('prenoms', 'prenom', 'prenom_s', 'prenoms_etudiant'),
     'sexe': ('sexe', 'genre'),
     'date_naissance': ('date_naissance', 'date_de_naissance', 'naissance', 'ddn'),
+    'email': ('email', 'courriel', 'mail', 'adresse_email', 'e_mail'),
+    'telephone': ('telephone', 'tel', 'telephone_etudiant', 'portable', 'contact'),
     'formation': (
         'formation', 'filiere', 'cycle', 'formation_cycle', 'intitule_formation',
         'code_formation', 'ref_formation',
@@ -397,6 +399,9 @@ class _LigneResolue:
     semestre: object
     groupe: object
     vague: object
+    # Contact (colonne acceptée « Contact ») : tracé, jamais requis.
+    email: str = ''
+    telephone: str = ''
 
 
 def _date_naissance(valeur):
@@ -514,6 +519,8 @@ def _resoudre_ligne(ligne, correspondance, annee, ligne_numero, appliquer, erreu
         prenoms=_valeur(ligne, correspondance, 'prenoms'),
         sexe=_normaliser_sexe(_valeur(ligne, correspondance, 'sexe')),
         date_naissance=_date_naissance(_valeur(ligne, correspondance, 'date_naissance')),
+        email=_valeur(ligne, correspondance, 'email'),
+        telephone=_valeur(ligne, correspondance, 'telephone'),
         filiere_code=(filiere_code or formation.filiere_code or '').upper(),
         formation=formation,
         parcours=parcours,
@@ -623,6 +630,8 @@ def _executer_import(rapport, lignes, correspondance, annee, appliquer,
                         'prenoms': resolue.prenoms,
                         'sexe': resolue.sexe,
                         'date_naissance': resolue.date_naissance,
+                        'email': resolue.email,
+                        'telephone': resolue.telephone,
                         'filiere_code': resolue.filiere_code,
                         'ref_formation': resolue.formation,
                         'parcours': resolue.parcours,

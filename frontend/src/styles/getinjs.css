@@ -695,3 +695,27 @@
 
 /* Pied institutionnel aligné à gauche, comme la maquette */
 .getinjs.imp-page .imp-pied { text-align: left; }
+
+/* Options encadrées de la fenêtre d'import (cases à cocher de la maquette) */
+.getinjs.imp-page .imp-option {
+  border: 1px solid #d7e5f5;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fbfdff, #f4f9ff);
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 0.6rem;
+}
+
+.getinjs.imp-page .imp-option .form-check { margin: 0; }
+
+/* Pastille du nombre d'imports dans l'en-tête du journal */
+.getinjs.imp-page .imp-journal-count {
+  flex: none;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  background: var(--injs-blue-pale);
+  border: 1px solid var(--injs-border-strong);
+  color: #0a2a5c;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
