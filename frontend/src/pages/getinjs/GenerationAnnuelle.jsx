@@ -94,6 +94,7 @@ export default function GenerationAnnuelle() {
 
   // Historique des générations et emplois du temps versionnés (réels).
   const [historique, setHistorique] = useState([])
+  const [pageHistorique, setPageHistorique] = useState(1)
   const [versions, setVersions] = useState([])
 
   useEffect(() => {
@@ -143,7 +144,10 @@ export default function GenerationAnnuelle() {
 
   const chargerHistorique = useCallback(async () => {
     try {
-      const { data } = await api.get('/edts/campagnes/historique/')
+      // Chargement explicite : 500 événements de génération (le serveur
+      // plafonne à 500 ; défaut historique 20 conservé pour les autres
+      // consommateurs de l'endpoint).
+      const { data } = await api.get('/edts/campagnes/historique/', { params: { limite: 500 } })
       setHistorique(Array.isArray(data?.executions) ? data.executions : [])
     } catch { setHistorique([]) }
   }, [])
@@ -156,6 +160,13 @@ export default function GenerationAnnuelle() {
   }, [])
 
   useEffect(() => { chargerHistorique(); chargerVersions() }, [chargerHistorique, chargerVersions])
+
+  // Pagination de l'historique chargé (15 par page, test inclus).
+  const PAR_PAGE_HISTORIQUE = 15
+  const pagesHistoriqueTotal = Math.max(1, Math.ceil(historique.length / PAR_PAGE_HISTORIQUE))
+  const pageHistoriqueSure = Math.min(pageHistorique, pagesHistoriqueTotal)
+  const debutHistorique = (pageHistoriqueSure - 1) * PAR_PAGE_HISTORIQUE
+  const historiqueAffiche = historique.slice(debutHistorique, debutHistorique + PAR_PAGE_HISTORIQUE)
 
   const chargerSynthese = async (id) => {
     if (!id) return
@@ -680,11 +691,17 @@ export default function GenerationAnnuelle() {
       <div className="row g-3 mb-3">
         <div className="col-xl-8">
           <div className="card h-100">
-            <div className="card-header">
-              <strong>Historique des générations</strong>
-              <div className="text-muted small">
-                Traçabilité complète : périmètre, volumes, conflits, durée
+            <div className="card-header d-flex flex-wrap align-items-center gap-2">
+              <div>
+                <strong>Historique des générations</strong>
+                <div className="text-muted small">
+                  Traçabilité complète : périmètre, volumes, conflits, durée
+                </div>
               </div>
+              <span className="badge text-bg-warning ms-auto">
+                <i className="bi bi-cloud-download me-1"></i>Chargement explicite : 500 événements
+              </span>
+              <span className="badge text-bg-primary">{historique.length} chargé(s)</span>
             </div>
             <div className="table-responsive">
               <table className="table table-hover align-middle mb-0 gen-table">
@@ -708,7 +725,7 @@ export default function GenerationAnnuelle() {
                         génération pour alimenter cet historique.
                       </td>
                     </tr>
-                  ) : historique.map((ligne) => (
+                  ) : historiqueAffiche.map((ligne) => (
                     <tr key={ligne.id}>
                       <td className="text-nowrap">{formatDateHeure(ligne.date)}</td>
                       <td>
@@ -746,6 +763,28 @@ export default function GenerationAnnuelle() {
                 </tbody>
               </table>
             </div>
+            {historique.length > 0 && (
+              <div className="card-footer gen-pagination">
+                <span>
+                  Événements {debutHistorique + 1} à {debutHistorique + historiqueAffiche.length} sur {historique.length}
+                </span>
+                {pagesHistoriqueTotal > 1 && (
+                  <span className="gen-pagination-nav">
+                    <button type="button" className="btn btn-outline-secondary btn-sm"
+                            disabled={pageHistoriqueSure <= 1}
+                            onClick={() => setPageHistorique(pageHistoriqueSure - 1)}>
+                      <i className="bi bi-chevron-left me-1"></i>Précédent
+                    </button>
+                    <strong>Page {pageHistoriqueSure} sur {pagesHistoriqueTotal}</strong>
+                    <button type="button" className="btn btn-outline-secondary btn-sm"
+                            disabled={pageHistoriqueSure >= pagesHistoriqueTotal}
+                            onClick={() => setPageHistorique(pageHistoriqueSure + 1)}>
+                      Suivant<i className="bi bi-chevron-right ms-1"></i>
+                    </button>
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

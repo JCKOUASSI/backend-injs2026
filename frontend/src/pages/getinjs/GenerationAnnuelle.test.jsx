@@ -362,6 +362,37 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     expect(screen.getByText(/12 séances · V1/)).toBeInTheDocument()
   })
 
+  it('charge explicitement 500 événements et pagine l’historique par 15', async () => {
+    const user = userEvent.setup()
+    // 20 exécutions : la première requête demande limite=500 au serveur.
+    apiController.reset()
+    // Déclarée AVANT routes() : premier match gagnant dans le mock.
+    apiController.setRoute('/edts/campagnes/historique/', {
+      executions: Array.from({ length: 20 }, (_, i) => ({
+        id: 50 + i, libelle: `Génération ${i + 1}`, annee_academique: '2026-2027',
+        date: '2026-11-04T02:39:00Z', statut: 'TERMINE', duree_ms: 300,
+        perimetre: { filieres: [], formations: [`Formation ${i + 1}`], niveaux: [], groupes: [] },
+        semestres: ['S1'], seances_placees: 9, seances_attendues: 12,
+        couverture_pct: 75.0, conflits: 0,
+      })),
+    })
+    routes()
+    rendre()
+    expect(await screen.findByText('Formation 1')).toBeInTheDocument()
+    expect(screen.getByText('Chargement explicite : 500 événements')).toBeInTheDocument()
+    expect(screen.getByText('20 chargé(s)')).toBeInTheDocument()
+    const appelHistorique = apiController.api.get.mock.calls
+      .find(([chemin]) => chemin.includes('/edts/campagnes/historique/'))
+    expect(appelHistorique).toBeTruthy()
+    expect(appelHistorique[1]).toEqual({ params: { limite: 500 } })
+    expect(screen.getByText('Événements 1 à 15 sur 20')).toBeInTheDocument()
+    expect(screen.getByText('Page 1 sur 2')).toBeInTheDocument()
+    expect(screen.queryByText('Formation 16')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Suivant/ }))
+    expect(screen.getByText('Formation 16')).toBeInTheDocument()
+    expect(screen.getByText('Événements 16 à 20 sur 20')).toBeInTheDocument()
+  })
+
   it('télécharge le document de conception depuis le backend', async () => {
     const user = userEvent.setup()
     const clickOriginal = HTMLAnchorElement.prototype.click

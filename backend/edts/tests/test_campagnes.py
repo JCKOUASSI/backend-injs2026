@@ -390,3 +390,42 @@ class HistoriqueEtPerimetresFinsTests(BaseCampagneTest):
         self.assertTrue(bilan['groupes'])
         self.assertTrue(all(
             ligne['statut'] == 'NON_PLANIFIE' for ligne in bilan['groupes']))
+
+
+class HistoriqueLimiteTests(BaseCampagneTest):
+    """Chargement explicite : `?limite=` sur l'historique des générations.
+
+    Par défaut, l'endpoint garde son plafond historique de 20
+    exécutions ; l'écran de génération demande explicitement 500
+    (plafond serveur). Valeur invalide ignorée, jamais d'erreur.
+    """
+
+    def _execution(self, campagne, numero):
+        from edts.models import ExecutionCampagne
+
+        return ExecutionCampagne.objects.create(
+            campagne=campagne, numero=numero,
+            statut=ExecutionCampagne.Statut.TERMINE,
+            bilan={'groupes': [], 'totaux': {}})
+
+    def test_limite_explicite_500(self):
+        client = APIClient()
+        client.force_authenticate(user=self.admin)
+        campagne = self.campagne(libelle='Campagne limite')
+        for numero in (1, 2, 3):
+            self._execution(campagne, numero)
+
+        defaut = client.get('/api/edts/campagnes/historique/')
+        self.assertEqual(len(defaut.data['executions']), 3)
+
+        borne = client.get('/api/edts/campagnes/historique/', {'limite': '2'})
+        self.assertEqual(len(borne.data['executions']), 2)
+
+        explicite = client.get('/api/edts/campagnes/historique/',
+                               {'limite': '500'})
+        self.assertEqual(len(explicite.data['executions']), 3)
+
+        invalide = client.get('/api/edts/campagnes/historique/',
+                              {'limite': 'abc'})
+        self.assertEqual(invalide.status_code, 200)
+        self.assertEqual(len(invalide.data['executions']), 3)

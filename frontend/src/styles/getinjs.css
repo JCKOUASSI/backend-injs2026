@@ -1158,3 +1158,11 @@
   justify-content: center;
   margin-top: 0.08rem;
 }
+
+/* — Historique des générations : pagination du chargement explicite ———— */
+.getinjs .gen-pagination {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.2rem;
+  justify-content: space-between; font-size: .82rem; color: #54677e;
+}
+.getinjs .gen-pagination-nav { display: inline-flex; align-items: center; gap: .8rem; }
+.getinjs .gen-pagination-nav strong { color: #0a2a5c; }

@@ -789,14 +789,26 @@ def historique_generations_api(request):
     attendues, couverture, conflits cumulés des groupes, semestres
     couverts (déduits des niveaux du bilan, S1/S2 pour le premier niveau,
     etc.) et durée mesurée. Le périmètre est résolu en noms lisibles.
+
+    Chargement explicite (additif) : `?limite=` plafonne le nombre
+    d'exécutions restituées (20 par défaut, comportement historique ;
+    maximum 500 — l'écran de génération demande explicitement 500).
     """
     from edts.models import ExecutionCampagne
     from scolarite.models import Groupe, Niveau
 
+    limite = 20
+    limite_brute = (request.query_params.get('limite') or '').strip()
+    if limite_brute:
+        try:
+            limite = max(1, min(int(limite_brute), 500))
+        except (TypeError, ValueError):
+            limite = 20
+
     executions = (
         ExecutionCampagne.objects
         .select_related('campagne', 'campagne__annee_academique')
-        .order_by('-demarree_le')[:20]
+        .order_by('-demarree_le')[:limite]
     )
 
     # Résolution des noms du périmètre (identifiants → libellés réels).
