@@ -278,31 +278,37 @@ export default function GetInjsApp() {
       {/* ── Indicateurs clés ───────────────────────────────────────────── */}
       <section className="giapp-kpis" aria-label="Indicateurs du module">
         <div className="giapp-kpi">
+          <span className="giapp-kpi-icone" aria-hidden="true"><i className="bi bi-people-fill"></i></span>
           <span className="giapp-kpi-libelle">Étudiants</span>
           <span className="giapp-kpi-valeur" data-testid="kpi-etudiants">{kpi(synthese?.effectif_total ?? null)}</span>
           <span className="giapp-kpi-detail">inscrits importés · année {annee?.libelle || '—'}</span>
         </div>
         <div className="giapp-kpi">
+          <span className="giapp-kpi-icone" aria-hidden="true"><i className="bi bi-diagram-3-fill"></i></span>
           <span className="giapp-kpi-libelle">Cohortes</span>
           <span className="giapp-kpi-valeur" data-testid="kpi-cohortes">{kpi(synthese?.nb_cohortes ?? null)}</span>
           <span className="giapp-kpi-detail">formation · niveau · groupe · vague</span>
         </div>
         <div className="giapp-kpi">
+          <span className="giapp-kpi-icone" aria-hidden="true"><i className="bi bi-building-fill"></i></span>
           <span className="giapp-kpi-libelle">Salles</span>
           <span className="giapp-kpi-valeur" data-testid="kpi-salles">{kpi(compteurs?.salles)}</span>
           <span className="giapp-kpi-detail">salles & espaces du référentiel</span>
         </div>
         <div className="giapp-kpi">
+          <span className="giapp-kpi-icone" aria-hidden="true"><i className="bi bi-person-video3"></i></span>
           <span className="giapp-kpi-libelle">Enseignants</span>
           <span className="giapp-kpi-valeur" data-testid="kpi-enseignants">{kpi(compteurs?.enseignants)}</span>
           <span className="giapp-kpi-detail">référentiel des enseignants</span>
         </div>
         <div className="giapp-kpi">
+          <span className="giapp-kpi-icone" aria-hidden="true"><i className="bi bi-calendar2-check-fill"></i></span>
           <span className="giapp-kpi-libelle">EDT publiés</span>
           <span className="giapp-kpi-valeur" data-testid="kpi-edt-publies">{kpi(compteurs?.emploisPublies)}</span>
           <span className="giapp-kpi-detail">sur {kpi(compteurs?.emploisTotal)} emplois du temps</span>
         </div>
         <div className="giapp-kpi">
+          <span className="giapp-kpi-icone" aria-hidden="true"><i className="bi bi-calendar-week-fill"></i></span>
           <span className="giapp-kpi-libelle">Séances</span>
           <span className="giapp-kpi-valeur" data-testid="kpi-seances-publiees">{kpi(compteurs?.seancesPubliees)}</span>
           <span className="giapp-kpi-detail">publiées · prêtes pour Présences</span>
@@ -313,6 +319,7 @@ export default function GetInjsApp() {
       <section className="giapp-grid-2">
         <div className="giapp-card">
           <div className="giapp-card-entete">
+            <span className="giapp-card-icone" aria-hidden="true"><i className="bi bi-bar-chart-fill"></i></span>
             <h2>Charge par semestre</h2>
             <span className="giapp-badge">{kpi(compteurs?.seancesPubliees)} séances</span>
           </div>
@@ -329,6 +336,7 @@ export default function GetInjsApp() {
 
         <div className="giapp-card">
           <div className="giapp-card-entete">
+            <span className="giapp-card-icone" aria-hidden="true"><i className="bi bi-people-fill"></i></span>
             <h2>Population par filière</h2>
             <span className="giapp-badge">{kpi(synthese?.effectif_total ?? null)} étudiants</span>
           </div>
@@ -370,6 +378,7 @@ export default function GetInjsApp() {
       <section className="giapp-grid-2">
         <div className="giapp-card">
           <div className="giapp-card-entete">
+            <span className="giapp-card-icone" aria-hidden="true"><i className="bi bi-lightning-charge-fill"></i></span>
             <h2>Dernières générations</h2>
             <Link to="/edt/campagnes" className="giapp-btn giapp-btn--petit">Ouvrir le moteur</Link>
           </div>
@@ -408,6 +417,7 @@ export default function GetInjsApp() {
 
         <div className="giapp-card">
           <div className="giapp-card-entete">
+            <span className="giapp-card-icone" aria-hidden="true"><i className="bi bi-signpost-2-fill"></i></span>
             <h2>Les 5 étapes du processus</h2>
           </div>
           <p className="giapp-card-sous">De l’inscription à la publication officielle</p>
@@ -430,7 +440,8 @@ export default function GetInjsApp() {
       {/* ── Journal des imports ────────────────────────────────────────── */}
       <section className="giapp-card">
         <div className="giapp-card-entete">
-          <h2>Journal des imports</h2>
+          <span className="giapp-card-icone" aria-hidden="true"><i className="bi bi-journal-text"></i></span>
+            <h2>Journal des imports</h2>
           <Link to="/edt/generation-annuelle" className="giapp-btn giapp-btn--petit">
             <i className="bi bi-upload"></i> Importer
           </Link>
