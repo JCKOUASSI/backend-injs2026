@@ -719,3 +719,74 @@
   font-weight: 800;
   white-space: nowrap;
 }
+
+/* ── Reproduction du format démo (titres dans le corps des cartes) ───────
+   La démo ne met pas de bandeau d'en-tête : titre serif bleu nuit et
+   sous-titre directement dans le corps de carte, coins modérés. */
+.getinjs.imp-page .card { border-radius: 14px; }
+
+.getinjs.imp-page .imp-card-titre {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.06rem;
+  font-weight: 700;
+  color: var(--injs-navy, #0a2a5c);
+}
+
+.getinjs.imp-page .imp-card-sous {
+  margin: 0.1rem 0 0.9rem;
+  font-size: 0.78rem;
+  color: #76879e;
+}
+
+.getinjs.imp-page .imp-card-sous-inline {
+  font-family: var(--bs-body-font-family, inherit);
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: #76879e;
+  margin-left: 0.6rem;
+}
+
+/* Encadrés colonnes : bordure simple, sans barre d'accent (format démo) */
+.getinjs.imp-page .imp-colonne {
+  border-left: 1px solid #d7e5f5;
+  background: #ffffff;
+}
+
+/* Scénarios : trois teintes de la palette bleue INJS, du pâle au soutenu */
+.getinjs.imp-page .imp-situation:nth-of-type(1) {
+  background: linear-gradient(180deg, #f4faff, var(--injs-blue-pale));
+  border-left-color: #6db3f2;
+}
+
+.getinjs.imp-page .imp-situation:nth-of-type(2) {
+  background: linear-gradient(180deg, #eef5fe, #dcecfb);
+  border-left-color: var(--injs-blue-royal);
+}
+
+.getinjs.imp-page .imp-situation:nth-of-type(3) {
+  background: linear-gradient(180deg, #e8f1fc, #d3e4f7);
+  border-left-color: #0a2a5c;
+}
+
+/* Journal au format démo : en-tête de tableau claire, importés en bleu nuit */
+.getinjs.imp-page .imp-journal-table thead th {
+  background: #eef4fb;
+  color: var(--injs-navy, #0a2a5c);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-top: 1px solid #e3edf9;
+  border-bottom: 2px solid #6db3f2;
+  padding: 0.55rem 0.6rem;
+  white-space: nowrap;
+}
+
+.getinjs.imp-page .imp-journal-table td { font-size: 0.82rem; }
+
+.getinjs.imp-page .imp-journal-table tbody tr:hover { background: var(--injs-blue-pale); }
+
+.getinjs.imp-page .imp-importes {
+  font-weight: 800;
+  color: #0a2a5c;
+}

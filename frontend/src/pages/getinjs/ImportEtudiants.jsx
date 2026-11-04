@@ -50,10 +50,10 @@ function telechargerBlob(contenu, nom, type = 'text/csv;charset=utf-8') {
 
 const COLONNES_ACCEPTEES = [
   { titre: 'Matricule', alias: 'matricule, code_etudiant, numero_matricule' },
-  { titre: 'Identité', alias: 'nom, prenoms, sexe, date_naissance' },
+  { titre: 'Identité', alias: 'nom, prenom(s), sexe, date_naissance' },
   { titre: 'Contact', alias: 'email, telephone' },
-  { titre: 'Parcours', alias: 'formation, filiere_code, parcours' },
-  { titre: 'Classement', alias: 'niveau, groupe, vague' },
+  { titre: 'Parcours', alias: 'formation/filiere, parcours' },
+  { titre: 'Classement', alias: 'niveau (L1/L2…), groupe, vague' },
   { titre: 'Scolarité', alias: 'semestre, statut' },
 ]
 
@@ -121,46 +121,38 @@ export default function ImportEtudiants() {
     return campagne
   }
 
-  const envoyerFichier = async (mode) => {
+  const envoyerFichier = async () => {
     if (!anneeId) return showToast('Choisissez une année académique.', 'error')
     if (!fichier) return showToast('Choisissez un fichier (.csv ou .xlsx).', 'error')
 
-    setEnCours(mode)
+    setEnCours('import')
     setRapport(null)
     const donnees = new FormData()
     donnees.append('annee_academique_id', anneeId)
     donnees.append('reconstruire_parcours', reconstruire ? 'true' : 'false')
     donnees.append('fichier', fichier)
 
-    const chemin = mode === 'analyse'
-      ? '/edts/lmd/import/inscrits/analyser/'
-      : '/edts/lmd/import/inscrits/'
-
     try {
-      const { data } = await api.post(chemin, donnees, {
+      const { data } = await api.post('/edts/lmd/import/inscrits/', donnees, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       setRapport(data)
-      if (mode === 'import') {
-        showToast(`${data.creees || 0} inscription(s) créée(s), ${data.mises_a_jour || 0} mise(s) à jour.`, 'success')
-        chargerJournal(anneeId)
-        if (genererApres) {
-          try {
-            await enchaineGeneration()
-            showToast(
-              'Génération annuelle lancée en arrière-plan : suivez-la dans '
-              + '« Campagnes de génération ».', 'success')
-          } catch (errGen) {
-            const corps = errGen?.response?.data
-            showToast(
-              corps?.detail?.explication || corps?.motif_echec
-              || 'Import réussi, mais la génération enchaînée a été refusée.',
-              'error',
-            )
-          }
+      showToast(`${data.creees || 0} inscription(s) créée(s), ${data.mises_a_jour || 0} mise(s) à jour.`, 'success')
+      chargerJournal(anneeId)
+      if (genererApres) {
+        try {
+          await enchaineGeneration()
+          showToast(
+            'Génération annuelle lancée en arrière-plan : suivez-la dans '
+            + '« Campagnes de génération ».', 'success')
+        } catch (errGen) {
+          const corps = errGen?.response?.data
+          showToast(
+            corps?.detail?.explication || corps?.motif_echec
+            || 'Import réussi, mais la génération enchaînée a été refusée.',
+            'error',
+          )
         }
-      } else {
-        showToast(`Analyse terminée : ${data.lignes_valides} ligne(s) exploitable(s).`, 'info')
       }
     } catch (err) {
       const corps = err?.response?.data
@@ -206,7 +198,7 @@ export default function ImportEtudiants() {
       </div>
 
       <div className="row g-3 mb-3">
-        <div className="col-xl-8">
+        <div className="col-xl-7">
           <div className="card h-100 imp-card-depot">
             <div className="card-body">
               <div
@@ -267,20 +259,11 @@ export default function ImportEtudiants() {
                 <button
                   type="button"
                   className="btn btn-dark gen-btn-lancer"
-                  onClick={() => envoyerFichier('import')}
+                  onClick={envoyerFichier}
                   disabled={enCours !== ''}
                 >
                   <i className="bi bi-upload me-1" aria-hidden="true"></i>
                   {enCours === 'import' ? 'Import…' : 'Importer les inscrits'}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-outline-primary"
-                  onClick={() => envoyerFichier('analyse')}
-                  disabled={enCours !== ''}
-                >
-                  <i className="bi bi-search me-1" aria-hidden="true"></i>
-                  {enCours === 'analyse' ? 'Analyse…' : 'Analyser sans importer'}
                 </button>
                 <span className="text-muted small">
                   Idempotent : un matricule déjà présent n'est jamais dupliqué
@@ -290,7 +273,7 @@ export default function ImportEtudiants() {
           </div>
         </div>
 
-        <div className="col-xl-4">
+        <div className="col-xl-5">
           <div className="card h-100">
             <div className="card-body">
               <label className="form-label gen-label" htmlFor="imp-annee">Année académique cible</label>
@@ -363,15 +346,15 @@ export default function ImportEtudiants() {
 
       {rapport && (
         <div className="card mb-3">
-          <div className="card-header">
-            <strong>Résultat de {rapport.applique ? 'l’import' : 'l’analyse'}</strong>
-            {anneeChoisie && (
-              <span className="text-muted small ms-2">
-                Année académique {anneeChoisie.libelle}
-              </span>
-            )}
-          </div>
           <div className="card-body">
+            <div className="imp-card-titre">
+              Résultat de l’import
+              {anneeChoisie && (
+                <span className="imp-card-sous-inline">
+                  Année académique {anneeChoisie.libelle}
+                </span>
+              )}
+            </div>
             <div className="getinjs-comptes">
               <Compte libelle="lignes lues" valeur={rapport.lignes_lues} />
               <Compte libelle="valides" valeur={rapport.lignes_valides} />
@@ -450,15 +433,13 @@ export default function ImportEtudiants() {
       )}
 
       <div className="row g-3 mb-3">
-        <div className="col-xl-8">
+        <div className="col-xl-7">
           <div className="card h-100">
-            <div className="card-header">
-              <strong>Colonnes acceptées</strong>
-              <div className="text-muted small">
-                Détection automatique par en-tête, insensible aux accents et à la casse
-              </div>
-            </div>
             <div className="card-body">
+              <div className="imp-card-titre">Colonnes acceptées</div>
+              <p className="imp-card-sous">
+                Détection automatique par alias, insensible aux accents et à la casse
+              </p>
               <div className="imp-colonnes">
                 {COLONNES_ACCEPTEES.map((colonne) => (
                   <div key={colonne.titre} className="imp-colonne">
@@ -478,15 +459,13 @@ export default function ImportEtudiants() {
           </div>
         </div>
 
-        <div className="col-xl-4">
+        <div className="col-xl-5">
           <div className="card h-100">
-            <div className="card-header">
-              <strong>Situations couvertes</strong>
-              <div className="text-muted small">
-                Avec ou sans parcours académique préalable
-              </div>
-            </div>
             <div className="card-body">
+              <div className="imp-card-titre">Scénarios couverts</div>
+              <p className="imp-card-sous">
+                Avec ou sans parcours académique préalable
+              </p>
               <div className="imp-situation">
                 <span className="imp-situation-titre">
                   <i className="bi bi-diagram-3 me-1" aria-hidden="true"></i>
@@ -494,7 +473,7 @@ export default function ImportEtudiants() {
                 </span>
                 <p>
                   Les inscriptions proviennent du processus LMD d'INJS2026 :
-                  groupes, vagues et étudiants sont déjà cohérents. Il suffit
+                  groupes, vagues et semestres sont déjà cohérents. Il suffit
                   de lancer la génération.
                 </p>
               </div>
@@ -504,10 +483,10 @@ export default function ImportEtudiants() {
                   Situation 2 — Fichier externe sans parcours
                 </span>
                 <p>
-                  Le fichier arrive sans parcours : le module rattache
-                  chaque ligne au référentiel INJS 2026, crée au besoin les
-                  groupes et vagues manquants, dérive les besoins de la
-                  maquette active, puis génère les emplois du temps. Une
+                  Le module rattache chaque ligne au référentiel INJS
+                  2026, crée au besoin les groupes et vagues manquants,
+                  génère les besoins depuis la maquette active pour les deux
+                  semestres du niveau, puis génère les emplois du temps. Une
                   formation ou un niveau inconnu est rejeté avec son motif.
                 </p>
               </div>
@@ -528,20 +507,22 @@ export default function ImportEtudiants() {
       </div>
 
       <div className="card mb-3">
-        <div className="card-header d-flex align-items-center">
-          <div>
-            <strong>Journal des imports</strong>
-            <div className="text-muted small">
-              Chaque fichier est journalisé avec ses volumes, erreurs et
-              référentiels créés.
+        <div className="card-body pb-0">
+          <div className="d-flex align-items-start">
+            <div>
+              <div className="imp-card-titre">Journal des imports</div>
+              <p className="imp-card-sous">
+                Chaque fichier est journalisé avec ses volumes, erreurs et
+                référentiels créés
+              </p>
             </div>
+            <span className="imp-journal-count ms-auto">
+              {journal.length} import(s)
+            </span>
           </div>
-          <span className="imp-journal-count ms-auto">
-            {journal.length} import(s)
-          </span>
         </div>
         <div className="table-responsive">
-          <table className="table table-hover align-middle mb-0 gen-table">
+          <table className="table table-hover align-middle mb-0 imp-journal-table">
             <thead>
               <tr>
                 <th scope="col">Fichier</th>
@@ -570,8 +551,8 @@ export default function ImportEtudiants() {
                     {lot.fichier}
                   </td>
                   <td className="text-nowrap">{formatDateJournal(lot.recu_le)}</td>
-                  <td className="fw-bold">{lot.lignes}</td>
-                  <td>{lot.inscrits}</td>
+                  <td>{lot.lignes}</td>
+                  <td className="imp-importes">{lot.inscrits}</td>
                   <td>{lot.ignores}</td>
                   <td>{lot.formations}</td>
                   <td>{lot.groupes}</td>

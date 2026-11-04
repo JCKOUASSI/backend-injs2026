@@ -97,7 +97,10 @@ describe('GET-INJS — Importer les étudiants inscrits (fenêtre dédiée)', ()
     expect(screen.getByText('Contact')).toBeInTheDocument()
     expect(screen.getByText('email, telephone')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Moteur de génération/ })).toBeInTheDocument()
-    expect(screen.getByText('Situations couvertes')).toBeInTheDocument()
+    expect(screen.getByText('Scénarios couverts')).toBeInTheDocument()
+    // La démo ne propose que l'import : pas d'analyse séparée ici.
+    expect(screen.queryByRole('button', { name: /Analyser sans importer/i }))
+      .not.toBeInTheDocument()
     expect(screen.getByText('Journal des imports')).toBeInTheDocument()
   })
 
@@ -146,22 +149,17 @@ describe('GET-INJS — Importer les étudiants inscrits (fenêtre dédiée)', ()
         '/edts/campagnes/7/demarrer/', { asynchrone: true }))
   })
 
-  it('analyse sans écrire et sans enchaîner de génération', async () => {
+  it('n’enchaîne aucune génération si la case est décochée', async () => {
     const user = userEvent.setup()
     rendre()
     await screen.findByLabelText('Année académique cible')
 
+    await user.click(screen.getByLabelText('Générer les EDT après import'))
     const fichier = new File(['matricule;nom\nM1;Ba'], 'inscrits.csv', { type: 'text/csv' })
     await user.upload(screen.getByLabelText('Fichier des inscrits'), fichier)
-    await user.click(screen.getByRole('button', { name: /Analyser sans importer/i }))
+    await user.click(screen.getByRole('button', { name: /Importer les inscrits/i }))
 
-    await waitFor(() =>
-      expect(apiMock.post).toHaveBeenCalledWith(
-        '/edts/lmd/import/inscrits/analyser/',
-        expect.any(FormData),
-        expect.anything(),
-      ),
-    )
+    expect(await screen.findByText('PARCOURS_NON_RESOLU')).toBeInTheDocument()
     expect(apiMock.post.mock.calls.some(([c]) => c === '/edts/campagnes/')).toBe(false)
   })
 
