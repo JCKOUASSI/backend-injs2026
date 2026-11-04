@@ -240,6 +240,9 @@ def executer_campagne(campagne_id, execution_id):
                 persister=bool(parametres.get('persister', True)),
                 remplacer=bool(parametres.get('remplacer', True)),
                 inclure_maquette=bool(parametres.get('inclure_maquette', True)),
+                # Le périmètre « formations » borne la génération : sans cela,
+                # une campagne ciblée régénérait toute l'année académique.
+                formation_ids=(campagne.perimetre or {}).get('formations') or None,
             )
         duree_ms = int((time.monotonic() - debut) * 1000)
         anomalies = extraire_anomalies(bilan)

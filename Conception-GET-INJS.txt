@@ -1345,3 +1345,47 @@ PREUVES MESURÉES (2026-11-04, base de démonstration)
   (> 25 min, interrompue) ; elle se pilote par campagnes/périmètres
   dans l'interface, et PostgreSQL a été mesuré 2,5× plus rapide sur ce
   moteur lors des missions précédentes (voir rapport final GET).
+
+================================================================================
+AUDIT DU 2026-11-04 — INCOHÉRENCES CORRIGÉES ET JEU D'EXEMPLE
+================================================================================
+
+CORRECTION FONCTIONNELLE (moteur) — PÉRIMÈTRE DES CAMPAGNES
+------------------------------------------------------------
+Constat : une campagne déclarée avec un périmètre « formations » régénérait
+en réalité TOUTE l'année académique — ``generer_annee`` ignorait le
+périmètre de la campagne. Correction apportée : ``generer_annee`` accepte
+un paramètre optionnel ``formation_ids`` (rétrocompatible, ``None`` =
+année entière) et ``executer_campagne`` transmet désormais le périmètre
+de la campagne. Le bilan expose ``formations_filtrees``. Test dédié :
+``test_filtre_formations_restraint_le_perimetre`` (test_generation_annee).
+
+CORRECTION D'AFFICHAGE (accueil GET INJS APP)
+--------------------------------------------
+Le compteur « EDT publiés » du hub était calculé sur la seule première
+page de la liste des emplois du temps. Il interroge désormais
+``/edts/emplois/?statut=PUBLIE&page_size=1`` et lit le ``count`` exact.
+Le hub présente en outre une vue d'ensemble dynamique (séances par jour,
+par nature CM/TD/TP, volume horaire) calculée des séances publiées
+réellement chargées, avec mention explicite de l'échantillon.
+
+JEU DE DONNÉES D'EXEMPLE (reproductible, idempotent)
+----------------------------------------------------
+Commande ``peupler_getinjs_exemples`` (services et API officiels
+uniquement, aucun horaire inventé) : 16 EDT générés et PUBLIÉS
+(8 Licences L1 S1 + 8 Masters M1 S7), 176 séances placées, 176 séances
+officielles PUBLIEE au registre Présences, 12 salles géolocalisées
+(campus INJS, Abidjan-Marcory), 1 campagne d'exemple à périmètre EM
+menée jusqu'à « Prêt à générer » (exécution lançable depuis l'écran
+Campagnes), 70 inscrits d'exemple importés par le fichier XLSX officiel
+(L2-EM-GETEX). Relance de la commande : 0 création — idempotence prouvée.
+
+LIMITES CONSTATÉES (honnêtes, non masquées)
+-------------------------------------------
+- Les générations sur maquettes L3/S5 lourdes restent lentes sur ce
+  moteur dans le bac à sable SQLite : le peuplement d'exemple couvre par
+  défaut le premier semestre de chaque cycle (option ``--avec-l3`` pour
+  le complément). La génération se pilote par périmètre (campagnes).
+- Une campagne interrompue en cours d'exécution n'a pas de reprise
+  automatique : c'est un manque identifié, à traiter par une reprise sur
+  incident (journal d'exécution déjà persisté).

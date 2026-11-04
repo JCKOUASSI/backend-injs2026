@@ -89,6 +89,56 @@ function compteDe(reponse, repli) {
   return repli
 }
 
+const JOURS_SEMAINE = ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI', 'DIMANCHE']
+
+function minutesDe(heure) {
+  const [h, m] = String(heure || '').split(':').map(Number)
+  return Number.isFinite(h) ? h * 60 + (m || 0) : null
+}
+
+/** Vue d'ensemble calculée des séances chargées — aucun chiffre inventé. */
+function calculerVueEnsemble(seances) {
+  // Semaine académique INJS : lundi à samedi toujours affichés ; le dimanche
+  // n'apparaît que s'il porte effectivement des séances.
+  const parJour = JOURS_SEMAINE.map((jour) => ({
+    libelle: jour.charAt(0) + jour.slice(1).toLowerCase(),
+    valeur: seances.filter((s) => s.placement?.jour === jour).length,
+  })).filter((j, i) => i < 6 || j.valeur > 0)
+  const types = {}
+  let minutes = 0
+  for (const s of seances) {
+    const t = s.placement?.type_seance || 'AUTRE'
+    types[t] = (types[t] || 0) + 1
+    const d = minutesDe(s.placement?.heure_debut)
+    const f = minutesDe(s.placement?.heure_fin)
+    if (d !== null && f !== null && f > d) minutes += f - d
+  }
+  const parType = Object.entries(types)
+    .map(([libelle, valeur]) => ({ libelle, valeur }))
+    .sort((a, b) => b.valeur - a.valeur)
+  return { parJour, parType, heures: Math.round((minutes / 60) * 10) / 10 }
+}
+
+function Barres({ donnees, accent }) {
+  const max = Math.max(1, ...donnees.map((d) => d.valeur))
+  return (
+    <div className="giapp-barres">
+      {donnees.map((d) => (
+        <div className="giapp-barre" key={d.libelle}>
+          <span className="giapp-barre-libelle">{d.libelle}</span>
+          <span className="giapp-barre-piste">
+            <span
+              className={`giapp-barre-remplissage ${accent === 'ocre' ? 'is-ocre' : ''}`}
+              style={{ width: `${Math.round((d.valeur / max) * 100)}%` }}
+            ></span>
+          </span>
+          <span className="giapp-barre-valeur">{d.valeur}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function GetInjsApp() {
   const { showToast } = useToast()
   const [compteurs, setCompteurs] = useState(null)
@@ -99,8 +149,10 @@ export default function GetInjsApp() {
   useEffect(() => {
     let annule = false
     ;(async () => {
-      const [emplois, publiees, evenements, conflits, sante] = await Promise.allSettled([
+      const [emplois, emploisPub, publiees, evenements, conflits, sante] = await Promise.allSettled([
         api.get('/edts/emplois/'),
+        // Compte exact des EDT publiés : la pagination ne doit pas le tronquer.
+        api.get('/edts/emplois/', { params: { statut: 'PUBLIE', page_size: 1 } }),
         api.get('/edts/interop/seances-publiees/', { params: { page_size: 100 } }),
         api.get('/edts/interop/evenements/', { params: { non_consommes: 1 } }),
         api.get('/edts/conflits/'),
@@ -112,7 +164,10 @@ export default function GetInjsApp() {
       setCompteurs({
         emploisTotal: emplois.status === 'fulfilled'
           ? compteDe(emplois.value, listeEmplois.length) : null,
-        emploisPublies: listeEmplois.filter((e) => e.statut === 'PUBLIE').length,
+        emploisPublies: emploisPub.status === 'fulfilled'
+          ? compteDe(emploisPub.value,
+              listeDe(emploisPub.value).filter((e) => e.statut === 'PUBLIE').length)
+          : listeEmplois.filter((e) => e.statut === 'PUBLIE').length,
         seancesPubliees: publiees.status === 'fulfilled'
           ? compteDe(publiees.value, listeSeances.length) : null,
         evenements: evenements.status === 'fulfilled'
@@ -147,6 +202,7 @@ export default function GetInjsApp() {
   }
 
   const kpi = (valeur) => (chargement ? '…' : (valeur ?? '—'))
+  const vue = calculerVueEnsemble(seances)
 
   return (
     <div className="giapp" data-testid="get-injs-app">
@@ -205,6 +261,32 @@ export default function GetInjsApp() {
           <span className="giapp-kpi-libelle">Événements de séance à consommer</span>
         </div>
       </section>
+
+      {/* ── Vue d'ensemble dynamique des séances publiées ──────────────── */}
+      {!chargement && seances.length > 0 && (
+        <>
+          <h2 className="giapp-titre-section">Vue d’ensemble des séances publiées</h2>
+          <section className="giapp-graphs" data-testid="vue-ensemble">
+            <div className="giapp-graph">
+              <h3>Séances par jour de semaine</h3>
+              <Barres donnees={vue.parJour} />
+            </div>
+            <div className="giapp-graph">
+              <h3>Séances par nature d’enseignement</h3>
+              <Barres donnees={vue.parType} accent="ocre" />
+            </div>
+            <div className="giapp-graph giapp-graph--chiffre">
+              <h3>Volume horaire planifié</h3>
+              <p className="giapp-gros-chiffre">{vue.heures} h</p>
+              <p className="giapp-note">
+                Calculé sur les {seances.length} séances publiées chargées
+                (échantillon des 100 plus récentes) — le total officiel est le
+                compteur « Séances publiées » ci-dessus.
+              </p>
+            </div>
+          </section>
+        </>
+      )}
 
       {/* ── Fonctionnalités du module ──────────────────────────────────── */}
       <h2 className="giapp-titre-section">Fonctionnalités du module</h2>

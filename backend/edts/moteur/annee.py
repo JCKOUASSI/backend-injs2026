@@ -81,7 +81,7 @@ def _edt_du_groupe(annee_academique_id, groupe, semaines, *, creer):
 
 def generer_annee(annee_academique_id, *, semaines=None, persister=False,
                   remplacer=True, budget=G.BUDGET_PLACEMENTS_DEFAUT,
-                  inclure_maquette=True):
+                  inclure_maquette=True, formation_ids=None):
     """Génère les EDT de tous les groupes INJS d'une année académique.
 
     :param annee_academique_id: année cible (obligatoire).
@@ -91,6 +91,9 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
         (idempotence d'une régénération).
     :param inclure_maquette: complète les besoins par la maquette pour les
         cohortes sans affectation pédagogique (cohortes importées).
+    :param formation_ids: périmètre optionnel — restreint la génération aux
+        groupes de ces formations (une campagne à périmètre « formations »
+        ne doit pas générer toute l'année). ``None`` = année entière.
     :returns: bilan structuré, par groupe et global — jamais d'exception métier.
     """
     from django.db.models import Count
@@ -110,11 +113,20 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
     groupes_injs = [g for g in groupes if g.ref_formation_id in perimetre]
     hors_perimetre = len(groupes) - len(groupes_injs)
 
+    # Périmètre de campagne éventuel : une génération restreinte à certaines
+    # formations ne touche pas les autres cohortes de l'année.
+    formations_filtrees = None
+    if formation_ids:
+        formations_filtrees = sorted({int(f) for f in formation_ids})
+        selection = set(formations_filtrees)
+        groupes_injs = [g for g in groupes_injs if g.ref_formation_id in selection]
+
     if not groupes_injs:
         return {
             'status_global': ANNEE_IMPOSSIBLE,
             'motif_echec': 'AUCUN_GROUPE_INJS',
             'annee_academique_id': annee_academique_id,
+            'formations_filtrees': formations_filtrees,
             'semaines': {'debut': min(semaines), 'fin': max(semaines)},
             'groupes': [],
             'totaux': {},
@@ -312,6 +324,7 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
         'motif_echec': motif_global,
         'detail': detail_global,
         'annee_academique_id': annee_academique_id,
+        'formations_filtrees': formations_filtrees,
         'semaines': {'debut': min(semaines), 'fin': max(semaines)},
         'groupes': lignes,
         'totaux': {

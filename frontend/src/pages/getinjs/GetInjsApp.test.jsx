@@ -26,6 +26,7 @@ const SEANCE_PUBLIEE = {
     heure_debut: '08:00',
     heure_fin: '10:00',
     enseignant: 'Kouadio Jean',
+    type_seance: 'CM',
   },
 }
 
@@ -69,6 +70,17 @@ describe('GET INJS APP — accueil du module', () => {
       .toHaveAttribute('href', '/edt/campagnes')
     expect(screen.getByRole('link', { name: /Présences de séance/ }))
       .toHaveAttribute('href', '/edt/presences')
+  })
+
+  it('affiche la vue d’ensemble dynamique des séances publiées', async () => {
+    monter()
+    // Graphiques calculés des séances réelles chargées (jour, nature, volume).
+    expect(await screen.findByTestId('vue-ensemble')).toBeInTheDocument()
+    expect(screen.getByText('Séances par jour de semaine')).toBeInTheDocument()
+    expect(screen.getByText('Séances par nature d’enseignement')).toBeInTheDocument()
+    expect(screen.getByText('Lundi')).toBeInTheDocument()
+    expect(screen.getByText('CM')).toBeInTheDocument()
+    expect(screen.getByText('2 h')).toBeInTheDocument()
   })
 
   it('liste les séances publiées prêtes pour le module Présences', async () => {
