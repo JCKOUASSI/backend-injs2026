@@ -1005,3 +1005,156 @@
   border: 1px dashed #9db9d9;
   color: #42597a;
 }
+
+/* ── « Conception » (Documentation technique du module) ──────────────────
+   Cartes couplées au format de référence : couches, algorithme numéroté,
+   contrats d'API, modèle de données, commandes et exigences couvertes. */
+.getinjs.conc-page .conc-couche {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: 0.9rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #e3edf9;
+}
+
+.getinjs.conc-page .conc-couche:last-of-type { border-bottom: none; }
+
+.getinjs.conc-page .conc-couche-nom {
+  font-weight: 800;
+  color: var(--injs-navy, #0a2a5c);
+  font-size: 0.86rem;
+}
+
+.getinjs.conc-page .conc-couche-pile {
+  font-weight: 700;
+  color: #14509e;
+  font-size: 0.84rem;
+}
+
+.getinjs.conc-page .conc-couche-role {
+  font-size: 0.8rem;
+  color: #5b718c;
+}
+
+.getinjs.conc-page .conc-note {
+  margin: 0.8rem 0 0;
+  padding: 0.6rem 0.8rem;
+  background: linear-gradient(180deg, #f4faff, var(--injs-blue-pale));
+  border-left: 3px solid #6db3f2;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: #42597a;
+}
+
+.getinjs.conc-page .conc-etapes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: conc-etape;
+}
+
+.getinjs.conc-page .conc-etapes li {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  padding: 0.45rem 0;
+  font-size: 0.84rem;
+  color: #33475f;
+}
+
+.getinjs.conc-page .conc-etape-num {
+  flex: 0 0 auto;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--injs-navy), var(--injs-blue-royal));
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.05rem;
+}
+
+.getinjs.conc-page .conc-methode {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.getinjs.conc-page .conc-methode-get {
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal, #14509e);
+}
+
+.getinjs.conc-page .conc-methode-post {
+  background: linear-gradient(92deg, var(--injs-navy), #0a2a5c);
+  color: #ffffff;
+}
+
+.getinjs.conc-page .conc-route {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 0.74rem;
+  color: #0a2a5c;
+  white-space: nowrap;
+}
+
+.getinjs.conc-page .conc-commande { margin-bottom: 0.85rem; }
+
+.getinjs.conc-page .conc-commande-etape {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--injs-navy, #0a2a5c);
+  margin-bottom: 0.25rem;
+}
+
+.getinjs.conc-page .conc-commande-code {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  background: #0a2a5c;
+  color: #d9ecff;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.getinjs.conc-page .conc-commande-detail {
+  font-size: 0.76rem;
+  color: #76879e;
+  margin-top: 0.25rem;
+}
+
+.getinjs.conc-page .conc-exigences {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.getinjs.conc-page .conc-exigences li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.4rem 0;
+  font-size: 0.84rem;
+  color: #33475f;
+}
+
+.getinjs.conc-page .conc-coche {
+  flex: 0 0 auto;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 50%;
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal, #14509e);
+  font-size: 0.78rem;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.08rem;
+}

@@ -394,13 +394,14 @@ export const ARBORESCENCE = [
         },
       },
       {
-        // Documentation du module : téléchargement direct du document
-        // de conception servi par l'API (aucune page intermédiaire).
+        // Documentation technique du module : page de conception du hub
+        // (architecture, algorithme, API, modèle de données, commandes,
+        // exigences) ; le document complet s'y télécharge au format texte.
         id: 'get_injs.conception',
         libelle: 'Conception',
         description: 'Documentation',
         icone: 'bi-file-earmark-text',
-        action: 'telecharger-conception',
+        chemin: '/edt/conception',
         droit: {
           curp: ['edt.creneau.consulter'],
           legacy: [['web', 'operationnel']],

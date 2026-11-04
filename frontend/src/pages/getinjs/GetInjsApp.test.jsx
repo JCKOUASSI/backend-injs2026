@@ -142,13 +142,10 @@ describe('GET INJS APP — tableau de bord d’accueil', () => {
     expect(screen.getByText(/identifiant unique permanent/)).toBeInTheDocument()
   })
 
-  it('télécharge la conception du module via l’API', async () => {
+  it('ouvre la page de conception du module', async () => {
     monter()
-    await screen.findByTestId('kpi-etudiants')
-    await userEvent.click(screen.getByTestId('telecharger-conception'))
-    await waitFor(() => {
-      expect(apiMock.getBlob).toHaveBeenCalledWith('/edts/lmd/conception/')
-    })
+    expect(await screen.findByTestId('ouvrir-conception'))
+      .toHaveAttribute('href', '/edt/conception')
   })
 
   it('affiche des états vides honnêtes sans données', async () => {

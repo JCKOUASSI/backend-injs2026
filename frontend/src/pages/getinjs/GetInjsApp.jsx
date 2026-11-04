@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../services/api'
-import { useToast } from '../../context/ToastContext'
 import '../../styles/getInjsApp.css'
 
 /**
@@ -101,7 +100,6 @@ function BarreCharge({ ligne }) {
 }
 
 export default function GetInjsApp() {
-  const { showToast } = useToast()
   const [chargement, setChargement] = useState(true)
   const [annee, setAnnee] = useState(null)
   const [compteurs, setCompteurs] = useState(null)
@@ -109,7 +107,6 @@ export default function GetInjsApp() {
   const [synthese, setSynthese] = useState(null)
   const [campagnes, setCampagnes] = useState([])
   const [journal, setJournal] = useState([])
-  const [telechargement, setTelechargement] = useState(false)
 
   useEffect(() => {
     let annule = false
@@ -185,25 +182,6 @@ export default function GetInjsApp() {
     })()
     return () => { annule = true }
   }, [])
-
-  const telechargerConception = async () => {
-    setTelechargement(true)
-    try {
-      const { blob, fileName } = await api.getBlob('/edts/lmd/conception/')
-      const url = URL.createObjectURL(blob)
-      const lien = document.createElement('a')
-      lien.href = url
-      lien.download = fileName || 'Conception-GET-INJS.txt'
-      document.body.appendChild(lien)
-      lien.click()
-      lien.remove()
-      URL.revokeObjectURL(url)
-    } catch {
-      showToast('Document de conception indisponible.', 'error')
-    } finally {
-      setTelechargement(false)
-    }
-  }
 
   const kpi = (v) => (chargement ? '…' : formaterNombre(v))
   const charge = chargeParSemestre(seances)
@@ -497,16 +475,14 @@ export default function GetInjsApp() {
           <span className="giapp-mini-titre">Étudiants importés</span>
           <span className="giapp-mini-lien">Accéder <i className="bi bi-arrow-right"></i></span>
         </Link>
-        <button type="button" className="giapp-mini giapp-mini--bouton"
-          onClick={telechargerConception} disabled={telechargement}
-          data-testid="telecharger-conception">
+        <Link to="/edt/conception" className="giapp-mini" data-testid="ouvrir-conception">
           <span className="giapp-mini-libelle">Document</span>
           <span className="giapp-mini-valeur"><i className="bi bi-file-earmark-text"></i></span>
           <span className="giapp-mini-titre">Conception du module</span>
           <span className="giapp-mini-lien">
-            {telechargement ? 'Téléchargement…' : 'Télécharger'} <i className="bi bi-arrow-right"></i>
+            Consulter <i className="bi bi-arrow-right"></i>
           </span>
-        </button>
+        </Link>
       </section>
 
       {/* ── Séances officielles publiées ───────────────────────────────── */}
