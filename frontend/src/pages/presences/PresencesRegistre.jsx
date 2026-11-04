@@ -59,6 +59,13 @@ export default function PresencesRegistre() {
   const [type, setType] = useState(() => searchParams.get('type') || '')
   const [mode, setMode] = useState(() => searchParams.get('mode') || '')
   const [seanceFiltre, setSeanceFiltre] = useState(() => searchParams.get('seance') || '')
+  // Chargement explicite de 200 événements appliqué dès l'ouverture ;
+  // un lien profond ciblé (?seance=, ?date=) conserve la période Du/Au.
+  const [modeCharge, setModeCharge] = useState(() => {
+    if (searchParams.get('mode') === 'periode') return 'periode'
+    if (searchParams.get('mode') === '200') return 'recents'
+    return (searchParams.get('seance') || searchParams.get('date')) ? 'periode' : 'recents'
+  })
   const [donnees, setDonnees] = useState(null)
   const [charge, setCharge] = useState(true)
   const [erreur, setErreur] = useState('')
@@ -73,7 +80,13 @@ export default function PresencesRegistre() {
     setCharge(true)
     setErreur('')
     try {
-      const params = new URLSearchParams({ date_debut: dateDebut, date_fin: dateFin })
+      const params = new URLSearchParams({ date_fin: dateFin })
+      if (modeCharge === 'recents') {
+        // Chargement explicite : 200 derniers pointages jusqu'au « Au ».
+        params.set('limite', '200')
+      } else {
+        params.set('date_debut', dateDebut)
+      }
       if (nom.trim()) params.set('nom', nom.trim())
       if (groupe.trim()) params.set('groupe', groupe.trim())
       if (type) params.set('type', type)
@@ -86,12 +99,13 @@ export default function PresencesRegistre() {
     } finally {
       setCharge(false)
     }
-  }, [dateDebut, dateFin, nom, groupe, type, mode, seanceFiltre])
+  }, [dateDebut, dateFin, nom, groupe, type, mode, seanceFiltre, modeCharge])
 
   useEffect(() => { charger() }, [charger])
 
   useEffect(() => {
     const sp = new URLSearchParams()
+    sp.set('mode', modeCharge === 'recents' ? '200' : 'periode')
     sp.set('date', dateDebut)
     if (nom.trim()) sp.set('nom', nom.trim())
     if (groupe.trim()) sp.set('groupe', groupe.trim())
@@ -99,7 +113,7 @@ export default function PresencesRegistre() {
     if (mode) sp.set('mode', mode)
     if (seanceFiltre) sp.set('seance', seanceFiltre)
     setSearchParams(sp, { replace: true })
-  }, [dateDebut, dateFin, nom, groupe, type, mode, seanceFiltre, setSearchParams])
+  }, [dateDebut, dateFin, nom, groupe, type, mode, seanceFiltre, modeCharge, setSearchParams])
 
   const chargerSeancesExc = useCallback(async () => {
     try {
@@ -143,6 +157,11 @@ export default function PresencesRegistre() {
           <div className="d-flex flex-wrap gap-2 mt-3">
             <span className="badge text-bg-light">{donnees?.total ?? 0} présence(s)</span>
             <span className="badge text-bg-light">{nbManuels} manuelle(s) sur la sélection</span>
+            {modeCharge === 'recents' && (
+              <span className="badge text-bg-warning">
+                <i className="bi bi-cloud-download me-1"></i>Chargement explicite : 200 événements
+              </span>
+            )}
             {seanceFiltre && (
               <button className="badge text-bg-warning border-0" onClick={() => setSeanceFiltre('')}>
                 Séance filtrée : #{seanceFiltre} × retirer
@@ -158,12 +177,22 @@ export default function PresencesRegistre() {
         <div className="pqr-panel-corps">
           <div className="pqr-filtres">
             <div>
+              <label className="label">Chargement</label>
+              <div className="pqr-segmente" role="group" aria-label="Mode de chargement des présences">
+                <button type="button" className={modeCharge === 'recents' ? 'actif' : ''}
+                        onClick={() => setModeCharge('recents')}>200 derniers</button>
+                <button type="button" className={modeCharge === 'periode' ? 'actif' : ''}
+                        onClick={() => setModeCharge('periode')}>Par période</button>
+              </div>
+            </div>
+            <div>
               <label className="label" htmlFor="pqr-hist-debut">Du</label>
               <input id="pqr-hist-debut" type="date" className="input" value={dateDebut}
+                     disabled={modeCharge === 'recents'}
                      onChange={(e) => setDateDebut(e.target.value)} />
             </div>
             <div>
-              <label className="label" htmlFor="pqr-hist-fin">Au</label>
+              <label className="label" htmlFor="pqr-hist-fin">{modeCharge === 'recents' ? 'Jusqu’au' : 'Au'}</label>
               <input id="pqr-hist-fin" type="date" className="input" value={dateFin}
                      onChange={(e) => setDateFin(e.target.value)} />
             </div>
@@ -199,6 +228,15 @@ export default function PresencesRegistre() {
       </div>
 
       <div className="pqr-panel">
+        {modeCharge === 'recents' && (
+          <div className="pqr-panel-tete">
+            <span>
+              <i className="bi bi-cloud-download me-2"></i>
+              Chargement explicite : 200 derniers pointages — jusqu’au {dateFin}
+            </span>
+            <span className="badge text-bg-primary">{lignes.length} chargé(s)</span>
+          </div>
+        )}
         <div className="table-container">
           <table className="table edt-table mb-0">
             <thead>
@@ -266,7 +304,11 @@ export default function PresencesRegistre() {
               ))}
               {!charge && lignes.length === 0 && (
                 <tr><td colSpan={11} className="text-center text-muted py-5">
-                  Aucune présence ne correspond à ces critères.
+                  {modeCharge === 'recents'
+                    ? <>Aucun pointage rattaché aux séances EDT jusqu’au {dateFin} :
+                        les 200 derniers s’afficheront ici dès les premiers badgeages
+                        (QR ou manuels) enregistrés sur les séances publiées.</>
+                    : 'Aucune présence ne correspond à ces critères.'}
                 </td></tr>
               )}
               {charge && (

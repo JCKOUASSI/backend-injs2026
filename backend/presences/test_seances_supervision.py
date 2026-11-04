@@ -669,3 +669,43 @@ class PlageSupervisionTests(BaseSupervision):
         donnees = reponse.json()
         self.assertNotIn('periode', donnees)
         self.assertEqual(len(donnees['seances']), 1)
+
+
+class HistoriqueLimiteTests(BaseSupervision):
+    """Chargement explicite des derniers pointages : `?limite=` sans borne.
+
+    Avec `limite` et sans `date_debut`, l'historique restitue les
+    derniers pointages jusqu'à `date_fin` (toutes dates confondues) ;
+    sans `limite`, la période Du/Au historique est inchangée.
+    """
+
+    def test_200_derniers_sans_borne_debut(self):
+        from datetime import timedelta as _td
+
+        from presences.seances_supervision import historique_presences
+
+        ancien = self.aujourdhui - _td(days=40)
+        _pointage(self.participants[0], self.affectation, ancien,
+                  statut_assiduite=Pointage.StatutAssiduite.PRESENT,
+                  mode=Pointage.Mode.QR_AUTOMATIQUE)
+        _pointage(self.participants[1], self.affectation, self.aujourdhui,
+                  statut_assiduite=Pointage.StatutAssiduite.PRESENT,
+                  mode=Pointage.Mode.QR_AUTOMATIQUE)
+
+        # Période historique : seul le jour même est visible.
+        jour = historique_presences(self.admin, date_debut=self.aujourdhui,
+                                    date_fin=self.aujourdhui)
+        self.assertEqual(jour['total'], 1)
+
+        # Chargement explicite : les deux, du plus récent au plus ancien.
+        recents = historique_presences(self.admin, date_fin=self.aujourdhui,
+                                       limite=200, borne_debut=False)
+        self.assertEqual(recents['total'], 2)
+        self.assertIsNone(recents['date_debut'])
+        self.assertEqual(recents['resultats'][0]['date_seance'],
+                         self.aujourdhui.isoformat())
+
+        # Le plafond s'applique réellement.
+        plafond = historique_presences(self.admin, date_fin=self.aujourdhui,
+                                       limite=1, borne_debut=False)
+        self.assertEqual(plafond['total'], 1)

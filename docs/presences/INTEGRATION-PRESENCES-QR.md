@@ -257,6 +257,7 @@ de l'application de référence, adossé à un endpoint additif :
   assiduité, anomalies (hors périmètre, signal perdu, position imprécise,
   entrée forcée, hors ligne suspecte, sortie automatique tracée).
   **Aucune coordonnée GPS n'est renvoyée** ; extraction bornée (slice 500).
+- **Chargement explicite de 200 événements** : l'écran s'ouvre sur les **200 derniers pointages** (`?limite=200` sans `date_debut` → pas de borne inférieure, plafond serveur 500 ; bascule « 200 derniers / Par période », pastille et en-tête visibles, compteur de chargés). Un lien profond ciblé (`?seance=`, `?date=`) conserve la période Du/Au.
 - **Côté web** : filtres serveur (période, nom, groupe, type, mode,
   séance) synchronisés avec l'URL — l'arrivée tableau de bord
   `?seance=&date=` reste compatible — compteurs du hero relus de la

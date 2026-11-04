@@ -648,7 +648,8 @@ def _nom_complet(obj, matricule_attr='matricule'):
 
 def historique_presences(user, *, date_debut=None, date_fin=None,
                          type_participant=None, mode=None, nom=None,
-                         groupe=None, seance_id=None, limite=500):
+                         groupe=None, seance_id=None, limite=500,
+                         borne_debut=True):
     """Registre historique des pointages rattachés aux séances LMD.
 
     Lecture seule, périmètre identique à la supervision : les comptes
@@ -656,14 +657,21 @@ def historique_presences(user, *, date_debut=None, date_fin=None,
     séances où il est affecté. Les coordonnées GPS brutes ne sortent
     jamais : seuls le verdict, la précision annoncée et les compteurs
     d'anomalies sont restitués.
+
+    Avec ``borne_debut=False`` (chargement explicite des plus récents),
+    il n'y a pas de borne inférieure : les ``limite`` derniers
+    pointages jusqu'à ``date_fin`` sont restitués, du plus récent au
+    plus ancien. Par défaut (``borne_debut=True``), le comportement
+    historique « période Du/Au » est inchangé.
     """
     from django.db.models import Count, Q
 
     date_fin = date_fin or timezone.localdate()
-    date_debut = date_debut or date_fin
+    if borne_debut:
+        date_debut = date_debut or date_fin
     qs = (Pointage.objects
           .filter(seance_edt__isnull=False,
-                  date_journee__gte=date_debut, date_journee__lte=date_fin,
+                  date_journee__lte=date_fin,
                   seance_edt__emploi_du_temps__statut__in=('VALIDE', 'PUBLIE'))
           .select_related(
               'participant', 'formateur', 'encadrant', 'seance_edt',
@@ -699,6 +707,9 @@ def historique_presences(user, *, date_debut=None, date_fin=None,
             | Q(encadrant__last_name__icontains=nom)
             | Q(encadrant__username__icontains=nom))
 
+    if borne_debut:
+        qs = qs.filter(date_journee__gte=date_debut)
+    limite = max(1, min(int(limite or 500), 500))
     pointages = list(qs[:limite])
     ids = [pt.id for pt in pointages]
 
@@ -775,7 +786,7 @@ def historique_presences(user, *, date_debut=None, date_fin=None,
             'anomalies': anomalies,
         })
     return {
-        'date_debut': date_debut.isoformat(),
+        'date_debut': date_debut.isoformat() if date_debut else None,
         'date_fin': date_fin.isoformat(),
         'total': len(resultats),
         'resultats': resultats,

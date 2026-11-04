@@ -210,6 +210,12 @@ describe('PresencesRegistre — historique refondu', () => {
   it('affiche l’historique transversal avec types, verdicts et anomalies', async () => {
     monter(<PresencesRegistre />)
     await waitFor(() => expect(screen.getByText('Ba Awa')).toBeTruthy())
+    // Chargement explicite de 200 événements : appliqué dès l'ouverture,
+    // visible dans l'écran, et demandé au serveur (limite=200).
+    expect(apiController.findCall('get', /historique\/\?.*limite=200/)).toBeTruthy()
+    expect(screen.getByText('Chargement explicite : 200 événements')).toBeTruthy()
+    expect(screen.getByText(/Chargement explicite : 200 derniers pointages/)).toBeTruthy()
+    expect(screen.getByText('2 chargé(s)')).toBeTruthy()
     expect(screen.getAllByText('ETUDIANT').length).toBe(2)
     expect(screen.getByText('Dans le périmètre')).toBeTruthy()
     expect(screen.getByText('±72 m')).toBeTruthy()

@@ -86,9 +86,13 @@ def historique_api(request):
     """Registre historique des présences LMD (lecture seule).
 
     `GET /api/presences/seances-edt/historique/?date_debut=&date_fin=
-    &type=&mode=&nom=&groupe=&seance_id=` — filtres appliqués côté
-    serveur sur les pointages rattachés aux séances des EDT publiés.
-    Aucune coordonnée GPS brute n'est restituée.
+    &type=&mode=&nom=&groupe=&seance_id=&limite=` — filtres appliqués
+    côté serveur sur les pointages rattachés aux séances des EDT
+    publiés. Aucune coordonnée GPS brute n'est restituée.
+
+    Chargement explicite (additif) : `limite` seul (sans `date_debut`)
+    charge les `limite` derniers pointages jusqu'à `date_fin`
+    (plafond 500 ; l'écran du registre demande 200).
     """
     from . import seances_supervision
     date_debut, err = _parse_date_param(request, 'date_debut')
@@ -97,9 +101,12 @@ def historique_api(request):
     date_fin, err = _parse_date_param(request, 'date_fin')
     if err:
         return Response(err, status=status.HTTP_400_BAD_REQUEST)
+    limite = _entier(request, 'limite')
     return Response(seances_supervision.historique_presences(
         request.user,
         date_debut=date_debut, date_fin=date_fin,
+        limite=limite or 500,
+        borne_debut=not (limite and date_debut is None),
         type_participant=(request.query_params.get('type') or '').strip().upper() or None,
         mode=(request.query_params.get('mode') or '').strip().upper() or None,
         nom=(request.query_params.get('nom') or '').strip() or None,
