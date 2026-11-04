@@ -129,6 +129,9 @@ export default function PresencesAudit() {
         </div>
         <div className="pqr-hero-actions">
           <span className="badge text-bg-light">{total} événement(s)</span>
+          <span className="badge text-bg-warning">
+            <i className="bi bi-cloud-download me-1"></i>Chargement explicite : 200 événements
+          </span>
         </div>
       </div>
 
@@ -169,6 +172,13 @@ export default function PresencesAudit() {
       </div>
 
       <div className="pqr-panel">
+        <div className="pqr-panel-tete">
+          <span>
+            <i className="bi bi-cloud-download me-2"></i>
+            Chargement explicite : 200 événements les plus récents
+          </span>
+          <span className="badge text-bg-primary">{lignes.length} chargé(s)</span>
+        </div>
         <div className="pqr-audit-liste">
           {lignes.map((l, i) => {
             const extra = l.extra || {}

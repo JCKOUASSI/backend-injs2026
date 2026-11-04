@@ -236,6 +236,9 @@ describe('PresencesAudit — traçabilité non destructive', () => {
     expect(screen.getByText('Nouvelle valeur')).toBeTruthy()
     expect(screen.getByText(/FORCE_DFRC/)).toBeTruthy()
     expect(screen.getByText(/NON_RENSEIGNE/)).toBeTruthy()
+    // Chargement explicite visible dans l'écran et demandé au serveur.
+    expect(screen.getAllByText(/Chargement explicite : 200 événements/).length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByText('1 chargé(s)')).toBeTruthy()
     // Chargement explicite demandé au serveur : 200 événements.
     expect(apiController.findCall('get', /audit-logs\/\?.*limite=200/)).toBeTruthy()
   })
