@@ -358,7 +358,7 @@ export default function GenerationAnnuelle() {
   )
 
   return (
-    <div className="getinjs">
+    <div className="getinjs gen-page">
       <div className="gen-entete">
         <div>
           <span className="gen-sur">Moteur LMD</span>
@@ -393,7 +393,7 @@ export default function GenerationAnnuelle() {
 
       <div className="row g-3 mb-3">
         <div className="col-xl-8">
-          <div className="card h-100">
+          <div className="card h-100 gen-card-main">
             <div className="card-header">
               <strong>Paramètres de génération</strong>
               <div className="text-muted small">
@@ -551,7 +551,7 @@ export default function GenerationAnnuelle() {
               <div className="d-flex flex-wrap align-items-center gap-2 mt-3">
                 <button
                   type="button"
-                  className="btn btn-dark"
+                  className="btn btn-dark gen-btn-lancer"
                   onClick={lancerGeneration}
                   disabled={enCours !== ''}
                 >
