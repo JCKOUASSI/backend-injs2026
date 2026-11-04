@@ -626,3 +626,72 @@
   font-size: 0.72rem;
   color: #8fa1b8;
 }
+
+/* ── Formatage maquette de la fenêtre d'import : en-tête clair premium ────
+   Même structure que l'image (sur-titre, titre, sous-titre, actions à
+   droite) ; la palette reste celle de l'INJS, bleu foncé / bleu clair. */
+.getinjs.imp-page .imp-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+
+.getinjs.imp-page .imp-sur {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--injs-blue-royal, #14509e);
+}
+
+.getinjs.imp-page .imp-titre {
+  margin: 0.15rem 0 0.3rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--injs-navy, #0a2a5c);
+}
+
+.getinjs.imp-page .imp-sous {
+  margin: 0;
+  max-width: 680px;
+  font-size: 0.88rem;
+  color: #54677e;
+  line-height: 1.55;
+}
+
+.getinjs.imp-page .imp-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.getinjs.imp-page .imp-actions .btn-outline-primary {
+  border-color: #9dbede;
+  color: #0a2a5c;
+  font-weight: 700;
+  background: #ffffff;
+}
+
+.getinjs.imp-page .imp-actions .btn-outline-primary:hover {
+  background: var(--injs-blue-pale);
+  border-color: var(--injs-blue-royal);
+  color: #0a2a5c;
+}
+
+/* Colonnes acceptées : grille 2 × 3 fidèle à la maquette */
+.getinjs.imp-page .imp-colonnes {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 576px) {
+  .getinjs.imp-page .imp-colonnes { grid-template-columns: 1fr; }
+}
+
+/* Pied institutionnel aligné à gauche, comme la maquette */
+.getinjs.imp-page .imp-pied { text-align: left; }

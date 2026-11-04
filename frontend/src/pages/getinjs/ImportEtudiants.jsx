@@ -207,27 +207,27 @@ export default function ImportEtudiants() {
 
   return (
     <div className="getinjs gen-page imp-page">
-      <div className="gen-entete">
+      <div className="imp-entete">
         <div>
-          <span className="gen-sur">Situation 2 · Fichier externe</span>
-          <h2 className="gen-titre">Importer les étudiants inscrits</h2>
-          <p className="gen-sous">
+          <span className="imp-sur">Situation 2 · Fichier externe</span>
+          <h2 className="imp-titre">Importer les étudiants inscrits</h2>
+          <p className="imp-sous">
             Recevoir un fichier d'inscrits produit hors application (scolarité,
             rectorat, partenaire) et générer malgré tout les emplois du temps
             de l'année. Le module reconnaît filière, formation, niveau, groupe
             et vague lorsque le parcours LMD n'existe pas encore.
           </p>
         </div>
-        <div className="gen-actions">
+        <div className="imp-actions">
           <button
             type="button"
-            className="btn btn-outline-secondary btn-sm"
+            className="btn btn-outline-primary btn-sm"
             onClick={() => telechargerBlob(MODELE_CSV, 'modele-inscrits.csv')}
           >
             <i className="bi bi-filetype-csv me-1" aria-hidden="true"></i>
             Modèle CSV
           </button>
-          <Link to="/edt/generation-annuelle" className="btn btn-outline-primary btn-sm">
+          <Link to="/edt/generation-annuelle" className="btn btn-dark btn-sm gen-btn-lancer">
             <i className="bi bi-gear me-1" aria-hidden="true"></i>
             Tableau de génération
           </Link>
@@ -235,7 +235,7 @@ export default function ImportEtudiants() {
       </div>
 
       <div className="row g-3 mb-3">
-        <div className="col-xl-7">
+        <div className="col-xl-8">
           <div className="card h-100 imp-card-depot">
             <div className="card-body">
               <div
@@ -268,7 +268,7 @@ export default function ImportEtudiants() {
               <div className="d-flex flex-wrap align-items-center gap-2 mt-3">
                 <button
                   type="button"
-                  className="btn btn-outline-primary btn-sm"
+                  className="btn btn-dark btn-sm gen-btn-lancer"
                   onClick={() => inputFichier.current?.click()}
                 >
                   <i className="bi bi-folder2-open me-1" aria-hidden="true"></i>
@@ -319,7 +319,7 @@ export default function ImportEtudiants() {
           </div>
         </div>
 
-        <div className="col-xl-5">
+        <div className="col-xl-4">
           <div className="card h-100">
             <div className="card-body">
               <label className="form-label gen-label" htmlFor="imp-annee">Année académique cible</label>
@@ -473,7 +473,7 @@ export default function ImportEtudiants() {
       )}
 
       <div className="row g-3 mb-3">
-        <div className="col-xl-7">
+        <div className="col-xl-8">
           <div className="card h-100">
             <div className="card-header">
               <strong>Colonnes acceptées</strong>
@@ -503,7 +503,7 @@ export default function ImportEtudiants() {
           </div>
         </div>
 
-        <div className="col-xl-5">
+        <div className="col-xl-4">
           <div className="card h-100">
             <div className="card-header">
               <strong>Situations couvertes</strong>
