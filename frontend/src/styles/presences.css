@@ -301,3 +301,33 @@
   .pqr-audit-resume .pqr-audit-motif,
   .pqr-audit-resume .pqr-audit-action-libelle { display: none; }
 }
+
+/* — Registre des séances : outils, groupes par date, pagination ————————— */
+.pqr-seances-outils {
+  display: flex; flex-wrap: wrap; gap: .6rem; align-items: center;
+  padding: .9rem 1.1rem .3rem;
+}
+.pqr-seances-outils .input { max-width: 380px; }
+.pqr-seances-compteur { margin-left: auto; font-size: .8rem; color: #5B7186; font-weight: 600; }
+.pqr-seances-scroll { max-height: 62vh; overflow: auto; }
+.pqr-table-seances thead th {
+  position: sticky; top: 0; z-index: 2; background: #0A2A5C; color: #EAF3FF;
+  font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
+}
+.pqr-table-seances td { padding: .42rem .6rem; vertical-align: middle; }
+.pqr-table-seances tbody tr:hover td { background: #F2F7FD; }
+.pqr-seances-groupe td {
+  background: linear-gradient(90deg, #EAF3FF, #F7FBFF);
+  color: #0A2A5C; font-weight: 800; font-size: .82rem; letter-spacing: .02em;
+  padding: .5rem .8rem; border-top: 2px solid #C3D2E4;
+}
+.pqr-seances-groupe:hover td { background: linear-gradient(90deg, #EAF3FF, #F7FBFF); }
+.pqr-seances-groupe-nb {
+  float: right; background: #0A2A5C; color: #fff; border-radius: 999px;
+  padding: .08rem .6rem; font-size: .7rem; font-weight: 700;
+}
+.pqr-pagination {
+  display: flex; align-items: center; justify-content: center; gap: 1rem;
+  padding: .9rem 1.1rem; border-top: 1px solid #E3EDF7;
+}
+.pqr-pagination-info { font-size: .85rem; font-weight: 700; color: #0A2A5C; }

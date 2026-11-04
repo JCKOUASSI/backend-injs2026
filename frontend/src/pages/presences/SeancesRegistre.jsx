@@ -33,6 +33,16 @@ const TON_STATUT = {
   PUBLIEE: 'text-bg-primary',
 }
 
+function libelleDateLongue(iso) {
+  if (!iso) return 'Date inconnue'
+  const d = new Date(`${iso}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return iso
+  const texte = d.toLocaleDateString('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  })
+  return texte.charAt(0).toUpperCase() + texte.slice(1)
+}
+
 function anomaliesSeance(s) {
   const horsPerimetre = s.presences?.presences_hors_perimetre || 0
   const sansGroupe = s.effectif_attendu === null || s.effectif_attendu === undefined ? 1 : 0
@@ -59,6 +69,7 @@ export default function SeancesRegistre() {
   const charger = useCallback(async () => {
     setCharge(true)
     setErreur('')
+    setPage(1)
     try {
       const params = new URLSearchParams({ date })
       if (mode === 'plage') {
@@ -93,8 +104,38 @@ export default function SeancesRegistre() {
     setSearchParams(sp, { replace: true })
   }, [date, statut, mode, setSearchParams])
 
+  const [recherche, setRecherche] = useState('')
+  const [page, setPage] = useState(1)
+
   const lignes = donnees?.seances || []
   const resume = donnees?.resume || {}
+
+  // Présentation : recherche instantanée sur la sélection chargée,
+  // regroupement par date et pagination par 15 (la sélection complète
+  // reste celle du serveur : aucun filtrage métier côté navigateur).
+  const PAR_PAGE = 15
+  const texte = recherche.trim().toLowerCase()
+  const lignesFiltrees = texte
+    ? lignes.filter((x) => [x.ecue_code, x.ecue_libelle, x.ue_code, x.intitule,
+        x.libelle, x.groupe_libelle, x.salle_libelle, x.formation_libelle]
+        .filter(Boolean).join(' ').toLowerCase().includes(texte))
+    : lignes
+  const totalParDate = lignesFiltrees.reduce((acc, x) => {
+    const d = x.date || date
+    acc[d] = (acc[d] || 0) + 1
+    return acc
+  }, {})
+  const pagesTotal = Math.max(1, Math.ceil(lignesFiltrees.length / PAR_PAGE))
+  const pageSure = Math.min(page, pagesTotal)
+  const debutPage = (pageSure - 1) * PAR_PAGE
+  const visibles = lignesFiltrees.slice(debutPage, debutPage + PAR_PAGE)
+  const groupesVisibles = []
+  for (const x of visibles) {
+    const d = x.date || date
+    const dernier = groupesVisibles[groupesVisibles.length - 1]
+    if (dernier && dernier.date === d) dernier.lignes.push(x)
+    else groupesVisibles.push({ date: d, lignes: [x] })
+  }
 
   return (
     <div>
@@ -175,8 +216,22 @@ export default function SeancesRegistre() {
             )}
           </>
         )}
-        <div className="table-container">
-          <table className="table edt-table mb-0">
+        <div className="pqr-seances-outils">
+          <input
+            type="search"
+            className="input"
+            aria-label="Rechercher dans les séances chargées"
+            placeholder="Rechercher (ECUE, UE, enseignant, groupe, salle…)"
+            value={recherche}
+            onChange={(e) => { setRecherche(e.target.value); setPage(1) }}
+          />
+          <span className="pqr-seances-compteur">
+            {lignesFiltrees.length} séance(s)
+            {pagesTotal > 1 ? ` · ${debutPage + 1} à ${debutPage + visibles.length} affichée(s)` : ''}
+          </span>
+        </div>
+        <div className="table-container pqr-seances-scroll">
+          <table className="table edt-table pqr-table-seances mb-0">
             <thead>
               <tr>
                 <th>Identifiant</th><th>Date</th><th>Horaire</th><th>ECUE → UE</th>
@@ -186,9 +241,17 @@ export default function SeancesRegistre() {
               </tr>
             </thead>
             <tbody>
-              {lignes.map((s) => {
-                const anom = anomaliesSeance(s)
-                return (
+              {groupesVisibles.map((g) => (
+                <React.Fragment key={g.date}>
+                  <tr className="pqr-seances-groupe">
+                    <td colSpan={13}>
+                      <i className="bi bi-calendar3 me-2"></i>{libelleDateLongue(g.date)}
+                      <span className="pqr-seances-groupe-nb">{totalParDate[g.date]} séance(s)</span>
+                    </td>
+                  </tr>
+                  {g.lignes.map((s) => {
+                    const anom = anomaliesSeance(s)
+                    return (
                   <tr key={s.id}>
                     <td><code>{identifiantPermanent(s.id)}</code></td>
                     <td><code>{s.date || date}</code></td>
@@ -242,11 +305,17 @@ export default function SeancesRegistre() {
                       )}
                     </td>
                   </tr>
-                )
-              })}
-              {!charge && lignes.length === 0 && (
+                    )
+                  })}
+                </React.Fragment>
+              ))}
+              {!charge && lignesFiltrees.length === 0 && (
                 <tr><td colSpan={13} className="text-center text-muted py-5">
-                  Aucune séance ne correspond à ces critères.
+                  {lignes.length === 0
+                    ? 'Aucune séance ne correspond à ces critères.'
+                    : <>Aucune séance ne correspond à la recherche « {recherche} ».
+                        <button type="button" className="btn btn-link btn-sm"
+                                onClick={() => setRecherche('')}>Effacer la recherche</button></>}
                 </td></tr>
               )}
               {charge && (
@@ -257,6 +326,19 @@ export default function SeancesRegistre() {
             </tbody>
           </table>
         </div>
+        {pagesTotal > 1 && (
+          <nav className="pqr-pagination" aria-label="Pagination des séances">
+            <button type="button" className="btn btn-outline-secondary btn-sm"
+                    disabled={pageSure <= 1} onClick={() => setPage(pageSure - 1)}>
+              <i className="bi bi-chevron-left me-1"></i>Précédent
+            </button>
+            <span className="pqr-pagination-info">Page {pageSure} sur {pagesTotal}</span>
+            <button type="button" className="btn btn-outline-secondary btn-sm"
+                    disabled={pageSure >= pagesTotal} onClick={() => setPage(pageSure + 1)}>
+              Suivant<i className="bi bi-chevron-right ms-1"></i>
+            </button>
+          </nav>
+        )}
         <div className="pqr-panel-corps pt-0">
           <p className="pqr-legende">
             L’identifiant permanent (<code>INJS-S-######</code>) est stable : une modification
