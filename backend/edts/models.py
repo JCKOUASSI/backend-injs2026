@@ -1051,3 +1051,17 @@ class PolitiqueContraintesSouples(models.Model):
     def charger(cls):
         """Politique enregistrée, ou ``None`` si personne n'a encore réglé."""
         return cls.objects.filter(pk=1).first()
+
+
+# ── Interopérabilité Présences (extension GET INJS APP) ─────────────────────
+# Modèles annexes tables ``gi_*`` : registre de séances à identité
+# permanente, historique, événements, géolocalisation des salles et
+# instantanés d'étudiants attendus. Importés ici pour l'enregistrement
+# Django ; aucune table existante n'est modifiée.
+from .models_interop import (  # noqa: E402,F401
+    SalleGeolocalisation,
+    SeanceEvenement,
+    SeanceHistorique,
+    SeanceInstantaneAttendus,
+    SeanceRegistre,
+)

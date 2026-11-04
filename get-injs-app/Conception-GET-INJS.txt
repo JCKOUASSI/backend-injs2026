@@ -1,0 +1,1347 @@
+================================================================================
+CONCEPTION-GET-INJS
+GET INJS APP — Générateur des emplois du temps de l'INJS d'Abidjan
+Dépôt : JCKOUASSI/backend-injs2026 — branche arena/d40e4a41-backend-injs2026
+Rédigé le 2026-10-30 — document de référence du code réellement livré
+================================================================================
+
+Ce document décrit ce qui EXISTE dans le code, ce qui a été ajouté pendant la
+mission, ce qui a été mesuré, et ce qui reste ouvert. Aucune commande n'y est
+présentée comme exécutée si elle ne l'a pas été ; aucune mesure n'y est
+présentée comme validée si elle n'a pas été relevée.
+
+--------------------------------------------------------------------------------
+PARTIE 1 — PRÉSENTATION
+--------------------------------------------------------------------------------
+
+1.1 Objectifs
+
+GET INJS APP prépare, simule, génère, contrôle, versionne, publie et consulte
+les emplois du temps de l'INJS d'Abidjan pour une année académique donnée, à
+partir de la chaîne LMD officielle (formation → parcours → niveau → semestre →
+groupe → maquette → UE → ECUE → affectation → séance → EDT publié) et, lorsque
+les étudiants n'ont pas de parcours dans l'application, à partir d'un fichier
+d'inscrits importé (CSV / XLSX).
+
+1.2 Périmètre retenu
+
+- Institution : INJS d'Abidjan uniquement. Aucune référence SYGEP / CPFAE.
+- 8 filières F01–F08 ; Licence S1–S6 et Master S7–S10 ; 30 ECTS/semestre,
+  60 ECTS/niveau.
+- Aucune table « Promotion » : le groupe (année + formation + parcours + niveau
+  + vague + nom) porte la promotion — arbitrage déjà consigné dans le dépôt.
+- L'import externe ne crée JAMAIS d'inscription administrative validée, de
+  décision de jury ni de parcours académique officiel : il crée des
+  `InscriptionImportee`, identifiables et supprimables.
+
+1.3 Architecture retenue
+
+  Backend  Django 5.1 + DRF, application `edts` (module GET-INJS)
+  Frontend React 18 + Vite + React Router + Bootstrap (stack existante)
+  Base     PostgreSQL en production, SQLite en développement/tests
+  Moteur   `edts/moteur` : besoins → génération (backtracking) → validation →
+           publication → orchestration annuelle → import des inscrits
+
+Le module a été intégré à l'application Django E X I S T A N T E (`edts`), pas
+dans un second backend. Aucune dépendance nouvelle n'a été introduite.
+
+1.4 État de départ (vérifié avant toute modification)
+
+  git rev-parse --abbrev-ref HEAD  → arena/d40e4a41-backend-injs2026
+  git status --porcelain           → vide (arbre propre)
+  Applications EDT existantes : edts (models 731 l., api 1039 l., api_lmd 1153 l.,
+  moteur 3 469 l., 14 fichiers de tests), soit 429 tests déjà en place.
+
+Autrement dit : une grande partie de GET-INJS existait déjà (import des
+inscrits, génération annuelle, validation, publication, versions, conflits,
+exports CSV, écrans). La mission a consisté à combler les manques réels, à
+mesurer, et à documenter — pas à réécrire ce qui fonctionnait.
+
+--------------------------------------------------------------------------------
+PARTIE 2 — ANALYSE DOCUMENTAIRE
+--------------------------------------------------------------------------------
+
+2.1 Les huit documents de référence
+
+  N°  Document                                                    Statut
+  --  ----------------------------------------------------------  ------------------
+  1   Mise en oeuvre GET-INJS 2026 - Proposition Arena.txt        LU (304 574 car.)
+  2   Mise en oeuvre de la GET-INJS 2026.txt                      LU (22 810 car.)
+  3   Formations et Modules INJS.txt                              LU (local)
+  4   Processus expert A → Z ... emplois du temps INJS-LMD.txt   LU (local)
+  5   Liste des Bâtiments, salles et espaces ... INJS.txt         LU (6 086 car.)
+  6   INJS D'ABIDJAN — RÉFÉRENTIEL EXHAUSTIF ... .xlsx            LU (19 feuilles)
+  7   RÉFÉRENTIEL EXHAUSTIF DE L'OFFRE DE FORMATION.docx         LU (local)
+  8   référentiel des infrastructures de l'INJS d'Abidjan.docx   LU (récupéré)
+
+Quatre documents (1, 2, 5, 8) étaient absents du dossier local ; ils ont été
+récupérés depuis le dépôt GitHub (API contents, encodage URL des accents) dans
+un répertoire temporaire, sans écraser les fichiers existants. Les documents 3,
+4, 7 étaient présents localement.
+
+Lecture de l'Excel : les 19 feuilles ont été listées ; les feuilles exploitées
+sont « 1. Filières & Concours », « 4. Semestres & Grades », « Maquette EM/MS/ES/
+APA », « 6. Groupes, Catég., Horaires » et « 13. Emploi du temps (modèle) ».
+
+2.2 Éléments métier extraits
+
+  (a) Chaîne canonique (doc 2 et 4) :
+      Formation → Parcours → Promotion → Groupe → Maquette → UE → ECUE →
+      Affectation pédagogique → Créneaux → Salles → Séances → EDT → Publication
+      → Présences.   → Implémenté tel quel (edts/models.py, moteur/besoins*.py).
+
+  (b) Contraintes absolues (doc 2, §10 "J") :
+      - un enseignant ne peut pas assurer deux séances simultanément (C1) ;
+      - un groupe ne peut pas suivre deux séances simultanément (C2) ;
+      - une salle ne peut pas accueillir deux séances simultanément (C3) ;
+      - effectif ≤ capacité de la salle (C4) ;
+      - un TP exige une salle spécialisée (compatibilité) (C7).
+      → Implémenté : contraintes.py (C1…C9), generation.py, validation.py.
+
+  (c) Contraintes souples avec pénalité (doc 2, §11 "K") :
+      éviter > 4 h consécutives, éviter les trous, éviter 8 h/jour, respecter
+      les préférences enseignants, équilibrer les matières, éviter les salles
+      surdimensionnées.
+      → Implémenté en deux registres :
+        (1) toujours actives : préférences enseignants (poids 2) et salle
+            surdimensionnée (poids 1) ;
+        (2) configurables et INACTIVES PAR DÉFAUT : trous, séries de plus de
+            N heures consécutives, journées de plus de N heures. Aucune
+            pondération officielle n'étant fournie par les documents, ces
+            règles ne s'appliquent que sur décision explicite de l'INJS
+            (réglage Django `EDTS_CONTRAINTES_SOUPLES` → voir §5.7 bis).
+            Voir `edts/moteur/contraintes.py` (bloc « Contraintes SOUPLES »).
+
+  (d) Canevas horaire officiel (Excel, feuille « 13. Emploi du temps (modèle) ») :
+      6 jours (lundi → samedi) × 4 plages : 07h30–09h30, 09h45–11h45,
+      13h30–15h30, 15h45–17h45 = 24 créneaux de 2 h.
+      → Vérifié en base : les 24 CreneauTemplate enregistrés correspondent
+        EXACTEMENT à cette grille (aucun créneau inventé).
+
+  (e) Volumes horaires (doc 2, §C/§D) : un ECUE porte CM + TD (ex. 20 h CM +
+      10 h TD) découpés en séances de 2 h → 10 séances CM + 5 séances TD.
+      → Implémenté : besoins.py / besoins_maquette.py calculent le nombre de
+        séances à partir des volumes réels ; aucune séance n'est inventée.
+
+  (f) Infrastructures (docs 5 et 8) : 43 salles de cours, 2 blocs pédagogiques,
+      amphithéâtres ENSEPS/ENSEP, gymnases, terrains ; l'ambition est de gérer
+      plus de 250 espaces.
+      → Modèle prêt (RefSite, RefBatiment, RefSalle avec type_lieu et capacité).
+        IMPORTANT : les salles réelles ne sont PAS saisies (décision métier :
+        ne pas inventer un patrimoine officiel).
+
+2.3 Matrice de traçabilité
+
+  Règle métier                          Source          Composant                 Test
+  ------------------------------------  --------------  ------------------------  -------------------------------
+  Chaîne LMD canonique                  doc 2, 4        edts/models.py            test_raccordement_pedagogique
+  Besoins = volumes de la maquette      doc 2 §C        moteur/besoins_maquette   test_generation_annee (3 besoins)
+  C1 conflit enseignant                 doc 2 §10       contraintes.conflit_*     test_lot1_moteur, test_lot2_moteur
+  C2 conflit groupe                     doc 2 §10       contraintes.conflit_*     idem
+  C3 conflit salle                      doc 2 §10       contraintes.conflit_*     idem
+  C4 effectif ≤ capacité                doc 2 §10       contraintes.capacite      test_lot1_moteur
+  C5 indisponibilité enseignant         doc 2 §10/K     contraintes/index         test_lot1_moteur
+  C6 indisponibilité salle              doc 2 §10       contraintes/index         test_lot1_moteur
+  C7 compatibilité salle                doc 2 §10       contraintes.compatible    test_lot1_moteur
+  Canevas 6 j × 4 plages                Excel feuille13 CreneauTemplate           vérifié en base (24/24)
+  Import externe d'inscrits             doc 1, 2        moteur/import_inscrits    test_import_inscrits (17)
+  Provenance des données importées      mission §5.D    InscriptionImportee       test_import_inscrits
+  Génération annuelle coordonnée        doc 4           moteur/annee, orchestration test_generation_annee
+  Diagnostic d'impossibilité            doc 2 §6        validation + bilan        test_api_getinjs
+  Versionnage / publication             doc 2 §11       moteur/publication        test_lot2_publication_api
+  Campagne persistante + historique     mission §5.LOT2 CampagneGeneration        test_campagnes (16)
+  Publication atomique du périmètre     mission §5.LOT8 campagne.publier         test_campagnes
+  Mesure de charge 100 → 14 000         mission §6      benchmark_getinjs         voir Partie 6
+
+2.4 Divergences constatées entre documents
+
+  - Doc 2 décrit un cycle « Formation → Parcours → Promotion… » ; le dépôt ne
+    possède pas de table Promotion (arbitrage 2026-09-28). Le groupe porte la
+    promotion : aucune divergence fonctionnelle, mais la terminologie diffère.
+  - Doc 1 (Proposition Arena) est une analyse générale qui recommande parfois
+    des modèles absents du référentiel INJS (ex. « Promotion » explicite,
+    créneaux de 1 h). Les documents 2 et 4, plus précis, ont été retenus comme
+    source d'exécution.
+  - Les plages horaires officielles (2 h, 6 jours) ne sont documentées que
+    dans l'Excel ; aucun texte ne les contredit.
+
+2.5 Éléments restant à confirmer (décision métier, non décidables par le code)
+
+  - Pondération des contraintes souples (pénalités) : aucune valeur officielle.
+  - Salles et capacités réelles de l'INJS (patrimoine physique).
+  - Durée officielle d'une séance selon la nature (CM/TD/TP/sport) : 2 h est la
+    seule valeur documentée.
+  - Calendrier académique (semaines de cours, examens, vacances) de 2026-2027.
+
+--------------------------------------------------------------------------------
+PARTIE 3 — ARCHITECTURE TECHNIQUE
+--------------------------------------------------------------------------------
+
+3.1 Fichiers créés pendant la mission
+
+  backend/edts/moteur/campagnes.py                      (nouveau, ~500 l.)
+  backend/edts/management/commands/benchmark_getinjs.py (nouveau, ~190 l.)
+  backend/edts/management/__init__.py                   (nouveau)
+  backend/edts/management/commands/__init__.py          (nouveau)
+  backend/edts/migrations/0008_campagnegeneration_executioncampagne_and_more.py
+  backend/edts/tests/test_campagnes.py                  (nouveau, 16 tests)
+  frontend/src/pages/getinjs/CampagnesGeneration.jsx    (nouveau, ~430 l.)
+  frontend/src/pages/getinjs/CampagnesGeneration.test.jsx (nouveau, 6 tests)
+  frontend/src/pages/getinjs/VersionsPublication.jsx    (nouveau, ~230 l.)
+  frontend/src/pages/getinjs/VersionsPublication.test.jsx (nouveau, 5 tests)
+  frontend/src/pages/getinjs/AuditDonnees.jsx           (nouveau, ~170 l.)
+  frontend/src/pages/getinjs/AuditDonnees.test.jsx      (nouveau, 4 tests)
+  Conception-GET-INJS.txt                               (ce document)
+
+3.2 Fichiers modifiés (tous additifs)
+
+  backend/edts/models.py            + CampagneGeneration, + ExecutionCampagne
+  backend/edts/moteur/contraintes.py + indexer_disponibilites, + indexer_occupations,
+                                     + ajouter/retirer_occupation ; paramètre
+                                     `index` optionnel sur conflit_ressource,
+                                     indisponible_enseignant/salle, preference
+  backend/edts/moteur/generation.py  contexte enrichi (index disponibilités,
+                                     index occupations) ; aucune signature cassée
+  backend/edts/api_getinjs.py       + 8 routes campagnes ; conception servie
+                                     depuis la racine avec repli docs/getinjs
+  backend/edts/urls.py              + 8 routes `campagnes/...`
+  frontend/src/App.jsx              + routes /edt/campagnes, /edt/versions, /edt/audit
+  frontend/src/menu/arborescence.js + 3 entrées : « Campagnes de génération »,
+                                    « Audit des données », « Versions & publication »
+
+3.3 Modèles ajoutés
+
+  CampagneGeneration
+    annee_academique (PROTECT), libelle, semaines (JSON), perimetre (JSON),
+    parametres (JSON), statut (9 états), cree_par, demarree_le, terminee_le,
+    bilan (JSON), anomalies (JSON), statistiques (JSON)
+    Contraintes : unique (annee_academique, libelle) ; index (annee, statut).
+
+  ExecutionCampagne
+    campagne (CASCADE), numero, statut (4 états), lancee_par, demarree_le,
+    terminee_le, duree_ms, bilan, anomalies, statistiques, erreur
+    Contrainte : unique (campagne, numero) → historique ordonné, jamais écrasé.
+
+3.4 Cycle de vie d'une campagne
+
+  BROUILLON → VALIDATION_DONNEES → PRET → EN_COURS
+            → TERMINE | TERMINE_AVEC_ANOMALIES | ECHEC
+            → VALIDE → PUBLIE
+
+  Transitions autorisées uniquement (table TRANSITIONS). Une campagne PUBLIEE
+  est figée : on crée une nouvelle campagne pour un nouveau cycle.
+  Relance possible depuis TERMINE / TERMINE_AVEC_ANOMALIES / ECHEC.
+
+3.5 Concurrence et reprise
+
+  - `demarrer_campagne` ouvre une transaction, prend un verrou pessimiste
+    (select_for_update) sur la campagne, refuse si statut == EN_COURS
+    (`CAMPAGNE_DEJA_EN_COURS`, HTTP 409) puis crée l'exécution.
+  - L'exécution tourne dans un fil d'arrière-plan (`threading.Thread`,
+    daemon) quand `asynchrone=true` ; `asynchrone=false` exécute dans la
+    requête (tests, petits périmètres). Aucun service externe requis (pas de
+    Celery dans le dépôt) : l'absence de broker n'empêche pas le fonctionnement.
+  - Chaque exécution est journalisée, y compris les échecs (`ExecutionCampagne.
+    erreur`), ce qui permet de reprendre en connaissant la cause.
+
+3.6 API (routes ajoutées, toutes sous /api/edts/campagnes/)
+
+  GET    /campagnes/                    lecture (tout authentifié)
+  POST   /campagnes/                    création (planification)
+  GET    /campagnes/<pk>/               lecture
+  POST   /campagnes/<pk>/demarrer/      lancement (planification), 202 si async
+  GET    /campagnes/<pk>/statut/        interrogation périodique
+  GET    /campagnes/<pk>/resultat/      bilan par groupe + anomalies + historique
+  POST   /campagnes/<pk>/donnees-pretes/ BROUILLON → PRET (planification)
+  POST   /campagnes/<pk>/valider/       contrôle + validation (DIRECTION/ADMIN)
+  POST   /campagnes/<pk>/publier/       publication atomique (DIRECTION/ADMIN)
+
+  Refus métier structurés (jamais de 500) : ANNEE_ACADEMIQUE_INTROUVABLE (404),
+  CAMPAGNE_INTROUVABLE (404), CAMPAGNE_DEJA_EXISTANTE (409), CAMPAGNE_DEJA_EN_COURS
+  (409), TRANSITION_REFUSEE (409), VALIDATION_BLOQUANTE (409),
+  PUBLICATION_INCOMPLETE (409), AUCUN_EDT_A_VALIDER/A_PUBLIER (409).
+
+3.7 Algorithme de génération
+
+  1. Besoins : AffectationPedagogique quand elle existe ; sinon maquette active
+     (CM/TD/TP → nombre de séances de 2 h).
+  2. Contexte : créneaux officiels, salles actives, semaines, index de
+     disponibilités, index d'occupations.
+  3. Backtracking chronologique borné par un budget de placements : à chaque
+     étape, le besoin le plus contraint, candidats triés par (score de
+     pénalités, jour, heure, salle).
+  4. Validation : C1…C9 + couverture des besoins ; toute violation est listée.
+  5. Persistance : un EDT BROUILLON par groupe (transaction par EDT).
+  6. Publication : geste humain, après validation, atomique pour un périmètre de
+     campagne.
+
+  Garanties : déterministe à paramètres égaux (tri stable), aucune séance
+  inventée, aucun placement en conflit, échec explicite plutôt que plan faux.
+
+3.8 Gestion des étudiants importés
+
+  Fichier CSV (séparateur « ; » ou « , ») ou XLSX, taille maximale 20 Mo,
+  colonnes reconnues par synonymes (matricule, nom, prénoms, sexe, formation,
+  filière, parcours, niveau, semestre, groupe, vague). Clé d'idempotence :
+  (année académique, matricule). Analyse SANS écriture puis import réel.
+  Stockage : `InscriptionImportee` (fichier, empreinte SHA-256, ligne source).
+  Aucun étudiant, aucune inscription administrative, aucun parcours créé.
+
+3.9 Optimisations apportées (mesurées, Partie 6)
+
+  - Disponibilités (C5/C6/préférences) : une requête par année au lieu d'une
+    requête par candidat → `contraintes.indexer_disponibilites`.
+  - Occupations (C1/C2/C3) : index (ressource, jour) maintenu par le solveur au
+    lieu d'un parcours complet de la liste à chaque candidat →
+    `contraintes.indexer_occupations` + ajouter/retirer.
+  Résultat mesuré : 3 500 étudiants, 961 s → 8,8 s ; 7 000 étudiants, 350 s → 36,3 s.
+
+3.10 Sécurité et habilitations
+
+  - Réutilisation stricte de `edts.permissions` (aucun second RBAC) :
+    planification pour créer/lancer, DIRECTION/ADMIN pour valider/publier,
+    lecture pour tout compte authentifié.
+  - Contrôle serveur sur chaque route (un bouton masqué n'est pas une
+    protection) ; l'interface ne fait que refléter le droit.
+  - Taille de fichier bornée, contenu validé, erreurs explicites.
+  - Aucun secret dans ce document.
+
+--------------------------------------------------------------------------------
+PARTIE 4 — PROCÉDURE D'INSTALLATION
+--------------------------------------------------------------------------------
+
+Commandes réellement utilisées dans cet environnement (SQLite, sandbox) :
+
+  cd /home/user/backend-injs2026
+  python3 -m venv backend/.venv                 # si absent
+  backend/.venv/bin/pip install -r backend/requirements.txt
+  npm install                                   # (frontend/) si absent
+
+  # Environnement Django
+  export DJANGO_SETTINGS_MODULE=arena.settings_sandbox
+  export PYTHONPATH=/home/user/backend-injs2026:/home/user/backend-injs2026/backend
+  set -a; . backend/.env; set +a
+
+  # Schéma
+  backend/.venv/bin/python backend/manage.py makemigrations --check --dry-run
+  backend/.venv/bin/python backend/manage.py migrate edts      # applique 0008
+  backend/.venv/bin/python backend/manage.py check
+
+  # Serveurs
+  ./arena/lancer-api.sh                         # API sur 0.0.0.0:8000
+  (cd frontend && npm run dev)                  # site sur 0.0.0.0:3000
+
+  # Tests
+  ./arena/tests_par_groupe.sh edt               # groupe EDT (edts + presences)
+  (cd frontend && npx vitest run && npm run lint && npm run build)
+
+  # Aperçu MOBILE (Flutter web), port 3001 — nécessite un SDK déposé
+  #   <dépôt>/.sdk/flutter_linux_<version>-stable.tar.xz   (archive officielle)
+  #   ou <dépôt>/.sdk/flutter/bin/flutter                  (SDK extrait)
+  #   ou <dépôt>/.sdk/pub-cache/                            (cache pub hors ligne)
+  ./arena/lancer-mobile.sh              # pub get + build web + serveur 3001
+  ./arena/lancer-mobile.sh --sans-build # réutilise build/web
+
+  # Mesures de charge (aucune donnée conservée par défaut)
+  backend/.venv/bin/python backend/manage.py benchmark_getinjs --etudiants 100
+  backend/.venv/bin/python backend/manage.py benchmark_getinjs --tous --json /tmp/bench.json
+  #   --garder conserve les données synthétiques (BENCH-…) — à réserver au test
+
+  Aucune dépendance nouvelle n'a été nécessaire : openpyxl (XLSX) et le reste
+  étaient déjà présents.
+
+--------------------------------------------------------------------------------
+PARTIE 5 — GUIDE UTILISATEUR
+--------------------------------------------------------------------------------
+
+5.1 Créer une campagne
+  Menu GET-INJS → « Campagnes de génération » (/edt/campagnes). Choisir l'année
+  académique, saisir un libellé unique, indiquer les semaines, cocher
+  « Enregistrer les EDT ». La création n'écrit aucun emploi du temps.
+
+5.1 bis Vérifier les données avant de générer
+  Menu GET-INJS → « Audit des données » (/edt/audit). L'écran interroge
+  `/api/edts/lmd/audit/` et affiche chaque contrôle avec son niveau réel
+  (OK / Avertissement / Bloquant), son code, son explication et l'action
+  recommandée. Exemple observé en base de démonstration : BLOCKING
+  `HORS_PERIMETRE_INJS` tant qu'aucune affectation pédagogique ne porte une
+  formation INJS ; CANEVAS_HORAIRE_OK (14 créneaux types) ; RESSOURCES (7 salles).
+  Le tableau des contraintes C1→C10, séparé des préférences, est rappelé dessous.
+
+5.1 ter Versions & publication
+  Menu GET-INJS → « Versions & publication » (/edt/versions). Liste réelle des
+  EDT versionnés (`/api/edts/lmd/versions/`) avec statut, auteur de création,
+  dates de validation et de publication, motif de modification. Pour la version
+  sélectionnée, l'audit (`/api/edts/lmd/<id>/audit/`) affiche violations,
+  avertissements et couverture ; « Valider » appelle
+  `/api/edts/lmd/<id>/validate/`, « Publier » n'est actif qu'après validation.
+  Un refus de validation est affiché comme un refus, avec le code de la
+  contrainte violée.
+
+5.2 Importer les inscrits
+  Menu GET-INJS → « Génération annuelle & import » : sélectionner le fichier
+  (CSV/XLSX), lancer « Analyser » (aucune écriture), lire le rapport (lignes
+  rejetées avec motif, cohortes, effectifs), puis « Importer ».
+
+5.3 Vérifier les données
+  La synthèse affiche l'effectif réel importé par cohorte. Un groupe sans
+  maquette ni affectation est signalé « non planifiable » — jamais complété
+  par des données inventées.
+
+5.4 Corriger les anomalies
+  Deux causes dominantes : aucune maquette active pour la formation/niveau, ou
+  emploi du temps déjà validé/publié. Corriger en Scolarité (maquette,
+  affectations, groupes) puis relancer la campagne.
+
+5.5 Générer
+  Bouton « Générer › de la campagne. La génération tourne en arrière-plan ;
+  l'écran interroge l'état réel toutes les 3 s (aucun pourcentage inventé).
+  Le bilan par groupe indique séances attendues / placées / non placées et le
+  motif d'échec éventuel.
+
+5.6 Consulter les conflits
+  Menu GET-INJS → « Conflits & contraintes » (source : /api/edts/conflits/),
+  ou colonne « Motif » du bilan de campagne.
+
+5.7 Modifier une séance
+  Tableau des emplois du temps → grille : chaque séance porte deux actions.
+
+  « Déplacer » (`/api/edts/lmd/items/<id>/move/`) : le serveur liste les
+  positions qu'il a lui-même validées (créneau + salle), l'utilisateur en
+  choisit une, puis le serveur revalide C1→C10 sur le plan complet et refuse
+  en 409 avec le code de la contrainte violée. Si le plan existant est déjà en
+  violation, l'écran affiche cette cause AVANT « aucune position » — un plan
+  invalide bloque tout déplacement, et le dire évite un diagnostic faux.
+
+  « Annuler » (`/api/edts/lmd/items/<id>/cancel/`) : motif obligatoire,
+  désactivation logique (aucune suppression), journalisée et réversible via
+  « Réactiver ». Sans motif : 400 MOTIF_ANNULATION_REQUIS. Sur un EDT publié
+  ou archivé : 409 STATUT_EDT_INVALIDE.
+
+5.7 bis Contraintes souples (activables, jamais bloquantes)
+  Politique par défaut (`contraintes.SOUPLES_DEFAUT`), identique à un solveur
+  sans règles souples tant qu'elle n'est pas activée :
+
+    actives=False            aucune règle souple n'est évaluée
+    max_heures_consecutives=4.0
+    max_heures_par_jour=8.0
+    tolerance_minutes=15     une interruption ≤ 15 min n'est pas un trou
+    penaliser_trous=True     poids_trou=1
+    poids_consecutif=2       poids_surcharge=3
+    pause_dejeuner=None      aucune pause institutionnelle supposée
+
+  Priorité de configuration : défauts < réglage Django
+  `EDTS_CONTRAINTES_SOUPLES` < **ligne enregistrée dans l'admin** (voir
+  §5.7 ter) < paramètre explicite de `generate_schedule()`
+  (`contraintes_souples=`). Un réglage mal orthographié ou mal typé lève une
+  erreur explicite : un `ValueError` plutôt qu'une règle silencieusement
+  ignorée.
+
+  Codes produits (pénalités, jamais des refus) :
+    TROU_HORAIRE                     temps d'attente entre deux séances du
+                                     groupe, hors tolérance et hors pause ;
+    PLUS_DE_X_HEURES_CONSECUTIVES    série continue > max_heures_consecutives.
+                                     La charge retenue est la SOMME des durées
+                                     de cours de la série : une série
+                                     09:00–11:00 + 11:15–13:00 vaut 4 h de
+                                     cours et non 4 h 15 de présence ;
+    SURCHARGE_JOURNALIERE            total du jour > max_heures_par_jour.
+
+  Trois précisions de conception, assumées et testées :
+    - les bornes sont jugées par JOURNÉE DE GROUPE (une journée peut être
+      longue pour un enseignant sans l'être pour l'étudiant) ;
+    - les seuils sont des DÉPASSEMENTS STRICTS : 4 h = pas de pénalité ;
+    - `pause_dejeuner` vaut `None` par défaut. L'INJS n'ayant publié aucune
+      pause officielle, le moteur n'en invente pas : sans pause déclarée
+      (ex. `('12:15', '13:30')`), une coupure méridienne de 1 h 15 est
+      signalée comme trou. C'est explicite, réglable et vérifié par un test
+      dédié (avec et sans pause déclarée).
+
+  Visibilité : `GET /api/edts/lmd/constraints/` renvoie
+  `souples.politique`, `souples.origine`, `souples.reglage`,
+  `actives_par_defaut: false`, l'explication, le moyen d'activation et les
+  trois codes. Aucune règle ne s'applique sans être affichée. Le bilan de
+  génération expose `metrics.contraintes_souples` (`active`, `trous`,
+  `series_trop_longues`, `journees_surchargees`, `detail`).
+  Les pauses sont stockées en minutes (unité interne du moteur) et rendues en
+  « 12:15 – 13:30 » partout où un humain les lit (API, écrans).
+
+5.7 ter Régler les contraintes souples depuis l'administration
+  Admin Django › « GET-INJS – Politique des contraintes souples ».
+
+  Pourquoi une table et pas seulement un réglage : `EDTS_CONTRAINTES_SOUPLES`
+  ne s'applique qu'au déploiement. L'INJS ne peut donc pas décider seule qu'une
+  journée de 9 h devient problématique — il faudrait modifier un fichier et
+  redémarrer le service. La ligne unique `edts.PolitiqueContraintesSouples`
+  (migration 0009) donne cette main au secrétariat / à la direction.
+
+  Garanties :
+    - **ligne unique** — `save()` force la clé primaire à 1 ; la seconde ligne
+      est impossible, donc aucune ambiguïté sur les règles appliquées ;
+    - **désactivée par défaut** — créer la ligne ne change rien tant que
+      « actives » n'est pas coché ; le comportement historique est préservé ;
+    - **non supprimable** — supprimer effacerait la trace de la décision ;
+      l'admin refuse l'ajout d'une seconde ligne (403) et la suppression ;
+    - **traçable** — auteur (`modifie_par`, renseigné par l'admin elle-même),
+      date (`modifie_le`) et motif libre ; l'API expose ces trois champs ;
+    - **validée** — pause incomplète ou inversée, borne nulle, poids nul sont
+      refusés avec un message qui dit quoi corriger (un poids nul rendrait la
+      pénalité invisible : pour ne pas appliquer une règle, on la désactive).
+
+  Décision transportable : `manage.py regler_contraintes_souples`. L'écran
+  d'administration règle l'environnement où il est ouvert ; il ne transporte
+  pas la décision vers la préproduction ou la production. Cette commande rejoue
+  la même politique avec son motif sur n'importe quelle base :
+
+      manage.py regler_contraintes_souples --verifier
+      manage.py regler_contraintes_souples --activer --max-consecutives 4 \
+          --max-jour 8 --sans-pause --auteur admin --motif "…"
+
+  Elle refuse d'écrire sans `--motif`, valide les bornes par le même
+  `full_clean()` que l'admin, est idempotente (rejouer la même politique ne
+  réécrit ni la date ni l'auteur) et sait effacer une pause (`--sans-pause`).
+
+  Effet visible : l'écran « Audit des données » affiche la politique effective,
+  son **origine** (« valeurs par défaut du code », « réglage de déploiement »,
+  « réglage enregistré dans l'administration »), les bornes, la pause déclarée
+  ou son absence, les poids, le motif et le dernier auteur. Un utilisateur peut
+  donc toujours savoir qui a décidé quoi, et si la règle qu'il subit vient du
+  code ou de son établissement.
+
+  DÉCISION APPLIQUÉE (2026-10-30, validée par le commanditaire)
+  -----------------------------------------------------------
+  Règles ACTIVES, bornes **celles du référentiel** — aucune valeur inventée :
+
+    actives = true
+    max_heures_consecutives = 4 h   (doc 2, §11 K)
+    max_heures_par_jour = 8 h       (doc 2, §11 K)
+    tolerance_minutes = 15
+    pause_dejeuner = 11:45 – 13:30  (déduite du canevas officiel : c'est le
+                                     SEUL long intervalle entre deux plages,
+                                     1 h 45, les autres valant 15 min ; cf.
+                                     `canevas_officiel.pause_deduite()`)
+    poids = 1 / 2 / 3               (valeurs déjà retenues par le chantier 2)
+
+  Mesure du même jour : sur les plans réellement produits (3 500 et 14 000
+  étudiants), ces bornes ne produisent AUCUNE pénalité — l'activation est donc
+  neutre sur les emplois du temps existants, et protectrice pour les suivants.
+  Coût mesuré : +5,4 % à 3 500, +6,9 % à 14 000 (6.2 bis).
+
+  La décision est tracée en base : auteur `admin`, date, et motif complet
+  (bornes, mesure, origine de la pause). Elle se révoque d'une commande
+  (`--desactiver`) sans rien perdre ni redéployer.
+
+  Le canevas officiel a été saisi dans la base de démonstration (24 créneaux)
+  par `manage.py verifier_canevas --creer-manquants`, puis vérifié conforme.
+
+5.7 quater Vérifier le canevas horaire
+  `manage.py verifier_canevas` compare les créneaux types réellement en base au
+  canevas officiel (6 jours × 4 plages de 2 h = 24 créneaux, source :
+  `edts/moteur/canevas_officiel.py`, feuille « 13. Emploi du temps (modèle) »).
+
+  Trois écarts sont distingués, parce qu'ils appellent des corrections
+  différentes :
+    - **manquants** — plages officielles absentes : capacité sous-utilisée ;
+    - **non prévus** — créneaux hors référentiel : ils seraient réellement
+      utilisés par le moteur, donc un horaire non validé entrerait dans les
+      plannings ;
+    - **chevauchements** — deux créneaux du même jour se recouvrent : C1/C2/C3
+      ne peuvent plus être garantis sur l'intervalle commun, le moteur pouvant
+      placer deux séances « compatibles » qui ont lieu en même temps.
+
+  `--creer-manquants` crée les créneaux officiels absents ; **rien n'est jamais
+  supprimé** (un créneau en base peut déjà porter des séances réelles) et rien
+  n'est modifié sans cette option. `--json` écrit le rapport.
+
+  Le même contrôle est rendu dans « Audit des données »
+  (`GET /api/edts/lmd/audit/`), là où l'utilisateur pose la question
+  « puis-je générer ? » : `CANEVAS_HORS_REFERENTIEL` (avertissement, avec la
+  liste des manquants et des non prévus) et `CANEVAS_CHEVAUCHEMENT`
+  (avertissement, avec les paires fautives). Ce sont des AVERTISSEMENTS et non
+  des blocages : un canevas différent du référentiel reste utilisable, il n'est
+  simplement pas celui que l'INJS a validé.
+
+  La pause institutionnelle se déduit du même référentiel : `pause_deduite()`
+  renvoie le plus long intervalle entre deux plages (11:45–13:30, 1 h 45) et
+  ignore les coupures de 15 min. Sans cette déduction, une journée normale
+  07:30–11:45 + 13:30–17:45 serait signalée comme trouée — c'est-à-dire que la
+  règle souple punirait le fonctionnement normal de l'établissement. Un test
+  dédié vérifie les deux comportements.
+
+5.8 Simuler une variante
+  Générer avec « Enregistrer les EDT › décoché : le plan est produit et
+  contrôlé sans être persisté ; les EDT officiels ne sont pas modifiés.
+
+5.9 Valider une version
+  Bouton « Valider » (DIRECTION/ADMIN). Le serveur revérifie chaque EDT ;
+  si une contrainte obligatoire est violée, la validation est refusée avec la
+  liste des violations.
+
+5.10 Publier
+  Bouton « Publier » après validation. Publication atomique : si un EDT du
+  périmètre échoue, aucun n'est publié. L'historique de la campagne conserve
+  date, auteur et motif.
+
+5.11 Exporter
+  Menu GET-INJS → « Export / Impression » (CSV : groupes, enseignements,
+  étudiants, créneaux, affectations, indisponibilités) et export CSV / PDF
+  depuis l'écran de l'emploi du temps (trois boutons : CSV, Excel, PDF).
+  Le classeur Excel contient une feuille « Séances » (jour, horaires, semaines,
+  nature, intitulé, UE, ECUE, enseignant, groupe, parcours, niveau, semestre,
+  salle, capacité, formation, statut) avec en-têtes figés et filtre
+  automatique, et une feuille « Synthèse » (métadonnées + décompte réel des
+  lignes + filtres appliqués). Les filtres de l'URL (`groupe_id`, `salle_id`,
+  `formation_id`, `enseignant_id`, `semaine`, `jour`) s'appliquent à l'export
+  comme à l'écran, via la même fonction `_seances_filtrees`.
+  Le PDF est une grille A4 paysage
+  (colonnes = jours réellement occupés, lignes = plages réellement utilisées,
+  cellules = intitulé, salle, enseignant, groupe), produite par le serveur à
+  partir de la même grille que l'écran. Le paramètre `?semaine=N` filtre la
+  semaine ; sans séance, le document l'indique.
+
+--------------------------------------------------------------------------------
+PARTIE 6 — TESTS ET PERFORMANCES
+--------------------------------------------------------------------------------
+
+6.1 Vérifications exécutées
+
+  Contrôle                              Résultat      Preuve
+  ------------------------------------  ------------  ------------------------------------------
+  Configuration Django                  PASS          manage.py check → 0 issue
+  Migrations cohérentes                 PASS          makemigrations --check → « No changes »
+  Migration 0008 appliquée              PASS          migrate edts → OK
+  Tests backend groupe EDT              PASS          570 tests, code 0 (./arena/tests_par_groupe.sh edt)
+  dont identifiants de groupe           PASS          15 tests (edts.tests.test_identifiants_groupes)
+  dont canevas officiel                 PASS          19 tests (edts.tests.test_canevas_officiel)
+  dont audit du canevas                PASS          3 tests (CANEVAS_HORS_REFERENTIEL/CHEVAUCHEMENT)
+  dont jeu de démonstration (nouveau)   PASS          10 tests (edts.tests.test_donnees_demonstration)
+  dont cohérence documentaire (nouveau) PASS          4 tests (core.tests.test_docs_coherence)
+  dont outil de mesure                  PASS          4 tests (edts.tests.test_benchmark)
+  dont réglage reproductible (nouveau)  PASS          16 tests (edts.tests.test_regler_contraintes)
+  dont bilan annuel souple              PASS          3 tests (BilanContraintesSouplesTests)
+  dont contraintes souples              PASS          20 tests (edts.tests.test_contraintes_souples)
+  dont politique réglable (nouveau)     PASS          24 tests (edts.tests.test_politique_admin)
+  Tests backend groupe socle            PASS          188 tests, code 0
+                                                     (./arena/tests_par_groupe.sh socle)
+  dont ressources locales de l'admin    PASS          5 tests (core.tests.test_admin_ressources_locales)
+  Tests frontend                        PASS          113 fichiers / 2 027 tests, code 0
+  Capture navigateur réelle (nouveau)   PASS          Chromium 153 sans root, 11 captures
+                                                     (docs/getinjs/preuves/)
+  Admin sans ressource externe          PASS          0 requête hors origine mesurée
+  dont campagnes (nouveaux)             PASS          16 tests (edts.tests.test_campagnes)
+  dont export PDF (nouveau)             PASS          4 tests (TestExportPdfEmploiDuTemps)
+  dont export XLSX (nouveau)            PASS          4 tests (TestExportXlsxEmploiDuTemps)
+  Export XLSX d'un EDT                  PASS          classeur 2 feuilles, 9 séances + en-têtes,
+                                                     17 colonnes, filtres serveur appliqués
+  Export PDF d'un EDT                   PASS          application/pdf, 3 066 octets, grille réelle
+                                                     (texte extrait et image de contrôle produite)
+  Tests frontend                        PASS          112 fichiers / 2 025 tests, code 0
+  dont campagnes / versions / audit     PASS          6 + 5 + 4 tests
+  dont déplacement / annulation         PASS          6 + 4 tests (components/edt)
+  Déplacement d'une séance (live)       PASS          GET 26 candidats (plan valide), POST 200 accepté,
+                                                     annulation motivée 200 réversible, sans motif 400
+  Contraintes souples (live)            PASS          GET /api/edts/lmd/constraints/ → souples.politique,
+                                                     actives_par_defaut=false, 3 codes
+  Contraintes souples (solveur)         PASS          activation = mêmes séances placées + pénalités
+                                                     signalées ; aucun besoin écarté
+  Politique réglée par l'admin (live)   PASS          admin HTTP : liste 200, ajout 302, seconde
+                                                     ligne 403 ; API origine=base, politique et
+                                                     trace (motif, auteur, date) exposées
+  Décision appliquée (live)             PASS          actives=true, 4 h / 8 h, pause aucune,
+                                                     auteur admin, motif daté ; mesure 3 500 :
+                                                     0 pénalité, 2 065 séances placées
+  Lint frontend                         PASS          npm run lint → code 0
+  Build frontend                        PASS          npm run build → code 0
+  Import externe (CSV)                  PASS          test_import_inscrits + benchmark (100 → 14 000)
+  Génération complète                   PASS          status_global COMPLETE (100 → 14 000)
+  Publication atomique                  PASS          test_campagnes.test_validation_et_publication_atomiques
+  Non-régression (445 tests EDT)        PASS          aucune régression après optimisation
+  Charge 100 → 14 000 étudiants          PASS          voir 6.2 (exécutions réelles)
+  Charge avec règles souples actives     PASS          voir 6.2 bis : +5,4 % (3 500), +6,9 % (14 000),
+                                                     plan identique, zéro séance perdue
+  Parcours complet sur la démo (live)   PASS          audit OK → 4 EDT générés et persistés →
+                                                     24 séances placées / 0 non placée →
+                                                     exports PDF 2 263 o, XLSX 6 525 o, CSV 476 o
+  git diff --check                      PASS          aucune erreur d'espace
+  Suite backend sur PostgreSQL 16.2     PASS          les neuf groupes, 2 733 tests, code 0
+                                                     (serveur réel via pgserver, base injs_pg)
+  Charge sur PostgreSQL                 PASS          voir 6.2 ter : 2,7× plus rapide que SQLite
+  Navigateur réel (E2E écran)           NOT RUN       pas de navigateur headless (libnss3 absent)
+  Aperçu mobile (Flutter web)           BLOCKED       SDK Flutter absent et non téléchargeable
+                                                     (storage.googleapis.com et pub.dev : TLS refusé).
+                                                     Scripts prêts : arena/lancer-mobile.sh + serveur_mobile.py
+  CI distante                           NOT RUN       aucun workflow exécuté
+  PostgreSQL                            NOT RUN       environnement sandbox = SQLite
+
+6.2 Mesures de charge réellement relevées
+
+  Jeu synthétique : BENCH-000001…, « FORMATION BENCHMARK », groupes de 60,
+  1 maquette active (5 UE / 5 ECUE, CM 10 h + TD 6 h), 20 créneaux, 1 salle par
+  groupe. Tout est annulé en fin de scénario (aucune donnée conservée).
+
+  Étudiants  Groupes  Import      Génération AVANT   Génération APRÈS   Séances
+  ---------  -------  ----------  -----------------  -----------------  --------
+  100        2        360 ms      1 035 ms           69 ms              80
+  500        9        1 821 ms    (non mesurée)      266 ms             360
+  3 500      59       12 849 ms   961 322 ms         8 821 ms           2 360
+  7 000      117      24 752 ms   349 682 ms         36 313 ms          4 680
+  14 000     234      50 868 ms   (non mesurée)      142 315 ms         9 360
+
+  « AVANT » = solveur d'origine (une requête SQL par candidat sur les
+  disponibilités, parcours complet de la liste des occupations).
+  « APRÈS » = index de disponibilités + index d'occupations maintenu par le
+  solveur (Partie 3.9). Les deux mesures 3 500 et 7 000 ont été relevées sur le
+  même jeu ; le facteur d'accélération est de 109× (3 500) et 9,6× (7 000).
+
+  Cohérence des résultats : dans TOUS les scénarios, 0 séance non placée,
+  0 conflit, status_global = COMPLETE, effectif importé = effectif demandé
+  (0 ligne rejetée). L'optimisation ne change donc pas le résultat produit.
+
+  Requêtes SQL (génération) : 1 790 → 32 pour 100 étudiants, 109 pour 500.
+  Au-delà de 3 500 étudiants le journal de Django sature (plafond 9 000
+  captures) : la commande écrit alors `requetes_sql = null` (« non mesurable »)
+  et NON « 0 » — un compteur saturé n'est pas une absence de requête.
+
+  Analyse de la croissance : l'import est linéaire (≈ 3,6 ms par étudiant :
+  0,36 s / 1,8 s / 12,8 s / 24,8 s / 50,9 s). La génération reste légèrement
+  super-linéaire (×2 d'étudiants ⇒ ×3,9 de temps entre 7 000 et 14 000), sans
+  doute à cause de la croissance des listes d'occupations indexées par jour ;
+  à 14 000 étudiants elle reste néanmoins de 142 s, compatible avec un usage
+  « campagne » lancée en arrière-plan. Aucun test au-delà de 14 000 n'a été
+  réalisé : la cible de la mission est atteinte, pas dépassée.
+
+6.2 bis Mesure de l'activation des contraintes souples (2026-10-30)
+
+  Jusqu'ici, l'activation n'était pas mesurée : le coût d'une règle qu'on
+  n'active pas est nul, mais celui d'une règle activée ne se déduit pas. La
+  commande `benchmark_getinjs` accepte désormais `--souples inactif|actif`
+  (et `--max-consecutives`, `--max-jour`) et publie le bilan des règles.
+
+  Mesures réelles, base SQLite du bac à sable, transaction annulée :
+
+    Volume  Régime                        Import     Génération  Placées  NP
+    ------  ----------------------------  ---------  ----------  -------  --
+    3 500   inactif (défaut)               14 663 ms   8 598 ms    2 065   0
+    3 500   actif, bornes 4 h / 8 h        14 072 ms   9 063 ms    2 065   0
+    3 500   actif, 2 h consécutives        14 344 ms   8 925 ms    2 065   0
+    3 500   actif, 2 h par jour            14 320 ms   9 416 ms    2 065   0
+    14 000  inactif                       57 802 ms  139 659 ms   8 190   0
+    14 000  actif                         58 654 ms  149 353 ms   8 190   0
+
+  Coût de l'activation : **+5,4 % à 3 500** et **+6,9 % à 14 000**, pour un
+  plan identique (mêmes 2 065 / 8 190 séances, zéro non placée). Ce coût a été
+  ramené de +78 % à +5 % par une factorisation : les règles souples ne
+  dépendent que du groupe et du créneau, jamais de la salle, et étaient
+  pourtant recalculées pour chaque salle éligible.
+
+  Trois constats mesurés, pas supposés :
+    - avec les bornes par défaut (4 h consécutives, 8 h/jour), le plan produit
+      par le moteur ne contient **aucune** violation : activer les règles en
+      l'état est neutre ;
+    - sous une borne de 2 h consécutives, le solveur **arbitre** : il préfère un
+      trou (poids 1) à une série trop longue (poids 2) — 295 trous, 0 série
+      signalée, aucun besoin perdu ;
+    - sous une borne de 2 h par jour, 295 journées surchargées sont signalées,
+      et les 2 065 séances restent placées : la politique n'écarte rien, à
+      l'échelle annuelle comme au niveau du groupe.
+
+6.2 ter PostgreSQL 16.2 — suite complète et charge (2026-10-30)
+
+  Le bac à sable n'avait jamais exécuté le projet sur PostgreSQL : la CI
+  distante non plus. Le serveur a été obtenu sans privilège racine grâce au
+  paquet `pgserver` (binaires PostgreSQL embarqués), base `injs_pg`, socket
+  Unix local. **PostgreSQL 16.2, 208 tables migrées** (migrations réelles,
+  aucune table créée à la main).
+
+  Neuf groupes rejoués sur PostgreSQL, un par un, avec leur code de sortie :
+
+    Groupe          Tests  SQLite    PostgreSQL
+    --------------  -----  --------  ----------
+    socle             179    68 s       97 s
+    pilotage          201    25 s       18 s
+    divers            139    26 s       19 s
+    scolarite         454   106 s       92 s
+    formations        270    64 s       48 s
+    auth              242   128 s       95 s
+    evaluations       230    81 s       63 s
+    habilitations     480   272 s      625 s
+    edt + presences   538   137 s      107 s
+    --------------  -----  --------  ----------
+    TOTAL           2 733              ~1 164 s
+
+  Charge (même commande, mêmes données synthétiques) :
+
+    Volume  Base        Import      Génération  Placées  NP
+    ------  ----------  ----------  ----------  -------  --
+    3 500   SQLite       14 663 ms    8 598 ms    2 065   0
+    3 500   PostgreSQL   14 262 ms    3 497 ms    2 360   0
+    14 000  SQLite       57 802 ms  149 353 ms    8 190   0
+    14 000  PostgreSQL   55 662 ms   54 401 ms    9 360   0
+
+  PostgreSQL est **2,5× plus rapide que SQLite sur la génération** à 3 500
+  étudiants et **2,7×** à 14 000. Les chiffres SQLite publiés en 6.2 sont donc
+  un majorant : la cible de 14 000 étudiants tient en moins d'une minute de
+  génération sur le SGBD réellement utilisé en production.
+
+  Défaut trouvé PAR PostgreSQL, invisible sur SQLite (voir journal 26) :
+  `list(groupe_ids)` découpait la chaîne « 10 » en ['1', '0']. SQLite masquait
+  le défaut parce que ses clés repartent de 1 à chaque exécution ; PostgreSQL
+  fait avancer la séquence, les clés dépassent 9 et cinq tests ont échoué. Le
+  défaut ne dépendait pas de la base : il dépendait de la LONGUEUR de
+  l'identifiant.
+
+6.3 Contrôles non exécutés
+
+  - Tests sur PostgreSQL : non exécutés (pas de serveur dans le bac à sable).
+  - Au-delà de 14 000 étudiants : non exécuté (hors cible).
+  - Parcours navigateur complet : non exécuté (pas de navigateur headless).
+  - Tests de charge en parallèle (deux campagnes simultanées) : non exécuté ;
+    le verrou pessimiste est couvert par un test unitaire, pas par une mesure.
+  - Charge sur PostgreSQL : MESURÉE désormais (6.2 ter). Reste non mesuré :
+    PostgreSQL en configuration de production (pooling, réglages serveur) ;
+    les mesures portent sur un serveur local aux réglages par défaut.
+  - CI distante (GitHub Actions) : toujours NOT RUN pour la tête de branche.
+    Motifs vérifiés, pas supposés : (a) `gh workflow run` est refusé en 403
+    « Resource not accessible by integration » — le jeton disponible n'a pas
+    le droit *actions:write* ; (b) 44 exécutions sont enregistrées, la
+    dernière créée le 2026-10-30 à 13:15 UTC (commit 5399436, succès) et plus
+    aucune depuis, alors que la branche a reçu plusieurs poussées — cohérent
+    avec un quota Actions épuisé (plusieurs exécutions d'une heure).
+    À défaut, les étapes du workflow ont été REJOUÉES à l'identique en local
+    sur PostgreSQL 16.2 : `manage.py check` (0 problème),
+    `makemigrations --check` (aucune migration), `check_repo_hygiene`
+    (1924 fichiers, conforme), `collectstatic` (176 fichiers copiés,
+    830 post-traités). L'étape « Tests » du job backend est couverte par les
+    neuf groupes exécutés dans le même environnement (2 733 tests, code 0),
+    et le job frontend par `npm run lint` (0) et `npx vitest run`
+    (113 fichiers / 2 027 tests).
+  - ÉCART CANEVAS : RÉSOLU. La base contenait 14 créneaux aux plages
+    hétérogènes et chevauchantes (08:00–12:00, 14:00–17:00, 18:00–20:00…) au
+    lieu des 24 créneaux officiels. Un contrôle dédié (`verifier_canevas`)
+    signale désormais manquants, non prévus et chevauchements ; les 24 créneaux
+    officiels ont été saisis dans la base de démonstration et le canevas est
+    déclaré CONFORME. La pause déjeuner (11:45–13:30) en découle et n'est donc
+    plus une supposition.
+    Reste à la main de l'INJS : valider que le canevas de production est bien
+    celui-là (le contrôle le dira en une commande).
+
+--------------------------------------------------------------------------------
+PARTIE 7 — JOURNAL D'IMPLÉMENTATION
+--------------------------------------------------------------------------------
+
+Ordre chronologique réel :
+
+1. Inspection : branche, arbre propre, inventaire `edts` (731+1 039+1 153+
+   3 469 lignes, 429 tests), inventaire frontend GET-INJS (10 entrées de menu,
+   écrans génériques, page génération annuelle).
+2. Vérification du canevas officiel : les 24 CreneauTemplate en base
+   correspondent exactement à la feuille Excel « 13. Emploi du temps (modèle) ».
+3. Récupération des 4 documents absents (API GitHub) et lecture des 8 documents.
+4. Création des modèles CampagneGeneration / ExecutionCampagne, migration 0008.
+5. Écriture de `moteur/campagnes.py` : transitions, verrou de concurrence,
+   exécution synchrone/asynchrone, extraction d'anomalies, validation,
+   publication atomique, vues de lecture.
+6. 8 routes API + 8 entrées d'URL ; doc de conception servi depuis la racine
+   avec repli sur docs/getinjs.
+7. 16 tests backend (cycle de vie, double lancement, échec consigné, génération
+   réelle, historique, publication atomique, permissions). Deux échecs
+   intermédiaires corrigés : faute de frappe `campaigne_en_dict`, et une
+   transition impossible (ACTIVE → BROUILLON d'une maquette) remplacée par un
+   scénario « année sans groupe ».
+8. Écran React « Campagnes de génération » + 6 tests ; trois ajustements de
+   tests (import de `render`, sélection du bouton par texte, route de refus
+   prioritaire dans le mock).
+9. Commande `benchmark_getinjs` (transaction annulée, mesures réelles).
+10. Mesures 100 / 500 / 3 500 : 961 s pour 3 500 → diagnostic : une requête SQL
+    par candidat sur les disponibilités.
+11. Optimisation 1 (index des disponibilités) : 3 500 → 56 s, 500 → 443 ms.
+12. Mesure 7 000 : 350 s → diagnostic : parcours linéaire des occupations.
+13. Optimisation 2 (index des occupations maintenu par le solveur) :
+    7 000 → 36 s. Groupe EDT rejoué : 445 tests, code 0.
+14. Mesure 14 000 : import 50 868 ms, génération 142 315 ms, 9 360 séances,
+    0 non placée, COMPLETE. Cible de la mission atteinte et mesurée.
+15. Re-vérification frontend : 108 fichiers / 2 003 tests, lint 0, build 0.
+16. Audit de couverture interface ↔ API : trois capacités serveur n'avaient
+    aucun écran (versions, audit, contraintes). Création de deux écrans
+    (« Versions & publication », « Audit des données »), routes et menu.
+17. Défaut réel trouvé au passage : les écrans GET-INJS passaient l'objet
+    d'erreur axios à `formatApiErrors`, qui attend le corps de réponse — le
+    message affiché était donc technique. Corrigé dans les cinq écrans
+    (`err?.response?.data` + repli explicite).
+18. Le test de contrat du menu a refusé un code CURP inventé
+    (`edt.emploi_du_temps.consulter`) : code retiré, l'entrée s'appuie sur
+    `valider`/`publier` qui existent réellement au catalogue.
+19. Frontend final : 110 fichiers / 2 012 tests, lint 0, build 0.
+20 bis. Écran de modification de séance : deux composants
+    (`components/edt/DeplacerSeance.jsx`, `AnnulerSeance.jsx`) câblés dans la
+    grille et dans le tableau des créneaux, 10 tests frontend, et 3 tests
+    backend sur les candidats de déplacement.
+    Deux défauts réels trouvés en exerçant la route sur des données réelles :
+    (a) `_BesoinAffectation` n'exposait pas `ecue_id`, exigé par C8 depuis les
+        cohortes importées → la route `move/` répondait 500 au lieu d'un verdict ;
+    (b) un plan déjà invalide renvoyait « 0 candidat » sans explication, ce qui
+        faisait croire à une absence de place alors que la cause était une
+        violation préexistante (C8). L'API renvoie désormais `plan_valide`,
+        `violations_plan`, `explication` et `action_recommandee`.
+    Preuve HTTP réelle (EDT temporaire, transaction annulée) : GET 26 candidats,
+    POST 200 accepté, annulation 200 réversible, réactivation 200, sans motif 400.
+
+21. Export PDF implémenté : `GET /api/edts/lmd/<id>/export.pdf/` (reportlab,
+    déjà présent dans requirements). La vue réutilise `grille_hebdomadaire`,
+    donc l'imprimé ne peut pas diverger de l'écran ; un EDT vide écrit
+    explicitement « aucune séance » au lieu de fabriquer une ligne.
+    Preuve visuelle : docs/getinjs/preuves/apercu-edt-pdf-2026-10-30.png.
+    Vérifié par rendu réel : 1 page A4 paysage, 3 066 octets, jours et plages
+    issus de la base, texte extrait conforme. 4 tests backend ajoutés,
+    bouton « PDF » ajouté à côté de l'export CSV dans l'écran EDT.
+    Groupe EDT rejoué : 449 tests, code 0.
+
+22. Contraintes souples (chantier 2) — règles demandées par la documentation
+    mais sans pondération officielle. Décision : les CODER, les laisser
+    INACTIVES par défaut, les rendre activables par réglage, et ne jamais les
+    laisser bloquer un placement.
+    (a) `contraintes.py` : bloc « Contraintes SOUPLES » — politique validée
+        (clé inconnue ou type invalide ⇒ ValueError), trous, séries,
+        surcharges, résumé de plan.
+    (b) `generation.py` : `_penalites()` enrichi, `candidats()` lit
+        `contexte['politique_souples']`, `generate_schedule(...,
+        contraintes_souples=)`, `metrics['contraintes_souples']`.
+    (c) `api_lmd.py` : `GET /constraints/` expose `souples`.
+        `settings.py` : `EDTS_CONTRAINTES_SOUPLES = {}`.
+    (d) `test_contraintes_souples.py` : 20 tests (politique, pénalités,
+        résumé, et trois tests d'INTÉGRATION sur le solveur réel).
+    Deux défauts corrigés pendant l'écriture, pas contournés :
+    - `_trous()` soustrayait deux `datetime.time` (TypeError) : passage par
+      une conversion en minutes ;
+    - la charge d'une série comptait le TEMPS DE PRÉSENCE (pauses incluses),
+      ce qui déclarait « 4 h consécutives » une journée de 4 h de cours avec
+      une récréation. Elle compte désormais la SOMME DES DURÉES DE COURS.
+    Décision documentée : `pause_dejeuner=None` par défaut — aucune pause
+    officielle n'étant publiée, le moteur n'en invente pas ; un test vérifie
+    les deux comportements (pause déclarée / non déclarée).
+    Comptes : groupe EDT 476 tests code 0 (456 + 20) ; frontend inchangé
+    112 fichiers / 2 022 tests ; preuve HTTP réelle sur l'API 8000.
+
+23. Chantier 3 — la politique des contraintes souples devient réglable SANS
+    redéploiement. Un réglage Django n'est pas un outil de gouvernance : il
+    faut un développeur pour l'activer. Ajout d'une ligne unique
+    `edts.PolitiqueContraintesSouples` (migration 0009), de son écran
+    d'administration (validation, traçabilité, ni ajout ni suppression) et de
+    son affichage dans « Audit des données » avec l'origine de la politique.
+    Priorité complétée : défauts < réglage Django < ligne de l'admin <
+    paramètre de génération.
+    Trois défauts corrigés, aucun contourné :
+    (a) `auto_now_add` renvoyait `created_at = NULL` dans l'UPDATE d'une ligne
+        dont la clé primaire est forcée à 1 → `NOT NULL constraint failed` ;
+        remplacé par `default=timezone.now` (stable en INSERT comme en UPDATE) ;
+    (b) les bornes de pause sortaient en minutes depuis minuit dans l'API
+        (« 735 → 810 ») : unité interne d'un côté, `pause_lisible()` de l'autre ;
+    (c) le contrôle transversal de l'admin a révélé que `CampagneGeneration` et
+        `ExecutionCampagne` (livrés au LOT 2) n'étaient PAS administrables —
+        un administrateur ne pouvait consulter ni le bilan ni les anomalies
+        d'une campagne. Enregistrés en lecture seule (`LECTURE_SEULE`) : une
+        trace d'exécution se consulte, ne se réécrit pas.
+    Comptes : groupe EDT 500 tests code 0 ; groupe socle 179 tests code 0 ;
+    frontend 112 fichiers / 2 025 tests ; lint 0 ; build 0.
+
+24. Chantier 4 — vérification complète et mesure de l'activation.
+    (a) Les NEUF groupes de tests backend ont été rejoués, un par un, avec leur
+        code de sortie : scolarite 454, formations 270, auth 242,
+        habilitations 480, evaluations 230, pilotage 201, divers 139, edt 500,
+        socle 179 — soit 2 695 tests, tous au vert (aucun groupe sauté).
+    (b) Le bilan annuel (`generer_annee`) expose désormais les règles souples :
+        par groupe (`contraintes_souples`, `penalites_souples`) et en totaux
+        (`active`, `trous`, `series_trop_longues`, `journees_surchargees`,
+        `penalites`). Sans cela, activer la politique restait invisible là où
+        l'INJS arbitre réellement.
+    (c) Défauts corrigés :
+        - `benchmark_getinjs` arrêtait sur `UNIQUE` toute exécution sur une base
+          contenant déjà les créneaux officiels : un outil de mesure non
+          rejouable ne mesure rien. `get_or_create` + comptage des créneaux
+          créés/réutilisés ;
+        - le calcul des règles souples était refait pour chaque salle éligible
+          alors qu'il ne dépend que du groupe et du créneau : +78 % de temps de
+          génération à 3 500 étudiants. Factorisé à +5,4 % ;
+        - la politique était relue en base à chaque groupe (59 lectures pour
+          3 500 étudiants, 234 pour 14 000) : lue une seule fois par année, donc
+          tous les groupes sont jugés par la même règle même si le réglage
+          change pendant la génération.
+    (d) Mesures réelles consignées en 6.2 bis (3 500 et 14 000 étudiants, deux
+        régimes, quatre politiques de bornes).
+    Comptes : groupe EDT 506 tests code 0 ; neuf groupes 2 695 tests code 0.
+
+25. Chantier 5 — la décision de politique est APPLIQUÉE et reproductible.
+    Le commanditaire a validé la proposition : activer les règles avec les
+    bornes documentées par le référentiel, tracer la décision dans l'admin.
+    (a) Nouvelle commande `regler_contraintes_souples` : motif obligatoire dès
+        qu'elle écrit, validation par le `full_clean()` du modèle, idempotence
+        (rejouer ne réécrit ni date ni auteur), `--verifier` sans écriture,
+        `--sans-pause` pour effacer une pause, `--auteur` pour porter la
+        décision. 16 tests.
+    (b) Décision appliquée en base : actives=true, 4 h / 8 h, tolérance 15,
+        aucune pause, auteur `admin`, motif daté (bornes, mesure, absence de
+        pause). API : origine=base, politique et trace complètes.
+    (c) Deux défauts corrigés dans la commande, trouvés en l'exécutant :
+        - la pause s'affichait « 735 – 810 » (minutes depuis minuit) ;
+        - il était impossible d'EFFACER une pause déjà enregistrée, donc de
+          revenir honnêtement à « aucune pause déclarée ».
+    (d) `benchmark_getinjs` mesure par défaut la politique réellement
+        enregistrée (`--souples defaut`) au lieu de forcer un régime : un outil
+        de mesure ne doit pas changer ce qu'il mesure.
+    (e) ÉCART trouvé et signalé : la base de développement ne contient pas les
+        24 créneaux du canevas officiel (14 plages hétérogènes). Aucune pause
+        n'a donc été inventée. Voir 6.3.
+    Comptes : groupe EDT 523 tests code 0.
+
+26. Chantier 6 — PostgreSQL 16.2 exécuté pour la première fois.
+    (a) Serveur réel obtenu sans root (`pgserver`, binaries embarquées), base
+        `injs_pg`, 208 tables par migrations réelles. Les NEUF groupes passent :
+        2 733 tests, code 0.
+    (b) Défaut majeur révélé : `list(groupe_ids)` sur une chaîne. `'9'` donne
+        `['9']` (donc tout allait bien sur des clés à un chiffre), `'10'` donne
+        `['1','0']` (donc plus aucune affectation trouvée). Tout groupe dont la
+        clé dépassait 9 était déclaré vide. SQLite masquait le défaut, sa
+        séquence repartant de 1 ; PostgreSQL l'a exposé. Le défaut ne dépendait
+        donc pas du SGBD.
+    (c) Deuxième défaut révélé par le même symptôme : les sorties anticipées du
+        solveur (canevas vide, aucun besoin) renvoyaient `metrics = {}`, d'où
+        un `KeyError` chez l'appelant au lieu d'un échec expliqué. Les métriques
+        sont désormais toujours complètes, à zéro, avec la raison dans
+        `motif_echec`.
+    (d) `arena/tests_par_groupe.sh` : budget du groupe habilitations porté de
+        600 à 1200 s (mesuré 625 s sur PostgreSQL). Un budget trop court ne
+        produit pas un échec mais un « INTERROMPU », c'est-à-dire une vérité
+        perdue.
+    (e) Charge comparée SQLite / PostgreSQL : PostgreSQL 2,5× à 2,7× plus
+        rapide sur la génération (6.2 ter).
+    Comptes : EDT 538 tests code 0 sur les DEUX SGBD ; 2 733 tests backend sur
+    PostgreSQL ; frontend 112 fichiers / 2 025 tests, lint 0, build 0.
+
+27. Chantier 7 — CI distante : tentative réelle, résultat honnête.
+    Le workflow `.github/workflows/ci.yml` existe déjà (backend PostgreSQL 16
+    + frontend Node 20) et a réellement tourné par le passé (44 exécutions,
+    dernière réussie à 13:15 UTC). Depuis, la branche pousse sans qu'aucun run
+    ne soit créé, et le déclenchement manuel est refusé en 403 : le jeton de ce
+    bac à sable n'a pas `actions:write`. Je ne peux donc pas prétendre à une
+    CI verte sur la tête de branche.
+    Ce qui a été fait à la place, sans maquiller l'écart : rejeu LOCAL des
+    quatre étapes non couvertes par les tests de groupes, avec les mêmes
+    variables d'environnement que le workflow (`DJANGO_DEBUG=0`,
+    `POSTGRES_*`), sur PostgreSQL 16.2. Toutes vertes. La couverture des tests
+    est identique (neuf groupes = même ensemble que le run monolithique), mais
+    elle n'est pas EXÉCUTÉE PAR GITHUB.
+
+28. Chantier 8 — le canevas horaire devient contrôlable, et la pause cesse
+    d'être une supposition.
+    (a) `edts/moteur/canevas_officiel.py` : source de vérité unique (6 jours ×
+        4 plages = 24 créneaux), détection des manquants, des non prévus et des
+        CHEVAUCHEMENTS (cas réel de la base : 08:00–12:00 contenant 08:00–10:00,
+        où C1/C2/C3 ne sont plus garantissables).
+    (b) `manage.py verifier_canevas` : rapport lisible, `--creer-manquants`
+        (création seule, aucune suppression), `--json`. 19 tests.
+    (c) La pause déjeuner se DÉDUIT du référentiel : `pause_deduite()` renvoie
+        11:45–13:30, seul intervalle long entre deux plages. Sans elle, une
+        journée normale 07:30–11:45 + 13:30–17:45 était pénalisée comme trouée.
+        Un test prouve les deux comportements sur le moteur réel.
+    (d) Les 24 créneaux officiels ont été saisis dans la base de démonstration ;
+        `verifier_canevas` déclare le canevas CONFORME. La politique a été
+        réappliquée avec la pause déduite (même commande, rejouable).
+    Comptes : groupe EDT 557 tests code 0.
+
+28 ter. Deux exemplaires du présent document avaient divergé (1 180 lignes à
+    la racine, 713 dans `docs/getinjs/`) : la copie servie par le site exposait
+    un état périmé du projet, avec des compteurs faux — plus trompeur qu'une
+    absence de document. Les deux sont désormais identiques (la racine fait
+    foi) et un test (`core.tests.test_docs_coherence`, 4 tests) échoue à la
+    moindre divergence, en indiquant la commande exacte à exécuter.
+
+28 bis. Le contrôle du canevas est rendu dans l'audit : deux avertissements
+    (`CANEVAS_HORS_REFERENTIEL`, `CANEVAS_CHEVAUCHEMENT`) plutôt qu'un blocage,
+    avec la liste chiffrée des écarts. Sans cela, le contrôle n'aurait vécu que
+    dans une commande en ligne de commande — c'est-à-dire nulle part pour un
+    utilisateur du site. 3 tests d'API ajoutés ; vérifié en direct : l'API
+    répond CANEVAS_HORAIRE_OK sur les 24 créneaux officiels, sans avertissement
+    de conformité. Groupe EDT 560 tests, code 0.
+
+29. Preuve visuelle réelle — et les trois défauts qu'elle a révélés.
+    Chromium 153 a été rendu exécutable SANS privilège root dans le bac à
+    sable : binaire `@sparticuz/chromium`, piloté par `puppeteer-core`, avec
+    les bibliothèques NSS/NSPR compilées depuis les sources (NSPR
+    `sailfishos-mirror` 4.41, NSS `mozilla/nss` en gyp+ninja, puis
+    `LD_LIBRARY_PATH=/tmp/chlibs`). Neuf écrans ont été capturés après une
+    connexion réelle par le formulaire, pas par appel API direct.
+    Ce que la machine voit et que les tests ne voyaient pas :
+    (a) Liste des emplois du temps — Bootstrap n'étant pas installé,
+        `.d-flex`, `.text-truncate` et `.d-block` n'avaient AUCUN effet :
+        l'année se collait au titre (« … DEMO-G4DEMO-2026-2027 ») et le badge
+        de statut n'était pas aligné. `d-block` manquait de surcroît dans la
+        branche « sélectionné ». Corrigé en CSS sous `.edt-page` ; un test
+        (`frontend/src/pages/Edts.test.jsx`) échoue si le correctif disparaît
+        — vérifié en le retirant volontairement.
+    (b) Cases à cocher — `.form-check` n'avait aucune règle : la case native
+        s'affichait collée au libellé sur 38 usages (« Enregistrer les
+        brouillons »). Règle ajoutée dans `designSystem.css`.
+    (c) Administration — Inter et la police d'icônes Material Symbols étaient
+        chargées depuis fonts.googleapis.com. Sans réseau, les icônes
+        s'affichaient EN TOUTES LETTRES (« chevron_right », « open_in_new »,
+        « filter_list »). Les deux polices sont désormais embarquées dans
+        `backend/static/admin/fonts/` : sous-ensemble de 38 icônes (35 Ko au
+        lieu de 3,9 Mo) et Inter variable latin, licences OFL et Apache 2.0
+        jointes, recette de régénération dans README.txt. Trois noms d'icônes
+        inexistants dans la police ont été corrigés (smartphone→mobile,
+        phonelink→devices, location_on→place).
+    Mesure après correction, page d'admin instrumentée : 0 requête vers un
+    domaine externe, `document.fonts` rapporte Inter et Material Symbols
+    « loaded ». Cinq tests protègent l'invariant, dont un qui échoue si un
+    gabarit utilise une icône absente du sous-ensemble (le nom s'afficherait
+    en clair sans que personne ne le voie avant une capture).
+    Captures : docs/getinjs/preuves/01…10 + aperçu PDF.
+    Comptes : backend groupe EDT 570, groupe socle 188 (2 774 au total),
+    frontend 113 fichiers / 2 027 tests, lint 0, build OK.
+
+Erreurs rencontrées et solutions :
+  - `campaigne_en_dict` (NameError) → renommé `campagne_en_dict`.
+  - Migration de statut de maquette refusée en test → scénario remplacé.
+  - `apiController.callsTo` inexistant → utilisation des mocks vitest.
+  - Route de test masquée par une route antérieure → ordre de déclaration revu.
+
+État Git final : voir la réponse de fin de mission (aucun commit ni push créé
+par cette mission, conformément à la consigne).
+
+--------------------------------------------------------------------------------
+PARTIE 8 — PROCÉDURE DE DÉPANNAGE
+--------------------------------------------------------------------------------
+
+Symptôme : « Aucune campagne pour cette année académique »
+  Cause : aucune campagne créée. Action : en créer une (Partie 5.1).
+
+Symptôme : HTTP 409 CAMPAGNE_DEJA_EN_COURS
+  Cause : une exécution tourne déjà (fil d'arrière-plan). Action : attendre la
+  fin (l'écran interroge l'état toutes les 3 s) ; si le processus serveur a été
+  arrêté pendant l'exécution, la campagne reste EN_COURS : créer une nouvelle
+  campagne ou repasser l'année en revue (aucune reprise automatique n'est
+  inventée).
+
+Symptôme : statut ECHEC avec motif AUCUN_GROUPE_INJS
+  Cause : aucun groupe actif dans le périmètre INJS pour l'année.
+  Action : importer les inscrits ou créer les groupes en Scolarité.
+
+Symptôme : groupes « non planifiés », motif AUCUN_BESOIN_PLANIFIABLE
+  Cause : ni affectation pédagogique, ni maquette active ne couvre la cohorte.
+  Action : activer une maquette ou saisir les affectations, puis relancer.
+
+Symptôme : validation refusée (VALIDATION_BLOQUANTE)
+  Cause : un EDT contient une violation de contrainte obligatoire.
+  Action : lire `detail.edt_en_echec[].violations`, corriger l'EDT, revalider.
+
+Symptôme : publication refusée (PUBLICATION_INCOMPLETE)
+  Cause : un EDT du périmètre n'a pas pu être publié. Aucun EDT du lot n'est
+  publié (atomicité). Action : corriger l'EDT signalé puis republier.
+
+Symptôme : import rejeté (motif MATRICULE_MANQUANT, NIVEAU_INCONNU…)
+  Cause : donnée du fichier. Action : corriger le fichier ou le mapping.
+
+Symptôme : fichier > 20 Mo
+  Cause : limite de sécurité. Action : découper le fichier.
+
+Symptôme : erreurs de migration
+  Action : `makemigrations --check --dry-run` puis `migrate edts`. Ne jamais
+  supprimer la base ni les migrations.
+
+Symptôme : lenteur de génération
+  Action : vérifier que les index sont actifs (disponibilités, occupations) ;
+  mesurer avec `benchmark_getinjs`.
+
+Symptôme : permissions (403)
+  Cause : rôle hors planification (création/lancement) ou hors DIRECTION/ADMIN
+  (validation/publication). Action : utiliser un compte habilité ; l'écran
+  reflète le droit mais le serveur décide.
+
+--------------------------------------------------------------------------------
+PARTIE 9 — ÉTAT FINAL
+--------------------------------------------------------------------------------
+
+Terminé et vérifié :
+  - campagnes persistantes (modèle, cycle de vie, verrou, historique, anomalies) ;
+  - API complète + permissions serveur ;
+  - écran React relié à l'API réelle ;
+  - mesure de charge 100 / 500 / 3 500 / 7 000 / 14 000 (voir Partie 6) ;
+  - deux optimisations mesurées (109× à 3 500 étudiants, 9,6× à 7 000) ;
+  - 570 tests backend EDT + 2 027 tests frontend, tous au vert ;
+  - documentation de conception (ce fichier).
+
+Déjà présent avant la mission (vérifié, non réécrit) :
+  - import CSV/XLSX des inscrits, analyse sans écriture, idempotence ;
+  - génération annuelle coordonnée, validation, publication, versions ;
+  - écrans GET-INJS (10 entrées), exports CSV, présences de séance.
+
+Non exécuté / non couvert :
+  - au-delà de 14 000 étudiants : non mesuré ;
+  - PostgreSQL en configuration de production, CI distante ;
+  - contraintes souples : réglables dans l'admin, INACTIVES par défaut ; le
+    COÛT d'activation est mesuré (6.2 bis) mais la PERTINENCE des bornes reste
+    une décision pédagogique de l'INJS, non tranchée ici ;
+  - capture d'écran : RÉALISÉE (31/10). Chromium 153 a été rendu exécutable
+    sans root en compilant NSS/NSPR depuis les sources. 11 captures dans
+    docs/getinjs/preuves/, dont l'écran de réglage des contraintes souples ;
+    elles ont révélé trois défauts d'affichage, corrigés (voir journal 29).
+
+Actions nécessitant une décision ou une habilitation :
+  - saisie du patrimoine réel (salles, capacités) ;
+  - calendrier académique officiel ;
+  - pondération officielle des contraintes souples et horaire de la pause
+    déjeuner (le moteur attend ces valeurs, il ne les invente pas) ;
+  - commit / push / déploiement (non effectués par cette mission).
+
+--------------------------------------------------------------------------------
+ANNEXE — APERÇU MOBILE (FLUTTER WEB)
+--------------------------------------------------------------------------------
+
+L'application mobile `qr_badge_mobile` (Flutter 1.0.8+12, 40 fichiers Dart,
+cibles Android/iOS/web) ne peut pas être exécutée dans le bac à sable :
+aucun SDK Flutter n'y est installé et les sources d'installation sont
+inaccessibles (storage.googleapis.com et pub.dev répondent par une fermeture
+TLS : SSL_ERROR_SYSCALL).
+
+Deux livrables permettent de l'exécuter dès qu'un SDK est disponible :
+
+  arena/lancer-mobile.sh
+      cherche le SDK dans .sdk/, extrait l'archive officielle si besoin,
+      lance `flutter pub get` (avec repli `--offline` si .sdk/pub-cache
+      existe), construit `flutter build web --dart-define=API_BASE_URL=`
+      puis démarre le serveur.
+
+  arena/serveur_mobile.py (port 3001)
+      sert le build web ET relaie `/api/*` vers Django sur 127.0.0.1:8000.
+      Le relais est nécessaire : le navigateur de l'utilisateur n'a pas accès
+      au 127.0.0.1 du bac à sable. Comme `API_BASE_URL` est vide, l'application
+      appelle `/api/...` sur sa propre origine : même origine → aucun CORS,
+      aucune URL codée en dur.
+
+Vérifié réellement (API + serveur de test) :
+  GET  /                 → 200      GET  /assets/a.txt   → 200
+  GET  /login (SPA)      → 200      GET  /api/edts/campagnes/ (avec jeton) → 200
+  POST /api/auth/login/  → 200      GET  /api/auth/me/ (sans jeton)        → 401
+  POST /api/edts/campagnes/ (avec jeton) → 201 (campagne créée puis supprimée)
+  API arrêtée            → 502 + message explicite (jamais une page blanche)
+
+NOT RUN : `flutter pub get`, `flutter build web`, `flutter test` et l'application
+mobile elle-même — SDK absent. Le chemin SDK-absent du script est, lui, exécuté
+et vérifié (message d'aide explicite, code de sortie 2).
+
+================================================================================
+Fin du document.
+================================================================================
+
+================================================================================
+EXTENSION — PRÉPARATION À L'INTÉGRATION DU MODULE PRÉSENCES (QR / MANUEL / GÉO)
+Ajout du 2026-11-04, sur la même branche. GET INJS APP reste la source de
+référence des séances pédagogiques publiées ; le module Présences n'est
+PAS développé ici — seules ses fondations contractuelles sont posées.
+================================================================================
+
+PRINCIPE DIRECTEUR
+------------------
+Une séance pédagogique officiellement publiée dans GET constitue la
+référence métier de tout futur pointage. Chaque séance possède une
+identité technique unique et permanente (UUID) qui ne dépend ni de la
+date, ni de l'horaire, ni de la salle, ni de l'enseignant.
+
+MODÈLES AJOUTÉS (tables préfixées gi_, aucune table existante modifiée)
+------------------------------------------------------------------------
+- gi_seance_registre (SeanceRegistre) : UUID unique, clé métier
+  déterministe (SHA-256 du contexte pédagogique — année, semestre,
+  groupe, ECUE/UE, type — jamais l'horaire/la salle/l'enseignant),
+  statut du cycle de vie, version, publie_le/publie_par, motif
+  d'annulation, seance_origine (lien annulation → reprogrammation),
+  rattachement courant à la ligne de placement (AffectationCreneau,
+  SET_NULL : le registre survit à une régénération et est rattaché à la
+  nouvelle ligne portant la même clé métier — l'UUID ne change jamais).
+- gi_seance_historique (SeanceHistorique) : journal non destructif
+  (CREATION, RATTACHEMENT, TRANSITION, MODIFICATION, PUBLICATION,
+  ANNULATION, REPROGRAMMATION, INSTANTANE) avec acteur, motif,
+  statuts avant/après et détails structurés.
+- gi_seance_evenement (SeanceEvenement) : file append-only des
+  événements contractuels SEANCE_PUBLIEE / SEANCE_MODIFIEE /
+  SEANCE_ANNULEE / SEANCE_REPROGRAMMEE / SEANCE_CLOTUREE, consommable
+  par curseur (paramètre « apres »), avec charge utile d'aperçu.
+- gi_salle_geolocalisation (SalleGeolocalisation) : configuration
+  géographique centralisée d'une salle du référentiel (OneToOne,
+  jamais de référentiel dupliqué) : latitude, longitude, rayon de
+  tolérance (m), zone, type d'espace (amphithéâtre, cours, labo,
+  gymnase, terrain, dojo, piscine, extérieur), statut de configuration.
+- gi_seance_instantane (SeanceInstantaneAttendus) : instantané historique
+  des étudiants attendus, constitué à la demande (ouverture d'une
+  session de présence) ; la liste n'est jamais figée dans la séance.
+
+CYCLE DE VIE D'UNE SÉANCE (transitions explicites, service métier)
+------------------------------------------------------------------
+BROUILLON → SIMULATION | EN_ATTENTE_VALIDATION | ANNULEE
+SIMULATION → BROUILLON | ANNULEE        (une simulation n'est JAMAIS
+                                          une séance officielle)
+EN_ATTENTE_VALIDATION → VALIDEE | BROUILLON | ANNULEE
+VALIDEE → PUBLIEE | ANNULEE
+PUBLIEE → MODIFIEE | ANNULEE | TERMINEE
+MODIFIEE → PUBLIEE | ANNULEE | TERMINEE
+ANNULEE, TERMINEE : états terminaux.
+peut_ouvrir_session_presence() = statut ∈ {PUBLIEE, MODIFIEE} uniquement.
+Une séance publiée modifiée passe MODIFIEE (version incrémentée,
+historique + événement SEANCE_MODIFIEE). Une annulation exige un motif
+tracé ; la reprogrammation crée une NOUVELLE séance reliée par
+seance_origine (événement SEANCE_REPROGRAMMEE), l'annulée reste lisible.
+Suppression physique interdite dès qu'un pointage historique référence
+la séance (signal pre_delete → ProtectedError) : la voie est
+l'annulation tracée, jamais l'effacement.
+
+ÉTUDIANTS ATTENDUS
+------------------
+etudiants_attendus(seance) : membres actifs du groupe de la séance
+(AffectationGroupe active rattachée à un dossier ayant un participant) —
+exactement le périmètre de presences.seances_supervision. Admission,
+inscription administrative validée et inscription pédagogique restent
+distinguées : la réponse expose l'inscription administrative source de
+chaque attendu, sans présumer l'inscription pédagogique.
+
+API D'INTEROPÉRABILITÉ (préfixe /api/edts/interop/, alias /api/timetable/)
+--------------------------------------------------------------------------
+GET  seances-publiees/?annee=&formation=&groupe=&page=&page_size=
+GET  seances/<uuid>/                    détail contractuel complet
+GET  seances/<uuid>/etudiants-attendus/?date=AAAA-MM-JJ
+POST seances/<uuid>/instantane/         (planification) {date_seance?}
+POST seances/<uuid>/transition/         (planification ; VALIDEE,
+     PUBLIEE, TERMINEE réservées DIRECTION/ADMIN) {statut, motif}
+POST emplois/<id>/reconcilier/          (planification) assure les
+     registres d'un EDT ; publie les registres si l'EDT est PUBLIÉ
+GET  salles-geolocalisation/            salles + configuration géo
+GET  evenements/?apres=<id>&non_consommes=1
+Permissions : lecture = authentifié ; écritures = IsEdtPlanification ;
+validation/publication/clôture = rôles de validation EDT existants.
+Le service d'interopérabilité n'importe pas l'application « presences »
+(aucune dépendance circulaire GET → Présences ; test dédié).
+
+COMMANDES
+---------
+cd backend
+.venv/bin/python -m django makemigrations edts && .venv/bin/python -m django migrate edts
+.venv/bin/python -m django test edts.tests.test_interop_presences
+.venv/bin/python -m django test edts   # 420 tests (3 erreurs AdminPolitique préexistantes)
+
+PREUVES MESURÉES (2026-11-04, base de démonstration)
+----------------------------------------------------
+- Tests d'interopérabilité : 14/14 verts (identité stable après
+  modification et après régénération, cycle de vie, simulation non
+  officielle, attendus + instantané figé, géo, permissions, garde de
+  suppression avec pointage).
+- Génération réelle moteur (EM Licence, L1, S1) : GENERATION_OK en
+  0,14 s, couverture 100 % (140/140 séances-occurrences, 280 h),
+  0 non placée, 0 violation au validateur indépendant.
+- Chaîne complète par API : génération persistée (12 séances) →
+  réconciliation (12 registres) → soumission/validation/publication
+  de l'EDT → réconciliation (12 séances PUBLIEE) → 12 événements
+  SEANCE_PUBLIEE ; détail d'une séance : peut_ouvrir_session_presence
+  = true, contexte UE EM-S1-UE03 / ECUE EM-S1-UE03-EC01 résolu.
+- Limite honnête : la génération annuelle complète (138 groupes) en une
+  seule passe dépasse le temps tenable sur SQLite dans ce bac à sable
+  (> 25 min, interrompue) ; elle se pilote par campagnes/périmètres
+  dans l'interface, et PostgreSQL a été mesuré 2,5× plus rapide sur ce
+  moteur lors des missions précédentes (voir rapport final GET).

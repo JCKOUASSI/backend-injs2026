@@ -1232,3 +1232,116 @@ et vérifié (message d'aide explicite, code de sortie 2).
 ================================================================================
 Fin du document.
 ================================================================================
+
+================================================================================
+EXTENSION — PRÉPARATION À L'INTÉGRATION DU MODULE PRÉSENCES (QR / MANUEL / GÉO)
+Ajout du 2026-11-04, sur la même branche. GET INJS APP reste la source de
+référence des séances pédagogiques publiées ; le module Présences n'est
+PAS développé ici — seules ses fondations contractuelles sont posées.
+================================================================================
+
+PRINCIPE DIRECTEUR
+------------------
+Une séance pédagogique officiellement publiée dans GET constitue la
+référence métier de tout futur pointage. Chaque séance possède une
+identité technique unique et permanente (UUID) qui ne dépend ni de la
+date, ni de l'horaire, ni de la salle, ni de l'enseignant.
+
+MODÈLES AJOUTÉS (tables préfixées gi_, aucune table existante modifiée)
+------------------------------------------------------------------------
+- gi_seance_registre (SeanceRegistre) : UUID unique, clé métier
+  déterministe (SHA-256 du contexte pédagogique — année, semestre,
+  groupe, ECUE/UE, type — jamais l'horaire/la salle/l'enseignant),
+  statut du cycle de vie, version, publie_le/publie_par, motif
+  d'annulation, seance_origine (lien annulation → reprogrammation),
+  rattachement courant à la ligne de placement (AffectationCreneau,
+  SET_NULL : le registre survit à une régénération et est rattaché à la
+  nouvelle ligne portant la même clé métier — l'UUID ne change jamais).
+- gi_seance_historique (SeanceHistorique) : journal non destructif
+  (CREATION, RATTACHEMENT, TRANSITION, MODIFICATION, PUBLICATION,
+  ANNULATION, REPROGRAMMATION, INSTANTANE) avec acteur, motif,
+  statuts avant/après et détails structurés.
+- gi_seance_evenement (SeanceEvenement) : file append-only des
+  événements contractuels SEANCE_PUBLIEE / SEANCE_MODIFIEE /
+  SEANCE_ANNULEE / SEANCE_REPROGRAMMEE / SEANCE_CLOTUREE, consommable
+  par curseur (paramètre « apres »), avec charge utile d'aperçu.
+- gi_salle_geolocalisation (SalleGeolocalisation) : configuration
+  géographique centralisée d'une salle du référentiel (OneToOne,
+  jamais de référentiel dupliqué) : latitude, longitude, rayon de
+  tolérance (m), zone, type d'espace (amphithéâtre, cours, labo,
+  gymnase, terrain, dojo, piscine, extérieur), statut de configuration.
+- gi_seance_instantane (SeanceInstantaneAttendus) : instantané historique
+  des étudiants attendus, constitué à la demande (ouverture d'une
+  session de présence) ; la liste n'est jamais figée dans la séance.
+
+CYCLE DE VIE D'UNE SÉANCE (transitions explicites, service métier)
+------------------------------------------------------------------
+BROUILLON → SIMULATION | EN_ATTENTE_VALIDATION | ANNULEE
+SIMULATION → BROUILLON | ANNULEE        (une simulation n'est JAMAIS
+                                          une séance officielle)
+EN_ATTENTE_VALIDATION → VALIDEE | BROUILLON | ANNULEE
+VALIDEE → PUBLIEE | ANNULEE
+PUBLIEE → MODIFIEE | ANNULEE | TERMINEE
+MODIFIEE → PUBLIEE | ANNULEE | TERMINEE
+ANNULEE, TERMINEE : états terminaux.
+peut_ouvrir_session_presence() = statut ∈ {PUBLIEE, MODIFIEE} uniquement.
+Une séance publiée modifiée passe MODIFIEE (version incrémentée,
+historique + événement SEANCE_MODIFIEE). Une annulation exige un motif
+tracé ; la reprogrammation crée une NOUVELLE séance reliée par
+seance_origine (événement SEANCE_REPROGRAMMEE), l'annulée reste lisible.
+Suppression physique interdite dès qu'un pointage historique référence
+la séance (signal pre_delete → ProtectedError) : la voie est
+l'annulation tracée, jamais l'effacement.
+
+ÉTUDIANTS ATTENDUS
+------------------
+etudiants_attendus(seance) : membres actifs du groupe de la séance
+(AffectationGroupe active rattachée à un dossier ayant un participant) —
+exactement le périmètre de presences.seances_supervision. Admission,
+inscription administrative validée et inscription pédagogique restent
+distinguées : la réponse expose l'inscription administrative source de
+chaque attendu, sans présumer l'inscription pédagogique.
+
+API D'INTEROPÉRABILITÉ (préfixe /api/edts/interop/, alias /api/timetable/)
+--------------------------------------------------------------------------
+GET  seances-publiees/?annee=&formation=&groupe=&page=&page_size=
+GET  seances/<uuid>/                    détail contractuel complet
+GET  seances/<uuid>/etudiants-attendus/?date=AAAA-MM-JJ
+POST seances/<uuid>/instantane/         (planification) {date_seance?}
+POST seances/<uuid>/transition/         (planification ; VALIDEE,
+     PUBLIEE, TERMINEE réservées DIRECTION/ADMIN) {statut, motif}
+POST emplois/<id>/reconcilier/          (planification) assure les
+     registres d'un EDT ; publie les registres si l'EDT est PUBLIÉ
+GET  salles-geolocalisation/            salles + configuration géo
+GET  evenements/?apres=<id>&non_consommes=1
+Permissions : lecture = authentifié ; écritures = IsEdtPlanification ;
+validation/publication/clôture = rôles de validation EDT existants.
+Le service d'interopérabilité n'importe pas l'application « presences »
+(aucune dépendance circulaire GET → Présences ; test dédié).
+
+COMMANDES
+---------
+cd backend
+.venv/bin/python -m django makemigrations edts && .venv/bin/python -m django migrate edts
+.venv/bin/python -m django test edts.tests.test_interop_presences
+.venv/bin/python -m django test edts   # 420 tests (3 erreurs AdminPolitique préexistantes)
+
+PREUVES MESURÉES (2026-11-04, base de démonstration)
+----------------------------------------------------
+- Tests d'interopérabilité : 14/14 verts (identité stable après
+  modification et après régénération, cycle de vie, simulation non
+  officielle, attendus + instantané figé, géo, permissions, garde de
+  suppression avec pointage).
+- Génération réelle moteur (EM Licence, L1, S1) : GENERATION_OK en
+  0,14 s, couverture 100 % (140/140 séances-occurrences, 280 h),
+  0 non placée, 0 violation au validateur indépendant.
+- Chaîne complète par API : génération persistée (12 séances) →
+  réconciliation (12 registres) → soumission/validation/publication
+  de l'EDT → réconciliation (12 séances PUBLIEE) → 12 événements
+  SEANCE_PUBLIEE ; détail d'une séance : peut_ouvrir_session_presence
+  = true, contexte UE EM-S1-UE03 / ECUE EM-S1-UE03-EC01 résolu.
+- Limite honnête : la génération annuelle complète (138 groupes) en une
+  seule passe dépasse le temps tenable sur SQLite dans ce bac à sable
+  (> 25 min, interrompue) ; elle se pilote par campagnes/périmètres
+  dans l'interface, et PostgreSQL a été mesuré 2,5× plus rapide sur ce
+  moteur lors des missions précédentes (voir rapport final GET).
