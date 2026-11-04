@@ -133,6 +133,10 @@ def _executer_import(request, *, appliquer):
         contenu=contenu,
         appliquer=appliquer,
         acteur=request.user if request.user.is_authenticated else None,
+        # Écran « Importer les étudiants inscrits » : décocher « Reconstruire
+        # le parcours » interdit la création des groupes/vagues absents.
+        reconstruire_parcours=_booleen(
+            request.data.get('reconstruire_parcours', True)),
     )
     donnees = rapport.as_dict()
 
@@ -219,6 +223,9 @@ def journal_imports_api(request):
         .annotate(
             lignes=Count('id'),
             inscrits=Count('id', filter=Q(statut=InscriptionImportee.Statut.INSCRIT)),
+            formations=Count('ref_formation', distinct=True),
+            groupes=Count('groupe', distinct=True),
+            vagues=Count('vague', distinct=True),
             recu_le=Min('created_at'),
         )
         .order_by('-recu_le')[:10]
@@ -228,6 +235,12 @@ def journal_imports_api(request):
         'empreinte': (l['empreinte'] or '')[:12],
         'lignes': l['lignes'],
         'inscrits': l['inscrits'],
+        # Lignes du lot non comptées comme inscrites (radiées) : le journal
+        # ne connaît que les lignes rattachées, aucun rejet n'est inventé.
+        'ignores': l['lignes'] - l['inscrits'],
+        'formations': l['formations'],
+        'groupes': l['groupes'],
+        'vagues': l['vagues'],
         'recu_le': l['recu_le'].isoformat() if l['recu_le'] else None,
     } for l in lignes]
     return Response({

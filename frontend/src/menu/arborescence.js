@@ -353,13 +353,15 @@ export const ARBORESCENCE = [
         },
       },
       {
-        // Même écran que la génération annuelle : sa zone 2 est l'import
-        // du fichier des inscrits (analyse puis import, CSV/XLSX).
+        // Fenêtre dédiée « Importer les étudiants inscrits » (situation 2,
+        // fichier externe) : dépôt, reconstruction du parcours, génération
+        // enchaînée et journal des imports. La zone d'import de l'écran de
+        // génération reste également disponible.
         id: 'get_injs.import',
         libelle: 'Import étudiants',
         description: 'Fichier externe',
         icone: 'bi-upload',
-        chemin: '/edt/generation-annuelle',
+        chemin: '/edt/import-etudiants',
         droit: {
           curp: ['edt.emploi_du_temps.generer'],
           legacy: [['web', 'operationnel']],

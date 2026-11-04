@@ -69,6 +69,7 @@ import CoursLmd from './pages/CoursLmd'
 import EdtNew from './pages/EdtNew'
 import GetInjsApp from './pages/getinjs/GetInjsApp'
 import GenerationAnnuelle from './pages/getinjs/GenerationAnnuelle'
+import ImportEtudiants from './pages/getinjs/ImportEtudiants'
 import CampagnesGeneration from './pages/getinjs/CampagnesGeneration'
 import VersionsPublication from './pages/getinjs/VersionsPublication'
 import AuditDonnees from './pages/getinjs/AuditDonnees'
@@ -1022,6 +1023,13 @@ function App() {
             <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Nouvel EDT</li></>}>
                 <EdtNew />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/edt/import-etudiants" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Import étudiants</li></>}>
+                <ImportEtudiants />
               </Layout>
             </ProtectedRoute>
           } />

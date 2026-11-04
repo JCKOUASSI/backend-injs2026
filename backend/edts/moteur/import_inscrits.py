@@ -52,6 +52,9 @@ REJET_SEMESTRE_ABSENT = 'SEMESTRE_ABSENT'
 REJET_FICHIER_VIDE = 'FICHIER_VIDE'
 REJET_FORMAT_NON_SUPPORTE = 'FORMAT_NON_SUPPORTE'
 REJET_COLONNES_ABSENTES = 'COLONNES_OBLIGATOIRES_ABSENTES'
+#: Groupe ou vague nommé dans le fichier mais absent du référentiel alors
+#: que la reconstruction du parcours est désactivée par l'utilisateur.
+REJET_PARCOURS_NON_RESOLU = 'PARCOURS_NON_RESOLU'
 
 #: Extensions acceptées (aucune bibliothèque nouvelle : ``openpyxl`` est déjà
 #: une dépendance du projet pour l'import Excel des formations).
@@ -428,7 +431,8 @@ def _normaliser_sexe(valeur):
     return ''
 
 
-def _resoudre_ligne(ligne, correspondance, annee, ligne_numero, appliquer, erreurs):
+def _resoudre_ligne(ligne, correspondance, annee, ligne_numero, appliquer, erreurs,
+                    reconstruire_parcours=True):
     """Résout une ligne brute ; ``None`` si elle doit être rejetée."""
     matricule = _valeur(ligne, correspondance, 'matricule')
     nom = _valeur(ligne, correspondance, 'nom')
@@ -476,11 +480,32 @@ def _resoudre_ligne(ligne, correspondance, annee, ligne_numero, appliquer, erreu
         return None
 
     parcours = _trouver_parcours(_valeur(ligne, correspondance, 'parcours'), formation)
-    vague = _trouver_ou_creer_vague(_valeur(ligne, correspondance, 'vague'), appliquer)
+    # Reconstruction du parcours : seuls les groupes et les vagues sont
+    # créés (les formations et niveaux doivent exister au référentiel).
+    # Désactivée, un groupe ou une vague nommé mais absent rejette la
+    # ligne avec un motif explicite — jamais de rattachement deviné.
+    peut_creer = appliquer and reconstruire_parcours
+    vague_nom = _valeur(ligne, correspondance, 'vague')
+    groupe_nom = _valeur(ligne, correspondance, 'groupe')
+    vague = _trouver_ou_creer_vague(vague_nom, peut_creer)
     groupe = _trouver_ou_creer_groupe(
-        annee, formation, parcours, niveau, vague,
-        _valeur(ligne, correspondance, 'groupe'), appliquer,
+        annee, formation, parcours, niveau, vague, groupe_nom, peut_creer,
     )
+    if not reconstruire_parcours:
+        if groupe_nom and groupe is None:
+            erreurs.append(LigneErreur(
+                ligne_numero, REJET_PARCOURS_NON_RESOLU,
+                f'Matricule {matricule} : groupe « {groupe_nom} » absent du '
+                'référentiel et reconstruction du parcours désactivée.',
+            ))
+            return None
+        if vague_nom and vague is None:
+            erreurs.append(LigneErreur(
+                ligne_numero, REJET_PARCOURS_NON_RESOLU,
+                f'Matricule {matricule} : vague « {vague_nom} » absente du '
+                'référentiel et reconstruction du parcours désactivée.',
+            ))
+            return None
 
     return _LigneResolue(
         ligne=ligne_numero,
@@ -500,12 +525,17 @@ def _resoudre_ligne(ligne, correspondance, annee, ligne_numero, appliquer, erreu
 
 
 def importer_inscrits(*, annee_academique_id, nom_fichier, contenu, appliquer=False,
-                      acteur=None):
+                      acteur=None, reconstruire_parcours=True):
     """Importe un fichier d'inscrits pour une année académique.
 
     ``appliquer=False`` (défaut) : **analyse seule**, aucune écriture.
     ``appliquer=True`` : écrit les ``InscriptionImportee`` de façon
     transactionnelle et idempotente (clé année + matricule).
+
+    ``reconstruire_parcours=False`` : les groupes et vagues nommés mais
+    absents du référentiel ne sont pas créés ; les lignes concernées sont
+    rejetées (motif ``PARCOURS_NON_RESOLU``). Défaut vrai = comportement
+    historique de l'écran d'import.
 
     Retourne toujours un :class:`RapportImport` — jamais une exception sur une
     ligne invalide : un fichier client contient toujours des lignes sales.
@@ -549,6 +579,7 @@ def importer_inscrits(*, annee_academique_id, nom_fichier, contenu, appliquer=Fa
     try:
         _executer_import(
             rapport, lignes, correspondance, annee, appliquer,
+            reconstruire_parcours=reconstruire_parcours,
         )
     except _AnnulerImport:
         # Aucune écriture conservée ; le rapport explique pourquoi.
@@ -561,7 +592,8 @@ def importer_inscrits(*, annee_academique_id, nom_fichier, contenu, appliquer=Fa
     return rapport
 
 
-def _executer_import(rapport, lignes, correspondance, annee, appliquer):
+def _executer_import(rapport, lignes, correspondance, annee, appliquer,
+                     reconstruire_parcours=True):
     """Corps transactionnel de l'import (isolé pour tester l'annulation)."""
     from edts.models import InscriptionImportee
 
@@ -571,6 +603,7 @@ def _executer_import(rapport, lignes, correspondance, annee, appliquer):
         for index, ligne in enumerate(lignes, start=2):
             resolue = _resoudre_ligne(
                 ligne, correspondance, annee, index, appliquer, rapport.erreurs,
+                reconstruire_parcours=reconstruire_parcours,
             )
             if resolue is not None:
                 resolues.append(resolue)
