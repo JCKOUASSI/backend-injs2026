@@ -102,9 +102,8 @@ describe('GET INJS APP — contenu du hub (miroir du hub INJS APP)', () => {
   const section = ARBORESCENCE.find((s) => s.id === 'get_injs')
   const visibles = section.enfants.filter((e) => !e.masque)
 
-  it('affiche exactement les entrées du hub démo, Accueil conservé en tête', () => {
+  it('affiche exactement les entrées du hub démo, Tableau de bord en tête', () => {
     expect(visibles.map((e) => [e.libelle, e.description])).toEqual([
-      ['Accueil GET INJS APP', 'Accueil du module'],
       ['Tableau de bord', 'Pilotage du module'],
       ['Emplois du temps', 'Grille hebdomadaire'],
       ['Génération', 'Moteur LMD'],
@@ -117,7 +116,6 @@ describe('GET INJS APP — contenu du hub (miroir du hub INJS APP)', () => {
 
   it('branche chaque entrée sur un écran réel de l’application', () => {
     const parLibelle = Object.fromEntries(visibles.map((e) => [e.libelle, e]))
-    expect(parLibelle['Accueil GET INJS APP'].chemin).toBe('/get-injs-app')
     expect(parLibelle['Tableau de bord'].chemin).toBe('/get-injs-app')
     expect(parLibelle['Emplois du temps'].chemin).toBe('/edt')
     expect(parLibelle['Génération'].chemin).toBe('/edt/generation-annuelle')

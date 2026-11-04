@@ -316,19 +316,6 @@ export const ARBORESCENCE = [
     droit: { legacy: [['web', 'operationnel']] },
     enfants: [
       {
-        // Page d'accueil du module GET INJS APP : fonctionnalités,
-        // compteurs réels et séances publiées prêtes pour Présences.
-        id: 'get_injs.accueil',
-        libelle: 'Accueil GET INJS APP',
-        description: 'Accueil du module',
-        icone: 'bi-house-door',
-        chemin: '/get-injs-app',
-        droit: {
-          curp: ['edt.creneau.consulter'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
         // Tableau de bord du module = la page d'accueil GET INJS APP
         // (pilotage : indicateurs, charge, générations, imports).
         id: 'get_injs.tableau_bord',
