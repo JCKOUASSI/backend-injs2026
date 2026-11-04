@@ -357,6 +357,23 @@ textarea:focus-visible,
 }
 .btn-info:hover:not(:disabled) { box-shadow: 0 10px 22px -8px rgba(14, 116, 144, 0.62); color: #FFFFFF; }
 
+/* Bouton sombre institutionnel — bleu nuit. `.btn-dark` était utilisé
+   dans plusieurs écrans (export CSV des emplois du temps, lancement de
+   génération, import des inscrits) sans aucune définition : le libellé
+   héritait de la couleur du texte (bleu nuit) et devenait invisible sur
+   les fonds bleu nuit locaux. Même famille de panne que `.btn-info`
+   ci-dessus, corrigée à la même place. */
+.btn-dark {
+  background: linear-gradient(135deg, var(--injs-navy) 0%, var(--injs-navy-mid) 100%);
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 6px 16px -6px rgba(7, 27, 58, 0.6);
+}
+.btn-dark:hover:not(:disabled) {
+  box-shadow: 0 10px 22px -8px rgba(7, 27, 58, 0.72);
+  color: #FFFFFF;
+}
+
 /* 4.4 Avertissement — contraste AA garanti (texte ambre foncé sur fond clair) */
 .btn-warning,
 .btn-outline-warning {
