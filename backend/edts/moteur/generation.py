@@ -56,6 +56,7 @@ BUDGET_PLACEMENTS_DEFAUT = 200_000
 #: Motif propre au moteur : besoins et créneaux existent, mais aucune salle ne
 #: peut accueillir les séances (contraintes dures C7 / C4).
 MOTIF_AUCUNE_SALLE_COMPATIBLE = 'AUCUNE_SALLE_COMPATIBLE'
+MOTIF_PLACEMENT_IMPOSSIBLE = 'PLACEMENT_IMPOSSIBLE'
 
 
 
@@ -489,6 +490,26 @@ def _warnings(besoins, salles):
     return avertissements
 
 
+def _motif_global(non_places, placements):
+    """Motif d'échec global HONNÊTE, dérivé des causes réelles.
+
+    Avant : ``AUCUNE_SALLE_COMPATIBLE`` dès qu'aucun placement n'aboutissait,
+    même quand les salles existaient mais que les créneaux étaient saturés
+    par des conflits (C1/C2/C3) — l'écran annonçait « aucune salle » à tort.
+    Désormais : le motif « salle » n'est retenu que si TOUTES les causes
+    bloquantes relevées sont C7/C4 ; sinon le motif générique de placement
+    impossible est renvoyé (le détail par besoin garde la raison précise).
+    """
+    if placements or not non_places:
+        return None
+    salle_uniquement = all(
+        {c.code_contrainte for c in np.contraintes_bloquantes}
+        <= {C.C7_COMPATIBILITE_SALLE, C.C4_CAPACITE}
+        for np in non_places
+    )
+    return MOTIF_AUCUNE_SALLE_COMPATIBLE if salle_uniquement else MOTIF_PLACEMENT_IMPOSSIBLE
+
+
 def _construire_resultat(resultat_besoins, besoins, placements, occupations,
                          contexte, budget, budget_liste):
     """Assemble le résultat final : placements, non-placés, métriques (étape Q)."""
@@ -555,9 +576,7 @@ def _construire_resultat(resultat_besoins, besoins, placements, occupations,
             'contraintes_souples': C.resume_souples(
                 placements, contexte.get('politique_souples')),
         },
-        motif_echec=None if placements or not non_places else (
-            MOTIF_AUCUNE_SALLE_COMPATIBLE if not placements else None
-        ),
+        motif_echec=_motif_global(non_places, placements),
         detail=resultat_besoins.detail,
         finalite=finalite,
     )

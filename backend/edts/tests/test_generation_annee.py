@@ -174,6 +174,33 @@ class GenerationAnneeTests(BaseAnneeTest):
         self.assertEqual(seances_1, seances_2)
         self.assertEqual(EmploiDuTemps.objects.count(), 1)
 
+    def test_totaux_planifies_coherents_quand_rien_n_est_place(self):
+        """Définitions du bilan : 0 placée ⇒ 0 planifié, 1 non planifié.
+
+        Sans aucune salle au référentiel, le groupe a des besoins mais rien
+        n'est placé : il ne doit pas être compté « planifié » (l'écran
+        affichait 135 planifiés / 0 non planifiés dans ce cas de figure).
+        """
+        from formations.models import RefSalle
+
+        self.importer([
+            f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'
+            for i in range(10)
+        ])
+        RefSalle.objects.all().delete()
+        bilan = A.generer_annee(self.annee.pk, semaines=[1])
+
+        self.assertEqual(bilan['totaux']['nb_groupes'], 1)
+        self.assertEqual(bilan['totaux']['nb_groupes_planifies'], 0)
+        self.assertEqual(bilan['totaux']['nb_groupes_non_planifies'], 1)
+        self.assertEqual(bilan['totaux']['nb_groupes_complets'], 0)
+        self.assertEqual(bilan['status_global'], A.ANNEE_IMPOSSIBLE)
+        ligne = bilan['groupes'][0]
+        self.assertGreater(ligne['seances_attendues'], 0)
+        self.assertEqual(ligne['seances_placees'], 0)
+        # Ici le motif « salle » est le vrai : aucune salle n'existe.
+        self.assertEqual(ligne['motif_echec'], G.MOTIF_AUCUNE_SALLE_COMPATIBLE)
+
     def test_groupe_sans_maquette_signale(self):
         from scolarite.models import Groupe
 

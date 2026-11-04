@@ -370,14 +370,21 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
         lignes.append(ligne)
 
     # ── 5. Bilan honnête ──────────────────────────────────────────────────────
-    planifies = [l for l in lignes if l['statut'] not in ('NON_PLANIFIE', 'NON_PERSISTE')]
+    # Définitions alignées sur l'affichage et sur les anomalies : un groupe
+    # est « planifié » s'il a AU MOINS une séance placée, « non planifié »
+    # s'il avait des séances attendues et qu'aucune n'est placée. Avant, un
+    # groupe IMPOSSIBLE à 0 séance placée comptait comme « planifié » (135
+    # planifiés / 0 non planifiés affichés alors que 127 groupes n'avaient
+    # rien placé et que les anomalies disaient l'inverse).
+    planifies = [l for l in lignes if (l['seances_placees'] or 0) > 0]
+    a_planifier = [l for l in lignes if (l['seances_attendues'] or 0) > 0]
     complet = [
         l for l in planifies
         if l['seances_non_placees'] == 0 and l['conflits'] == 0
     ]
     if not planifies:
         status_global = ANNEE_IMPOSSIBLE
-    elif len(complet) == len(lignes):
+    elif len(complet) == len(a_planifier):
         status_global = ANNEE_COMPLETE
     else:
         status_global = ANNEE_PARTIELLE
@@ -434,7 +441,9 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
             'nb_groupes': len(lignes),
             'nb_groupes_planifies': len(planifies),
             'nb_groupes_complets': len(complet),
-            'nb_groupes_non_planifies': len([l for l in lignes if l['statut'] == 'NON_PLANIFIE']),
+            'nb_groupes_non_planifies': len([
+                l for l in a_planifier if (l['seances_placees'] or 0) == 0
+            ]),
             'etudiants_couverts': total_etudiants,
             'seances_attendues': sum(l['seances_attendues'] for l in lignes),
             'seances_placees': sum(l['seances_placees'] for l in lignes),

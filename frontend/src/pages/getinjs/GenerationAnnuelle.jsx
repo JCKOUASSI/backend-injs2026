@@ -36,6 +36,31 @@ const STATUTS_EXECUTION = {
   EN_COURS: { libelle: 'en cours', classe: 'badge-primary' },
 }
 
+// Motifs d'échec du moteur traduits en langage métier. Un code inconnu est
+// affiché tel quel : l'interface ne masque jamais la cause renvoyée.
+const MOTIFS_LISIBLES = {
+  AUCUNE_SALLE_COMPATIBLE: 'Aucune salle compatible (type ou capacité)',
+  PLACEMENT_IMPOSSIBLE: 'Aucune combinaison créneau/salle ne satisfait les contraintes',
+  AUCUN_PLACEMENT_POSSIBLE: 'Aucun placement possible',
+  AUCUN_BESOIN_PLANIFIABLE: 'Aucun besoin horaire calculable (ni affectation, ni maquette)',
+  AUCUN_GROUPE_INJS: 'Aucun groupe dans le périmètre INJS',
+  CANEVAS_HORAIRE_VIDE: 'Canevas horaire vide (aucun créneau type)',
+  AFFECTATIONS_PEDAGOGIQUES_VIDES: 'Aucune affectation pédagogique',
+  HORS_PERIMETRE_INJS: 'Hors périmètre INJS',
+  C9_CALENDRIER: 'Aucune période de planification autorisée',
+  AUCUNE_MAQUETTE_ACTIVE: 'Aucune maquette active pour cette cohorte',
+  VOLUMES_HORAIRES_ABSENTS: 'Volumes horaires absents de la maquette',
+  VOLUME_HORAIRE_INCONNU: 'Volume horaire inconnu',
+  AUCUN_GROUPE_IMPORTE: 'Aucun groupe importé',
+  EDT_STATUT_NON_MODIFIABLE: 'EDT non modifiable (statut actuel)',
+  VALIDATION_BLOQUANTE: 'Validation bloquante',
+}
+
+function libelleMotif(code) {
+  if (!code) return null
+  return MOTIFS_LISIBLES[code] || code
+}
+
 function Statut({ statut }) {
   const info = STATUTS_LISIBLES[statut] || { libelle: statut || '—', classe: 'badge-neutral' }
   return <span className={`badge ${info.classe}`}>{info.libelle}</span>
@@ -61,8 +86,11 @@ function formatDateHeure(iso) {
 
 function formatDuree(ms) {
   if (ms == null) return '—'
-  if (ms < 100) return `${ms} ms`
-  return `${(ms / 1000).toFixed(1)} s`
+  if (ms < 1000) return `${ms} ms`
+  const secondes = (ms / 1000).toLocaleString('fr-FR', {
+    minimumFractionDigits: 1, maximumFractionDigits: 1,
+  })
+  return `${secondes} s`
 }
 
 export default function GenerationAnnuelle() {
@@ -652,7 +680,7 @@ export default function GenerationAnnuelle() {
               <span className={`badge ${STATUT_GLOBAL[bilan.status_global]?.classe || 'badge-neutral'}`}>
                 {STATUT_GLOBAL[bilan.status_global]?.libelle || bilan.status_global}
               </span>
-              {bilan.motif_echec && <span className="ms-2 text-danger">{bilan.motif_echec}</span>}
+              {bilan.motif_echec && <span className="ms-2 text-danger">{libelleMotif(bilan.motif_echec)}</span>}
             </p>
 
             {bilan.detail?.explication && (
@@ -666,6 +694,7 @@ export default function GenerationAnnuelle() {
               <div className="getinjs-comptes">
                 <Compte libelle="groupes" valeur={bilan.totaux.nb_groupes} />
                 <Compte libelle="planifiés" valeur={bilan.totaux.nb_groupes_planifies} />
+                <Compte libelle="non planifiés" valeur={bilan.totaux.nb_groupes_non_planifies} />
                 <Compte libelle="complets" valeur={bilan.totaux.nb_groupes_complets} />
                 <Compte libelle="étudiants couverts" valeur={bilan.totaux.etudiants_couverts} />
                 <Compte libelle="séances placées" valeur={bilan.totaux.seances_placees} />
@@ -707,7 +736,7 @@ export default function GenerationAnnuelle() {
                         <td>
                           <Statut statut={g.statut} />
                           {g.motif_echec && (
-                            <div className="small text-muted">{g.motif_echec}</div>
+                            <div className="small text-muted">{libelleMotif(g.motif_echec)}</div>
                           )}
                         </td>
                       </tr>

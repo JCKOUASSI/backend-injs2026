@@ -805,11 +805,18 @@ def historique_generations_api(request):
         except (TypeError, ValueError):
             limite = 20
 
-    executions = (
+    executions = list(
         ExecutionCampagne.objects
         .select_related('campagne', 'campagne__annee_academique')
         .order_by('-demarree_le')[:limite]
     )
+    # Exécutions orphelines (fil mort après un redémarrage serveur) : les
+    # clôturer en ÉCHEC explicite plutôt que les afficher « en cours »
+    # indéfiniment dans l'historique.
+    from edts.moteur.campagnes import reparer_execution_orpheline
+
+    for execution in executions:
+        reparer_execution_orpheline(execution)
 
     # Résolution des noms du périmètre (identifiants → libellés réels).
     from formations.referentiel_injs_l6 import formations_injs

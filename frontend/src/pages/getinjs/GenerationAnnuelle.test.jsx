@@ -101,7 +101,7 @@ const HISTORIQUE = {
     annee_academique: '2025-2026',
     date: '2026-11-04T02:39:00Z',
     statut: 'TERMINE',
-    duree_ms: 300,
+    duree_ms: 12500,
     perimetre: { filieres: [], formations: [], niveaux: [], groupes: [] },
     semestres: ['S1', 'S2'],
     seances_placees: 9,
@@ -353,13 +353,47 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     expect(within(nonPlacees).getByText('3')).toBeInTheDocument()
   })
 
+  it('traduit le motif d’échec des groupes et compte les non planifiés', async () => {
+    // Route surchargée : reset puis déclaration AVANT routes() (premier
+    // motif gagnant dans le mock, le beforeEach a déjà posé la route type).
+    apiController.reset()
+    apiController.setRoute('/edts/lmd/generate-annee/', {
+      ...BILAN,
+      status_global: 'IMPOSSIBLE',
+      totaux: {
+        ...BILAN.totaux,
+        nb_groupes_planifies: 0, nb_groupes_complets: 0, nb_groupes_non_planifies: 2,
+        seances_placees: 0, seances_non_placees: 12,
+      },
+      groupes: [{
+        groupe_id: 13, groupe: 'L1-G9', formation: 'Licence en Journalisme',
+        parcours: null, niveau: 'L1', vague: null, effectif: 33,
+        statut: 'GENERATION_IMPOSSIBLE', motif_echec: 'PLACEMENT_IMPOSSIBLE',
+        seances_attendues: 12, seances_placees: 0, seances_non_placees: 12,
+      }],
+    })
+    routes()
+    const user = userEvent.setup()
+    rendre()
+    await screen.findByLabelText(/Année académique/)
+    await user.click(screen.getByRole('button', { name: /Prévisualiser sans persister/i }))
+
+    const bilanTable = await screen.findByRole('table', { name: /Bilan par groupe/i })
+    expect(within(bilanTable).getByText(
+      'Aucune combinaison créneau/salle ne satisfait les contraintes',
+    )).toBeInTheDocument()
+    expect(within(bilanTable).queryByText('PLACEMENT_IMPOSSIBLE')).not.toBeInTheDocument()
+    const nonPlanifies = screen.getByText('non planifiés').closest('.getinjs-compte')
+    expect(within(nonPlanifies).getByText('2')).toBeInTheDocument()
+  })
+
   it('affiche l’historique réel des générations et les EDT versionnés', async () => {
     rendre()
     expect(await screen.findByText('Historique des générations')).toBeInTheDocument()
     expect(await screen.findByText('Toutes filières')).toBeInTheDocument()
     expect(screen.getByText('S1, S2')).toBeInTheDocument()
     expect(screen.getByText('75 %')).toBeInTheDocument()
-    expect(screen.getByText('0.3 s')).toBeInTheDocument()
+    expect(screen.getByText('12,5 s')).toBeInTheDocument()
     expect(screen.getByText('terminée')).toBeInTheDocument()
     expect(screen.getByText('Emplois du temps versionnés')).toBeInTheDocument()
     expect(screen.getByText('EDT Licence en Journalisme L1 — S1 (exemple GET)'))

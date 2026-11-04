@@ -53,6 +53,59 @@ TRANSITIONS = {
 
 STATUTS_TERMINES = (S.TERMINE, S.TERMINE_AVEC_ANOMALIES, S.ECHEC)
 
+# ── Exécutions réellement actives dans CE processus ─────────────────────────
+# Le fil d'arrière-plan d'une génération meurt avec le processus (redémarrage
+# du serveur, rechargement automatique en développement) : l'exécution
+# resterait « EN_COURS » en base pour toujours, l'historique l'afficherait
+# indéfiniment et le verrou empêcherait toute relance. Ce registre distingue
+# une exécution vivante d'une orpheline. Le garde-fou d'âge évite de clôturer
+# une exécution très jeune (fenêtre de démarrage du fil, ou autre processus
+# en déploiement multi-workers).
+_EXECUTIONS_ACTIVES: set[int] = set()
+_VERROU_REGISTRE = threading.Lock()
+AGE_MIN_ORPHELINE_S = 120
+
+
+def _marquer_execution_active(execution_id):
+    with _VERROU_REGISTRE:
+        _EXECUTIONS_ACTIVES.add(execution_id)
+
+
+def _marquer_execution_terminee(execution_id):
+    with _VERROU_REGISTRE:
+        _EXECUTIONS_ACTIVES.discard(execution_id)
+
+
+def reparer_execution_orpheline(execution):
+    """Clôt en ÉCHEC une exécution « en cours » dont le fil a disparu.
+
+    Retourne ``True`` si l'exécution (et sa campagne si elle était en cours)
+    a été réparée. Ne touche jamais une exécution vivante de ce processus,
+    ni une exécution démarrée il y a moins de ``AGE_MIN_ORPHELINE_S``.
+    """
+    if execution is None or execution.statut != ExecutionCampagne.Statut.EN_COURS:
+        return False
+    with _VERROU_REGISTRE:
+        if execution.pk in _EXECUTIONS_ACTIVES:
+            return False
+    demarree = execution.demarree_le
+    if demarree is not None and (timezone.now() - demarree).total_seconds() < AGE_MIN_ORPHELINE_S:
+        return False
+    execution.statut = ExecutionCampagne.Statut.ECHEC
+    execution.terminee_le = timezone.now()
+    execution.erreur = (
+        'Exécution interrompue : le serveur a redémarré pendant la génération. '
+        'Relancez la campagne.'
+    )
+    execution.save(update_fields=['statut', 'terminee_le', 'erreur'])
+    campagne = execution.campagne
+    if campagne.statut == S.EN_COURS:
+        campagne.statut = S.ECHEC
+        campagne.terminee_le = execution.terminee_le
+        campagne.save(update_fields=['statut', 'terminee_le', 'updated_at'])
+    return True
+
+
 
 class TransitionRefusee(Exception):
     """Transition de statut non autorisée (message destiné à l'utilisateur)."""
@@ -171,6 +224,12 @@ def demarrer_campagne(campagne_id, *, user=None, asynchrone=True):
         if campagne is None:
             raise TransitionRefusee('CAMPAGNE_INTROUVABLE', {})
         if campagne.statut == S.EN_COURS:
+            # Une exécution orpheline (fil mort) ne doit pas bloquer la
+            # relance pour toujours : on la clôt d'abord si elle l'est.
+            courante = campagne.executions.order_by('-numero').first()
+            if reparer_execution_orpheline(courante):
+                campagne.refresh_from_db()
+        if campagne.statut == S.EN_COURS:
             raise TransitionRefusee('CAMPAGNE_DEJA_EN_COURS', {
                 'explication': (
                     'Une exécution est déjà en cours pour cette campagne : '
@@ -231,6 +290,7 @@ def executer_campagne(campagne_id, execution_id):
     from edts.moteur.annee import generer_annee
 
     parametres = campagne.parametres or {}
+    _marquer_execution_active(execution_id)
     debut = time.monotonic()
     try:
         with CaptureQueriesContext(connection) as requetes:
@@ -304,6 +364,8 @@ def executer_campagne(campagne_id, execution_id):
             campagne.statistiques = {**(campagne.statistiques or {}), 'duree_ms': duree_ms}
             campagne.save(update_fields=['statut', 'terminee_le', 'statistiques', 'updated_at'])
         raise
+    finally:
+        _marquer_execution_terminee(execution_id)
 
 
 def _statuts_depuis_bilan(bilan, anomalies):
@@ -562,6 +624,9 @@ def statut_campagne(campagne_id):
     """État compact pour l'interrogation périodique (progression)."""
     campagne = _charger(campagne_id)
     execution = campagne.executions.order_by('-numero').first()
+    if reparer_execution_orpheline(execution):
+        campagne.refresh_from_db()
+        execution.refresh_from_db()
     return {
         'id': campagne.pk,
         'statut': campagne.statut,

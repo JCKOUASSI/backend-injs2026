@@ -63,6 +63,64 @@ class BaseCampagneTest(TestCase):
         )
 
 
+class ExecutionOrphelineTests(BaseCampagneTest):
+    """Une exécution dont le fil est mort ne doit pas rester « en cours »."""
+
+    def _campagne_en_cours_orpheline(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        campagne = self.campagne()
+        C.marquer_pret(campagne.pk, user=self.admin)
+        campagne.refresh_from_db()
+        execution = ExecutionCampagne.objects.create(
+            campagne=campagne, numero=1,
+            statut=ExecutionCampagne.Statut.EN_COURS,
+            demarree_le=timezone.now() - timedelta(hours=2),
+        )
+        campagne.statut = CampagneGeneration.Statut.EN_COURS
+        campagne.demarree_le = execution.demarree_le
+        campagne.save()
+        return campagne, execution
+
+    def test_statut_repare_l_execution_orpheline(self):
+        campagne, execution = self._campagne_en_cours_orpheline()
+        statut = C.statut_campagne(campagne.pk)
+        self.assertFalse(statut['en_cours'])
+        self.assertEqual(statut['statut'], CampagneGeneration.Statut.ECHEC)
+        self.assertIn('interrompue', statut['erreur'])
+        execution.refresh_from_db()
+        self.assertEqual(execution.statut, ExecutionCampagne.Statut.ECHEC)
+        self.assertIsNotNone(execution.terminee_le)
+
+    def test_relance_possible_apres_reparation(self):
+        campagne, _execution = self._campagne_en_cours_orpheline()
+        # Ne doit plus lever CAMPAGNE_DEJA_EN_COURS : l'orpheline est close.
+        lancee = C.demarrer_campagne(campagne.pk, user=self.admin, asynchrone=False)
+        self.assertEqual(lancee['numero'], 2)
+
+    def test_execution_vivante_jamais_reparee(self):
+        campagne, execution = self._campagne_en_cours_orpheline()
+        C._marquer_execution_active(execution.pk)
+        try:
+            self.assertFalse(C.reparer_execution_orpheline(execution))
+        finally:
+            C._marquer_execution_terminee(execution.pk)
+        execution.refresh_from_db()
+        self.assertEqual(execution.statut, ExecutionCampagne.Statut.EN_COURS)
+
+    def test_execution_jeune_jamais_reparee(self):
+        campagne = self.campagne()
+        C.marquer_pret(campagne.pk, user=self.admin)
+        campagne.refresh_from_db()
+        execution = ExecutionCampagne.objects.create(
+            campagne=campagne, numero=1,
+            statut=ExecutionCampagne.Statut.EN_COURS,
+        )
+        self.assertFalse(C.reparer_execution_orpheline(execution))
+
+
 class CycleDeVieCampagneTests(BaseCampagneTest):
     def test_creation_en_brouillon_avec_effectif_mesure(self):
         campagne = self.campagne()
