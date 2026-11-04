@@ -1,6 +1,6 @@
-/* ── GET INJS APP — accueil du module (identité universitaire INJS) ──
-   Bleu foncé et bleu clair ; titres en serif. Classes préfixées
-   `giapp-` : aucun impact sur les autres écrans. */
+/* ── GET INJS APP — tableau de bord d'accueil du module ──
+   Maquette validée, couleurs INJS : bleu foncé et bleu clair.
+   Classes préfixées `giapp-` : aucun impact sur les autres écrans. */
 
 .giapp {
   --giapp-bleu-fonce: #0a2a5c;
@@ -10,48 +10,69 @@
   --giapp-encre: #14263f;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.1rem;
 }
 
+/* ── En-tête ─────────────────────────────────────────────────────────────── */
 .giapp-hero {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 1.5rem;
   flex-wrap: wrap;
-  padding: 1.75rem 2rem;
+  padding: 1.6rem 1.8rem;
   border-radius: 18px;
-  color: var(--giapp-fond);
-  background: linear-gradient(135deg, #081f42 0%, var(--giapp-bleu-fonce) 55%, var(--giapp-bleu) 100%);
-  box-shadow: 0 18px 34px -18px rgba(10, 42, 92, 0.55);
+  color: var(--giapp-encre);
+  background: linear-gradient(135deg, #eef4fd 0%, #e2edfb 60%, #d4e6fa 100%);
+  border: 1px solid #cfdff5;
+  box-shadow: 0 14px 28px -20px rgba(10, 42, 92, 0.35);
 }
 
-.giapp-hero-tag {
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--giapp-bleu-clair);
+.giapp-hero-main { max-width: 680px; }
+
+.giapp-pills {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
 }
+
+.giapp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid #bcd3f0;
+  color: var(--giapp-bleu-fonce);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+a.giapp-pill:hover { background: #ffffff; color: var(--giapp-bleu-fonce); }
 
 .giapp-hero-title {
-  margin: 0.35rem 0 0.4rem;
+  margin: 0 0 0.45rem;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 2.2rem;
+  font-size: 2.1rem;
   font-weight: 700;
   letter-spacing: 0.01em;
+  color: var(--giapp-bleu-fonce);
 }
 
 .giapp-hero-sub {
-  margin: 0 0 1.1rem;
-  max-width: 620px;
-  color: rgba(242, 247, 253, 0.85);
+  margin: 0 0 1.15rem;
+  color: #44597a;
   font-size: 0.92rem;
+  line-height: 1.55;
 }
 
 .giapp-hero-actions {
   display: flex;
-  gap: 0.6rem;
+  gap: 0.9rem;
+  align-items: center;
   flex-wrap: wrap;
 }
 
@@ -69,19 +90,57 @@
 }
 
 .giapp-btn--accent {
-  background: var(--giapp-bleu-clair);
-  color: #08213f;
+  background: var(--giapp-bleu-fonce);
+  color: #ffffff;
 }
 
-.giapp-btn--clair {
-  background: rgba(242, 247, 253, 0.14);
-  color: var(--giapp-fond);
-  border: 1px solid rgba(242, 247, 253, 0.45);
+.giapp-btn--accent:hover { background: var(--giapp-bleu); color: #ffffff; }
+
+.giapp-btn--petit {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.76rem;
+  border-radius: 8px;
+  background: var(--giapp-fond);
+  border: 1px solid #bcd3f0;
+  color: var(--giapp-bleu-fonce);
 }
 
-.giapp-btn:disabled {
-  opacity: 0.6;
-  cursor: wait;
+.giapp-btn--petit:hover { background: #e2edfb; color: var(--giapp-bleu-fonce); }
+
+.giapp-btn:disabled { opacity: 0.6; cursor: wait; }
+
+.giapp-hero-lien {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--giapp-bleu);
+  text-decoration: none;
+}
+
+.giapp-hero-lien:hover { color: var(--giapp-bleu-fonce); text-decoration: underline; }
+
+.giapp-hero-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  align-items: flex-end;
+}
+
+.giapp-hero-stat { text-align: right; }
+
+.giapp-hero-stat-libelle {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #5f7295;
+}
+
+.giapp-hero-stat-valeur {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--giapp-bleu-fonce);
 }
 
 .giapp-hero-etat {
@@ -90,7 +149,9 @@
   gap: 0.5rem;
   padding: 0.45rem 0.8rem;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.22);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #bcd3f0;
+  color: var(--giapp-bleu-fonce);
   font-size: 0.78rem;
   font-weight: 700;
   white-space: nowrap;
@@ -103,12 +164,13 @@
   background: #94a3b8;
 }
 
-.giapp-pastille.is-ok { background: #38bdf8; }
+.giapp-pastille.is-ok { background: #1d9bf0; }
 .giapp-pastille.is-ko { background: #f87171; }
 
+/* ── Indicateurs ─────────────────────────────────────────────────────────── */
 .giapp-kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 0.9rem;
 }
 
@@ -117,85 +179,76 @@
   border: 1px solid #d9e4f2;
   border-top: 4px solid var(--giapp-bleu-clair);
   border-radius: 14px;
-  padding: 1rem 1.1rem;
+  padding: 0.95rem 1.05rem;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.12rem;
+}
+
+.giapp-kpi-libelle {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #54677e;
 }
 
 .giapp-kpi-valeur {
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 1.9rem;
+  font-size: 1.85rem;
   font-weight: 700;
   color: var(--giapp-bleu-fonce);
 }
 
-.giapp-kpi-libelle {
+.giapp-kpi-detail { font-size: 0.74rem; color: #76879e; }
+
+/* ── Cartes et grilles ───────────────────────────────────────────────────── */
+.giapp-grid-2 {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 0.9rem;
+}
+
+@media (max-width: 992px) {
+  .giapp-grid-2 { grid-template-columns: 1fr; }
+  .giapp-hero-stats { align-items: flex-start; }
+  .giapp-hero-stat { text-align: left; }
+}
+
+.giapp-card {
+  background: #ffffff;
+  border: 1px solid #d9e4f2;
+  border-radius: 14px;
+  padding: 1rem 1.15rem;
+}
+
+.giapp-card-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.giapp-card-entete h2 {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--giapp-bleu-fonce);
+}
+
+.giapp-card-sous {
+  margin: 0.25rem 0 0.85rem;
   font-size: 0.78rem;
-  font-weight: 600;
-  color: #54677e;
+  color: #76879e;
 }
 
 .giapp-titre-section {
-  margin: 0.4rem 0 -0.4rem;
+  margin: 0.4rem 0 -0.3rem;
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--giapp-bleu-fonce);
-}
-
-.giapp-tuiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 0.9rem;
-}
-
-.giapp-tuile {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 1.05rem 1.1rem;
-  background: var(--giapp-fond);
-  border: 1px solid #d9e4f2;
-  border-radius: 14px;
-  text-decoration: none;
-  color: var(--giapp-encre);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.giapp-tuile:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 22px -12px rgba(10, 42, 92, 0.35);
-  color: var(--giapp-encre);
-}
-
-.giapp-tuile-icone {
-  width: 40px;
-  height: 40px;
-  border-radius: 11px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--giapp-bleu-fonce);
-  color: var(--giapp-bleu-clair);
-  font-size: 1.1rem;
-}
-
-.giapp-tuile-titre {
-  font-weight: 800;
-  font-size: 0.95rem;
-}
-
-.giapp-tuile-desc {
-  font-size: 0.8rem;
-  color: #54677e;
-  flex: 1;
-}
-
-.giapp-tuile-lien {
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: var(--giapp-bleu);
 }
 
 .giapp-panneau {
@@ -211,9 +264,151 @@
   color: #54677e;
 }
 
-.giapp-table-wrap {
-  overflow-x: auto;
+/* ── Barres (charge, population) ─────────────────────────────────────────── */
+.giapp-barres { display: grid; gap: 0.45rem; }
+
+.giapp-barre {
+  display: grid;
+  grid-template-columns: 5.2rem 1fr 5.4rem;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
 }
+
+.giapp-barre-libelle { color: #3c5069; font-weight: 600; }
+
+.giapp-barre-libelle--long {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.giapp-barre-piste {
+  height: 0.62rem;
+  background: #e3edf9;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.giapp-barre-remplissage {
+  display: block;
+  height: 100%;
+  background: var(--giapp-bleu-fonce);
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+
+.giapp-barre-remplissage.is-clair { background: var(--giapp-bleu-clair); }
+
+.giapp-barre-valeur { text-align: right; font-weight: 800; color: var(--giapp-bleu-fonce); }
+
+.giapp-barre-part { font-weight: 600; color: #76879e; }
+
+.giapp-niveaux {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.giapp-niveau {
+  background: var(--giapp-fond);
+  border: 1px solid #d9e4f2;
+  border-radius: 10px;
+  padding: 0.5rem 0.4rem;
+  text-align: center;
+}
+
+.giapp-niveau-code {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #54677e;
+}
+
+.giapp-niveau-valeur {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--giapp-bleu-fonce);
+}
+
+/* ── Dernières générations ───────────────────────────────────────────────── */
+.giapp-generations {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.giapp-generation {
+  border: 1px solid #e3edf9;
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+  background: #fbfdff;
+}
+
+.giapp-generation-ligne {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.giapp-generation-date { font-size: 0.74rem; font-weight: 700; color: #76879e; }
+
+.giapp-generation-titre {
+  margin: 0.3rem 0 0.2rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--giapp-encre);
+}
+
+.giapp-generation-stats { margin: 0; font-size: 0.76rem; color: #54677e; }
+.giapp-generation-stats strong { color: var(--giapp-bleu-fonce); }
+
+/* ── Étapes du processus ─────────────────────────────────────────────────── */
+.giapp-etapes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.giapp-etape {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--giapp-encre);
+}
+
+.giapp-etape:hover { background: var(--giapp-fond); color: var(--giapp-encre); }
+
+.giapp-etape-numero {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--giapp-bleu-fonce);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.giapp-etape-titre { display: block; font-size: 0.86rem; font-weight: 800; }
+
+.giapp-etape-desc { display: block; font-size: 0.76rem; color: #54677e; }
+
+/* ── Tableaux ────────────────────────────────────────────────────────────── */
+.giapp-table-wrap { overflow-x: auto; }
 
 .giapp-table {
   width: 100%;
@@ -235,10 +430,7 @@
   vertical-align: middle;
 }
 
-.giapp-uuid {
-  font-size: 0.75rem;
-  color: var(--giapp-bleu);
-}
+.giapp-uuid { font-size: 0.75rem; color: var(--giapp-bleu); }
 
 .giapp-badge {
   display: inline-block;
@@ -260,65 +452,53 @@
   color: #54677e;
 }
 
-/* ── Vue d'ensemble : graphiques sobres calculés des données réelles ─────── */
-.giapp-graphs {
+/* ── Accès rapides ───────────────────────────────────────────────────────── */
+.giapp-minis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 0.9rem;
 }
 
-.giapp-graph {
-  background: #fbfdff;
-  border: 1px solid #d9e4f2;
-  border-top: 3px solid var(--giapp-bleu-fonce);
-  border-radius: 12px;
+.giapp-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
   padding: 0.9rem 1rem;
+  background: #ffffff;
+  border: 1px solid #d9e4f2;
+  border-top: 3px solid var(--giapp-bleu-clair);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--giapp-encre);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.giapp-graph h3 {
-  margin: 0 0 0.7rem;
-  font-size: 0.8rem;
+.giapp-mini:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 22px -14px rgba(10, 42, 92, 0.35);
+  color: var(--giapp-encre);
+}
+
+.giapp-mini--bouton:disabled { opacity: 0.6; cursor: wait; transform: none; }
+
+.giapp-mini-libelle {
+  font-size: 0.66rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--giapp-bleu-fonce);
+  color: #54677e;
 }
 
-.giapp-barres { display: grid; gap: 0.42rem; }
-
-.giapp-barre {
-  display: grid;
-  grid-template-columns: 5.2rem 1fr 2rem;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.78rem;
-}
-
-.giapp-barre-libelle { color: #3c5069; font-weight: 600; }
-
-.giapp-barre-piste {
-  height: 0.62rem;
-  background: #e3edf9;
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.giapp-barre-remplissage {
-  display: block;
-  height: 100%;
-  background: var(--giapp-bleu-fonce);
-  border-radius: 999px;
-  transition: width 0.6s ease;
-}
-
-.giapp-barre-remplissage.is-clair { background: var(--giapp-bleu-clair); }
-
-.giapp-barre-valeur { text-align: right; font-weight: 800; color: var(--giapp-bleu-fonce); }
-
-.giapp-gros-chiffre {
-  margin: 0.2rem 0;
+.giapp-mini-valeur {
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--giapp-bleu-fonce);
 }
+
+.giapp-mini-titre { font-size: 0.84rem; font-weight: 700; }
+
+.giapp-mini-lien { font-size: 0.76rem; font-weight: 800; color: var(--giapp-bleu); }

@@ -44,6 +44,8 @@ urlpatterns_lmd = [
          name='edt-lmd-import-inscrits-analyser'),
     path('lmd/import/inscrits/synthese/', g.synthese_import_api,
          name='edt-lmd-import-inscrits-synthese'),
+    path('lmd/import/inscrits/journal/', g.journal_imports_api,
+         name='edt-lmd-import-inscrits-journal'),
     path('lmd/import/inscrits/', g.importer_inscrits_api,
          name='edt-lmd-import-inscrits'),
     path('lmd/generate-annee/', g.generate_annee_api,

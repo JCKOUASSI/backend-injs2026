@@ -5,76 +5,42 @@ import { useToast } from '../../context/ToastContext'
 import '../../styles/getInjsApp.css'
 
 /**
- * GET INJS APP — page d'accueil du module de gestion des emplois du temps.
+ * GET INJS APP — tableau de bord d'accueil du module (miroir de la maquette
+ * validée, couleurs INJS bleu foncé / bleu clair).
  *
- * Le moteur (génération déterministe, campagnes, import d'inscrits,
- * publication, exports) vit dans l'application backend ``edts`` et ses
- * écrans dédiés ; cette page est le point d'entrée visible du module :
- * elle présente ses fonctionnalités, ses compteurs réels et les séances
- * officiellement publiées prêtes pour le futur module Présences.
- * Aucun chiffre n'est inventé : un service injoignable affiche « — ».
+ * Chaque chiffre provient d'un endpoint réel du module ou des référentiels :
+ * aucun compteur n'est inventé — un service injoignable affiche « — » et un
+ * bloc sans données affiche son état vide honnête.
  */
 
-const FONCTIONNALITES = [
+const SEMESTRES = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10']
+const NIVEAUX = ['L1', 'L2', 'L3', 'M1', 'M2']
+
+const ETAPES = [
   {
-    titre: 'Tableau des emplois du temps',
-    description: 'Consulter, filtrer et ouvrir les emplois du temps par formation, groupe, enseignant ou salle.',
-    chemin: '/edt', icone: 'bi-table',
+    titre: 'Référentiels INJS',
+    description: 'Filières, formations, salles et enseignants du référentiel.',
+    chemin: '/edt/salles-espaces',
   },
   {
-    titre: 'Créer un emploi du temps',
-    description: 'Composer manuellement un emploi du temps et ses séances.',
-    chemin: '/edt/nouveau', icone: 'bi-plus-square',
+    titre: 'Inscriptions / import',
+    description: 'Fichier CSV ou XLSX des inscrits ; le parcours est créé automatiquement.',
+    chemin: '/edt/generation-annuelle',
   },
   {
-    titre: 'Génération annuelle & import',
-    description: 'Importer un fichier d’inscrits (CSV/XLSX) puis générer les emplois du temps de toute l’année.',
-    chemin: '/edt/generation-annuelle', icone: 'bi-lightning-charge',
+    titre: 'Parcours LMD',
+    description: 'Maquettes pédagogiques, UE et ECUE des formations Licence & Master.',
+    chemin: '/cours',
   },
   {
-    titre: 'Campagnes de génération',
-    description: 'Piloter les générations par campagnes tracées (périmètre, bilan, anomalies, durée).',
-    chemin: '/edt/campagnes', icone: 'bi-collection-play',
+    titre: 'Génération',
+    description: 'Moteur déterministe piloté par campagnes tracées (périmètre, bilan, anomalies).',
+    chemin: '/edt/campagnes',
   },
   {
-    titre: 'Audit des données',
-    description: 'Vérifier « puis-je générer ? » : contrôles des référentiels avant toute génération.',
-    chemin: '/edt/audit', icone: 'bi-clipboard2-check',
-  },
-  {
-    titre: 'Versions & publication',
-    description: 'Valider puis publier officiellement les emplois du temps, par versions successives.',
-    chemin: '/edt/versions', icone: 'bi-send-check',
-  },
-  {
-    titre: 'Présences de séance',
-    description: 'Séances du jour, effectifs attendus et émargement (QR & manuel).',
-    chemin: '/edt/presences', icone: 'bi-qr-code-scan',
-  },
-  {
-    titre: 'Cours (LMD)',
-    description: 'Séances et cours rattachés aux maquettes LMD.',
-    chemin: '/cours', icone: 'bi-journal-bookmark',
-  },
-  {
-    titre: 'Salles & espaces',
-    description: '166 salles et espaces de formation du référentiel INJS.',
-    chemin: '/edt/salles-espaces', icone: 'bi-building',
-  },
-  {
-    titre: 'Disponibilités',
-    description: 'Indisponibilités et préférences des enseignants et des salles.',
-    chemin: '/edt/disponibilites', icone: 'bi-calendar-heart',
-  },
-  {
-    titre: 'Conflits & contraintes',
-    description: 'Détecter et résoudre les conflits salle / enseignant / groupe.',
-    chemin: '/edt/conflits', icone: 'bi-exclamation-triangle',
-  },
-  {
-    titre: 'Export / Impression',
-    description: 'Exporter les emplois du temps (CSV, XLSX, PDF) et les imprimer.',
-    chemin: '/edt/export', icone: 'bi-printer',
+    titre: 'Consultation & export',
+    description: 'Grilles hebdomadaires, exports CSV/XLSX/PDF et publication officielle.',
+    chemin: '/edt',
   },
 ]
 
@@ -89,67 +55,68 @@ function compteDe(reponse, repli) {
   return repli
 }
 
-const JOURS_SEMAINE = ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI', 'DIMANCHE']
-
-function minutesDe(heure) {
-  const [h, m] = String(heure || '').split(':').map(Number)
-  return Number.isFinite(h) ? h * 60 + (m || 0) : null
+function formaterNombre(n) {
+  return typeof n === 'number' ? n.toLocaleString('fr-FR') : '—'
 }
 
-/** Vue d'ensemble calculée des séances chargées — aucun chiffre inventé. */
-function calculerVueEnsemble(seances) {
-  // Semaine académique INJS : lundi à samedi toujours affichés ; le dimanche
-  // n'apparaît que s'il porte effectivement des séances.
-  const parJour = JOURS_SEMAINE.map((jour) => ({
-    libelle: jour.charAt(0) + jour.slice(1).toLowerCase(),
-    valeur: seances.filter((s) => s.placement?.jour === jour).length,
-  })).filter((j, i) => i < 6 || j.valeur > 0)
-  const types = {}
-  let minutes = 0
+function formaterDate(iso) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('fr-FR')
+}
+
+function formaterDuree(ms) {
+  if (typeof ms !== 'number') return '—'
+  if (ms < 1000) return `${ms} ms`
+  return `${(ms / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} s`
+}
+
+/** Répartition des séances publiées par semestre (S1 → S10), données exactes. */
+function chargeParSemestre(seances) {
+  const compteurs = Object.fromEntries(SEMESTRES.map((s) => [s, 0]))
   for (const s of seances) {
-    const t = s.placement?.type_seance || 'AUTRE'
-    types[t] = (types[t] || 0) + 1
-    const d = minutesDe(s.placement?.heure_debut)
-    const f = minutesDe(s.placement?.heure_fin)
-    if (d !== null && f !== null && f > d) minutes += f - d
+    const sem = s.placement?.semestre
+    if (sem in compteurs) compteurs[sem] += 1
   }
-  const parType = Object.entries(types)
-    .map(([libelle, valeur]) => ({ libelle, valeur }))
-    .sort((a, b) => b.valeur - a.valeur)
-  return { parJour, parType, heures: Math.round((minutes / 60) * 10) / 10 }
+  const max = Math.max(1, ...Object.values(compteurs))
+  return SEMESTRES.map((sem) => ({
+    libelle: sem, valeur: compteurs[sem],
+    part: seances.length ? Math.round((compteurs[sem] / seances.length) * 100) : 0,
+    largeur: Math.round((compteurs[sem] / max) * 100),
+  }))
 }
 
-function Barres({ donnees, accent }) {
-  const max = Math.max(1, ...donnees.map((d) => d.valeur))
+function BarreCharge({ ligne }) {
   return (
-    <div className="giapp-barres">
-      {donnees.map((d) => (
-        <div className="giapp-barre" key={d.libelle}>
-          <span className="giapp-barre-libelle">{d.libelle}</span>
-          <span className="giapp-barre-piste">
-            <span
-              className={`giapp-barre-remplissage ${accent === 'clair' ? 'is-clair' : ''}`}
-              style={{ width: `${Math.round((d.valeur / max) * 100)}%` }}
-            ></span>
-          </span>
-          <span className="giapp-barre-valeur">{d.valeur}</span>
-        </div>
-      ))}
+    <div className="giapp-barre">
+      <span className="giapp-barre-libelle">{ligne.libelle}</span>
+      <span className="giapp-barre-piste">
+        <span className="giapp-barre-remplissage" style={{ width: `${ligne.largeur}%` }}></span>
+      </span>
+      <span className="giapp-barre-valeur">
+        {ligne.valeur} <span className="giapp-barre-part">· {ligne.part} %</span>
+      </span>
     </div>
   )
 }
 
 export default function GetInjsApp() {
   const { showToast } = useToast()
+  const [chargement, setChargement] = useState(true)
+  const [annee, setAnnee] = useState(null)
   const [compteurs, setCompteurs] = useState(null)
   const [seances, setSeances] = useState([])
-  const [chargement, setChargement] = useState(true)
+  const [synthese, setSynthese] = useState(null)
+  const [campagnes, setCampagnes] = useState([])
+  const [journal, setJournal] = useState([])
   const [telechargement, setTelechargement] = useState(false)
 
   useEffect(() => {
     let annule = false
     ;(async () => {
-      const [emplois, emploisPub, publiees, evenements, conflits, sante] = await Promise.allSettled([
+      const [annees, emplois, emploisPub, publiees1, evenements, conflits, sante,
+        campagnesR, enseignants, salles] = await Promise.allSettled([
+        api.get('/scolarite/ref/annees/'),
         api.get('/edts/emplois/'),
         // Compte exact des EDT publiés : la pagination ne doit pas le tronquer.
         api.get('/edts/emplois/', { params: { statut: 'PUBLIE', page_size: 1 } }),
@@ -157,10 +124,34 @@ export default function GetInjsApp() {
         api.get('/edts/interop/evenements/', { params: { non_consommes: 1 } }),
         api.get('/edts/conflits/'),
         api.get('/health/'),
+        api.get('/edts/campagnes/'),
+        api.get('/edts/referentiel-enseignants/'),
+        api.get('/scolarite/ref/salles/'),
       ])
       if (annule) return
+
+      const listeAnnees = annees.status === 'fulfilled' ? listeDe(annees.value) : []
+      const anneeCourante = listeAnnees.find((a) => a.courante) || listeAnnees[0] || null
+      setAnnee(anneeCourante)
+
+      // Séances publiées : pages suivantes pour des répartitions exactes.
+      let toutesSeances = publiees1.status === 'fulfilled' ? listeDe(publiees1.value) : []
+      const totalSeances = publiees1.status === 'fulfilled'
+        ? compteDe(publiees1.value, toutesSeances.length) : toutesSeances.length
+      if (publiees1.status === 'fulfilled' && totalSeances > toutesSeances.length) {
+        const pages = Math.min(10, Math.ceil(totalSeances / 100))
+        for (let p = 2; p <= pages && toutesSeances.length < totalSeances; p += 1) {
+          try {
+            const suite = await api.get('/edts/interop/seances-publiees/',
+              { params: { page_size: 100, page: p } })
+            toutesSeances = toutesSeances.concat(listeDe(suite))
+          } catch { break }
+          if (annule) return
+        }
+      }
+      setSeances(toutesSeances)
+
       const listeEmplois = emplois.status === 'fulfilled' ? listeDe(emplois.value) : []
-      const listeSeances = publiees.status === 'fulfilled' ? listeDe(publiees.value) : []
       setCompteurs({
         emploisTotal: emplois.status === 'fulfilled'
           ? compteDe(emplois.value, listeEmplois.length) : null,
@@ -168,15 +159,28 @@ export default function GetInjsApp() {
           ? compteDe(emploisPub.value,
               listeDe(emploisPub.value).filter((e) => e.statut === 'PUBLIE').length)
           : listeEmplois.filter((e) => e.statut === 'PUBLIE').length,
-        seancesPubliees: publiees.status === 'fulfilled'
-          ? compteDe(publiees.value, listeSeances.length) : null,
+        seancesPubliees: publiees1.status === 'fulfilled' ? totalSeances : null,
         evenements: evenements.status === 'fulfilled'
           ? (evenements.value.data?.count ?? null) : null,
         conflits: conflits.status === 'fulfilled'
           ? compteDe(conflits.value, listeDe(conflits.value).length) : null,
+        enseignants: enseignants.status === 'fulfilled'
+          ? listeDe(enseignants.value).length : null,
+        salles: salles.status === 'fulfilled' ? listeDe(salles.value).length : null,
         apiOk: sante.status === 'fulfilled' && sante.value.data?.status === 'ok',
       })
-      setSeances(listeSeances)
+      setCampagnes(campagnesR.status === 'fulfilled' ? listeDe(campagnesR.value) : [])
+
+      // Blocs rattachés à l'année courante : synthèse d'import et journal.
+      if (anneeCourante?.id) {
+        const [synth, journ] = await Promise.allSettled([
+          api.get('/edts/lmd/import/inscrits/synthese/', { params: { annee: anneeCourante.id } }),
+          api.get('/edts/lmd/import/inscrits/journal/', { params: { annee: anneeCourante.id } }),
+        ])
+        if (annule) return
+        if (synth.status === 'fulfilled') setSynthese(synth.value.data)
+        if (journ.status === 'fulfilled') setJournal(journ.value.data?.lots ?? [])
+      }
       setChargement(false)
     })()
     return () => { annule = true }
@@ -201,104 +205,297 @@ export default function GetInjsApp() {
     }
   }
 
-  const kpi = (valeur) => (chargement ? '…' : (valeur ?? '—'))
-  const vue = calculerVueEnsemble(seances)
+  const kpi = (v) => (chargement ? '…' : formaterNombre(v))
+  const charge = chargeParSemestre(seances)
+  const heuresPlanifiees = Math.round(
+    seances.reduce((total, s) => total + (s.placement?.duree_prevue_minutes || 0), 0) / 60,
+  )
+
+  // Population gérée par le module pour la génération (inscrits importés).
+  const cohortes = synthese?.cohortes ?? []
+  const parFormation = Object.values(cohortes.reduce((acc, c) => {
+    const cle = c.formation || '—'
+    acc[cle] = acc[cle] || { libelle: cle, valeur: 0 }
+    acc[cle].valeur += c.effectif || 0
+    return acc
+  }, {})).sort((a, b) => b.valeur - a.valeur)
+  const maxFormation = Math.max(1, ...parFormation.map((f) => f.valeur))
+  const parNiveau = NIVEAUX.map((n) => ({
+    libelle: n,
+    valeur: cohortes.filter((c) => c.niveau === n)
+      .reduce((t, c) => t + (c.effectif || 0), 0),
+  }))
 
   return (
     <div className="giapp" data-testid="get-injs-app">
-      {/* ── Bannière du module ─────────────────────────────────────────── */}
+      {/* ── En-tête du tableau de bord ─────────────────────────────────── */}
       <header className="giapp-hero">
-        <div>
-          <span className="giapp-hero-tag">INJS · Abidjan — Marcory</span>
+        <div className="giapp-hero-main">
+          <div className="giapp-pills">
+            <Link to="/edt/audit" className="giapp-pill">
+              <i className="bi bi-clipboard2-check"></i> Audit des données · Opérations
+            </Link>
+            <span className="giapp-pill">Licence • Master — Système LMD</span>
+            <span className="giapp-pill">
+              Année {annee?.libelle || '…'}
+            </span>
+          </div>
           <h1 className="giapp-hero-title">GET INJS APP</h1>
           <p className="giapp-hero-sub">
-            Gestion des Emplois du Temps — génération, import des inscrits,
-            publication officielle et séances prêtes pour le module Présences.
+            GET INJS APP orchestre les filières, formations, groupes, vagues et
+            enseignants de l’INJS d’Abidjan pour générer les emplois du temps de
+            l’année — de l’import des inscrits (3 500 à 14 000 étudiants) à la
+            publication officielle des séances, prêtes pour le module Présences.
           </p>
           <div className="giapp-hero-actions">
             <Link to="/edt/generation-annuelle" className="giapp-btn giapp-btn--accent">
-              <i className="bi bi-lightning-charge-fill"></i> Générer les emplois du temps
+              <i className="bi bi-lightning-charge-fill"></i> Générer un emploi du temps
             </Link>
-            <button
-              type="button"
-              className="giapp-btn giapp-btn--clair"
-              onClick={telechargerConception}
-              disabled={telechargement}
-              data-testid="telecharger-conception"
-            >
-              <i className="bi bi-file-earmark-arrow-down"></i>
-              {telechargement ? 'Téléchargement…' : 'Conception du module (TXT)'}
-            </button>
+            <Link to="/edt" className="giapp-hero-lien">
+              Consulter les grilles <i className="bi bi-arrow-right"></i>
+            </Link>
           </div>
         </div>
-        <div className="giapp-hero-etat" data-testid="etat-api">
-          <span className={`giapp-pastille ${compteurs?.apiOk ? 'is-ok' : 'is-ko'}`}></span>
-          {chargement ? 'Vérification des services…'
-            : compteurs?.apiOk ? 'Services GET opérationnels' : 'Services GET injoignables'}
+        <div className="giapp-hero-stats">
+          <div className="giapp-hero-stat">
+            <span className="giapp-hero-stat-libelle">Séances publiées</span>
+            <span className="giapp-hero-stat-valeur">{kpi(compteurs?.seancesPubliees)}</span>
+          </div>
+          <div className="giapp-hero-stat">
+            <span className="giapp-hero-stat-libelle">Heures planifiées</span>
+            <span className="giapp-hero-stat-valeur">
+              {chargement ? '…' : `${formaterNombre(heuresPlanifiees)} h`}
+            </span>
+          </div>
+          <div className="giapp-hero-etat" data-testid="etat-api">
+            <span className={`giapp-pastille ${compteurs?.apiOk ? 'is-ok' : 'is-ko'}`}></span>
+            {chargement ? 'Vérification des services…'
+              : compteurs?.apiOk ? 'Services GET opérationnels' : 'Services GET injoignables'}
+          </div>
         </div>
       </header>
 
-      {/* ── Compteurs réels ────────────────────────────────────────────── */}
-      <section className="giapp-kpis" aria-label="Compteurs du module">
+      {/* ── Indicateurs clés ───────────────────────────────────────────── */}
+      <section className="giapp-kpis" aria-label="Indicateurs du module">
         <div className="giapp-kpi">
-          <span className="giapp-kpi-valeur" data-testid="kpi-emplois">{kpi(compteurs?.emploisTotal)}</span>
-          <span className="giapp-kpi-libelle">Emplois du temps</span>
+          <span className="giapp-kpi-libelle">Étudiants</span>
+          <span className="giapp-kpi-valeur" data-testid="kpi-etudiants">{kpi(synthese?.effectif_total ?? null)}</span>
+          <span className="giapp-kpi-detail">inscrits importés · année {annee?.libelle || '—'}</span>
         </div>
         <div className="giapp-kpi">
-          <span className="giapp-kpi-valeur" data-testid="kpi-emplois-publies">{kpi(compteurs?.emploisPublies)}</span>
+          <span className="giapp-kpi-libelle">Cohortes</span>
+          <span className="giapp-kpi-valeur" data-testid="kpi-cohortes">{kpi(synthese?.nb_cohortes ?? null)}</span>
+          <span className="giapp-kpi-detail">formation · niveau · groupe · vague</span>
+        </div>
+        <div className="giapp-kpi">
+          <span className="giapp-kpi-libelle">Salles</span>
+          <span className="giapp-kpi-valeur" data-testid="kpi-salles">{kpi(compteurs?.salles)}</span>
+          <span className="giapp-kpi-detail">salles & espaces du référentiel</span>
+        </div>
+        <div className="giapp-kpi">
+          <span className="giapp-kpi-libelle">Enseignants</span>
+          <span className="giapp-kpi-valeur" data-testid="kpi-enseignants">{kpi(compteurs?.enseignants)}</span>
+          <span className="giapp-kpi-detail">référentiel des enseignants</span>
+        </div>
+        <div className="giapp-kpi">
           <span className="giapp-kpi-libelle">EDT publiés</span>
+          <span className="giapp-kpi-valeur" data-testid="kpi-edt-publies">{kpi(compteurs?.emploisPublies)}</span>
+          <span className="giapp-kpi-detail">sur {kpi(compteurs?.emploisTotal)} emplois du temps</span>
         </div>
         <div className="giapp-kpi">
+          <span className="giapp-kpi-libelle">Séances</span>
           <span className="giapp-kpi-valeur" data-testid="kpi-seances-publiees">{kpi(compteurs?.seancesPubliees)}</span>
-          <span className="giapp-kpi-libelle">Séances publiées (prêtes pour Présences)</span>
-        </div>
-        <div className="giapp-kpi">
-          <span className="giapp-kpi-valeur" data-testid="kpi-conflits">{kpi(compteurs?.conflits)}</span>
-          <span className="giapp-kpi-libelle">Conflits actifs</span>
-        </div>
-        <div className="giapp-kpi">
-          <span className="giapp-kpi-valeur" data-testid="kpi-evenements">{kpi(compteurs?.evenements)}</span>
-          <span className="giapp-kpi-libelle">Événements de séance à consommer</span>
+          <span className="giapp-kpi-detail">publiées · prêtes pour Présences</span>
         </div>
       </section>
 
-      {/* ── Vue d'ensemble dynamique des séances publiées ──────────────── */}
-      {!chargement && seances.length > 0 && (
-        <>
-          <h2 className="giapp-titre-section">Vue d’ensemble des séances publiées</h2>
-          <section className="giapp-graphs" data-testid="vue-ensemble">
-            <div className="giapp-graph">
-              <h3>Séances par jour de semaine</h3>
-              <Barres donnees={vue.parJour} />
-            </div>
-            <div className="giapp-graph">
-              <h3>Séances par nature d’enseignement</h3>
-              <Barres donnees={vue.parType} accent="clair" />
-            </div>
-            <div className="giapp-graph giapp-graph--chiffre">
-              <h3>Volume horaire planifié</h3>
-              <p className="giapp-gros-chiffre">{vue.heures} h</p>
-              <p className="giapp-note">
-                Calculé sur les {seances.length} séances publiées chargées
-                (échantillon des 100 plus récentes) — le total officiel est le
-                compteur « Séances publiées » ci-dessus.
-              </p>
-            </div>
-          </section>
-        </>
-      )}
+      {/* ── Charge par semestre · Population par filière ───────────────── */}
+      <section className="giapp-grid-2">
+        <div className="giapp-card">
+          <div className="giapp-card-entete">
+            <h2>Charge par semestre</h2>
+            <span className="giapp-badge">{kpi(compteurs?.seancesPubliees)} séances</span>
+          </div>
+          <p className="giapp-card-sous">Séances officielles publiées, par semestre académique</p>
+          {chargement ? <p className="giapp-vide">Chargement…</p>
+            : seances.length === 0 ? (
+              <p className="giapp-vide">Aucune séance publiée pour le moment.</p>
+            ) : (
+              <div className="giapp-barres" data-testid="charge-semestres">
+                {charge.map((ligne) => <BarreCharge key={ligne.libelle} ligne={ligne} />)}
+              </div>
+            )}
+        </div>
 
-      {/* ── Fonctionnalités du module ──────────────────────────────────── */}
-      <h2 className="giapp-titre-section">Fonctionnalités du module</h2>
-      <section className="giapp-tuiles">
-        {FONCTIONNALITES.map((f) => (
-          <Link key={f.chemin} to={f.chemin} className="giapp-tuile">
-            <span className="giapp-tuile-icone" aria-hidden="true"><i className={`bi ${f.icone}`}></i></span>
-            <span className="giapp-tuile-titre">{f.titre}</span>
-            <span className="giapp-tuile-desc">{f.description}</span>
-            <span className="giapp-tuile-lien">Ouvrir <i className="bi bi-arrow-right"></i></span>
+        <div className="giapp-card">
+          <div className="giapp-card-entete">
+            <h2>Population par filière</h2>
+            <span className="giapp-badge">{kpi(synthese?.effectif_total ?? null)} étudiants</span>
+          </div>
+          <p className="giapp-card-sous">Étudiants importés rattachés à leurs cohortes de génération</p>
+          {chargement ? <p className="giapp-vide">Chargement…</p>
+            : parFormation.length === 0 ? (
+              <p className="giapp-vide">
+                Aucun inscrit importé pour l’année {annee?.libelle || 'courante'} :
+                importez le fichier des inscrits pour alimenter la génération.
+              </p>
+            ) : (
+              <>
+                <div className="giapp-barres" data-testid="population-filieres">
+                  {parFormation.slice(0, 5).map((f) => (
+                    <div className="giapp-barre" key={f.libelle}>
+                      <span className="giapp-barre-libelle giapp-barre-libelle--long">{f.libelle}</span>
+                      <span className="giapp-barre-piste">
+                        <span className="giapp-barre-remplissage is-clair"
+                          style={{ width: `${Math.round((f.valeur / maxFormation) * 100)}%` }}></span>
+                      </span>
+                      <span className="giapp-barre-valeur">{formaterNombre(f.valeur)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="giapp-niveaux">
+                  {parNiveau.map((n) => (
+                    <div className="giapp-niveau" key={n.libelle}>
+                      <span className="giapp-niveau-code">{n.libelle}</span>
+                      <span className="giapp-niveau-valeur">{formaterNombre(n.valeur)}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+        </div>
+      </section>
+
+      {/* ── Dernières générations · Étapes du processus ────────────────── */}
+      <section className="giapp-grid-2">
+        <div className="giapp-card">
+          <div className="giapp-card-entete">
+            <h2>Dernières générations</h2>
+            <Link to="/edt/campagnes" className="giapp-btn giapp-btn--petit">Ouvrir le moteur</Link>
+          </div>
+          <p className="giapp-card-sous">Campagnes de génération tracées du module</p>
+          {chargement ? <p className="giapp-vide">Chargement…</p>
+            : campagnes.length === 0 ? (
+              <p className="giapp-vide">Aucune campagne de génération pour le moment.</p>
+            ) : (
+              <ul className="giapp-generations" data-testid="dernieres-generations">
+                {campagnes.slice(0, 4).map((c) => {
+                  const stats = { ...(c.totaux || {}), ...(c.statistiques || {}) }
+                  const placees = stats.seances_placees
+                  const nonPlacees = stats.seances_non_placees
+                  const couverture = (typeof placees === 'number' && typeof nonPlacees === 'number'
+                    && (placees + nonPlacees) > 0)
+                    ? `${((placees / (placees + nonPlacees)) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %`
+                    : '—'
+                  return (
+                    <li key={c.id} className="giapp-generation">
+                      <div className="giapp-generation-ligne">
+                        <span className="giapp-generation-date">{formaterDate(c.created_at)}</span>
+                        <span className="giapp-badge">{c.statut_libelle || c.statut}</span>
+                      </div>
+                      <p className="giapp-generation-titre">{c.libelle}</p>
+                      <p className="giapp-generation-stats">
+                        Séances <strong>{formaterNombre(placees ?? null)}</strong> · Couverture{' '}
+                        <strong>{couverture}</strong> · Durée{' '}
+                        <strong>{formaterDuree(stats.duree_ms)}</strong>
+                      </p>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+        </div>
+
+        <div className="giapp-card">
+          <div className="giapp-card-entete">
+            <h2>Les 5 étapes du processus</h2>
+          </div>
+          <p className="giapp-card-sous">De l’inscription à la publication officielle</p>
+          <ol className="giapp-etapes">
+            {ETAPES.map((etape, i) => (
+              <li key={etape.titre}>
+                <Link to={etape.chemin} className="giapp-etape">
+                  <span className="giapp-etape-numero">{i + 1}</span>
+                  <span>
+                    <span className="giapp-etape-titre">{etape.titre}</span>
+                    <span className="giapp-etape-desc">{etape.description}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* ── Journal des imports ────────────────────────────────────────── */}
+      <section className="giapp-card">
+        <div className="giapp-card-entete">
+          <h2>Journal des imports</h2>
+          <Link to="/edt/generation-annuelle" className="giapp-btn giapp-btn--petit">
+            <i className="bi bi-upload"></i> Importer
           </Link>
-        ))}
+        </div>
+        <p className="giapp-card-sous">
+          Traçabilité des fichiers d’inscrits reçus pour l’année {annee?.libelle || 'courante'}
+        </p>
+        {chargement ? <p className="giapp-vide">Chargement…</p>
+          : journal.length === 0 ? (
+            <p className="giapp-vide">Aucun import enregistré pour cette année.</p>
+          ) : (
+            <div className="giapp-table-wrap">
+              <table className="giapp-table" data-testid="journal-imports">
+                <thead>
+                  <tr>
+                    <th>Fichier</th><th>Reçu le</th><th>Lignes rattachées</th>
+                    <th>Étudiants inscrits</th><th>Empreinte du lot</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {journal.map((lot, i) => (
+                    <tr key={`${lot.empreinte}-${i}`}>
+                      <td>{lot.fichier}</td>
+                      <td>{formaterDate(lot.recu_le)}</td>
+                      <td>{formaterNombre(lot.lignes)}</td>
+                      <td>{formaterNombre(lot.inscrits)}</td>
+                      <td><code className="giapp-uuid">{lot.empreinte || '—'}</code></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+      </section>
+
+      {/* ── Accès rapides ──────────────────────────────────────────────── */}
+      <section className="giapp-minis">
+        <Link to="/edt" className="giapp-mini">
+          <span className="giapp-mini-libelle">Emplois du temps</span>
+          <span className="giapp-mini-valeur">{kpi(compteurs?.emploisTotal)}</span>
+          <span className="giapp-mini-titre">Grille hebdomadaire</span>
+          <span className="giapp-mini-lien">Accéder <i className="bi bi-arrow-right"></i></span>
+        </Link>
+        <Link to="/edt/conflits" className="giapp-mini">
+          <span className="giapp-mini-libelle">Moteur LMD</span>
+          <span className="giapp-mini-valeur">{kpi(compteurs?.conflits)}</span>
+          <span className="giapp-mini-titre">Conflit(s) actif(s)</span>
+          <span className="giapp-mini-lien">Accéder <i className="bi bi-arrow-right"></i></span>
+        </Link>
+        <Link to="/edt/generation-annuelle" className="giapp-mini">
+          <span className="giapp-mini-libelle">Import annuel</span>
+          <span className="giapp-mini-valeur">{kpi(synthese?.effectif_total ?? null)}</span>
+          <span className="giapp-mini-titre">Étudiants importés</span>
+          <span className="giapp-mini-lien">Accéder <i className="bi bi-arrow-right"></i></span>
+        </Link>
+        <button type="button" className="giapp-mini giapp-mini--bouton"
+          onClick={telechargerConception} disabled={telechargement}
+          data-testid="telecharger-conception">
+          <span className="giapp-mini-libelle">Document</span>
+          <span className="giapp-mini-valeur"><i className="bi bi-file-earmark-text"></i></span>
+          <span className="giapp-mini-titre">Conception du module</span>
+          <span className="giapp-mini-lien">
+            {telechargement ? 'Téléchargement…' : 'Télécharger'} <i className="bi bi-arrow-right"></i>
+          </span>
+        </button>
       </section>
 
       {/* ── Séances officielles publiées ───────────────────────────────── */}

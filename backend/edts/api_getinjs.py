@@ -194,6 +194,49 @@ def synthese_import_api(request):
     })
 
 
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def journal_imports_api(request):
+    """GET /api/edts/lmd/import/inscrits/journal/ — journal des imports.
+
+    Reconstruit les lots d'import depuis les inscriptions rattachées
+    (``fichier`` + ``empreinte`` du fichier source) : seules des données
+    réellement tracées sont exposées — lignes rattachées, étudiants
+    inscrits, date de réception du lot. Aucune durée ni aucun rejet
+    n'est inventé : l'import ne persiste que les lignes rattachées.
+    """
+    from django.db.models import Count, Min, Q
+
+    from edts.models import InscriptionImportee
+
+    annee_id, erreur = _annee_de_requete(request)
+    if erreur is not None:
+        return erreur
+
+    lignes = (
+        InscriptionImportee.objects.filter(annee_academique_id=annee_id)
+        .values('fichier', 'empreinte')
+        .annotate(
+            lignes=Count('id'),
+            inscrits=Count('id', filter=Q(statut=InscriptionImportee.Statut.INSCRIT)),
+            recu_le=Min('created_at'),
+        )
+        .order_by('-recu_le')[:10]
+    )
+    lots = [{
+        'fichier': l['fichier'] or '(sans nom de fichier)',
+        'empreinte': (l['empreinte'] or '')[:12],
+        'lignes': l['lignes'],
+        'inscrits': l['inscrits'],
+        'recu_le': l['recu_le'].isoformat() if l['recu_le'] else None,
+    } for l in lignes]
+    return Response({
+        'annee_academique_id': annee_id,
+        'lots': lots,
+        'nb_lots': len(lots),
+    })
+
+
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def generate_annee_api(request):

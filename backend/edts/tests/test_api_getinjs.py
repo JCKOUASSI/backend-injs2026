@@ -64,6 +64,43 @@ class BaseApiTest(TestCase):
         ]
 
 
+class JournalImportsApiTests(BaseApiTest):
+    """Journal des imports : lots reconstruits des lignes rattachées."""
+
+    def _importer(self, nom, nombre, prefixe):
+        # Matricules distincts par fichier : un même matricule réimporté
+        # change de lot (rattachement courant), ce n'est pas le cas testé ici.
+        lignes = [
+            f'{prefixe}-{i:03d};Nom{i};Prenom;{self.formation.intitule};L1;S1;L1-G1;V1'
+            for i in range(nombre)
+        ]
+        return self.client.post(
+            '/api/edts/lmd/import/inscrits/',
+            {'annee_academique_id': self.annee.pk,
+             'fichier': self.fichier(lignes, nom=nom)},
+            format='multipart',
+        )
+
+    def test_journal_regroupe_par_lot(self):
+        self._importer('inscrits-a.csv', 5, 'A')
+        self._importer('inscrits-b.csv', 3, 'B')
+        reponse = self.client.get(
+            '/api/edts/lmd/import/inscrits/journal/',
+            {'annee': self.annee.pk},
+        )
+        self.assertEqual(reponse.status_code, 200)
+        self.assertEqual(reponse.data['nb_lots'], 2)
+        par_fichier = {l['fichier']: l for l in reponse.data['lots']}
+        self.assertEqual(par_fichier['inscrits-a.csv']['lignes'], 5)
+        self.assertEqual(par_fichier['inscrits-a.csv']['inscrits'], 5)
+        self.assertEqual(par_fichier['inscrits-b.csv']['lignes'], 3)
+        self.assertIsNotNone(par_fichier['inscrits-a.csv']['recu_le'])
+
+    def test_journal_annee_requise(self):
+        reponse = self.client.get('/api/edts/lmd/import/inscrits/journal/')
+        self.assertEqual(reponse.status_code, 400)
+
+
 class ImportApiTests(BaseApiTest):
     def test_analyse_sans_ecriture(self):
         reponse = self.client.post(
