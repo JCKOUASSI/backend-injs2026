@@ -250,6 +250,174 @@ def journal_imports_api(request):
     })
 
 
+def _sexe_court(valeur):
+    """Normalise le sexe vers « M » / « F » (la base stocke MASCULIN/FEMININ)."""
+    texte = (valeur or '').strip().upper()
+    if texte.startswith('M'):
+        return 'M'
+    if texte.startswith('F'):
+        return 'F'
+    return ''
+
+
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def inscrits_population_api(request):
+    """GET /api/edts/lmd/inscrits/?annee=&q=&formation=&niveau=&page=
+
+    Population des étudiants inscrits d'une année, toutes origines, pour
+    l'écran « Étudiants inscrits » (POPULATIONS LMD) : inscriptions
+    administratives **validées** du processus INJS2026 (source « Base »)
+    et inscriptions lues dans un fichier externe (source « Import »),
+    fusionnées, triées par nom, puis paginées à 25 par page.
+
+    Règles métier :
+    - un même matricule présent dans les deux origines n'apparaît qu'une
+      fois : l'inscription administrative, dossier métier de référence,
+      fait foi (la ligne importée reste consultable dans la synthèse et
+      le journal des imports) ;
+    - une inscription administrative non validée n'est pas un étudiant
+      inscrit : elle reste dans le circuit de validation de la scolarité ;
+    - aucune donnée n'est inventée : le groupe d'un inscrit de la base
+      est son affectation active, la vague son rattachement ; à défaut,
+      le champ est vide et l'écran affiche « — ».
+
+    Les facettes ``formations`` / ``niveaux`` décrivent la population de
+    l'année (avant filtres) pour alimenter les listes déroulantes.
+    """
+    annee_id, erreur = _annee_de_requete(request)
+    if erreur is not None:
+        return erreur
+
+    from edts.models import InscriptionImportee
+    from scolarite.models import InscriptionAdministrative
+
+    lignes = []
+    matricules_base = set()
+    for ins in (
+        InscriptionAdministrative.objects.filter(
+            annee_academique_id=annee_id,
+            statut=InscriptionAdministrative.Statut.VALIDEE,
+        )
+        .select_related('etudiant__participant', 'ref_formation', 'niveau', 'vague')
+        .prefetch_related('affectations__groupe')
+    ):
+        participant = ins.etudiant.participant
+        matricules_base.add(participant.matricule)
+        groupe = next(
+            (a.groupe.nom for a in ins.affectations.all()
+             if a.active and a.groupe_id),
+            '',
+        )
+        lignes.append({
+            'matricule': participant.matricule,
+            'nom': participant.nom,
+            'prenoms': participant.prenom,
+            'sexe': _sexe_court(participant.sexe),
+            'formation_id': ins.ref_formation_id,
+            'formation_code': ins.ref_formation.code or '',
+            'formation': ins.ref_formation.intitule,
+            'niveau_id': ins.niveau_id,
+            'niveau': ins.niveau.code,
+            'niveau_ordre': ins.niveau.ordre,
+            'groupe': groupe,
+            'vague': ins.vague.libelle if ins.vague_id else '',
+            'statut': 'Inscrit',
+            'source': 'Base',
+        })
+
+    for ins in (
+        InscriptionImportee.objects.filter(annee_academique_id=annee_id)
+        .select_related('ref_formation', 'niveau', 'groupe', 'vague')
+    ):
+        if ins.matricule in matricules_base:
+            continue
+        lignes.append({
+            'matricule': ins.matricule,
+            'nom': ins.nom,
+            'prenoms': ins.prenoms,
+            'sexe': _sexe_court(ins.sexe),
+            'formation_id': ins.ref_formation_id,
+            'formation_code': ins.ref_formation.code or '',
+            'formation': ins.ref_formation.intitule,
+            'niveau_id': ins.niveau_id,
+            'niveau': ins.niveau.code,
+            'niveau_ordre': ins.niveau.ordre,
+            'groupe': ins.groupe.nom if ins.groupe_id else '',
+            'vague': ins.vague.libelle if ins.vague_id else '',
+            'statut': ins.get_statut_display(),
+            'source': 'Import',
+        })
+
+    formations = sorted(
+        {
+            l['formation_id']: {
+                'id': l['formation_id'],
+                'code': l['formation_code'],
+                'intitule': l['formation'],
+            }
+            for l in lignes
+        }.values(),
+        key=lambda f: f['intitule'],
+    )
+    niveaux = sorted(
+        {
+            l['niveau_id']: {
+                'id': l['niveau_id'],
+                'code': l['niveau'],
+                'ordre': l['niveau_ordre'],
+            }
+            for l in lignes
+        }.values(),
+        key=lambda n: (n['ordre'], n['code']),
+    )
+
+    recherche = (request.query_params.get('q') or '').strip().casefold()
+    formation_id = _int(request.query_params.get('formation'))
+    niveau_id = _int(request.query_params.get('niveau'))
+    if recherche:
+        lignes = [
+            l for l in lignes
+            if recherche in l['matricule'].casefold()
+            or recherche in l['nom'].casefold()
+            or recherche in l['prenoms'].casefold()
+        ]
+    if formation_id is not None:
+        lignes = [l for l in lignes if l['formation_id'] == formation_id]
+    if niveau_id is not None:
+        lignes = [l for l in lignes if l['niveau_id'] == niveau_id]
+
+    lignes.sort(key=lambda l: (l['nom'].casefold(), l['prenoms'].casefold(),
+                               l['matricule']))
+
+    taille_page = 25
+    total = len(lignes)
+    total_pages = (total + taille_page - 1) // taille_page
+    try:
+        page = int(request.query_params.get('page', 1))
+    except (TypeError, ValueError):
+        page = 1
+    page = min(max(page, 1), total_pages) if total_pages else 1
+    debut = (page - 1) * taille_page
+    resultats = [
+        {cle: ligne[cle] for cle in (
+            'matricule', 'nom', 'prenoms', 'sexe', 'formation_code', 'formation',
+            'niveau', 'groupe', 'vague', 'statut', 'source',
+        )}
+        for ligne in lignes[debut:debut + taille_page]
+    ]
+    return Response({
+        'annee_academique_id': annee_id,
+        'total': total,
+        'page': page,
+        'taille_page': taille_page,
+        'total_pages': total_pages,
+        'formations': formations,
+        'niveaux': niveaux,
+        'resultats': resultats,
+    })
+
+
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def generate_annee_api(request):

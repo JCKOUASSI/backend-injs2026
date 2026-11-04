@@ -792,3 +792,118 @@
   font-weight: 800;
   color: #0a2a5c;
 }
+
+/* ── « Étudiants inscrits » (POPULATIONS LMD) ─────────────────────────────
+   Refonte du module sur le format de référence : quatre indicateurs,
+   carte de filtres, liste paginée à 25 par page. Palette INJS. */
+.getinjs.insc-page .insc-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 991.98px) {
+  .getinjs.insc-page .insc-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+
+.getinjs.insc-page .insc-kpi {
+  background: linear-gradient(180deg, #ffffff, #f4faff);
+  border: 1px solid #d7e5f5;
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+}
+
+.getinjs.insc-page .insc-kpi-label {
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6db3f2;
+}
+
+.getinjs.insc-page .insc-kpi-valeur {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--injs-navy, #0a2a5c);
+}
+
+.getinjs.insc-page .insc-kpi-sous {
+  font-size: 0.72rem;
+  color: #76879e;
+}
+
+.getinjs.insc-page .insc-filtre-label {
+  display: block;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #42597a;
+  margin-bottom: 0.35rem;
+}
+
+.getinjs.insc-page .insc-matricule {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.getinjs.insc-page .insc-formation-sous {
+  font-size: 0.72rem;
+  color: #76879e;
+}
+
+.getinjs.insc-page .insc-statut,
+.getinjs.insc-page .insc-source {
+  display: inline-block;
+  padding: 0.14rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.getinjs.insc-page .insc-statut-inscrit {
+  background: var(--injs-blue-pale);
+  color: #0a2a5c;
+}
+
+.getinjs.insc-page .insc-statut-autre {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.getinjs.insc-page .insc-source-base {
+  background: #ffffff;
+  border: 1px solid var(--injs-border-strong, #bcd3ee);
+  color: #42597a;
+}
+
+.getinjs.insc-page .insc-source-import {
+  background: linear-gradient(92deg, #dcecfb, var(--injs-blue-pale));
+  color: var(--injs-blue-royal, #14509e);
+}
+
+.getinjs.insc-page .insc-source-note {
+  padding: 0.2rem 0.65rem;
+  border: 1px solid #d7e5f5;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #42597a;
+  white-space: nowrap;
+}
+
+.getinjs.insc-page .insc-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 1rem;
+  border-top: 1px solid #e3edf9;
+  font-size: 0.8rem;
+  color: #42597a;
+}

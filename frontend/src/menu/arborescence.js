@@ -368,15 +368,18 @@ export const ARBORESCENCE = [
         },
       },
       {
-        // Populations étudiantes réelles (inscriptions administratives).
+        // Population étudiante réelle d'une année, toutes origines
+        // (inscriptions administratives validées + fichier externe
+        // importé), fusionnée et paginée par le module. La gestion
+        // administrative des inscriptions reste dans le menu Scolarité.
         id: 'get_injs.inscrits',
         libelle: 'Étudiants inscrits',
         description: 'Populations',
         icone: 'bi-people',
-        chemin: '/scolarite/inscriptions',
+        chemin: '/edt/etudiants-inscrits',
         droit: {
-          curp: ['scolarite.inscription_administrative.consulter'],
-          legacy: [['scolarite', 'voir']],
+          curp: ['edt.creneau.consulter', 'scolarite.inscription_administrative.consulter'],
+          legacy: [['web', 'operationnel'], ['scolarite', 'voir']],
         },
       },
       {
