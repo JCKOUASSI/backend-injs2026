@@ -260,7 +260,15 @@ export default function GenerationAnnuelle() {
         },
       })
       await api.post(`/edts/campagnes/${campagne.id}/donnees-pretes/`, {})
-      await api.post(`/edts/campagnes/${campagne.id}/demarrer/`, { asynchrone: false })
+      // Démarrage ASYNCHRONE : la génération peut durer plusieurs minutes
+      // sur un périmètre complet — l'exécuter dans la requête HTTP la
+      // faisait expirer (toast « Une erreur est survenue »). Le serveur
+      // répond 202 immédiatement et l'avancement se suit sur /statut/.
+      await api.post(`/edts/campagnes/${campagne.id}/demarrer/`, { asynchrone: true })
+      const statutFinal = await attendreFinGeneration(campagne.id)
+      if (statutFinal?.erreur) {
+        throw new Error(statutFinal.erreur)
+      }
       const { data: resultat } = await api.get(`/edts/campagnes/${campagne.id}/resultat/`)
       const bilanCampagne = {
         status_global: resultat.campagne?.status_global,
@@ -286,11 +294,35 @@ export default function GenerationAnnuelle() {
       const corps = err?.response?.data
       showToast(
         corps?.detail?.explication || corps?.motif_echec
-        || formatApiErrors(corps) || 'Génération impossible.',
+        || formatApiErrors(corps)
+        || (err?.message && err.message !== 'Network Error' ? err.message : null)
+        || 'Génération impossible.',
         'error',
       )
     } finally {
       setEnCours('')
+    }
+  }
+
+  const attendreFinGeneration = async (campagneId) => {
+    const delaiMax = 20 * 60 * 1000
+    const debutAttente = Date.now()
+    for (;;) {
+      let statut = null
+      try {
+        const { data } = await api.get(`/edts/campagnes/${campagneId}/statut/`)
+        statut = data
+      } catch { statut = null }
+      if (statut && statut.en_cours === false) return statut
+      if (Date.now() - debutAttente > delaiMax) {
+        showToast(
+          'La génération est toujours en cours après 20 minutes : '
+          + 'son résultat apparaîtra dans l’historique des générations.',
+          'warning',
+        )
+        return statut
+      }
+      await new Promise((resolve) => { setTimeout(resolve, 2000) })
     }
   }
 

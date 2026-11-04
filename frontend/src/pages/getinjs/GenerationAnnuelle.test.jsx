@@ -146,6 +146,9 @@ function routes({ synthese = SYNTHESE } = {}) {
   apiController.setRoute('/edts/campagnes/', { id: 1, libelle: 'Génération 2025-2026' })
   apiController.setRoute('/edts/campagnes/1/donnees-pretes/', {})
   apiController.setRoute('/edts/campagnes/1/demarrer/', { campagne_id: 1, execution_id: 5 })
+  apiController.setRoute('/edts/campagnes/1/statut/', {
+    id: 1, statut: 'TERMINE', en_cours: false, erreur: '',
+  })
   apiController.setRoute('/edts/campagnes/1/resultat/', RESULTAT_CAMPAGNE)
 }
 
@@ -299,8 +302,10 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
       })),
     )
     expect(apiMock.post).toHaveBeenCalledWith('/edts/campagnes/1/donnees-pretes/', {})
+    // Démarrage asynchrone (le synchrone expirait en HTTP) + statut suivi.
     expect(apiMock.post).toHaveBeenCalledWith(
-      '/edts/campagnes/1/demarrer/', { asynchrone: false })
+      '/edts/campagnes/1/demarrer/', { asynchrone: true })
+    expect(apiMock.get).toHaveBeenCalledWith('/edts/campagnes/1/statut/')
 
     const bilanTable = await screen.findByRole('table', { name: /Bilan par groupe/i })
     expect(within(bilanTable).getByRole('cell', { name: 'L1-G1' })).toBeInTheDocument()

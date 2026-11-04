@@ -211,19 +211,30 @@ class GenerationResult:
 
 # ── Candidats (étape M) ───────────────────────────────────────────────────────
 
-def _salles_compatibles(besoin, salles):
+def _salles_compatibles(besoin, salles, cache=None):
     """Salles utilisables pour ce besoin (C7 + C4), triées par marge.
 
     Les salles les plus « justes » passent d'abord : une grande salle reste
     disponible pour un groupe plus grand, ce qui réduit les impasses en fin de
     résolution. Tri déterministe : égalité départagée par ``pk``.
     """
+    # ``cache`` (dict du contexte) mémoïse par (nature, effectif) : le
+    # référentiel des salles est fixe pendant un run et le solveur redemande
+    # les mêmes couples à chaque nœud. Résultat strictement identique.
+    cle = None
+    if cache is not None:
+        cle = (besoin.nature, besoin.effectif)
+        if cle in cache:
+            return cache[cle]
     compatibles = [
         salle for salle in salles
         if C.compatible_salle(salle, besoin.nature)
         and C.capacite_suffisante(salle, besoin.effectif)
     ]
-    return sorted(compatibles, key=lambda s: (s.capacite or 10 ** 6, s.pk))
+    retenues = sorted(compatibles, key=lambda s: (s.capacite or 10 ** 6, s.pk))
+    if cache is not None:
+        cache[cle] = retenues
+    return retenues
 
 
 def _penalites(besoin, creneau, salle, annee_id, index=None,
@@ -298,7 +309,14 @@ def candidats(besoin, contexte, occupations):
     index = contexte.get('index_disponibilites')
     index_occupations = contexte.get('index_occupations')
     politique_souples = contexte.get('politique_souples')
-    eligibles = _salles_compatibles(besoin, salles)
+    eligibles = _salles_compatibles(
+        besoin, salles,
+        cache=contexte.setdefault('cache_salles_compatibles', {}),
+    )
+    # Indisponibilités des salles : indépendantes du besoin et des occupations
+    # (index fixe pendant le run) — mémoïsées dans le contexte par
+    # (salle, jour, heures) plutôt que recalculées à chaque nœud exploré.
+    cache_indispo_salles = contexte.setdefault('cache_indisponibilites_salles', {})
 
     for creneau in creneaux:
         creneaux_testes += 1
@@ -333,11 +351,16 @@ def candidats(besoin, contexte, occupations):
         for salle in eligibles:
             salles_testes += 1
             violations = list(base)
-            # C6 — indisponibilité salle.
-            if C.indisponible_salle(
-                salle.pk, annee_id, creneau.jour,
-                creneau.heure_debut, creneau.heure_fin, index=index,
-            ):
+            # C6 — indisponibilité salle (mémoïsée par contexte, cf. plus haut).
+            cle_indispo = (salle.pk, creneau.jour, creneau.heure_debut, creneau.heure_fin)
+            indispo_salle = cache_indispo_salles.get(cle_indispo)
+            if indispo_salle is None:
+                indispo_salle = C.indisponible_salle(
+                    salle.pk, annee_id, creneau.jour,
+                    creneau.heure_debut, creneau.heure_fin, index=index,
+                )
+                cache_indispo_salles[cle_indispo] = indispo_salle
+            if indispo_salle:
                 violations.append(C.Violation(
                     C.C6_DISPONIBILITE_SALLE,
                     f'Salle indisponible le {creneau.jour}.',
