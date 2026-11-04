@@ -223,24 +223,49 @@ describe('PresencesRegistre — historique refondu', () => {
 })
 
 describe('PresencesAudit — traçabilité non destructive', () => {
-  it('liste les événements avec auteur, entité, motif et valeurs avant/après', async () => {
+  it('liste compacte : auteur, entité, motif ; détail déployable avant/après', async () => {
+    const user = userEvent.setup()
     monter(<PresencesAudit />)
     await waitFor(() => expect(screen.getByText('Entrée forcée')).toBeTruthy())
-    expect(screen.getByText('1 événement(s)')).toBeTruthy()
-    expect(screen.getAllByText('Awa Traoré').length).toBe(2)
-    expect(screen.getByText(/participant #MAT011/)).toBeTruthy()
+    // Chargement explicite visible dans l'écran et demandé au serveur.
+    expect(screen.getAllByText(/Chargement explicite : 200 événements/).length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByText('1 chargé(s)')).toBeTruthy()
+    expect(apiController.findCall('get', /audit-logs\/\?.*limite=200/)).toBeTruthy()
     expect(screen.getByText('motif : QR_NON_LISIBLE')).toBeTruthy()
-    expect(screen.getByText(/mode MANUEL/)).toBeTruthy()
+    // Détail replié par défaut : les valeurs ne sont pas encore affichées.
+    expect(screen.queryByText('Ancienne valeur')).toBeNull()
+    await user.click(screen.getByRole('button', { name: /Détails/ }))
     // Correction non destructive : ancienne et nouvelle valeurs côte à côte.
     expect(screen.getByText('Ancienne valeur')).toBeTruthy()
     expect(screen.getByText('Nouvelle valeur')).toBeTruthy()
     expect(screen.getByText(/FORCE_DFRC/)).toBeTruthy()
     expect(screen.getByText(/NON_RENSEIGNE/)).toBeTruthy()
-    // Chargement explicite visible dans l'écran et demandé au serveur.
-    expect(screen.getAllByText(/Chargement explicite : 200 événements/).length).toBeGreaterThanOrEqual(2)
-    expect(screen.getByText('1 chargé(s)')).toBeTruthy()
-    // Chargement explicite demandé au serveur : 200 événements.
-    expect(apiController.findCall('get', /audit-logs\/\?.*limite=200/)).toBeTruthy()
+    expect(screen.getByText(/mode MANUEL/)).toBeTruthy()
+    expect(screen.getByText(/participant #MAT011/)).toBeTruthy()
+  })
+
+  it('pagine par 12 : page suivante, plage et compteurs', async () => {
+    const user = userEvent.setup()
+    apiController.reset()
+    apiController.setRoute('/audit-logs/', {
+      count: 15,
+      results: Array.from({ length: 15 }, (_, i) => ({
+        id: 100 + i, timestamp: '2026-09-15T08:05:00+00:00',
+        action: 'SCAN_HEARTBEAT', action_label: `Événement ${i + 1}`,
+        acteur_label: 'Testeur', acteur_role: 'ETUDIANT',
+        cible_type: 'participant', cible_nom: `Cible ${i + 1}`,
+        cible_numero: `MAT${100 + i}`, formation_titre: '', extra: {},
+      })),
+    })
+    monter(<PresencesAudit />)
+    await waitFor(() => expect(screen.getByText('Événement 1')).toBeTruthy())
+    expect(screen.getByText('Événements 1 à 12 sur 15')).toBeTruthy()
+    expect(screen.getByText('Page 1 sur 2')).toBeTruthy()
+    expect(screen.queryByText('Événement 13')).toBeNull()
+    await user.click(screen.getByRole('button', { name: /Suivant/ }))
+    expect(screen.getByText('Événements 13 à 15 sur 15')).toBeTruthy()
+    expect(screen.getByText('Événement 13')).toBeTruthy()
+    expect(screen.queryByText('Événement 1', { exact: true })).toBeNull()
   })
 })
 

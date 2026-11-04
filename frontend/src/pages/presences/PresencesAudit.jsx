@@ -7,13 +7,12 @@ import '../../styles/presences.css'
  * Journal d'audit des présences — traçabilité non destructive.
  *
  * Lecture du `presences.AuditLog` via `GET /api/audit-logs/` (filtres
- * serveur : action, cible, période). Toute présence manuelle, toute
- * correction, toute clôture de séance et toute modification de
- * configuration géographique y sont inscrites avec leur auteur, leur
- * date et leur motif. Une correction conserve l'ancienne valeur à côté
- * de la nouvelle (`extra.avant` / `extra.apres`, ou
- * `extra.ancienne_valeur` / `extra.nouvelle_valeur`) : rien n'est écrasé
- * silencieusement. Aucune écriture depuis cet écran.
+ * serveur : action, cible, période ; chargement explicite de 200
+ * événements). Affichage compact : une ligne par événement
+ * (horodatage, action, acteur → cible, motif), détail déployable au
+ * clic (contexte + ancienne/nouvelle valeurs côte à côte — rien n'est
+ * écrasé silencieusement), pagination par page de 12. Aucune écriture
+ * depuis cet écran.
  */
 
 const ACTIONS = [
@@ -30,6 +29,8 @@ const ACTIONS = [
   ['FORMATION_QR_GENERATE', 'Générations de QR'],
   ['POINTAGE_MODIFIE', 'Modifications après clôture'],
 ]
+
+const PAR_PAGE = 12
 
 function resumeExtra(extra) {
   if (!extra || typeof extra !== 'object') return null
@@ -87,10 +88,14 @@ export default function PresencesAudit() {
   const [total, setTotal] = useState(0)
   const [charge, setCharge] = useState(false)
   const [erreur, setErreur] = useState('')
+  const [page, setPage] = useState(1)
+  const [ouvert, setOuvert] = useState(null)
 
   const charger = useCallback(async () => {
     setCharge(true)
     setErreur('')
+    setPage(1)
+    setOuvert(null)
     try {
       const params = new URLSearchParams()
       // Chargement explicite : 200 événements les plus récents (le
@@ -113,6 +118,11 @@ export default function PresencesAudit() {
   }, [action, cible, dateDebut, dateFin])
 
   useEffect(() => { charger() }, [charger])
+
+  const pagesTotal = Math.max(1, Math.ceil(lignes.length / PAR_PAGE))
+  const pageSure = Math.min(page, pagesTotal)
+  const debut = (pageSure - 1) * PAR_PAGE
+  const visibles = lignes.slice(debut, debut + PAR_PAGE)
 
   return (
     <div>
@@ -179,52 +189,72 @@ export default function PresencesAudit() {
           </span>
           <span className="badge text-bg-primary">{lignes.length} chargé(s)</span>
         </div>
+
+        {pagesTotal > 1 && (
+          <div className="pqr-audit-plage">
+            Événements {debut + 1} à {debut + visibles.length} sur {lignes.length}
+          </div>
+        )}
+
         <div className="pqr-audit-liste">
-          {lignes.map((l, i) => {
+          {visibles.map((l, i) => {
             const extra = l.extra || {}
             const contexte = resumeExtra(extra)
+            const globalIndex = debut + i
+            const deplie = ouvert === l.id
             return (
               <article
                 key={l.id}
-                className={`pqr-audit-ligne pqr-audit-animee${(i + 1) % 5 === 0 ? ' pqr-audit-ligne-epaisse' : ''}`}
+                className={`pqr-audit-ligne pqr-audit-animee${(globalIndex + 1) % 5 === 0 ? ' pqr-audit-ligne-epaisse' : ''}`}
                 style={{ animationDelay: `${Math.min(i, 20) * 18}ms` }}
               >
-                <div>
-                  <div className="pqr-audit-horodatage">
+                <button
+                  type="button"
+                  className="pqr-audit-resume"
+                  aria-expanded={deplie}
+                  onClick={() => setOuvert(deplie ? null : l.id)}
+                >
+                  <span className="pqr-audit-horodatage">
                     {new Date(l.timestamp).toLocaleString('fr-FR')}
-                  </div>
-                  <div className="pqr-audit-auteur">{l.acteur_label}</div>
-                  {l.acteur_role && <div className="pqr-audit-role">{l.acteur_role}</div>}
-                  <div className="pqr-audit-entite">
-                    {(l.cible_type || 'cible')}{l.cible_numero ? ` #${l.cible_numero}` : ''}
-                  </div>
-                  {l.cible_nom && <div className="pqr-audit-cible-nom">{l.cible_nom}</div>}
-                </div>
+                  </span>
+                  <span className={`pqr-puce pqr-puce-${tonAction(l)}`}>
+                    {l.action_label || l.action}
+                  </span>
+                  <span className="pqr-audit-personnes">
+                    <strong>{l.acteur_label}</strong>
+                    {l.cible_nom ? <> → {l.cible_nom}</> : null}
+                    {l.cible_numero ? <small> #{l.cible_numero}</small> : null}
+                  </span>
+                  {extra.motif
+                    ? <span className="pqr-audit-motif">motif : {extra.motif}</span>
+                    : <span></span>}
+                  <span className="pqr-audit-action-libelle">{deplie ? 'Masquer' : 'Détails'}</span>
+                  <i className={`bi ${deplie ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
+                </button>
 
-                <div>
-                  <div className="pqr-audit-entete">
-                    <span className={`pqr-puce pqr-puce-${tonAction(l)}`}>
-                      {l.action_label || l.action}
-                    </span>
-                    {extra.motif
-                      ? <span className="pqr-audit-motif">motif : {extra.motif}</span>
-                      : null}
-                  </div>
-                  {(contexte || l.formation_titre || extra.commentaire || l.device_id) && (
-                    <div className="pqr-audit-contexte">
-                      {[contexte, l.formation_titre || null,
-                        extra.commentaire ? `« ${extra.commentaire} »` : null,
-                        l.device_id ? `appareil ${l.device_id}` : null,
-                        l.pointage_id ? `pointage #${l.pointage_id}` : null]
-                        .filter(Boolean).join(' · ')}
+                {deplie && (
+                  <div className="pqr-audit-detail">
+                    <div className="pqr-audit-meta">
+                      <span>
+                        {(l.cible_type || 'cible')}{l.cible_numero ? ` #${l.cible_numero}` : ''}
+                        {l.acteur_role ? ` · acteur ${l.acteur_role}` : ''}
+                      </span>
+                      {(contexte || l.formation_titre || extra.commentaire || l.device_id || l.pointage_id) && (
+                        <span>
+                          {[contexte, l.formation_titre || null,
+                            extra.commentaire ? `« ${extra.commentaire} »` : null,
+                            l.device_id ? `appareil ${l.device_id}` : null,
+                            l.pointage_id ? `pointage #${l.pointage_id}` : null]
+                            .filter(Boolean).join(' · ')}
+                        </span>
+                      )}
                     </div>
-                  )}
-
-                  <div className="pqr-audit-valeurs">
-                    <Valeur titre="Ancienne valeur" contenu={ancienneValeur(extra)} />
-                    <Valeur titre="Nouvelle valeur" contenu={nouvelleValeur(extra)} />
+                    <div className="pqr-audit-valeurs">
+                      <Valeur titre="Ancienne valeur" contenu={ancienneValeur(extra)} />
+                      <Valeur titre="Nouvelle valeur" contenu={nouvelleValeur(extra)} />
+                    </div>
                   </div>
-                </div>
+                )}
               </article>
             )
           })}
@@ -238,11 +268,28 @@ export default function PresencesAudit() {
             </p>
           )}
         </div>
+
         {!charge && lignes.length >= 200 && (
           <p className="pqr-audit-limite">
             Affichage limité aux 200 événements les plus récents — affinez les filtres
             (action, cible, période) pour explorer le journal complet, conservé côté serveur.
           </p>
+        )}
+
+        {pagesTotal > 1 && (
+          <nav className="pqr-audit-pagination" aria-label="Pagination du journal d’audit">
+            <button type="button" className="btn btn-outline-secondary btn-sm"
+                    disabled={pageSure <= 1}
+                    onClick={() => { setPage(pageSure - 1); setOuvert(null) }}>
+              <i className="bi bi-chevron-left me-1"></i>Précédent
+            </button>
+            <span className="pqr-audit-page-info">Page {pageSure} sur {pagesTotal}</span>
+            <button type="button" className="btn btn-outline-secondary btn-sm"
+                    disabled={pageSure >= pagesTotal}
+                    onClick={() => { setPage(pageSure + 1); setOuvert(null) }}>
+              Suivant<i className="bi bi-chevron-right ms-1"></i>
+            </button>
+          </nav>
         )}
       </div>
     </div>
