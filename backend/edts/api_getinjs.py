@@ -262,12 +262,27 @@ def generate_annee_api(request):
         semaines = [s for s in semaines.replace(' ', '').split(',') if s]
     semaines = [int(s) for s in semaines if str(s).isdigit()] if semaines else None
 
+    def _ids(cle):
+        brut = request.data.get(cle)
+        if isinstance(brut, str):
+            brut = [x for x in brut.replace(' ', '').split(',') if x]
+        return [int(x) for x in brut if str(x).isdigit()] if brut else None
+
     bilan = generer_annee(
         annee_id,
         semaines=semaines,
         persister=_booleen(request.data.get('persister')),
         remplacer=_booleen(request.data.get('remplacer', True)),
         inclure_maquette=_booleen(request.data.get('inclure_maquette', True)),
+        formation_ids=_ids('formation_ids') or _ids('formations'),
+        niveau_ids=_ids('niveau_ids') or _ids('niveaux'),
+        groupe_ids=_ids('groupe_ids') or _ids('groupes'),
+        semestre_numeros=_ids('semestre_numeros') or _ids('semestres'),
+        inclure_samedi=_booleen(request.data.get('inclure_samedi', True)),
+        eviter_pause_meridienne=_booleen(
+            request.data.get('eviter_pause_meridienne')),
+        max_seances_par_groupe_semaine=_int(
+            request.data.get('max_seances_par_groupe_semaine')),
     )
 
     if bilan['status_global'] == ANNEE_IMPOSSIBLE:
@@ -390,6 +405,103 @@ def campagnes_api(request):
     except TransitionRefusee as exc:
         return _refus(exc)
     return Response(campagne_en_dict(campagne), status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def historique_generations_api(request):
+    """GET /api/edts/campagnes/historique/ — historique des générations.
+
+    Une ligne par **exécution** de campagne (les campagnes jamais lancées
+    n'y figurent pas : il n'y a rien à tracer). Chaque ligne est calculée
+    depuis le bilan réellement persisté de l'exécution : séances placées /
+    attendues, couverture, conflits cumulés des groupes, semestres
+    couverts (déduits des niveaux du bilan, S1/S2 pour le premier niveau,
+    etc.) et durée mesurée. Le périmètre est résolu en noms lisibles.
+    """
+    from edts.models import ExecutionCampagne
+    from scolarite.models import Groupe, Niveau
+
+    executions = (
+        ExecutionCampagne.objects
+        .select_related('campagne', 'campagne__annee_academique')
+        .order_by('-demarree_le')[:20]
+    )
+
+    # Résolution des noms du périmètre (identifiants → libellés réels).
+    from formations.referentiel_injs_l6 import formations_injs
+
+    formations_par_id = {
+        f.pk: f for f in formations_injs()
+    }
+    niveaux_par_code = {n.code: n for n in Niveau.objects.all()}
+    groupes_par_id = {
+        g.pk: g.nom for g in Groupe.objects.all().only('pk', 'nom')
+    }
+
+    lignes = []
+    for execution in executions:
+        campagne = execution.campagne
+        perimetre = campagne.perimetre or {}
+        bilan = execution.bilan or {}
+        groupes_bilan = bilan.get('groupes') or []
+        totaux = bilan.get('totaux') or {}
+
+        formation_ids = perimetre.get('formations') or []
+        formations = [
+            formations_par_id[fid].intitule
+            for fid in formation_ids if fid in formations_par_id
+        ]
+        filieres = sorted({
+            formations_par_id[fid].filiere_code
+            for fid in formation_ids
+            if fid in formations_par_id and formations_par_id[fid].filiere_code
+        })
+        niveau_ids = perimetre.get('niveaux') or []
+        niveaux = sorted({
+            n.code for n in Niveau.objects.filter(pk__in=niveau_ids)
+        }) if niveau_ids else []
+        groupe_ids = perimetre.get('groupes') or []
+        groupes = [
+            groupes_par_id[gid] for gid in groupe_ids if gid in groupes_par_id
+        ]
+
+        # Semestres couverts : déduits des niveaux présents dans le bilan
+        # (niveau d'ordre k → semestres S(2k-1) et S(2k)).
+        semestres = set()
+        for ligne_bilan in groupes_bilan:
+            niveau = niveaux_par_code.get(ligne_bilan.get('niveau'))
+            if niveau is not None and niveau.ordre:
+                semestres.add(f'S{2 * niveau.ordre - 1}')
+                semestres.add(f'S{2 * niveau.ordre}')
+
+        placees = totaux.get('seances_placees')
+        attendues = totaux.get('seances_attendues')
+        couverture = (
+            round(placees / attendues * 100, 1)
+            if placees is not None and attendues else None
+        )
+        lignes.append({
+            'id': execution.pk,
+            'campagne_id': campagne.pk,
+            'libelle': campagne.libelle,
+            'annee_academique': campagne.annee_academique.libelle,
+            'date': execution.demarree_le.isoformat() if execution.demarree_le else None,
+            'statut': execution.statut,
+            'duree_ms': execution.duree_ms,
+            'perimetre': {
+                'filieres': filieres,
+                'formations': formations,
+                'niveaux': niveaux,
+                'groupes': groupes,
+            },
+            'semestres': sorted(semestres, key=lambda x: int(x[1:])),
+            'seances_placees': placees,
+            'seances_attendues': attendues,
+            'couverture_pct': couverture,
+            'conflits': sum((l.get('conflits') or 0) for l in groupes_bilan),
+        })
+    return Response({'executions': lignes, 'count': len(lignes)})
 
 
 @api_view(['GET'])

@@ -81,7 +81,10 @@ def _edt_du_groupe(annee_academique_id, groupe, semaines, *, creer):
 
 def generer_annee(annee_academique_id, *, semaines=None, persister=False,
                   remplacer=True, budget=G.BUDGET_PLACEMENTS_DEFAUT,
-                  inclure_maquette=True, formation_ids=None):
+                  inclure_maquette=True, formation_ids=None,
+                  niveau_ids=None, groupe_ids=None, semestre_numeros=None,
+                  inclure_samedi=True, eviter_pause_meridienne=False,
+                  max_seances_par_groupe_semaine=None):
     """Génère les EDT de tous les groupes INJS d'une année académique.
 
     :param annee_academique_id: année cible (obligatoire).
@@ -94,6 +97,20 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
     :param formation_ids: périmètre optionnel — restreint la génération aux
         groupes de ces formations (une campagne à périmètre « formations »
         ne doit pas générer toute l'année). ``None`` = année entière.
+    :param niveau_ids: périmètre optionnel — restreint aux groupes de ces
+        niveaux. ``None`` = tous les niveaux du périmètre formations.
+    :param groupe_ids: périmètre optionnel — restreint à ces groupes précis.
+    :param semestre_numeros: périmètre optionnel — ne planifie que les
+        besoins du ou des semestres demandés (numéros globaux, ex. ``[3]``
+        pour S3). Les besoins sans semestre identifiable sont écartés.
+    :param inclure_samedi: faux = le canevas ne propose aucun créneau du
+        samedi (les créneaux types du samedi sont retirés avant recherche).
+    :param eviter_pause_meridienne: vrai = aucun créneau chevauchant
+        12h00–14h00 n'est proposé au moteur.
+    :param max_seances_par_groupe_semaine: quota hebdomadaire par groupe —
+        les besoins sont plafonnés (ordre déterministe conservé) et les
+        séances écrêtées restent comptées comme **attendues non placées**
+        dans le bilan : le quota ne masque aucune séance.
     :returns: bilan structuré, par groupe et global — jamais d'exception métier.
     """
     from django.db.models import Count
@@ -121,12 +138,28 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
         selection = set(formations_filtrees)
         groupes_injs = [g for g in groupes_injs if g.ref_formation_id in selection]
 
+    # Périmètres fins de l'écran « Génération » (niveaux, puis groupes
+    # précis) : ils bornent les groupes réellement planifiés, jamais
+    # seulement l'affichage du bilan.
+    niveaux_filtres = None
+    if niveau_ids:
+        niveaux_filtres = sorted({int(n) for n in niveau_ids})
+        groupes_injs = [g for g in groupes_injs if g.niveau_id in set(niveaux_filtres)]
+    groupes_filtres = None
+    if groupe_ids:
+        groupes_filtres = sorted({int(g) for g in groupe_ids})
+        groupes_injs = [g for g in groupes_injs if g.pk in set(groupes_filtres)]
+    semestres_filtres = None
+
     if not groupes_injs:
         return {
             'status_global': ANNEE_IMPOSSIBLE,
             'motif_echec': 'AUCUN_GROUPE_INJS',
             'annee_academique_id': annee_academique_id,
             'formations_filtrees': formations_filtrees,
+            'niveaux_filtres': niveaux_filtres,
+            'groupes_filtres': groupes_filtres,
+            'semestres_filtres': semestres_filtres,
             'semaines': {'debut': min(semaines), 'fin': max(semaines)},
             'groupes': [],
             'totaux': {},
@@ -172,6 +205,37 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
             'detail': resultat_maquette.detail,
         }
 
+    # ── 2 bis. Contraintes de périmètre demandées à l'écran ─────────────
+    # Semestre ciblé : ne conserver que les besoins de ce semestre. Un
+    # besoin sans semestre rattaché ne peut pas prouver qu'il appartient
+    # au périmètre demandé : il est écarté, pas supposé.
+    if semestre_numeros:
+        from scolarite.models import Semestre
+
+        semestres_filtres = sorted({int(n) for n in semestre_numeros})
+        numero_par_semestre = dict(
+            Semestre.objects.values_list('id', 'numero'))
+        for gid, besoins_groupe in list(besoins_par_groupe.items()):
+            besoins_par_groupe[gid] = [
+                b for b in besoins_groupe
+                if numero_par_semestre.get(b.semestre_id) in semestres_filtres
+            ]
+
+    # Canevas proposé au moteur : samedi et pause méridienne sont des
+    # retraits explicites de créneaux types, pas des préférences.
+    from datetime import time as _heure
+
+    from edts.models import CreneauTemplate
+
+    creneaux_annee = list(CreneauTemplate.objects.order_by('jour', 'heure_debut'))
+    if not inclure_samedi:
+        creneaux_annee = [c for c in creneaux_annee if c.jour != 'SAMEDI']
+    if eviter_pause_meridienne:
+        creneaux_annee = [
+            c for c in creneaux_annee
+            if not (c.heure_debut < _heure(14, 0) and c.heure_fin > _heure(12, 0))
+        ]
+
     # ── 3. Génération coordonnée, groupe par groupe ───────────────────────────
     occupations = O.occupations_persistees(annee_academique_id, semaines=semaines)
     # Politique souple lue UNE fois pour toute l'année : tous les groupes sont
@@ -202,14 +266,37 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
             })
             continue
 
+        # Quota hebdomadaire demandé : les besoins sont plafonnés dans
+        # leur ordre déterministe ; les séances écrêtées restent comptées
+        # comme attendues (voir l'ajustement de la ligne de bilan).
+        attendues_avant_quota = sum(b.nb_seances for b in besoins)
+        besoins_quotas = besoins
+        if (max_seances_par_groupe_semaine
+                and attendues_avant_quota > max_seances_par_groupe_semaine):
+            import dataclasses
+
+            restant = int(max_seances_par_groupe_semaine)
+            besoins_quotas = []
+            for besoin in besoins:
+                if restant <= 0:
+                    break
+                if besoin.nb_seances <= restant:
+                    besoins_quotas.append(besoin)
+                    restant -= besoin.nb_seances
+                else:
+                    besoins_quotas.append(
+                        dataclasses.replace(besoin, nb_seances=restant))
+                    restant = 0
+
         resultat = G.generate_schedule(
             annee_academique_id=annee_academique_id,
             groupe_ids=[groupe.pk],
             semaines=semaines,
             budget=budget,
             occupations_initiales=occupations,
-            besoins=besoins,
+            besoins=besoins_quotas,
             contraintes_souples=politique_souples,
+            creneaux=creneaux_annee,
         )
 
         # Coordination : ces placements pèsent sur les groupes suivants.
@@ -255,6 +342,19 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
             'edt_id': None,
             'edt_cree': False,
         }
+
+        if attendues_avant_quota > ligne['seances_attendues']:
+            # Le quota a écrêté des séances : elles redeviennent des
+            # attendues non placées explicites (jamais masquées).
+            ligne['seances_attendues'] = attendues_avant_quota
+            ligne['seances_non_placees'] = (
+                attendues_avant_quota - ligne['seances_placees'])
+            ligne['taux_couverture'] = (
+                round(ligne['seances_placees'] / attendues_avant_quota, 4)
+                if attendues_avant_quota else 0)
+            ligne['quota_seances_semaine'] = max_seances_par_groupe_semaine
+            if ligne['statut'] == 'GENERATION_OK':
+                ligne['statut'] = 'GENERATION_PARTIELLE'
 
         # ── 4. Persistance éventuelle (transaction par EDT) ───────────────────
         if persister and resultat.placements:
@@ -325,6 +425,9 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
         'detail': detail_global,
         'annee_academique_id': annee_academique_id,
         'formations_filtrees': formations_filtrees,
+        'niveaux_filtres': niveaux_filtres,
+        'groupes_filtres': groupes_filtres,
+        'semestres_filtres': semestres_filtres,
         'semaines': {'debut': min(semaines), 'fin': max(semaines)},
         'groupes': lignes,
         'totaux': {

@@ -318,3 +318,75 @@ class CampagnesApiTests(BaseCampagneTest):
         self.client.force_authenticate(user=self.auditeur)
         refus = self.client.post(f'/api/edts/campagnes/{campagne.pk}/publier/', {}, format='json')
         self.assertEqual(refus.status_code, 403)
+
+
+class HistoriqueEtPerimetresFinsTests(BaseCampagneTest):
+    """Écran « Génération » (maquette) : historique réel + périmètres fins."""
+
+    def _importer_inscrits(self):
+        # Comme le flux réel : l'import crée le groupe L1-G1 de la cohorte.
+        from edts.moteur import import_inscrits as I
+
+        lignes = [
+            f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'
+            for i in range(30)
+        ]
+        I.importer_inscrits(
+            annee_academique_id=self.annee.pk,
+            nom_fichier='inscrits.csv',
+            contenu=('matricule;nom;formation;niveau;semestre;groupe;vague\n'
+                     + '\n'.join(lignes) + '\n').encode('utf-8'),
+            appliquer=True,
+        )
+
+    def _campagne_executee(self, libelle='Campagne historique', **params):
+        self._importer_inscrits()
+        campagne = self.campagne(libelle=libelle, **params)
+        C.marquer_pret(campagne.pk, user=self.admin)
+        C.demarrer_campagne(campagne.pk, user=self.admin, asynchrone=False)
+        return campagne
+
+    def test_historique_expose_lexecution_reelle(self):
+        self._campagne_executee()
+        client = APIClient()
+        client.force_authenticate(user=self.admin)
+        reponse = client.get('/api/edts/campagnes/historique/')
+        self.assertEqual(reponse.status_code, 200, reponse.data)
+        lignes = reponse.data['executions']
+        self.assertEqual(len(lignes), 1)
+        ligne = lignes[0]
+        self.assertEqual(ligne['libelle'], 'Campagne historique')
+        self.assertIsNotNone(ligne['duree_ms'])
+        self.assertIn('seances_placees', ligne)
+        self.assertIn('seances_attendues', ligne)
+        self.assertIn('conflits', ligne)
+        # Le niveau L1 de la fabrique couvre les semestres S1 et S2.
+        self.assertEqual(ligne['semestres'], ['S1', 'S2'])
+
+    def test_historique_vide_sans_execution(self):
+        self.campagne(libelle='Jamais lancée')
+        client = APIClient()
+        client.force_authenticate(user=self.admin)
+        reponse = client.get('/api/edts/campagnes/historique/')
+        self.assertEqual(reponse.status_code, 200, reponse.data)
+        self.assertEqual(reponse.data['executions'], [])
+
+    def test_perimetre_groupe_inconnu_bilan_impossible_explicite(self):
+        from edts.moteur.annee import generer_annee
+
+        bilan = generer_annee(self.annee.pk, groupe_ids=[999999])
+        self.assertEqual(bilan['status_global'], 'IMPOSSIBLE')
+        self.assertEqual(bilan['motif_echec'], 'AUCUN_GROUPE_INJS')
+        self.assertEqual(bilan['groupes_filtres'], [999999])
+
+    def test_semestre_cible_ecarte_les_autres_besoins(self):
+        from edts.moteur.annee import generer_annee
+
+        # La fabrique ne couvre que S1 : cibler S9 ne planifie rien, et le
+        # bilan le dit (aucun groupe planifié) au lieu d'inventer des séances.
+        self._importer_inscrits()
+        bilan = generer_annee(self.annee.pk, semestre_numeros=[9])
+        self.assertEqual(bilan['semestres_filtres'], [9])
+        self.assertTrue(bilan['groupes'])
+        self.assertTrue(all(
+            ligne['statut'] == 'NON_PLANIFIE' for ligne in bilan['groupes']))

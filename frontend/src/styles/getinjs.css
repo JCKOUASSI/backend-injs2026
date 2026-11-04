@@ -81,3 +81,162 @@
     border: 1px solid CanvasText;
   }
 }
+
+/* ── Génération (maquette validée) : en-tête, paramètres, historique ────── */
+.getinjs .gen-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+
+.getinjs .gen-sur {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--injs-blue-royal, #14509e);
+}
+
+.getinjs .gen-titre {
+  margin: 0.15rem 0 0.3rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--injs-navy, #0a2a5c);
+}
+
+.getinjs .gen-sous {
+  margin: 0;
+  max-width: 680px;
+  font-size: 0.88rem;
+  color: #54677e;
+  line-height: 1.55;
+}
+
+.getinjs .gen-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.getinjs .gen-label {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #54677e;
+  margin-bottom: 0.25rem;
+}
+
+.getinjs .gen-contraintes {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid #e8f0fa;
+}
+
+.getinjs .gen-etapes {
+  margin: 0 0 1rem;
+  padding-left: 1.2rem;
+  font-size: 0.84rem;
+  color: #33475e;
+  line-height: 1.6;
+}
+
+.getinjs .gen-etapes li::marker {
+  color: var(--injs-blue-royal, #14509e);
+  font-weight: 800;
+}
+
+.getinjs .gen-sous-titre {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--injs-navy, #0a2a5c);
+  margin-bottom: 0.4rem;
+}
+
+.getinjs .gen-savoir,
+.getinjs .gen-regles {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.84rem;
+  color: #33475e;
+  line-height: 1.65;
+}
+
+.getinjs .gen-table th {
+  background: #eef4fb;
+  color: var(--injs-navy, #0a2a5c);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border-bottom: 2px solid #6db3f2;
+  padding: 0.55rem 0.6rem;
+  white-space: nowrap;
+}
+
+.getinjs .gen-table td { font-size: 0.82rem; }
+
+.getinjs .gen-conflits {
+  display: inline-block;
+  min-width: 1.7rem;
+  text-align: center;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: #eef4fb;
+  border: 1px solid var(--injs-border-strong, #bcd3f0);
+  color: var(--injs-blue-royal, #14509e);
+  font-weight: 800;
+  font-size: 0.72rem;
+}
+
+.getinjs .gen-conflits.is-alert {
+  background: #fdf1f1;
+  border-color: #e5b4b4;
+  color: #a02c2c;
+}
+
+.getinjs .gen-versions {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.getinjs .gen-version {
+  border: 1px solid #dbe7f5;
+  border-left: 3px solid var(--injs-blue-royal, #14509e);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  background: linear-gradient(180deg, #fbfdff, #f0f6fd);
+}
+
+.getinjs .gen-version-code {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--injs-navy, #0a2a5c);
+  word-break: break-word;
+  flex: 1;
+}
+
+.getinjs .gen-version-date {
+  display: block;
+  font-size: 0.7rem;
+  color: #76879e;
+  margin-top: 0.15rem;
+}
+
+.getinjs .gen-version-desc {
+  display: block;
+  font-size: 0.74rem;
+  color: #54677e;
+}

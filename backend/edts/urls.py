@@ -76,6 +76,8 @@ urlpatterns_lmd = [
     # ── LOT 2 — campagnes de génération (AJOUT) ─────────────────────────────
     # Routes nouvelles sous `campagnes/` : aucune route existante modifiée.
     path('campagnes/', g.campagnes_api, name='edt-campagnes'),
+    path('campagnes/historique/', g.historique_generations_api,
+         name='edt-campagnes-historique'),
     path('campagnes/<int:pk>/', g.campagne_detail_api, name='edt-campagne-detail'),
     path('campagnes/<int:pk>/demarrer/', g.campagne_demarrer_api,
          name='edt-campagne-demarrer'),
@@ -93,6 +95,8 @@ urlpatterns_lmd = [
     # ── LOT 2 — campagnes de génération (AJOUT) ─────────────────────────────
     # Routes nouvelles sous `campagnes/` : aucune route existante modifiée.
     path('campagnes/', g.campagnes_api, name='edt-campagnes'),
+    path('campagnes/historique/', g.historique_generations_api,
+         name='edt-campagnes-historique'),
     path('campagnes/<int:pk>/', g.campagne_detail_api, name='edt-campagne-detail'),
     path('campagnes/<int:pk>/demarrer/', g.campagne_demarrer_api,
          name='edt-campagne-demarrer'),

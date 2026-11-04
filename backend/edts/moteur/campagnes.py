@@ -234,6 +234,7 @@ def executer_campagne(campagne_id, execution_id):
     debut = time.monotonic()
     try:
         with CaptureQueriesContext(connection) as requetes:
+            perimetre = campagne.perimetre or {}
             bilan = generer_annee(
                 campagne.annee_academique_id,
                 semaines=campagne.semaines or [1],
@@ -242,7 +243,20 @@ def executer_campagne(campagne_id, execution_id):
                 inclure_maquette=bool(parametres.get('inclure_maquette', True)),
                 # Le périmètre « formations » borne la génération : sans cela,
                 # une campagne ciblée régénérait toute l'année académique.
-                formation_ids=(campagne.perimetre or {}).get('formations') or None,
+                formation_ids=perimetre.get('formations') or None,
+                # Périmètres fins de l'écran « Génération » : niveaux,
+                # groupes précis et semestre ciblé bornent réellement les
+                # groupes et les besoins planifiés.
+                niveau_ids=perimetre.get('niveaux') or None,
+                groupe_ids=perimetre.get('groupes') or None,
+                semestre_numeros=perimetre.get('semestres') or None,
+                # Contraintes et options de la maquette : samedi, pause
+                # méridienne et quota hebdomadaire par groupe.
+                inclure_samedi=bool(parametres.get('inclure_samedi', True)),
+                eviter_pause_meridienne=bool(
+                    parametres.get('eviter_pause_meridienne', False)),
+                max_seances_par_groupe_semaine=(
+                    parametres.get('max_seances_par_groupe_semaine') or None),
             )
         duree_ms = int((time.monotonic() - debut) * 1000)
         anomalies = extraire_anomalies(bilan)
