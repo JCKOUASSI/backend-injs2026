@@ -21,7 +21,79 @@ from django.utils import timezone
 from formations.models import Participant, QRToken
 from parametres.models import Parametre
 
-from .models import AuditLog, Pointage
+from .models import AuditLog, EncadrantSeance, Pointage
+
+#: Codes métier normalisés exposés en plus du code legacy (`code`), sans
+#: jamais le remplacer : les clients historiques (Flutter) continuent de
+#: lire `code`/`detail`, les nouveaux lisent `code_normalise`/`message`.
+CODES_NORMALISES = {
+    'INVALID_TOKEN': 'QR_INVALIDE',
+    'TOKEN_EXPIRED': 'QR_EXPIRE',
+    'ALREADY_SCANNED': 'DOUBLE_ENTREE',
+    'NOT_IN_LIST': 'ETUDIANT_HORS_GROUPE',
+    'NOT_IN_GROUP': 'ETUDIANT_HORS_GROUPE',
+    'HORS_SEANCE': 'SEANCE_INACTIVE',
+    'TROP_TOT': 'SEANCE_INACTIVE',
+    'HORS_FENETRE': 'SEANCE_TERMINEE',
+    'LOCATION_REQUIRED': 'GPS_INDISPONIBLE',
+    'LOCATION_INACCURATE': 'PRECISION_GPS_INSUFFISANTE',
+    'OUT_OF_GEOFENCE': 'HORS_GEOFENCE',
+    'NO_OPEN_SESSION': 'SORTIE_SANS_ENTREE',
+}
+
+#: Action recommandée affichable telle quelle par les clients.
+ACTIONS_RECOMMANDEES = {
+    'QR_INVALIDE': 'Scannez le QR affiché par l’enseignant pour cette séance.',
+    'QR_EXPIRE': 'Demandez à l’enseignant de réafficher le QR de la séance.',
+    'DOUBLE_ENTREE': 'Votre présence est déjà complète pour cette séance.',
+    'ETUDIANT_HORS_GROUPE': 'Vérifiez votre inscription dans le groupe de la séance auprès du secrétariat.',
+    'ENSEIGNANT_NON_AFFECTE': 'Seul l’enseignant affecté à la séance peut badger.',
+    'ACTIVITE_NON_AUTORISEE': 'Demandez votre habilitation d’encadrement pour cette séance au secrétariat.',
+    'SEANCE_INACTIVE': 'La séance n’est pas ouverte au badgeage pour le moment.',
+    'SEANCE_TERMINEE': 'La séance est terminée : le badgeage est clos.',
+    'HORS_GEOFENCE': 'Rapprochez-vous du site puis scannez à nouveau.',
+    'GPS_INDISPONIBLE': 'Activez la géolocalisation puis scannez à nouveau.',
+    'PRECISION_GPS_INSUFFISANTE': 'Patientez jusqu’à une meilleure précision GPS puis réessayez.',
+    'SORTIE_SANS_ENTREE': 'Aucune entrée ouverte : scannez d’abord le QR d’entrée.',
+    'HEARTBEAT_INTERROMPU': 'Rouvrez l’application pour reprendre le suivi de présence.',
+}
+
+
+def normaliser_erreur(erreur, *, type_personne='participant'):
+    """Enrichit un dict d'erreur `{code, detail}` des champs normalisés.
+
+    Additif et rétrocompatible : `code` et `detail` sont inchangés, les
+    champs `code_normalise`, `message` et `action_recommandee` s'ajoutent.
+    """
+    if not erreur:
+        return erreur
+    code = erreur.get('code')
+    normalise = CODES_NORMALISES.get(code, code)
+    if code == 'UTILISATEUR_NON_AUTORISE':
+        # Même refus legacy, deux lectures métier selon le profil.
+        normalise = ('ACTIVITE_NON_AUTORISEE' if type_personne == 'encadrant'
+                     else 'ENSEIGNANT_NON_AFFECTE')
+    enrichi = dict(erreur)
+    enrichi['code_normalise'] = normalise
+    enrichi['message'] = erreur.get('detail')
+    action = ACTIONS_RECOMMANDEES.get(normalise)
+    if action:
+        enrichi['action_recommandee'] = action
+    return enrichi
+
+
+#: Catalogue normalisé des motifs de badgeage manuel (badgeage unitaire).
+#: Un badgeage manuel est une exception : motif obligatoire, et le motif
+#: AUTRE exige un commentaire explicite. Codes stockés tels quels dans
+#: ``Pointage.motif_manuel`` et dans le journal d'audit.
+MOTIFS_EMARGEMENT_MANUEL = {
+    'QR_NON_LISIBLE': 'QR illisible ou non fonctionnel',
+    'GPS_INDISPONIBLE': 'GPS indisponible sur l’appareil',
+    'PANNE_RESEAU': 'Panne réseau au moment du badgeage',
+    'PROBLEME_TECHNIQUE': 'Problème technique (appareil, application)',
+    'PARTICIPANT_PRESENT_SANS_BADGE': 'Participant présent mais sans badge',
+    'AUTRE': 'Autre motif (commentaire obligatoire)',
+}
 
 #: Index lundi=0..dimanche=6 aligné sur les codes `JOUR_CHOICES` de l'EDT.
 _JOURS = {'LUNDI': 0, 'MARDI': 1, 'MERCREDI': 2, 'JEUDI': 3,
@@ -145,6 +217,8 @@ def peut_gerer_seance(user, affectation):
         return True
     if role in {'ENCADRANT', 'FORMATEUR'} and affectation.enseignant_id == user.id:
         return True
+    if role == 'ENCADRANT' and encadrant_habilite(user, affectation):
+        return True
     return False
 
 
@@ -235,6 +309,18 @@ def enseignant_autorise(affectation, user):
     return bool(enseignant is not None and enseignant.user_id == user.pk)
 
 
+def encadrant_habilite(user, affectation):
+    """L'encadrant est-il explicitement habilité sur cette séance LMD ?
+
+    L'habilitation est la liaison ``EncadrantSeance`` (déclarée, active) —
+    jamais une assimilation à l'enseignant ni un rapprochement par nom.
+    """
+    if user is None or not getattr(user, 'pk', None):
+        return False
+    return EncadrantSeance.objects.filter(
+        encadrant=user, seance_edt=affectation, actif=True).exists()
+
+
 def autorisation_badgeage(user, personne, type_personne, affectation):
     """Contrôle d'accès au badgeage QR d'une séance LMD.
 
@@ -256,6 +342,8 @@ def autorisation_badgeage(user, personne, type_personne, affectation):
             403,
         )
     if enseignant_autorise(affectation, user):
+        return True, None, None, None
+    if type_personne == 'encadrant' and encadrant_habilite(user, affectation):
         return True, None, None, None
     return (
         False,
@@ -407,6 +495,7 @@ def badger_scan(request, *, affectation, date, personne=None, participant=None,
     if ouvert is not None:
         ouvert.timestamp_sortie = min(now, cloture)
         ouvert.statut = Pointage.Statut.TERMINE
+        ouvert.type_sortie = Pointage.TypeSortie.SORTIE_QR
         ouvert.calculer_duree()
         if ouvert.statut_assiduite == Pointage.StatutAssiduite.NON_RENSEIGNE or not ouvert.statut_assiduite:
             seuil_retard = debut + timedelta(minutes=_parametre(CLE_TOLERANCE_RETARD))
@@ -414,7 +503,15 @@ def badger_scan(request, *, affectation, date, personne=None, participant=None,
                 ouvert.statut_assiduite = Pointage.StatutAssiduite.PRESENT
         ouvert.save()
         _log_scan(AuditLog.Action.SCAN_SECURE_SORTIE, request, personne, affectation,
-                  ouvert, device_id, {'duree_minutes': float(ouvert.duree_presence_minutes or 0)},
+                  ouvert, device_id, {
+                      'duree_minutes': float(ouvert.duree_presence_minutes or 0),
+                      'mode': Pointage.Mode.QR_AUTOMATIQUE,
+                      'source_position': 'BADGE_SORTIE',
+                      'type_sortie': Pointage.TypeSortie.SORTIE_QR,
+                      'latitude': (coords or {}).get('last_latitude'),
+                      'longitude': (coords or {}).get('last_longitude'),
+                      'accuracy_m': (coords or {}).get('last_accuracy_m'),
+                  },
                   type_personne=type_personne)
         return 'SORTIE', ouvert, None
 
@@ -443,6 +540,7 @@ def badger_scan(request, *, affectation, date, personne=None, participant=None,
         session=None,
         date_journee=date,
         timestamp_entree=now,
+        mode=Pointage.Mode.QR_AUTOMATIQUE,
         statut=Pointage.Statut.EN_COURS,
         statut_assiduite=(Pointage.StatutAssiduite.RETARD if now > seuil_retard
                           else Pointage.StatutAssiduite.PRESENT),
@@ -461,6 +559,8 @@ def badger_scan(request, *, affectation, date, personne=None, participant=None,
                   'retard': pointage.statut_assiduite == Pointage.StatutAssiduite.RETARD,
                   'distance_m': distance_m,
                   'rayon_m': rayon_m,
+                  'mode': Pointage.Mode.QR_AUTOMATIQUE,
+                  'source_position': 'BADGE_ENTREE',
               }, type_personne=type_personne)
     return 'ENTREE', pointage, None
 
@@ -492,6 +592,24 @@ def _heartbeat_audit_du(previous_heartbeat_at):
     if previous_heartbeat_at is None:
         return True
     return (timezone.now() - previous_heartbeat_at).total_seconds() >= interval
+
+
+def _evaluation_position(geo_ok, geo_code, latitude, longitude):
+    """Classe d'évaluation d'une position de heartbeat (contrat §LOT3).
+
+    Dérivée uniquement des codes produits par ``geofence.verifier_position``
+    et du seuil configurable existant — aucun seuil nouveau n'est inventé :
+    DANS_PERIMETRE / HORS_PERIMETRE / POSITION_IMPRECISE (précision au-delà
+    de ``MOBILE_GEOFENCE_MAX_ACCURACY_M``) / POSITION_ABSENTE (aucune
+    coordonnée alors que le site est géolocalisé).
+    """
+    if geo_ok:
+        return 'DANS_PERIMETRE'
+    if geo_code == 'LOCATION_INACCURATE':
+        return 'POSITION_IMPRECISE'
+    if geo_code == 'LOCATION_REQUIRED' or latitude is None or longitude is None:
+        return 'POSITION_ABSENTE'
+    return 'HORS_PERIMETRE'
 
 
 @transaction.atomic
@@ -540,6 +658,7 @@ def appliquer_heartbeat(request, pointage, *, affectation, coords=None, device_i
 
     geo_ok, geo_code, geo_detail, distance_m, rayon_m = _controle_geofence_edt(
         affectation, coords)
+    evaluation = _evaluation_position(geo_ok, geo_code, latitude, longitude)
     outside_limit = max(1, int(getattr(settings, 'MOBILE_GEOFENCE_OUTSIDE_CONFIRMATIONS', 2)))
     previous_heartbeat_at = pointage.last_heartbeat_at
 
@@ -567,10 +686,13 @@ def appliquer_heartbeat(request, pointage, *, affectation, coords=None, device_i
                           'accuracy_m': accuracy_m,
                           'battery_level': coords.get('last_battery_level'),
                           'is_charging': coords.get('last_is_charging'),
+                          'source_position': 'HEARTBEAT',
+                          'evaluation': evaluation,
                       }, type_personne=type_personne)
         return ({
             'detail': 'Heartbeat enregistré.',
             'canal': 'EDT_LMD',
+            'evaluation': evaluation,
             'statut': pointage.statut,
             'outside_geofence_count': pointage.outside_geofence_count,
             'distance_m': round(distance_m, 1) if distance_m is not None else None,
@@ -593,10 +715,11 @@ def appliquer_heartbeat(request, pointage, *, affectation, coords=None, device_i
         _, cloture = fenetre_scan(affectation, pointage.date_journee)
         pointage.timestamp_sortie = min(now, cloture)
         pointage.statut = Pointage.Statut.SORTIE_AUTO
+        pointage.type_sortie = Pointage.TypeSortie.SORTIE_AUTOMATIQUE_FIN_SEANCE
         pointage.calculer_duree()
         pointage.save(update_fields=champs_position + [
             'timestamp_sortie', 'statut', 'duree_presence_minutes',
-            'outside_geofence_count',
+            'outside_geofence_count', 'type_sortie',
         ])
         _log_scan(AuditLog.Action.OUT_OF_GEOFENCE, request, pointage.personne,
                   affectation, pointage, device_id, extra, type_personne=type_personne)
@@ -606,6 +729,8 @@ def appliquer_heartbeat(request, pointage, *, affectation, coords=None, device_i
             'detail': 'Sortie automatique déclenchée (hors périmètre).',
             'action': 'SORTIE_AUTO',
             'canal': 'EDT_LMD',
+            'evaluation': evaluation,
+            'type_sortie': pointage.type_sortie,
             'statut': pointage.statut,
             'timestamp_sortie': pointage.timestamp_sortie,
             'duree_session_minutes': float(pointage.duree_presence_minutes or 0),
@@ -615,17 +740,60 @@ def appliquer_heartbeat(request, pointage, *, affectation, coords=None, device_i
 
     pointage.statut = Pointage.Statut.HORS_LIGNE_SUSPECT
     pointage.save(update_fields=champs_position + ['statut', 'outside_geofence_count'])
+    extra['source_position'] = 'HEARTBEAT'
+    extra['evaluation'] = evaluation
     _log_scan(AuditLog.Action.SCAN_HEARTBEAT, request, pointage.personne,
               affectation, pointage, device_id, extra, type_personne=type_personne)
     return ({
         'detail': geo_detail or 'Position hors périmètre enregistrée (présence conservée).',
         'canal': 'EDT_LMD',
+        'evaluation': evaluation,
         'statut': pointage.statut,
         'distance_m': extra['distance_m'],
         'rayon_m': extra['rayon_m'],
         'geofence_code': geo_code,
         'outside_geofence_count': pointage.outside_geofence_count,
     }, None)
+
+
+@transaction.atomic
+def sortie_seance(request, *, personne, affectation, date, device_id='', coords=None,
+                  type_personne='participant'):
+    """Sortie **volontaire** du participant (endpoint de sortie mobile).
+
+    Réutilise les bornes de la fenêtre de badgeage (`fenetre_scan`) et
+    l'écriture `timestamp_sortie` du scan : rien n'est inventé — sans
+    entrée ouverte, la sortie est refusée (`NO_OPEN_SESSION`, normalisé
+    `SORTIE_SANS_ENTREE`) et aucune ligne n'est créée. La position
+    éventuellement transmise est conservée dans le journal d'audit
+    (source BADGE_SORTIE), jamais utilisée pour refuser une sortie.
+    """
+    pointage = (Pointage.objects.select_for_update()
+                .filter(seance_edt=affectation, date_journee=date,
+                        timestamp_sortie__isnull=True,
+                        **filtres_personne(type_personne, personne))
+                .order_by('-timestamp_entree').first())
+    if pointage is None:
+        return None, {'code': 'NO_OPEN_SESSION',
+                      'detail': 'Aucune entrée ouverte à clôturer pour cette séance.'}
+    _, cloture = fenetre_scan(affectation, date)
+    pointage.timestamp_sortie = min(timezone.now(), cloture)
+    pointage.statut = Pointage.Statut.TERMINE
+    pointage.type_sortie = Pointage.TypeSortie.SORTIE_QR
+    pointage.calculer_duree()
+    pointage.save()
+    _log_scan(AuditLog.Action.SCAN_SECURE_SORTIE, request, personne, affectation,
+              pointage, device_id, {
+                  'duree_minutes': float(pointage.duree_presence_minutes or 0),
+                  'mode': Pointage.Mode.QR_AUTOMATIQUE,
+                  'source_position': 'BADGE_SORTIE',
+                  'type_sortie': Pointage.TypeSortie.SORTIE_QR,
+                  'via': 'ENDPOINT_SORTIE',
+                  'latitude': (coords or {}).get('last_latitude'),
+                  'longitude': (coords or {}).get('last_longitude'),
+                  'accuracy_m': (coords or {}).get('last_accuracy_m'),
+              }, type_personne=type_personne)
+    return pointage, None
 
 
 # ---------------------------------------------------------------------------
@@ -758,6 +926,7 @@ def emarger(request, affectation, date, entries, *, motif_global=''):
             raise ErreurEmargement(f'Ligne {index + 1} : participant {pid} introuvable.')
 
         motif = (entree.get('motif') or motif_global or '').strip()
+        commentaire = (entree.get('commentaire') or '').strip()
         assiduite = STATUTS_EMARGEMENT[statut_cible]
         pointage = existants.get(pid)
         avant = None
@@ -768,6 +937,8 @@ def emarger(request, affectation, date, entries, *, motif_global=''):
                     participant=participant, seance_edt=affectation, date_journee=date,
                     timestamp_entree=debut, statut=Pointage.Statut.TERMINE,
                     statut_assiduite=assiduite, device_id='EMARGEMENT_MANUEL',
+                    mode=Pointage.Mode.MANUEL, motif_manuel=motif,
+                    commentaire_manuel=commentaire,
                     annee_academique_id=affectation.emploi_du_temps.annee_academique_id,
                     groupe_lmd_id=affectation.groupe_id,
                 )
@@ -780,6 +951,8 @@ def emarger(request, affectation, date, entries, *, motif_global=''):
                     participant=participant, seance_edt=affectation, date_journee=date,
                     timestamp_entree=seuil + timedelta(minutes=1), statut=Pointage.Statut.TERMINE,
                     statut_assiduite=assiduite, device_id='EMARGEMENT_MANUEL',
+                    mode=Pointage.Mode.MANUEL, motif_manuel=motif,
+                    commentaire_manuel=commentaire,
                     annee_academique_id=affectation.emploi_du_temps.annee_academique_id,
                     groupe_lmd_id=affectation.groupe_id,
                 )
@@ -794,6 +967,8 @@ def emarger(request, affectation, date, entries, *, motif_global=''):
                     timestamp_entree=debut, timestamp_sortie=debut,
                     statut=Pointage.Statut.FORCE_DFRC, statut_assiduite=assiduite,
                     device_id='EMARGEMENT_MANUEL',
+                    mode=Pointage.Mode.MANUEL, motif_manuel=motif,
+                    commentaire_manuel=commentaire,
                     annee_academique_id=affectation.emploi_du_temps.annee_academique_id,
                     groupe_lmd_id=affectation.groupe_id,
                 )
@@ -814,6 +989,9 @@ def emarger(request, affectation, date, entries, *, motif_global=''):
             }
             pointage.statut = Pointage.Statut.FORCE_DFRC
             pointage.statut_assiduite = assiduite
+            pointage.mode = Pointage.Mode.MANUEL
+            pointage.motif_manuel = motif
+            pointage.commentaire_manuel = commentaire
             if statut_cible in ('ABSENT', 'ABSENCE_JUSTIFIEE', 'EXCUSE'):
                 pointage.timestamp_entree = debut
                 pointage.timestamp_sortie = debut
@@ -845,7 +1023,9 @@ def emarger(request, affectation, date, entries, *, motif_global=''):
             cible_nom=f'{participant.nom} {participant.prenom}'.strip(),
             pointage=pointage,
             extra={'canal': 'EDT_LMD', 'seance_edt': affectation.pk, 'date': date.isoformat(),
-                   'motif': motif, 'avant': avant, 'apres': nouvelle,
+                   'motif': motif, 'commentaire': commentaire or None,
+                   'mode': Pointage.Mode.MANUEL,
+                   'avant': avant, 'apres': nouvelle,
                    'source': 'EMARGEMENT_MANUEL'},
         )
         journal.append({
@@ -855,6 +1035,39 @@ def emarger(request, affectation, date, entries, *, motif_global=''):
             'corrige': avant is not None,
         })
     return journal
+
+
+def emarger_unitaire(request, affectation, date, participant_id, *,
+                     statut='PRESENT', motif='', commentaire=''):
+    """Badgeage manuel **unitaire** : un participant, un motif catalogué.
+
+    Le badgeage manuel est une exception, jamais un défaut : le motif est
+    obligatoire et doit appartenir au catalogue
+    `MOTIFS_EMARGEMENT_MANUEL` ; le motif AUTRE exige un commentaire.
+    L'écriture elle-même (création ou correction tracée avant/après) est
+    déléguée à `emarger`, source unique du geste manuel.
+    """
+    motif = (motif or '').strip().upper()
+    commentaire = (commentaire or '').strip()
+    if not motif:
+        raise ErreurEmargement(
+            'Motif obligatoire pour un badgeage manuel.',
+            code='MOTIF_MANUEL_REQUIS')
+    if motif not in MOTIFS_EMARGEMENT_MANUEL:
+        raise ErreurEmargement(
+            f'Motif « {motif} » hors catalogue (attendu : '
+            f'{", ".join(sorted(MOTIFS_EMARGEMENT_MANUEL))}).',
+            code='MOTIF_MANUEL_INCONNU')
+    if motif == 'AUTRE' and not commentaire:
+        raise ErreurEmargement(
+            'Le motif AUTRE exige un commentaire explicite.',
+            code='COMMENTAIRE_MANUEL_REQUIS')
+    journal = emarger(
+        request, affectation, date,
+        [{'participant': participant_id, 'statut': statut,
+          'motif': motif, 'commentaire': commentaire}],
+    )
+    return journal[0] if journal else None
 
 
 # ---------------------------------------------------------------------------
@@ -873,6 +1086,7 @@ def auto_clore(request, affectation, date):
     for pointage in ouverts:
         pointage.timestamp_sortie = min(timezone.now(), cloture)
         pointage.statut = Pointage.Statut.SORTIE_AUTO
+        pointage.type_sortie = Pointage.TypeSortie.SORTIE_AUTOMATIQUE_FIN_SEANCE
         pointage.calculer_duree()
         pointage.save()
         AuditLog.objects.create(
@@ -886,7 +1100,8 @@ def auto_clore(request, affectation, date):
                        if pointage.participant else ''),
             pointage=pointage,
             extra={'canal': 'EDT_LMD', 'seance_edt': affectation.pk, 'date': date.isoformat(),
-                   'source': 'AUTOCLOTURE'},
+                   'source': 'AUTOCLOTURE',
+                   'type_sortie': Pointage.TypeSortie.SORTIE_AUTOMATIQUE_FIN_SEANCE},
         )
         nb_clotures += 1
 

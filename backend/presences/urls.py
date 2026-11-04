@@ -13,12 +13,16 @@ urlpatterns = [
     # présences rattachées). Lecture seule — ne déclenche aucune écriture.
     path('presences/seances-edt/supervision/', seances_edt_api.supervision_api,
          name='presences-edt-supervision'),
+    path('presences/seances-edt/historique/', seances_edt_api.historique_api,
+         name='presences-edt-historique'),
     path('presences/seances-edt/scan/', seances_edt_api.scan_seance, name='presences-edt-scan'),
     path('presences/seances-edt/<int:pk>/qr/', seances_edt_api.qr_seance, name='presences-edt-qr'),
     path('presences/seances-edt/<int:pk>/presences/', seances_edt_api.presences_seance,
          name='presences-edt-liste'),
     path('presences/seances-edt/<int:pk>/emargement/', seances_edt_api.emargement_seance,
          name='presences-edt-emargement'),
+    path('presences/seances-edt/<int:pk>/emargement/unitaire/', seances_edt_api.emargement_unitaire,
+         name='presences-edt-emargement-unitaire'),
     path('presences/seances-edt/<int:pk>/autoclore/', seances_edt_api.autoclore_seance,
          name='presences-edt-autoclore'),
 
@@ -44,6 +48,7 @@ urlpatterns = [
     # Scan sécurisé (app mobile — anti-fraude, auth requise)
     path('scan/secure/', views.secure_scan_view, name='secure-scan'),
     path('scan/secure/heartbeat/', views.secure_scan_heartbeat, name='secure-scan-heartbeat'),
+    path('scan/secure/exit/', views.secure_scan_exit, name='secure-scan-exit'),
     path('scan/secure/check-status/', views.secure_check_badge_status, name='secure-check-badge-status'),
 
     # Config runtime (app mobile)

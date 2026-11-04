@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquette — Présences de séance · Design « Nuit INJS Premium Dynamique »</title>
+<style>
+  /* ═══ PRÉSENCES DE SÉANCE — « NUIT INJS PREMIUM DYNAMIQUE » ═══
+     Continuité du design validé (nuit académique, azur, doré), poussé
+     en dynamisme : bandeau vivant (halos animés, pastille LIVE),
+     anneau de taux animé, lignes de présence en cartes avec avatars,
+     puces de canal, micro-transitions et compteurs animés. */
+  :root{
+    --nuit:#061831; --nuit-2:#0A2A5C; --royal:#1267D6; --azur:#38BDF8; --or:#F5B544;
+    --vert:#1D9E62; --vermillon:#D45A4E; --ambre:#D97706; --encre:#132A44; --pale:#5B7186;
+    --fond:#F2F7FD; --ligne:#DCE8F5; --r:20px;
+    --ombre:0 18px 40px -18px rgba(6,24,49,.30); --ombre-douce:0 8px 24px -12px rgba(6,24,49,.16);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--fond);color:var(--encre);
+       font-family:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif}
+  .page{max-width:1340px;margin:0 auto;padding:0 24px 56px}
+  .note{background:#FFF7E0;border:1px solid #F0D488;color:#7A5B00;border-radius:12px;padding:10px 14px;font-size:13px;margin:14px 0}
+  @keyframes flotter{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-18px) scale(1.12)}}
+  @keyframes entrer{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes pulser{0%{box-shadow:0 0 0 0 rgba(29,158,98,.5)}70%{box-shadow:0 0 0 9px rgba(29,158,98,0)}100%{box-shadow:0 0 0 0 rgba(29,158,98,0)}}
+  .anim-entree{animation:entrer .55s cubic-bezier(.2,.7,.2,1) both}
+
+  /* ── Bandeau séance ─────────────────────────────── */
+  .hero{position:relative;overflow:hidden;border-radius:0 0 28px 28px;color:#fff;margin:0 -24px;
+    background:linear-gradient(120deg,var(--nuit) 0%,var(--nuit-2) 58%,#14509E 100%);padding:28px 38px 30px}
+  .halo{position:absolute;border-radius:50%;filter:blur(10px);pointer-events:none}
+  .halo.a{width:480px;height:480px;right:-120px;top:-260px;background:radial-gradient(circle,rgba(56,189,248,.4),transparent 65%);animation:flotter 11s ease-in-out infinite}
+  .halo.b{width:380px;height:380px;left:-100px;bottom:-240px;background:radial-gradient(circle,rgba(245,181,68,.28),transparent 65%);animation:flotter 13s ease-in-out infinite reverse}
+  .hero .contenu{position:relative;z-index:1}
+  .badge{display:inline-flex;gap:8px;align-items:center;background:rgba(168,212,248,.16);border:1px solid rgba(168,212,248,.45);
+    color:#A8D4F8;border-radius:999px;padding:5px 12px;font-size:11px;letter-spacing:.14em;font-weight:700}
+  .live{display:inline-flex;gap:7px;align-items:center;background:rgba(29,158,98,.18);border:1px solid rgba(29,158,98,.55);
+    color:#7FE3B0;border-radius:999px;padding:5px 12px;font-size:11px;letter-spacing:.12em;font-weight:800}
+  .live .point-live{width:8px;height:8px;border-radius:50%;background:#2BD97B;animation:pulser 1.8s infinite}
+  .hero h1{font-size:30px;margin:14px 0 6px;font-weight:800}
+  .hero h1 .or{color:var(--or)}
+  .hero p{color:#CFE6FA;margin:0;max-width:70ch;font-size:15px;line-height:1.55}
+  .hero-ligne{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;align-items:flex-end}
+  .champ-verre{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.30);border-radius:12px;color:#fff;
+    padding:9px 12px;font-size:14px;backdrop-filter:blur(6px)}
+  .champ-verre option{color:var(--encre)}
+  .etiquette{font-size:11px;letter-spacing:.12em;color:#A8D4F8;text-transform:uppercase;font-weight:700;display:block;margin-bottom:6px}
+  .btn{border-radius:12px;padding:10px 16px;font-weight:700;font-size:14px;text-decoration:none;display:inline-flex;gap:8px;align-items:center;border:0;cursor:pointer}
+  .btn-or{background:var(--or);color:#3A2A00;box-shadow:0 10px 22px -10px rgba(245,181,68,.8)}
+  .btn-verre{background:rgba(255,255,255,.10);color:#fff;border:1px solid rgba(255,255,255,.35)}
+  .btn-royal{background:var(--royal);color:#fff}
+  .btn-douce{background:#EAF5FF;color:#0B4FA8}
+  .btn-danger-douce{background:#FBE7E3;color:#9C2B2E}
+
+  /* ── Disposition ───────────────────────────────── */
+  .grille{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.55fr);gap:16px;margin-top:18px}
+  @media (max-width:1020px){.grille{grid-template-columns:1fr}}
+  .panel{background:#fff;border:1px solid var(--ligne);border-radius:var(--r);box-shadow:var(--ombre-douce);overflow:hidden}
+  .panel-tete{padding:16px 20px;border-bottom:1px solid var(--ligne);display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .surtitre{color:var(--royal);font-size:11px;letter-spacing:.14em;font-weight:800;text-transform:uppercase}
+  .panel-tete h2{margin:3px 0 0;font-size:18px;color:var(--nuit-2)}
+  .corps{padding:18px 20px}
+
+  /* QR */
+  .qr-zone{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .qr-cadre{background:#fff;border:2px solid var(--nuit-2);border-radius:18px;padding:12px;box-shadow:var(--ombre-douce)}
+  .qr-cadre canvas{display:block}
+  .compte{font-family:ui-monospace,Menlo,Consolas,monospace;background:#FFF3D6;color:#8A5A00;border-radius:8px;padding:2px 8px;font-weight:700}
+  .infos-seance{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;font-size:14px}
+  .infos-seance .k{color:var(--pale);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+  /* Synthèse */
+  .anneau-zone{display:flex;gap:18px;align-items:center}
+  .mini-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;flex:1}
+  .mini-stat{background:#F7FBFF;border:1px solid var(--ligne);border-radius:14px;padding:10px 12px}
+  .mini-stat .v{font-size:21px;font-weight:800;color:var(--nuit-2)}
+  .mini-stat .l{color:var(--pale);font-size:12px}
+  .barre{height:8px;background:#E3EDF7;border-radius:99px;overflow:hidden}
+  .barre i{display:block;height:100%;border-radius:99px;transition:width 1s cubic-bezier(.2,.7,.2,1)}
+
+  /* Présences */
+  .filtres{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .filtres input[type=search]{border:1px solid var(--ligne);border-radius:10px;padding:9px 12px;font-size:14px;min-width:210px}
+  .segmente{display:inline-flex;background:#EDF3FA;border-radius:11px;padding:3px;gap:3px}
+  .segmente button{border:0;background:transparent;padding:6px 12px;border-radius:8px;font-weight:600;color:var(--pale);cursor:pointer;font-size:13px}
+  .segmente button.actif{background:#fff;color:var(--nuit-2);box-shadow:0 2px 8px rgba(6,24,49,.12)}
+  .presence{display:flex;gap:14px;align-items:center;padding:12px 20px;border-top:1px solid #EDF3FA;transition:background .15s}
+  .presence:hover{background:#F7FBFF}
+  .avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;flex-shrink:0;font-size:15px}
+  .puce{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700}
+  .puce.vert{background:#E2F4EA;color:#14663C}.puce.ambre{background:#FEF0D9;color:#8A5A00}
+  .puce.rouge{background:#FBE7E3;color:#9C2B2E}.puce.gris{background:#EDF1F6;color:#5B7186}
+  .puce.bleu{background:#EAF5FF;color:#0B4FA8}.puce.violet{background:#EFE7FB;color:#5B2EA6}
+  .heure{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:var(--pale)}
+  .legende{color:var(--pale);font-size:13px;border-left:3px solid var(--or);padding:2px 0 2px 12px;margin:16px 20px 20px}
+
+  /* État vide premium (celui de la capture, sublimé) */
+  .vide{margin-top:18px;text-align:center;padding:52px 20px;background:
+      radial-gradient(600px 220px at 50% -60px,rgba(56,189,248,.18),transparent 65%),#fff;
+    border:1px dashed #B9CFEA;border-radius:var(--r)}
+  .vide .rond{width:76px;height:76px;margin:0 auto 16px;border-radius:50%;background:#EAF5FF;display:flex;align-items:center;justify-content:center;font-size:34px}
+  .vide h3{color:var(--nuit-2);margin:0 0 8px}
+  .vide p{color:var(--pale);max-width:52ch;margin:0 auto 18px}
+  footer{color:var(--pale);font-size:12.5px;margin-top:26px}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="note">🧪 <strong>Maquette interactive</strong> — cliquez sur les filtres et la recherche pour sentir le dynamisme. Données de démonstration (INJS d'Abidjan, Marcory) ; en production, tout vient des APIs de présences du serveur.</div>
+
+  <!-- ═══ BANDEAU SÉANCE ═══ -->
+  <section class="hero">
+    <div class="halo a"></div><div class="halo b"></div>
+    <div class="contenu">
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <span class="badge">▣ PRÉSENCES · BADGEAGE DE SÉANCE LMD</span>
+        <span class="live"><span class="point-live"></span>EN DIRECT</span>
+      </div>
+      <div class="hero-ligne">
+        <div>
+          <h1>PHY101 · Physique <span class="or">appliquée</span></h1>
+          <p>QR de séance pour le badgeage automatique des étudiants, émargement manuel
+             motivé et clôture automatique — Licence STAPS, Institut National de la
+             Jeunesse et des Sports d'Abidjan (Marcory).</p>
+        </div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap">
+          <div><span class="etiquette">Date des séances</span>
+            <input class="champ-verre" type="date" value="2026-11-04"></div>
+          <div><span class="etiquette">Séance</span>
+            <select class="champ-verre">
+              <option>08:00 · Physique appliquée (L1-G1)</option>
+              <option>10:15 · Pédagogie des APS (L1-G3)</option>
+            </select></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="grille">
+    <!-- ═══ COLONNE GAUCHE : QR + SYNTHÈSE ═══ -->
+    <div>
+      <section class="panel anim-entree">
+        <div class="panel-tete">
+          <div><div class="surtitre">Session QR temporaire</div><h2>QR de séance</h2></div>
+          <span class="puce vert">● Ouverte</span>
+        </div>
+        <div class="corps">
+          <div class="qr-zone">
+            <div class="qr-cadre"><canvas id="qr" width="168" height="168" aria-label="QR de démonstration"></canvas></div>
+            <div style="flex:1;min-width:210px">
+              <div class="infos-seance">
+                <div><div class="k">Horaire</div><strong>08:00 — 10:00</strong></div>
+                <div><div class="k">Salle / Espace</div><strong>Amphi 1</strong></div>
+                <div><div class="k">Groupe</div><strong>L1-G1</strong></div>
+                <div><div class="k">Enseignant</div><strong>Awa Traoré</strong></div>
+                <div><div class="k">Expire dans</div><span class="compte" id="compte">24:59</span></div>
+                <div><div class="k">Identifiant</div><strong style="font-family:ui-monospace,Menlo,monospace">INJS-S-000041</strong></div>
+              </div>
+              <div class="actions">
+                <button class="btn btn-royal">↻ Régénérer</button>
+                <button class="btn btn-douce">▣ Agrandir</button>
+                <button class="btn btn-danger-douce">⏹ Clôturer la séance</button>
+              </div>
+            </div>
+          </div>
+          <p style="color:var(--pale);font-size:13px;margin:14px 0 0">
+            Les étudiants scannent ce QR depuis leur application : le serveur vérifie
+            jeton, inscription au groupe, périmètre et doublon avant toute validation.
+          </p>
+        </div>
+      </section>
+
+      <section class="panel anim-entree" style="margin-top:16px;animation-delay:.08s">
+        <div class="panel-tete">
+          <div><div class="surtitre">Synthèse serveur</div><h2>État de la séance</h2></div>
+          <span class="puce bleu">Temps réel</span>
+        </div>
+        <div class="corps">
+          <div class="anneau-zone">
+            <svg width="104" height="104" viewBox="0 0 104 104" role="img" aria-label="Taux de présence 88 pour cent">
+              <circle cx="52" cy="52" r="44" fill="none" stroke="#E3EDF7" stroke-width="10"/>
+              <circle id="anneau" cx="52" cy="52" r="44" fill="none" stroke="url(#deg)" stroke-width="10" stroke-linecap="round"
+                      stroke-dasharray="276" stroke-dashoffset="276" transform="rotate(-90 52 52)"/>
+              <defs><linearGradient id="deg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#1267D6"/><stop offset="1" stop-color="#38BDF8"/></linearGradient></defs>
+              <text x="52" y="58" text-anchor="middle" font-size="21" font-weight="800" fill="#0A2A5C">88 %</text>
+            </svg>
+            <div class="mini-stats">
+              <div class="mini-stat"><div class="v" data-compteur="52">0</div><div class="l">Attendus</div></div>
+              <div class="mini-stat"><div class="v" data-compteur="46">0</div><div class="l">Présents (2 retards)</div></div>
+              <div class="mini-stat"><div class="v" data-compteur="3">0</div><div class="l">Présences manuelles</div></div>
+              <div class="mini-stat"><div class="v" data-compteur="1">0</div><div class="l">Anomalie GPS</div></div>
+            </div>
+          </div>
+          <div style="margin-top:16px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--pale)"><span>Badgeage QR automatique</span><strong style="color:var(--nuit-2)">43</strong></div>
+            <div class="barre" style="margin:6px 0 12px"><i id="barre-qr" style="width:0;background:linear-gradient(90deg,#1267D6,#38BDF8)"></i></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--pale)"><span>Émargement manuel motivé</span><strong style="color:var(--nuit-2)">3</strong></div>
+            <div class="barre" style="margin-top:6px"><i id="barre-manuel" style="width:0;background:linear-gradient(90deg,#8A5A00,#F5B544)"></i></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ═══ COLONNE DROITE : PRÉSENCES ═══ -->
+    <section class="panel anim-entree" style="animation-delay:.14s">
+      <div class="panel-tete" style="flex-wrap:wrap">
+        <div><div class="surtitre">L1-G1 · Licence STAPS</div><h2>Présences de la séance</h2></div>
+        <div class="filtres">
+          <input type="search" id="recherche" placeholder="🔎 Nom ou matricule…">
+          <div class="segmente" id="segmente">
+            <button class="actif" data-filtre="tous">Tous</button>
+            <button data-filtre="present">Présents</button>
+            <button data-filtre="absent">Absents</button>
+            <button data-filtre="manuel">Manuels</button>
+          </div>
+          <button class="btn btn-or">✚ Émargement manuel</button>
+        </div>
+      </div>
+      <div id="lignes">
+        <div class="presence" data-statut="present" data-canal="qr" data-texte="Aya Traoré mat011">
+          <div class="avatar" style="background:linear-gradient(135deg,#1267D6,#38BDF8)">KT</div>
+          <div style="flex:1;min-width:0"><strong>Aya Traoré</strong> <span class="heure">MAT011</span>
+            <div class="heure">Entrée 08:02 · en salle</div></div>
+          <span class="puce vert">Présent</span><span class="puce bleu">▣ QR</span>
+        </div>
+        <div class="presence" data-statut="present" data-canal="manuel" data-texte="Nadia Diallo mat012">
+          <div class="avatar" style="background:linear-gradient(135deg,#8A5A00,#F5B544)">ND</div>
+          <div style="flex:1;min-width:0"><strong>Nadia Diallo</strong> <span class="heure">MAT012</span>
+            <div class="heure">Entrée 08:07 · par l'enseignant</div></div>
+          <span class="puce vert">Présent</span><span class="puce ambre" title="Motif : QR_NON_LISIBLE">✎ Manuel · QR illisible</span>
+        </div>
+        <div class="presence" data-statut="present" data-canal="qr" data-texte="Marc Kouadio mat013">
+          <div class="avatar" style="background:linear-gradient(135deg,#0A2A5C,#1267D6)">MK</div>
+          <div style="flex:1;min-width:0"><strong>Marc Kouadio</strong> <span class="heure">MAT013</span>
+            <div class="heure">Entrée 08:16 · retard signalé</div></div>
+          <span class="puce ambre">Retard</span><span class="puce bleu">▣ QR</span>
+        </div>
+        <div class="presence" data-statut="absent" data-canal="" data-texte="Fatou Ndiaye mat014">
+          <div class="avatar" style="background:linear-gradient(135deg,#5B7186,#93A9C4)">FN</div>
+          <div style="flex:1;min-width:0"><strong>Fatou Ndiaye</strong> <span class="heure">MAT014</span>
+            <div class="heure">Aucun badgeage pour le moment</div></div>
+          <span class="puce gris">Non pointé</span>
+          <button class="btn btn-douce" style="padding:7px 12px">Badger manuellement</button>
+        </div>
+        <div class="presence" data-statut="absent" data-canal="" data-texte="Yao Mensah mat015">
+          <div class="avatar" style="background:linear-gradient(135deg,#5B7186,#93A9C4)">YM</div>
+          <div style="flex:1;min-width:0"><strong>Yao Mensah</strong> <span class="heure">MAT015</span>
+            <div class="heure">Absence justifiée déposée</div></div>
+          <span class="puce violet">Absence justifiée</span>
+        </div>
+      </div>
+      <p class="legende">Le canal est toujours identifiable : <strong>QR automatique</strong> (serveur) ou
+        <strong>manuel motivé et audité</strong>. Aucune présence n'est validée par le navigateur.</p>
+    </section>
+  </div>
+
+  <!-- ═══ ÉTAT VIDE (celui de votre capture, sublimé) ═══ -->
+  <section class="vide anim-entree" style="animation-delay:.2s">
+    <div class="rond">🗓️</div>
+    <h3>Aucune séance planifiée ce jour pour votre périmètre</h3>
+    <p>Les séances proviennent des emplois du temps publiés par GET INJS APP.
+       Choisissez une autre date, ou vérifiez que l'emploi du temps de la
+       formation est bien publié pour cette journée.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-royal">← Jour précédent</button>
+      <button class="btn btn-douce">Ouvrir les emplois du temps</button>
+      <button class="btn btn-or">Jour suivant →</button>
+    </div>
+  </section>
+
+  <footer>Maquette de design — « Nuit INJS Premium Dynamique » pour l'écran Présences de séance.
+    À valider avant implémentation dans <em>Présences</em> du Hub (React + APIs existantes).</footer>
+</div>
+
+<script>
+  // QR de démonstration (motif aléatoire stable) — en production : vrai jeton serveur.
+  (function () {
+    const c = document.getElementById('qr').getContext('2d');
+    let graine = 42;
+    const alea = () => (graine = (graine * 1103515245 + 12345) % 2147483648) / 2147483648;
+    c.fillStyle = '#fff'; c.fillRect(0, 0, 168, 168); c.fillStyle = '#0A2A5C';
+    const n = 25, t = 168 / n;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++)
+      if (alea() > .52) c.fillRect(x * t, y * t, t, t);
+    const coin = (cx, cy) => { c.fillStyle = '#0A2A5C'; c.fillRect(cx, cy, t * 7, t * 7);
+      c.fillStyle = '#fff'; c.fillRect(cx + t, cy + t, t * 5, t * 5);
+      c.fillStyle = '#0A2A5C'; c.fillRect(cx + t * 2, cy + t * 2, t * 3, t * 3); };
+    coin(0, 0); coin(168 - t * 7, 0); coin(0, 168 - t * 7);
+  })();
+
+  // Compte à rebours décoratif + animations d'entrée.
+  (function () {
+    let sec = 24 * 60 + 59;
+    const el = document.getElementById('compte');
+    setInterval(() => { sec = Math.max(0, sec - 1);
+      el.textContent = String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0'); }, 1000);
+    document.getElementById('anneau').style.transition = 'stroke-dashoffset 1.1s cubic-bezier(.2,.7,.2,1)';
+    requestAnimationFrame(() => {
+      document.getElementById('anneau').style.strokeDashoffset = String(276 * (1 - .88));
+      document.getElementById('barre-qr').style.width = '94%';
+      document.getElementById('barre-manuel').style.width = '7%';
+      document.querySelectorAll('[data-compteur]').forEach((n) => {
+        const cible = Number(n.dataset.compteur); let v = 0;
+        const pas = setInterval(() => { v += Math.ceil(cible / 24);
+          if (v >= cible) { v = cible; clearInterval(pas); } n.textContent = v; }, 36);
+      });
+    });
+  })();
+
+  // Filtres + recherche (démonstration du dynamisme).
+  (function () {
+    let filtre = 'tous';
+    const lignes = [...document.querySelectorAll('.presence')];
+    const appliquer = () => {
+      const q = document.getElementById('recherche').value.toLowerCase();
+      lignes.forEach((l) => {
+        const okF = filtre === 'tous' || l.dataset.statut === filtre
+          || (filtre === 'manuel' && l.dataset.canal === 'manuel');
+        l.style.display = okF && l.dataset.texte.includes(q) ? '' : 'none';
+      });
+    };
+    document.getElementById('segmente').addEventListener('click', (e) => {
+      if (e.target.tagName !== 'BUTTON') return;
+      document.querySelectorAll('#segmente button').forEach((b) => b.classList.remove('actif'));
+      e.target.classList.add('actif'); filtre = e.target.dataset.filtre; appliquer();
+    });
+    document.getElementById('recherche').addEventListener('input', appliquer);
+  })();
+</script>
+</body>
+</html>

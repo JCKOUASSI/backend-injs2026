@@ -475,6 +475,12 @@ export default function GetInjsApp() {
           <span className="giapp-mini-titre">Étudiants importés</span>
           <span className="giapp-mini-lien">Accéder <i className="bi bi-arrow-right"></i></span>
         </Link>
+        <Link to="/edt/presences" className="giapp-mini" data-testid="ouvrir-presences">
+          <span className="giapp-mini-libelle">Présences QR</span>
+          <span className="giapp-mini-valeur">{kpi(seances.length)}</span>
+          <span className="giapp-mini-titre">Séance(s) publiée(s) prête(s) au badgeage</span>
+          <span className="giapp-mini-lien">Accéder <i className="bi bi-arrow-right"></i></span>
+        </Link>
         <Link to="/edt/conception" className="giapp-mini" data-testid="ouvrir-conception">
           <span className="giapp-mini-libelle">Document</span>
           <span className="giapp-mini-valeur"><i className="bi bi-file-earmark-text"></i></span>

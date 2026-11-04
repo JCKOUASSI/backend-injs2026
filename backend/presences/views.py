@@ -608,7 +608,9 @@ def _jeton_lmd_pour_mobile(qr_token):
 
     if qr_token is not None and qr_token.is_valid:
         return qr_token, None
-    return service.resoudre_jeton_lmd(getattr(qr_token, 'token', qr_token))
+    jeton, erreur = service.resoudre_jeton_lmd(getattr(qr_token, 'token', qr_token))
+    # Codes normalisés additifs (canal LMD) : `code` legacy inchangé.
+    return jeton, service.normaliser_erreur(erreur)
 
 
 def _scan_seance_edt_mobile(*, request, qr_token, personne, type_str, device_id, donnees):
@@ -624,15 +626,17 @@ def _scan_seance_edt_mobile(*, request, qr_token, personne, type_str, device_id,
     affectation = qr_token.seance_edt
     date = timezone.localdate()
     if not service.est_seance_du_jour(affectation, date):
-        return Response({'code': 'HORS_SEANCE',
-                         'detail': 'Ce créneau n’a pas séance aujourd’hui.'},
-                        status=status.HTTP_400_BAD_REQUEST)
+        return Response(service.normaliser_erreur(
+            {'code': 'HORS_SEANCE',
+             'detail': 'Ce créneau n’a pas séance aujourd’hui.'}),
+            status=status.HTTP_400_BAD_REQUEST)
 
     autorise, code, detail, http = service.autorisation_badgeage(
         request.user, personne, type_str, affectation)
     if not autorise:
-        return Response({'code': code, 'detail': detail},
-                        status=http or status.HTTP_403_FORBIDDEN)
+        return Response(service.normaliser_erreur(
+            {'code': code, 'detail': detail}, type_personne=type_str),
+            status=http or status.HTTP_403_FORBIDDEN)
 
     label = affectation.intitule or str(affectation.creneau_template)
     action, pointage, erreur = service.badger_scan(
@@ -640,7 +644,8 @@ def _scan_seance_edt_mobile(*, request, qr_token, personne, type_str, device_id,
         device_id=device_id, coords=_coords_from_payload(donnees),
         type_personne=type_str)
     if erreur:
-        return Response(erreur, status=status.HTTP_400_BAD_REQUEST)
+        return Response(service.normaliser_erreur(
+            erreur, type_personne=type_str), status=status.HTTP_400_BAD_REQUEST)
 
     numero, nom, prenom = service.libelle_personne(personne, type_str)
     personne_data = {'numero': numero, 'nom': nom, 'prenom': prenom}
@@ -655,6 +660,8 @@ def _scan_seance_edt_mobile(*, request, qr_token, personne, type_str, device_id,
         'seance_intitule': label,
         'date': date.isoformat(),
         'pointage_id': pointage.pk,
+        'mode': service.Pointage.Mode.QR_AUTOMATIQUE,
+        'type_sortie': pointage.type_sortie,
         'statut': pointage.statut,
         'statut_assiduite': pointage.statut_assiduite,
         'timestamp': (pointage.timestamp_sortie if action == 'SORTIE'
@@ -675,7 +682,8 @@ def _heartbeat_seance_edt_mobile(*, request, qr_token, personne, type_str, devic
         date=timezone.localdate(), device_id=device_id,
         coords=_coords_from_payload(donnees), type_personne=type_str)
     if erreur:
-        return Response(erreur, status=status.HTTP_400_BAD_REQUEST)
+        return Response(service.normaliser_erreur(
+            erreur, type_personne=type_str), status=status.HTTP_400_BAD_REQUEST)
     return Response(charge)
 
 
@@ -3329,6 +3337,180 @@ def audit_log_list(request):
 # ──────────────────────────────────────────────
 # Vérification statut badgeage sécurisé (app mobile, authentifié)
 # ──────────────────────────────────────────────
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def secure_scan_exit(request):
+    """Sortie **volontaire** du participant (endpoint dédié).
+
+    `POST /api/scan/secure/exit/` — pendant du scan pour les clients qui
+    séparent le geste de sortie du toggle entrée/sortie. Même canal que le
+    scan et le heartbeat : identité déduite du compte authentifié, appareil
+    requis, QR résolu côté serveur. Sans entrée ouverte, la sortie est
+    refusée (`SORTIE_SANS_ENTREE`) et aucune ligne n'est créée. La sortie
+    n'est jamais refusée pour un motif de géofence : une position
+    éventuellement transmise est seulement consignée dans l'audit
+    (source BADGE_SORTIE).
+
+    body: { token_qr, device_id, latitude?, longitude?, accuracy_m? }
+    """
+    from . import seances_edt_services as service
+
+    serializer = SecureScanSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+
+    user = request.user
+    if getattr(user, 'must_change_password', False):
+        return _password_change_required_response()
+    personne, type_str, err = _resolve_authenticated_personne(user)
+    if err:
+        return err
+    device_err = _require_mobile_device_id(type_str, data.get('device_id', ''))
+    if device_err:
+        return device_err
+
+    device_id = data.get('device_id', '')
+    if device_id and type_str in ('participant', 'formateur'):
+        binding = DeviceBinding.objects.filter(
+            device_id=device_id, is_active=True
+        ).first()
+        if binding and binding.user_id != user.id:
+            return Response(
+                {'code': 'DEVICE_MISMATCH',
+                 'detail': 'Cet appareil est lié à un autre compte. '
+                           'Contactez votre superviseur.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+    try:
+        qr_token = QRToken.objects.select_related(
+            'session__module__formation', 'seance_edt__creneau_template',
+            'seance_edt__emploi_du_temps__annee_academique', 'seance_edt__groupe',
+        ).get(token=data['token_qr'])
+    except QRToken.DoesNotExist:
+        return Response(
+            service.normaliser_erreur(
+                {'code': 'INVALID_TOKEN', 'detail': 'QR code invalide.'}),
+            status=status.HTTP_400_BAD_REQUEST)
+
+    coords = _coords_from_payload(data)
+
+    # Canal EDT/LMD : service des séances planifiées.
+    if qr_token.seance_edt_id is not None:
+        jeton, erreur = _jeton_lmd_pour_mobile(qr_token)
+        if erreur is not None:
+            return Response(service.normaliser_erreur(erreur),
+                            status=status.HTTP_400_BAD_REQUEST)
+        affectation = jeton.seance_edt
+        date = timezone.localdate()
+        if not service.est_seance_du_jour(affectation, date):
+            return Response(service.normaliser_erreur(
+                {'code': 'HORS_SEANCE',
+                 'detail': 'Ce créneau n’a pas séance aujourd’hui.'}),
+                status=status.HTTP_400_BAD_REQUEST)
+        autorise, code, detail, http_statut = service.autorisation_badgeage(
+            request.user, personne, type_str, affectation)
+        if not autorise:
+            return Response(
+                service.normaliser_erreur({'code': code, 'detail': detail},
+                                          type_personne=type_str),
+                status=http_statut or status.HTTP_403_FORBIDDEN)
+        pointage, erreur = service.sortie_seance(
+            request, personne=personne, affectation=affectation, date=date,
+            device_id=device_id, coords=coords, type_personne=type_str)
+        if erreur:
+            return Response(service.normaliser_erreur(
+                erreur, type_personne=type_str),
+                status=status.HTTP_400_BAD_REQUEST)
+        label = affectation.intitule or str(affectation.creneau_template)
+        numero, nom, prenom = service.libelle_personne(personne, type_str)
+        personne_data = {'numero': numero, 'nom': nom, 'prenom': prenom}
+        return Response({
+            'action': 'SORTIE',
+            'canal': 'EDT_LMD',
+            'type_sortie': Pointage.TypeSortie.SORTIE_QR,
+            'type_personne': type_str,
+            'participant': personne_data if type_str == 'participant' else None,
+            'formateur': personne_data if type_str == 'formateur' else None,
+            'encadrant': personne_data if type_str == 'encadrant' else None,
+            'seance': {'id': affectation.pk, 'intitule': label,
+                       'date': date.isoformat()},
+            'seance_intitule': label,
+            'date': date.isoformat(),
+            'pointage_id': pointage.pk,
+            'statut': pointage.statut,
+            'timestamp': pointage.timestamp_sortie,
+            'duree_session_minutes': (float(pointage.duree_presence_minutes)
+                                      if pointage.duree_presence_minutes is not None
+                                      else None),
+            'message': f'Sortie enregistrée ({label}).',
+        })
+
+    # Canal legacy (session de module).
+    if qr_token.is_expired or not qr_token.actif:
+        return Response(
+            service.normaliser_erreur(
+                {'code': 'TOKEN_EXPIRED', 'detail': 'QR code expiré.'}),
+            status=status.HTTP_400_BAD_REQUEST)
+    seance = qr_token.session
+    if not seance:
+        return Response({'code': 'NO_SESSION',
+                         'detail': "Ce QR code n'est pas lié à une séance."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    formation = seance.module.formation
+    today = timezone.localdate()
+    session_filter = _pointage_filter(personne, type_str, formation,
+                                      date_journee=today)
+    session_filter['session'] = seance
+    with transaction.atomic():
+        pointage = (Pointage.objects.select_for_update()
+                    .filter(**session_filter, timestamp_sortie__isnull=True)
+                    .order_by('-timestamp_entree').first())
+        if pointage is None:
+            return Response(
+                service.normaliser_erreur(
+                    {'code': 'NO_OPEN_SESSION',
+                     'detail': 'Aucune entrée ouverte à clôturer pour cette séance.'}),
+                status=status.HTTP_400_BAD_REQUEST)
+        pointage.timestamp_sortie = _clamp_to_seance(timezone.now(), seance)
+        pointage.statut = Pointage.Statut.TERMINE
+        pointage.type_sortie = Pointage.TypeSortie.SORTIE_QR
+        pointage.calculer_duree()
+        pointage.save()
+        personne_data = {
+            'numero': (getattr(personne, 'matricule', None)
+                       or getattr(personne, 'numerobadge', None)
+                       or getattr(personne, 'numero', '')),
+            'nom': getattr(personne, 'nom', None) or getattr(personne, 'last_name', '') or '',
+            'prenom': getattr(personne, 'prenom', None) or getattr(personne, 'first_name', '') or '',
+        }
+        _log_audit(
+            action=AuditLog.Action.SCAN_SECURE_SORTIE,
+            request=request,
+            cible_type=type_str,
+            cible_numero=personne_data['numero'],
+            cible_nom=f"{personne_data['nom']} {personne_data['prenom']}",
+            formation=formation,
+            pointage=pointage,
+            device_id=device_id,
+            extra={'duree_minutes': float(pointage.duree_presence_minutes or 0),
+                   'type_sortie': Pointage.TypeSortie.SORTIE_QR,
+                   'source_position': 'BADGE_SORTIE',
+                   'via': 'ENDPOINT_SORTIE'},
+        )
+    return Response({
+        'action': 'SORTIE',
+        'canal': 'LEGACY',
+        'type_sortie': Pointage.TypeSortie.SORTIE_QR,
+        'type_personne': type_str,
+        'pointage_id': pointage.pk,
+        'date': str(today),
+        'timestamp': pointage.timestamp_sortie,
+        'duree_session_minutes': pointage.duree_presence_minutes,
+        'message': 'Sortie enregistrée.',
+    })
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

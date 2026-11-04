@@ -23,6 +23,7 @@ const SECTIONS_ATTENDUES = [
   'Scolarité',
   'Formations',
   'GET INJS APP',
+  'Présences QR',
   'Évaluations',
   'Jurys',
   'Diplômation',
@@ -133,6 +134,38 @@ describe('GET INJS APP — contenu du hub (miroir du hub INJS APP)', () => {
     expect(masquees.disponibilites.chemin).toBe('/edt/disponibilites')
     expect(masquees.conflits_edt.chemin).toBe('/edt/conflits')
     expect(masquees.export_edt.chemin).toBe('/edt/export')
+  })
+})
+
+describe('PRÉSENCES QR — hub du module Présences', () => {
+  const section = ARBORESCENCE.find((s) => s.id === 'presences_qr')
+
+  it('est situé immédiatement après le hub GET INJS APP', () => {
+    const ids = ARBORESCENCE.map((s) => s.id)
+    expect(ids.indexOf('presences_qr')).toBe(ids.indexOf('get_injs') + 1)
+  })
+
+  it('expose exactement les 7 entrées attendues du module', () => {
+    const libelles = section.enfants.map((e) => e.libelle)
+    expect(libelles).toEqual([
+      'Tableau de bord', 'Séances', 'Badgeage', 'Présences',
+      'Audit', 'Configuration', 'Contrat API',
+    ])
+    const parLibelle = Object.fromEntries(
+      section.enfants.map((e) => [e.libelle, e]),
+    )
+    expect(parLibelle['Tableau de bord'].chemin).toBe('/presences')
+    expect(parLibelle['Séances'].chemin).toBe('/presences/seances')
+    expect(parLibelle.Badgeage.chemin).toBe('/presences/poste')
+    expect(parLibelle['Présences'].chemin).toBe('/presences/registre')
+    expect(parLibelle.Audit.chemin).toBe('/presences/audit')
+    expect(parLibelle.Configuration.chemin).toBe('/presences/configuration')
+    expect(parLibelle['Contrat API'].chemin).toBe('/presences/contrat')
+    // Aucun chemin dupliqué dans le module.
+    expect(new Set(section.enfants.map((e) => e.chemin)).size).toBe(7)
+    for (const enfant of section.enfants) {
+      expect(enfant.droit, enfant.id).toBeTruthy()
+    }
   })
 })
 

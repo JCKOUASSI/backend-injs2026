@@ -65,6 +65,13 @@ import EvaluationDetail from './pages/EvaluationDetail'
 import EvaluationTake from './pages/EvaluationTake'
 import Edts from './pages/Edts'
 import EdtPresences from './pages/EdtPresences'
+import SeancesRegistre from './pages/presences/SeancesRegistre'
+import PresencesHub from './pages/presences/PresencesHub'
+import PosteBadgeage from './pages/presences/PosteBadgeage'
+import PresencesRegistre from './pages/presences/PresencesRegistre'
+import PresencesAudit from './pages/presences/PresencesAudit'
+import PresencesGeofence from './pages/presences/PresencesGeofence'
+import PresencesContrat from './pages/presences/PresencesContrat'
 import CoursLmd from './pages/CoursLmd'
 import EdtNew from './pages/EdtNew'
 import GetInjsApp from './pages/getinjs/GetInjsApp'
@@ -1012,6 +1019,55 @@ function App() {
             <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Cours (LMD)</li></>}>
                 <CoursLmd />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/presences/seances" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Présences QR</li><li className="separator">/</li><li>Séances</li></>}>
+                <SeancesRegistre />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/presences" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Présences QR</li></>}>
+                <PresencesHub />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/presences/poste" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Présences QR</li><li className="separator">/</li><li>Poste de badgeage</li></>}>
+                <PosteBadgeage />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/presences/registre" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Présences QR</li><li className="separator">/</li><li>Registre des présences</li></>}>
+                <PresencesRegistre />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/presences/audit" element={
+            <ProtectedRoute allowedRoles={[...PRESENCE_VIEW_ROLES, 'ADMIN']} capacite={{ module: 'presences', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Présences QR</li><li className="separator">/</li><li>Journal d’audit</li></>}>
+                <PresencesAudit />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/presences/configuration" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Présences QR</li><li className="separator">/</li><li>Configuration géofence</li></>}>
+                <PresencesGeofence />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/presences/contrat" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Présences QR</li><li className="separator">/</li><li>Contrat API</li></>}>
+                <PresencesContrat />
               </Layout>
             </ProtectedRoute>
           } />

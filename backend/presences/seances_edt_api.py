@@ -69,6 +69,45 @@ def _entier(request, nom):
         return None
 
 
+def _parse_date_param(request, nom):
+    brut = (request.query_params.get(nom) or '').strip()
+    if not brut:
+        return None, None
+    try:
+        annee, mois, jour = (int(x) for x in brut.split('-'))
+        return _date_cls(annee, mois, jour), None
+    except (TypeError, ValueError):
+        return None, {'detail': f'Paramètre « {nom} » invalide (JJJJ-MM-JJ attendu).'}
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, ExigePermission.pour('presences.emargement.consulter')])
+def historique_api(request):
+    """Registre historique des présences LMD (lecture seule).
+
+    `GET /api/presences/seances-edt/historique/?date_debut=&date_fin=
+    &type=&mode=&nom=&groupe=&seance_id=` — filtres appliqués côté
+    serveur sur les pointages rattachés aux séances des EDT publiés.
+    Aucune coordonnée GPS brute n'est restituée.
+    """
+    from . import seances_supervision
+    date_debut, err = _parse_date_param(request, 'date_debut')
+    if err:
+        return Response(err, status=status.HTTP_400_BAD_REQUEST)
+    date_fin, err = _parse_date_param(request, 'date_fin')
+    if err:
+        return Response(err, status=status.HTTP_400_BAD_REQUEST)
+    return Response(seances_supervision.historique_presences(
+        request.user,
+        date_debut=date_debut, date_fin=date_fin,
+        type_participant=(request.query_params.get('type') or '').strip().upper() or None,
+        mode=(request.query_params.get('mode') or '').strip().upper() or None,
+        nom=(request.query_params.get('nom') or '').strip() or None,
+        groupe=(request.query_params.get('groupe') or '').strip() or None,
+        seance_id=_entier(request, 'seance_id'),
+    ))
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, ExigePermission.pour('presences.emargement.consulter')])
 def supervision_api(request):
@@ -172,19 +211,23 @@ def scan_seance(request):
 
     jeton, erreur = service.resoudre_jeton_lmd(token)
     if erreur is not None:
-        return Response(erreur, status=400)
+        return Response(service.normaliser_erreur(erreur), status=400)
 
     affectation = jeton.seance_edt
     from django.utils import timezone
     date = timezone.localdate()
     if not service.est_seance_du_jour(affectation, date):
-        return Response({'code': 'HORS_SEANCE',
-                         'detail': 'Ce créneau n’a pas séance aujourd’hui.'}, status=400)
+        return Response(service.normaliser_erreur(
+            {'code': 'HORS_SEANCE',
+             'detail': 'Ce créneau n’a pas séance aujourd’hui.'}), status=400)
 
     autorise, code, detail, statut_http = service.autorisation_badgeage(
         request.user, personne, type_str, affectation)
     if not autorise:
-        return Response({'code': code, 'detail': detail}, status=statut_http or 403)
+        return Response(
+            service.normaliser_erreur({'code': code, 'detail': detail},
+                                      type_personne=type_str),
+            status=statut_http or 403)
 
     coords = {}
     for cle, champ in (('latitude', 'last_latitude'), ('longitude', 'last_longitude'),
@@ -197,10 +240,13 @@ def scan_seance(request):
         request, personne=personne, affectation=affectation, date=date,
         device_id=device_id, coords=coords or None, type_personne=type_str)
     if erreur:
-        return Response(erreur, status=400)
+        return Response(service.normaliser_erreur(
+            erreur, type_personne=type_str), status=400)
     return Response({
         'action': action,
         'canal': 'EDT_LMD',
+        'mode': Pointage.Mode.QR_AUTOMATIQUE,
+        'type_sortie': pointage.type_sortie,
         'type_personne': type_str,
         'seance': {'id': affectation.pk,
                    'libelle': affectation.intitule or str(affectation.creneau_template),
@@ -238,6 +284,11 @@ def presences_seance(request, pk):
             'statut_badgeage': pointage.statut if pointage else None,
             'statut': pointage.statut_assiduite if pointage else None,
             'pointage_id': pointage.pk if pointage else None,
+            # Canal du badgeage : MANUEL identifiable sans ambiguïté
+            # (mode explicite ; device_id pour l'historique antérieur).
+            'mode': (pointage.mode if pointage else None),
+            'motif_manuel': (pointage.motif_manuel if pointage else ''),
+            'type_sortie': (pointage.type_sortie if pointage else None),
         })
     effectif = len(lignes)
     presents = sum(1 for l in lignes if l['statut'] in (Pointage.StatutAssiduite.PRESENT,
@@ -248,7 +299,8 @@ def presences_seance(request, pk):
         Pointage.StatutAssiduite.EXCUSE))
     # Anomalies et gestes manuels : lus sur les pointages (jamais déduits).
     presences_manuelles = sum(1 for p in pointages.values()
-                              if p.device_id == 'EMARGEMENT_MANUEL')
+                              if p.mode == Pointage.Mode.MANUEL
+                              or p.device_id == 'EMARGEMENT_MANUEL')
     anomalies_gps = sum(1 for p in pointages.values()
                         if (p.outside_geofence_count or 0) > 0)
     sorties_automatiques = sum(1 for p in pointages.values()
@@ -301,6 +353,52 @@ def emargement_seance(request, pk):
         return _erreur(exc)
     return Response({'detail': f'{len(journal)} ligne(s) d’émargement enregistrée(s).',
                      'journal': journal}, status=201)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, ExigePermission.pour('presences.emargement.saisir')])
+def emargement_unitaire(request, pk):
+    """Badgeage manuel **unitaire** : un participant, un motif catalogué.
+
+    `POST /api/presences/seances-edt/<pk>/emargement/unitaire/?date=`
+    `{participant, statut?, motif, commentaire?}` — le motif est
+    obligatoire (catalogue `MOTIFS_EMARGEMENT_MANUEL`) et le motif AUTRE
+    exige un commentaire. Même RBAC et même garde que l'émargement de
+    masse ; la réponse expose `mode: MANUEL` pour que la présence soit
+    identifiable sans ambiguïté.
+    """
+    affectation = _affectation_ou_404(pk)
+    if affectation is None:
+        return Response({'detail': 'Séance introuvable.'}, status=404)
+    if not service.peut_gerer_seance(request.user, affectation):
+        return Response({'detail': 'Seuls l’enseignant de la séance, le secrétariat et la '
+                                   'direction émargent.'}, status=403)
+    date, err = _date(request)
+    if err:
+        return Response(err, status=400)
+    if not service.est_seance_du_jour(affectation, date):
+        return Response({'detail': 'Aucune séance planifiée ce jour pour ce créneau.'}, status=400)
+    participant_id = request.data.get('participant')
+    if participant_id in (None, ''):
+        return Response({'detail': '« participant » requis.'}, status=400)
+    try:
+        ligne = service.emarger_unitaire(
+            request, affectation, date, participant_id,
+            statut=(request.data.get('statut') or 'PRESENT'),
+            motif=request.data.get('motif') or '',
+            commentaire=request.data.get('commentaire') or '',
+        )
+    except service.ErreurEmargement as exc:
+        return _erreur(exc)
+    return Response({
+        'detail': 'Badgeage manuel enregistré.',
+        'participant': ligne['participant'],
+        'statut': ligne['statut'],
+        'pointage_id': ligne['pointage_id'],
+        'corrige': ligne['corrige'],
+        'mode': Pointage.Mode.MANUEL,
+        'motif': (request.data.get('motif') or '').strip().upper(),
+    }, status=201)
 
 
 @api_view(['POST'])

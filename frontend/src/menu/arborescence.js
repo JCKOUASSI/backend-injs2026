@@ -463,6 +463,102 @@ export const ARBORESCENCE = [
     ],
   },
 
+  // ----------------------------------------------------------------- PRÉSENCES QR
+  {
+    // Hub du module Présences : les séances LMD publiées par GET INJS APP
+    // y deviennent des présences (QR de séance scanné par les auditeurs,
+    // heartbeat géolocalisé, émargement manuel à motif, clôture de séance).
+    id: 'presences_qr',
+    libelle: 'Présences QR',
+    sousTitre: 'Gestion des présences',
+    icone: 'bi-qr-code',
+    droit: { legacy: [['web', 'operationnel']] },
+    enfants: [
+      {
+        id: 'presences_qr.tableau',
+        libelle: 'Tableau de bord',
+        description: 'Vue d’ensemble du jour',
+        icone: 'bi-speedometer2',
+        chemin: '/presences',
+        droit: {
+          curp: ['presences.emargement.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        // Séances LMD du jour (supervision temps réel) : statut, QR,
+        // présences rattachées et anomalies, séance par séance.
+        id: 'presences_qr.seances',
+        libelle: 'Séances',
+        description: 'Registre des séances',
+        icone: 'bi-broadcast',
+        chemin: '/presences/seances',
+        droit: {
+          curp: ['presences.emargement.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        // Poste de badgeage web : QR de séance, géolocalisation,
+        // badgeage/sortie serveur et heartbeat.
+        id: 'presences_qr.badgeage',
+        libelle: 'Badgeage',
+        description: 'Terminal de badgeage',
+        icone: 'bi-phone',
+        chemin: '/presences/poste',
+        droit: {
+          curp: ['presences.emargement.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        // Présences d'une séance : QR, badgeage automatique, émargement
+        // manuel à motif et clôture (enseignant de la séance).
+        id: 'presences_qr.presences',
+        libelle: 'Présences',
+        description: 'Registre historique',
+        icone: 'bi-qr-code-scan',
+        chemin: '/presences/registre',
+        droit: {
+          curp: ['presences.emargement.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        id: 'presences_qr.audit',
+        libelle: 'Audit',
+        description: 'Journal d’audit',
+        icone: 'bi-clock-history',
+        chemin: '/presences/audit',
+        droit: {
+          legacy: [['presences', 'voir']],
+        },
+      },
+      {
+        id: 'presences_qr.configuration',
+        libelle: 'Configuration',
+        description: 'Géofence : sites et périmètres',
+        icone: 'bi-geo-alt',
+        chemin: '/presences/configuration',
+        droit: {
+          curp: ['presences.emargement.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        id: 'presences_qr.contrat',
+        libelle: 'Contrat API',
+        description: 'Intégration',
+        icone: 'bi-file-earmark-code',
+        chemin: '/presences/contrat',
+        droit: {
+          curp: ['presences.emargement.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+    ],
+  },
+
   // ----------------------------------------------------------------- ÉVALUATIONS
   {
     id: 'evaluations',

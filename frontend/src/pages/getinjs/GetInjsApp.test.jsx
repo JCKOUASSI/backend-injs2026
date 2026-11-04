@@ -148,6 +148,12 @@ describe('GET INJS APP — tableau de bord d’accueil', () => {
       .toHaveAttribute('href', '/edt/conception')
   })
 
+  it('ouvre le hub Présences QR des séances LMD', async () => {
+    monter()
+    expect(await screen.findByTestId('ouvrir-presences'))
+      .toHaveAttribute('href', '/edt/presences')
+  })
+
   it('affiche des états vides honnêtes sans données', async () => {
     apiController.reset()
     apiController.setRoute('/scolarite/ref/annees/', [

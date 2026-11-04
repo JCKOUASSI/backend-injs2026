@@ -13,7 +13,9 @@ from admin_mixins import (
     log_admin_audit,
     pointage_remettre_en_cours_guard,
 )
-from .models import Pointage, AuditLog, DeviceBinding, Rattrapage, _log_audit
+from .models import (
+    Pointage, AuditLog, DeviceBinding, EncadrantSeance, Rattrapage, _log_audit,
+)
 from .rattrapage_service import (
     RattrapageError,
     annuler_rattrapage,
@@ -715,3 +717,14 @@ class DeviceBindingAdmin(admin.ModelAdmin):
             f"{updated} liaison(s) réactivée(s).",
             level=messages.SUCCESS,
         )
+
+
+@admin.register(EncadrantSeance)
+class EncadrantSeanceAdmin(admin.ModelAdmin):
+    """Habilitations encadrant ↔ séance LMD (LOT 7) : déclaration explicite,
+    jamais d'assimilation encadrant = enseignant."""
+
+    list_display = ['encadrant', 'seance_edt', 'actif', 'cree_par', 'created_at']
+    list_filter = ['actif']
+    search_fields = ['encadrant__username', 'encadrant__matricule']
+    autocomplete_fields = ['encadrant', 'seance_edt']
