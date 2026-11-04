@@ -21,7 +21,7 @@ const ENDPOINTS = [
   ['POST', '/api/scan/secure/heartbeat/', 'Heartbeat géolocalisé (évaluation serveur, sortie auto après confirmations).'],
   ['POST', '/api/scan/secure/exit/', 'Sortie mobile sécurisée (jamais inventée : position ou fin de séance tracée).'],
   ['GET', '/api/scan/secure/status/', 'Statut de badgeage du participant pour une formation.'],
-  ['GET', '/api/audit-logs/', 'Journal d’audit (filtres action, cible, période) — lecture seule.'],
+  ['GET', '/api/audit-logs/', 'Journal d’audit (filtres action, cible, période ; limite d’extraction, l’écran du hub charge 200 événements) — lecture seule.'],
   ['GET|POST|PUT', '/api/formations/ref/sites/', 'Sites géofence (coordonnées, rayon) — DFRC uniquement.'],
 ]
 

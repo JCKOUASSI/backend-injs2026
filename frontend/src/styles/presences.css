@@ -262,3 +262,7 @@
 @media (prefers-reduced-motion: reduce) {
   .pqr-audit-animee { animation: none; }
 }
+.pqr-audit-limite {
+  margin: 0; padding: .8rem 1.1rem 1rem; border-top: 1px solid #E3EDF7;
+  font-size: .8rem; color: #5B7186; text-align: center;
+}

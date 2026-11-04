@@ -3279,6 +3279,9 @@ def audit_log_list(request):
       - cible_numero : numéro participant/formateur
       - date_debut   : YYYY-MM-DD
       - date_fin     : YYYY-MM-DD
+      - limite       : int — plafond d'extraction (500 par défaut et au
+                       maximum, comportement historique ; l'écran
+                       d'audit du hub demande explicitement 200)
     """
     qs = AuditLog.objects.select_related('acteur', 'formation', 'pointage').order_by('-timestamp')
 
@@ -3310,8 +3313,16 @@ def audit_log_list(request):
     if request.user.role == 'ENCADRANT':
         qs = qs.filter(formation__modules__superviseur=request.user)
 
+    limite = 500
+    limite_brute = request.query_params.get('limite')
+    if limite_brute:
+        try:
+            limite = max(1, min(int(limite_brute), 500))
+        except (TypeError, ValueError):
+            limite = 500
+
     data = []
-    for log in qs[:500]:
+    for log in qs[:limite]:
         data.append({
             'id': log.id,
             'timestamp': log.timestamp.isoformat(),

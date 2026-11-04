@@ -93,6 +93,9 @@ export default function PresencesAudit() {
     setErreur('')
     try {
       const params = new URLSearchParams()
+      // Chargement explicite : 200 événements les plus récents (le
+      // serveur plafonne l'extraction, défaut historique 500).
+      params.set('limite', '200')
       if (action) params.set('action', action)
       if (cible.trim()) params.set('cible_numero', cible.trim())
       if (dateDebut) params.set('date_debut', dateDebut)
@@ -225,6 +228,12 @@ export default function PresencesAudit() {
             </p>
           )}
         </div>
+        {!charge && lignes.length >= 200 && (
+          <p className="pqr-audit-limite">
+            Affichage limité aux 200 événements les plus récents — affinez les filtres
+            (action, cible, période) pour explorer le journal complet, conservé côté serveur.
+          </p>
+        )}
       </div>
     </div>
   )

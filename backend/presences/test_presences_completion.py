@@ -342,3 +342,40 @@ class AutoclotureEtHistoriqueTests(MobileSeanceEdtMixin, TestCase):
         self.assertTrue(any(
             ligne.get('canal') == 'EDT_LMD' and ligne.get('statut') == 'EN_COURS'
             for ligne in pointages), reponse.data)
+
+
+class JournalAuditLimiteTests(TestCase):
+    """GET /api/audit-logs/?limite= — plafond d'extraction explicite.
+
+    L'écran d'audit du hub « Présences QR » charge explicitement
+    200 événements ; le défaut historique (500) reste inchangé pour les
+    autres consommateurs (tableau de bord : comptages, derniers
+    pointages).
+    """
+
+    def setUp(self):
+        self.client = APIClient()
+        self.dfrc = User.objects.create_user(
+            username='admin-audit', password='x', role='ADMIN')
+        for i in range(5):
+            AuditLog.objects.create(
+                action=AuditLog.Action.SCAN_HEARTBEAT,
+                acteur_label='Test', cible_numero=f'MAT{i:03d}')
+
+    def _get(self, suffixe=''):
+        self.client.force_authenticate(self.dfrc)
+        return self.client.get(f'/api/audit-logs/{suffixe}')
+
+    def test_limite_explicite_200_et_plafonds(self):
+        reponse = self._get('?limite=2')
+        self.assertEqual(reponse.status_code, 200, reponse.data)
+        self.assertEqual(reponse.data['count'], 2)
+        self.assertEqual(len(reponse.data['results']), 2)
+
+        # Défaut historique inchangé : tout le journal (plafond 500).
+        reponse = self._get()
+        self.assertEqual(reponse.data['count'], 5)
+
+        # Valeur invalide ignorée, valeur excessive plafonnée — jamais d'erreur.
+        self.assertEqual(self._get('?limite=abc').data['count'], 5)
+        self.assertEqual(self._get('?limite=9999').data['count'], 5)
