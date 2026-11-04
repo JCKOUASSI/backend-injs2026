@@ -20,6 +20,7 @@ Marcory — Côte d'Ivoire). Les sources de vérité sont les 11 fichiers du dos
   - MISSION PRIORITAIRE CONCEVOIR, DÉVELOPPER, TESTER ET INTÉGRER GET INJS APP.txt
   - Referentiels_de_l_INJS_Tableau_de_bordOKOKOK.pdf
   - Modèle fonctionnel de référence backend-injs2026.pdf
+ et du sous-dossier "develop-get-injs-timetable-module" 
 
 OBJECTIF
 --------
@@ -172,6 +173,395 @@ implémente, teste, corrige et termine uniquement lorsque les critères
 d'acceptation sont satisfaits et que build + healthcheck sont verts. Rends
 compte de manière concise : fichiers livrés, commandes exécutées, résultats
 mesurés, limites restantes.
+
+------------------------------------------------------
+
+EXTENSION ARCHITECTURALE OBLIGATOIRE
+
+Préparation de GET INJS APP à l’intégration du futur module de gestion des présences QR Code, manuelles et géolocalisées
+
+1. CONTEXTE ET OBJECTIF STRATÉGIQUE
+
+Dans le cadre de l’implémentation de GET INJS APP (Gestion des Emplois du Temps de l’INJS Abidjan), tu dois intégrer dès maintenant, dans la conception fonctionnelle, métier, technique et architecturale du module, toutes les contraintes nécessaires à son interconnexion future avec un module centralisé de gestion des présences.
+
+L’architecture cible de l’écosystème backend-injs2026 est la suivante :
+
+RÉFÉRENTIELS LMD → EMPLOIS DU TEMPS → SÉANCES PÉDAGOGIQUES → PRÉSENCES QR CODE / MANUELLES → GÉOLOCALISATION → STATISTIQUES ET CONTRÔLE ACADÉMIQUE.
+
+GET INJS APP doit donc constituer la source de référence des séances pédagogiques officiellement planifiées, validées et publiées.
+
+Le futur module de gestion des présences exploitera ces séances sans avoir à reconstruire, dupliquer ou maintenir ses propres référentiels pédagogiques.
+
+2. RÈGLE ARCHITECTURALE FONDAMENTALE
+
+Appliquer impérativement le principe suivant :
+
+Une séance pédagogique officiellement publiée dans GET INJS APP constitue la référence métier à laquelle devront être rattachés tous les futurs enregistrements de présence.
+
+Chaque séance doit posséder un identifiant technique unique, permanent et exploitable par les futurs modules de présence, de contrôle académique et de statistiques.
+
+L’identifiant d’une séance ne doit jamais dépendre de sa date, de son horaire, de sa salle ou de son enseignant, car ces informations peuvent être modifiées.
+
+Une modification de programmation doit conserver l’identité de la séance lorsque celle-ci représente toujours la même activité pédagogique.
+
+En cas d’annulation suivie d’une reprogrammation constituant une nouvelle activité, conserver la traçabilité de l’annulation et établir explicitement le lien entre les deux séances.
+
+3. DONNÉES OBLIGATOIRES À PRÉVOIR POUR CHAQUE SÉANCE
+
+Concevoir le modèle de données des séances afin qu’il puisse fournir ultérieurement toutes les informations nécessaires au contrôle des présences.
+
+Chaque séance devra notamment permettre de retrouver :
+
+A. Contexte académique
+
+* Année académique.
+* Filière INJS.
+* Formation.
+* Parcours ou spécialité.
+* Cycle et niveau d’études.
+* Semestre.
+* Promotion.
+* Groupe pédagogique.
+* UE.
+* ECUE.
+* Maquette pédagogique de référence.
+
+B. Encadrement pédagogique
+
+* Enseignant responsable.
+* Enseignants associés, le cas échéant.
+* Affectations pédagogiques.
+* Responsabilité de la séance.
+
+C. Programmation
+
+* Date de la séance.
+* Heure de début.
+* Heure de fin.
+* Durée prévue.
+* Fuseau horaire de référence.
+* Salle ou espace pédagogique.
+* Type de séance : cours magistral, travaux dirigés, travaux pratiques, évaluation, activité pratique ou autre catégorie autorisée par le référentiel INJS.
+
+D. Informations opérationnelles
+
+* Identifiant unique de la séance.
+* Statut de programmation.
+* Statut de validation.
+* Statut de publication.
+* Date de publication.
+* Historique des modifications.
+* Auteur de la création.
+* Auteur des modifications.
+* Motif de modification ou d’annulation.
+* Version de programmation.
+
+Ne pas créer de champs redondants lorsqu’une relation avec un référentiel existant permet de retrouver l’information.
+
+Privilégier les relations explicites et les clés étrangères.
+
+4. GESTION DES STATUTS ET DU CYCLE DE VIE DES SÉANCES
+
+Prévoir un cycle de vie cohérent et exploitable par le futur module de présence.
+
+Les états métier devront distinguer clairement :
+
+* BROUILLON.
+* SIMULATION.
+* EN_ATTENTE_VALIDATION.
+* VALIDEE.
+* PUBLIEE.
+* MODIFIEE.
+* ANNULEE.
+* TERMINEE.
+
+Ces états constituent des propositions fonctionnelles à adapter aux conventions déjà présentes dans le projet.
+
+Ne pas confondre validation administrative, publication officielle et réalisation effective d’une séance.
+
+Règles impératives :
+
+1. Une séance en simulation ne peut jamais être considérée comme une séance officielle.
+2. Une séance non validée ne peut pas ouvrir une session officielle de présence.
+3. Une séance publiée devient exploitable par le futur module de présence.
+4. Une séance annulée ne doit plus accepter de nouveaux pointages.
+5. Toute modification d’une séance publiée doit être historisée.
+6. Les modifications d’horaire, de salle ou d’enseignant doivent être communiquées au futur module de présence.
+7. Une séance déjà associée à des pointages ne doit jamais être supprimée physiquement.
+8. La clôture d’une séance doit préserver les données historiques et la traçabilité.
+
+Prévoir une gestion explicite des transitions autorisées entre statuts.
+
+5. PRÉPARATION DU RATTACHEMENT DES ÉTUDIANTS AUX SÉANCES
+
+Le futur module de présence devra déterminer automatiquement quels étudiants sont attendus à chaque séance.
+
+GET INJS APP doit donc garantir la possibilité de retrouver les étudiants concernés à partir de :
+
+* Leur inscription administrative validée.
+* Leur inscription pédagogique effective, lorsqu’elle est requise.
+* Leur année académique.
+* Leur formation et parcours.
+* Leur promotion.
+* Leur groupe pédagogique.
+* Leur statut académique à la date de la séance.
+
+Respecter impérativement la distinction métier entre :
+
+* Admission.
+* Inscription administrative validée.
+* Inscription pédagogique.
+* Parcours académique.
+* Décision officielle du jury.
+
+Ne jamais considérer automatiquement qu’une admission ou une inscription administrative validée équivaut à une inscription pédagogique.
+
+Ne pas figer une liste d’étudiants directement dans chaque séance si elle peut être calculée à partir des inscriptions et affectations pédagogiques.
+
+Prévoir néanmoins la possibilité de constituer un instantané historique des étudiants attendus au moment de l’ouverture d’une session de présence.
+
+Cet instantané devra permettre de préserver la cohérence historique même si les inscriptions ou affectations évoluent ultérieurement.
+
+6. PRÉPARATION DU FUTUR POINTAGE PAR QR CODE
+
+Sans développer maintenant le système de pointage, concevoir les séances de manière à permettre ultérieurement :
+
+* L’ouverture d’une session de présence associée à une séance.
+* La génération d’un QR Code dynamique.
+* L’association d’un pointage à un étudiant identifié.
+* La vérification de l’appartenance de l’étudiant au groupe concerné.
+* Le contrôle des horaires autorisés.
+* La détection des doubles pointages.
+* La gestion des retards.
+* La fermeture automatique ou manuelle de la session.
+
+Le QR Code devra être associé à une session de présence et non simplement à une séance permanente.
+
+Prévoir une architecture permettant des jetons temporaires, signés, non prédictibles et renouvelables.
+
+Ne jamais stocker un secret de pointage directement dans un QR Code statique permanent.
+
+Le backend devra rester l’autorité de validation du pointage.
+
+7. PRÉPARATION DU POINTAGE MANUEL
+
+Prévoir une architecture permettant au futur module de présence de prendre en charge :
+
+* Le pointage manuel par un enseignant autorisé.
+* Le pointage manuel par un agent administratif habilité.
+* La correction d’une présence.
+* La régularisation d’une absence.
+* L’enregistrement d’un retard.
+* L’ajout d’un motif.
+* L’ajout d’un justificatif.
+* La validation d’une correction par un responsable habilité.
+
+Toute intervention manuelle devra être associée à :
+
+* L’utilisateur intervenant.
+* La date et l’heure de l’intervention.
+* L’ancienne valeur.
+* La nouvelle valeur.
+* Le motif.
+* L’identité du validateur lorsque nécessaire.
+
+Prévoir une traçabilité non destructive des corrections.
+
+8. PRÉPARATION DE LA GÉOLOCALISATION
+
+Anticiper les futurs contrôles géographiques sans imposer prématurément une technologie particulière.
+
+Les salles et espaces pédagogiques devront pouvoir être associés, lorsque nécessaire, à des informations géographiques :
+
+* Latitude.
+* Longitude.
+* Rayon de tolérance en mètres.
+* Zone géographique autorisée.
+* Type d’espace.
+* Statut de configuration géographique.
+
+Prévoir la possibilité de gérer plusieurs types de lieux : amphithéâtres, salles de cours, installations sportives, terrains, espaces extérieurs et sites pédagogiques.
+
+La configuration géographique devra être centralisée et réutilisable.
+
+Le futur système de présence devra pouvoir vérifier :
+
+* La position déclarée par le terminal.
+* La distance par rapport au lieu autorisé.
+* La précision GPS annoncée.
+* La date et l’heure du contrôle.
+* La cohérence entre la séance et le lieu prévu.
+
+IMPORTANT :
+
+La géolocalisation ne constitue pas, à elle seule, une preuve absolue de présence physique.
+
+Prévoir une architecture permettant de combiner QR Code, géolocalisation, contrôle serveur et intervention humaine.
+
+Ne jamais considérer une coordonnée GPS comme une donnée pédagogique ou académique permanente.
+
+9. PRÉPARATION DES STATISTIQUES ET DU CONTRÔLE ACADÉMIQUE
+
+Les données produites par GET INJS APP devront permettre au futur module de présence de calculer :
+
+* Le nombre de séances programmées.
+* Le nombre de séances publiées.
+* Le nombre de séances réalisées.
+* Le nombre de séances annulées.
+* Le volume horaire prévu.
+* Le volume horaire effectivement réalisé, lorsqu’il est renseigné.
+* Les séances par filière.
+* Les séances par formation.
+* Les séances par promotion.
+* Les séances par groupe.
+* Les séances par UE et ECUE.
+* Les séances par enseignant.
+* Les séances par salle.
+
+Prévoir également la possibilité de rapprocher ces informations des futures statistiques de présence :
+
+* Taux de présence par étudiant.
+* Taux d’absence.
+* Taux de retard.
+* Taux de présence par groupe.
+* Taux de présence par filière.
+* Taux de présence par formation.
+* Taux de présence par UE et ECUE.
+* Volume horaire suivi par étudiant.
+* Historique des absences justifiées et non justifiées.
+
+Ne pas calculer ni stocker artificiellement des statistiques de présence dans GET INJS APP en l’absence de données de pointage fiables.
+
+10. ARCHITECTURE API ET INTEROPÉRABILITÉ
+
+Concevoir les API GET INJS APP de façon à permettre une future intégration propre avec le module de présence.
+
+Prévoir des ressources permettant notamment de retrouver :
+
+* Les séances officiellement publiées.
+* Les détails complets d’une séance.
+* Les étudiants théoriquement attendus.
+* Les enseignants affectés.
+* Les salles et leurs configurations géographiques.
+* Les modifications et annulations.
+* L’historique des publications.
+
+Les API devront respecter :
+
+* Les conventions REST déjà utilisées dans le projet.
+* Les permissions métier existantes.
+* Les règles RBAC de l’application.
+* La validation des données côté backend.
+* La pagination.
+* Le filtrage.
+* La journalisation.
+* La gestion des erreurs.
+* La documentation technique.
+
+Prévoir, si pertinent, un mécanisme de notifications événementielles pour signaler au futur module de présence :
+
+* SEANCE_PUBLIEE.
+* SEANCE_MODIFIEE.
+* SEANCE_ANNULEE.
+* SEANCE_REPROGRAMMEE.
+* SEANCE_CLOTUREE.
+
+Éviter les dépendances circulaires entre applications Django.
+
+GET INJS APP doit rester indépendant du futur module de présence tout en exposant des interfaces contractuelles stables.
+
+11. SÉCURITÉ, RBAC ET TRAÇABILITÉ
+
+Préparer les contrôles d’accès nécessaires aux futures opérations.
+
+Distinguer notamment les permissions permettant de :
+
+* Consulter les séances.
+* Créer les séances.
+* Modifier les séances.
+* Simuler un emploi du temps.
+* Générer un emploi du temps.
+* Valider un emploi du temps.
+* Publier un emploi du temps.
+* Annuler une séance.
+* Consulter les étudiants attendus.
+
+Ne pas attribuer automatiquement les futures permissions de pointage aux utilisateurs chargés de planifier les emplois du temps.
+
+Respecter le catalogue de rôles, les permissions métier et les mécanismes d’autorisation déjà implémentés dans backend-injs2026.
+
+Toutes les opérations sensibles devront être traçables.
+
+12. CONTRAINTES DE DÉVELOPPEMENT
+
+Cette extension ne doit en aucun cas détourner l’objectif principal de GET INJS APP.
+
+Il est impératif de respecter les règles suivantes :
+
+1. Ne pas développer maintenant le module complet de gestion des présences.
+2. Ne pas développer maintenant le scanner QR Code.
+3. Ne pas développer maintenant le moteur de pointage.
+4. Ne pas développer maintenant les traitements de géolocalisation des étudiants.
+5. Ne pas créer de fausses données de présence.
+6. Ne pas dupliquer les référentiels LMD existants.
+7. Ne pas créer une seconde gestion indépendante des étudiants, enseignants, salles ou groupes.
+8. Ne pas modifier les règles métier de la scolarité pour simplifier GET INJS APP.
+9. Ne pas introduire de dépendances circulaires.
+10. Ne pas effectuer de migration destructive.
+11. Ne pas réinitialiser les bases de données.
+12. Ne pas introduire de références fonctionnelles, techniques ou documentaires à SYGEP-CPFAE ou CPFAE.
+
+La préparation doit être proportionnée : implémenter les fondations réellement nécessaires, documenter les interfaces futures et éviter le surdimensionnement technique.
+
+13. TESTS ET CRITÈRES D’ACCEPTATION
+
+Ajouter des tests garantissant notamment :
+
+* L’unicité et la stabilité de l’identifiant d’une séance.
+* Le rattachement de chaque séance aux bons référentiels LMD.
+* L’impossibilité d’utiliser une simulation comme séance officielle.
+* L’impossibilité d’ouvrir une session officielle de présence pour une séance non publiée.
+* La conservation de l’identité d’une séance après une modification ordinaire.
+* La traçabilité des modifications.
+* L’impossibilité de supprimer physiquement une séance ayant des pointages historiques.
+* L’identification des étudiants théoriquement attendus.
+* La prise en compte des changements de groupe et d’inscription selon leur date d’effet.
+* La disponibilité des informations géographiques des salles lorsqu’elles sont configurées.
+* La cohérence des permissions métier.
+* L’absence de dépendance circulaire entre GET INJS APP et le futur module de présence.
+
+Les tests doivent être exécutés réellement. Ne jamais déclarer un test réussi sans résultat vérifiable.
+
+14. LIVRABLES ARCHITECTURAUX OBLIGATOIRES
+
+À la fin de l’implémentation de GET INJS APP, produire :
+
+1. Le schéma des entités et relations nécessaires à la gestion des séances.
+2. Le diagramme du cycle de vie d’une séance pédagogique.
+3. Le contrat API des futures interactions avec le module de présence.
+4. Le dictionnaire des données utiles au futur pointage.
+5. Le modèle de rattachement des étudiants aux séances.
+6. Le modèle de configuration géographique des salles.
+7. La matrice des permissions concernées.
+8. Les tests automatisés de préparation à l’interopérabilité.
+9. Une documentation d’intégration destinée au futur développeur du module de présence.
+10. Un rapport précisant les fonctionnalités effectivement implémentées, celles qui sont seulement préparées et les éventuels points restant à traiter.
+
+15. DIRECTIVE FINALE
+
+Tu dois concevoir GET INJS APP comme le premier maillon d’un système intégré de gestion académique et pédagogique de l’INJS Abidjan.
+
+La priorité demeure la livraison d’un module GET INJS APP complet, fiable, opérationnel, ergonomique, sécurisé et conforme aux règles métier de l’INJS.
+
+Toutefois, aucune décision architecturale ne doit compromettre l’intégration future du module de gestion des présences par QR Code, pointage manuel et géolocalisation.
+
+Le principe directeur est simple : construire maintenant les fondations nécessaires, sans développer prématurément le module suivant.
+
+L’ensemble doit rester cohérent, modulaire, évolutif, maintenable et interopérable avec le reste de backend-injs2026.
+
+Une précaution importante : ce complément ne doit pas conduire l’agent à développer un deuxième référentiel académique. Il doit réutiliser les modèles existants de scolarite, formations, admissions, edts et les autres applications pertinentes de backend-injs2026.
+
+L’objectif est que, lorsque nous lancerons ultérieurement le développement du module Présences-QR, celui-ci puisse se connecter à GET INJS APP sans refonte structurelle majeure.
 
 ================================================================================
  FIN DU PROMPT MAITRE — GET INJS APP
