@@ -20,7 +20,7 @@ const ETAPES = [
   {
     titre: 'Référentiels INJS',
     description: 'Filières, formations, salles et enseignants du référentiel.',
-    chemin: '/edt/salles-espaces',
+    chemin: '/edt/referentiels',
   },
   {
     titre: 'Inscriptions / import',

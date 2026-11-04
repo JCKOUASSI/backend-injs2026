@@ -418,6 +418,196 @@ def inscrits_population_api(request):
     })
 
 
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def referentiels_api(request):
+    """GET /api/edts/lmd/referentiels/?annee= — données de référence INJS.
+
+    Alimente l'écran « Référentiels » du hub GET-INJS (onglets Filières &
+    formations, Maquettes & modules, Bâtiments & salles, Enseignants,
+    Groupes & vagues) avec les référentiels réels qui nourrissent le
+    moteur de génération :
+
+    - « filières » du compteur = mentions officielles (STAPS, STASE) et
+      « formations » = filières métier (parcours) — vocabulaire de l'écran ;
+    - une maquette est « publiée » lorsqu'elle est ACTIVE pour l'année,
+      « paramétrable » lorsqu'elle est encore en brouillon (les autres
+      statuts affichent leur libellé réel) ;
+    - « modules » = ECUE des maquettes actives de l'année, c'est-à-dire
+      exactement ce que le moteur transforme en besoins ;
+    - l'effectif d'un groupe compte ses affectations actives et ses
+      inscriptions importées rattachées — deux sources réelles, jamais
+      d'estimation.
+    """
+    annee_id, erreur = _annee_de_requete(request)
+    if erreur is not None:
+        return erreur
+
+    from django.db.models import Count, Sum
+
+    from edts.models import InscriptionImportee
+    from formations.models import (
+        Formateur, RefBatiment, RefSalle, RefSite, RefVague,
+    )
+    from referentiels.models import RefFiliere, RefMention
+    from scolarite.models import AffectationGroupe, ECUE, Groupe, Maquette
+
+    mentions = [
+        {
+            'code': m.code,
+            'nom': m.nom_complet or m.libelle,
+            'ecole': m.ecole.code if m.ecole_id else '',
+        }
+        for m in RefMention.objects.filter(actif=True, archive=False)
+        .select_related('ecole').order_by('code')
+    ]
+
+    groupes_par_filiere = {
+        ligne['ref_formation__filiere_id']: ligne['n']
+        for ligne in Groupe.objects.filter(annee_academique_id=annee_id)
+        .values('ref_formation__filiere_id').annotate(n=Count('id'))
+    }
+    filieres_publiees = set(
+        Maquette.objects.filter(
+            annee_academique_id=annee_id, statut=Maquette.Statut.ACTIVE,
+        ).values_list('ref_formation__filiere_id', flat=True),
+    )
+    parcours = [
+        {
+            'code': f.code,
+            'libelle': f.libelle,
+            'mention': f.mention.code if f.mention_id else '',
+            'maquette': 'publiée' if f.pk in filieres_publiees else 'paramétrable',
+            'groupes': groupes_par_filiere.get(f.pk, 0),
+        }
+        for f in RefFiliere.objects.filter(actif=True, archive=False)
+        .select_related('mention').order_by('code')
+    ]
+
+    maquettes = [
+        {
+            'id': m.pk,
+            'formation': m.ref_formation.intitule,
+            'niveau': m.niveau.code,
+            'version': m.version,
+            'statut': m.statut,
+            'statut_libelle': (
+                'Publiée' if m.statut == Maquette.Statut.ACTIVE
+                else 'Paramétrable' if m.statut == Maquette.Statut.BROUILLON
+                else m.get_statut_display()
+            ),
+            'publiee': m.statut == Maquette.Statut.ACTIVE,
+            'ues': m.nb_ues,
+            'modules': m.nb_modules,
+            'credits': m.credits or 0,
+        }
+        for m in Maquette.objects.filter(annee_academique_id=annee_id)
+        .select_related('ref_formation', 'niveau')
+        .annotate(
+            nb_ues=Count('unites_enseignement', distinct=True),
+            nb_modules=Count('unites_enseignement__ecues', distinct=True),
+            credits=Sum('unites_enseignement__credits'),
+        )
+        .order_by('ref_formation__intitule', 'niveau__ordre')
+    ]
+    modules = ECUE.objects.filter(
+        ue__maquette__annee_academique_id=annee_id,
+        ue__maquette__statut=Maquette.Statut.ACTIVE,
+    ).count()
+
+    salles = [
+        {
+            'code': s.code,
+            'nom': s.nom,
+            'batiment': s.batiment.nom if s.batiment_id else '',
+            'site': s.site.nom if s.site_id else '',
+            'capacite': s.capacite,
+            'type': s.get_type_lieu_display(),
+        }
+        for s in RefSalle.objects.filter(actif=True)
+        .select_related('batiment', 'site')
+        .order_by('batiment__nom', 'nom')
+    ]
+
+    enseignants = [
+        {
+            'nom': f.nom,
+            'prenom': f.prenom,
+            'specialite': f.specialite or '',
+            'grade': f.grade_ref.libelle if f.grade_ref_id else '',
+            'statut': f.statut_enseignant or '',
+        }
+        for f in Formateur.objects.select_related('grade_ref')
+        .order_by('nom', 'prenom')
+    ]
+
+    effectifs = {}
+    for source in (
+        AffectationGroupe.objects.filter(
+            inscription__annee_academique_id=annee_id, active=True,
+        ).values('groupe_id').annotate(n=Count('id')),
+        InscriptionImportee.objects.filter(
+            annee_academique_id=annee_id, groupe__isnull=False,
+        ).values('groupe_id').annotate(n=Count('id')),
+    ):
+        for ligne in source:
+            effectifs[ligne['groupe_id']] = (
+                effectifs.get(ligne['groupe_id'], 0) + ligne['n']
+            )
+    groupes = [
+        {
+            'nom': g.nom,
+            'formation': g.ref_formation.intitule,
+            'niveau': g.niveau.code,
+            'vague': g.vague.libelle if g.vague_id else '',
+            'capacite': g.capacite_max,
+            'effectif': effectifs.get(g.pk, 0),
+        }
+        for g in Groupe.objects.filter(annee_academique_id=annee_id)
+        .select_related('ref_formation', 'niveau', 'vague')
+        .order_by('ref_formation__intitule', 'niveau__ordre', 'nom')
+    ]
+
+    groupes_par_vague = {
+        ligne['vague_id']: ligne['n']
+        for ligne in Groupe.objects.filter(
+            annee_academique_id=annee_id, vague__isnull=False,
+        ).values('vague_id').annotate(n=Count('id'))
+    }
+    vagues = [
+        {
+            'code': v.code or '',
+            'libelle': v.libelle,
+            'groupes': groupes_par_vague.get(v.pk, 0),
+        }
+        for v in RefVague.objects.filter(actif=True).order_by('ordre', 'libelle')
+    ]
+
+    return Response({
+        'annee_academique_id': annee_id,
+        'compteurs': {
+            'filieres': len(mentions),
+            'formations': len(parcours),
+            'modules': modules,
+            'groupes': len(groupes),
+            'vagues': len(vagues),
+            'salles': len(salles),
+            'enseignants': len(enseignants),
+        },
+        'mentions': mentions,
+        'parcours': parcours,
+        'maquettes': maquettes,
+        'infrastructure': {
+            'sites': RefSite.objects.count(),
+            'batiments': RefBatiment.objects.count(),
+            'salles': salles,
+        },
+        'enseignants': enseignants,
+        'groupes': groupes,
+        'vagues': vagues,
+    })
+
+
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def generate_annee_api(request):

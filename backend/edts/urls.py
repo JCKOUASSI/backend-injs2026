@@ -50,6 +50,8 @@ urlpatterns_lmd = [
          name='edt-lmd-import-inscrits'),
     path('lmd/inscrits/', g.inscrits_population_api,
          name='edt-lmd-inscrits-population'),
+    path('lmd/referentiels/', g.referentiels_api,
+         name='edt-lmd-referentiels'),
     path('lmd/generate-annee/', g.generate_annee_api,
          name='edt-lmd-generate-annee'),
     path('lmd/conception/', g.conception_api, name='edt-lmd-conception'),

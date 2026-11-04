@@ -71,6 +71,7 @@ import GetInjsApp from './pages/getinjs/GetInjsApp'
 import GenerationAnnuelle from './pages/getinjs/GenerationAnnuelle'
 import ImportEtudiants from './pages/getinjs/ImportEtudiants'
 import EtudiantsInscrits from './pages/getinjs/EtudiantsInscrits'
+import ReferentielsInjs from './pages/getinjs/Referentiels'
 import CampagnesGeneration from './pages/getinjs/CampagnesGeneration'
 import VersionsPublication from './pages/getinjs/VersionsPublication'
 import AuditDonnees from './pages/getinjs/AuditDonnees'
@@ -1024,6 +1025,13 @@ function App() {
             <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Nouvel EDT</li></>}>
                 <EdtNew />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/edt/referentiels" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Référentiels</li></>}>
+                <ReferentielsInjs />
               </Layout>
             </ProtectedRoute>
           } />

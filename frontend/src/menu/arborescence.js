@@ -387,10 +387,9 @@ export const ARBORESCENCE = [
         libelle: 'Référentiels',
         description: 'INJS 2026',
         icone: 'bi-collection',
-        chemin: '/edt/salles-espaces',
-        ecran: 'salles_espaces',
+        chemin: '/edt/referentiels',
         droit: {
-          curp: ['patrimoine.espace.consulter'],
+          curp: ['patrimoine.espace.consulter', 'edt.creneau.consulter'],
           legacy: [['web', 'operationnel']],
         },
       },
@@ -404,6 +403,23 @@ export const ARBORESCENCE = [
         action: 'telecharger-conception',
         droit: {
           curp: ['edt.creneau.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        // Écran générique historique « Salles & espaces », conservé hors
+        // menu : la page Référentiels du hub couvre ces données (onglet
+        // Bâtiments & salles) et les liens existants (EDT, Génération,
+        // Scolarité) restent joignables.
+        id: 'get_injs.salles_espaces',
+        masque: true,
+        libelle: 'Salles & espaces',
+        description: 'Espaces physiques',
+        icone: 'bi-door-open',
+        chemin: '/edt/salles-espaces',
+        ecran: 'salles_espaces',
+        droit: {
+          curp: ['patrimoine.espace.consulter'],
           legacy: [['web', 'operationnel']],
         },
       },

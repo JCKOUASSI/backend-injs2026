@@ -907,3 +907,101 @@
   font-size: 0.8rem;
   color: #42597a;
 }
+
+/* ── « Référentiels » (Données de référence INJS) ─────────────────────────
+   Compteurs en bande, onglets en pastilles, tableaux au format clair du
+   module. Palette INJS. */
+.getinjs.ref-page .ref-kpis {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 1199.98px) {
+  .getinjs.ref-page .ref-kpis { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (max-width: 575.98px) {
+  .getinjs.ref-page .ref-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+
+.getinjs.ref-page .ref-kpi {
+  background: linear-gradient(180deg, #ffffff, #f4faff);
+  border: 1px solid #d7e5f5;
+  border-radius: 14px;
+  padding: 0.7rem 0.85rem;
+}
+
+.getinjs.ref-page .ref-kpi-label {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6db3f2;
+}
+
+.getinjs.ref-page .ref-kpi-valeur {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--injs-navy, #0a2a5c);
+}
+
+.getinjs.ref-page .ref-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.getinjs.ref-page .ref-tab {
+  padding: 0.42rem 1rem;
+  border: 1px solid var(--injs-border-strong, #bcd3ee);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #42597a;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.getinjs.ref-page .ref-tab:hover {
+  border-color: var(--injs-blue-royal, #14509e);
+  color: var(--injs-blue-royal, #14509e);
+}
+
+.getinjs.ref-page .ref-tab.actif {
+  background: linear-gradient(92deg, var(--injs-navy) 0%, #0a2a5c 55%, var(--injs-blue-royal) 130%);
+  border-color: #0a2a5c;
+  color: #ffffff;
+  box-shadow: 0 10px 20px -10px rgba(10, 42, 92, 0.7);
+}
+
+.getinjs.ref-page .ref-ecole,
+.getinjs.ref-page .ref-maquette {
+  display: inline-block;
+  padding: 0.14rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.getinjs.ref-page .ref-ecole {
+  background: #ffffff;
+  border: 1px solid var(--injs-border-strong, #bcd3ee);
+  color: #42597a;
+}
+
+.getinjs.ref-page .ref-maquette-publiee {
+  background: var(--injs-blue-pale);
+  color: #0a2a5c;
+}
+
+.getinjs.ref-page .ref-maquette-param {
+  background: #ffffff;
+  border: 1px dashed #9db9d9;
+  color: #42597a;
+}

@@ -121,7 +121,7 @@ describe('GET INJS APP — contenu du hub (miroir du hub INJS APP)', () => {
     expect(parLibelle['Génération'].chemin).toBe('/edt/generation-annuelle')
     expect(parLibelle['Import étudiants'].chemin).toBe('/edt/import-etudiants')
     expect(parLibelle['Étudiants inscrits'].chemin).toBe('/edt/etudiants-inscrits')
-    expect(parLibelle['Référentiels'].chemin).toBe('/edt/salles-espaces')
+    expect(parLibelle['Référentiels'].chemin).toBe('/edt/referentiels')
     // Conception : téléchargement direct, pas de page intermédiaire.
     expect(parLibelle.Conception.action).toBe('telecharger-conception')
     expect(parLibelle.Conception.chemin).toBeUndefined()
