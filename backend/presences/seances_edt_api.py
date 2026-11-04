@@ -115,6 +115,13 @@ def supervision_api(request):
 
     `GET /api/presences/seances-edt/supervision/?date=&statut=&formation_id=&groupe_id=&enseignant_id=`
 
+    Mode **chargement explicite** (additif) : dès que `limite` est
+    fourni (`&limite=200&horizon=120`), la réponse charge les séances
+    les plus proches de `date` (jours candidats explorés par proximité
+    dans l'horizon, plafond `limite`), avec un bloc `periode`
+    décrivant la fenêtre réellement explorée. Sans `limite`, le
+    comportement historique (une journée) est strictement inchangé.
+
     Vue **consultative** : statut de séance dérivé des horaires planifiés,
     contexte LMD par clés étrangères, présences réellement rattachées
     (``Pointage.seance_edt``). Aucune écriture, aucun badgeage, aucun QR
@@ -130,13 +137,20 @@ def supervision_api(request):
             {'detail': 'Statut inconnu. Valeurs acceptées : '
                        + ', '.join(supervision.STATUTS_SEANCE) + '.'},
             status=status.HTTP_400_BAD_REQUEST)
-    return Response(supervision.supervision_seances(
-        request.user, jour,
-        statut=statut,
-        formation_id=_entier(request, 'formation_id'),
-        groupe_id=_entier(request, 'groupe_id'),
-        enseignant_id=_entier(request, 'enseignant_id'),
-    ))
+    filtres = {
+        'statut': statut,
+        'formation_id': _entier(request, 'formation_id'),
+        'groupe_id': _entier(request, 'groupe_id'),
+        'enseignant_id': _entier(request, 'enseignant_id'),
+    }
+    if (request.query_params.get('limite') or '').strip():
+        return Response(supervision.supervision_seances_plage(
+            request.user, jour,
+            horizon=_entier(request, 'horizon') or 120,
+            limite=_entier(request, 'limite') or 200,
+            **filtres,
+        ))
+    return Response(supervision.supervision_seances(request.user, jour, **filtres))
 
 
 @api_view(['GET'])

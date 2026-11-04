@@ -46,6 +46,7 @@ et tout référentiel hérité d'autres applications ne sont pas utilisés ici, 
 plus qu'un quelconque « module » comme périmètre.
 """
 from collections import defaultdict
+from datetime import timedelta
 
 from django.db.models import Count, Q
 from django.utils import timezone
@@ -55,6 +56,7 @@ from .models import AuditLog, EncadrantSeance, Pointage
 
 __all__ = [
     'STATUTS_SEANCE', 'LIBELLES_STATUT', 'statut_seance', 'supervision_seances',
+    'supervision_seances_plage', 'historique_presences',
 ]
 
 #: Statuts de séance. Aucun de ces codes n'est stocké en base : ce sont des
@@ -506,6 +508,125 @@ def supervision_seances(user, date=None, *, statut=None, formation_id=None,
         'resume': resume,
         'seances': lignes,
     }
+
+def _jours_candidats(date_reference, horizon):
+    """Jours de l'horizon ayant au moins une occurrence de séance active.
+
+    Pré-balayage **en dates seules** (aucune donnée de séance exposée) :
+    il évite de résoudre la supervision complète sur des jours sans
+    séance. Les lignes elles-mêmes proviennent toujours de
+    :func:`supervision_seances`, qui applique périmètre et filtres.
+    """
+    from edts.models import AffectationCreneau
+
+    base = (AffectationCreneau.objects
+            .filter(emploi_du_temps__statut__in=('VALIDE', 'PUBLIE'), actif=True)
+            .select_related('creneau_template', 'emploi_du_temps__annee_academique'))
+    jours = set()
+    for affectation in base:
+        for decalage in range(-horizon, horizon + 1):
+            jour = date_reference + timedelta(days=decalage)
+            if service.est_seance_du_jour(affectation, jour):
+                jours.add(jour)
+    return jours
+
+
+def supervision_seances_plage(user, date_reference=None, *, horizon=120,
+                              limite=200, statut=None, formation_id=None,
+                              groupe_id=None, enseignant_id=None):
+    """Chargement **explicite** des séances les plus proches d'une date.
+
+    À partir de ``date_reference``, les jours candidats (au moins une
+    occurrence de séance) sont explorés par **proximité croissante**
+    dans un horizon de ``horizon`` jours de part et d'autre (défaut et
+    maximum 120), jusqu'à réunir ``limite`` séances (défaut et maximum
+    200). Chaque jour est résolu par :func:`supervision_seances` (mêmes
+    règles de périmètre, de statut et de présences rattachées) ; les
+    lignes sont restituées par ordre chronologique. Le résumé est
+    recalculé sur la sélection réellement chargée.
+
+    :returns: le même contrat que :func:`supervision_seances`, augmenté
+        d'un bloc ``periode`` (``date_reference``, ``date_debut`` et
+        ``date_fin`` de la fenêtre effectivement explorée, ``limite``,
+        ``horizon_jours``, ``tronque``).
+
+    Aucune écriture.
+    """
+    date_reference = date_reference or timezone.localdate()
+    try:
+        horizon = int(horizon)
+    except (TypeError, ValueError):
+        horizon = 120
+    try:
+        limite = int(limite)
+    except (TypeError, ValueError):
+        limite = 200
+    horizon = max(1, min(horizon, 120))
+    limite = max(1, min(limite, 200))
+
+    candidats = _jours_candidats(date_reference, horizon)
+    # Le jour repère est toujours exploré (annulations logiques visibles).
+    candidats.add(date_reference)
+    jours_ordonnes = sorted(
+        candidats, key=lambda j: (abs((j - date_reference).days), j))
+
+    lignes = []
+    tronque = False
+    explore_min = date_reference
+    explore_max = date_reference
+    for jour in jours_ordonnes:
+        explore_min = min(explore_min, jour)
+        explore_max = max(explore_max, jour)
+        if len(lignes) >= limite:
+            tronque = True
+            break
+        resultat = supervision_seances(
+            user, jour, statut=statut, formation_id=formation_id,
+            groupe_id=groupe_id, enseignant_id=enseignant_id)
+        lignes.extend(resultat['seances'])
+    if len(lignes) > limite:
+        lignes = lignes[:limite]
+        tronque = True
+    lignes.sort(key=lambda l: (l['date'], l['debut']))
+
+    resume = {
+        'seances_total': len(lignes),
+        'seances_en_cours': sum(1 for l in lignes if l['statut'] == 'EN_COURS'),
+        'enseignants_actifs': len({
+            l['formateur_id'] or l['enseignant_id'] or l['libelle']
+            for l in lignes if l['statut'] == 'EN_COURS'
+            and (l['formateur_id'] or l['enseignant_id'] or l['libelle'])}),
+        'salles_occupees': len({
+            l['salle_id'] or l['salle_libelle'] for l in lignes
+            if l['statut'] == 'EN_COURS' and (l['salle_id'] or l['salle_libelle'])}),
+        'participants_presents': sum(l['presences']['presents'] for l in lignes),
+        'sessions_qr_ouvertes': sum(1 for l in lignes if l['session_qr_ouverte']),
+        'emargements_manuels': sum(l['presences']['source_manuelle'] for l in lignes),
+        'par_population': {
+            'etudiants': sum(l['presences']['par_population']['etudiants'] for l in lignes),
+            'enseignants': sum(l['presences']['par_population']['enseignants'] for l in lignes),
+            'encadrants': sum(l['presences']['par_population']['encadrants'] for l in lignes),
+        },
+        'en_salle_maintenant': sum(
+            l['presences']['en_salle'] for l in lignes if l['statut'] == 'EN_COURS'),
+        'retard_moyen_min': _retard_moyen(lignes),
+        'anomalies': sum(1 for l in lignes if l['effectif_attendu'] is None),
+    }
+    return {
+        'date': date_reference.isoformat(),
+        'genere_le': timezone.now().isoformat(),
+        'resume': resume,
+        'seances': lignes,
+        'periode': {
+            'date_reference': date_reference.isoformat(),
+            'date_debut': explore_min.isoformat(),
+            'date_fin': explore_max.isoformat(),
+            'horizon_jours': horizon,
+            'limite': limite,
+            'tronque': tronque,
+        },
+    }
+
 
 # ---------------------------------------------------------------------------
 # Historique des présences (registre transversal, lecture seule)

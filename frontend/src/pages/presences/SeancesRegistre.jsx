@@ -43,6 +43,7 @@ export default function SeancesRegistre() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [date, setDate] = useState(() => searchParams.get('date') || new Date().toLocaleDateString('en-CA'))
   const [statut, setStatut] = useState(() => searchParams.get('statut') || '')
+  const [mode, setMode] = useState(() => (searchParams.get('mode') === '200' ? 'plage' : 'jour'))
   const [donnees, setDonnees] = useState(null)
   const [auto, setAuto] = useState(false)
   const [charge, setCharge] = useState(true)
@@ -53,6 +54,12 @@ export default function SeancesRegistre() {
     setErreur('')
     try {
       const params = new URLSearchParams({ date })
+      if (mode === 'plage') {
+        // Chargement explicite : 200 séances les plus proches de la
+        // date repère (jours candidats explorés par proximité, ±120 j).
+        params.set('limite', '200')
+        params.set('horizon', '120')
+      }
       if (statut) params.set('statut', statut)
       const res = await api.get(`/presences/seances-edt/supervision/?${params.toString()}`)
       setDonnees(res.data)
@@ -61,7 +68,7 @@ export default function SeancesRegistre() {
     } finally {
       setCharge(false)
     }
-  }, [date, statut])
+  }, [date, statut, mode])
 
   useEffect(() => { charger() }, [charger])
 
@@ -75,8 +82,9 @@ export default function SeancesRegistre() {
     const sp = new URLSearchParams()
     sp.set('date', date)
     if (statut) sp.set('statut', statut)
+    if (mode === 'plage') sp.set('mode', '200')
     setSearchParams(sp, { replace: true })
-  }, [date, statut, setSearchParams])
+  }, [date, statut, mode, setSearchParams])
 
   const lignes = donnees?.seances || []
   const resume = donnees?.resume || {}
@@ -97,11 +105,25 @@ export default function SeancesRegistre() {
             <span className="badge text-bg-light">{resume.participants_presents ?? 0} présent(s)</span>
             <span className="badge text-bg-light">{resume.sessions_qr_ouvertes ?? 0} session(s) QR ouverte(s)</span>
             <span className="badge text-bg-light">{resume.emargements_manuels ?? 0} émargement(s) manuel(s)</span>
+            {mode === 'plage' && (
+              <span className="badge text-bg-warning">
+                <i className="bi bi-cloud-download me-1"></i>Chargement explicite : 200 séances
+              </span>
+            )}
           </div>
         </div>
         <div className="pqr-hero-actions">
           <div>
-            <label className="form-label text-white-50 mb-1" htmlFor="pqr-seances-date">Date</label>
+            <label className="form-label text-white-50 mb-1">Chargement</label>
+            <div className="pqr-segmente" role="group" aria-label="Mode de chargement des séances">
+              <button type="button" className={mode === 'jour' ? 'actif' : ''}
+                      onClick={() => setMode('jour')}>Par jour</button>
+              <button type="button" className={mode === 'plage' ? 'actif' : ''}
+                      onClick={() => setMode('plage')}>200 séances</button>
+            </div>
+          </div>
+          <div>
+            <label className="form-label text-white-50 mb-1" htmlFor="pqr-seances-date">{mode === 'plage' ? 'Autour du' : 'Date'}</label>
             <input id="pqr-seances-date" type="date" className="input" value={date}
                    onChange={(e) => setDate(e.target.value)} />
           </div>
@@ -128,6 +150,24 @@ export default function SeancesRegistre() {
       {erreur && <div className="error-message">{erreur}</div>}
 
       <div className="pqr-panel">
+        {mode === 'plage' && (
+          <>
+            <div className="pqr-panel-tete">
+              <span>
+                <i className="bi bi-cloud-download me-2"></i>
+                Chargement explicite : 200 séances autour du {date}
+                {donnees?.periode ? ` — fenêtre explorée du ${donnees.periode.date_debut} au ${donnees.periode.date_fin}` : ''}
+              </span>
+              <span className="badge text-bg-primary">{lignes.length} chargée(s)</span>
+            </div>
+            {donnees?.periode?.tronque && (
+              <p className="pqr-audit-limite">
+                Plafond de 200 séances atteint — resserrez la date repère
+                ou le statut pour explorer la suite.
+              </p>
+            )}
+          </>
+        )}
         <div className="table-container">
           <table className="table edt-table mb-0">
             <thead>

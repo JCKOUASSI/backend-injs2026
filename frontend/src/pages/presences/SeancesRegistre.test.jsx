@@ -86,6 +86,23 @@ describe('SeancesRegistre — module Séances refondu', () => {
     })
   })
 
+  it('chargement explicite : 200 séances demandées et affichées', async () => {
+    const user = userEvent.setup()
+    render(
+      <AllProviders user={makeUser('ENSEIGNANT')}>
+        <SeancesRegistre />
+      </AllProviders>,
+    )
+    await waitFor(() => expect(screen.getByText('INJS-S-000041')).toBeTruthy())
+    await user.click(screen.getByRole('button', { name: '200 séances' }))
+    await waitFor(() => expect(
+      apiController.findCall('get', /supervision\/\?.*limite=200/)).toBeTruthy())
+    expect(screen.getByText('Chargement explicite : 200 séances')).toBeTruthy()
+    expect(screen.getByText(/Chargement explicite : 200 séances autour du/)).toBeTruthy()
+    expect(screen.getByText('2 chargée(s)')).toBeTruthy()
+    expect(screen.getByLabelText('Autour du')).toBeTruthy()
+  })
+
   it('identifiantPermanent : format INJS-S-###### stable', () => {
     expect(identifiantPermanent(7)).toBe('INJS-S-000007')
     expect(identifiantPermanent(123456)).toBe('INJS-S-123456')

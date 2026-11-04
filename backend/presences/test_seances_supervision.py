@@ -621,3 +621,51 @@ class EnrichissementTableauDeBordTests(BaseSupervision):
         self.assertEqual(historique_presences(
             self.admin, date_debut=self.aujourdhui, date_fin=self.aujourdhui,
             nom='Participant1')['total'], 1)
+
+
+class PlageSupervisionTests(BaseSupervision):
+    """Chargement explicite plafonné : `?limite=&horizon=` sur la supervision.
+
+    Sans `limite`, l'endpoint garde son comportement historique (une
+    journée) ; avec `limite`, il charge les séances les plus proches de
+    la date repère (jours candidats explorés par proximité dans
+    l'horizon) et tronque à ``limite`` séances (plafond 200), résumé
+    recalculé sur la sélection, lignes en ordre chronologique.
+    """
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.admin)
+
+    def test_fenetre_200_couvre_plusieurs_jours(self):
+        reponse = self.client.get(URL_SUPERVISION, {'limite': '200'})
+        self.assertEqual(reponse.status_code, 200, reponse.data)
+        donnees = reponse.json()
+        self.assertIn('periode', donnees)
+        self.assertEqual(donnees['periode']['limite'], 200)
+        self.assertEqual(donnees['periode']['horizon_jours'], 120)
+        self.assertGreaterEqual(donnees['periode']['date_fin'],
+                                donnees['periode']['date_debut'])
+        # La séance hebdomadaire du jour est chargée au moins une fois,
+        # et les lignes sont restituées par ordre chronologique.
+        self.assertGreaterEqual(len(donnees['seances']), 1)
+        self.assertTrue(any(l['id'] == self.affectation.id
+                            for l in donnees['seances']))
+        dates = [l['date'] for l in donnees['seances']]
+        self.assertEqual(dates, sorted(dates))
+        self.assertEqual(donnees['resume']['seances_total'],
+                         len(donnees['seances']))
+
+    def test_plafond_explicite_et_troncature(self):
+        reponse = self.client.get(URL_SUPERVISION,
+                                  {'limite': '1', 'horizon': '120'})
+        donnees = reponse.json()
+        self.assertEqual(len(donnees['seances']), 1)
+        self.assertTrue(donnees['periode']['tronque'])
+        self.assertEqual(donnees['periode']['limite'], 1)
+
+    def test_sans_limite_comportement_historique(self):
+        reponse = self.client.get(URL_SUPERVISION)
+        donnees = reponse.json()
+        self.assertNotIn('periode', donnees)
+        self.assertEqual(len(donnees['seances']), 1)

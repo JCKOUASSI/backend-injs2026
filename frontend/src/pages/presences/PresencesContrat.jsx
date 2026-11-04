@@ -15,7 +15,7 @@ const ENDPOINTS = [
   ['POST', '/api/presences/seances-edt/{id}/emargement/', 'Émargement de masse des non-encore-pointés (enseignant de la séance, motif global).'],
   ['POST', '/api/presences/seances-edt/emargement/unitaire/', 'Badgeage manuel unitaire d’un participant (motif obligatoire).'],
   ['POST', '/api/presences/seances-edt/{id}/cloturer/', 'Clôture : sorties automatiques + absents non badgés, sur confirmation.'],
-  ['GET', '/api/presences/seances-edt/supervision/', 'Supervision temps réel des séances du jour + résumé.'],
+  ['GET', '/api/presences/seances-edt/supervision/', 'Supervision temps réel des séances du jour + résumé ; avec &limite=200, chargement explicite des 200 séances les plus proches de la date (horizon ±120 j, bloc periode).'],
   ['GET', '/api/presences/seances-edt/historique/', 'Registre historique transversal : ?date_debut=&date_fin=&type=&mode=&nom=&groupe=&seance_id= ; verdict de périmètre déduit, auteur manuel depuis l’audit (FORCE_ENTREE), aucune coordonnée exposée.'],
   ['POST', '/api/scan/secure/enter/', 'Entrée mobile sécurisée (jeton, position, appareil).'],
   ['POST', '/api/scan/secure/heartbeat/', 'Heartbeat géolocalisé (évaluation serveur, sortie auto après confirmations).'],
