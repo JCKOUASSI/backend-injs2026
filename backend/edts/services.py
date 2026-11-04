@@ -288,6 +288,28 @@ def verifier_affectation(affectation):
 # Grille hebdomadaire (P17)
 # ---------------------------------------------------------------------------
 
+def contexte_affectation(aff):
+    """Contexte pédagogique d'une séance, via son affectation pédagogique.
+
+    Additif et honnête : ne renvoie que ce qui est réellement rattaché à la
+    séance (niveau, semestre, UE, ECUE, groupe, enseignant, capacité du
+    groupe) — aucune déduction. ``None`` sans rattachement LMD explicite.
+    """
+    ap = getattr(aff, 'affectation_pedagogique', None)
+    if ap is None:
+        return None
+    groupe = ap.groupe if ap.groupe_id else None
+    return {
+        'niveau': ap.niveau.code if ap.niveau_id else None,
+        'semestre': f'S{ap.semestre.numero}' if ap.semestre_id else None,
+        'ue': ap.ue.code if ap.ue_id else None,
+        'ecue': ap.ecue.code if ap.ecue_id else None,
+        'groupe': groupe.nom if groupe else None,
+        'enseignant': str(ap.enseignant) if ap.enseignant_id else None,
+        'effectif': groupe.capacite_max if groupe else None,
+    }
+
+
 def grille_hebdomadaire(emploi_du_temps, semaine=None):
     """Organise les affectations d'un EDT en vues journalières pour une semaine.
 
@@ -305,6 +327,13 @@ def grille_hebdomadaire(emploi_du_temps, semaine=None):
         .select_related(
             'creneau_template', 'formateur', 'groupe', 'formation',
             'groupe__annee_academique',
+            'affectation_pedagogique',
+            'affectation_pedagogique__niveau',
+            'affectation_pedagogique__semestre',
+            'affectation_pedagogique__ue',
+            'affectation_pedagogique__ecue',
+            'affectation_pedagogique__groupe',
+            'affectation_pedagogique__enseignant',
         )
     )
     if semaine:
@@ -335,6 +364,7 @@ def grille_hebdomadaire(emploi_du_temps, semaine=None):
             'commentaire': aff.commentaire,
             'semaine_debut': aff.semaine_debut,
             'semaine_fin': aff.semaine_fin,
+            'contexte': contexte_affectation(aff),
         })
 
     jours_tries = []

@@ -241,6 +241,7 @@ def _serialize_affectation(a):
         'enseignant_nom': a.enseignant_nom,
         'nature': a.nature,
         'nature_libelle': a.get_nature_display(),
+        'contexte': services.contexte_affectation(a),
         'intitule': a.intitule,
         'commentaire': a.commentaire,
         'salle_nom': a.salle_nom,
@@ -643,6 +644,13 @@ def affectations_api(request):
         qp = request.query_params
         affects = AffectationCreneau.objects.select_related(
             'emploi_du_temps', 'creneau_template', 'formation', 'groupe', 'formateur',
+            'affectation_pedagogique',
+            'affectation_pedagogique__niveau',
+            'affectation_pedagogique__semestre',
+            'affectation_pedagogique__ue',
+            'affectation_pedagogique__ecue',
+            'affectation_pedagogique__groupe',
+            'affectation_pedagogique__enseignant',
         )
         filtres = {
             'emploi_du_temps_id': 'emploi_du_temps_id',
