@@ -224,7 +224,7 @@ existants — aucune architecture parallèle :
 | Séances (registre refondu) | `/presences/seances` | `GET /api/presences/seances-edt/supervision/?date=&statut=` (filtres serveur, identifiant permanent `INJS-S-######`, ECUE → UE, encadrants habilités, attendus/présents/manuels/anomalies) |
 | Poste de badgeage | `/presences/poste` | QR + `POST /presences/seances-edt/scan/`, heartbeat `/scan/secure/heartbeat/`, sortie `/scan/secure/exit/` |
 | Présences (registre historique refondu) | `/presences/registre` | `GET /api/presences/seances-edt/historique/` (registre transversal) + `GET /presences/seances-edt/du-jour/` et `GET /presences/seances-edt/{id}/presences/` (exceptions du jour) |
-| Journal d'audit | `/presences/audit` | `GET /api/audit-logs/` (lecture seule) |
+| Journal d'audit (traçabilité non destructive) | `/presences/audit` | `GET /api/audit-logs/` (lecture seule) : articles horodatage/auteur/entité, puce d'action (alerte = intervention humaine), motif, ancienne/nouvelle valeurs (`extra.avant`/`apres`) côte à côte |
 | Configuration géofence | `/presences/configuration` | `GET|POST|PUT /api/formations/ref/sites/` (DFRC) |
 | Contrat API | `/presences/contrat` | documentation intégrée des contrats réels |
 

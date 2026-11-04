@@ -128,8 +128,14 @@ function preparer() {
       results: [{
         id: 1, timestamp: '2026-09-15T08:05:00+00:00', action: 'FORCE_ENTREE',
         action_label: 'Entrée forcée', acteur_label: 'Awa Traoré', acteur_role: 'ENSEIGNANT',
-        cible_nom: 'Awa Traoré', cible_numero: 'MAT011', formation_titre: '',
-        device_id: 'dev-1', extra: { mode: 'MANUEL', motif: 'QR_NON_LISIBLE' },
+        cible_type: 'participant', cible_nom: 'Awa Traoré', cible_numero: 'MAT011',
+        formation_titre: '', pointage_id: 5,
+        device_id: 'dev-1',
+        extra: {
+          mode: 'MANUEL', motif: 'QR_NON_LISIBLE', commentaire: 'QR illisible',
+          avant: { statut: 'EN_COURS', statut_assiduite: 'NON_RENSEIGNE' },
+          apres: { statut: 'FORCE_DFRC', statut_assiduite: 'PRESENT' },
+        },
       }],
     }
   })
@@ -216,12 +222,20 @@ describe('PresencesRegistre — historique refondu', () => {
   })
 })
 
-describe('PresencesAudit', () => {
-  it('liste les événements avec acteur, cible et contexte', async () => {
+describe('PresencesAudit — traçabilité non destructive', () => {
+  it('liste les événements avec auteur, entité, motif et valeurs avant/après', async () => {
     monter(<PresencesAudit />)
     await waitFor(() => expect(screen.getByText('Entrée forcée')).toBeTruthy())
-    expect(screen.getByText(/mode MANUEL · motif QR_NON_LISIBLE/)).toBeTruthy()
     expect(screen.getByText('1 événement(s)')).toBeTruthy()
+    expect(screen.getAllByText('Awa Traoré').length).toBe(2)
+    expect(screen.getByText(/participant #MAT011/)).toBeTruthy()
+    expect(screen.getByText('motif : QR_NON_LISIBLE')).toBeTruthy()
+    expect(screen.getByText(/mode MANUEL/)).toBeTruthy()
+    // Correction non destructive : ancienne et nouvelle valeurs côte à côte.
+    expect(screen.getByText('Ancienne valeur')).toBeTruthy()
+    expect(screen.getByText('Nouvelle valeur')).toBeTruthy()
+    expect(screen.getByText(/FORCE_DFRC/)).toBeTruthy()
+    expect(screen.getByText(/NON_RENSEIGNE/)).toBeTruthy()
   })
 })
 
