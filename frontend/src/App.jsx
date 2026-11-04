@@ -67,6 +67,7 @@ import Edts from './pages/Edts'
 import EdtPresences from './pages/EdtPresences'
 import CoursLmd from './pages/CoursLmd'
 import EdtNew from './pages/EdtNew'
+import GetInjsApp from './pages/getinjs/GetInjsApp'
 import GenerationAnnuelle from './pages/getinjs/GenerationAnnuelle'
 import CampagnesGeneration from './pages/getinjs/CampagnesGeneration'
 import VersionsPublication from './pages/getinjs/VersionsPublication'
@@ -986,6 +987,13 @@ function App() {
             <ProtectedRoute allowedRoles={ARCHIVE_CONSULT_ROLES}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/archives">Archives</Link></li><li className="separator">/</li><li>Cahiers d'appel</li></>}>
                 <ArchiveCahiersAppel />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/get-injs-app" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>GET INJS APP</li></>}>
+                <GetInjsApp />
               </Layout>
             </ProtectedRoute>
           } />

@@ -310,11 +310,22 @@ export const ARBORESCENCE = [
   // ------------------------------------------------------------------ GET-INJS
   {
     id: 'get_injs',
-    libelle: 'GET-INJS',
+    libelle: 'GET INJS APP',
     sousTitre: 'Gestion des Emplois du Temps',
     icone: 'bi-calendar-week',
     droit: { legacy: [['web', 'operationnel']] },
     enfants: [
+      {
+        // Page d'accueil du module GET INJS APP : fonctionnalités,
+        // compteurs réels et séances publiées prêtes pour Présences.
+        id: 'get_injs.accueil',
+        libelle: 'Accueil GET INJS APP',
+        chemin: '/get-injs-app',
+        droit: {
+          curp: ['edt.creneau.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
       {
         id: 'get_injs.tableau',
         libelle: 'Tableau des emplois du temps',

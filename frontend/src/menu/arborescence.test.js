@@ -22,7 +22,7 @@ const SECTIONS_ATTENDUES = [
   'Tableau de bord',
   'Scolarité',
   'Formations',
-  'GET-INJS',
+  'GET INJS APP',
   'Évaluations',
   'Jurys',
   'Diplômation',
