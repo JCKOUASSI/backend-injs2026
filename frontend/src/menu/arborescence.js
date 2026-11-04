@@ -320,6 +320,21 @@ export const ARBORESCENCE = [
         // compteurs réels et séances publiées prêtes pour Présences.
         id: 'get_injs.accueil',
         libelle: 'Accueil GET INJS APP',
+        description: 'Accueil du module',
+        icone: 'bi-house-door',
+        chemin: '/get-injs-app',
+        droit: {
+          curp: ['edt.creneau.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        // Tableau de bord du module = la page d'accueil GET INJS APP
+        // (pilotage : indicateurs, charge, générations, imports).
+        id: 'get_injs.tableau_bord',
+        libelle: 'Tableau de bord',
+        description: 'Pilotage du module',
+        icone: 'bi-speedometer2',
         chemin: '/get-injs-app',
         droit: {
           curp: ['edt.creneau.consulter'],
@@ -328,7 +343,9 @@ export const ARBORESCENCE = [
       },
       {
         id: 'get_injs.tableau',
-        libelle: 'Tableau des emplois du temps',
+        libelle: 'Emplois du temps',
+        description: 'Grille hebdomadaire',
+        icone: 'bi-calendar3',
         chemin: '/edt',
         droit: {
           curp: ['edt.creneau.consulter', 'edt.emploi_du_temps.generer'],
@@ -336,19 +353,12 @@ export const ARBORESCENCE = [
         },
       },
       {
-        id: 'get_injs.generation',
-        libelle: 'Créer un emploi du temps',
-        chemin: '/edt/nouveau',
-        droit: {
-          curp: ['edt.emploi_du_temps.generer', 'edt.emploi_du_temps.creer'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
         // Demande 21 : entrée d'échelle annuelle — import du fichier des
         // inscrits puis EDT de TOUTES les cohortes de l'année en une passe.
         id: 'get_injs.generation_annuelle',
-        libelle: 'Génération annuelle & import',
+        libelle: 'Génération',
+        description: 'Moteur LMD',
+        icone: 'bi-gear',
         chemin: '/edt/generation-annuelle',
         droit: {
           curp: ['edt.emploi_du_temps.generer'],
@@ -356,57 +366,35 @@ export const ARBORESCENCE = [
         },
       },
       {
-        // LOT 2 — campagnes de génération : trace persistante (périmètre,
-        // bilan, anomalies, durée, historique) et publication contrôlée.
-        id: 'get_injs.campagnes',
-        libelle: 'Campagnes de génération',
-        chemin: '/edt/campagnes',
+        // Même écran que la génération annuelle : sa zone 2 est l'import
+        // du fichier des inscrits (analyse puis import, CSV/XLSX).
+        id: 'get_injs.import',
+        libelle: 'Import étudiants',
+        description: 'Fichier externe',
+        icone: 'bi-upload',
+        chemin: '/edt/generation-annuelle',
         droit: {
           curp: ['edt.emploi_du_temps.generer'],
           legacy: [['web', 'operationnel']],
         },
       },
       {
-        // Écran « vérifier » : contrôle des données AVANT génération, et
-        // mémoire des versions avec les gestes valider / publier.
-        id: 'get_injs.audit',
-        libelle: 'Audit des données',
-        chemin: '/edt/audit',
+        // Populations étudiantes réelles (inscriptions administratives).
+        id: 'get_injs.inscrits',
+        libelle: 'Étudiants inscrits',
+        description: 'Populations',
+        icone: 'bi-people',
+        chemin: '/scolarite/inscriptions',
         droit: {
-          curp: ['edt.emploi_du_temps.generer', 'edt.contrainte.consulter'],
-          legacy: [['web', 'operationnel']],
+          curp: ['scolarite.inscription_administrative.consulter'],
+          legacy: [['scolarite', 'voir']],
         },
       },
       {
-        id: 'get_injs.versions',
-        libelle: 'Versions & publication',
-        chemin: '/edt/versions',
-        droit: {
-          curp: ['edt.emploi_du_temps.valider', 'edt.emploi_du_temps.publier'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
-        id: 'get_injs.presences_seance',
-        libelle: 'Présences de séance (QR & émargement)',
-        chemin: '/edt/presences',
-        droit: {
-          curp: ['presences.emargement.consulter'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
-        id: 'get_injs.cours',
-        libelle: 'Cours',
-        chemin: '/cours',
-        droit: {
-          curp: ['edt.seance.creer'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
-        id: 'get_injs.salles',
-        libelle: 'Salles & espaces',
+        id: 'get_injs.referentiels',
+        libelle: 'Référentiels',
+        description: 'INJS 2026',
+        icone: 'bi-collection',
         chemin: '/edt/salles-espaces',
         ecran: 'salles_espaces',
         droit: {
@@ -415,7 +403,21 @@ export const ARBORESCENCE = [
         },
       },
       {
+        // Documentation du module : téléchargement direct du document
+        // de conception servi par l'API (aucune page intermédiaire).
+        id: 'get_injs.conception',
+        libelle: 'Conception',
+        description: 'Documentation',
+        icone: 'bi-file-earmark-text',
+        action: 'telecharger-conception',
+        droit: {
+          curp: ['edt.creneau.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
         id: 'get_injs.disponibilites',
+        masque: true,
         libelle: 'Disponibilités',
         chemin: '/edt/disponibilites',
         ecran: 'disponibilites',
@@ -428,16 +430,8 @@ export const ARBORESCENCE = [
         },
       },
       {
-        id: 'get_injs.enseignants',
-        libelle: 'Enseignants',
-        chemin: '/formateurs',
-        droit: {
-          curp: ['enseignants.enseignant.consulter'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
         id: 'get_injs.conflits',
+        masque: true,
         libelle: 'Conflits & contraintes',
         chemin: '/edt/conflits',
         ecran: 'conflits_edt',
@@ -447,16 +441,8 @@ export const ARBORESCENCE = [
         },
       },
       {
-        id: 'get_injs.rattrapages',
-        libelle: 'Rattrapages & examens',
-        chemin: '/rattrapages',
-        droit: {
-          curp: ['edt.rattrapage.consulter', 'edt.examen.consulter'],
-          legacy: [['presences', 'voir']],
-        },
-      },
-      {
         id: 'get_injs.export',
+        masque: true,
         libelle: 'Export / Impression',
         chemin: '/edt/export',
         ecran: 'export_edt',

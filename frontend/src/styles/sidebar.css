@@ -301,6 +301,39 @@
   border: 1px solid rgba(18, 103, 214, 0.4);
 }
 
+/* Entrées de menu à action (bouton, ex. téléchargement) : même design. */
+.sidebar button.nav-sous-item {
+  background: none;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+
+.sidebar button.nav-sous-item:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Libellé + description d'une entrée de sous-menu (hubs de module). */
+.sidebar .nav-sous-textes {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+  min-width: 0;
+}
+
+.sidebar .nav-sous-desc {
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.sidebar .nav-sous-item.active .nav-sous-desc {
+  color: rgba(255, 255, 255, 0.75);
+}
+
 /* Pied de barre latérale */
 .sidebar-footer {
   padding: 0.75rem 0.85rem;

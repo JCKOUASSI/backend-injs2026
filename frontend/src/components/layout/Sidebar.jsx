@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import logo from '../../assets/logo-injs.svg'
+import api from '../../services/api'
+import { useToast } from '../../context/ToastContext'
 import { useAuth } from '../../context/AuthContext'
 import { useMenuAutorise } from '../../hooks/useMenuAutorise'
 import { LIBELLES_ROLES } from '../../menu/arborescence'
@@ -57,6 +59,7 @@ function ecrireEtat(etat) {
 }
 
 export default function Sidebar({ open = false, onClose = () => {} }) {
+  const { showToast } = useToast()
   const { user, logout } = useAuth()
   const location = useLocation()
   const chemin = location.pathname
@@ -109,6 +112,37 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
   useEffect(() => { ecrireEtat(ouverts) }, [ouverts])
 
   const basculer = (id) => setOuverts((p) => ({ ...p, [id]: !p[id] }))
+
+  /** Action de menu « telecharger-conception » (GET INJS APP) : le document
+   *  de conception du module, servi par l'API, sans page intermédiaire. */
+  const telechargerConception = async () => {
+    try {
+      const { blob, fileName } = await api.getBlob('/edts/lmd/conception/')
+      const url = URL.createObjectURL(blob)
+      const lien = document.createElement('a')
+      lien.href = url
+      lien.download = fileName || 'Conception-GET-INJS.txt'
+      document.body.appendChild(lien)
+      lien.click()
+      lien.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      showToast('Document de conception indisponible.', 'error')
+    }
+  }
+
+  /** Contenu d'une entrée de sous-menu : icône, libellé et description. */
+  const contenuEnfant = (enfant) => (
+    <>
+      {enfant.icone && <i className={`bi ${enfant.icone}`}></i>}
+      <span className="nav-sous-textes">
+        <span className="nav-label">{enfant.libelle}</span>
+        {enfant.description && (
+          <span className="nav-sous-desc">{enfant.description}</span>
+        )}
+      </span>
+    </>
+  )
 
   const nomComplet = user?.get_full_name
     ? user.get_full_name()
@@ -231,28 +265,40 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
               </button>
               {ouvert && (
                 <ul className="nav-sous-menu" id={`menu-${section.id}`}>
-                  {enfants.map((enfant, index) => {
+                  {enfants.filter((e) => !e.masque).map((enfant, index, visibles) => {
                     const requis = droitRequis(enfant)
+                    const titre = [
+                      enfant.libelle,
+                      requis.curp.length ? `CURP : ${requis.curp.join(', ')}` : null,
+                      requis.legacy.length ? `Capacités : ${requis.legacy.join(', ')}` : null,
+                    ].filter(Boolean).join(' — ')
                     return (
                       <li key={enfant.id} className="nav-sous-ligne">
                         <span
                           className="nav-connecteur"
                           aria-hidden="true"
-                        >{index === enfants.length - 1 ? '└─' : '├─'}</span>
-                        <Link
-                          to={resoudreHref(enfant)}
-                          className={`nav-sous-item${estActif(enfant) ? ' active' : ''}`}
-                          onClick={fermerNavigation}
-                          data-testid={`nav-${enfant.id}`}
-                          title={[
-                            enfant.libelle,
-                            requis.curp.length ? `CURP : ${requis.curp.join(', ')}` : null,
-                            requis.legacy.length ? `Capacités : ${requis.legacy.join(', ')}` : null,
-                          ].filter(Boolean).join(' — ')}
-                        >
-                          {enfant.icone && <i className={`bi ${enfant.icone}`}></i>}
-                          <span className="nav-label">{enfant.libelle}</span>
-                        </Link>
+                        >{index === visibles.length - 1 ? '└─' : '├─'}</span>
+                        {enfant.action === 'telecharger-conception' ? (
+                          <button
+                            type="button"
+                            className="nav-sous-item"
+                            onClick={() => { telechargerConception(); fermerNavigation() }}
+                            data-testid={`nav-${enfant.id}`}
+                            title={titre}
+                          >
+                            {contenuEnfant(enfant)}
+                          </button>
+                        ) : (
+                          <Link
+                            to={resoudreHref(enfant)}
+                            className={`nav-sous-item${estActif(enfant) ? ' active' : ''}`}
+                            onClick={fermerNavigation}
+                            data-testid={`nav-${enfant.id}`}
+                            title={titre}
+                          >
+                            {contenuEnfant(enfant)}
+                          </Link>
+                        )}
                       </li>
                     )
                   })}

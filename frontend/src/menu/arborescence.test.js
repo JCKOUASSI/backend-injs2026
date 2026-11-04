@@ -82,7 +82,8 @@ describe('GET-INJS — génération annuelle (demande 21)', () => {
       (e) => e.chemin === '/edt/generation-annuelle',
     )
     expect(entree).toBeDefined()
-    expect(entree.libelle).toMatch(/Génération annuelle/i)
+    expect(entree.libelle).toBe('Génération')
+    expect(entree.description).toBe('Moteur LMD')
     expect(entree.droit.curp).toContain('edt.emploi_du_temps.generer')
     // L'écran est un composant dédié : pas de descripteur générique requis.
     expect(entree.ecran).toBeUndefined()
@@ -94,6 +95,47 @@ describe('GET-INJS — génération annuelle (demande 21)', () => {
     const entree = toutesEntrees.find((e) => e.chemin === '/edt/generation-annuelle')
     const cites = entree.droit.curp.filter((code) => CATALOGUE.codes.includes(code))
     expect(cites.length).toBeGreaterThan(0)
+  })
+})
+
+describe('GET INJS APP — contenu du hub (miroir du hub INJS APP)', () => {
+  const section = ARBORESCENCE.find((s) => s.id === 'get_injs')
+  const visibles = section.enfants.filter((e) => !e.masque)
+
+  it('affiche exactement les entrées du hub démo, Accueil conservé en tête', () => {
+    expect(visibles.map((e) => [e.libelle, e.description])).toEqual([
+      ['Accueil GET INJS APP', 'Accueil du module'],
+      ['Tableau de bord', 'Pilotage du module'],
+      ['Emplois du temps', 'Grille hebdomadaire'],
+      ['Génération', 'Moteur LMD'],
+      ['Import étudiants', 'Fichier externe'],
+      ['Étudiants inscrits', 'Populations'],
+      ['Référentiels', 'INJS 2026'],
+      ['Conception', 'Documentation'],
+    ])
+  })
+
+  it('branche chaque entrée sur un écran réel de l’application', () => {
+    const parLibelle = Object.fromEntries(visibles.map((e) => [e.libelle, e]))
+    expect(parLibelle['Accueil GET INJS APP'].chemin).toBe('/get-injs-app')
+    expect(parLibelle['Tableau de bord'].chemin).toBe('/get-injs-app')
+    expect(parLibelle['Emplois du temps'].chemin).toBe('/edt')
+    expect(parLibelle['Génération'].chemin).toBe('/edt/generation-annuelle')
+    expect(parLibelle['Import étudiants'].chemin).toBe('/edt/generation-annuelle')
+    expect(parLibelle['Étudiants inscrits'].chemin).toBe('/scolarite/inscriptions')
+    expect(parLibelle['Référentiels'].chemin).toBe('/edt/salles-espaces')
+    // Conception : téléchargement direct, pas de page intermédiaire.
+    expect(parLibelle.Conception.action).toBe('telecharger-conception')
+    expect(parLibelle.Conception.chemin).toBeUndefined()
+  })
+
+  it('conserve les écrans génériques joignables hors menu (routes préservées)', () => {
+    const masquees = Object.fromEntries(
+      section.enfants.filter((e) => e.masque).map((e) => [e.ecran, e]),
+    )
+    expect(masquees.disponibilites.chemin).toBe('/edt/disponibilites')
+    expect(masquees.conflits_edt.chemin).toBe('/edt/conflits')
+    expect(masquees.export_edt.chemin).toBe('/edt/export')
   })
 })
 
