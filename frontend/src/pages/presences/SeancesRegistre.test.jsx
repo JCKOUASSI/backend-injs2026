@@ -86,6 +86,20 @@ describe('SeancesRegistre — module Séances refondu', () => {
     })
   })
 
+  it('chargement explicite de 200 séances appliqué dès l’ouverture', async () => {
+    render(
+      <AllProviders user={makeUser('ENSEIGNANT')}>
+        <SeancesRegistre />
+      </AllProviders>,
+    )
+    // Sans aucun clic : la première requête demande déjà limite=200
+    // et l'écran affiche la pastille du chargement explicite.
+    await waitFor(() => expect(
+      apiController.findCall('get', /supervision\/\?.*limite=200/)).toBeTruthy())
+    expect(screen.getByText('Chargement explicite : 200 séances')).toBeTruthy()
+    expect(screen.getByRole('button', { name: '200 séances' })).toHaveClass('actif')
+  })
+
   it('chargement explicite : 200 séances demandées et affichées', async () => {
     const user = userEvent.setup()
     render(

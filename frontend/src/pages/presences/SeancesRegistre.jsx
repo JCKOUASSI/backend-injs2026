@@ -43,7 +43,14 @@ export default function SeancesRegistre() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [date, setDate] = useState(() => searchParams.get('date') || new Date().toLocaleDateString('en-CA'))
   const [statut, setStatut] = useState(() => searchParams.get('statut') || '')
-  const [mode, setMode] = useState(() => (searchParams.get('mode') === '200' ? 'plage' : 'jour'))
+  // Chargement explicite de 200 séances appliqué dès l'ouverture ;
+  // un jour précis demandé dans l'URL (?date= ou ?mode=jour) conserve
+  // le mode « Par jour » historique.
+  const [mode, setMode] = useState(() => {
+    if (searchParams.get('mode') === 'jour') return 'jour'
+    if (searchParams.get('mode') === '200') return 'plage'
+    return searchParams.get('date') ? 'jour' : 'plage'
+  })
   const [donnees, setDonnees] = useState(null)
   const [auto, setAuto] = useState(false)
   const [charge, setCharge] = useState(true)
@@ -82,7 +89,7 @@ export default function SeancesRegistre() {
     const sp = new URLSearchParams()
     sp.set('date', date)
     if (statut) sp.set('statut', statut)
-    if (mode === 'plage') sp.set('mode', '200')
+    sp.set('mode', mode === 'plage' ? '200' : 'jour')
     setSearchParams(sp, { replace: true })
   }, [date, statut, mode, setSearchParams])
 
