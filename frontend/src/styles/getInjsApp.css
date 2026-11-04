@@ -1,13 +1,13 @@
 /* ── GET INJS APP — accueil du module (identité universitaire INJS) ──
-   Vert profond, ocre et crème ; titres en serif. Classes préfixées
+   Bleu foncé et bleu clair ; titres en serif. Classes préfixées
    `giapp-` : aucun impact sur les autres écrans. */
 
 .giapp {
-  --giapp-vert: #0b3d2e;
-  --giapp-vert-clair: #116149;
-  --giapp-ocre: #c89b3c;
-  --giapp-creme: #faf6ee;
-  --giapp-encre: #1c2a24;
+  --giapp-bleu-fonce: #0a2a5c;
+  --giapp-bleu: #14509e;
+  --giapp-bleu-clair: #6db3f2;
+  --giapp-fond: #f2f7fd;
+  --giapp-encre: #14263f;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -21,9 +21,9 @@
   flex-wrap: wrap;
   padding: 1.75rem 2rem;
   border-radius: 18px;
-  color: var(--giapp-creme);
-  background: linear-gradient(135deg, var(--giapp-vert) 0%, var(--giapp-vert-clair) 70%, #17644c 100%);
-  box-shadow: 0 18px 34px -18px rgba(11, 61, 46, 0.55);
+  color: var(--giapp-fond);
+  background: linear-gradient(135deg, #081f42 0%, var(--giapp-bleu-fonce) 55%, var(--giapp-bleu) 100%);
+  box-shadow: 0 18px 34px -18px rgba(10, 42, 92, 0.55);
 }
 
 .giapp-hero-tag {
@@ -31,7 +31,7 @@
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--giapp-ocre);
+  color: var(--giapp-bleu-clair);
 }
 
 .giapp-hero-title {
@@ -45,7 +45,7 @@
 .giapp-hero-sub {
   margin: 0 0 1.1rem;
   max-width: 620px;
-  color: rgba(250, 246, 238, 0.85);
+  color: rgba(242, 247, 253, 0.85);
   font-size: 0.92rem;
 }
 
@@ -68,15 +68,15 @@
   cursor: pointer;
 }
 
-.giapp-btn--or {
-  background: var(--giapp-ocre);
-  color: #23180a;
+.giapp-btn--accent {
+  background: var(--giapp-bleu-clair);
+  color: #08213f;
 }
 
 .giapp-btn--clair {
-  background: rgba(250, 246, 238, 0.14);
-  color: var(--giapp-creme);
-  border: 1px solid rgba(250, 246, 238, 0.45);
+  background: rgba(242, 247, 253, 0.14);
+  color: var(--giapp-fond);
+  border: 1px solid rgba(242, 247, 253, 0.45);
 }
 
 .giapp-btn:disabled {
@@ -103,7 +103,7 @@
   background: #94a3b8;
 }
 
-.giapp-pastille.is-ok { background: #34d399; }
+.giapp-pastille.is-ok { background: #38bdf8; }
 .giapp-pastille.is-ko { background: #f87171; }
 
 .giapp-kpis {
@@ -114,8 +114,8 @@
 
 .giapp-kpi {
   background: #ffffff;
-  border: 1px solid #e7e2d4;
-  border-top: 4px solid var(--giapp-ocre);
+  border: 1px solid #d9e4f2;
+  border-top: 4px solid var(--giapp-bleu-clair);
   border-radius: 14px;
   padding: 1rem 1.1rem;
   display: flex;
@@ -127,13 +127,13 @@
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 1.9rem;
   font-weight: 700;
-  color: var(--giapp-vert);
+  color: var(--giapp-bleu-fonce);
 }
 
 .giapp-kpi-libelle {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #5b6b62;
+  color: #54677e;
 }
 
 .giapp-titre-section {
@@ -141,7 +141,7 @@
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--giapp-vert);
+  color: var(--giapp-bleu-fonce);
 }
 
 .giapp-tuiles {
@@ -155,8 +155,8 @@
   flex-direction: column;
   gap: 0.35rem;
   padding: 1.05rem 1.1rem;
-  background: var(--giapp-creme);
-  border: 1px solid #e7e2d4;
+  background: var(--giapp-fond);
+  border: 1px solid #d9e4f2;
   border-radius: 14px;
   text-decoration: none;
   color: var(--giapp-encre);
@@ -165,7 +165,7 @@
 
 .giapp-tuile:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 22px -12px rgba(11, 61, 46, 0.35);
+  box-shadow: 0 12px 22px -12px rgba(10, 42, 92, 0.35);
   color: var(--giapp-encre);
 }
 
@@ -176,8 +176,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--giapp-vert);
-  color: var(--giapp-ocre);
+  background: var(--giapp-bleu-fonce);
+  color: var(--giapp-bleu-clair);
   font-size: 1.1rem;
 }
 
@@ -188,19 +188,19 @@
 
 .giapp-tuile-desc {
   font-size: 0.8rem;
-  color: #5b6b62;
+  color: #54677e;
   flex: 1;
 }
 
 .giapp-tuile-lien {
   font-size: 0.78rem;
   font-weight: 800;
-  color: var(--giapp-vert-clair);
+  color: var(--giapp-bleu);
 }
 
 .giapp-panneau {
   background: #ffffff;
-  border: 1px solid #e7e2d4;
+  border: 1px solid #d9e4f2;
   border-radius: 14px;
   padding: 1rem 1.1rem;
 }
@@ -208,7 +208,7 @@
 .giapp-vide {
   margin: 0;
   font-size: 0.85rem;
-  color: #5b6b62;
+  color: #54677e;
 }
 
 .giapp-table-wrap {
@@ -224,40 +224,40 @@
 .giapp-table th {
   text-align: left;
   padding: 0.5rem 0.6rem;
-  border-bottom: 2px solid var(--giapp-ocre);
-  color: var(--giapp-vert);
+  border-bottom: 2px solid var(--giapp-bleu-clair);
+  color: var(--giapp-bleu-fonce);
   white-space: nowrap;
 }
 
 .giapp-table td {
   padding: 0.5rem 0.6rem;
-  border-bottom: 1px solid #f0ebdd;
+  border-bottom: 1px solid #e8f0fa;
   vertical-align: middle;
 }
 
 .giapp-uuid {
   font-size: 0.75rem;
-  color: var(--giapp-vert-clair);
+  color: var(--giapp-bleu);
 }
 
 .giapp-badge {
   display: inline-block;
   padding: 0.12rem 0.55rem;
   border-radius: 999px;
-  background: #eef4f0;
-  color: var(--giapp-vert);
+  background: #e3edfb;
+  color: var(--giapp-bleu-fonce);
   font-size: 0.7rem;
   font-weight: 800;
   white-space: nowrap;
 }
 
-.giapp-badge--ok { background: #dcfce7; color: #166534; }
+.giapp-badge--ok { background: #d7e9fc; color: #0a4d8f; }
 .giapp-badge--ko { background: #fee2e2; color: #991b1b; }
 
 .giapp-note {
   margin: 0.8rem 0 0;
   font-size: 0.78rem;
-  color: #5b6b62;
+  color: #54677e;
 }
 
 /* ── Vue d'ensemble : graphiques sobres calculés des données réelles ─────── */
@@ -268,9 +268,9 @@
 }
 
 .giapp-graph {
-  background: #fffdf8;
-  border: 1px solid #e7dfc9;
-  border-top: 3px solid var(--giapp-vert);
+  background: #fbfdff;
+  border: 1px solid #d9e4f2;
+  border-top: 3px solid var(--giapp-bleu-fonce);
   border-radius: 12px;
   padding: 0.9rem 1rem;
 }
@@ -281,7 +281,7 @@
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--giapp-vert);
+  color: var(--giapp-bleu-fonce);
 }
 
 .giapp-barres { display: grid; gap: 0.42rem; }
@@ -294,11 +294,11 @@
   font-size: 0.78rem;
 }
 
-.giapp-barre-libelle { color: #44554b; font-weight: 600; }
+.giapp-barre-libelle { color: #3c5069; font-weight: 600; }
 
 .giapp-barre-piste {
   height: 0.62rem;
-  background: #f3edda;
+  background: #e3edf9;
   border-radius: 999px;
   overflow: hidden;
 }
@@ -306,19 +306,19 @@
 .giapp-barre-remplissage {
   display: block;
   height: 100%;
-  background: var(--giapp-vert);
+  background: var(--giapp-bleu-fonce);
   border-radius: 999px;
   transition: width 0.6s ease;
 }
 
-.giapp-barre-remplissage.is-ocre { background: var(--giapp-ocre); }
+.giapp-barre-remplissage.is-clair { background: var(--giapp-bleu-clair); }
 
-.giapp-barre-valeur { text-align: right; font-weight: 800; color: var(--giapp-vert); }
+.giapp-barre-valeur { text-align: right; font-weight: 800; color: var(--giapp-bleu-fonce); }
 
 .giapp-gros-chiffre {
   margin: 0.2rem 0;
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 2rem;
   font-weight: 700;
-  color: var(--giapp-vert);
+  color: var(--giapp-bleu-fonce);
 }

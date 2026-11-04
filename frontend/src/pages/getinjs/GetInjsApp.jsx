@@ -128,7 +128,7 @@ function Barres({ donnees, accent }) {
           <span className="giapp-barre-libelle">{d.libelle}</span>
           <span className="giapp-barre-piste">
             <span
-              className={`giapp-barre-remplissage ${accent === 'ocre' ? 'is-ocre' : ''}`}
+              className={`giapp-barre-remplissage ${accent === 'clair' ? 'is-clair' : ''}`}
               style={{ width: `${Math.round((d.valeur / max) * 100)}%` }}
             ></span>
           </span>
@@ -216,7 +216,7 @@ export default function GetInjsApp() {
             publication officielle et séances prêtes pour le module Présences.
           </p>
           <div className="giapp-hero-actions">
-            <Link to="/edt/generation-annuelle" className="giapp-btn giapp-btn--or">
+            <Link to="/edt/generation-annuelle" className="giapp-btn giapp-btn--accent">
               <i className="bi bi-lightning-charge-fill"></i> Générer les emplois du temps
             </Link>
             <button
@@ -273,7 +273,7 @@ export default function GetInjsApp() {
             </div>
             <div className="giapp-graph">
               <h3>Séances par nature d’enseignement</h3>
-              <Barres donnees={vue.parType} accent="ocre" />
+              <Barres donnees={vue.parType} accent="clair" />
             </div>
             <div className="giapp-graph giapp-graph--chiffre">
               <h3>Volume horaire planifié</h3>
