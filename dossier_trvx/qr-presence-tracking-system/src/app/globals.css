@@ -1,0 +1,180 @@
+@import "tailwindcss";
+
+@theme {
+  --color-papier: #f2ede2;
+  --color-papier-haut: #faf7f0;
+  --color-neutre: #e5ddcc;
+  --color-encre: #17140f;
+  --color-encre-pale: #5c544a;
+  --color-filet: #cfc5b2;
+  --color-vert: #1f5c3d;
+  --color-vert-clair: #2f7d52;
+  --color-vert-fonce: #123524;
+  --color-vermillon: #c2410c;
+
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background-color: var(--color-papier);
+    color: var(--color-encre);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  ::selection {
+    background: var(--color-vert);
+    color: var(--color-papier-haut);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-vert);
+    outline-offset: 2px;
+  }
+}
+
+/* Papier : la texture de registre en fond, très basse opacité */
+.grain-papier::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("/images/registre.jpg");
+  background-size: cover;
+  background-position: center;
+  opacity: 0.14;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Petites capitales tracées : en-têtes de colonnes et statuts */
+.caps {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.tab {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Lignes de registre : filet fin, trait plus marqué toutes les 5 lignes */
+.ligne-registre {
+  border-bottom: 1px solid var(--color-filet);
+}
+.ligne-registre-epaisse {
+  border-bottom: 2px solid color-mix(in srgb, var(--color-filet) 70%, var(--color-encre) 30%);
+}
+
+.tampon {
+  border: 2px solid var(--color-vert);
+  color: var(--color-vert);
+  transform: rotate(-3deg);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-vert) 35%, transparent);
+}
+
+.panneau {
+  background: var(--color-papier-haut);
+  border: 1px solid var(--color-filet);
+}
+
+.champ {
+  background: var(--color-papier-haut);
+  border: 1px solid var(--color-filet);
+  border-radius: 2px;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-encre);
+  width: 100%;
+}
+.champ:focus {
+  border-color: var(--color-vert);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-vert) 18%, transparent);
+}
+
+.bouton {
+  background: var(--color-vert);
+  color: var(--color-papier-haut);
+  border: 1px solid var(--color-vert);
+  padding: 0.6rem 1.1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  transition: background 140ms ease, transform 140ms ease;
+  cursor: pointer;
+}
+.bouton:hover:not(:disabled) {
+  background: var(--color-vert-fonce);
+}
+.bouton:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.bouton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.bouton-secondaire {
+  background: transparent;
+  color: var(--color-vert);
+}
+.bouton-secondaire:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-vert) 10%, transparent);
+}
+.bouton-danger {
+  background: transparent;
+  color: var(--color-vermillon);
+  border-color: var(--color-vermillon);
+}
+.bouton-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-vermillon) 12%, transparent);
+}
+
+/* Entrée des lignes du registre : cascade machinée */
+@keyframes ligne-apparition {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.ligne-animee {
+  animation: ligne-apparition 320ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes pouls {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-vert-clair) 55%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-vert-clair) 0%, transparent);
+  }
+}
+.pouls {
+  animation: pouls 1.8s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -6,6 +6,8 @@
 
 CONTEXTE ET SOURCES
 -------------------
+Tu es un architecte logiciel senior spécialisé en systèmes universitaires LMD (Licence-Master-Doctorat) et en architectures modernes Django (backend API) + Flutter (frontend mobile/web).
+Agis comme une équipe composée d’un architecte logiciel senior, d’un expert UX/UI universitaire, d’un développeur frontend senior et d’un expert en systèmes LMD africains.
 Tu interviens sur le dépôt backend-injs2026 (application LMD de l'INJS d'Abidjan,
 Marcory — Côte d'Ivoire). Les sources de vérité sont les 11 fichiers du dossier
 "dossier_trvx" :
@@ -21,6 +23,85 @@ Marcory — Côte d'Ivoire). Les sources de vérité sont les 11 fichiers du dos
   - Referentiels_de_l_INJS_Tableau_de_bordOKOKOK.pdf
   - Modèle fonctionnel de référence backend-injs2026.pdf
  et du sous-dossier "develop-get-injs-timetable-module" 
+Tu possède en plus comme outils de gestion, la liste de modèles suivants :
+   Claude Opus 5.5 (Max)
+   Gemini 4 Carbon (Élevé)
+   Google · Propriétaire
+   Claude Sonnet 5.5 (Max)
+   GPT-6 Astra (Max)
+   OpenAI · Propriétaire
+   Claude Fable 5.1 (Max)
+   Anthropique · Propriétaire
+   GPT-6.1 Sol (Max)
+   OpenAI · Propriétaire
+   Gemini 4 Argon (Élevé)
+   GPT-6.1 Terra (Max)
+   OpenAI · Propriétaire
+   Muse Wonder Complet (Max)
+   Meta · Propriétaire
+   Claude Fable 5 (Aiguë)
+   Claude Opus 5 (Max)
+   GPT-6 Sol (Max)
+   Kimi K3.1 Pro (Max)
+   Moonshot · Propriétaire
+   GPT-5.6 Sol (xHigh)
+   OpenAI · Propriétaire
+   Claude Sonnet 5 (Aigu)
+   Grok 4.7 (xHigh)
+   SpaceXAI · Propriétaire
+   Flash Gemini 3.8 (Élevé)
+   Muse Merveille (Max)
+   Meta · Propriétaire
+   Muse Spark 1.3 (Max)
+   MiMo-V2.6-Pro
+   Xiaomi · MIT
+   DeepSeek-V4.1-Flash-20261017 (Max)
+   DeepSeek · MIT
+   GPT-6 Luna (Max)
+   GLM-5.3 (Max)
+   Z.ai · MIT
+   Tencent · Apache 2.0
+   Kimi K3 (Max)
+   Moonshot · Licence Kimi K3
+   GLM-5.2 (Max)
+   Z.ai · MIT · SiliconFlow
+   Claude Haiku 5,5 (Élevé)
+   MiMo-V2.6-Flash
+   Qwen3.8-Max
+   Alibaba · Propriétaire
+   Grok 4.6 (xHigh)
+   SpaceXAI · Propriétaire
+   DeepSeek-V4-Pro (Haut, 20260813)
+   DeepSeek · MIT
+   GPT-5.6 Terra (xHigh)
+   Flash Gemini 3.7 (Élevé)
+   GPT-6 Luna (Moyen)
+   GLM-5.3-Flash
+   Z.ai · MIT
+   2.49
+   MiniMax-M3.1-Flash
+   MiniMax · Licence communautaire MiniMax
+   Qwen3.8-27B
+   Alibaba · Apache 2.0
+   Qwen3.8-Flash-Next
+   Alibaba · Qwen-communauté-1.0
+   GPT-6 Luna (Bas)
+   Qwen3.7-Max
+   Qwen3.7-Plus
+   Tencent · Apache 2.0
+   Spark-X2.6
+   XHToken · Propriétaire
+   MiniMax-M3
+   MiniMax · Licence communautaire MiniMax
+   Mistral Medium 3,5
+   Mistral · MIT modifié
+   Nemotron 3 Ultra
+   Nvidia · OpenMDW-1.1
+   NVIDIA-Nemotron-3.5-Super-VL-120B-A12B (NVFP4)
+   Nvidia · OpenMDW-1.1
+   Inkling
+   Thinky · Apache 2.0
+   Solar Pro 4
 
 OBJECTIF
 --------
