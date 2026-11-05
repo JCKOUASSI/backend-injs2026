@@ -110,7 +110,12 @@ fabrique de donnée : chaque manque devient une anomalie nommée.
   pas d'interface de scénarios comparatifs).
 - **Préparé :** présences QR/manuelle/géolocalisation — socle `SeanceRegistre` +
   `interop_presences.py` prêts ; capture non développée (conformément à la consigne).
+- **Écran frontend (ajouté après arbitrage expert) :** page « Dimensionnement »
+  du hub GET-INJS (`/edt/dimensionnement`, entrée de menu après « Génération ») —
+  indicateurs dérivés, tableau des promotions, capacité cible paramétrable avec
+  recalcul, anomalies affichées telles quelles ; 3 tests d'écran verts, suite
+  frontend complète 2 215/2 215, build OK.
 - **Non implémenté (assumé, non maquillé) :** mutualisation inter-promotions des
-  enseignements ; tableau de bord de dimensionnement côté frontend (l'endpoint est
-  prêt à l'alimenter) ; palier 15 000 non ajouté aux paliers standard du banc
-  (mesure effectuée en exécution dédiée).
+  enseignements (à concevoir à partir des chiffres que l'écran rend visibles) ;
+  palier 15 000 non ajouté aux paliers standard du banc (mesure effectuée en
+  exécution dédiée).
