@@ -166,8 +166,15 @@ def get_direction_overview():
     nb_dossiers = DossierEtudiant.objects.count()
     nb_abandons = DossierEtudiant.objects.filter(statut__code='ABANDON').count()
     taux_abandon = round(nb_abandons / nb_dossiers * 100, 1) if nb_dossiers else None
+    # Diplomation : même convention que le taux de réussite ci-dessus —
+    # ``None`` (jauge « — ») tant que la base de calcul n'existe pas.
+    # Sans diplôme délivré, afficher 0 % annoncerait un échec total alors
+    # qu'aucune cohorte n'a encore achevé son cycle (en 2026-2027 : 3 727
+    # dossiers tous ACTIF, aucun jury, aucun diplôme) ; le compteur
+    # « N diplômes délivrés » sous la jauge conserve l'information factuelle.
     taux_diplomation = (
-        round(nb_diplomes / nb_dossiers * 100, 1) if nb_dossiers else None
+        round(nb_diplomes / nb_dossiers * 100, 1)
+        if nb_diplomes and nb_dossiers else None
     )
 
     # Évolution des effectifs : candidatures et inscriptions validées,

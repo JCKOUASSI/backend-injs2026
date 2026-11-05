@@ -238,7 +238,10 @@ class OverviewIndicateursReelsTests(APITestCase):
         indicateurs = res.data['indicateurs']
         # 1 abandon sur 2 dossiers, aucun diplôme, aucune note saisie.
         self.assertEqual(indicateurs['taux_abandon'], 50.0)
-        self.assertEqual(indicateurs['taux_diplomation'], 0.0)
+        # Aucun diplôme délivré : indicateur non calculable (None → jauge
+        # « — »), pas un faux 0 % d'échec — même convention que le taux de
+        # réussite sans note, ci-dessous.
+        self.assertIsNone(indicateurs['taux_diplomation'])
         self.assertIsNone(indicateurs['taux_reussite'])
         self.assertEqual(indicateurs['dossiers_etudiants'], 2)
 
@@ -255,3 +258,24 @@ class OverviewIndicateursReelsTests(APITestCase):
         self.assertTrue(any('Diplôme – X' in a['texte'] for a in activite))
         self.assertIn('taux_recouvrement', res.data['situation_financiere'])
         self.assertIn('categories', res.data['charts']['charges_par_cycle'])
+
+    def test_overview_diplomation_calculee_des_le_premier_diplome(self):
+        """Un diplôme délivré : le taux redevient un pourcentage réel."""
+        from formations.models import RefFormation
+        from graduation.models import Diplome
+        from scolarite.models import DossierEtudiant, Niveau
+
+        formation = RefFormation.objects.create(code='STAPS', intitule='STAPS')
+        niveau = Niveau.objects.create(code='M2', libelle='Master 2')
+        dossier = DossierEtudiant.objects.order_by('id').first()
+        Diplome.objects.create(
+            etudiant=dossier, annee_academique=self.annee,
+            ref_formation=formation, niveau=niveau,
+        )
+
+        res = self.client.get('/api/dashboard/overview/')
+        self.assertEqual(res.status_code, 200)
+        indicateurs = res.data['indicateurs']
+        # 1 diplôme délivré pour 2 dossiers étudiants.
+        self.assertEqual(indicateurs['diplomes_delivres'], 1)
+        self.assertEqual(indicateurs['taux_diplomation'], 50.0)
