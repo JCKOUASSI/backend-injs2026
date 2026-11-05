@@ -161,6 +161,13 @@ export default function ReferentielGenerique() {
   const [envoi, setEnvoi] = useState(false)
   const [confirmation, setConfirmation] = useState(null)
   const [lectureSeule, setLectureSeule] = useState(false)
+  // Affichage : la liste historique reste le défaut ; la vue « cartes » et
+  // la pagination évitent les écrans de centaines de lignes (166 salles).
+  const [vue, setVue] = useState(() => {
+    try { return localStorage.getItem(`ref-vue-${slug}`) || 'liste' } catch { return 'liste' }
+  })
+  const [page, setPage] = useState(1)
+  const [filtresSelecteurs, setFiltresSelecteurs] = useState({})
 
   // Capacités réelles du modèle, annoncées par le registre backend : les
   // référentiels hors socle (scolarité LMD) n'ont ni provenance ni
@@ -270,7 +277,43 @@ export default function ReferentielGenerique() {
         ;(entree?.selecteurs || []).forEach((fk) => valeurs.push(l[`${fk}_libelle`]))
         return valeurs.filter(Boolean).some((v) => String(v).toLowerCase().includes(q))
       })
-  }, [lignes, recherche, filtreActif, entree, lectureSeule])
+      .filter((l) => Object.entries(filtresSelecteurs).every(
+        ([fk, valeur]) => !valeur || String(l[fk] ?? '') === valeur,
+      ))
+  }, [lignes, recherche, filtreActif, entree, lectureSeule, filtresSelecteurs])
+
+  // Valeurs distinctes de chaque sélecteur (pour les filtres rapides) :
+  // un sélecteur à valeur unique (ex. un seul site) n'affiche pas de filtre.
+  const valeursSelecteurs = useMemo(() => {
+    const parFk = {}
+    ;(entree?.selecteurs || []).forEach((fk) => {
+      const vues = new Map()
+      lignes.forEach((l) => {
+        if (l[fk] !== null && l[fk] !== undefined && l[`${fk}_libelle`]) {
+          vues.set(String(l[fk]), l[`${fk}_libelle`])
+        }
+      })
+      if (vues.size >= 2) {
+        parFk[fk] = [...vues.entries()]
+          .map(([valeur, libelle]) => ({ valeur, libelle }))
+          .sort((a, b) => a.libelle.localeCompare(b.libelle))
+      }
+    })
+    return parFk
+  }, [entree, lignes])
+
+  const PAR_PAGE = 24
+  const nbPages = Math.max(1, Math.ceil(lignesFiltrees.length / PAR_PAGE))
+  const pageSure = Math.min(page, nbPages)
+  const lignesPage = lignesFiltrees.slice((pageSure - 1) * PAR_PAGE, pageSure * PAR_PAGE)
+
+  useEffect(() => { setPage(1) }, [recherche, filtreActif, filtresSelecteurs, vue, slug])
+  useEffect(() => {
+    try { localStorage.setItem(`ref-vue-${slug}`, vue) } catch { /* stockage indisponible */ }
+  }, [vue, slug])
+
+  const changerVue = (nouvelle) => setVue(nouvelle)
+
 
   const ouvrirCreation = () => {
     const base = { fiabilite: 'A_RENSEIGNER', actif: true }
@@ -455,6 +498,51 @@ export default function ReferentielGenerique() {
     return liste
   }
 
+  // Actions d'une ligne, partagées par la vue liste et la vue cartes.
+  const rendreActions = (ligne) => (
+    <div className="cand-actions">
+      <button
+        type="button"
+        className="ref-action"
+        onClick={() => ouvrirEdition(ligne)}
+        title="Modifier"
+        aria-label={`Modifier ${ligne.libelle}`}
+      >
+        <i className="bi bi-pencil" aria-hidden="true"></i>
+      </button>
+      <button
+        type="button"
+        className={`ref-action ref-action--statut${ligne.actif ? ' is-actif' : ''}`}
+        onClick={() => basculerStatut(ligne)}
+        title={ligne.actif ? 'Désactiver' : 'Activer'}
+        aria-label={`${ligne.actif ? 'Désactiver' : 'Activer'} ${ligne.libelle}`}
+      >
+        <i className={`bi ${ligne.actif ? 'bi-toggle-on' : 'bi-toggle-off'}`} aria-hidden="true"></i>
+      </button>
+      {archivageSupporte && (ligne.archive ? (
+        <button
+          type="button"
+          className="ref-action ref-action--reactiver"
+          onClick={() => reactiver(ligne)}
+          title="Réactiver"
+          aria-label={`Réactiver ${ligne.libelle}`}
+        >
+          <i className="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="ref-action ref-action--archiver"
+          onClick={() => setConfirmation(ligne)}
+          title="Archiver"
+          aria-label={`Archiver ${ligne.libelle}`}
+        >
+          <i className="bi bi-archive" aria-hidden="true"></i>
+        </button>
+      ))}
+    </div>
+  )
+
   if (chargement) {
     return (
       <div className="cand-page ref-page">
@@ -582,6 +670,47 @@ export default function ReferentielGenerique() {
               </select>
             </div>
             )}
+            {Object.entries(valeursSelecteurs).map(([fk, valeurs]) => (
+              <div className="cand-champ ref-champ-selecteur" key={fk}>
+                <label className="cand-etiquette" htmlFor={`ref-filtre-${fk}`}>
+                  {LIBELLES_CHAMPS[fk] || fk}
+                </label>
+                <select
+                  id={`ref-filtre-${fk}`}
+                  className="cand-saisie"
+                  value={filtresSelecteurs[fk] || ''}
+                  onChange={(e) => setFiltresSelecteurs((f) => ({ ...f, [fk]: e.target.value }))}
+                >
+                  <option value="">Tous</option>
+                  {valeurs.map((v) => (
+                    <option key={v.valeur} value={v.valeur}>{v.libelle}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+            <div className="cand-champ ref-champ-vue">
+              <span className="cand-etiquette" id="ref-vue-libelle">Présentation</span>
+              <div className="ref-vue-toggle" role="group" aria-labelledby="ref-vue-libelle">
+                <button
+                  type="button"
+                  className={`ref-vue-btn${vue === 'liste' ? ' is-active' : ''}`}
+                  aria-pressed={vue === 'liste'}
+                  onClick={() => changerVue('liste')}
+                >
+                  <i className="bi bi-list-ul" aria-hidden="true"></i>
+                  Liste
+                </button>
+                <button
+                  type="button"
+                  className={`ref-vue-btn${vue === 'cartes' ? ' is-active' : ''}`}
+                  aria-pressed={vue === 'cartes'}
+                  onClick={() => changerVue('cartes')}
+                >
+                  <i className="bi bi-grid-3x3-gap" aria-hidden="true"></i>
+                  Cartes
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -599,6 +728,51 @@ export default function ReferentielGenerique() {
                 : 'Aucune valeur ne correspond au filtre courant.'}
             </p>
           </div>
+        ) : vue === 'cartes' ? (
+          <div className="ref-cartes" role="list" aria-label={`Présentation en cartes — ${entree.libelle}`}>
+            {lignesPage.map((ligne) => (
+              <article className={`ref-carte${ligne.archive ? ' is-archive' : ''}`} key={ligne.id} role="listitem">
+                <header className="ref-carte-entete">
+                  {aUnCode && ligne.code
+                    ? <span className="ref-carte-code">{ligne.code}</span>
+                    : <span></span>}
+                  {provenanceSuivie && (
+                    <span className={`ref-fiab ref-fiab--${String(ligne.fiabilite).toLowerCase()}`}>
+                      {LIBELLE_FIABILITE[ligne.fiabilite] || '—'}
+                    </span>
+                  )}
+                </header>
+                <h3 className="ref-carte-titre">{ligne.libelle}</h3>
+                <dl className="ref-carte-champs">
+                  {colonnes
+                    .filter((c) => !['code', 'libelle', 'fiabilite'].includes(c.cle))
+                    .map((c) => (
+                      <div className="ref-carte-champ" key={c.cle}>
+                        <dt>{c.libelle}</dt>
+                        <dd
+                          className={c.cle === 'equipements' ? 'ref-carte-equipements' : undefined}
+                          title={typeof ligne[c.cle] === 'string' ? ligne[c.cle] : undefined}
+                        >
+                          {c.cle === 'capacite' && ligne[c.cle] !== null && ligne[c.cle] !== undefined ? (
+                            <span className="ref-carte-capacite">
+                              <i className="bi bi-people" aria-hidden="true"></i>
+                              {afficherCellule(ligne, c.cle)} places
+                            </span>
+                          ) : typeof ligne[c.cle] === 'boolean' ? (
+                            ligne[c.cle] ? 'Oui' : '—'
+                          ) : (
+                            afficherCellule(ligne, c.cle)
+                          )}
+                        </dd>
+                      </div>
+                    ))}
+                </dl>
+                {!lectureSeule && (
+                  <footer className="ref-carte-pied">{rendreActions(ligne)}</footer>
+                )}
+              </article>
+            ))}
+          </div>
         ) : (
           <div className="cand-table-wrap">
             <table className={`cand-table ref-table${lectureSeule ? ' ref-table--lecture' : ''}`}>
@@ -613,7 +787,7 @@ export default function ReferentielGenerique() {
                 </tr>
               </thead>
               <tbody>
-                {lignesFiltrees.map((ligne) => (
+                {lignesPage.map((ligne) => (
                   <tr key={ligne.id} className={ligne.archive ? 'is-archive' : ''}>
                     {colonnes.map((c) => (
                       <td
@@ -634,47 +808,7 @@ export default function ReferentielGenerique() {
                     ))}
                     {!lectureSeule && (
                     <td className="cand-td-actions">
-                      <div className="cand-actions">
-                        <button
-                          type="button"
-                          className="ref-action"
-                          onClick={() => ouvrirEdition(ligne)}
-                          title="Modifier"
-                          aria-label={`Modifier ${ligne.libelle}`}
-                        >
-                          <i className="bi bi-pencil" aria-hidden="true"></i>
-                        </button>
-                        <button
-                          type="button"
-                          className={`ref-action ref-action--statut${ligne.actif ? ' is-actif' : ''}`}
-                          onClick={() => basculerStatut(ligne)}
-                          title={ligne.actif ? 'Désactiver' : 'Activer'}
-                          aria-label={`${ligne.actif ? 'Désactiver' : 'Activer'} ${ligne.libelle}`}
-                        >
-                          <i className={`bi ${ligne.actif ? 'bi-toggle-on' : 'bi-toggle-off'}`} aria-hidden="true"></i>
-                        </button>
-                        {archivageSupporte && (ligne.archive ? (
-                          <button
-                            type="button"
-                            className="ref-action ref-action--reactiver"
-                            onClick={() => reactiver(ligne)}
-                            title="Réactiver"
-                            aria-label={`Réactiver ${ligne.libelle}`}
-                          >
-                            <i className="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="ref-action ref-action--archiver"
-                            onClick={() => setConfirmation(ligne)}
-                            title="Archiver"
-                            aria-label={`Archiver ${ligne.libelle}`}
-                          >
-                            <i className="bi bi-archive" aria-hidden="true"></i>
-                          </button>
-                        ))}
-                      </div>
+                      {rendreActions(ligne)}
                     </td>
                     )}
                   </tr>
@@ -682,6 +816,34 @@ export default function ReferentielGenerique() {
               </tbody>
             </table>
           </div>
+        )}
+
+        {lignesFiltrees.length > PAR_PAGE && (
+          <nav className="ref-pagination" aria-label="Pagination du référentiel">
+            <span className="ref-pagination-info">
+              Éléments {(pageSure - 1) * PAR_PAGE + 1} à{' '}
+              {Math.min(pageSure * PAR_PAGE, lignesFiltrees.length)} sur {lignesFiltrees.length}
+            </span>
+            <div className="ref-pagination-boutons">
+              <button
+                type="button"
+                className="ref-pagination-btn"
+                disabled={pageSure <= 1}
+                onClick={() => setPage((n) => Math.max(1, n - 1))}
+              >
+                Précédent
+              </button>
+              <span className="ref-pagination-page">Page {pageSure} sur {nbPages}</span>
+              <button
+                type="button"
+                className="ref-pagination-btn"
+                disabled={pageSure >= nbPages}
+                onClick={() => setPage((n) => Math.min(nbPages, n + 1))}
+              >
+                Suivant
+              </button>
+            </div>
+          </nav>
         )}
       </section>
 
