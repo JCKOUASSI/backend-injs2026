@@ -38,7 +38,8 @@ Les résultats sont écrits dans `./collecte/`.
 | Script | Contenu |
 |---|---|
 | `00_profil_schema.sql` | contexte, volumes par schéma, liste et comptage exact des tables, colonnes, clés primaires/étrangères, contraintes `CHECK`, index, historique `django_migrations`, tables sans clé primaire, séquences |
-| `10_anomalies.sql` | intégrité des FK (`convalidated`), références orphelines, colonnes texte NOT NULL vides, dates incohérentes, doublons sur clés naturelles (`matricule`, `code`, `numero`), orphelins métier de la base cible |
+| `10_anomalies.sql` | intégrité des FK (`convalidated`), références orphelines, colonnes texte NOT NULL vides, dates incohérentes, doublons sur clés naturelles (`matricule`, `code`, `numero`), orphelins métier de la base cible, distribution des codes de statut, algorithmes de hachage |
+| `20_empreinte_modules.sql` | empreinte fonctionnelle : applications réellement migrées, présence des 24 tables structurantes de GET INJS APP et des 19 de PRÉSENCES QR, volumes de ces seules tables, cohérence des liaisons entre modules |
 
 ## Validation effectuée
 

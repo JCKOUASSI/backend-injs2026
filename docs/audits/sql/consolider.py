@@ -395,6 +395,49 @@ def build(folder: str) -> str:
                            f"pas la cible attendue, comparaison non significative._")
             out.append("")
 
+
+    # §7 empreinte fonctionnelle des modules
+    out.append("## 7. Empreinte fonctionnelle — GET INJS APP et PRÉSENCES QR")
+    out.append("")
+    found = False
+    for base in bases:
+        d = data[base].get("20_empreinte_modules")
+        if not d:
+            continue
+        found = True
+        sec = d["sections"]
+        out.append(f"### `{base}`")
+        out.append("")
+        scores = []
+        for block in parse_blocks(sec.get("3. SCORE PAR MODULE (tables structurantes présentes)", [])):
+            scores.extend(block["rows"])
+        if scores:
+            out.append("| Module | Tables structurantes présentes | Attendues | Couverture |")
+            out.append("|---|---|---|---|")
+            for r in scores:
+                if len(r) >= 4:
+                    out.append(f"| {r[0]} | {r[1]} | {r[2]} | {r[3]} % |")
+            out.append("")
+        absentes = []
+        for block in parse_blocks(sec.get("2. PRÉSENCE DES TABLES STRUCTURANTES (par module)", [])):
+            absentes.extend(r for r in block["rows"] if len(r) >= 3 and r[2].upper() != "PRÉSENTE")
+        if absentes:
+            out.append(f"- **{len(absentes)} table(s) structurante(s) absente(s)** :")
+            for r in absentes[:40]:
+                out.append(f"  - `{r[1]}` ({r[0]})")
+            if len(absentes) > 40:
+                out.append(f"  - … et {len(absentes) - 40} autres")
+            out.append("")
+        notices = parse_notices(sec.get("5. COHÉRENCE DES LIAISONS ENTRE MODULES", []))
+        if notices:
+            out.append("- **Liaisons entre modules** :")
+            for n in notices:
+                out.append(f"  - {n}")
+            out.append("")
+    if not found:
+        out.append("_non fourni : script `20_empreinte_modules.sql` absent de la collecte_")
+        out.append("")
+
     return "\n".join(out) + "\n"
 
 

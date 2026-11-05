@@ -47,7 +47,7 @@ psql_exec() {
 
 for base in $BASES; do
   echo "── Base : $base"
-  for script in 00_profil_schema.sql 10_anomalies.sql; do
+  for script in 20_empreinte_modules.sql 00_profil_schema.sql 10_anomalies.sql; do
     fichier="$ICI/$script"
     [ -f "$fichier" ] || { echo "   ! script absent : $fichier" >&2; continue; }
     sortie="$SORTIE/${base}__${script%.sql}__${HORODATAGE}.txt"

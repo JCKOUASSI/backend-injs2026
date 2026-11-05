@@ -7,6 +7,7 @@ Ce dossier reçoit les fichiers produits par `run_audit.sh` sur le VPS.
 `run_audit.sh` produit déjà les bons noms ; il suffit de copier les fichiers tels quels :
 
 ```
+injs-db__20_empreinte_modules__<horodatage>.txt
 injs-db__00_profil_schema__<horodatage>.txt
 injs-db__10_anomalies__<horodatage>.txt
 injs_lmd_prod_20261026__00_profil_schema__<horodatage>.txt
