@@ -36,6 +36,8 @@ export default function Dimensionnement() {
   const [capacite, setCapacite] = useState('60')
   const [rapport, setRapport] = useState(null)
   const [chargement, setChargement] = useState(false)
+  const [plan, setPlan] = useState(null)
+  const [constitutionEnCours, setConstitutionEnCours] = useState(false)
 
   useEffect(() => {
     let actif = true
@@ -74,6 +76,49 @@ export default function Dimensionnement() {
   }, [anneeId, capacite, showToast])
 
   useEffect(() => { charger() }, [anneeId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Constitution des groupes manquants : prévisualisation (simulation,
+  // aucune écriture) puis création confirmée explicitement. La
+  // répartition des étudiants dans ces groupes reste l'opération
+  // existante de l'écran Groupes (Scolarité).
+  const previsualiserConstitution = async () => {
+    setConstitutionEnCours(true)
+    try {
+      const capaciteValide = parseInt(capacite, 10)
+      const { data } = await api.post('/edts/lmd/dimensionnement/constituer/', {
+        annee_academique_id: anneeId,
+        simulation: true,
+        ...(Number.isFinite(capaciteValide) && capaciteValide > 0
+          ? { capacite: capaciteValide }
+          : {}),
+      })
+      setPlan(data.plan)
+    } catch {
+      showToast('Prévisualisation impossible (droits de planification requis).', 'error')
+    } finally {
+      setConstitutionEnCours(false)
+    }
+  }
+
+  const confirmerConstitution = async () => {
+    setConstitutionEnCours(true)
+    try {
+      const capaciteValide = parseInt(capacite, 10)
+      const { data } = await api.post('/edts/lmd/dimensionnement/constituer/', {
+        annee_academique_id: anneeId,
+        ...(Number.isFinite(capaciteValide) && capaciteValide > 0
+          ? { capacite: capaciteValide }
+          : {}),
+      })
+      showToast(`${data.total_crees} groupe(s) constitué(s). Répartissez ensuite les étudiants depuis l'écran Groupes (Scolarité).`, 'success')
+      setPlan(null)
+      await charger()
+    } catch {
+      showToast('Constitution impossible (droits de planification requis).', 'error')
+    } finally {
+      setConstitutionEnCours(false)
+    }
+  }
 
   const anneeChoisie = annees.find((a) => String(a.id) === String(anneeId))
   const totaux = rapport?.totaux || {}
@@ -158,6 +203,66 @@ export default function Dimensionnement() {
               </div>
             ))}
           </div>
+
+          {totaux.deficit_groupes > 0 && !plan && (
+            <div className="alert alert-warning d-flex flex-wrap align-items-center gap-3" role="alert">
+              <span>
+                <strong>{nombre(totaux.deficit_groupes)} groupe(s) manquant(s)</strong>{' '}
+                pour couvrir les promotions à la capacité cible. Vous pouvez
+                constituer ces groupes (contenants vides) ; la répartition
+                des étudiants se fera ensuite depuis l&rsquo;écran Groupes.
+              </span>
+              <button
+                type="button"
+                className="btn btn-warning"
+                onClick={previsualiserConstitution}
+                disabled={constitutionEnCours}
+              >
+                Constituer les groupes manquants
+              </button>
+            </div>
+          )}
+
+          {plan && (
+            <div className="card mb-3 border-warning">
+              <div className="card-body">
+                <div className="imp-card-titre">
+                  Plan de constitution — {plan.total_a_creer} groupe(s) à créer
+                </div>
+                <p className="imp-card-sous">
+                  Prévisualisation sans écriture. Les noms prolongent la
+                  numérotation existante ; capacité de chaque groupe :{' '}
+                  {plan.capacite_cible_par_groupe} étudiants.
+                </p>
+                <ul className="mb-3">
+                  {plan.creations.map((bloc) => (
+                    <li key={`${bloc.ref_formation_id}-${bloc.niveau_id}-${bloc.parcours_id ?? 'sans'}`}>
+                      <strong>{bloc.formation} — {bloc.niveau}</strong> :{' '}
+                      {bloc.groupes_a_creer.map((g) => g.nom).join(', ')}
+                    </li>
+                  ))}
+                </ul>
+                <div className="d-flex gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-dark"
+                    onClick={confirmerConstitution}
+                    disabled={constitutionEnCours}
+                  >
+                    Confirmer la création
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => setPlan(null)}
+                    disabled={constitutionEnCours}
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="card mb-3">
             <div className="card-body pb-0">

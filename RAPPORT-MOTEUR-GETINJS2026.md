@@ -110,6 +110,15 @@ fabrique de donnée : chaque manque devient une anomalie nommée.
   pas d'interface de scénarios comparatifs).
 - **Préparé :** présences QR/manuelle/géolocalisation — socle `SeanceRegistre` +
   `interop_presences.py` prêts ; capture non développée (conformément à la consigne).
+- **Constitution intelligente des groupes (ajoutée ensuite) :** service
+  `moteur/constitution.py` + `POST /edts/lmd/dimensionnement/constituer/`
+  (rôle Planification) — crée les groupes manquants du dimensionnement,
+  noms en continuation de l'existant (`L1-G6…`), capacité = capacité cible,
+  mode simulation sans écriture, idempotent ; la répartition des étudiants
+  réutilise l'existant (`repartir_automatiquement`, écran Groupes). Écran :
+  prévisualisation du plan puis confirmation explicite. 7 tests backend +
+  1 test d'écran ; simulation sur la base de démonstration : 80 groupes à
+  créer pour 40 promotions, base inchangée après simulation.
 - **Écran frontend (ajouté après arbitrage expert) :** page « Dimensionnement »
   du hub GET-INJS (`/edt/dimensionnement`, entrée de menu après « Génération ») —
   indicateurs dérivés, tableau des promotions, capacité cible paramétrable avec

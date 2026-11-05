@@ -54,6 +54,8 @@ urlpatterns_lmd = [
          name='edt-lmd-referentiels'),
     path('lmd/dimensionnement/', g.dimensionnement_api,
          name='edt-lmd-dimensionnement'),
+    path('lmd/dimensionnement/constituer/', g.constituer_groupes_api,
+         name='edt-lmd-dimensionnement-constituer'),
     path('lmd/generate-annee/', g.generate_annee_api,
          name='edt-lmd-generate-annee'),
     path('lmd/conception/', g.conception_api, name='edt-lmd-conception'),

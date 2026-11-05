@@ -1004,6 +1004,33 @@ def dimensionnement_api(request):
 
 
 @api_view(['POST'])
+@permission_classes([IsEdtPlanification])
+def constituer_groupes_api(request):
+    """POST /api/edts/lmd/dimensionnement/constituer/ — groupes manquants.
+
+    Corps : ``annee_academique_id`` (ou ``?annee=``), ``capacite``
+    (capacité cible par groupe, défaut 60), ``simulation`` (vrai = plan
+    sans écriture). Crée les groupes que le dimensionnement réclame
+    (contenants vides rattachés aux promotions réelles, noms en
+    continuation de l'existant) ; la répartition des étudiants dans ces
+    groupes reste l'opération existante de l'écran Groupes (Scolarité).
+    Idempotent : sans déficit recalculé, rien n'est créé.
+    """
+    from edts.moteur.constitution import constituer_groupes
+
+    annee_id, erreur = _annee_de_requete(request)
+    if erreur is not None:
+        return erreur
+    capacite = _int(request.data.get('capacite'))
+    bilan = constituer_groupes(
+        annee_id,
+        capacite_cible=capacite,
+        simulation=_booleen(request.data.get('simulation')),
+    )
+    return Response(bilan)
+
+
+@api_view(['POST'])
 @permission_classes([IsEdtValidation])
 def campagne_publier_api(request, pk):
     """POST /api/edts/campagnes/<pk>/publier/ — publication atomique du périmètre."""

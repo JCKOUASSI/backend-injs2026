@@ -53,6 +53,22 @@ const RAPPORT = {
   ],
 }
 
+const PLAN = {
+  annee_academique_id: 2,
+  capacite_cible_par_groupe: 60,
+  creations: [
+    {
+      ref_formation_id: 3, formation: 'ANDRAGOGIE — LICENCE', niveau_id: 1,
+      niveau: 'L1', parcours_id: null, effectif: 130, groupes_existants: 1,
+      groupes_a_creer: [
+        { nom: 'L1-G2', capacite_max: 60 },
+        { nom: 'L1-G3', capacite_max: 60 },
+      ],
+    },
+  ],
+  total_a_creer: 2,
+}
+
 function rendre() {
   const user = makeUser('ADMIN')
   apiController.setMe(user)
@@ -68,6 +84,17 @@ describe('GET-INJS — Dimensionnement (Besoins de planification)', () => {
     apiController.reset()
     apiController.setRoute('/scolarite/ref/annees/', ANNEES)
     apiController.setRoute('/edts/lmd/dimensionnement/', RAPPORT)
+    apiController.setRoute('/edts/lmd/dimensionnement/constituer/', (path, body) => (
+      body?.simulation
+        ? { simulation: true, groupes_crees: [], total_crees: 0, plan: PLAN }
+        : {
+          simulation: false, total_crees: 2,
+          groupes_crees: [
+            { id: 11, nom: 'L1-G2' }, { id: 12, nom: 'L1-G3' },
+          ],
+          plan: PLAN,
+        }
+    ))
   })
 
   it('affiche les indicateurs dérivés, les promotions et les anomalies', async () => {
@@ -109,6 +136,32 @@ describe('GET-INJS — Dimensionnement (Besoins de planification)', () => {
       .filter(([chemin]) => chemin === '/edts/lmd/dimensionnement/')
     expect(appels[appels.length - 1][1].params)
       .toMatchObject({ annee: '2', capacite: 30 })
+  })
+
+  it('constitue les groupes manquants après prévisualisation et confirmation', async () => {
+    const user = userEvent.setup()
+    rendre()
+    await screen.findByText('ANDRAGOGIE — LICENCE')
+
+    // Déficit > 0 → action proposée ; la prévisualisation n'écrit rien.
+    await user.click(screen.getByRole('button', { name: 'Constituer les groupes manquants' }))
+    expect(await screen.findByText(/Plan de constitution — 2 groupe\(s\) à créer/))
+      .toBeInTheDocument()
+    expect(screen.getByText(/L1-G2/)).toBeInTheDocument()
+    expect(screen.getByText(/L1-G3/)).toBeInTheDocument()
+    const appelsSimulation = apiMock.post.mock.calls
+      .filter(([chemin]) => chemin === '/edts/lmd/dimensionnement/constituer/')
+    expect(appelsSimulation).toHaveLength(1)
+    expect(appelsSimulation[0][1]).toMatchObject({ simulation: true })
+
+    // Confirmation explicite → création, puis rapport rechargé.
+    await user.click(screen.getByRole('button', { name: 'Confirmer la création' }))
+    const appels = apiMock.post.mock.calls
+      .filter(([chemin]) => chemin === '/edts/lmd/dimensionnement/constituer/')
+    expect(appels).toHaveLength(2)
+    expect(appels[1][1]).not.toHaveProperty('simulation')
+    expect(await screen.findByText(/2 groupe\(s\) constitué\(s\)/)).toBeInTheDocument()
+    expect(screen.queryByText(/Plan de constitution/)).not.toBeInTheDocument()
   })
 
   it('année sans inscription validée : état vide honnête', async () => {
