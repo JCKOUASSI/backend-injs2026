@@ -44,6 +44,7 @@ export default function Campagnes() {
   const peutAgir = canActScolarite(user)
 
   const [campagnes, setCampagnes] = useState([])
+  const [totalCampagnes, setTotalCampagnes] = useState(0)
   const [chargement, setChargement] = useState(true)
   const [enCours, setEnCours] = useState(false)
   const [form, setForm] = useState({ ...formVide })
@@ -53,8 +54,16 @@ export default function Campagnes() {
   const charger = useCallback(async () => {
     setChargement(true)
     try {
-      const res = await api.get('/admissions/campagnes/')
-      setCampagnes(res.data)
+      // Chargement explicite : 200 campagnes (demande du 05/11/2026, même
+      // convention que le « chargement explicite : 200 événements » du hub
+      // Présences et de l'écran Résultats concours). L'API borne
+      // `page_size` à 200 et répond en enveloppe paginée ; le tableau
+      // complet historique reste accepté par repli.
+      const res = await api.get('/admissions/campagnes/', { params: { page_size: 200 } })
+      const data = res.data
+      const lignes = Array.isArray(data) ? data : (data?.results || [])
+      setCampagnes(lignes)
+      setTotalCampagnes(Array.isArray(data) ? data.length : (data?.count ?? lignes.length))
     } catch (err) {
       toast.showToast(err.response?.data?.error || 'Chargement des campagnes impossible.', 'error')
     } finally {
@@ -144,11 +153,12 @@ export default function Campagnes() {
   }, [campagnes, filtres, options])
 
   const kpis = useMemo(() => ({
-    total: campagnes.length,
+    // Total réel renvoyé par l'API (peut dépasser les 200 lignes chargées).
+    total: Math.max(totalCampagnes, campagnes.length),
     brouillons: campagnes.filter((c) => c.statut === 'BROUILLON').length,
     ouvertes: campagnes.filter((c) => ['OUVERTE', 'PLANIFIEE', 'SUSPENDUE'].includes(c.statut)).length,
     candidatures: campagnes.reduce((s, c) => s + (Number(c.nb_candidatures) || 0), 0),
-  }), [campagnes])
+  }), [campagnes, totalCampagnes])
 
   // L'API renvoie les années par ordre décroissant : l'année affichée est
   // celle marquée courante, pas la plus récente de la liste.
@@ -375,6 +385,10 @@ export default function Campagnes() {
             <i className="bi bi-list-check" aria-hidden="true"></i>Dossiers de campagne
           </h2>
           <span className="cand-count-pill">
+            <i className="bi bi-cloud-download" aria-hidden="true"></i>
+            Chargement explicite : 200 campagnes
+          </span>
+          <span className="cand-count-pill">
             {campagnesFiltrees.length} dossier{campagnesFiltrees.length > 1 ? 's' : ''}
           </span>
         </header>
@@ -535,6 +549,14 @@ export default function Campagnes() {
                   </tbody>
                 </table>
               </div>
+              {totalCampagnes > campagnes.length && (
+                <p className="camp-note">
+                  <i className="bi bi-info-circle" aria-hidden="true"></i>
+                  Affichage limité aux {campagnes.length} premières campagnes
+                  ({totalCampagnes} au total) : le chargement explicite est borné
+                  à 200 et les filtres s'appliquent aux campagnes chargées.
+                </p>
+              )}
               <p className="cand-defile" aria-hidden="true">
                 <i className="bi bi-arrow-left-right"></i>
                 Faites défiler le tableau horizontalement
