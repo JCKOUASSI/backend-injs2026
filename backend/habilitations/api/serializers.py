@@ -28,7 +28,7 @@ class RoleMetierSerializer(serializers.ModelSerializer):
         )
         read_only_fields = fields
 
-    def get_permissions_count(self, obj):
+    def get_permissions_count(self, obj) -> int:
         compteur = getattr(obj, '_permissions_count', None)
         return compteur if compteur is not None else obj.permissions.count()
 

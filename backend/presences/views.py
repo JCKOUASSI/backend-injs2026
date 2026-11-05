@@ -13,6 +13,9 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django.db.models import Q
 from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes, throttle_classes, authentication_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -608,7 +611,9 @@ def _jeton_lmd_pour_mobile(qr_token):
 
     if qr_token is not None and qr_token.is_valid:
         return qr_token, None
-    return service.resoudre_jeton_lmd(getattr(qr_token, 'token', qr_token))
+    jeton, erreur = service.resoudre_jeton_lmd(getattr(qr_token, 'token', qr_token))
+    # Codes normalisés additifs (canal LMD) : `code` legacy inchangé.
+    return jeton, service.normaliser_erreur(erreur)
 
 
 def _scan_seance_edt_mobile(*, request, qr_token, personne, type_str, device_id, donnees):
@@ -624,15 +629,17 @@ def _scan_seance_edt_mobile(*, request, qr_token, personne, type_str, device_id,
     affectation = qr_token.seance_edt
     date = timezone.localdate()
     if not service.est_seance_du_jour(affectation, date):
-        return Response({'code': 'HORS_SEANCE',
-                         'detail': 'Ce créneau n’a pas séance aujourd’hui.'},
-                        status=status.HTTP_400_BAD_REQUEST)
+        return Response(service.normaliser_erreur(
+            {'code': 'HORS_SEANCE',
+             'detail': 'Ce créneau n’a pas séance aujourd’hui.'}),
+            status=status.HTTP_400_BAD_REQUEST)
 
     autorise, code, detail, http = service.autorisation_badgeage(
         request.user, personne, type_str, affectation)
     if not autorise:
-        return Response({'code': code, 'detail': detail},
-                        status=http or status.HTTP_403_FORBIDDEN)
+        return Response(service.normaliser_erreur(
+            {'code': code, 'detail': detail}, type_personne=type_str),
+            status=http or status.HTTP_403_FORBIDDEN)
 
     label = affectation.intitule or str(affectation.creneau_template)
     action, pointage, erreur = service.badger_scan(
@@ -640,7 +647,8 @@ def _scan_seance_edt_mobile(*, request, qr_token, personne, type_str, device_id,
         device_id=device_id, coords=_coords_from_payload(donnees),
         type_personne=type_str)
     if erreur:
-        return Response(erreur, status=status.HTTP_400_BAD_REQUEST)
+        return Response(service.normaliser_erreur(
+            erreur, type_personne=type_str), status=status.HTTP_400_BAD_REQUEST)
 
     numero, nom, prenom = service.libelle_personne(personne, type_str)
     personne_data = {'numero': numero, 'nom': nom, 'prenom': prenom}
@@ -655,6 +663,8 @@ def _scan_seance_edt_mobile(*, request, qr_token, personne, type_str, device_id,
         'seance_intitule': label,
         'date': date.isoformat(),
         'pointage_id': pointage.pk,
+        'mode': service.Pointage.Mode.QR_AUTOMATIQUE,
+        'type_sortie': pointage.type_sortie,
         'statut': pointage.statut,
         'statut_assiduite': pointage.statut_assiduite,
         'timestamp': (pointage.timestamp_sortie if action == 'SORTIE'
@@ -675,7 +685,8 @@ def _heartbeat_seance_edt_mobile(*, request, qr_token, personne, type_str, devic
         date=timezone.localdate(), device_id=device_id,
         coords=_coords_from_payload(donnees), type_personne=type_str)
     if erreur:
-        return Response(erreur, status=status.HTTP_400_BAD_REQUEST)
+        return Response(service.normaliser_erreur(
+            erreur, type_personne=type_str), status=status.HTTP_400_BAD_REQUEST)
     return Response(charge)
 
 
@@ -721,6 +732,34 @@ def _public_scan_disabled_response():
     )
 
 
+
+
+# ── Contrats OpenAPI (scan QR, pointage, fiches présences) ───────────
+
+
+class ErreurCodePresenceSerializer(serializers.Serializer):
+    """Erreurs de badgeage : {'code': CODE, 'detail': message}."""
+
+    code = serializers.CharField()
+    detail = serializers.CharField()
+
+
+class PresenceDetailErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class ForcePointageReponseSerializer(serializers.Serializer):
+    action = serializers.CharField()
+    detail = serializers.CharField()
+    pointage = PointageSerializer()
+
+
+class ParticipantHistoriquePresenceSerializer(serializers.Serializer):
+    participant = ParticipantSerializer()
+    pointages = PointageSerializer(many=True)
+
+
+@extend_schema(request=ScanSerializer, responses={200: OpenApiTypes.OBJECT, 400: ErreurCodePresenceSerializer, 403: ErreurCodePresenceSerializer})
 @api_view(['POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
@@ -966,6 +1005,7 @@ def scan_view(request):
 # Le numéro est déduit du user connecté : impossible de badger pour autrui.
 # ──────────────────────────────────────────────
 
+@extend_schema(request=SecureScanSerializer, responses={200: OpenApiTypes.OBJECT, 400: ErreurCodePresenceSerializer, 403: ErreurCodePresenceSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @throttle_classes([ScanRateThrottle])
@@ -1319,6 +1359,7 @@ def secure_scan_view(request):
         }, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(request=SecureHeartbeatSerializer, responses={200: OpenApiTypes.OBJECT, 400: ErreurCodePresenceSerializer, 403: ErreurCodePresenceSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @throttle_classes([ScanRateThrottle])
@@ -1619,6 +1660,7 @@ def secure_scan_heartbeat(request):
 # Config app mobile (heartbeat, etc.)
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def mobile_config(request):
@@ -1643,6 +1685,7 @@ def mobile_config(request):
 # Historique personnel (app mobile)
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def my_historique(request):
@@ -1921,6 +1964,7 @@ def _compute_volume_horaire_stats(modules_data, pointages_qs):
     }
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 403: PresenceDetailErreurSerializer})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def my_fiche(request):
@@ -1991,6 +2035,7 @@ def my_fiche(request):
 # Gestion des liaisons appareils (superviseur / DFRC)
 # ──────────────────────────────────────────────
 
+@extend_schema(request=None, responses={200: PresenceDetailErreurSerializer, 404: PresenceDetailErreurSerializer})
 @api_view(['DELETE'])
 @permission_classes([IsDFRCOrEncadrant])
 def unbind_device(request, device_id):
@@ -2014,6 +2059,7 @@ def unbind_device(request, device_id):
         )
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsDFRCOrEncadrant])
 def list_device_bindings(request):
@@ -2034,6 +2080,7 @@ def list_device_bindings(request):
 # DFRC — Dashboard temps réel (polling)
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def formation_dashboard(request, pk):
@@ -2332,6 +2379,7 @@ def formation_dashboard(request, pk):
 # DFRC — Liste des présences d'une formation
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def formation_presences(request, pk):
@@ -2380,6 +2428,7 @@ def formation_presences(request, pk):
 # SUPERVISEUR / DFRC — Fermer session ouverte d'un participant
 # ──────────────────────────────────────────────
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: PresenceDetailErreurSerializer, 404: PresenceDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def close_session(request, pk):
@@ -2471,6 +2520,7 @@ def close_session(request, pk):
 # DFRC / SUPERVISEUR — Pointage forcé (R6)
 # ──────────────────────────────────────────────
 
+@extend_schema(request=ForcePointageSerializer, responses={200: ForcePointageReponseSerializer, 201: ForcePointageReponseSerializer, 400: PresenceDetailErreurSerializer, 404: PresenceDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def force_pointage(request, pk):
@@ -2661,6 +2711,7 @@ def _force_pointage_impl(request, pk):
     return Response({'detail': 'Action non reconnue.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(request=ForceBadgeageBulkAuditeursSerializer, responses={201: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 403: PresenceDetailErreurSerializer, 404: PresenceDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def force_badgeage_auditeurs_bulk(request, pk):
@@ -2726,6 +2777,7 @@ def force_badgeage_auditeurs_bulk(request, pk):
 # PARTICIPANT — Historique personnel
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: ParticipantHistoriquePresenceSerializer, 403: PresenceDetailErreurSerializer, 404: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def participant_historique(request, pk):
@@ -2756,6 +2808,7 @@ def participant_historique(request, pk):
 # PARTICIPANT — Fiche complète (Secrétariat / Direction)
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 403: PresenceDetailErreurSerializer, 404: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def participant_fiche_admin(request, pk):
@@ -2939,6 +2992,7 @@ def _build_notes_fiche_payload(participant, inscriptions):
     }
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 403: PresenceDetailErreurSerializer, 404: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def participant_notes_fiche(request, pk):
@@ -2962,6 +3016,7 @@ def participant_notes_fiche(request, pk):
     return Response(_build_notes_fiche_payload(participant, inscriptions))
 
 
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, (200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, 400: PresenceDetailErreurSerializer, 403: PresenceDetailErreurSerializer, 503: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def participant_notes_fiche_export(request, pk, fmt):
@@ -3178,6 +3233,7 @@ def _get_formation_offline_data_payload(token):
     }
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @authentication_classes([])
 @permission_classes([AllowAny])
@@ -3209,6 +3265,7 @@ def scan_offline_data(request):
     return _cached_offline_data_response(token)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @authentication_classes([])
 @permission_classes([AllowAny])
@@ -3227,6 +3284,7 @@ def formation_offline_data(request, token):
     return _cached_offline_data_response(token)
 
 
+@extend_schema(responses={200: ParticipantSerializer, 400: PresenceDetailErreurSerializer, 403: PresenceDetailErreurSerializer, 404: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def participant_lookup(request):
@@ -3259,6 +3317,7 @@ def participant_lookup(request):
 # DFRC / ENCADRANT — Journal d'audit
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsDFRCOrEncadrant])
 def audit_log_list(request):
@@ -3271,6 +3330,9 @@ def audit_log_list(request):
       - cible_numero : numéro participant/formateur
       - date_debut   : YYYY-MM-DD
       - date_fin     : YYYY-MM-DD
+      - limite       : int — plafond d'extraction (500 par défaut et au
+                       maximum, comportement historique ; l'écran
+                       d'audit du hub demande explicitement 200)
     """
     qs = AuditLog.objects.select_related('acteur', 'formation', 'pointage').order_by('-timestamp')
 
@@ -3302,8 +3364,38 @@ def audit_log_list(request):
     if request.user.role == 'ENCADRANT':
         qs = qs.filter(formation__modules__superviseur=request.user)
 
+    # Chargement explicite paginé (extension de la série « 200 »,
+    # 05/11/2026) : si `page_size` est fourni (écrans du hub Audit &
+    # Traçabilité), extraction paginée bornée à 200 lignes avec total
+    # réel. Sans `page_size`, comportement `limite` historique ci-dessous
+    # (écran d'audit du hub Présences) inchangé.
+    paginer = 'page_size' in request.query_params
+    total = None
+    if paginer:
+        try:
+            page_size = int(request.query_params.get('page_size') or 50)
+        except (TypeError, ValueError):
+            page_size = 50
+        page_size = max(1, min(page_size, 200))
+        try:
+            page = max(1, int(request.query_params.get('page') or 1))
+        except (TypeError, ValueError):
+            page = 1
+        total = qs.count()
+        debut = (page - 1) * page_size
+        selection = qs[debut:debut + page_size]
+    else:
+        limite = 500
+        limite_brute = request.query_params.get('limite')
+        if limite_brute:
+            try:
+                limite = max(1, min(int(limite_brute), 500))
+            except (TypeError, ValueError):
+                limite = 500
+        selection = qs[:limite]
+
     data = []
-    for log in qs[:500]:
+    for log in selection:
         data.append({
             'id': log.id,
             'timestamp': log.timestamp.isoformat(),
@@ -3323,6 +3415,14 @@ def audit_log_list(request):
             'extra': log.extra,
         })
 
+    if paginer:
+        return Response({
+            'count': total,
+            'total_pages': max(1, -(-total // page_size)),
+            'page': page,
+            'page_size': page_size,
+            'results': data,
+        })
     return Response({'count': len(data), 'results': data})
 
 
@@ -3330,6 +3430,182 @@ def audit_log_list(request):
 # Vérification statut badgeage sécurisé (app mobile, authentifié)
 # ──────────────────────────────────────────────
 
+@extend_schema(request=SecureScanSerializer, responses={200: OpenApiTypes.OBJECT, 400: ErreurCodePresenceSerializer, 403: ErreurCodePresenceSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def secure_scan_exit(request):
+    """Sortie **volontaire** du participant (endpoint dédié).
+
+    `POST /api/scan/secure/exit/` — pendant du scan pour les clients qui
+    séparent le geste de sortie du toggle entrée/sortie. Même canal que le
+    scan et le heartbeat : identité déduite du compte authentifié, appareil
+    requis, QR résolu côté serveur. Sans entrée ouverte, la sortie est
+    refusée (`SORTIE_SANS_ENTREE`) et aucune ligne n'est créée. La sortie
+    n'est jamais refusée pour un motif de géofence : une position
+    éventuellement transmise est seulement consignée dans l'audit
+    (source BADGE_SORTIE).
+
+    body: { token_qr, device_id, latitude?, longitude?, accuracy_m? }
+    """
+    from . import seances_edt_services as service
+
+    serializer = SecureScanSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+
+    user = request.user
+    if getattr(user, 'must_change_password', False):
+        return _password_change_required_response()
+    personne, type_str, err = _resolve_authenticated_personne(user)
+    if err:
+        return err
+    device_err = _require_mobile_device_id(type_str, data.get('device_id', ''))
+    if device_err:
+        return device_err
+
+    device_id = data.get('device_id', '')
+    if device_id and type_str in ('participant', 'formateur'):
+        binding = DeviceBinding.objects.filter(
+            device_id=device_id, is_active=True
+        ).first()
+        if binding and binding.user_id != user.id:
+            return Response(
+                {'code': 'DEVICE_MISMATCH',
+                 'detail': 'Cet appareil est lié à un autre compte. '
+                           'Contactez votre superviseur.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+    try:
+        qr_token = QRToken.objects.select_related(
+            'session__module__formation', 'seance_edt__creneau_template',
+            'seance_edt__emploi_du_temps__annee_academique', 'seance_edt__groupe',
+        ).get(token=data['token_qr'])
+    except QRToken.DoesNotExist:
+        return Response(
+            service.normaliser_erreur(
+                {'code': 'INVALID_TOKEN', 'detail': 'QR code invalide.'}),
+            status=status.HTTP_400_BAD_REQUEST)
+
+    coords = _coords_from_payload(data)
+
+    # Canal EDT/LMD : service des séances planifiées.
+    if qr_token.seance_edt_id is not None:
+        jeton, erreur = _jeton_lmd_pour_mobile(qr_token)
+        if erreur is not None:
+            return Response(service.normaliser_erreur(erreur),
+                            status=status.HTTP_400_BAD_REQUEST)
+        affectation = jeton.seance_edt
+        date = timezone.localdate()
+        if not service.est_seance_du_jour(affectation, date):
+            return Response(service.normaliser_erreur(
+                {'code': 'HORS_SEANCE',
+                 'detail': 'Ce créneau n’a pas séance aujourd’hui.'}),
+                status=status.HTTP_400_BAD_REQUEST)
+        autorise, code, detail, http_statut = service.autorisation_badgeage(
+            request.user, personne, type_str, affectation)
+        if not autorise:
+            return Response(
+                service.normaliser_erreur({'code': code, 'detail': detail},
+                                          type_personne=type_str),
+                status=http_statut or status.HTTP_403_FORBIDDEN)
+        pointage, erreur = service.sortie_seance(
+            request, personne=personne, affectation=affectation, date=date,
+            device_id=device_id, coords=coords, type_personne=type_str)
+        if erreur:
+            return Response(service.normaliser_erreur(
+                erreur, type_personne=type_str),
+                status=status.HTTP_400_BAD_REQUEST)
+        label = affectation.intitule or str(affectation.creneau_template)
+        numero, nom, prenom = service.libelle_personne(personne, type_str)
+        personne_data = {'numero': numero, 'nom': nom, 'prenom': prenom}
+        return Response({
+            'action': 'SORTIE',
+            'canal': 'EDT_LMD',
+            'type_sortie': Pointage.TypeSortie.SORTIE_QR,
+            'type_personne': type_str,
+            'participant': personne_data if type_str == 'participant' else None,
+            'formateur': personne_data if type_str == 'formateur' else None,
+            'encadrant': personne_data if type_str == 'encadrant' else None,
+            'seance': {'id': affectation.pk, 'intitule': label,
+                       'date': date.isoformat()},
+            'seance_intitule': label,
+            'date': date.isoformat(),
+            'pointage_id': pointage.pk,
+            'statut': pointage.statut,
+            'timestamp': pointage.timestamp_sortie,
+            'duree_session_minutes': (float(pointage.duree_presence_minutes)
+                                      if pointage.duree_presence_minutes is not None
+                                      else None),
+            'message': f'Sortie enregistrée ({label}).',
+        })
+
+    # Canal legacy (session de module).
+    if qr_token.is_expired or not qr_token.actif:
+        return Response(
+            service.normaliser_erreur(
+                {'code': 'TOKEN_EXPIRED', 'detail': 'QR code expiré.'}),
+            status=status.HTTP_400_BAD_REQUEST)
+    seance = qr_token.session
+    if not seance:
+        return Response({'code': 'NO_SESSION',
+                         'detail': "Ce QR code n'est pas lié à une séance."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    formation = seance.module.formation
+    today = timezone.localdate()
+    session_filter = _pointage_filter(personne, type_str, formation,
+                                      date_journee=today)
+    session_filter['session'] = seance
+    with transaction.atomic():
+        pointage = (Pointage.objects.select_for_update()
+                    .filter(**session_filter, timestamp_sortie__isnull=True)
+                    .order_by('-timestamp_entree').first())
+        if pointage is None:
+            return Response(
+                service.normaliser_erreur(
+                    {'code': 'NO_OPEN_SESSION',
+                     'detail': 'Aucune entrée ouverte à clôturer pour cette séance.'}),
+                status=status.HTTP_400_BAD_REQUEST)
+        pointage.timestamp_sortie = _clamp_to_seance(timezone.now(), seance)
+        pointage.statut = Pointage.Statut.TERMINE
+        pointage.type_sortie = Pointage.TypeSortie.SORTIE_QR
+        pointage.calculer_duree()
+        pointage.save()
+        personne_data = {
+            'numero': (getattr(personne, 'matricule', None)
+                       or getattr(personne, 'numerobadge', None)
+                       or getattr(personne, 'numero', '')),
+            'nom': getattr(personne, 'nom', None) or getattr(personne, 'last_name', '') or '',
+            'prenom': getattr(personne, 'prenom', None) or getattr(personne, 'first_name', '') or '',
+        }
+        _log_audit(
+            action=AuditLog.Action.SCAN_SECURE_SORTIE,
+            request=request,
+            cible_type=type_str,
+            cible_numero=personne_data['numero'],
+            cible_nom=f"{personne_data['nom']} {personne_data['prenom']}",
+            formation=formation,
+            pointage=pointage,
+            device_id=device_id,
+            extra={'duree_minutes': float(pointage.duree_presence_minutes or 0),
+                   'type_sortie': Pointage.TypeSortie.SORTIE_QR,
+                   'source_position': 'BADGE_SORTIE',
+                   'via': 'ENDPOINT_SORTIE'},
+        )
+    return Response({
+        'action': 'SORTIE',
+        'canal': 'LEGACY',
+        'type_sortie': Pointage.TypeSortie.SORTIE_QR,
+        'type_personne': type_str,
+        'pointage_id': pointage.pk,
+        'date': str(today),
+        'timestamp': pointage.timestamp_sortie,
+        'duree_session_minutes': pointage.duree_presence_minutes,
+        'message': 'Sortie enregistrée.',
+    })
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurCodePresenceSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def secure_check_badge_status(request):
@@ -3480,6 +3756,7 @@ def secure_check_badge_status(request):
 # Vérification statut badgeage avant confirmation (endpoint public)
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @authentication_classes([])
 @permission_classes([AllowAny])

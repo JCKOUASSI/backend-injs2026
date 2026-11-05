@@ -2,6 +2,9 @@
 
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q, Prefetch
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -262,6 +265,102 @@ def _inscription_queryset():
 
 # ── Dossiers étudiants ──────────────────────────────────────────────────────
 
+
+
+# ── Contrats OpenAPI (dossiers étudiants, inscriptions administratives) ──
+
+
+class ErreurInscriptionSerializer(serializers.Serializer):
+    """Erreurs du module : {'error': message ou liste de messages}."""
+
+    error = serializers.JSONField()
+
+
+class DossierEtudiantReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    uuid = serializers.CharField()
+    participant_id = serializers.IntegerField()
+    matricule = serializers.CharField(allow_null=True)
+    nom = serializers.CharField()
+    prenom = serializers.CharField()
+    nom_complet = serializers.CharField()
+    statut_id = serializers.IntegerField(allow_null=True)
+    statut = serializers.CharField(allow_null=True)
+    date_premiere_inscription = serializers.DateField(allow_null=True)
+
+
+class InscriptionAdminReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    etudiant_id = serializers.IntegerField()
+    matricule = serializers.CharField()
+    etudiant = serializers.CharField()
+    annee_academique_id = serializers.IntegerField()
+    annee_academique = serializers.CharField()
+    ref_formation_id = serializers.IntegerField()
+    ref_formation = serializers.CharField()
+    parcours_id = serializers.IntegerField(allow_null=True)
+    parcours = serializers.CharField(allow_null=True)
+    parcours_code = serializers.CharField(allow_null=True)
+    niveau_id = serializers.IntegerField()
+    niveau = serializers.CharField()
+    cycle = serializers.CharField()
+    vague_id = serializers.IntegerField(allow_null=True)
+    vague = serializers.CharField(allow_null=True)
+    categorie_id = serializers.IntegerField(allow_null=True)
+    categorie = serializers.CharField(allow_null=True)
+    grade_id = serializers.IntegerField(allow_null=True)
+    grade = serializers.CharField(allow_null=True)
+    regime_id = serializers.IntegerField(allow_null=True)
+    regime = serializers.CharField(allow_null=True)
+    type_inscription = serializers.CharField()
+    type_inscription_libelle = serializers.CharField()
+    statut = serializers.CharField()
+    statut_libelle = serializers.CharField()
+    date_inscription = serializers.DateField()
+    date_validation = serializers.DateTimeField(allow_null=True)
+    admission_id = serializers.IntegerField(allow_null=True)
+
+
+class InscriptionAdminDetailSerializer(InscriptionAdminReponseSerializer):
+    observations = serializers.CharField()
+    valide_par = serializers.CharField(allow_null=True)
+    transitions_possibles = serializers.JSONField()
+
+
+class DossierEtudiantDetailSerializer(DossierEtudiantReponseSerializer):
+    observations = serializers.CharField()
+    email = serializers.CharField()
+    telephone = serializers.CharField()
+    date_naissance = serializers.DateField(allow_null=True)
+    lieu_naissance = serializers.CharField()
+    sexe = serializers.CharField()
+    inscription_courante = InscriptionAdminReponseSerializer(allow_null=True)
+    inscriptions = InscriptionAdminReponseSerializer(many=True)
+    admissions = serializers.JSONField()
+    parcours = serializers.JSONField()
+    affectations_groupes = serializers.JSONField()
+    inscriptions_pedagogiques = serializers.JSONField()
+    historique = serializers.JSONField()
+    ressources = serializers.JSONField()
+
+
+class InscriptionListeSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    total_pages = serializers.IntegerField()
+    page = serializers.IntegerField()
+    page_size = serializers.IntegerField()
+    results = InscriptionAdminReponseSerializer(many=True)
+
+
+class AnneeClotureeSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    libelle = serializers.CharField()
+    cloturee = serializers.BooleanField()
+    date_cloture = serializers.DateTimeField(allow_null=True)
+    courante = serializers.BooleanField()
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurInscriptionSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def etudiant_list(request):
@@ -312,6 +411,7 @@ def etudiant_list(request):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: DossierEtudiantDetailSerializer, 400: OpenApiTypes.OBJECT, 404: ErreurInscriptionSerializer})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def etudiant_detail(request, pk):
@@ -387,6 +487,7 @@ def etudiant_detail(request, pk):
 
 # ── Inscriptions administratives ────────────────────────────────────────────
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: InscriptionListeSerializer, 201: InscriptionAdminDetailSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC,
                      ExigePermission.pour('scolarite.inscription_administrative.consulter')])
@@ -407,6 +508,30 @@ def inscription_list(request):
             | Q(etudiant__participant__nom__icontains=recherche)
             | Q(etudiant__participant__prenom__icontains=recherche)
         )
+    # Chargement explicite (extension de la série, 05/11/2026) : si
+    # `page_size` est fourni, réponse paginée bornée à 200 lignes — même
+    # convention que les écrans Campagnes / Équivalences. Sans `page_size`,
+    # tableau complet historique (plafond 500) inchangé.
+    if 'page_size' in request.query_params:
+        try:
+            page_size = int(request.query_params.get('page_size') or 50)
+        except (TypeError, ValueError):
+            page_size = 50
+        page_size = max(1, min(page_size, 200))
+        try:
+            page = max(1, int(request.query_params.get('page') or 1))
+        except (TypeError, ValueError):
+            page = 1
+        total = queryset.count()
+        debut = (page - 1) * page_size
+        lignes = queryset[debut:debut + page_size]
+        return Response({
+            'count': total,
+            'total_pages': max(1, -(-total // page_size)),
+            'page': page,
+            'page_size': page_size,
+            'results': [_serialize_inscription(i) for i in lignes],
+        })
     return Response([_serialize_inscription(i) for i in queryset[:500]])
 
 
@@ -438,6 +563,7 @@ def _inscription_creer(request):
     return Response(_serialize_inscription(inscription, detail=True), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: InscriptionAdminDetailSerializer, 204: None, 400: OpenApiTypes.OBJECT, 404: ErreurInscriptionSerializer, 409: ErreurInscriptionSerializer})
 @api_view(['GET', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def inscription_detail(request, pk):
@@ -482,6 +608,7 @@ def inscription_detail(request, pk):
     return Response(_serialize_inscription(inscription, detail=True))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: InscriptionAdminDetailSerializer, 400: OpenApiTypes.OBJECT, 404: ErreurInscriptionSerializer, 409: ErreurInscriptionSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def inscription_transition(request, pk):
@@ -501,6 +628,7 @@ def inscription_transition(request, pk):
     return Response(_serialize_inscription(inscription, detail=True))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: InscriptionAdminDetailSerializer, 201: InscriptionAdminDetailSerializer, 400: OpenApiTypes.OBJECT, 409: ErreurInscriptionSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def inscrire_depuis_admission(request):
@@ -534,6 +662,7 @@ def inscrire_depuis_admission(request):
     return Response(_serialize_inscription(inscription, detail=True), status=statut_http)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def inscription_stats(request):
@@ -567,6 +696,7 @@ def inscription_stats(request):
 # ── Lot L1/L3 — radiation, changement de parcours, clôture d'année ───────────
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: InscriptionAdminDetailSerializer, 400: OpenApiTypes.OBJECT, 404: ErreurInscriptionSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def inscription_radier(request, pk):
@@ -587,6 +717,7 @@ def inscription_radier(request, pk):
     return Response(_serialize_inscription(inscription, detail=True))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: InscriptionAdminDetailSerializer, 400: OpenApiTypes.OBJECT, 404: ErreurInscriptionSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def inscription_changer_parcours(request, pk):
@@ -608,6 +739,7 @@ def inscription_changer_parcours(request, pk):
     return Response(_serialize_inscription(inscription, detail=True))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: AnneeClotureeSerializer, 400: ErreurInscriptionSerializer, 404: ErreurInscriptionSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def annee_cloturer(request, pk):
@@ -629,6 +761,7 @@ def annee_cloturer(request, pk):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: AnneeClotureeSerializer, 400: ErreurInscriptionSerializer, 404: ErreurInscriptionSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def annee_rouvrir(request, pk):

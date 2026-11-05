@@ -20,7 +20,7 @@ class EvenementAuditSerializer(serializers.ModelSerializer):
         )
         read_only_fields = fields
 
-    def get_acteur_nom(self, obj):
+    def get_acteur_nom(self, obj) -> str | None:
         if obj.acteur_id is None:
             return obj.acteur_label or None
         acteur = obj.acteur
@@ -31,7 +31,7 @@ class EvenementAuditSerializer(serializers.ModelSerializer):
         )
         return nom or acteur.get_username()
 
-    def get_action_libelle(self, obj):
+    def get_action_libelle(self, obj) -> str:
         """Libellé humain quand l'action correspond à un choix d'un journal source."""
         for modele in _MODELES_SOURCES:
             choix = getattr(getattr(modele, 'Action', None), 'choices', None)

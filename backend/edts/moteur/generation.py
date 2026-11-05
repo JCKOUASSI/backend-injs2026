@@ -56,6 +56,7 @@ BUDGET_PLACEMENTS_DEFAUT = 200_000
 #: Motif propre au moteur : besoins et créneaux existent, mais aucune salle ne
 #: peut accueillir les séances (contraintes dures C7 / C4).
 MOTIF_AUCUNE_SALLE_COMPATIBLE = 'AUCUNE_SALLE_COMPATIBLE'
+MOTIF_PLACEMENT_IMPOSSIBLE = 'PLACEMENT_IMPOSSIBLE'
 
 
 
@@ -211,19 +212,30 @@ class GenerationResult:
 
 # ── Candidats (étape M) ───────────────────────────────────────────────────────
 
-def _salles_compatibles(besoin, salles):
+def _salles_compatibles(besoin, salles, cache=None):
     """Salles utilisables pour ce besoin (C7 + C4), triées par marge.
 
     Les salles les plus « justes » passent d'abord : une grande salle reste
     disponible pour un groupe plus grand, ce qui réduit les impasses en fin de
     résolution. Tri déterministe : égalité départagée par ``pk``.
     """
+    # ``cache`` (dict du contexte) mémoïse par (nature, effectif) : le
+    # référentiel des salles est fixe pendant un run et le solveur redemande
+    # les mêmes couples à chaque nœud. Résultat strictement identique.
+    cle = None
+    if cache is not None:
+        cle = (besoin.nature, besoin.effectif)
+        if cle in cache:
+            return cache[cle]
     compatibles = [
         salle for salle in salles
         if C.compatible_salle(salle, besoin.nature)
         and C.capacite_suffisante(salle, besoin.effectif)
     ]
-    return sorted(compatibles, key=lambda s: (s.capacite or 10 ** 6, s.pk))
+    retenues = sorted(compatibles, key=lambda s: (s.capacite or 10 ** 6, s.pk))
+    if cache is not None:
+        cache[cle] = retenues
+    return retenues
 
 
 def _penalites(besoin, creneau, salle, annee_id, index=None,
@@ -298,7 +310,14 @@ def candidats(besoin, contexte, occupations):
     index = contexte.get('index_disponibilites')
     index_occupations = contexte.get('index_occupations')
     politique_souples = contexte.get('politique_souples')
-    eligibles = _salles_compatibles(besoin, salles)
+    eligibles = _salles_compatibles(
+        besoin, salles,
+        cache=contexte.setdefault('cache_salles_compatibles', {}),
+    )
+    # Indisponibilités des salles : indépendantes du besoin et des occupations
+    # (index fixe pendant le run) — mémoïsées dans le contexte par
+    # (salle, jour, heures) plutôt que recalculées à chaque nœud exploré.
+    cache_indispo_salles = contexte.setdefault('cache_indisponibilites_salles', {})
 
     for creneau in creneaux:
         creneaux_testes += 1
@@ -333,11 +352,16 @@ def candidats(besoin, contexte, occupations):
         for salle in eligibles:
             salles_testes += 1
             violations = list(base)
-            # C6 — indisponibilité salle.
-            if C.indisponible_salle(
-                salle.pk, annee_id, creneau.jour,
-                creneau.heure_debut, creneau.heure_fin, index=index,
-            ):
+            # C6 — indisponibilité salle (mémoïsée par contexte, cf. plus haut).
+            cle_indispo = (salle.pk, creneau.jour, creneau.heure_debut, creneau.heure_fin)
+            indispo_salle = cache_indispo_salles.get(cle_indispo)
+            if indispo_salle is None:
+                indispo_salle = C.indisponible_salle(
+                    salle.pk, annee_id, creneau.jour,
+                    creneau.heure_debut, creneau.heure_fin, index=index,
+                )
+                cache_indispo_salles[cle_indispo] = indispo_salle
+            if indispo_salle:
                 violations.append(C.Violation(
                     C.C6_DISPONIBILITE_SALLE,
                     f'Salle indisponible le {creneau.jour}.',
@@ -466,6 +490,26 @@ def _warnings(besoins, salles):
     return avertissements
 
 
+def _motif_global(non_places, placements):
+    """Motif d'échec global HONNÊTE, dérivé des causes réelles.
+
+    Avant : ``AUCUNE_SALLE_COMPATIBLE`` dès qu'aucun placement n'aboutissait,
+    même quand les salles existaient mais que les créneaux étaient saturés
+    par des conflits (C1/C2/C3) — l'écran annonçait « aucune salle » à tort.
+    Désormais : le motif « salle » n'est retenu que si TOUTES les causes
+    bloquantes relevées sont C7/C4 ; sinon le motif générique de placement
+    impossible est renvoyé (le détail par besoin garde la raison précise).
+    """
+    if placements or not non_places:
+        return None
+    salle_uniquement = all(
+        {c.code_contrainte for c in np.contraintes_bloquantes}
+        <= {C.C7_COMPATIBILITE_SALLE, C.C4_CAPACITE}
+        for np in non_places
+    )
+    return MOTIF_AUCUNE_SALLE_COMPATIBLE if salle_uniquement else MOTIF_PLACEMENT_IMPOSSIBLE
+
+
 def _construire_resultat(resultat_besoins, besoins, placements, occupations,
                          contexte, budget, budget_liste):
     """Assemble le résultat final : placements, non-placés, métriques (étape Q)."""
@@ -532,9 +576,7 @@ def _construire_resultat(resultat_besoins, besoins, placements, occupations,
             'contraintes_souples': C.resume_souples(
                 placements, contexte.get('politique_souples')),
         },
-        motif_echec=None if placements or not non_places else (
-            MOTIF_AUCUNE_SALLE_COMPATIBLE if not placements else None
-        ),
+        motif_echec=_motif_global(non_places, placements),
         detail=resultat_besoins.detail,
         finalite=finalite,
     )

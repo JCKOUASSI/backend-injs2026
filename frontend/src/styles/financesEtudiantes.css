@@ -1,0 +1,418 @@
+/* ==========================================================================
+   FINANCES ÉTUDIANTES (Scolarité) — design premium du module (capture 03/11)
+   --------------------------------------------------------------------------
+   Page d'opérations (échéanciers, enregistrement et confirmation de
+   paiements) auparavant en Bootstrap brut. Habillage dédié `.fin-*` :
+   hero navy, KPI de synthèse calculés sur les données chargées, onglets
+   pilule, panneaux à en-tête navy, tableaux dynamiques. La logique
+   (gating FINANCE/DIRECTION/SECRÉTARIAT, idempotence, confirmation)
+   et les badges Bootstrap des statuts sont inchangés.
+   ========================================================================== */
+
+.fin-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.25rem;
+}
+
+/* ── HERO navy ── */
+.fin-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.3rem 1.6rem;
+  border-radius: 18px;
+  background:
+    radial-gradient(560px 240px at 88% -30%, rgba(52, 211, 153, 0.25), transparent 65%),
+    linear-gradient(120deg, #071B3A 0%, #0B2A5B 55%, #1265D6 130%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 18px 38px -18px rgba(7, 27, 58, 0.55);
+  color: #FFFFFF;
+}
+
+.fin-hero-identite {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.fin-hero-icone {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #FFFFFF;
+  font-size: 1.5rem;
+  box-shadow: 0 10px 22px -10px rgba(0, 0, 0, 0.5);
+}
+
+.fin-hero-eyebrow {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7DD3FC;
+}
+
+.fin-hero-titre {
+  margin: 0.15rem 0;
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.fin-hero-intro {
+  margin: 0;
+  max-width: 75ch;
+  font-size: 0.88rem;
+  color: #C7D8EE;
+}
+
+.fin-btn-hero {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #E0F2FE;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: background 0.15s ease;
+}
+
+.fin-btn-hero:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+}
+
+/* ── KPI de synthèse ── */
+.fin-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+}
+
+.fin-kpi {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.15rem;
+  background: #FFFFFF;
+  border: 1px solid #E4EAF2;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(7, 27, 58, 0.05),
+              0 14px 30px -18px rgba(7, 27, 58, 0.25);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.fin-kpi:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 22px 38px -18px rgba(7, 27, 58, 0.35);
+}
+
+.fin-kpi-icone {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 1.15rem;
+  border: 1px solid rgba(7, 27, 58, 0.06);
+}
+
+.fin-kpi-icone.is-blue { background: linear-gradient(135deg, #E3EEFF, #CFE3FF); color: #1265D6; }
+.fin-kpi-icone.is-indigo { background: linear-gradient(135deg, #E6E9FF, #D3D9FF); color: #283A87; }
+.fin-kpi-icone.is-cyan { background: linear-gradient(135deg, #DFF7FE, #C4EFFB); color: #0E7490; }
+.fin-kpi-icone.is-amber { background: linear-gradient(135deg, #FFF3D6, #FFE9B8); color: #B45309; }
+
+.fin-kpi-corps {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.fin-kpi-valeur {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #071B3A;
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-kpi-libelle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #667085;
+}
+
+.fin-kpi-sub {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #047857;
+}
+
+/* ── Onglets pilule ── */
+.fin-tabs {
+  display: inline-flex;
+  gap: 0.3rem;
+  padding: 0.35rem;
+  background: #FFFFFF;
+  border: 1px solid #E6EDF5;
+  border-radius: 14px;
+  box-shadow: 0 10px 26px -18px rgba(7, 27, 58, 0.35);
+  align-self: flex-start;
+}
+
+.fin-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #344054;
+  font-size: 0.88rem;
+  font-weight: 700;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.fin-tab:hover { background: #F1F7FF; }
+
+.fin-tab.is-active {
+  background: linear-gradient(135deg, #0B2A5B, #1265D6);
+  color: #FFFFFF;
+  box-shadow: 0 8px 18px -8px rgba(11, 42, 91, 0.7);
+}
+
+.fin-tab.is-active i { color: #F5C542; }
+
+/* ── Panneaux ── */
+.fin-panel {
+  background: #FFFFFF;
+  border: 1px solid #E4EAF2;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(7, 27, 58, 0.05),
+              0 16px 36px -20px rgba(7, 27, 58, 0.3);
+}
+
+.fin-form-card {
+  border: 1px solid #E4EAF2;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(7, 27, 58, 0.05),
+              0 16px 36px -20px rgba(7, 27, 58, 0.3);
+}
+
+.fin-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem;
+  background: linear-gradient(120deg, #071B3A, #0B2A5B 70%, #10397A);
+  color: #FFFFFF;
+}
+
+.fin-panel-titre {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.fin-panel-titre i { color: #F5C542; }
+
+.fin-count-pill {
+  padding: 0.28rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #FFFFFF;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Tableau ── */
+.fin-table-wrap { overflow-x: auto; }
+
+.fin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.fin-table thead th {
+  padding: 0.8rem 1.1rem;
+  background: linear-gradient(180deg, #0B2A5B, #071B3A);
+  color: #DCEBFF;
+  border-bottom: 2px solid #F5C542;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.fin-table tbody td {
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid #EDF1F7;
+  color: #1D2939;
+  vertical-align: middle;
+}
+
+.fin-table tbody tr:nth-child(even) td { background: #FAFCFF; }
+.fin-table tbody tr:hover td { background: #F3F8FF; }
+
+.fin-table tbody tr:hover td:first-child {
+  box-shadow: inset 3px 0 0 #F5C542;
+}
+
+@keyframes finLigneIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fin-table tbody tr { animation: finLigneIn 0.35s ease both; }
+.fin-table tbody tr:nth-child(2) { animation-delay: 0.03s; }
+.fin-table tbody tr:nth-child(3) { animation-delay: 0.06s; }
+.fin-table tbody tr:nth-child(4) { animation-delay: 0.09s; }
+.fin-table tbody tr:nth-child(5) { animation-delay: 0.12s; }
+.fin-table tbody tr:nth-child(n+6) { animation-delay: 0.15s; }
+
+.fin-centre { text-align: center; padding: 2rem 1rem !important; }
+
+.fin-etudiant { font-weight: 700; color: #0B2A5B; }
+
+.fin-montant {
+  font-weight: 800;
+  color: #071B3A;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.fin-date {
+  font-size: 0.82rem;
+  color: #475467;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.fin-id-chip,
+.fin-nombre-chip,
+.fin-ref-chip {
+  display: inline-block;
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #0B2A5B;
+  background: #EEF4FF;
+  border: 1px solid #C7D9FB;
+  border-radius: 7px;
+  padding: 0.16rem 0.5rem;
+  white-space: nowrap;
+}
+
+.fin-nombre-chip {
+  background: linear-gradient(135deg, #EAF2FF, #DCEBFF);
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+}
+
+/* ── Boutons d'action ── */
+.fin-btn-confirmer {
+  padding: 0.4rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid #047857;
+  background: #ECFDF5;
+  color: #047857;
+  font-size: 0.8rem;
+  font-weight: 800;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.fin-btn-confirmer:hover:not(:disabled) {
+  background: #047857;
+  color: #FFFFFF;
+}
+
+.fin-btn-confirmer:disabled { opacity: 0.55; }
+
+.fin-btn-ok {
+  background: linear-gradient(135deg, #1265D6, #0B4FA8);
+  border-color: transparent;
+  font-weight: 800;
+  box-shadow: 0 8px 18px -8px rgba(18, 101, 214, 0.8);
+}
+
+/* ── État vide ── */
+.fin-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 2.2rem 1rem 2.4rem;
+  text-align: center;
+}
+
+.fin-vide-icone {
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #EAF2FF, #D6E7FF);
+  border: 1px solid #B9D4F5;
+  color: #1265D6;
+  font-size: 1.4rem;
+  box-shadow: 0 10px 20px -12px rgba(18, 101, 214, 0.6);
+}
+
+.fin-vide-titre {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #071B3A;
+}
+
+.fin-vide-texte {
+  margin: 0;
+  max-width: 58ch;
+  font-size: 0.84rem;
+  color: #667085;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fin-table tbody tr { animation: none; }
+  .fin-kpi { transition: none; }
+  .fin-kpi:hover { transform: none; }
+}
+
+@media (max-width: 768px) {
+  .fin-page { padding: 0.85rem; }
+  .fin-hero { padding: 1.1rem 1.2rem; }
+}

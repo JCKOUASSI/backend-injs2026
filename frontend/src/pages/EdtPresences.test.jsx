@@ -43,6 +43,9 @@ function routes() {
   apiController.setRoute(`${API}/41/presences/`, EMARGEMENT)
   apiController.setRoute(`${API}/41/qr/`, { actif: false, token: null, expire_a: null })
   apiController.setRoute(`${API}/41/emargement/`, () => ({ detail: '1 ligne(s) enregistrée(s).' }))
+  apiController.setRoute(`${API}/41/emargement/unitaire/`, () => ({
+    detail: 'Badgeage manuel enregistré.', mode: 'MANUEL', statut: 'PRESENT',
+  }))
   apiController.setRoute(`${API}/41/autoclore/`, () => ({ pointages_clotures: 1, absents_marques: 1 }))
 }
 
@@ -113,5 +116,86 @@ describe('Écran Présences de séance LMD (lot C)', () => {
     await userEvent.click(screen.getByRole('button', { name: /Tous présents/ }))
     const ligne = screen.getByText('Diallo Moussa').closest('tr')
     await waitFor(() => expect(within(ligne).getByRole('combobox')).toHaveValue('PRESENT'))
+  })
+})
+
+
+describe('Badgeage manuel unitaire et canal des présences', () => {
+  beforeEach(() => {
+    apiController.reset()
+    routes()
+  })
+
+  it('affiche le canal de chaque présence (QR automatique)', async () => {
+    // setRoute conserve la première route correspondante : on ré-enregistre
+    // un jeu complet avec les modes explicites renvoyés par le serveur.
+    apiController.reset()
+    apiController.setRoute(`${API}/du-jour/`, SEANCES)
+    apiController.setRoute(`${API}/41/presences/`, {
+      ...EMARGEMENT,
+      presences_manuelles: 0,
+      lignes: [
+        { ...EMARGEMENT.lignes[0], mode: 'QR_AUTOMATIQUE' },
+        { ...EMARGEMENT.lignes[1], mode: null, pointage_id: 92, statut: 'PRESENT',
+          badge_entree: '2026-09-15T08:01:00Z' },
+      ],
+    })
+    apiController.setRoute(`${API}/41/qr/`, { actif: false, token: null, expire_a: null })
+    rendre()
+    await waitFor(() => expect(screen.getByText('Ba Awa')).toBeInTheDocument())
+    const ligneQr = screen.getByText('Ba Awa').closest('tr')
+    expect(within(ligneQr).getByText(
+      (texte, el) => el?.tagName === 'SPAN' && el.textContent.trim() === 'QR',
+    )).toBeInTheDocument()
+    const ligne = screen.getByText('Diallo Moussa').closest('tr')
+    expect(within(ligne).getByText('Non renseigné')).toBeInTheDocument()
+  })
+
+  it('badge manuellement un participant avec un motif du catalogue', async () => {
+    rendre()
+    await waitFor(() => expect(screen.getByText('Diallo Moussa')).toBeInTheDocument())
+    const ligne = screen.getByText('Diallo Moussa').closest('tr')
+    await userEvent.click(within(ligne).getByRole('button', { name: /Badger/ }))
+    const modale = screen.getByText(/Badgeage manuel —/).closest('.modal-card')
+    await userEvent.selectOptions(within(modale).getByLabelText(/Motif/), 'QR_NON_LISIBLE')
+    await userEvent.click(within(modale).getByRole('button', { name: /Enregistrer le badgeage/ }))
+    await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith(
+      `${API}/41/emargement/unitaire/?date=2026-09-15`,
+      expect.objectContaining({ participant: 12, statut: 'PRESENT', motif: 'QR_NON_LISIBLE' }),
+    ))
+  })
+
+  it('exige un commentaire pour le motif AUTRE avant envoi', async () => {
+    rendre()
+    await waitFor(() => expect(screen.getByText('Diallo Moussa')).toBeInTheDocument())
+    const ligne = screen.getByText('Diallo Moussa').closest('tr')
+    await userEvent.click(within(ligne).getByRole('button', { name: /Badger/ }))
+    const modale = screen.getByText(/Badgeage manuel —/).closest('.modal-card')
+    await userEvent.selectOptions(within(modale).getByLabelText(/Motif/), 'AUTRE')
+    const bouton = within(modale).getByRole('button', { name: /Enregistrer le badgeage/ })
+    expect(bouton).toBeDisabled()
+    await userEvent.type(within(modale).getByLabelText(/Commentaire/), 'Badge oublié, identité vérifiée.')
+    expect(bouton).not.toBeDisabled()
+  })
+
+  it('affiche le panneau QR, la synthèse premium et les filtres dynamiques', async () => {
+    rendre()
+    // Panneau QR de séance (jeton réel ou état fermé, jamais un faux QR).
+    await waitFor(() => expect(screen.getByText('QR de séance')).toBeInTheDocument())
+    expect(screen.getByText('Aucun QR actif pour cette séance.')).toBeInTheDocument()
+    // Synthèse : anneau de taux (1 présent / 2 attendus) et compteurs.
+    expect(screen.getByText('État de la séance')).toBeInTheDocument()
+    expect(screen.getByText('50 %')).toBeInTheDocument()
+    expect(screen.getByText('Badgeage QR automatique')).toBeInTheDocument()
+    // Filtres dynamiques : segment Absents → seul Diallo Moussa reste.
+    await waitFor(() => expect(screen.getByText('Ba Awa')).toBeInTheDocument())
+    await userEvent.click(screen.getByRole('button', { name: 'Absents' }))
+    expect(screen.queryByText('Ba Awa')).not.toBeInTheDocument()
+    expect(screen.getByText('Diallo Moussa')).toBeInTheDocument()
+    // Recherche par nom.
+    await userEvent.click(screen.getByRole('button', { name: 'Tous' }))
+    await userEvent.type(screen.getByLabelText('Rechercher un étudiant'), 'Ba')
+    expect(screen.getByText('Ba Awa')).toBeInTheDocument()
+    expect(screen.queryByText('Diallo Moussa')).not.toBeInTheDocument()
   })
 })

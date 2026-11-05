@@ -21,6 +21,9 @@ par ``POST /scolarite/etudiants/<id>/evenements/`` (fiche étudiant).
 from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -94,6 +97,16 @@ def _serialize_evenement(evenement):
     }
 
 
+
+
+# ── Contrats OpenAPI (journal des événements et audit) ───────────────
+
+
+class ErreurJournalSerializer(serializers.Serializer):
+    error = serializers.JSONField()
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurJournalSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def journal_evenements(request):
@@ -154,6 +167,7 @@ def _serialize_audit(entree):
     }
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurJournalSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def journal_audit(request):
@@ -183,6 +197,7 @@ def journal_audit(request):
     return _enveloppe(queryset, page, page_size, _serialize_audit)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def journal_stats(request):

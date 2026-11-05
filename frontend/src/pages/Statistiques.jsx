@@ -21,6 +21,7 @@ import { useStatsMeta } from '../hooks/useStatsMeta'
 import { PointJournalierTableauINJS, pjPct } from '../components/PointJournalierINJS'
 import { AuditeursNotoiresPanel, AuditeursNotoiresKpiStrip, filterAuditeursNotoires } from '../components/AuditeursNotoiresPanel'
 import RapportsWorkflowPanel from '../components/RapportsWorkflowPanel'
+import '../styles/statistiques.css'
 
 // ── Palettes & constantes ────────────────────────────────────────────────────
 const C = ['#283A87','#1267D6','#35BDF5','#0D9488','#16A36A','#D97706','#805AD5','#DC3545','#104A8E','#64748B']
@@ -1001,7 +1002,7 @@ function TauxBar({ value, small }) {
 // ── KPI Card ──────────────────────────────────────────────────────────────────
 function Kpi({ icon, label, value, color, sub, help }) {
   return (
-    <div style={{background:'#fff',borderRadius:12,padding:'1.1rem 1.3rem',display:'flex',alignItems:'center',gap:'0.9rem',boxShadow:'0 1px 4px rgba(0,0,0,0.07)',borderLeft:`4px solid ${color}`}}>
+    <div className="stats-kpi" style={{'--stats-accent':color,background:'#fff',borderRadius:12,padding:'1.1rem 1.3rem',display:'flex',alignItems:'center',gap:'0.9rem',boxShadow:'0 1px 4px rgba(0,0,0,0.07)',borderLeft:`4px solid ${color}`}}>
       <div style={{width:42,height:42,borderRadius:'50%',background:color+'1a',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
         <i className={`bi ${icon}`} style={{fontSize:'1.2rem',color}}/>
       </div>
@@ -1076,7 +1077,7 @@ function PedagogieTauxGrille({ ped, withBars = false, grid = false }) {
 // ── Chart Card ────────────────────────────────────────────────────────────────
 function Card({ title, icon, children, col }) {
   return (
-    <div style={{background:'#fff',borderRadius:12,padding:'1.1rem 1.3rem',boxShadow:'0 1px 4px rgba(0,0,0,0.07)',gridColumn:col}}>
+    <div className="stats-card" style={{background:'#fff',borderRadius:12,padding:'1.1rem 1.3rem',boxShadow:'0 1px 4px rgba(0,0,0,0.07)',gridColumn:col}}>
       <h4 style={{fontSize:'0.85rem',fontWeight:700,color:'#1e293b',marginBottom:'0.85rem',display:'flex',alignItems:'center',gap:'0.35rem'}}>
         <i className={`bi ${icon}`} style={{color:'var(--navy)'}}/>
         {title}
@@ -1879,17 +1880,17 @@ export default function Statistiques() {
   )
 
   return (
-    <div>
+    <div className="stats-page">
       <AlertesStyles />
       {/* ── En-tête ─────────────────────────────────────── */}
-      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'1.2rem',flexWrap:'wrap',gap:'0.75rem'}}>
+      <div className="stats-hero" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'1.2rem',flexWrap:'wrap',gap:'0.75rem'}}>
         <div>
-          <h2 style={{margin:0,fontWeight:800,color:'#1e293b',fontSize:'1.3rem'}}>
+          <h2 className="stats-hero-title" style={{margin:0,fontWeight:800,color:'#1e293b',fontSize:'1.3rem'}}>
             <i className="bi bi-bar-chart-line me-2" style={{color:'var(--navy)'}}/>
             Statistiques & Bilans
           </h2>
           {lastRefresh && (
-            <p style={{margin:0,fontSize:'0.73rem',color:'#94a3b8',marginTop:'0.1rem'}}>
+            <p className="stats-hero-meta" style={{margin:0,fontSize:'0.73rem',color:'#94a3b8',marginTop:'0.1rem'}}>
               Mis à jour le {lastRefresh.toLocaleString('fr-FR')}
             </p>
           )}
@@ -1945,7 +1946,7 @@ export default function Statistiques() {
       </div>
 
       {VH_PERIOD_TABS.has(onglet) && (
-      <div className="finance-filter-panel" style={{ marginBottom: '1rem' }}>
+      <div className="finance-filter-panel stats-period" style={{ marginBottom: '1rem' }}>
         <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: '0.5rem', letterSpacing: '0.04em' }}>
           PÉRIODE — INDICATEURS CLÉS
         </div>
@@ -2029,9 +2030,9 @@ export default function Statistiques() {
       {tabLoading}
 
       {/* ── Navigation onglets ─────────────────────────── */}
-      <div style={{display:'flex',gap:'0.25rem',marginBottom:'1.2rem',borderBottom:'2px solid #e2e8f0',overflowX:'auto',paddingBottom:0}}>
+      <div className="stats-tabs" style={{display:'flex',gap:'0.25rem',marginBottom:'1.2rem',overflowX:'auto'}}>
         {visibleOnglets.map(o => (
-          <button key={o.id} onClick={() => setOnglet(o.id)} style={{
+          <button key={o.id} className={`stats-tab${onglet===o.id ? ' is-active' : ''}`} onClick={() => setOnglet(o.id)} style={{
             background:'none',border:'none',cursor:'pointer',padding:'0.55rem 0.9rem',
             fontSize:'0.82rem',fontWeight:onglet===o.id?700:500,
             color:onglet===o.id?'#001a33':'#64748b',
@@ -2068,7 +2069,7 @@ export default function Statistiques() {
 
           {loadingInitial && !data ? <TabSpinner label="Chargement de la vue d'ensemble…"/> : (
           <div style={{display:'grid',gridTemplateColumns:'minmax(200px,260px) 1fr',gap:'1rem',alignItems:'start',marginBottom:'1.2rem'}}>
-            <div style={{background:'#fff',borderRadius:10,boxShadow:'0 1px 4px rgba(0,0,0,0.07)',overflow:'hidden',maxHeight:'70vh',overflowY:'auto'}}>
+            <div className="stats-sidenav" style={{background:'#fff',borderRadius:10,boxShadow:'0 1px 4px rgba(0,0,0,0.07)',overflow:'hidden',maxHeight:'70vh',overflowY:'auto'}}>
               <div style={{padding:'0.65rem 0.85rem',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',fontSize:'0.78rem',color:'#64748b',fontWeight:600}}>
                 {overviewSections.length} section{overviewSections.length > 1 ? 's' : ''}
               </div>
@@ -2185,7 +2186,7 @@ export default function Statistiques() {
 
           {!pedagogiques ? <TabSpinner label="Chargement des indicateurs pédagogiques…"/> : (
           <div style={{display:'grid',gridTemplateColumns:'minmax(220px,280px) 1fr',gap:'1rem',alignItems:'start',marginBottom:'1.2rem'}}>
-            <div style={{background:'#fff',borderRadius:10,boxShadow:'0 1px 4px rgba(0,0,0,0.07)',overflow:'hidden',maxHeight:'70vh',overflowY:'auto'}}>
+            <div className="stats-sidenav" style={{background:'#fff',borderRadius:10,boxShadow:'0 1px 4px rgba(0,0,0,0.07)',overflow:'hidden',maxHeight:'70vh',overflowY:'auto'}}>
               <div style={{padding:'0.65rem 0.85rem',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',fontSize:'0.78rem',color:'#64748b',fontWeight:600}}>
                 {pedEntries.length} périmètre{pedEntries.length > 1 ? 's' : ''}
               </div>
@@ -2361,7 +2362,7 @@ export default function Statistiques() {
             </div>
           ) : (
             <div style={{display:'grid',gridTemplateColumns:'minmax(200px,260px) 1fr',gap:'1rem',alignItems:'start',marginBottom:'1.2rem'}}>
-              <div style={{background:'#fff',borderRadius:10,boxShadow:'0 1px 4px rgba(0,0,0,0.07)',overflow:'hidden',maxHeight:'70vh',overflowY:'auto'}}>
+              <div className="stats-sidenav" style={{background:'#fff',borderRadius:10,boxShadow:'0 1px 4px rgba(0,0,0,0.07)',overflow:'hidden',maxHeight:'70vh',overflowY:'auto'}}>
                 <div style={{padding:'0.65rem 0.85rem',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',fontSize:'0.78rem',color:'#64748b',fontWeight:600}}>
                   {historique.pointages_par_mois.length} mois
                 </div>
@@ -2455,7 +2456,7 @@ export default function Statistiques() {
             </div>
           ) : (
             <div style={{display:'grid',gridTemplateColumns:'minmax(220px,280px) 1fr',gap:'1rem',alignItems:'start',marginBottom:'1.2rem'}}>
-              <div style={{background:'#fff',borderRadius:10,boxShadow:'0 1px 4px rgba(0,0,0,0.07)',overflow:'hidden',maxHeight:'70vh',overflowY:'auto'}}>
+              <div className="stats-sidenav" style={{background:'#fff',borderRadius:10,boxShadow:'0 1px 4px rgba(0,0,0,0.07)',overflow:'hidden',maxHeight:'70vh',overflowY:'auto'}}>
                 <div style={{padding:'0.65rem 0.85rem',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',fontSize:'0.78rem',color:'#64748b',fontWeight:600}}>
                   {secStats.total} secrétariat{secStats.total > 1 ? 's' : ''}
                 </div>
@@ -3161,7 +3162,7 @@ export default function Statistiques() {
           ) : (
             <div style={{display:'grid',gridTemplateColumns:'minmax(220px,280px) 1fr',gap:'1rem',alignItems:'start'}}>
               {/* Liste des tableaux */}
-              <div style={{background:'#fff',borderRadius:10,boxShadow:'0 1px 4px rgba(0,0,0,0.07)',overflow:'hidden',maxHeight:'70vh',overflowY:'auto'}}>
+              <div className="stats-sidenav" style={{background:'#fff',borderRadius:10,boxShadow:'0 1px 4px rgba(0,0,0,0.07)',overflow:'hidden',maxHeight:'70vh',overflowY:'auto'}}>
                 <div style={{padding:'0.65rem 0.85rem',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',fontSize:'0.78rem',color:'#64748b',fontWeight:600}}>
                   {pjData.total_tableaux} tableau(x) — {pjAnnee}
                 </div>
@@ -3276,7 +3277,7 @@ export default function Statistiques() {
           </div>
 
           <div style={{display:'grid',gridTemplateColumns:'minmax(220px,280px) 1fr',gap:'1rem',alignItems:'start'}}>
-            <div style={{background:'#fff',borderRadius:10,boxShadow:'0 1px 4px rgba(0,0,0,0.07)',overflow:'hidden',maxHeight:'70vh',overflowY:'auto'}}>
+            <div className="stats-sidenav" style={{background:'#fff',borderRadius:10,boxShadow:'0 1px 4px rgba(0,0,0,0.07)',overflow:'hidden',maxHeight:'70vh',overflowY:'auto'}}>
               <div style={{padding:'0.65rem 0.85rem',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',fontSize:'0.78rem',color:'#64748b',fontWeight:600}}>
                 {alertesSidebar.length} vue{alertesSidebar.length > 1 ? 's' : ''}
               </div>

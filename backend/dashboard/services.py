@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from scolarite.models import (
     AnneeAcademique, DossierEtudiant, InscriptionAdministrative,
-    Maquette, UE, ECUE, Groupe, AffectationPedagogique,
+    Maquette, UE, ECUE, Groupe, AffectationPedagogique, JournalScolarite,
 )
 from admissions.models import CampagneAdmission, Candidature, Epreuve, Admission
 from formations.models import RefFormation, Formateur, Module, ModuleParticipant, SessionModule
@@ -139,19 +139,179 @@ def get_direction_overview():
             'icon': 'bi-people',
         })
 
-    # Pipeline LMD global
+    # Pipeline LMD global — « Évaluations » compte les évaluations du
+    # module Évaluations (chaîne LMD), pas les modules legacy formations.
+    from evaluations.models import Evaluation as EvaluationLMD
     pipeline = [
         {'id': 'candidature', 'label': 'Candidatures', 'value': nb_candidats, 'icon': 'bi-pencil-square', 'active': True},
         {'id': 'admission', 'label': 'Admissions', 'value': nb_admis, 'icon': 'bi-check2-circle', 'active': True},
         {'id': 'inscription', 'label': 'Inscriptions', 'value': nb_inscrits, 'icon': 'bi-card-checklist', 'active': True},
         {'id': 'cours', 'label': 'Enseignement', 'value': nb_cours, 'icon': 'bi-journal-bookmark', 'active': True},
-        {'id': 'evaluation', 'label': 'Évaluations', 'value': Module.objects.count(), 'icon': 'bi-file-earmark-text', 'active': True},
+        {'id': 'evaluation', 'label': 'Évaluations', 'value': EvaluationLMD.objects.count(), 'icon': 'bi-file-earmark-text', 'active': True},
         {'id': 'jury', 'label': 'Jurys', 'value': SessionJury.objects.count(), 'icon': 'bi-balance-scale', 'active': True},
         {'id': 'diplome', 'label': 'Diplômation', 'value': nb_diplomes, 'icon': 'bi-award', 'active': True},
     ]
 
+    # ── Indicateurs de pilotage, calculés sur les modules réels ──────────
+    # Réussite : notes saisies (module Évaluations) dont la valeur atteint
+    # la moitié du barème. Sans note, l'indicateur reste ``None``.
+    from evaluations.models import EvaluationGrade
+    from django.db.models import F
+    notes = EvaluationGrade.objects.filter(valeur__isnull=False, bareme__gt=0)
+    nb_notes = notes.count()
+    nb_reussies = notes.filter(valeur__gte=F('bareme') / 2).count()
+    taux_reussite = round(nb_reussies / nb_notes * 100, 1) if nb_notes else None
+
+    # Abandon / diplomation : dossiers étudiants et diplômes délivrés.
+    nb_dossiers = DossierEtudiant.objects.count()
+    nb_abandons = DossierEtudiant.objects.filter(statut__code='ABANDON').count()
+    taux_abandon = round(nb_abandons / nb_dossiers * 100, 1) if nb_dossiers else None
+    # Diplomation : même convention que le taux de réussite ci-dessus —
+    # ``None`` (jauge « — ») tant que la base de calcul n'existe pas.
+    # Sans diplôme délivré, afficher 0 % annoncerait un échec total alors
+    # qu'aucune cohorte n'a encore achevé son cycle (en 2026-2027 : 3 727
+    # dossiers tous ACTIF, aucun jury, aucun diplôme) ; le compteur
+    # « N diplômes délivrés » sous la jauge conserve l'information factuelle.
+    taux_diplomation = (
+        round(nb_diplomes / nb_dossiers * 100, 1)
+        if nb_diplomes and nb_dossiers else None
+    )
+
+    # Évolution des effectifs : candidatures et inscriptions validées,
+    # sur les six dernières années écoulées du référentiel (les années
+    # futures enregistrées ne portent encore aucun effectif).
+    annee_courante = get_current_academic_year()
+    annees = [
+        a for a in AnneeAcademique.objects.order_by('libelle')
+        if annee_courante is None or a.libelle <= annee_courante.libelle
+    ][-6:]
+    evolution = {
+        'annees': [a.libelle for a in annees],
+        'series': [
+            {
+                'nom': 'Candidatures',
+                'couleur': '#35BDF5',
+                'donnees': [
+                    Candidature.objects.filter(annee_academique_id=a.id).count()
+                    for a in annees
+                ],
+            },
+            {
+                'nom': 'Inscrits',
+                'couleur': '#1267D6',
+                'donnees': [
+                    InscriptionAdministrative.objects.filter(
+                        annee_academique_id=a.id,
+                        statut=InscriptionAdministrative.Statut.VALIDEE,
+                    ).count()
+                    for a in annees
+                ],
+            },
+        ],
+    }
+
+    # Répartition par sexe des étudiants (participants des dossiers).
+    sexe_labels = {'FEMININ': 'Femmes', 'MASCULIN': 'Hommes'}
+    repartition_sexe = [
+        {'label': sexe_labels.get(ligne['participant__sexe'], ligne['participant__sexe']),
+         'value': ligne['n']}
+        for ligne in DossierEtudiant.objects
+        .exclude(participant__sexe__isnull=True)
+        .exclude(participant__sexe='')
+        .values('participant__sexe')
+        .annotate(n=Count('id'))
+        if ligne['participant__sexe'] in sexe_labels
+    ]
+
+    # Charge d'enseignement : volumes des affectations pédagogiques,
+    # par cycle (Licence / Master) et type (CM, TD, TP).
+    def _volume(cycle, type_enseignement):
+        total = (
+            AffectationPedagogique.objects
+            .filter(niveau__code__startswith=cycle, type_enseignement=type_enseignement)
+            .aggregate(s=Sum('volume_horaire'))['s']
+        )
+        return int(total or 0)
+
+    charges_par_cycle = {
+        'categories': ['Licence', 'Master'],
+        'series': [
+            {'nom': nom, 'couleur': couleur,
+             'valeurs': [_volume('L', code), _volume('M', code)]}
+            for nom, code, couleur in [
+                ('CM', 'CM', '#1265D6'), ('TD', 'TD', '#0E9BB5'), ('TP', 'TP', '#283A87'),
+            ]
+        ],
+    }
+
+    # Activité récente : dernières écritures du journal de scolarité.
+    libelles_actions = {
+        'PIECE_DEPOSEE': 'Pièce déposée',
+        'PIECE_VERIFIEE': 'Pièce vérifiée',
+        'CANDIDATURE_CREATION': 'Candidature créée',
+        'CANDIDATURE_TRANSITION': 'Candidature mise à jour',
+    }
+
+    def _icone_action(action):
+        if action.startswith('PIECE'):
+            return 'bi-folder-check', '#0E9BB5'
+        if action.startswith('CANDIDATURE'):
+            return 'bi-file-earmark-text', '#1267D6'
+        if action.startswith(('MAQUETTE', 'UE', 'ECUE')):
+            return 'bi-diagram-3', '#283A87'
+        if action.startswith('INSCRIPTION'):
+            return 'bi-card-checklist', '#16A36A'
+        if action.startswith(('PAIEMENT', 'FINANCE')):
+            return 'bi-cash-coin', '#F59E0B'
+        if action.startswith(('NOTE', 'EVALUATION')):
+            return 'bi-journal-check', '#8B5CF6'
+        return 'bi-activity', '#64748B'
+
+    activite_recente = []
+    for entree in JournalScolarite.objects.order_by('-timestamp', '-id')[:6]:
+        icone, couleur = _icone_action(entree.action or '')
+        libelle = libelles_actions.get(
+            entree.action, (entree.action or 'Activité').replace('_', ' ').capitalize(),
+        )
+        texte = f'{libelle} — {entree.objet_libelle}' if entree.objet_libelle else libelle
+        activite_recente.append({
+            'heure': timezone.localtime(entree.timestamp).strftime('%H:%M'),
+            'icone': icone,
+            'couleur': couleur,
+            'texte': texte,
+        })
+
+    # Situation financière : facturé, encaissé confirmé, restant dû.
+    total_facture = Facture.objects.aggregate(s=Sum('total'))['s'] or Decimal('0')
+    total_encaisse = (
+        Paiement.objects.filter(statut='CONFIRME').aggregate(s=Sum('montant'))['s']
+        or Decimal('0')
+    )
+    taux_recouvrement = (
+        round(float(total_encaisse) / float(total_facture) * 100, 1)
+        if total_facture else None
+    )
+
+    def _xof(montant):
+        return f'{montant:,.0f}'.replace(',', ' ') + ' XOF'
+
+    situation_financiere = {
+        'taux_recouvrement': taux_recouvrement,
+        'facture': _xof(total_facture),
+        'encaisse': _xof(total_encaisse),
+        'impayes': _xof(total_facture - total_encaisse),
+    }
+
     return {
         'annee_academique': annee.libelle if annee else None,
+        'indicateurs': {
+            'taux_reussite': taux_reussite,
+            'notes_evaluees': nb_notes,
+            'taux_abandon': taux_abandon,
+            'dossiers_etudiants': nb_dossiers,
+            'taux_diplomation': taux_diplomation,
+            'diplomes_delivres': nb_diplomes,
+        },
         'kpis': {
             'etudiants_inscrits': nb_inscrits,
             'candidats': nb_candidats,
@@ -171,7 +331,12 @@ def get_direction_overview():
         'charts': {
             'repartition_niveaux': [{'label': k, 'value': v} for k, v in niveaux_counts.items()],
             'repartition_formations': formations_dist,
+            'evolution_effectifs': evolution,
+            'repartition_sexe': repartition_sexe,
+            'charges_par_cycle': charges_par_cycle,
         },
+        'activite_recente': activite_recente,
+        'situation_financiere': situation_financiere,
         'alerts': alerts,
         'quick_actions': [
             {'label': 'Nouvelle inscription', 'to': '/scolarite/inscriptions', 'icon': 'bi-person-plus-fill'},

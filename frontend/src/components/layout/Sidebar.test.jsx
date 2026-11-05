@@ -213,6 +213,33 @@ describe('filtrage par les permissions CURP (compte gouverné)', () => {
     expect(audit.queryByTestId('nav-audit.actions')).toBeNull()
   })
 
+  it('affiche le module Présences QR (après GET INJS APP) et ses menus', async () => {
+    monter({ chemin: '/edt' })
+    const groupe = await ouvrirSection('Présences QR')
+    const attendus = [
+      ['nav-presences_qr.tableau', '/presences'],
+      ['nav-presences_qr.seances', '/presences/seances'],
+      ['nav-presences_qr.badgeage', '/presences/poste'],
+      ['nav-presences_qr.presences', '/presences/registre'],
+      ['nav-presences_qr.audit', '/presences/audit'],
+      ['nav-presences_qr.configuration', '/presences/configuration'],
+      ['nav-presences_qr.contrat', '/presences/contrat'],
+    ]
+    for (const [testid, href] of attendus) {
+      expect(groupe.getByTestId(testid)).toBeTruthy()
+      expect(groupe.getByTestId(testid).getAttribute('href')).toBe(href)
+    }
+    // Structure exacte : ni registre ni rattrapages dans ce module.
+    expect(groupe.queryByTestId('nav-presences_qr.registre')).toBeNull()
+    expect(groupe.queryByTestId('nav-presences_qr.supervision')).toBeNull()
+    expect(groupe.queryByTestId('nav-presences_qr.poste')).toBeNull()
+    expect(groupe.queryByTestId('nav-presences_qr.rattrapages')).toBeNull()
+    // Position : le groupe suit immédiatement GET INJS APP dans la barre.
+    const groupes = [...document.querySelectorAll('.nav-groupe')]
+    const libelles = groupes.map((g) => g.querySelector('.nav-label')?.textContent)
+    expect(libelles.indexOf('Présences QR')).toBe(libelles.indexOf('GET INJS APP') + 1)
+  })
+
   it('une liste de permissions vide ferme le menu (fermeture par défaut)', async () => {
     monter({ mesAcces: mesAcces([]) })
     expect(await screen.findByText(/Aucune entrée autorisée pour ce compte/i)).toBeTruthy()

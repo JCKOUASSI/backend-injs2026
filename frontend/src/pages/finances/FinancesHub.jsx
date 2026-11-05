@@ -5,6 +5,7 @@
  * brouillon, paiements jamais confirmés — aucun encaissement réel.
  */
 import ModuleHub from '@/components/hub/ModuleHub'
+import '@/styles/financesHub.css'
 const fcfa = (n) => `${Number(n || 0).toLocaleString('fr-FR')} FCFA`
 
 const TONS_GLOBAL = {
@@ -27,27 +28,27 @@ export default function FinancesHub({ ongletInitial = 'bareme' }) {
     <ModuleHub
       titre="Finances étudiantes"
       badge="Finances étudiantes"
-      icone="wallet"
+      icone="bi-wallet2"
       introduction="Frais, échéanciers et encaissements des étudiants. Les données d’exemple sont volontairement inopérantes : barème indicatif INACTIF (inutilisable par la facturation), factures en brouillon et paiements jamais confirmés — aucun montant officiel n’est présenté comme arrêté."
       statsEndpoint="/finances-etudiantes/hub/stats/"
       pastilles={(s) => [
-        { icone: 'wallet', texte: `Dû total suivi : ${fcfa(s.montant_attendu)} · reste ${fcfa(s.montant_reste)}` },
-        { icone: 'shieldCheck', texte: `Encaissé et confirmé : ${fcfa(s.montant_encaisse_confirme)}` },
-        { icone: 'alertTriangle', texte: s.tarifications_actives === 0
+        { icone: 'bi-wallet2', texte: `Dû total suivi : ${fcfa(s.montant_attendu)} · reste ${fcfa(s.montant_reste)}` },
+        { icone: 'bi-shield-check', texte: `Encaissé et confirmé : ${fcfa(s.montant_encaisse_confirme)}` },
+        { icone: 'bi-exclamation-triangle', texte: s.tarifications_actives === 0
           ? 'Aucun barème officiel actif : la tarification officielle reste à arrêter.'
           : `${s.tarifications_actives} lignes de barème officiel actif` },
-        { icone: 'info', texte: 'Confirmations, quittances et rapprochements : écrans financiers dédiés.' },
+        { icone: 'bi-info-circle', texte: 'Confirmations, quittances et rapprochements : écrans financiers dédiés.' },
       ]}
       tuiles={(s) => [
-        { valeur: s.echeanciers, libelle: 'Échéanciers', sub: 'étudiants suivis', icone: 'calendarRange', ton: 'blue' },
-        { valeur: s.factures, libelle: 'Factures', sub: `${s.factures_par_statut?.BROUILLON ?? 0} brouillons · ${s.factures_par_statut?.EMISE ?? 0} émises`, icone: 'receiptText', ton: 'indigo' },
-        { valeur: s.paiements, libelle: 'Paiements', sub: `${s.paiements_par_statut?.CONFIRME ?? 0} confirmés`, icone: 'banknote', ton: 'green' },
-        { valeur: s.quittances, libelle: 'Quittances', sub: 'reçus officiels', icone: 'badgeDollarSign', ton: 'cyan' },
-        { valeur: s.relances, libelle: 'Relances', sub: `${s.remboursements ?? 0} remboursements en cours`, icone: 'bellRing', ton: 'amber' },
+        { valeur: s.echeanciers, libelle: 'Échéanciers', sub: 'étudiants suivis', icone: 'bi-calendar-range', ton: 'blue' },
+        { valeur: s.factures, libelle: 'Factures', sub: `${s.factures_par_statut?.BROUILLON ?? 0} brouillons · ${s.factures_par_statut?.EMISE ?? 0} émises`, icone: 'bi-receipt', ton: 'indigo' },
+        { valeur: s.paiements, libelle: 'Paiements', sub: `${s.paiements_par_statut?.CONFIRME ?? 0} confirmés`, icone: 'bi-bank', ton: 'green' },
+        { valeur: s.quittances, libelle: 'Quittances', sub: 'reçus officiels', icone: 'bi-patch-check', ton: 'cyan' },
+        { valeur: s.relances, libelle: 'Relances', sub: `${s.remboursements ?? 0} remboursements en cours`, icone: 'bi-bell', ton: 'amber' },
       ]}
       onglets={[
         {
-          id: 'bareme', libelle: 'Frais & barème', icone: 'listOrdered',
+          id: 'bareme', libelle: 'Frais & barème', icone: 'bi-list-ol',
           endpoint: '/finances-etudiantes/hub/tarifications/',
           rechercheLocale: ['formation', 'nature_display'],
           recherchePlaceholder: 'Formation ou nature de frais…',
@@ -63,7 +64,7 @@ export default function FinancesHub({ ongletInitial = 'bareme' }) {
           videTexte: 'Le barème de tarification apparaîtra ici.',
         },
         {
-          id: 'echeanciers', libelle: 'Échéanciers', icone: 'calendarRange',
+          id: 'echeanciers', libelle: 'Échéanciers', icone: 'bi-calendar-range',
           endpoint: '/finances-etudiantes/hub/echeanciers/',
           rechercheLocale: ['nom_complet', 'matricule'],
           recherchePlaceholder: 'Étudiant…',
@@ -78,7 +79,7 @@ export default function FinancesHub({ ongletInitial = 'bareme' }) {
           videTexte: 'Les échéanciers générés depuis le barème officiel apparaîtront ici.',
         },
         {
-          id: 'factures', libelle: 'Factures', icone: 'receiptText',
+          id: 'factures', libelle: 'Factures', icone: 'bi-receipt',
           endpoint: '/finances-etudiantes/hub/factures/',
           rechercheLocale: ['numero', 'nom_complet', 'matricule'],
           recherchePlaceholder: 'Numéro ou étudiant…',
@@ -99,7 +100,7 @@ export default function FinancesHub({ ongletInitial = 'bareme' }) {
           videTexte: 'Les factures émises depuis les échéanciers apparaîtront ici.',
         },
         {
-          id: 'paiements', libelle: 'Paiements', icone: 'banknote',
+          id: 'paiements', libelle: 'Paiements', icone: 'bi-bank',
           endpoint: '/finances-etudiantes/hub/paiements/',
           rechercheLocale: ['nom_complet', 'matricule', 'transaction_externe'],
           recherchePlaceholder: 'Étudiant ou transaction…',
@@ -133,7 +134,7 @@ export default function FinancesHub({ ongletInitial = 'bareme' }) {
           videTexte: 'Les paiements enregistrés (caisse, mobile money, virement) apparaîtront ici.',
         },
         {
-          id: 'recus', libelle: 'Reçus & quittances', icone: 'badgeDollarSign',
+          id: 'recus', libelle: 'Reçus & quittances', icone: 'bi-patch-check',
           endpoint: '/finances-etudiantes/hub/quittances/',
           rechercheLocale: ['matricule'],
           recherchePlaceholder: 'Matricule…',
@@ -149,7 +150,7 @@ export default function FinancesHub({ ongletInitial = 'bareme' }) {
           videTexte: 'Les quittances des paiements confirmés apparaîtront ici — les données d’exemple n’en produisent volontairement aucune.',
         },
         {
-          id: 'bourses', libelle: 'Bourses & remboursements', icone: 'undo2',
+          id: 'bourses', libelle: 'Bourses & remboursements', icone: 'bi-arrow-counterclockwise',
           endpoint: '/finances-etudiantes/hub/remboursements/',
           rechercheLocale: ['matricule', 'motif'],
           recherchePlaceholder: 'Matricule ou motif…',
@@ -165,7 +166,7 @@ export default function FinancesHub({ ongletInitial = 'bareme' }) {
           videTexte: 'Les demandes de remboursement instruites par la finance apparaîtront ici.',
         },
         {
-          id: 'situation', libelle: 'Situation financière', icone: 'scale',
+          id: 'situation', libelle: 'Situation financière', icone: 'bi-pie-chart',
           endpoint: '/finances-etudiantes/hub/echeanciers/',
           rechercheLocale: ['nom_complet', 'matricule'],
           recherchePlaceholder: 'Étudiant…',
@@ -175,7 +176,7 @@ export default function FinancesHub({ ongletInitial = 'bareme' }) {
           videTexte: 'Les situations financières des étudiants suivis apparaîtront ici.',
         },
         {
-          id: 'relances', libelle: 'Relances & rapprochements', icone: 'bellRing',
+          id: 'relances', libelle: 'Relances & rapprochements', icone: 'bi-bell',
           endpoint: '/finances-etudiantes/hub/relances/',
           rechercheLocale: ['nom_complet', 'matricule', 'detail'],
           recherchePlaceholder: 'Étudiant ou détail…',
@@ -190,6 +191,7 @@ export default function FinancesHub({ ongletInitial = 'bareme' }) {
           videTexte: 'Relances et rapprochements bancaires apparaîtront ici.',
         },
       ]}
+      classePage="finx-page"
       ongletInitial={ongletInitial}
     />
   )

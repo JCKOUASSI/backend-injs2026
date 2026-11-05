@@ -21,6 +21,9 @@ from datetime import date as _date_cls
 from uuid import UUID
 
 from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -69,12 +72,101 @@ def _entier(request, nom):
         return None
 
 
+def _parse_date_param(request, nom):
+    brut = (request.query_params.get(nom) or '').strip()
+    if not brut:
+        return None, None
+    try:
+        annee, mois, jour = (int(x) for x in brut.split('-'))
+        return _date_cls(annee, mois, jour), None
+    except (TypeError, ValueError):
+        return None, {'detail': f'Paramètre « {nom} » invalide (JJJJ-MM-JJ attendu).'}
+
+
+
+
+# ── Contrats OpenAPI (séances EDT : supervision, QR, émargement) ─────
+
+
+class SeanceEdtDetailErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class SeanceEdtCodeErreurSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    detail = serializers.CharField()
+
+
+class QrSeanceReponseSerializer(serializers.Serializer):
+    actif = serializers.BooleanField()
+    token = serializers.CharField(allow_null=True)
+    expire_a = serializers.CharField(allow_null=True)
+    ouvre_a = serializers.CharField(required=False)
+    url_badgeage = serializers.CharField(required=False)
+
+
+class EmargementSeanceReponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    journal = serializers.JSONField()
+
+
+class EmargementUnitaireReponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    participant = serializers.JSONField()
+    statut = serializers.CharField()
+    pointage_id = serializers.IntegerField(allow_null=True)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, ExigePermission.pour('presences.emargement.consulter')])
+def historique_api(request):
+    """Registre historique des présences LMD (lecture seule).
+
+    `GET /api/presences/seances-edt/historique/?date_debut=&date_fin=
+    &type=&mode=&nom=&groupe=&seance_id=&limite=` — filtres appliqués
+    côté serveur sur les pointages rattachés aux séances des EDT
+    publiés. Aucune coordonnée GPS brute n'est restituée.
+
+    Chargement explicite (additif) : `limite` seul (sans `date_debut`)
+    charge les `limite` derniers pointages jusqu'à `date_fin`
+    (plafond 500 ; l'écran du registre demande 200).
+    """
+    from . import seances_supervision
+    date_debut, err = _parse_date_param(request, 'date_debut')
+    if err:
+        return Response(err, status=status.HTTP_400_BAD_REQUEST)
+    date_fin, err = _parse_date_param(request, 'date_fin')
+    if err:
+        return Response(err, status=status.HTTP_400_BAD_REQUEST)
+    limite = _entier(request, 'limite')
+    return Response(seances_supervision.historique_presences(
+        request.user,
+        date_debut=date_debut, date_fin=date_fin,
+        limite=limite or 500,
+        borne_debut=not (limite and date_debut is None),
+        type_participant=(request.query_params.get('type') or '').strip().upper() or None,
+        mode=(request.query_params.get('mode') or '').strip().upper() or None,
+        nom=(request.query_params.get('nom') or '').strip() or None,
+        groupe=(request.query_params.get('groupe') or '').strip() or None,
+        seance_id=_entier(request, 'seance_id'),
+    ))
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, ExigePermission.pour('presences.emargement.consulter')])
 def supervision_api(request):
     """Séances d'une journée + suivi de leurs présences (bloc « Séances en direct »).
 
     `GET /api/presences/seances-edt/supervision/?date=&statut=&formation_id=&groupe_id=&enseignant_id=`
+
+    Mode **chargement explicite** (additif) : dès que `limite` est
+    fourni (`&limite=200&horizon=120`), la réponse charge les séances
+    les plus proches de `date` (jours candidats explorés par proximité
+    dans l'horizon, plafond `limite`), avec un bloc `periode`
+    décrivant la fenêtre réellement explorée. Sans `limite`, le
+    comportement historique (une journée) est strictement inchangé.
 
     Vue **consultative** : statut de séance dérivé des horaires planifiés,
     contexte LMD par clés étrangères, présences réellement rattachées
@@ -91,15 +183,23 @@ def supervision_api(request):
             {'detail': 'Statut inconnu. Valeurs acceptées : '
                        + ', '.join(supervision.STATUTS_SEANCE) + '.'},
             status=status.HTTP_400_BAD_REQUEST)
-    return Response(supervision.supervision_seances(
-        request.user, jour,
-        statut=statut,
-        formation_id=_entier(request, 'formation_id'),
-        groupe_id=_entier(request, 'groupe_id'),
-        enseignant_id=_entier(request, 'enseignant_id'),
-    ))
+    filtres = {
+        'statut': statut,
+        'formation_id': _entier(request, 'formation_id'),
+        'groupe_id': _entier(request, 'groupe_id'),
+        'enseignant_id': _entier(request, 'enseignant_id'),
+    }
+    if (request.query_params.get('limite') or '').strip():
+        return Response(supervision.supervision_seances_plage(
+            request.user, jour,
+            horizon=_entier(request, 'horizon') or 120,
+            limite=_entier(request, 'limite') or 200,
+            **filtres,
+        ))
+    return Response(supervision.supervision_seances(request.user, jour, **filtres))
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def seances_du_jour(request):
@@ -109,6 +209,7 @@ def seances_du_jour(request):
     return Response(service.seances_du_jour(request.user, date))
 
 
+@extend_schema(request=None, responses={200: QrSeanceReponseSerializer, 400: SeanceEdtDetailErreurSerializer, 403: SeanceEdtDetailErreurSerializer, 404: SeanceEdtDetailErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, ExigePermission.pour('presences.qr.generer')])
 def qr_seance(request, pk):
@@ -140,6 +241,7 @@ def qr_seance(request, pk):
     }, status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: SeanceEdtCodeErreurSerializer, 403: SeanceEdtCodeErreurSerializer})
 @api_view(['POST'])
 @throttle_classes([ScanRateThrottle])
 @permission_classes([IsAuthenticated])
@@ -172,19 +274,23 @@ def scan_seance(request):
 
     jeton, erreur = service.resoudre_jeton_lmd(token)
     if erreur is not None:
-        return Response(erreur, status=400)
+        return Response(service.normaliser_erreur(erreur), status=400)
 
     affectation = jeton.seance_edt
     from django.utils import timezone
     date = timezone.localdate()
     if not service.est_seance_du_jour(affectation, date):
-        return Response({'code': 'HORS_SEANCE',
-                         'detail': 'Ce créneau n’a pas séance aujourd’hui.'}, status=400)
+        return Response(service.normaliser_erreur(
+            {'code': 'HORS_SEANCE',
+             'detail': 'Ce créneau n’a pas séance aujourd’hui.'}), status=400)
 
     autorise, code, detail, statut_http = service.autorisation_badgeage(
         request.user, personne, type_str, affectation)
     if not autorise:
-        return Response({'code': code, 'detail': detail}, status=statut_http or 403)
+        return Response(
+            service.normaliser_erreur({'code': code, 'detail': detail},
+                                      type_personne=type_str),
+            status=statut_http or 403)
 
     coords = {}
     for cle, champ in (('latitude', 'last_latitude'), ('longitude', 'last_longitude'),
@@ -197,10 +303,13 @@ def scan_seance(request):
         request, personne=personne, affectation=affectation, date=date,
         device_id=device_id, coords=coords or None, type_personne=type_str)
     if erreur:
-        return Response(erreur, status=400)
+        return Response(service.normaliser_erreur(
+            erreur, type_personne=type_str), status=400)
     return Response({
         'action': action,
         'canal': 'EDT_LMD',
+        'mode': Pointage.Mode.QR_AUTOMATIQUE,
+        'type_sortie': pointage.type_sortie,
         'type_personne': type_str,
         'seance': {'id': affectation.pk,
                    'libelle': affectation.intitule or str(affectation.creneau_template),
@@ -210,6 +319,7 @@ def scan_seance(request):
     }, status=status.HTTP_201_CREATED if action == 'ENTREE' else status.HTTP_200_OK)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: SeanceEdtDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, ExigePermission.pour('presences.emargement.consulter')])
 def presences_seance(request, pk):
@@ -238,6 +348,11 @@ def presences_seance(request, pk):
             'statut_badgeage': pointage.statut if pointage else None,
             'statut': pointage.statut_assiduite if pointage else None,
             'pointage_id': pointage.pk if pointage else None,
+            # Canal du badgeage : MANUEL identifiable sans ambiguïté
+            # (mode explicite ; device_id pour l'historique antérieur).
+            'mode': (pointage.mode if pointage else None),
+            'motif_manuel': (pointage.motif_manuel if pointage else ''),
+            'type_sortie': (pointage.type_sortie if pointage else None),
         })
     effectif = len(lignes)
     presents = sum(1 for l in lignes if l['statut'] in (Pointage.StatutAssiduite.PRESENT,
@@ -248,7 +363,8 @@ def presences_seance(request, pk):
         Pointage.StatutAssiduite.EXCUSE))
     # Anomalies et gestes manuels : lus sur les pointages (jamais déduits).
     presences_manuelles = sum(1 for p in pointages.values()
-                              if p.device_id == 'EMARGEMENT_MANUEL')
+                              if p.mode == Pointage.Mode.MANUEL
+                              or p.device_id == 'EMARGEMENT_MANUEL')
     anomalies_gps = sum(1 for p in pointages.values()
                         if (p.outside_geofence_count or 0) > 0)
     sorties_automatiques = sum(1 for p in pointages.values()
@@ -275,6 +391,7 @@ def presences_seance(request, pk):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: EmargementSeanceReponseSerializer, 400: OpenApiTypes.OBJECT, 404: SeanceEdtDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, ExigePermission.pour('presences.emargement.saisir')])
 def emargement_seance(request, pk):
@@ -303,6 +420,54 @@ def emargement_seance(request, pk):
                      'journal': journal}, status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: EmargementUnitaireReponseSerializer, 400: OpenApiTypes.OBJECT, 404: SeanceEdtDetailErreurSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, ExigePermission.pour('presences.emargement.saisir')])
+def emargement_unitaire(request, pk):
+    """Badgeage manuel **unitaire** : un participant, un motif catalogué.
+
+    `POST /api/presences/seances-edt/<pk>/emargement/unitaire/?date=`
+    `{participant, statut?, motif, commentaire?}` — le motif est
+    obligatoire (catalogue `MOTIFS_EMARGEMENT_MANUEL`) et le motif AUTRE
+    exige un commentaire. Même RBAC et même garde que l'émargement de
+    masse ; la réponse expose `mode: MANUEL` pour que la présence soit
+    identifiable sans ambiguïté.
+    """
+    affectation = _affectation_ou_404(pk)
+    if affectation is None:
+        return Response({'detail': 'Séance introuvable.'}, status=404)
+    if not service.peut_gerer_seance(request.user, affectation):
+        return Response({'detail': 'Seuls l’enseignant de la séance, le secrétariat et la '
+                                   'direction émargent.'}, status=403)
+    date, err = _date(request)
+    if err:
+        return Response(err, status=400)
+    if not service.est_seance_du_jour(affectation, date):
+        return Response({'detail': 'Aucune séance planifiée ce jour pour ce créneau.'}, status=400)
+    participant_id = request.data.get('participant')
+    if participant_id in (None, ''):
+        return Response({'detail': '« participant » requis.'}, status=400)
+    try:
+        ligne = service.emarger_unitaire(
+            request, affectation, date, participant_id,
+            statut=(request.data.get('statut') or 'PRESENT'),
+            motif=request.data.get('motif') or '',
+            commentaire=request.data.get('commentaire') or '',
+        )
+    except service.ErreurEmargement as exc:
+        return _erreur(exc)
+    return Response({
+        'detail': 'Badgeage manuel enregistré.',
+        'participant': ligne['participant'],
+        'statut': ligne['statut'],
+        'pointage_id': ligne['pointage_id'],
+        'corrige': ligne['corrige'],
+        'mode': Pointage.Mode.MANUEL,
+        'motif': (request.data.get('motif') or '').strip().upper(),
+    }, status=201)
+
+
+@extend_schema(request=None, responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: SeanceEdtDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, ExigePermission.pour('presences.seance_emargement.cloturer')])
 def autoclore_seance(request, pk):

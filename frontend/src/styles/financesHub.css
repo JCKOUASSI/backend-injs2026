@@ -1,0 +1,170 @@
+/* ==========================================================================
+   HUB FINANCES ÉTUDIANTES — thème premium dynamique (`.finx-page`)
+   --------------------------------------------------------------------------
+   Habillage dédié de l'écran consolidé Finances (consultation) : même
+   langage navy/or que les autres modules premium, accent émeraude pour
+   l'argent. Scopé strictement à `.finx-page` (classePage du ModuleHub) :
+   les autres hubs partagés sont inchangés, aucune logique modifiée.
+   ========================================================================== */
+
+/* ── HERO : bandeau navy dégradé, pastilles translucides ── */
+.finx-page .cand-hero {
+  background:
+    radial-gradient(560px 240px at 88% -30%, rgba(52, 211, 153, 0.25), transparent 65%),
+    linear-gradient(120deg, #071B3A 0%, #0B2A5B 55%, #1265D6 130%);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 18px 38px -18px rgba(7, 27, 58, 0.55);
+}
+
+.finx-page .cand-hero-icone {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #FFFFFF;
+  box-shadow: 0 10px 22px -10px rgba(0, 0, 0, 0.5);
+}
+
+.finx-page .cand-hero-badge { color: #7DD3FC; }
+.finx-page .cand-hero-title { color: #FFFFFF; }
+.finx-page .cand-hero-sub { color: #C7D8EE; }
+
+.finx-page .hub-pastille {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #E0F2FE;
+}
+
+.finx-page .hub-pastille i { color: #F5C542; }
+
+.finx-page .hub-pastille--primary {
+  background: linear-gradient(135deg, rgba(245, 197, 66, 0.25), rgba(245, 197, 66, 0.1));
+  border-color: rgba(245, 197, 66, 0.45);
+  color: #FDE68A;
+}
+
+/* ── TUILES KPI : soulèvement au survol, icônes teintées ── */
+.finx-page .cand-kpi {
+  border: 1px solid #E4EAF2;
+  box-shadow: 0 1px 2px rgba(7, 27, 58, 0.05),
+              0 14px 30px -18px rgba(7, 27, 58, 0.25);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.finx-page .cand-kpi:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 22px 38px -18px rgba(7, 27, 58, 0.35);
+}
+
+.finx-page .cand-kpi-icon { border-radius: 12px; }
+.finx-page .cand-kpi-icon.is-blue { background: linear-gradient(135deg, #E3EEFF, #CFE3FF); color: #1265D6; }
+.finx-page .cand-kpi-icon.is-indigo { background: linear-gradient(135deg, #E6E9FF, #D3D9FF); color: #283A87; }
+.finx-page .cand-kpi-icon.is-green { background: linear-gradient(135deg, #D9FBEA, #B7F0D2); color: #047857; }
+.finx-page .cand-kpi-icon.is-cyan { background: linear-gradient(135deg, #DFF7FE, #C4EFFB); color: #0E7490; }
+.finx-page .cand-kpi-icon.is-amber { background: linear-gradient(135deg, #FFF3D6, #FFE9B8); color: #B45309; }
+
+.finx-page .cand-kpi-value {
+  color: #071B3A;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Montants dans les cellules : nets et tabulaires. */
+.finx-page .hub-montant {
+  font-weight: 800;
+  color: #071B3A;
+}
+
+/* ── ONGLETS : barre pilule, onglet actif navy dégradé ── */
+.finx-page .hub-onglets {
+  background: #FFFFFF;
+  border: 1px solid #E6EDF5;
+  border-radius: 16px;
+  padding: 0.4rem;
+  box-shadow: 0 10px 26px -18px rgba(7, 27, 58, 0.35);
+}
+
+.finx-page .hub-onglet {
+  border-color: transparent;
+  border-radius: 11px;
+  background: transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.finx-page .hub-onglet:hover { background: #F1F7FF; border-color: transparent; }
+
+.finx-page .hub-onglet.is-active {
+  background: linear-gradient(135deg, #0B2A5B, #1265D6);
+  color: #FFFFFF;
+  border-color: transparent;
+  box-shadow: 0 8px 18px -8px rgba(11, 42, 91, 0.7);
+}
+
+.finx-page .hub-onglet.is-active i { color: #F5C542; }
+
+/* ── PANNEAU : en-tête navy, compteur translucide ── */
+.finx-page .cand-panel {
+  border-color: #E4EAF2;
+  box-shadow: 0 1px 2px rgba(7, 27, 58, 0.05),
+              0 16px 36px -20px rgba(7, 27, 58, 0.3);
+}
+
+.finx-page .cand-panel-head {
+  background: linear-gradient(120deg, #071B3A, #0B2A5B 70%, #10397A);
+  color: #FFFFFF;
+}
+
+.finx-page .cand-panel-title { color: #FFFFFF; }
+.finx-page .cand-panel-title i { color: #F5C542; }
+
+.finx-page .cand-count-pill {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #FFFFFF;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── NOTE D'ONGLET : bandeau ambre ── */
+.finx-page .hub-note {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 10px;
+  padding: 0.55rem 0.8rem;
+  color: #92400E;
+}
+
+.finx-page .hub-note i { color: #D97706; }
+
+/* ── TABLEAU : en-tête navy souligné or, cascade, survol doré ── */
+.finx-page .cand-table thead th {
+  background: linear-gradient(180deg, #0B2A5B, #071B3A);
+  color: #DCEBFF;
+  border-bottom: 2px solid #F5C542;
+}
+
+@keyframes finxLigneIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.finx-page .cand-table tbody tr { animation: finxLigneIn 0.35s ease both; }
+.finx-page .cand-table tbody tr:nth-child(2) { animation-delay: 0.03s; }
+.finx-page .cand-table tbody tr:nth-child(3) { animation-delay: 0.06s; }
+.finx-page .cand-table tbody tr:nth-child(4) { animation-delay: 0.09s; }
+.finx-page .cand-table tbody tr:nth-child(5) { animation-delay: 0.12s; }
+.finx-page .cand-table tbody tr:nth-child(n+6) { animation-delay: 0.15s; }
+
+.finx-page .cand-table tbody tr:hover td:first-child {
+  box-shadow: inset 3px 0 0 #F5C542;
+}
+
+/* ── ÉTAT VIDE : médaillon dégradé ── */
+.finx-page .cand-vide-icone {
+  background: linear-gradient(135deg, #EAF2FF, #D6E7FF);
+  border: 1px solid #B9D4F5;
+  color: #1265D6;
+  box-shadow: 0 10px 20px -12px rgba(18, 101, 214, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finx-page .cand-table tbody tr { animation: none; }
+  .finx-page .cand-kpi { transition: none; }
+  .finx-page .cand-kpi:hover { transform: none; }
+}

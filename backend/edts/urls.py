@@ -9,6 +9,7 @@ from django.urls import path
 
 from . import api
 from . import api_getinjs as g
+from . import api_interop as interop
 from . import api_lmd as lmd
 
 # Pas d'app_name volontaire : le jeu de routes est monté deux fois
@@ -43,8 +44,18 @@ urlpatterns_lmd = [
          name='edt-lmd-import-inscrits-analyser'),
     path('lmd/import/inscrits/synthese/', g.synthese_import_api,
          name='edt-lmd-import-inscrits-synthese'),
+    path('lmd/import/inscrits/journal/', g.journal_imports_api,
+         name='edt-lmd-import-inscrits-journal'),
     path('lmd/import/inscrits/', g.importer_inscrits_api,
          name='edt-lmd-import-inscrits'),
+    path('lmd/inscrits/', g.inscrits_population_api,
+         name='edt-lmd-inscrits-population'),
+    path('lmd/referentiels/', g.referentiels_api,
+         name='edt-lmd-referentiels'),
+    path('lmd/dimensionnement/', g.dimensionnement_api,
+         name='edt-lmd-dimensionnement'),
+    path('lmd/dimensionnement/constituer/', g.constituer_groupes_api,
+         name='edt-lmd-dimensionnement-constituer'),
     path('lmd/generate-annee/', g.generate_annee_api,
          name='edt-lmd-generate-annee'),
     path('lmd/conception/', g.conception_api, name='edt-lmd-conception'),
@@ -73,6 +84,8 @@ urlpatterns_lmd = [
     # ── LOT 2 — campagnes de génération (AJOUT) ─────────────────────────────
     # Routes nouvelles sous `campagnes/` : aucune route existante modifiée.
     path('campagnes/', g.campagnes_api, name='edt-campagnes'),
+    path('campagnes/historique/', g.historique_generations_api,
+         name='edt-campagnes-historique'),
     path('campagnes/<int:pk>/', g.campagne_detail_api, name='edt-campagne-detail'),
     path('campagnes/<int:pk>/demarrer/', g.campagne_demarrer_api,
          name='edt-campagne-demarrer'),
@@ -90,6 +103,8 @@ urlpatterns_lmd = [
     # ── LOT 2 — campagnes de génération (AJOUT) ─────────────────────────────
     # Routes nouvelles sous `campagnes/` : aucune route existante modifiée.
     path('campagnes/', g.campagnes_api, name='edt-campagnes'),
+    path('campagnes/historique/', g.historique_generations_api,
+         name='edt-campagnes-historique'),
     path('campagnes/<int:pk>/', g.campagne_detail_api, name='edt-campagne-detail'),
     path('campagnes/<int:pk>/demarrer/', g.campagne_demarrer_api,
          name='edt-campagne-demarrer'),
@@ -147,3 +162,28 @@ urlpatterns = [
 # `affectations/` ou `conflits/`, l'ordre les rend donc sans effet — il est
 # conservé pour que la lecture du fichier reflète l'historique en premier.
 urlpatterns += urlpatterns_lmd
+
+# ── Interopérabilité Présences (extension GET INJS APP) ────────────────────
+# Contrat stable pour le futur module de présence : séances publiées par
+# identité permanente (UUID), étudiants attendus, instantanés, cycle de
+# vie tracé, géolocalisation des salles et file d'événements. Aucun
+# pointage n'est accepté ici.
+urlpatterns += [
+    path('interop/seances-publiees/', interop.seances_publiees_api,
+         name='edt-interop-seances-publiees'),
+    path('interop/seances/<uuid:uuid>/', interop.seance_detail_api,
+         name='edt-interop-seance-detail'),
+    path('interop/seances/<uuid:uuid>/etudiants-attendus/',
+         interop.seance_etudiants_attendus_api,
+         name='edt-interop-seance-attendus'),
+    path('interop/seances/<uuid:uuid>/instantane/', interop.seance_instantane_api,
+         name='edt-interop-seance-instantane'),
+    path('interop/seances/<uuid:uuid>/transition/', interop.seance_transition_api,
+         name='edt-interop-seance-transition'),
+    path('interop/emplois/<int:pk>/reconcilier/', interop.emploi_reconcilier_api,
+         name='edt-interop-emploi-reconcilier'),
+    path('interop/salles-geolocalisation/', interop.salles_geolocalisation_api,
+         name='edt-interop-salles-geolocalisation'),
+    path('interop/evenements/', interop.evenements_api,
+         name='edt-interop-evenements'),
+]

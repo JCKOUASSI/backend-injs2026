@@ -246,3 +246,28 @@ class EffectifsTests(BaseImportTest):
         rapport = self.importer(_csv(lignes), appliquer=True)
         self.assertEqual(rapport.effectif_total, 25)
         self.assertEqual(InscriptionImportee.objects.count(), 25)
+
+
+class ContactImporteTests(BaseImportTest):
+    """Colonne « Contact » de l'écran d'import : email / téléphone tracés."""
+
+    def test_email_et_telephone_reconnus_et_conserves(self):
+        entete = ('matricule;nom;prenoms;email;telephone;formation;'
+                  'niveau;semestre;groupe;vague\n')
+        lignes = [
+            f'INJS-{i:03d};Nom{i};Prenom;etudiant{i}@injs.ci;0707000{i:03d};'
+            f'{self.formation.intitule};L1;S1;L1-G1;V1'
+            for i in range(3)
+        ]
+        rapport = I.importer_inscrits(
+            annee_academique_id=self.annee.pk,
+            nom_fichier='contacts.csv',
+            contenu=(entete + '\n'.join(lignes) + '\n').encode('utf-8'),
+            appliquer=True,
+        )
+        self.assertEqual(rapport.lignes_valides, 3)
+        self.assertIn('email', rapport.colonnes_reconnues)
+        self.assertIn('telephone', rapport.colonnes_reconnues)
+        inscription = InscriptionImportee.objects.get(matricule='INJS-001')
+        self.assertEqual(inscription.email, 'etudiant1@injs.ci')
+        self.assertEqual(inscription.telephone, '0707000001')

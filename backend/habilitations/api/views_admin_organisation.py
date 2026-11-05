@@ -13,6 +13,9 @@ confère aucun droit — l'autorisation reste l'apanage du moteur CURP.
 from django.db import IntegrityError, transaction
 from rest_framework import status
 from rest_framework.response import Response
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.views import APIView
 
 from administrations.models import Departement, Direction
@@ -158,13 +161,27 @@ def _ser_compte_bref(compte):
 # ---------------------------------------------------------------------------
 # Directions
 # ---------------------------------------------------------------------------
+
+
+# ── Contrats OpenAPI (administration des habilitations) ──────────────
+
+
+class ErreurAdminOrganisationSerializer(serializers.Serializer):
+    """Erreurs du module : {'detail': message, 'code': CODE}."""
+
+    detail = serializers.CharField()
+    code = serializers.CharField(required=False)
+
+
 class DirectionListCreateView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: ErreurAdminOrganisationSerializer})
     def get(self, request):
         items = Direction.objects.all()
         return Response({'results': [_ser_direction(d) for d in items]})
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: ErreurAdminOrganisationSerializer})
     @transaction.atomic
     def post(self, request):
         data = request.data
@@ -202,6 +219,7 @@ class DirectionDetailView(APIView):
     def _get(self, request, pk):
         return Direction.objects.filter(pk=pk).first()
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurAdminOrganisationSerializer, 404: ErreurAdminOrganisationSerializer})
     def get(self, request, pk):
         direction = self._get(request, pk)
         if direction is None:
@@ -213,6 +231,7 @@ class DirectionDetailView(APIView):
             ],
         })
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: ErreurAdminOrganisationSerializer, 404: ErreurAdminOrganisationSerializer})
     @transaction.atomic
     def patch(self, request, pk):
         direction = self._get(request, pk)
@@ -250,6 +269,7 @@ class DirectionDetailView(APIView):
 class DepartementListCreateView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: ErreurAdminOrganisationSerializer})
     def get(self, request):
         qs = Departement.objects.select_related('direction').all()
         direction_id = request.query_params.get('direction')
@@ -257,6 +277,7 @@ class DepartementListCreateView(APIView):
             qs = qs.filter(direction_id=direction_id)
         return Response({'results': [_ser_departement(d) for d in qs]})
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: ErreurAdminOrganisationSerializer})
     @transaction.atomic
     def post(self, request):
         data = request.data
@@ -304,6 +325,7 @@ class DepartementDetailView(APIView):
     def _get(self, request, pk):
         return Departement.objects.select_related('direction').filter(pk=pk).first()
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurAdminOrganisationSerializer, 404: ErreurAdminOrganisationSerializer})
     def get(self, request, pk):
         departement = self._get(request, pk)
         if departement is None:
@@ -321,6 +343,7 @@ class DepartementDetailView(APIView):
             ],
         })
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: ErreurAdminOrganisationSerializer, 404: ErreurAdminOrganisationSerializer})
     @transaction.atomic
     def patch(self, request, pk):
         departement = self._get(request, pk)
@@ -378,6 +401,7 @@ class DepartementDetailView(APIView):
 class ServiceListCreateView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: ErreurAdminOrganisationSerializer})
     def get(self, request):
         qs = Service.objects.select_related('departement').all()
         departement_id = request.query_params.get('departement')
@@ -388,6 +412,7 @@ class ServiceListCreateView(APIView):
             qs = qs.filter(nom__icontains=q)
         return Response({'results': [_ser_service(s) for s in qs]})
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: ErreurAdminOrganisationSerializer})
     @transaction.atomic
     def post(self, request):
         data = request.data
@@ -433,6 +458,7 @@ class ServiceDetailView(APIView):
     def _get(self, request, pk):
         return Service.objects.select_related('departement').filter(pk=pk).first()
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurAdminOrganisationSerializer, 404: ErreurAdminOrganisationSerializer})
     def get(self, request, pk):
         service_ = self._get(request, pk)
         if service_ is None:
@@ -447,6 +473,7 @@ class ServiceDetailView(APIView):
             ],
         })
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: ErreurAdminOrganisationSerializer, 404: ErreurAdminOrganisationSerializer})
     @transaction.atomic
     def patch(self, request, pk):
         service_ = self._get(request, pk)
@@ -547,9 +574,11 @@ class DepartementComptesView(APIView):
             ],
         })
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
     def post(self, request, pk):
         return self._rattacher(request, pk, retirer=False)
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
     def delete(self, request, pk):
         return self._rattacher(request, pk, retirer=True)
 
@@ -601,9 +630,11 @@ class ServiceComptesView(APIView):
             ],
         })
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
     def post(self, request, pk):
         return self._rattacher(request, pk, retirer=False)
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
     def delete(self, request, pk):
         return self._rattacher(request, pk, retirer=True)
 
@@ -622,6 +653,7 @@ class ComptePermissionsEffectivesView(APIView):
 
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 404: ErreurAdminOrganisationSerializer})
     def get(self, request, pk):
         compte = (
             CompteUtilisateur.objects

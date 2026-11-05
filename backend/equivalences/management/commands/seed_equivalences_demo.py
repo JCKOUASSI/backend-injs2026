@@ -16,10 +16,17 @@ par ``[Exemple]`` : repérage, idempotence (une demande d'exemple
 existante n'est jamais retouchée) et purge ciblée (``--purger``, les
 APPLIQUEE sont conservées — l'historique académique est engagé).
 
+L'option ``--volume N`` complète jusqu'à N demandes ``[Exemple]`` au
+total par des demandes simples (statuts d'instruction, sans cheminement
+workflow) : elle sert à tester le chargement explicite borné à 200 des
+écrans de liste sur un volume réaliste. ``--purger`` les retire comme
+les autres exemples non APPLIQUEE.
+
 Exemples
 --------
     python manage.py seed_equivalences_demo --dry-run
     python manage.py seed_equivalences_demo --utilisateur admin
+    python manage.py seed_equivalences_demo --volume 210
     python manage.py seed_equivalences_demo --purger
 """
 
@@ -87,6 +94,9 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--annee', help="Libellé d'année (défaut : année courante).")
         parser.add_argument('--utilisateur', help="Nom d'utilisateur signataire des transitions.")
+        parser.add_argument('--volume', type=int, default=0,
+                            help='Compléter jusqu\'à N demandes [Exemple] au total '
+                                 '(test du chargement explicite 200).')
         parser.add_argument('--purger', action='store_true',
                             help='Supprimer les demandes [Exemple] non APPLIQUEE, puis quitter.')
         parser.add_argument('--dry-run', action='store_true', help='Simuler sans écrire.')
@@ -271,7 +281,47 @@ class Command(BaseCommand):
                     self._pieces(demande, cible, utilisateur)
                     self._avancer(demande, cible, utilisateur, rang_global)
 
+        # ── Complément de volume (test du chargement explicite 200) ──────
+        volume = options.get('volume') or 0
+        volume_crees = 0
+        if volume:
+            existantes = DemandeEquivalenceDispense.objects.filter(
+                motif__startswith=MARQUE,
+            ).count()
+            # En simulation, les `crees` de la passe cohortes ne sont pas
+            # encore en base : on les compte comme à venir.
+            manque = max(0, volume - existantes - (crees if dry_run else 0))
+            if manque:
+                inscrits_volume = list(
+                    InscriptionAdministrative.objects.filter(
+                        annee_academique=annee,
+                        statut=InscriptionAdministrative.Statut.VALIDEE,
+                    ).select_related('etudiant__participant')
+                    .order_by('etudiant__participant__matricule')
+                )
+                statuts_volume = [S.BROUILLON, S.SOUMISE, S.EN_INSTRUCTION, S.A_COMPLETER]
+                for i in range(manque):
+                    if not inscrits_volume:
+                        break
+                    volume_crees += 1
+                    if dry_run:
+                        continue
+                    inscription = inscrits_volume[i % len(inscrits_volume)]
+                    DemandeEquivalenceDispense.objects.create(
+                        type_demande='EQUIVALENCE' if i % 2 == 0 else 'DISPENSE',
+                        etudiant=inscription.etudiant, annee_academique=annee,
+                        ref_formation_id=inscription.ref_formation_id,
+                        niveau_id=inscription.niveau_id,
+                        statut=statuts_volume[i % len(statuts_volume)],
+                        etablissement_origine='Université partenaire (exemple volume)',
+                        diplome_origine='Diplôme antérieur (exemple volume)',
+                        annee_obtention=2024,
+                        motif=f'{MARQUE} Demande de volume — test du chargement explicite 200.',
+                        date_effet=annee.date_debut,
+                    )
+
         self.stdout.write(
             f'Demandes d’exemple créées : {crees} ; déjà présentes : {ignores} ; '
-            f'cohortes sans maquette ACTIVE : {sans_maquette}.',
+            f'cohortes sans maquette ACTIVE : {sans_maquette}'
+            + (f' ; volume de test : +{volume_crees} (cible {volume}).' if volume else '.'),
         )

@@ -8,7 +8,7 @@ Pattern retenu : ViewSet + DefaultRouter (comme l'app parametres).
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
-from rest_framework import status, viewsets
+from rest_framework import serializers, status, viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -42,6 +42,18 @@ from .serializers import (
     RefTypeFraisSerializer,
     RefTypeNotificationSerializer,
 )
+
+
+
+
+# ── Contrats OpenAPI (administration des habilitations) ──────────────
+
+
+class ErreurReferentielsSerializer(serializers.Serializer):
+    """Erreurs du module : {'detail': message, 'code': CODE}."""
+
+    detail = serializers.CharField()
+    code = serializers.CharField(required=False)
 
 
 class RefPagination(PageNumberPagination):
@@ -291,6 +303,9 @@ class ReferentielJournalViewSet(viewsets.ReadOnlyModelViewSet):
 # Refonte « Référentiels » : API générique pilotée par le registre
 # ═══════════════════════════════════════════════════════════════════════════
 from django.db.models import Count  # noqa: E402
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.views import APIView  # noqa: E402
 
 from .registre import (  # noqa: E402
@@ -347,6 +362,7 @@ class TableauDeBordReferentielsView(APIView):
 
     permission_classes = [ReferentielPermission]
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
     def get(self, request):
         entrees = []
         total_valeurs = 0

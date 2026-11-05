@@ -127,11 +127,27 @@ describe('affichage et lecture', () => {
   it('affiche « — » plutôt que 0 pour un crédit d’ECUE non publié', async () => {
     monter()
     await attendreEcran()
-    const ligne = await screen.findByTestId('ligne-ecue-100')
-    const cellules = within(ligne).getAllByRole('cell')
-    // Colonnes : code, intitulé, ECTS, volumes, statut, actions.
-    expect(cellules[2]).toHaveTextContent('—')
-    expect(cellules[3]).toHaveTextContent('—')
+    const carte = await screen.findByTestId('ligne-ecue-100')
+    // Carte ECUE : ni les crédits ni les volumes non publiés ne deviennent 0.
+    expect(within(carte).getByText('— ECTS')).toBeInTheDocument()
+    expect(carte.querySelector('.uex-volumes-vide')).toHaveTextContent('—')
+  })
+
+  it('affiche la synthèse premium de la maquette et les barres de volumes', async () => {
+    const ueAvecVolumes = {
+      ...UE,
+      ecues: [{ ...UE.ecues[0], credits: 3, volume_cm: 12, volume_td: 8, volume_tp: 6 }],
+    }
+    const { container } = monter({ ues: [ueAvecVolumes] })
+    await attendreEcran()
+    // Synthèse calculée : barre de contexte, 4 indicateurs, volumes agrégés.
+    expect(container.querySelector('.uex-toolbar')).not.toBeNull()
+    expect(container.querySelectorAll('.uex-kpi')).toHaveLength(4)
+    expect(screen.getByText('26 h')).toBeInTheDocument()
+    const carte = await screen.findByTestId('ligne-ecue-100')
+    expect(carte.querySelector('.uex-volumes-barre')).not.toBeNull()
+    expect(within(carte).getByText(/CM 12 · TD 8 · TP 6/)).toBeInTheDocument()
+    expect(within(carte).getByText('3 ECTS')).toBeInTheDocument()
   })
 })
 
@@ -406,5 +422,170 @@ describe('rôles', () => {
     expect(screen.queryByTestId(/^ue-statut-/)).toBeNull()
     // La consultation reste complète : les ECUE sont visibles.
     expect(await screen.findByTestId('ligne-ecue-100')).toBeInTheDocument()
+  })
+})
+
+describe('clonage d’une maquette gelée (demande 03/11)', () => {
+  it('clone la maquette validée et bascule sur la version brouillon éditable', async () => {
+    const clone = { ...MAQUETTE_VALIDEE, id: 3, statut: 'BROUILLON' }
+    // Liste mutable passée dès le montage : le refetch après clonage la
+    // relit et y découvre le clone (le mock conserve la première route).
+    const liste = [MAQUETTE_VALIDEE]
+    monter({ maquettes: liste })
+    apiController.setRoute('/scolarite/maquettes/2/cloner/', () => {
+      liste.push(clone)
+      return clone
+    })
+    expect(await screen.findByTestId('maquette-verrouillee')).toBeInTheDocument()
+    expect(screen.queryByTestId('nouvelle-ue')).toBeNull()
+
+    fireEvent.click(screen.getByTestId('cloner-maquette'))
+    await waitFor(() => {
+      expect(apiController.findCall('post', '/scolarite/maquettes/2/cloner/')).toBeTruthy()
+    })
+    // Le clone est sélectionné : les actions d'écriture deviennent visibles.
+    expect(await screen.findByTestId('nouvelle-ue')).toBeInTheDocument()
+    expect(await screen.findByText(/Version brouillon créée par clonage/)).toBeInTheDocument()
+  })
+
+  it('un rôle sans droit d’écriture ne voit pas le bouton de clonage', async () => {
+    monter({ utilisateur: ENSEIGNANT, maquettes: [MAQUETTE_VALIDEE] })
+    expect(await screen.findByTestId('maquette-verrouillee')).toBeInTheDocument()
+    expect(screen.queryByTestId('cloner-maquette')).toBeNull()
+  })
+})
+
+describe('sélection multiple des UE (demande 03/11)', () => {
+  const UE2 = { ...UE, id: 11, code: 'EM-S1-UE02', intitule: 'Sciences humaines et sociales', ecues: [] }
+  const UE3 = { ...UE, id: 12, code: 'EM-S1-UE03', intitule: 'Sciences de l’intervention', ecues: [] }
+
+  it('coche individuelle, partielle puis activation en masse', async () => {
+    monter({ ues: [UE, UE2, UE3] })
+    await attendreEcran()
+    // Aucune barre tant que rien n'est coché.
+    expect(screen.queryByTestId('barre-actions-ue')).toBeNull()
+
+    fireEvent.click(screen.getByTestId('cocher-ue-10'))
+    fireEvent.click(screen.getByTestId('cocher-ue-11'))
+    expect(await screen.findByTestId('barre-actions-ue')).toBeInTheDocument()
+    expect(screen.getByText('2 UE sélectionnées')).toBeInTheDocument()
+    // Sélection partielle : la case « tout cocher » est indéterminée.
+    expect(screen.getByTestId('tout-cocher-ue').indeterminate).toBe(true)
+
+    apiController.setRoute('/scolarite/ues/10/statut/', { id: 10, statut: 'ACTIVE' })
+    apiController.setRoute('/scolarite/ues/11/statut/', { id: 11, statut: 'ACTIVE' })
+    fireEvent.click(screen.getByTestId('masse-ue-activer'))
+    await waitFor(() => {
+      expect(apiController.findCall('post', '/scolarite/ues/10/statut/')).toBeTruthy()
+      expect(apiController.findCall('post', '/scolarite/ues/11/statut/')).toBeTruthy()
+    })
+    expect(apiController.findCall('post', '/scolarite/ues/12/statut/')).toBeFalsy()
+    expect(await screen.findByText(/Activation groupée : 2 UE traitées\./)).toBeInTheDocument()
+  })
+
+  it('tout cocher sélectionne les UE affichées, tout désélectionner vide', async () => {
+    monter({ ues: [UE, UE2, UE3] })
+    await attendreEcran()
+    fireEvent.click(screen.getByTestId('tout-cocher-ue'))
+    expect(await screen.findByText('3 UE sélectionnées')).toBeInTheDocument()
+    expect(screen.getByTestId('tout-cocher-ue').checked).toBe(true)
+    fireEvent.click(screen.getByTestId('masse-ue-effacer'))
+    await waitFor(() => expect(screen.queryByTestId('barre-actions-ue')).toBeNull())
+  })
+
+  it('suppression en masse après confirmation explicite', async () => {
+    monter({ ues: [UE2, UE3] })
+    await screen.findByTestId('ligne-ue-11')
+    fireEvent.click(screen.getByTestId('tout-cocher-ue'))
+    fireEvent.click(await screen.findByTestId('masse-ue-supprimer'))
+    const boite = await screen.findByRole('dialog')
+    expect(within(boite).getByText(/Supprimer les 2 UE sélectionnées/)).toBeInTheDocument()
+    fireEvent.click(within(boite).getByText('Supprimer la sélection'))
+    await waitFor(() => {
+      expect(apiController.findCall('delete', '/scolarite/ues/11/')).toBeTruthy()
+      expect(apiController.findCall('delete', '/scolarite/ues/12/')).toBeTruthy()
+    })
+    expect(await screen.findByText(/Suppression groupée : 2 UE traitées\./)).toBeInTheDocument()
+  })
+})
+
+describe('sélection multiple des ECUE (demande 03/11)', () => {
+  it('coche un ECUE et le désactive en masse (ignoré si transition non autorisée)', async () => {
+    monter()
+    await attendreEcran()
+    expect(await screen.findByTestId('ligne-ecue-100')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('cocher-ecue-100'))
+    expect(await screen.findByText('1 ECUE sélectionnée')).toBeInTheDocument()
+    // ECUE en brouillon : « Désactiver » n'est pas une transition autorisée.
+    fireEvent.click(screen.getByTestId('masse-ecue-desactiver'))
+    expect(await screen.findByText(/1 ignorée \(transition non autorisée\)/)).toBeInTheDocument()
+    expect(apiController.findCall('post', '/scolarite/ecues/100/statut/')).toBeFalsy()
+  })
+})
+
+describe('visibilité sur maquette gelée (demande 03/11 — retour utilisateur)', () => {
+  it('montre les cases verrouillées et le bouton d’édition, puis tout s’active après clonage', async () => {
+    const clone = { ...MAQUETTE_VALIDEE, id: 3, statut: 'BROUILLON' }
+    const liste = [MAQUETTE_VALIDEE]
+    monter({ maquettes: liste })
+    apiController.setRoute('/scolarite/maquettes/2/cloner/', () => {
+      liste.push(clone)
+      return clone
+    })
+    expect(await screen.findByTestId('maquette-verrouillee')).toBeInTheDocument()
+    await attendreEcran()
+    // Les cases à cocher sont VUES (mais verrouillées) et le bouton
+    // « Passer en mode édition » est présent dans la barre d'outils.
+    const caseUe = screen.getByTestId('cocher-ue-10')
+    expect(caseUe).toBeInTheDocument()
+    expect(caseUe.disabled).toBe(true)
+    expect(screen.getByTestId('tout-cocher-ue').disabled).toBe(true)
+    expect(screen.getByTestId('cloner-maquette-barre')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('cloner-maquette-barre'))
+    // Après clonage : cases actives, sélection et barre de masse utilisables.
+    expect(await screen.findByTestId('nouvelle-ue')).toBeInTheDocument()
+    expect(screen.getByTestId('cocher-ue-10').disabled).toBe(false)
+    fireEvent.click(screen.getByTestId('cocher-ue-10'))
+    expect(await screen.findByTestId('barre-actions-ue')).toBeInTheDocument()
+  })
+
+  it('un gestionnaire ouvre l’écran directement sur la copie brouillon', async () => {
+    const copie = { ...MAQUETTE_VALIDEE, id: 3, statut: 'BROUILLON' }
+    monter({ maquettes: [MAQUETTE_VALIDEE, copie] })
+    // La maquette présélectionnée est la copie de travail (id 3).
+    expect(await screen.findByTestId('nouvelle-ue')).toBeInTheDocument()
+    expect(screen.getByTestId('choix-maquette').value).toBe('3')
+  })
+})
+
+describe('bascule automatique au choix d’une maquette gelée (demande 03/11)', () => {
+  it('choisir la version officielle dans la liste ouvre sa copie de travail éditable', async () => {
+    const officielle = { ...MAQUETTE_VALIDEE, id: 2, statut: 'ACTIVE', version: 1 }
+    const copie = { ...MAQUETTE_VALIDEE, id: 3, statut: 'BROUILLON', version: 2 }
+    monter({ maquettes: [officielle, copie] })
+    await attendreEcran()
+    // L'écran démarre sur la copie ; l'utilisateur choisit quand même la v1.
+    expect(screen.getByTestId('choix-maquette').value).toBe('3')
+    fireEvent.change(screen.getByTestId('choix-maquette'), { target: { value: '2' } })
+    // Bascule automatique : on reste sur la copie éditable, cases actives.
+    expect(screen.getByTestId('choix-maquette').value).toBe('3')
+    expect(await screen.findByText(/copie brouillon/)).toBeInTheDocument()
+    expect(screen.getByTestId('nouvelle-ue')).toBeInTheDocument()
+    expect(screen.getByTestId('cocher-ue-10').disabled).toBe(false)
+    fireEvent.click(screen.getByTestId('cocher-ue-10'))
+    expect(await screen.findByTestId('barre-actions-ue')).toBeInTheDocument()
+  })
+
+  it('un rôle en lecture seule reste sur la maquette officielle choisie', async () => {
+    const officielle = { ...MAQUETTE_VALIDEE, id: 2, statut: 'ACTIVE', version: 1 }
+    const copie = { ...MAQUETTE_VALIDEE, id: 3, statut: 'BROUILLON', version: 2 }
+    monter({ utilisateur: ENSEIGNANT, maquettes: [officielle, copie] })
+    await attendreEcran()
+    fireEvent.change(screen.getByTestId('choix-maquette'), { target: { value: '2' } })
+    // Aucune bascule : consultation de l'officielle, aucune action d'écriture.
+    expect(screen.getByTestId('choix-maquette').value).toBe('2')
+    expect(screen.queryByTestId('nouvelle-ue')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('cocher-ue-10')).not.toBeInTheDocument()
   })
 })

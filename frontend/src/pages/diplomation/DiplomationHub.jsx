@@ -6,6 +6,7 @@
  * l’écran Diplômes de la scolarité.
  */
 import ModuleHub from '@/components/hub/ModuleHub'
+import '../../styles/diplomation.css'
 
 const TONS_STATUT = {
   BROUILLON: 'slate', VALIDATION_PENDING: 'amber',
@@ -26,25 +27,25 @@ export default function DiplomationHub({ ongletInitial = 'eligibilite' }) {
   return (
     <ModuleHub
       titre="Diplômation & documents officiels"
-      badge="Diplômation"
-      icone="graduationCap"
+      badge="Diplômation · Documents officiels LMD"
+      icone="bi-mortarboard"
       introduction="Fin de cycle, diplômes et registre annuel. Les diplômes d’exemple restent en brouillon ou en attente de validation — aucun n’est validé, afin qu’aucun document de démonstration ne puisse être présenté comme authentique sur le portail public de vérification."
       statsEndpoint="/graduation/stats/"
       pastilles={(s) => [
-        { icone: 'graduationCap', texte: `${s.etudiants_fin_cycle ?? 0} étudiants en fin de cycle (L3/M2)` },
-        { icone: 'shieldCheck', texte: `${s.par_statut?.VALIDATED ?? 0} diplôme(s) validé(s) — vérifiables par QR code` },
-        { icone: 'bookOpen', texte: `${s.registres ?? 0} registre(s) annuel(s)` },
-        { icone: 'info', texte: 'Validation, révocation et PDF signés : écran Diplômes de la scolarité.' },
+        { icone: 'bi-mortarboard', texte: `${s.etudiants_fin_cycle ?? 0} étudiants en fin de cycle (L3/M2)` },
+        { icone: 'bi-patch-check', texte: `${s.par_statut?.VALIDATED ?? 0} diplôme(s) validé(s) — vérifiables par QR code` },
+        { icone: 'bi-journal-bookmark', texte: `${s.registres ?? 0} registre(s) annuel(s)` },
+        { icone: 'bi-info-circle', texte: 'Validation, révocation et PDF signés : écran Diplômes de la scolarité.' },
       ]}
       tuiles={(s) => [
-        { valeur: s.diplomes, libelle: 'Diplômes suivis', sub: `${s.par_statut?.VALIDATED ?? 0} validés · ${s.par_statut?.REVOKED ?? 0} révoqués`, icone: 'award', ton: 'blue' },
-        { valeur: s.par_statut?.VALIDATION_PENDING, libelle: 'En attente de validation', sub: 'décision de la Direction requise', icone: 'hourglass', ton: 'amber' },
-        { valeur: s.reeditions, libelle: 'Rééditions', sub: 'duplicatas tracés', icone: 'copy', ton: 'cyan' },
-        { valeur: s.modeles, libelle: 'Gabarits actifs', sub: 'diplôme, attestation, relevé', icone: 'layoutTemplate', ton: 'violet' },
+        { valeur: s.diplomes, libelle: 'Diplômes suivis', sub: `${s.par_statut?.VALIDATED ?? 0} validés · ${s.par_statut?.REVOKED ?? 0} révoqués`, icone: 'bi-award', ton: 'blue' },
+        { valeur: s.par_statut?.VALIDATION_PENDING, libelle: 'En attente de validation', sub: 'décision de la Direction requise', icone: 'bi-hourglass-split', ton: 'amber' },
+        { valeur: s.reeditions, libelle: 'Rééditions', sub: 'duplicatas tracés', icone: 'bi-files', ton: 'cyan' },
+        { valeur: s.modeles, libelle: 'Gabarits actifs', sub: 'diplôme, attestation, relevé', icone: 'bi-file-earmark-text', ton: 'violet' },
       ]}
       onglets={[
         {
-          id: 'eligibilite', libelle: 'Éligibilité', icone: 'listChecks',
+          id: 'eligibilite', libelle: 'Éligibilité', icone: 'bi-list-check',
           endpoint: '/graduation/eligibles/',
           rechercheLocale: ['nom_complet', 'matricule', 'formation'],
           recherchePlaceholder: 'Étudiant, matricule, formation…',
@@ -60,7 +61,7 @@ export default function DiplomationHub({ ongletInitial = 'eligibilite' }) {
           videTexte: 'Les inscriptions validées de L3 et M2 de l’année courante apparaîtront ici.',
         },
         {
-          id: 'attestations', libelle: 'Diplômes & attestations', icone: 'award',
+          id: 'attestations', libelle: 'Diplômes & attestations', icone: 'bi-award',
           endpoint: '/graduation/diplomes/',
           rechercheLocale: ['nom_complet', 'matricule', 'ref_formation'],
           recherchePlaceholder: 'Diplômé(e), matricule…',
@@ -75,7 +76,7 @@ export default function DiplomationHub({ ongletInitial = 'eligibilite' }) {
           videTexte: 'Les diplômes créés depuis l’écran Diplômes de la scolarité apparaîtront ici.',
         },
         {
-          id: 'certificats', libelle: 'Certificats & gabarits', icone: 'layoutTemplate',
+          id: 'certificats', libelle: 'Certificats & gabarits', icone: 'bi-file-earmark-text',
           endpoint: '/graduation/modeles/',
           rechercheLocale: ['libelle', 'formation'],
           recherchePlaceholder: 'Gabarit ou formation…',
@@ -91,7 +92,7 @@ export default function DiplomationHub({ ongletInitial = 'eligibilite' }) {
           videTexte: 'Les gabarits de documents officiels apparaîtront ici.',
         },
         {
-          id: 'registres', libelle: 'Registres & modèles', icone: 'bookOpen',
+          id: 'registres', libelle: 'Registres & modèles', icone: 'bi-journal-bookmark',
           endpoint: '/graduation/registres/',
           rechercheLocale: ['annee_academique'],
           recherchePlaceholder: 'Année académique…',
@@ -107,6 +108,7 @@ export default function DiplomationHub({ ongletInitial = 'eligibilite' }) {
         },
       ]}
       ongletInitial={ongletInitial}
+      classePage="hub-diplomation"
     />
   )
 }

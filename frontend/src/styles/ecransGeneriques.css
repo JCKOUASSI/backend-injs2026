@@ -1161,3 +1161,276 @@
     transition: none !important;
   }
 }
+
+/* ── ALERTES & SEUILS PREMIUM (rendu dédié alertes_seuils) ─────────────────
+   Même identité que « Sessions de jury LMD » : héros dégradé INJS scopé à cet
+   écran via le wrapper data-testid de EcranGenerique, cartes-jauges et
+   synthèse comptée. Aucun JSON brut ne doit plus y apparaître. */
+[data-testid="ecran-stats_alertes"] .gen-hero {
+  background:
+    radial-gradient(700px 260px at 88% -30%, rgba(53,189,245,.42), transparent 60%),
+    radial-gradient(520px 220px at 8% 120%, rgba(245,158,11,.30), transparent 55%),
+    linear-gradient(120deg, #071B3A 0%, #1D2B66 48%, #283A87 78%, #104A8E 100%) !important;
+  border: none !important; color: #fff;
+  box-shadow: 0 22px 44px -16px rgba(7,27,58,.55), inset 0 1px 0 rgba(255,255,255,.22) !important;
+}
+[data-testid="ecran-stats_alertes"] .gen-hero-title { color: #fff !important; }
+[data-testid="ecran-stats_alertes"] .gen-hero-title i { color: #FBBF24 !important; }
+[data-testid="ecran-stats_alertes"] .gen-hero-eyebrow { color: #FDE68A !important; }
+[data-testid="ecran-stats_alertes"] .gen-hero-intro { color: #DBEAFE !important; }
+[data-testid="ecran-stats_alertes"] .gen-hero-icon { background: rgba(255,255,255,.14) !important;
+  border: 1px solid rgba(255,255,255,.3); color: #7DD3FC !important; }
+[data-testid="ecran-stats_alertes"] .gen-plaquette { color:#E0F2FE !important; background:rgba(255,255,255,.12) !important; border-color:rgba(255,255,255,.25) !important; }
+
+.gen-kpi-detail { margin: 0; display: flex; flex-direction: column; gap: .3rem; }
+.gen-kpi-detail > div { display: flex; justify-content: space-between; gap: 1rem; }
+.gen-kpi-detail dt { font-weight: 600; color: #64748B; }
+.gen-kpi-detail dd { margin: 0; font-weight: 800; color: var(--injs-navy); }
+
+.alertes-vue { display: flex; flex-direction: column; gap: 1.1rem; }
+.alertes-panel { background:#fff; border:1px solid #e6edf5; border-radius:18px; overflow:hidden;
+  box-shadow:0 10px 28px -16px rgba(7,27,58,.22); }
+.alertes-panel-head { display:flex; align-items:center; justify-content:space-between; gap:.75rem; flex-wrap:wrap;
+  padding:.85rem 1.3rem; border-bottom:1px solid #edf1f6; background:linear-gradient(180deg,#f8fbff,#fff); }
+.alertes-panel-title { margin:0; display:flex; align-items:center; gap:.5rem; font-size:.98rem; font-weight:800; color:var(--injs-navy); }
+.alertes-panel-title i { color:var(--injs-blue-royal); }
+.alertes-count { display:inline-flex; padding:.22rem .7rem; border-radius:999px; background:var(--injs-blue-pale);
+  color:var(--injs-indigo); border:1px solid var(--injs-border-strong); font-size:.75rem; font-weight:800; }
+.alertes-btn-refresh { border-radius:999px; font-weight:700; border-color:#dbe5f0; color:var(--injs-indigo); background:#fff; }
+.alertes-btn-refresh:hover { background:var(--injs-blue-pale); }
+.alertes-synthese { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:.8rem; padding:1.1rem 1.3rem; }
+.alertes-stat { border:1px solid #e6edf5; border-radius:14px; padding:.8rem .9rem; text-align:center; background:#f8fbff; }
+.alertes-stat-valeur { display:block; font-size:1.55rem; font-weight:850; line-height:1; color:var(--injs-navy); }
+.alertes-stat-libelle { display:block; margin-top:.3rem; font-size:.64rem; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:#64748b; }
+.alertes-stat--green { border-top:4px solid #16A36A; } .alertes-stat--amber { border-top:4px solid #F59E0B; }
+.alertes-stat--red { border-top:4px solid #DC3545; } .alertes-stat--slate { border-top:4px solid #94A3B8; }
+.alertes-alerte-config { margin:0 1.3rem 1.2rem; display:flex; gap:.8rem; align-items:flex-start; flex-wrap:wrap;
+  background:#FFF4DF; border:1px solid #F5DFAE; color:#7C4A03; border-radius:13px; padding:.9rem 1rem; font-size:.86rem; }
+.alertes-alerte-config > i { color:#D97706; font-size:1.15rem; margin-top:.1rem; }
+.alertes-btn-init { margin-left:auto; border-radius:999px; font-weight:800; background:linear-gradient(120deg,#1D2B66,#1267D6); color:#fff; border:none; padding:.45rem 1rem; }
+.alertes-grille { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:1rem; padding:1.1rem 1.3rem 1.3rem; }
+.alertes-carte { border:1px solid #e6edf5; border-radius:16px; padding:1rem 1.05rem; background:#fff;
+  box-shadow:0 8px 22px -14px rgba(7,27,58,.25); display:flex; flex-direction:column; gap:.45rem; }
+.alertes-carte-head { display:flex; justify-content:space-between; align-items:center; }
+.alertes-carte-icone { width:40px; height:40px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; font-size:1.1rem; }
+.alertes-badge { display:inline-flex; padding:.24rem .65rem; border-radius:999px; font-size:.68rem; font-weight:800; letter-spacing:.03em; border:1px solid transparent; }
+.alertes-badge--green { color:#0E7A4F; background:#E7F8EF; border-color:#B7E7CE; }
+.alertes-badge--amber { color:#8A5A00; background:#FFF4DF; border-color:#F5DFAE; }
+.alertes-badge--red { color:#A3222F; background:#FDEBEC; border-color:#F5C2C7; }
+.alertes-badge--slate { color:#475569; background:#F1F5F9; border-color:#DCE3EC; }
+.alertes-carte-titre { margin:0; font-size:.92rem; font-weight:800; color:var(--injs-navy); }
+.alertes-carte-valeur { font-size:1.7rem; font-weight:850; line-height:1; color:var(--injs-navy); }
+.alertes-carte-valeur small { font-size:.85rem; font-weight:700; color:#64748b; margin-left:.2rem; }
+.alertes-jauge { position:relative; height:9px; border-radius:999px; background:#E6EDF5; margin:.35rem 0 .15rem; }
+.alertes-jauge-remplissage { position:absolute; inset:0 auto 0 0; border-radius:999px; background:#1267D6; }
+.alertes-jauge--green { background:#16A36A; } .alertes-jauge--amber { background:#F59E0B; }
+.alertes-jauge--red { background:#DC3545; } .alertes-jauge--slate { background:#94A3B8; }
+.alertes-jauge-seuil { position:absolute; top:-3px; width:3px; height:15px; border-radius:2px; transform:translateX(-50%); }
+.alertes-jauge-seuil--avert { background:#F59E0B; } .alertes-jauge-seuil--crit { background:#DC3545; }
+.alertes-carte-seuils { display:flex; gap:1rem; flex-wrap:wrap; font-size:.74rem; font-weight:700; color:#475569; }
+.alertes-point { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:.35rem; }
+.alertes-point--avert { background:#F59E0B; } .alertes-point--crit { background:#DC3545; }
+.alertes-carte-aide { margin:0; font-size:.76rem; line-height:1.45; color:#64748b; }
+.alertes-vide { color:#64748b; padding:0 1.3rem 1.2rem; }
+.alertes-vide-bloc { text-align:center; padding:2.2rem 1.5rem 2.5rem; }
+.alertes-vide-icone { width:70px; height:70px; margin:0 auto .9rem; border-radius:20px; display:flex; align-items:center; justify-content:center;
+  font-size:1.8rem; color:var(--injs-indigo); background:linear-gradient(145deg,#e8edfb,#f4f8fd); border:1px solid #dbe5f0; }
+.alertes-vide-titre { font-weight:850; color:var(--injs-navy); margin-bottom:.25rem; }
+.alertes-vide-texte { color:#64748b; font-size:.86rem; max-width:58ch; margin:0 auto; }
+.alertes-table thead th { background:#f8fbff; color:#64748b; font-size:.66rem; text-transform:uppercase; letter-spacing:.07em; }
+.alertes-table tbody td { vertical-align:middle; }
+.alertes-cell-avert { color:#D97706; font-weight:800; } .alertes-cell-crit { color:#DC3545; font-weight:800; }
+@media (max-width: 900px) { .alertes-synthese { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
+/* ── RÉSULTATS / BILANS PREMIUM (rendu dédié bilans_resultats) ─────────────
+   Même identité que « Sessions de jury LMD » : héros dégradé INJS scopé à cet
+   écran, synthèse, périodes en pastilles, couverture et filtres en français. */
+[data-testid="ecran-stats_resultats"] .gen-hero {
+  background:
+    radial-gradient(700px 260px at 88% -30%, rgba(53,189,245,.42), transparent 60%),
+    radial-gradient(520px 220px at 8% 120%, rgba(245,158,11,.30), transparent 55%),
+    linear-gradient(120deg, #071B3A 0%, #1D2B66 48%, #283A87 78%, #104A8E 100%) !important;
+  border: none !important; color: #fff;
+  box-shadow: 0 22px 44px -16px rgba(7,27,58,.55), inset 0 1px 0 rgba(255,255,255,.22) !important;
+}
+[data-testid="ecran-stats_resultats"] .gen-hero-title { color: #fff !important; }
+[data-testid="ecran-stats_resultats"] .gen-hero-title i { color: #7DD3FC !important; }
+[data-testid="ecran-stats_resultats"] .gen-hero-eyebrow { color: #FDE68A !important; }
+[data-testid="ecran-stats_resultats"] .gen-hero-intro { color: #DBEAFE !important; }
+[data-testid="ecran-stats_resultats"] .gen-hero-icon { background: rgba(255,255,255,.14) !important;
+  border: 1px solid rgba(255,255,255,.3); color: #7DD3FC !important; }
+[data-testid="ecran-stats_resultats"] .gen-plaquette { color:#E0F2FE !important; background:rgba(255,255,255,.12) !important; border-color:rgba(255,255,255,.25) !important; }
+
+.bilans-vue { display:flex; flex-direction:column; gap:1.1rem; }
+.bilans-panel { background:#fff; border:1px solid #e6edf5; border-radius:18px; overflow:hidden;
+  box-shadow:0 10px 28px -16px rgba(7,27,58,.22); }
+.bilans-panel-head { display:flex; align-items:center; justify-content:space-between; gap:.75rem; flex-wrap:wrap;
+  padding:.85rem 1.3rem; border-bottom:1px solid #edf1f6; background:linear-gradient(180deg,#f8fbff,#fff); }
+.bilans-panel-title { margin:0; display:flex; align-items:center; gap:.5rem; font-size:.98rem; font-weight:800; color:var(--injs-navy); }
+.bilans-panel-title i { color:var(--injs-blue-royal); }
+.bilans-count { display:inline-flex; padding:.22rem .7rem; border-radius:999px; background:var(--injs-blue-pale);
+  color:var(--injs-indigo); border:1px solid var(--injs-border-strong); font-size:.75rem; font-weight:800; }
+.bilans-btn-refresh { border-radius:999px; font-weight:700; border-color:#dbe5f0; color:var(--injs-indigo); background:#fff; }
+.bilans-btn-refresh:hover { background:var(--injs-blue-pale); }
+.bilans-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.8rem; padding:1.1rem 1.3rem; }
+.bilans-stat { border:1px solid #e6edf5; border-top:4px solid var(--injs-indigo); border-radius:14px; padding:.85rem .95rem; background:#f8fbff; }
+.bilans-stat-valeur { display:block; font-size:1.6rem; font-weight:850; line-height:1.05; color:var(--injs-navy); }
+.bilans-stat-valeur--texte { font-size:1.02rem; padding-top:.35rem; text-transform:capitalize; }
+.bilans-stat-libelle { display:block; margin-top:.35rem; font-size:.64rem; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:#64748b; }
+.bilans-vide-bloc { text-align:center; padding:2.4rem 1.5rem 2.6rem; }
+.bilans-vide-icone { width:76px; height:76px; margin:0 auto 1rem; border-radius:22px; display:flex; align-items:center; justify-content:center;
+  font-size:2rem; color:var(--injs-indigo); background:linear-gradient(145deg,#e8edfb,#f4f8fd); border:1px solid #dbe5f0;
+  box-shadow:inset 0 1px 0 #fff, 0 12px 24px -14px rgba(40,58,135,.45); }
+.bilans-vide-titre { font-size:1.05rem; font-weight:850; color:var(--injs-navy); margin-bottom:.3rem; }
+.bilans-vide-texte { color:#64748b; font-size:.88rem; max-width:60ch; margin:0 auto; }
+.bilans-periodes { margin-top:1.1rem; display:flex; gap:.4rem; flex-wrap:wrap; justify-content:center; }
+.bilans-periode { font-size:.72rem; font-weight:750; color:var(--injs-indigo); background:var(--injs-blue-pale);
+  border:1px solid var(--injs-border-strong); border-radius:999px; padding:.28rem .7rem; }
+.bilans-table thead th { background:#f8fbff; color:#64748b; font-size:.66rem; text-transform:uppercase; letter-spacing:.07em; }
+.bilans-table tbody tr:hover { background:#f6faff; }
+.bilans-sous { display:block; font-size:.74rem; font-weight:600; color:#94a3b8; }
+.bilans-deux { display:grid; grid-template-columns:1fr 1fr; gap:1.1rem; }
+.bilans-couverture { display:grid; grid-template-columns:repeat(4,1fr); gap:.7rem; padding:1.05rem 1.3rem 1.2rem; }
+.bilans-couv { text-align:center; border:1px solid #eef2f7; border-radius:13px; padding:.75rem .4rem; background:#f8fbff; }
+.bilans-couv-icone { display:block; color:var(--injs-blue-royal); font-size:1.05rem; }
+.bilans-couv-valeur { display:block; font-size:1.35rem; font-weight:850; color:var(--injs-navy); line-height:1.1; }
+.bilans-couv-libelle { font-size:.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#64748b; }
+.bilans-filtres { margin:0; padding:1.05rem 1.3rem 1.2rem; display:flex; flex-direction:column; gap:.45rem; }
+.bilans-filtres > div { display:flex; justify-content:space-between; gap:1rem; border-bottom:1px dashed #eef2f7; padding-bottom:.4rem; }
+.bilans-filtres dt { font-weight:600; color:#64748b; font-size:.84rem; }
+.bilans-filtres dd { margin:0; font-weight:800; color:var(--injs-navy); font-size:.84rem; text-transform:capitalize; }
+@media (max-width: 900px) { .bilans-stats { grid-template-columns:repeat(2,1fr); } .bilans-deux { grid-template-columns:1fr; } }
+
+/* ==========================================================================
+   PREMIUM DYNAMIQUE (capture Semestres 03/11) — vague navy partagée
+   Hero navy dégradé, en-têtes de panneau navy, pastille référence (L1, L2…),
+   cascade d'apparition des lignes. Ajouts `.gen-*` uniquement : la logique
+   CRUD, le DOM et les `data-testid` sont inchangés.
+   ========================================================================== */
+
+/* ── HERO : bandeau navy dégradé, plaquettes translucides ── */
+.gen-hero {
+  background:
+    radial-gradient(560px 240px at 88% -30%, rgba(56, 189, 248, 0.28), transparent 65%),
+    linear-gradient(120deg, #071B3A 0%, #0B2A5B 55%, #1265D6 130%);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 18px 38px -18px rgba(7, 27, 58, 0.55);
+}
+
+.gen-hero::after {
+  background: radial-gradient(closest-side, rgba(56, 189, 248, 0.22), rgba(56, 189, 248, 0));
+}
+
+.gen-hero-icon {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #FFFFFF;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 10px 22px -10px rgba(0, 0, 0, 0.5);
+}
+
+.gen-hero-eyebrow { color: #7DD3FC; }
+.gen-hero-title { color: #FFFFFF; }
+.gen-hero-intro { color: #C7D8EE; }
+
+.gen-plaquette {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #E0F2FE;
+  backdrop-filter: blur(4px);
+}
+
+.gen-plaquette--accent {
+  background: linear-gradient(135deg, rgba(245, 197, 66, 0.25), rgba(245, 197, 66, 0.1));
+  border-color: rgba(245, 197, 66, 0.45);
+  color: #FDE68A;
+}
+
+/* ── EN-TÊTES DE PANNEAU : navy, pastille compteur translucide ── */
+.gen-toolbar-head,
+.gen-panel-head {
+  background: linear-gradient(120deg, #071B3A, #0B2A5B 70%, #10397A);
+  color: #FFFFFF;
+}
+
+.gen-panel-title,
+.gen-toolbar-head .gen-panel-title { color: #FFFFFF; }
+
+.gen-panel-title i {
+  color: #F5C542;
+  background: rgba(245, 197, 66, 0.14);
+  border: 1px solid rgba(245, 197, 66, 0.3);
+  border-radius: 8px;
+  padding: 0.28rem 0.34rem;
+}
+
+.gen-panel-head .gen-count-pill,
+.gen-toolbar-head .gen-count-pill {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #FFFFFF;
+}
+
+/* Bouton « Nouveau » : dégradé bleu royal dans l'en-tête navy. */
+.gen-panel-head .btn-primary,
+.gen-toolbar-head .btn-primary {
+  background: linear-gradient(135deg, #1265D6, #0B4FA8);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 8px 18px -8px rgba(18, 101, 214, 0.8);
+  font-weight: 700;
+}
+
+.gen-panel-head .btn-primary:hover,
+.gen-toolbar-head .btn-primary:hover {
+  background: linear-gradient(135deg, #2B7BE8, #1265D6);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ── TABLEAU : en-tête navy, cascade d'apparition, survol doré ── */
+.gen-table thead th {
+  background: linear-gradient(180deg, #0B2A5B, #071B3A);
+  color: #DCEBFF;
+  border-bottom: 2px solid #F5C542;
+  box-shadow: none;
+}
+
+@keyframes genLigneIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.gen-table tbody tr {
+  animation: genLigneIn 0.35s ease both;
+}
+
+.gen-table tbody tr:nth-child(2) { animation-delay: 0.03s; }
+.gen-table tbody tr:nth-child(3) { animation-delay: 0.06s; }
+.gen-table tbody tr:nth-child(4) { animation-delay: 0.09s; }
+.gen-table tbody tr:nth-child(5) { animation-delay: 0.12s; }
+.gen-table tbody tr:nth-child(6) { animation-delay: 0.15s; }
+.gen-table tbody tr:nth-child(7) { animation-delay: 0.18s; }
+.gen-table tbody tr:nth-child(8) { animation-delay: 0.21s; }
+.gen-table tbody tr:nth-child(n+9) { animation-delay: 0.24s; }
+
+.gen-table tbody tr:hover td:first-child {
+  box-shadow: inset 3px 0 0 #F5C542;
+}
+
+/* ── PASTILLE RÉFÉRENCE : code résolu d'un référentiel lié (L1, M2…) ── */
+.gen-ref-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.24rem 0.65rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #EAF2FF, #DCEBFF);
+  border: 1px solid #B9D4F5;
+  color: #0B2A5B;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gen-table tbody tr { animation: none; }
+}

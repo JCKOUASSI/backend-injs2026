@@ -46,15 +46,17 @@ et tout référentiel hérité d'autres applications ne sont pas utilisés ici, 
 plus qu'un quelconque « module » comme périmètre.
 """
 from collections import defaultdict
+from datetime import timedelta
 
 from django.db.models import Count, Q
 from django.utils import timezone
 
 from . import seances_edt_services as service
-from .models import Pointage
+from .models import AuditLog, EncadrantSeance, Pointage
 
 __all__ = [
     'STATUTS_SEANCE', 'LIBELLES_STATUT', 'statut_seance', 'supervision_seances',
+    'supervision_seances_plage', 'historique_presences',
 ]
 
 #: Statuts de séance. Aucun de ces codes n'est stocké en base : ce sont des
@@ -214,22 +216,33 @@ def _presences_par_seance(affectation_ids, date):
     la plus récente : le comptage est ainsi immunisé contre le double comptage.
     """
     lignes = (Pointage.objects
-              .filter(seance_edt_id__in=affectation_ids, date_journee=date,
-                      participant__isnull=False)
+              .filter(seance_edt_id__in=affectation_ids, date_journee=date)
               .order_by('seance_edt_id', 'timestamp_entree', 'id')
-              .values('seance_edt_id', 'participant_id', 'statut', 'statut_assiduite',
+              .values('seance_edt_id', 'participant_id', 'formateur_id', 'encadrant_id',
+                      'statut', 'statut_assiduite',
                       'device_id', 'timestamp_entree', 'timestamp_sortie',
                       'outside_geofence_count'))
     resultat = defaultdict(dict)
     for ligne in lignes:
-        resultat[ligne['seance_edt_id']][ligne['participant_id']] = ligne
+        # Étudiants cléés par participant ; enseignants/encadrants (dont le
+        # ``participant`` est nul) cléés par leur FK propre, pour ne jamais
+        # écraser ni être écrasés par une ligne étudiant.
+        if ligne['participant_id'] is not None:
+            cle = ligne['participant_id']
+        elif ligne['formateur_id'] is not None:
+            cle = ('formateur', ligne['formateur_id'])
+        elif ligne['encadrant_id'] is not None:
+            cle = ('encadrant', ligne['encadrant_id'])
+        else:
+            continue
+        resultat[ligne['seance_edt_id']][cle] = ligne
     return resultat
 
     debut, fin = service.horodatages(affectation, date)
     maintenant = maintenant or timezone.now()
     if maintenant < debut:
         return 'A_VENIR'
-def _compter(rows, attendus_ids):
+def _compter(rows, attendus_ids, debut=None):
     """Décompte par catégorie d'assiduité, sans double comptage.
 
     ``rows`` : lignes de la séance dédoublonnées par participant.
@@ -244,12 +257,32 @@ def _compter(rows, attendus_ids):
     presents = absents_justifies = absents_injustifies = dispenses = 0
     non_renseignes = retards = qr = manuel = 0
     hors_perimetre = 0
+    etudiants = enseignants = encadrants = 0
+    en_salle = entrees_en_retard = 0
+    somme_retard_min = 0.0
     for participant_id, ligne in rows.items():
+        # Enseignants/encadrants : comptés dans la répartition par
+        # population, jamais dans les compteurs d'assiduité étudiants.
+        if ligne.get('formateur_id'):
+            enseignants += 1
+            continue
+        if ligne.get('encadrant_id'):
+            encadrants += 1
+            continue
         if attendus_ids and participant_id not in attendus_ids:
             # Présence d'un participant hors du groupe : jamais imputée à la
             # séance (sinon double comptage avec sa séance d'origine).
             hors_perimetre += 1
             continue
+        etudiants += 1
+        # En salle/espace maintenant : entré et pas encore sorti.
+        if ligne.get('timestamp_entree') and not ligne.get('timestamp_sortie'):
+            en_salle += 1
+        # Retard d'entrée par rapport au début prévu de la séance.
+        if debut is not None and ligne.get('timestamp_entree') \
+                and ligne['timestamp_entree'] > debut:
+            entrees_en_retard += 1
+            somme_retard_min += (ligne['timestamp_entree'] - debut).total_seconds() / 60
         assiduite = (ligne['statut_assiduite']
                      or Pointage.MAPPING_ASSIDUITE().get(
                          ligne['statut'], Pointage.StatutAssiduite.NON_RENSEIGNE))
@@ -279,14 +312,24 @@ def _compter(rows, attendus_ids):
         'source_qr': qr,
         'source_manuelle': manuel,
         'presences_hors_perimetre': hors_perimetre,
+        'par_population': {
+            'etudiants': etudiants,
+            'enseignants': enseignants,
+            'encadrants': encadrants,
+        },
+        'en_salle': en_salle,
+        'entrees_en_retard': entrees_en_retard,
+        'retard_moyen_min': (round(somme_retard_min / entrees_en_retard, 1)
+                             if entrees_en_retard else None),
     }
 
 
-def _seance_ligne(affectation, date, maintenant, rows, effectif, attendus_ids):
+def _seance_ligne(affectation, date, maintenant, rows, effectif, attendus_ids,
+                 encadrants=None):
     """Payload d'une séance : identité, enseignement, public, presences."""
     debut, fin = service.horodatages(affectation, date)
     statut = statut_seance(affectation, date, maintenant)
-    compteurs = _compter(rows, attendus_ids)
+    compteurs = _compter(rows, attendus_ids, debut)
     # Effectif attendu : ``None`` si la séance n'a pas de groupe rattaché.
     # Jamais 0 par défaut — 0 signifierait « groupe vide », pas « inconnu ».
     attendu = effectif if affectation.groupe_id else None
@@ -318,11 +361,28 @@ def _seance_ligne(affectation, date, maintenant, rows, effectif, attendus_ids):
         'presences': compteurs,
         'non_pointes': non_pointes,
         'taux_presence': taux,
+        'session_qr_ouverte': bool(service.jeton_actif(affectation, date)),
+        # Encadrants explicitement habilités sur la séance (jamais déduits
+        # d'un nom) : libellés d'affichage uniquement.
+        'encadrants': list(encadrants or []),
     }
     ligne.update(_contexte_pedagogique(affectation))
     ligne.update(_libelle_enseignant(affectation))
     ligne.update(_salle(affectation))
     return ligne
+
+
+def _retard_moyen(lignes):
+    """Retard moyen d'entrée (minutes), pondéré par séance. ``None`` si
+    aucune entrée en retard sur la journée."""
+    total = somme = 0
+    for ligne in lignes:
+        compteurs = ligne['presences']
+        n = compteurs.get('entrees_en_retard') or 0
+        if n and compteurs.get('retard_moyen_min') is not None:
+            total += n
+            somme += compteurs['retard_moyen_min'] * n
+    return round(somme / total, 1) if total else None
 
 
 def supervision_seances(user, date=None, *, statut=None, formation_id=None,
@@ -385,6 +445,9 @@ def supervision_seances(user, date=None, *, statut=None, formation_id=None,
             'resume': {
                 'seances_total': 0, 'seances_en_cours': 0, 'enseignants_actifs': 0,
                 'salles_occupees': 0, 'participants_presents': 0, 'anomalies': 0,
+                'sessions_qr_ouvertes': 0, 'emargements_manuels': 0,
+                'par_population': {'etudiants': 0, 'enseignants': 0, 'encadrants': 0},
+                'en_salle_maintenant': 0, 'retard_moyen_min': None,
             },
             'seances': [],
         }
@@ -394,6 +457,13 @@ def supervision_seances(user, date=None, *, statut=None, formation_id=None,
     participants = _participants_groupes(groupe_ids)
     presences = _presences_par_seance({a.pk for a in affectations}, date)
 
+    encadrants_par_seance = {}
+    for lien in (EncadrantSeance.objects
+                 .filter(seance_edt__in=affectations, actif=True)
+                 .select_related('encadrant')):
+        nom = (lien.encadrant.get_full_name() or lien.encadrant.username).strip()
+        encadrants_par_seance.setdefault(lien.seance_edt_id, []).append(nom)
+
     lignes = []
     for affectation in affectations:
         ligne = _seance_ligne(
@@ -401,6 +471,7 @@ def supervision_seances(user, date=None, *, statut=None, formation_id=None,
             presences.get(affectation.pk, {}),
             effectifs.get(affectation.groupe_id) if affectation.groupe_id else None,
             participants.get(affectation.groupe_id, set()) if affectation.groupe_id else set(),
+            encadrants_par_seance.get(affectation.pk, []),
         )
         if statut and ligne['statut'] != statut:
             continue
@@ -417,6 +488,16 @@ def supervision_seances(user, date=None, *, statut=None, formation_id=None,
             l['salle_id'] or l['salle_libelle'] for l in lignes
             if l['statut'] == 'EN_COURS' and (l['salle_id'] or l['salle_libelle'])}),
         'participants_presents': sum(l['presences']['presents'] for l in lignes),
+        'sessions_qr_ouvertes': sum(1 for l in lignes if l['session_qr_ouverte']),
+        'emargements_manuels': sum(l['presences']['source_manuelle'] for l in lignes),
+        'par_population': {
+            'etudiants': sum(l['presences']['par_population']['etudiants'] for l in lignes),
+            'enseignants': sum(l['presences']['par_population']['enseignants'] for l in lignes),
+            'encadrants': sum(l['presences']['par_population']['encadrants'] for l in lignes),
+        },
+        'en_salle_maintenant': sum(
+            l['presences']['en_salle'] for l in lignes if l['statut'] == 'EN_COURS'),
+        'retard_moyen_min': _retard_moyen(lignes),
         # Anomalie = séance dont l'effectif attendu n'est pas déterminable
         # (aucun groupe rattaché) : y afficher un chiffre serait un mensonge.
         'anomalies': sum(1 for l in lignes if l['effectif_attendu'] is None),
@@ -427,3 +508,287 @@ def supervision_seances(user, date=None, *, statut=None, formation_id=None,
         'resume': resume,
         'seances': lignes,
     }
+
+def _jours_candidats(date_reference, horizon):
+    """Jours de l'horizon ayant au moins une occurrence de séance active.
+
+    Pré-balayage **en dates seules** (aucune donnée de séance exposée) :
+    il évite de résoudre la supervision complète sur des jours sans
+    séance. Les lignes elles-mêmes proviennent toujours de
+    :func:`supervision_seances`, qui applique périmètre et filtres.
+    """
+    from edts.models import AffectationCreneau
+
+    base = (AffectationCreneau.objects
+            .filter(emploi_du_temps__statut__in=('VALIDE', 'PUBLIE'), actif=True)
+            .select_related('creneau_template', 'emploi_du_temps__annee_academique'))
+    jours = set()
+    for affectation in base:
+        for decalage in range(-horizon, horizon + 1):
+            jour = date_reference + timedelta(days=decalage)
+            if service.est_seance_du_jour(affectation, jour):
+                jours.add(jour)
+    return jours
+
+
+def supervision_seances_plage(user, date_reference=None, *, horizon=120,
+                              limite=200, statut=None, formation_id=None,
+                              groupe_id=None, enseignant_id=None):
+    """Chargement **explicite** des séances les plus proches d'une date.
+
+    À partir de ``date_reference``, les jours candidats (au moins une
+    occurrence de séance) sont explorés par **proximité croissante**
+    dans un horizon de ``horizon`` jours de part et d'autre (défaut et
+    maximum 120), jusqu'à réunir ``limite`` séances (défaut et maximum
+    200). Chaque jour est résolu par :func:`supervision_seances` (mêmes
+    règles de périmètre, de statut et de présences rattachées) ; les
+    lignes sont restituées par ordre chronologique. Le résumé est
+    recalculé sur la sélection réellement chargée.
+
+    :returns: le même contrat que :func:`supervision_seances`, augmenté
+        d'un bloc ``periode`` (``date_reference``, ``date_debut`` et
+        ``date_fin`` de la fenêtre effectivement explorée, ``limite``,
+        ``horizon_jours``, ``tronque``).
+
+    Aucune écriture.
+    """
+    date_reference = date_reference or timezone.localdate()
+    try:
+        horizon = int(horizon)
+    except (TypeError, ValueError):
+        horizon = 120
+    try:
+        limite = int(limite)
+    except (TypeError, ValueError):
+        limite = 200
+    horizon = max(1, min(horizon, 120))
+    limite = max(1, min(limite, 200))
+
+    candidats = _jours_candidats(date_reference, horizon)
+    # Le jour repère est toujours exploré (annulations logiques visibles).
+    candidats.add(date_reference)
+    jours_ordonnes = sorted(
+        candidats, key=lambda j: (abs((j - date_reference).days), j))
+
+    lignes = []
+    tronque = False
+    explore_min = date_reference
+    explore_max = date_reference
+    for jour in jours_ordonnes:
+        explore_min = min(explore_min, jour)
+        explore_max = max(explore_max, jour)
+        if len(lignes) >= limite:
+            tronque = True
+            break
+        resultat = supervision_seances(
+            user, jour, statut=statut, formation_id=formation_id,
+            groupe_id=groupe_id, enseignant_id=enseignant_id)
+        lignes.extend(resultat['seances'])
+    if len(lignes) > limite:
+        lignes = lignes[:limite]
+        tronque = True
+    lignes.sort(key=lambda l: (l['date'], l['debut']))
+
+    resume = {
+        'seances_total': len(lignes),
+        'seances_en_cours': sum(1 for l in lignes if l['statut'] == 'EN_COURS'),
+        'enseignants_actifs': len({
+            l['formateur_id'] or l['enseignant_id'] or l['libelle']
+            for l in lignes if l['statut'] == 'EN_COURS'
+            and (l['formateur_id'] or l['enseignant_id'] or l['libelle'])}),
+        'salles_occupees': len({
+            l['salle_id'] or l['salle_libelle'] for l in lignes
+            if l['statut'] == 'EN_COURS' and (l['salle_id'] or l['salle_libelle'])}),
+        'participants_presents': sum(l['presences']['presents'] for l in lignes),
+        'sessions_qr_ouvertes': sum(1 for l in lignes if l['session_qr_ouverte']),
+        'emargements_manuels': sum(l['presences']['source_manuelle'] for l in lignes),
+        'par_population': {
+            'etudiants': sum(l['presences']['par_population']['etudiants'] for l in lignes),
+            'enseignants': sum(l['presences']['par_population']['enseignants'] for l in lignes),
+            'encadrants': sum(l['presences']['par_population']['encadrants'] for l in lignes),
+        },
+        'en_salle_maintenant': sum(
+            l['presences']['en_salle'] for l in lignes if l['statut'] == 'EN_COURS'),
+        'retard_moyen_min': _retard_moyen(lignes),
+        'anomalies': sum(1 for l in lignes if l['effectif_attendu'] is None),
+    }
+    return {
+        'date': date_reference.isoformat(),
+        'genere_le': timezone.now().isoformat(),
+        'resume': resume,
+        'seances': lignes,
+        'periode': {
+            'date_reference': date_reference.isoformat(),
+            'date_debut': explore_min.isoformat(),
+            'date_fin': explore_max.isoformat(),
+            'horizon_jours': horizon,
+            'limite': limite,
+            'tronque': tronque,
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
+# Historique des présences (registre transversal, lecture seule)
+# ---------------------------------------------------------------------------
+
+def _nom_complet(obj, matricule_attr='matricule'):
+    """Nom d'affichage d'un acteur, sans rapprochement : champs réels."""
+    if obj is None:
+        return None, None
+    nom = ' '.join(part for part in (
+        getattr(obj, 'nom', '') or '', getattr(obj, 'prenom', '') or '') if part).strip()
+    if not nom:
+        nom = (obj.get_full_name() if hasattr(obj, 'get_full_name') else '') or ''
+    if not nom:
+        nom = getattr(obj, 'username', '') or '—'
+    matricule = getattr(obj, matricule_attr, None) or getattr(obj, 'username', None)
+    return nom, matricule
+
+
+def historique_presences(user, *, date_debut=None, date_fin=None,
+                         type_participant=None, mode=None, nom=None,
+                         groupe=None, seance_id=None, limite=500,
+                         borne_debut=True):
+    """Registre historique des pointages rattachés aux séances LMD.
+
+    Lecture seule, périmètre identique à la supervision : les comptes
+    habilités voient tout, un enseignant/encadrant ne voit que les
+    séances où il est affecté. Les coordonnées GPS brutes ne sortent
+    jamais : seuls le verdict, la précision annoncée et les compteurs
+    d'anomalies sont restitués.
+
+    Avec ``borne_debut=False`` (chargement explicite des plus récents),
+    il n'y a pas de borne inférieure : les ``limite`` derniers
+    pointages jusqu'à ``date_fin`` sont restitués, du plus récent au
+    plus ancien. Par défaut (``borne_debut=True``), le comportement
+    historique « période Du/Au » est inchangé.
+    """
+    from django.db.models import Count, Q
+
+    date_fin = date_fin or timezone.localdate()
+    if borne_debut:
+        date_debut = date_debut or date_fin
+    qs = (Pointage.objects
+          .filter(seance_edt__isnull=False,
+                  date_journee__lte=date_fin,
+                  seance_edt__emploi_du_temps__statut__in=('VALIDE', 'PUBLIE'))
+          .select_related(
+              'participant', 'formateur', 'encadrant', 'seance_edt',
+              'seance_edt__groupe',
+              'seance_edt__affectation_pedagogique__ecue')
+          .order_by('-timestamp_entree', '-id'))
+
+    role = (getattr(user, 'role', '') or '').upper()
+    if role not in {'ADMIN', 'INJS_ADMIN', 'CHEF_INJS_ADMIN', 'SECRETARIAT',
+                    'CHEF_SECRETARIAT', 'DIRECTION'} and getattr(user, 'id', None):
+        qs = qs.filter(Q(seance_edt__enseignant_id=user.id)
+                       | Q(seance_edt__formateur_id=user.id))
+    if type_participant == 'ETUDIANT':
+        qs = qs.filter(participant__isnull=False)
+    elif type_participant == 'ENSEIGNANT':
+        qs = qs.filter(formateur__isnull=False)
+    elif type_participant == 'ENCADRANT':
+        qs = qs.filter(encadrant__isnull=False)
+    if mode:
+        qs = qs.filter(mode=mode)
+    if seance_id:
+        qs = qs.filter(seance_edt_id=seance_id)
+    if groupe:
+        qs = qs.filter(seance_edt__groupe__nom__icontains=groupe)
+    if nom:
+        qs = qs.filter(
+            Q(participant__nom__icontains=nom)
+            | Q(participant__prenom__icontains=nom)
+            | Q(participant__matricule__icontains=nom)
+            | Q(formateur__nom__icontains=nom)
+            | Q(formateur__prenom__icontains=nom)
+            | Q(encadrant__first_name__icontains=nom)
+            | Q(encadrant__last_name__icontains=nom)
+            | Q(encadrant__username__icontains=nom))
+
+    if borne_debut:
+        qs = qs.filter(date_journee__gte=date_debut)
+    limite = max(1, min(int(limite or 500), 500))
+    pointages = list(qs[:limite])
+    ids = [pt.id for pt in pointages]
+
+    heartbeats = {}
+    auteurs_manuels = {}
+    if ids:
+        for row in (AuditLog.objects
+                    .filter(pointage_id__in=ids, action=AuditLog.Action.SCAN_HEARTBEAT)
+                    .values('pointage_id').annotate(n=Count('id'))):
+            heartbeats[row['pointage_id']] = row['n']
+        for log in (AuditLog.objects
+                    .filter(pointage_id__in=ids, action=AuditLog.Action.FORCE_ENTREE)
+                    .order_by('-timestamp')):
+            # Le plus récent par pointage fait foi pour l'affichage.
+            auteurs_manuels.setdefault(log.pointage_id, log.acteur_label)
+
+    resultats = []
+    for pt in pointages:
+        affectation = pt.seance_edt
+        if pt.participant_id:
+            type_p, personne, mat_attr = 'ETUDIANT', pt.participant, 'matricule'
+        elif pt.formateur_id:
+            type_p, personne, mat_attr = 'ENSEIGNANT', pt.formateur, 'numerobadge'
+        elif pt.encadrant_id:
+            type_p, personne, mat_attr = 'ENCADRANT', pt.encadrant, 'username'
+        else:
+            continue
+        nom_p, matricule = _nom_complet(personne, mat_attr)
+        ecue = getattr(getattr(affectation, 'affectation_pedagogique', None), 'ecue', None)
+        if ecue is not None:
+            seance_libelle = ' · '.join(
+                part for part in (ecue.code or '', ecue.intitule or '') if part) or affectation.intitule
+        else:
+            seance_libelle = affectation.intitule or 'Séance'
+        duree = None
+        if pt.duree_presence_minutes is not None:
+            duree = int(pt.duree_presence_minutes)
+        elif pt.timestamp_entree and pt.timestamp_sortie:
+            duree = max(0, int((pt.timestamp_sortie - pt.timestamp_entree).total_seconds() // 60))
+        anomalies = []
+        if (pt.outside_geofence_count or 0) > 0:
+            anomalies.append('HORS_PERIMETRE')
+        if pt.statut == Pointage.Statut.HORS_LIGNE_SUSPECT:
+            anomalies.append('SIGNAL_PERDU')
+        if pt.mode == Pointage.Mode.MANUEL:
+            verdict = None
+        elif (pt.outside_geofence_count or 0) > 0:
+            verdict = 'HORS_PERIMETRE'
+        elif pt.statut == Pointage.Statut.HORS_LIGNE_SUSPECT:
+            verdict = 'SIGNAL_PERDU'
+        else:
+            verdict = 'DANS_PERIMETRE'
+        resultats.append({
+            'id': pt.id,
+            'nom': nom_p,
+            'matricule': matricule,
+            'type_participant': type_p,
+            'seance_id': affectation.id,
+            'seance': seance_libelle,
+            'groupe': (getattr(affectation.groupe, 'nom', '') or None),
+            'date_seance': pt.date_journee.isoformat(),
+            'timestamp_entree': pt.timestamp_entree.isoformat() if pt.timestamp_entree else None,
+            'timestamp_sortie': pt.timestamp_sortie.isoformat() if pt.timestamp_sortie else None,
+            'duree_minutes': duree,
+            'heartbeats': heartbeats.get(pt.id, 0),
+            'mode': pt.mode or None,
+            'motif_manuel': pt.motif_manuel or None,
+            'auteur_manuel': auteurs_manuels.get(pt.id),
+            'verdict_geofence': verdict,
+            'accuracy_m': pt.last_accuracy_m,
+            'statut': pt.statut,
+            'statut_assiduite': pt.statut_assiduite or None,
+            'type_sortie': pt.type_sortie or None,
+            'anomalies': anomalies,
+        })
+    return {
+        'date_debut': date_debut.isoformat() if date_debut else None,
+        'date_fin': date_fin.isoformat(),
+        'total': len(resultats),
+        'resultats': resultats,
+    }
+

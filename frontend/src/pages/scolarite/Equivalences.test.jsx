@@ -116,7 +116,9 @@ describe('pages/scolarite/Equivalences.jsx — chargement et liste (LOT 31)', ()
     expect(container.querySelector('.spinner-border')).toBeTruthy()
     await settle()
 
-    expect(apiMock.get).toHaveBeenCalledWith(DEMANDES_PATH)
+    // Chargement explicite borné à 200 (05/11/2026) : la liste est demandée
+    // avec `page_size=200` et lue en enveloppe paginée.
+    expect(apiMock.get).toHaveBeenCalledWith(DEMANDES_PATH, { params: { page_size: 200 } })
     expect(screen.getByRole('heading', { name: /équivalences et dispenses/i })).toBeInTheDocument()
 
     // Les quatre référentiels sont demandés (années et niveaux en actif=true).
@@ -213,6 +215,48 @@ describe('pages/scolarite/Equivalences.jsx — chargement et liste (LOT 31)', ()
 /* ------------------------------------------------------------------ */
 /* LOT 31 — création d'une demande                                      */
 /* ------------------------------------------------------------------ */
+
+describe('pages/scolarite/Equivalences.jsx — chargement explicite de 200 demandes', () => {
+  beforeEach(() => {
+    apiController.reset()
+    window.localStorage.clear()
+  })
+
+  it('demande page_size=200, lit l’enveloppe paginée et l’annonce dans l’écran', async () => {
+    mount('ADMIN', () => ({
+      count: 2, total_pages: 1, page: 1, page_size: 200,
+      results: [
+        { id: 101, type_demande: 'DISPENSE', matricule: 'E200A', ref_formation: 'L1 LSF', decision: '', statut: 'BROUILLON', credits_reconnus: null },
+        { id: 102, type_demande: 'EQUIVALENCE', matricule: 'E200B', ref_formation: 'L2 LFM', decision: '', statut: 'SOUMISE', credits_reconnus: null },
+      ],
+    }))
+    await settle()
+
+    // Requête explicite bornée à 200 (convention « 200 événements »).
+    const appel = getCalls(DEMANDES_PATH)[0]
+    expect(appel).toBeTruthy()
+    expect(appel[1].params).toMatchObject({ page_size: 200 })
+    expect(screen.getByText(/Chargement explicite : 200 demandes/)).toBeInTheDocument()
+    expect(rowFor('E200A')).toBeTruthy()
+    expect(rowFor('E200B')).toBeTruthy()
+    // Pas de note de troncature : tout tient dans les 200 chargées.
+    expect(screen.queryByText(/Affichage limité/)).not.toBeInTheDocument()
+  })
+
+  it('signale la troncature quand le total dépasse les 200 chargées', async () => {
+    mount('ADMIN', () => ({
+      count: 320, total_pages: 2, page: 1, page_size: 200,
+      results: [
+        { id: 103, type_demande: 'DISPENSE', matricule: 'E200C', ref_formation: 'L1 LSF', decision: '', statut: 'BROUILLON', credits_reconnus: null },
+      ],
+    }))
+    await settle()
+
+    expect(rowFor('E200C')).toBeTruthy()
+    expect(screen.getByText(/Affichage limité aux 1 premières demandes \(320 au total\)/))
+      .toBeInTheDocument()
+  })
+})
 
 describe('pages/scolarite/Equivalences.jsx — création (LOT 31)', () => {
   beforeEach(() => {

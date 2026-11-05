@@ -3242,3 +3242,28 @@ describe('Statistiques (LOT 38e) — boutons Actualiser des onglets maillés', (
     await waitFor(() => expect(callsTo('/statistiques/secretariats/').length).toBe(nSec + 1))
   })
 })
+
+describe('pages/Statistiques.jsx — design premium sobre', () => {
+  beforeEach(() => {
+    apiController.reset()
+    window.localStorage.clear()
+    apiController.setRoute('/statistiques/', (path) => {
+      const q = paramsOf(path)
+      if (isMetaCall(q)) {
+        return { formations_liste: FORMATIONS, secretariats_liste: SECRETARIATS, filtre_actif: { scope_locked: false } }
+      }
+      return {}
+    })
+    apiController.setRoute('/statistiques/point-journalier/', () => ({ tableaux: [], tableaux_complets: [] }))
+    apiController.setRoute('/statistiques/bilans/', () => ({ bilans: [], tableaux_complets: [] }))
+    apiController.setRoute('/statistiques/alertes/seuils/', () => ({ seuils: [], indicateurs: [], synthese: {}, seuils_vides: true }))
+  })
+
+  it('applique le thème sobre (héros, onglets pilules, panneau période)', async () => {
+    mountStats(adminMe())
+    await screen.findByRole('option', { name: 'INJS Marcory' })
+    expect(document.querySelector('.stats-page .stats-hero')).not.toBeNull()
+    expect(document.querySelector('.stats-tabs .stats-tab.is-active')).not.toBeNull()
+    expect(document.querySelector('.stats-hero-title')).toHaveTextContent('Statistiques & Bilans')
+  })
+})

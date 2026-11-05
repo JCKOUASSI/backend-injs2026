@@ -2,6 +2,8 @@
 
 Pattern @api_view. Espaces référencés via formations.RefSalle (source unique).
 """
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -59,6 +61,157 @@ def _serialize_reservation(r):
     }
 
 
+# ── Contrats OpenAPI (formes réelles des _serialize_* ci-dessus) ─────
+
+
+class ErreurPatrimoineSerializer(serializers.Serializer):
+    error = serializers.CharField()
+
+
+class EquipementReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    nom = serializers.CharField()
+    type_equipement = serializers.CharField()
+    type_equipement_display = serializers.CharField()
+    marque = serializers.CharField()
+    modele = serializers.CharField()
+    num_serie = serializers.CharField()
+    etat = serializers.CharField()
+    etat_display = serializers.CharField()
+    salle_id = serializers.IntegerField(allow_null=True)
+    salle = serializers.CharField(allow_null=True)
+    date_acquisition = serializers.DateField(allow_null=True)
+
+
+class EquipementListeSerializer(serializers.Serializer):
+    results = EquipementReponseSerializer(many=True)
+
+
+class EquipementCreationSerializer(serializers.Serializer):
+    nom = serializers.CharField()
+    salle_id = serializers.IntegerField(required=False)
+    type_equipement = serializers.CharField(required=False)
+    marque = serializers.CharField(required=False)
+    modele = serializers.CharField(required=False)
+    num_serie = serializers.CharField(required=False)
+
+
+class VehiculeReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    immatriculation = serializers.CharField()
+    marque = serializers.CharField()
+    modele = serializers.CharField()
+    annee_mise_en_circulation = serializers.IntegerField(allow_null=True)
+    kilometrage = serializers.IntegerField()
+    prochaine_revision = serializers.DateField(allow_null=True)
+
+
+class VehiculeCreationSerializer(serializers.Serializer):
+    immatriculation = serializers.CharField()
+    marque = serializers.CharField(required=False)
+    modele = serializers.CharField(required=False)
+    kilometrage = serializers.IntegerField(required=False)
+
+
+class VehiculeListeSerializer(serializers.Serializer):
+    results = VehiculeReponseSerializer(many=True)
+
+
+class InventaireReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    date_inventaire = serializers.DateField()
+    responsable = serializers.CharField(allow_null=True)
+    commentaires = serializers.CharField()
+
+
+class InventaireListeSerializer(serializers.Serializer):
+    results = InventaireReponseSerializer(many=True)
+
+
+class InventaireCreeSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    date_inventaire = serializers.DateField()
+
+
+class InventaireCreationSerializer(serializers.Serializer):
+    date_inventaire = serializers.DateField()
+    commentaires = serializers.CharField(required=False)
+
+
+class MaintenanceReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    equipement_id = serializers.IntegerField(allow_null=True)
+    equipement = serializers.CharField(allow_null=True)
+    salle_id = serializers.IntegerField(allow_null=True)
+    salle = serializers.CharField(allow_null=True)
+    type_maintenance = serializers.CharField()
+    type_maintenance_display = serializers.CharField()
+    description = serializers.CharField()
+    date_debut = serializers.DateTimeField()
+    date_fin = serializers.DateTimeField(allow_null=True)
+    statut = serializers.CharField()
+    statut_display = serializers.CharField()
+
+
+class MaintenanceListeSerializer(serializers.Serializer):
+    results = MaintenanceReponseSerializer(many=True)
+
+
+class MaintenanceCreationSerializer(serializers.Serializer):
+    description = serializers.CharField()
+    date_debut = serializers.DateTimeField()
+    equipement_id = serializers.IntegerField(required=False)
+    salle_id = serializers.IntegerField(required=False)
+    type_maintenance = serializers.CharField(required=False)
+    date_fin = serializers.DateTimeField(required=False)
+
+
+class StatutRequeteSerializer(serializers.Serializer):
+    statut = serializers.CharField()
+
+
+class ReservationReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    salle_id = serializers.IntegerField()
+    salle = serializers.CharField()
+    motif = serializers.CharField()
+    date_debut = serializers.DateTimeField()
+    date_fin = serializers.DateTimeField()
+    statut = serializers.CharField()
+    statut_display = serializers.CharField()
+    demande_par = serializers.CharField(allow_null=True)
+    valide_par = serializers.CharField(allow_null=True)
+
+
+class ReservationListeSerializer(serializers.Serializer):
+    results = ReservationReponseSerializer(many=True)
+
+
+class ReservationCreationSerializer(serializers.Serializer):
+    salle_id = serializers.IntegerField()
+    motif = serializers.CharField()
+    date_debut = serializers.DateTimeField()
+    date_fin = serializers.DateTimeField()
+
+
+class MouvementReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    type_mouvement = serializers.CharField()
+    type_mouvement_display = serializers.CharField()
+    equipement = serializers.CharField(allow_null=True)
+    vehicule = serializers.CharField(allow_null=True)
+    detail = serializers.CharField()
+    acteur = serializers.CharField(allow_null=True)
+    created_at = serializers.DateTimeField()
+
+
+class MouvementListeSerializer(serializers.Serializer):
+    results = MouvementReponseSerializer(many=True)
+
+
+
+
+@extend_schema(request=EquipementCreationSerializer, responses={200: EquipementListeSerializer, 201: EquipementReponseSerializer, 400: ErreurPatrimoineSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsGestionPatrimoineOrReadOnly])
 def equipements_api(request):
@@ -89,6 +242,7 @@ def equipements_api(request):
     return Response(_serialize_equipement(e), status=201)
 
 
+@extend_schema(request=VehiculeCreationSerializer, responses={200: VehiculeListeSerializer, 201: VehiculeReponseSerializer, 400: ErreurPatrimoineSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsGestionPatrimoineOrReadOnly])
 def vehicules_api(request):
@@ -106,6 +260,8 @@ def vehicules_api(request):
         )
     except Exception as exc:
         return Response({'error': str(exc)}, status=400)
+    return Response(_serialize_vehicule(v), status=201)
+@extend_schema(request=InventaireCreationSerializer, responses={200: InventaireListeSerializer, 201: InventaireCreeSerializer, 400: ErreurPatrimoineSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsGestionPatrimoineOrReadOnly])
 def inventaires_api(request):
@@ -130,6 +286,7 @@ def inventaires_api(request):
     return Response({'id': inv.id, 'date_inventaire': inv.date_inventaire.isoformat()}, status=201)
 
 
+@extend_schema(request=MaintenanceCreationSerializer, responses={200: MaintenanceListeSerializer, 201: MaintenanceReponseSerializer, 400: ErreurPatrimoineSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsGestionPatrimoineOrReadOnly])
 def maintenances_api(request):
@@ -158,6 +315,7 @@ def maintenances_api(request):
     return Response(_serialize_maintenance(m), status=201)
 
 
+@extend_schema(request=StatutRequeteSerializer, responses={200: MaintenanceReponseSerializer, 400: ErreurPatrimoineSerializer, 404: ErreurPatrimoineSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsGestionPatrimoine])
 def maintenance_transition_api(request, pk):
@@ -173,6 +331,7 @@ def maintenance_transition_api(request, pk):
     return Response(_serialize_maintenance(m))
 
 
+@extend_schema(request=ReservationCreationSerializer, responses={200: ReservationListeSerializer, 201: ReservationReponseSerializer, 400: ErreurPatrimoineSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsGestionPatrimoineOrReadOnly])
 def reservations_api(request):
@@ -202,6 +361,7 @@ def reservations_api(request):
     return Response(_serialize_reservation(r), status=201)
 
 
+@extend_schema(request=StatutRequeteSerializer, responses={200: ReservationReponseSerializer, 400: ErreurPatrimoineSerializer, 404: ErreurPatrimoineSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsValidationPatrimoine])
 def reservation_valider_api(request, pk):
@@ -217,6 +377,7 @@ def reservation_valider_api(request, pk):
     return Response(_serialize_reservation(r))
 
 
+@extend_schema(responses={200: MouvementListeSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def mouvements_api(request):
@@ -233,4 +394,3 @@ def mouvements_api(request):
          'created_at': m.created_at.isoformat()}
         for m in qs
     ]})
-    return Response(_serialize_vehicule(v), status=201)

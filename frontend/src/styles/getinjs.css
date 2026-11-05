@@ -81,3 +81,1088 @@
     border: 1px solid CanvasText;
   }
 }
+
+/* ── Génération (maquette validée) : en-tête, paramètres, historique ────── */
+.getinjs .gen-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+
+.getinjs .gen-sur {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--injs-blue-royal, #14509e);
+}
+
+.getinjs .gen-titre {
+  margin: 0.15rem 0 0.3rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--injs-navy, #0a2a5c);
+}
+
+.getinjs .gen-sous {
+  margin: 0;
+  max-width: 680px;
+  font-size: 0.88rem;
+  color: #54677e;
+  line-height: 1.55;
+}
+
+.getinjs .gen-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.getinjs .gen-label {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #54677e;
+  margin-bottom: 0.25rem;
+}
+
+.getinjs .gen-contraintes {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid #e8f0fa;
+}
+
+.getinjs .gen-etapes {
+  margin: 0 0 1rem;
+  padding-left: 1.2rem;
+  font-size: 0.84rem;
+  color: #33475e;
+  line-height: 1.6;
+}
+
+.getinjs .gen-etapes li::marker {
+  color: var(--injs-blue-royal, #14509e);
+  font-weight: 800;
+}
+
+.getinjs .gen-sous-titre {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--injs-navy, #0a2a5c);
+  margin-bottom: 0.4rem;
+}
+
+.getinjs .gen-savoir,
+.getinjs .gen-regles {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.84rem;
+  color: #33475e;
+  line-height: 1.65;
+}
+
+.getinjs .gen-table th {
+  background: #eef4fb;
+  color: var(--injs-navy, #0a2a5c);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border-bottom: 2px solid #6db3f2;
+  padding: 0.55rem 0.6rem;
+  white-space: nowrap;
+}
+
+.getinjs .gen-table td { font-size: 0.82rem; }
+
+.getinjs .gen-conflits {
+  display: inline-block;
+  min-width: 1.7rem;
+  text-align: center;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: #eef4fb;
+  border: 1px solid var(--injs-border-strong, #bcd3f0);
+  color: var(--injs-blue-royal, #14509e);
+  font-weight: 800;
+  font-size: 0.72rem;
+}
+
+.getinjs .gen-conflits.is-alert {
+  background: #fdf1f1;
+  border-color: #e5b4b4;
+  color: #a02c2c;
+}
+
+.getinjs .gen-versions {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.getinjs .gen-version {
+  border: 1px solid #dbe7f5;
+  border-left: 3px solid var(--injs-blue-royal, #14509e);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  background: linear-gradient(180deg, #fbfdff, #f0f6fd);
+}
+
+.getinjs .gen-version-code {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--injs-navy, #0a2a5c);
+  word-break: break-word;
+  flex: 1;
+}
+
+.getinjs .gen-version-date {
+  display: block;
+  font-size: 0.7rem;
+  color: #76879e;
+  margin-top: 0.15rem;
+}
+
+.getinjs .gen-version-desc {
+  display: block;
+  font-size: 0.74rem;
+  color: #54677e;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Design premium INJS (bleu foncé / bleu clair) — écran « Génération ».
+   Scopé à la page (.gen-page) : les autres écrans GET-INJS qui partagent
+   le socle .getinjs (campagnes, versions, audit) ne sont pas touchés.
+   Palette : nuit #061831 · bleu foncé #0a2a5c · bleu #14509e ·
+   bleu clair #6db3f2 · ciel #a8d4f8 · fond #f2f7fd (tokens --injs-*).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── En-tête : panneau bleu nuit en dégradé, halo bleu clair ────────────── */
+.getinjs.gen-page .gen-entete {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(560px 240px at 88% -30%, rgba(109, 179, 242, 0.45), transparent 62%),
+    radial-gradient(420px 200px at -6% 115%, rgba(20, 80, 158, 0.55), transparent 60%),
+    linear-gradient(118deg, #061831 0%, #0a2a5c 52%, #14509e 100%);
+  border: 1px solid rgba(109, 179, 242, 0.35);
+  border-radius: 20px;
+  padding: 1.35rem 1.6rem;
+  box-shadow: 0 24px 44px -22px rgba(6, 24, 49, 0.65);
+}
+
+.getinjs.gen-page .gen-sur {
+  color: #6db3f2;
+  letter-spacing: 0.18em;
+}
+
+.getinjs.gen-page .gen-titre {
+  color: #ffffff;
+  font-size: 1.85rem;
+  text-shadow: 0 2px 14px rgba(6, 24, 49, 0.45);
+}
+
+.getinjs.gen-page .gen-sous {
+  color: #c9def7;
+  max-width: 640px;
+}
+
+.getinjs.gen-page .gen-actions .btn {
+  border-radius: 999px;
+  font-weight: 700;
+  padding: 0.42rem 0.95rem;
+  backdrop-filter: blur(2px);
+  transition: all 0.15s ease;
+}
+
+.getinjs.gen-page .gen-actions .btn-outline-primary {
+  border-color: rgba(168, 212, 248, 0.75);
+  color: #eaf5ff;
+  background: rgba(109, 179, 242, 0.12);
+}
+
+.getinjs.gen-page .gen-actions .btn-outline-secondary {
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #dbeafe;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.getinjs.gen-page .gen-actions .btn:hover {
+  background: #6db3f2;
+  border-color: #6db3f2;
+  color: #061831;
+  box-shadow: 0 10px 20px -10px rgba(109, 179, 242, 0.8);
+}
+
+/* ── Cartes premium : bordure bleutée, ombre portée teintée bleu nuit ───── */
+.getinjs.gen-page .card {
+  background: #ffffff;
+  border: 1px solid #d7e5f5;
+  border-radius: 18px;
+  box-shadow: 0 18px 34px -24px rgba(7, 27, 58, 0.4);
+  overflow: hidden;
+}
+
+.getinjs.gen-page .card-header {
+  background: linear-gradient(92deg, var(--injs-blue-pale), #f7fbff);
+  border-bottom: 2px solid #6db3f2;
+  color: var(--injs-navy);
+  padding: 0.8rem 1.1rem;
+}
+
+.getinjs.gen-page .card-header strong {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.02rem;
+  letter-spacing: 0.01em;
+}
+
+.getinjs.gen-page .card-header .text-muted { color: #5b7292 !important; }
+
+/* Carte principale : en-tête bleu nuit en dégradé, texte blanc/ciel */
+.getinjs.gen-page .gen-card-main {
+  border-color: #b9d2f2;
+  box-shadow: 0 26px 44px -24px rgba(7, 27, 58, 0.5);
+}
+
+.getinjs.gen-page .gen-card-main .card-header {
+  background:
+    radial-gradient(360px 120px at 95% -40%, rgba(109, 179, 242, 0.5), transparent 65%),
+    linear-gradient(92deg, #0a2a5c, #14509e);
+  border-bottom: 3px solid #6db3f2;
+  color: #ffffff;
+}
+
+.getinjs.gen-page .gen-card-main .card-header .text-muted { color: #a8d4f8 !important; }
+
+/* ── Formulaire : champs aux bordures bleues, focus lumineux ────────────── */
+.getinjs.gen-page .form-select,
+.getinjs.gen-page .form-control {
+  border-color: var(--injs-border-strong);
+  border-radius: 10px;
+  color: var(--injs-navy);
+  background-color: #fbfdff;
+}
+
+.getinjs.gen-page .form-select:focus,
+.getinjs.gen-page .form-control:focus {
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 0.22rem rgba(18, 103, 214, 0.16);
+  background-color: #ffffff;
+}
+
+.getinjs.gen-page .form-check-input { accent-color: var(--injs-blue-royal); }
+
+.getinjs.gen-page .form-check-input:checked {
+  background-color: var(--injs-blue-royal);
+  border-color: var(--injs-blue-royal);
+}
+
+.getinjs.gen-page .gen-contraintes {
+  background: linear-gradient(180deg, #f7fbff, var(--injs-blue-pale));
+  border: 1px solid #d7e5f5;
+  border-radius: 14px;
+  padding: 0.85rem 1rem 0.35rem;
+}
+
+/* Bouton de lancement : dégradé bleu nuit → bleu royal */
+.getinjs.gen-page .gen-btn-lancer {
+  color: #FFFFFF;
+  background: linear-gradient(92deg, var(--injs-navy) 0%, #0a2a5c 45%, var(--injs-blue-royal) 100%);
+  border: 1px solid #0a2a5c;
+  border-radius: 12px;
+  padding: 0.55rem 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  box-shadow: 0 14px 26px -12px rgba(10, 42, 92, 0.75);
+  transition: all 0.15s ease;
+}
+
+.getinjs.gen-page .gen-btn-lancer:hover:not(:disabled) {
+  color: #FFFFFF;
+  background: linear-gradient(92deg, #0a2a5c 0%, #14509e 55%, #35bdf5 130%);
+  box-shadow: 0 18px 30px -12px rgba(18, 103, 214, 0.8);
+  transform: translateY(-1px);
+}
+
+/* ── « Comment le moteur décide » : étapes numérotées bleu nuit ─────────── */
+.getinjs.gen-page .gen-etapes {
+  list-style: none;
+  counter-reset: gen-etape;
+  padding-left: 0;
+}
+
+.getinjs.gen-page .gen-etapes li {
+  counter-increment: gen-etape;
+  position: relative;
+  padding-left: 2.35rem;
+  margin-bottom: 0.6rem;
+  min-height: 1.7rem;
+}
+
+.getinjs.gen-page .gen-etapes li::before {
+  content: counter(gen-etape);
+  position: absolute;
+  left: 0;
+  top: 0.05rem;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #0a2a5c, var(--injs-blue-royal));
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 14px -8px rgba(10, 42, 92, 0.8);
+  border: 2px solid #a8d4f8;
+}
+
+.getinjs.gen-page .gen-etapes li::marker { content: none; }
+
+.getinjs.gen-page .gen-sous-titre {
+  color: var(--injs-navy);
+  border-top: 1px solid #e3edf9;
+  padding-top: 0.8rem;
+}
+
+.getinjs.gen-page .gen-savoir li::marker,
+.getinjs.gen-page .gen-regles li::marker { color: var(--injs-blue-royal); }
+
+/* ── Historique : en-tête de tableau bleu nuit, survol bleu pâle ────────── */
+.getinjs.gen-page .gen-table thead th {
+  background: linear-gradient(92deg, #0a2a5c, #14509e);
+  color: #ffffff;
+  border-bottom: 3px solid #6db3f2;
+}
+
+.getinjs.gen-page .gen-table tbody tr { transition: background 0.12s ease; }
+
+.getinjs.gen-page .gen-table tbody tr:hover { background: var(--injs-blue-pale); }
+
+/* ── Compteurs du bilan et de l'import : chiffres bleu nuit ─────────────── */
+.getinjs.gen-page .getinjs-compte {
+  border-color: #c9dcf5;
+  background: linear-gradient(180deg, #fbfdff, var(--injs-blue-pale));
+  border-radius: 14px;
+}
+
+.getinjs.gen-page .getinjs-compte-valeur { color: #0a2a5c; }
+
+/* ── Emplois du temps versionnés : puce dégradée, badge ciel ─────────────── */
+.getinjs.gen-page .gen-version {
+  border-color: #c9dcf5;
+  border-left: 4px solid var(--injs-blue-royal);
+  background:
+    radial-gradient(220px 90px at 100% 0%, rgba(109, 179, 242, 0.18), transparent 70%),
+    linear-gradient(180deg, #fbfdff, #eef5fe);
+  box-shadow: 0 10px 18px -14px rgba(10, 42, 92, 0.5);
+}
+
+.getinjs.gen-page .gen-version .badge-neutral {
+  background: var(--injs-blue-pale);
+  color: #0a2a5c;
+  border: 1px solid var(--injs-border-strong);
+}
+
+@media (max-width: 576px) {
+  .getinjs.gen-page .gen-entete { padding: 1.1rem 1.15rem; }
+  .getinjs.gen-page .gen-titre { font-size: 1.5rem; }
+}
+
+/* ── « Importer les étudiants inscrits » (fenêtre dédiée, design premium) ──
+   Hérite du panneau bleu nuit, des cartes et du tableau de .gen-page ;
+   ne définit que les éléments propres à l'import. */
+.getinjs.imp-page .imp-dropzone {
+  border: 2px dashed #9dbede;
+  border-radius: 16px;
+  background:
+    radial-gradient(320px 130px at 50% -30%, rgba(109, 179, 242, 0.22), transparent 70%),
+    linear-gradient(180deg, #f7fbff, var(--injs-blue-pale));
+  padding: 1.6rem 1rem 1.35rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  transition: all 0.15s ease;
+}
+
+.getinjs.imp-page .imp-dropzone.is-survol {
+  border-color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  box-shadow: inset 0 0 0 3px rgba(18, 103, 214, 0.18);
+}
+
+.getinjs.imp-page .imp-dropzone-icone {
+  width: 3.1rem;
+  height: 3.1rem;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #0a2a5c, var(--injs-blue-royal));
+  border: 2px solid #a8d4f8;
+  color: #ffffff;
+  font-size: 1.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 20px -10px rgba(10, 42, 92, 0.8);
+  margin-bottom: 0.35rem;
+}
+
+.getinjs.imp-page .imp-dropzone-titre {
+  font-weight: 700;
+  color: var(--injs-navy);
+  font-size: 0.95rem;
+}
+
+.getinjs.imp-page .imp-dropzone-sous { font-size: 0.78rem; color: #5b7292; }
+
+.getinjs.imp-page .imp-fichier-choisi {
+  margin-top: 0.45rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid var(--injs-border-strong);
+  color: #0a2a5c;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.getinjs.imp-page .imp-modele {
+  font-weight: 700;
+  color: var(--injs-blue-royal);
+  text-decoration: none;
+}
+
+.getinjs.imp-page .imp-colonnes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.6rem;
+}
+
+.getinjs.imp-page .imp-colonne {
+  border: 1px solid #d7e5f5;
+  border-left: 3px solid var(--injs-blue-royal);
+  border-radius: 10px;
+  padding: 0.5rem 0.65rem;
+  background: linear-gradient(180deg, #fbfdff, #f0f6fd);
+}
+
+.getinjs.imp-page .imp-colonne-titre {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+}
+
+.getinjs.imp-page .imp-obligatoire {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: #0a2a5c;
+  color: #a8d4f8;
+  border-radius: 999px;
+  padding: 0.08rem 0.45rem;
+}
+
+.getinjs.imp-page .imp-colonne-alias {
+  display: block;
+  font-size: 0.72rem;
+  color: #5b7292;
+  margin-top: 0.15rem;
+  word-break: break-word;
+}
+
+.getinjs.imp-page .imp-note {
+  margin: 0.8rem 0 0;
+  font-size: 0.78rem;
+  color: #76879e;
+}
+
+.getinjs.imp-page .imp-situation {
+  border: 1px solid #d7e5f5;
+  border-left: 4px solid var(--injs-blue-royal);
+  border-radius: 12px;
+  padding: 0.65rem 0.8rem;
+  background: linear-gradient(180deg, #fbfdff, var(--injs-blue-pale));
+  margin-bottom: 0.65rem;
+}
+
+.getinjs.imp-page .imp-situation:last-child { margin-bottom: 0; }
+
+.getinjs.imp-page .imp-situation-titre {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #0a2a5c;
+  margin-bottom: 0.2rem;
+}
+
+.getinjs.imp-page .imp-situation p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #42597a;
+  line-height: 1.55;
+}
+
+.getinjs.imp-page .imp-fichier-icone { color: var(--injs-blue-royal); }
+
+.getinjs.imp-page .imp-pied {
+  margin: 0.25rem 0 0;
+  text-align: center;
+  font-size: 0.72rem;
+  color: #8fa1b8;
+}
+
+/* ── Formatage maquette de la fenêtre d'import : en-tête clair premium ────
+   Même structure que l'image (sur-titre, titre, sous-titre, actions à
+   droite) ; la palette reste celle de l'INJS, bleu foncé / bleu clair. */
+.getinjs.imp-page .imp-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+
+.getinjs.imp-page .imp-sur {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--injs-blue-royal, #14509e);
+}
+
+.getinjs.imp-page .imp-titre {
+  margin: 0.15rem 0 0.3rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--injs-navy, #0a2a5c);
+}
+
+.getinjs.imp-page .imp-sous {
+  margin: 0;
+  max-width: 680px;
+  font-size: 0.88rem;
+  color: #54677e;
+  line-height: 1.55;
+}
+
+.getinjs.imp-page .imp-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.getinjs.imp-page .imp-actions .btn-outline-primary {
+  border-color: #9dbede;
+  color: #0a2a5c;
+  font-weight: 700;
+  background: #ffffff;
+}
+
+.getinjs.imp-page .imp-actions .btn-outline-primary:hover {
+  background: var(--injs-blue-pale);
+  border-color: var(--injs-blue-royal);
+  color: #0a2a5c;
+}
+
+/* Colonnes acceptées : grille 2 × 3 fidèle à la maquette */
+.getinjs.imp-page .imp-colonnes {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 576px) {
+  .getinjs.imp-page .imp-colonnes { grid-template-columns: 1fr; }
+}
+
+/* Pied institutionnel aligné à gauche, comme la maquette */
+.getinjs.imp-page .imp-pied { text-align: left; }
+
+/* Options encadrées de la fenêtre d'import (cases à cocher de la maquette) */
+.getinjs.imp-page .imp-option {
+  border: 1px solid #d7e5f5;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fbfdff, #f4f9ff);
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 0.6rem;
+}
+
+.getinjs.imp-page .imp-option .form-check { margin: 0; }
+
+/* Pastille du nombre d'imports dans l'en-tête du journal */
+.getinjs.imp-page .imp-journal-count {
+  flex: none;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  background: var(--injs-blue-pale);
+  border: 1px solid var(--injs-border-strong);
+  color: #0a2a5c;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* ── Reproduction du format démo (titres dans le corps des cartes) ───────
+   La démo ne met pas de bandeau d'en-tête : titre serif bleu nuit et
+   sous-titre directement dans le corps de carte, coins modérés. */
+.getinjs.imp-page .card { border-radius: 14px; }
+
+.getinjs.imp-page .imp-card-titre {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.06rem;
+  font-weight: 700;
+  color: var(--injs-navy, #0a2a5c);
+}
+
+.getinjs.imp-page .imp-card-sous {
+  margin: 0.1rem 0 0.9rem;
+  font-size: 0.78rem;
+  color: #76879e;
+}
+
+.getinjs.imp-page .imp-card-sous-inline {
+  font-family: var(--bs-body-font-family, inherit);
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: #76879e;
+  margin-left: 0.6rem;
+}
+
+/* Encadrés colonnes : bordure simple, sans barre d'accent (format démo) */
+.getinjs.imp-page .imp-colonne {
+  border-left: 1px solid #d7e5f5;
+  background: #ffffff;
+}
+
+/* Scénarios : trois teintes de la palette bleue INJS, du pâle au soutenu */
+.getinjs.imp-page .imp-situation:nth-of-type(1) {
+  background: linear-gradient(180deg, #f4faff, var(--injs-blue-pale));
+  border-left-color: #6db3f2;
+}
+
+.getinjs.imp-page .imp-situation:nth-of-type(2) {
+  background: linear-gradient(180deg, #eef5fe, #dcecfb);
+  border-left-color: var(--injs-blue-royal);
+}
+
+.getinjs.imp-page .imp-situation:nth-of-type(3) {
+  background: linear-gradient(180deg, #e8f1fc, #d3e4f7);
+  border-left-color: #0a2a5c;
+}
+
+/* Journal au format démo : en-tête de tableau claire, importés en bleu nuit */
+.getinjs.imp-page .imp-journal-table thead th {
+  background: #eef4fb;
+  color: var(--injs-navy, #0a2a5c);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-top: 1px solid #e3edf9;
+  border-bottom: 2px solid #6db3f2;
+  padding: 0.55rem 0.6rem;
+  white-space: nowrap;
+}
+
+.getinjs.imp-page .imp-journal-table td { font-size: 0.82rem; }
+
+.getinjs.imp-page .imp-journal-table tbody tr:hover { background: var(--injs-blue-pale); }
+
+.getinjs.imp-page .imp-importes {
+  font-weight: 800;
+  color: #0a2a5c;
+}
+
+/* ── « Étudiants inscrits » (POPULATIONS LMD) ─────────────────────────────
+   Refonte du module sur le format de référence : quatre indicateurs,
+   carte de filtres, liste paginée à 25 par page. Palette INJS. */
+.getinjs.insc-page .insc-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 991.98px) {
+  .getinjs.insc-page .insc-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+
+.getinjs.insc-page .insc-kpi {
+  background: linear-gradient(180deg, #ffffff, #f4faff);
+  border: 1px solid #d7e5f5;
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+}
+
+.getinjs.insc-page .insc-kpi-label {
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6db3f2;
+}
+
+.getinjs.insc-page .insc-kpi-valeur {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--injs-navy, #0a2a5c);
+}
+
+.getinjs.insc-page .insc-kpi-sous {
+  font-size: 0.72rem;
+  color: #76879e;
+}
+
+.getinjs.insc-page .insc-filtre-label {
+  display: block;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #42597a;
+  margin-bottom: 0.35rem;
+}
+
+.getinjs.insc-page .insc-matricule {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.getinjs.insc-page .insc-formation-sous {
+  font-size: 0.72rem;
+  color: #76879e;
+}
+
+.getinjs.insc-page .insc-statut,
+.getinjs.insc-page .insc-source {
+  display: inline-block;
+  padding: 0.14rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.getinjs.insc-page .insc-statut-inscrit {
+  background: var(--injs-blue-pale);
+  color: #0a2a5c;
+}
+
+.getinjs.insc-page .insc-statut-autre {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.getinjs.insc-page .insc-source-base {
+  background: #ffffff;
+  border: 1px solid var(--injs-border-strong, #bcd3ee);
+  color: #42597a;
+}
+
+.getinjs.insc-page .insc-source-import {
+  background: linear-gradient(92deg, #dcecfb, var(--injs-blue-pale));
+  color: var(--injs-blue-royal, #14509e);
+}
+
+.getinjs.insc-page .insc-source-note {
+  padding: 0.2rem 0.65rem;
+  border: 1px solid #d7e5f5;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #42597a;
+  white-space: nowrap;
+}
+
+.getinjs.insc-page .insc-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 1rem;
+  border-top: 1px solid #e3edf9;
+  font-size: 0.8rem;
+  color: #42597a;
+}
+
+/* ── « Référentiels » (Données de référence INJS) ─────────────────────────
+   Compteurs en bande, onglets en pastilles, tableaux au format clair du
+   module. Palette INJS. */
+.getinjs.ref-page .ref-kpis {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 1199.98px) {
+  .getinjs.ref-page .ref-kpis { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (max-width: 575.98px) {
+  .getinjs.ref-page .ref-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+
+.getinjs.ref-page .ref-kpi {
+  background: linear-gradient(180deg, #ffffff, #f4faff);
+  border: 1px solid #d7e5f5;
+  border-radius: 14px;
+  padding: 0.7rem 0.85rem;
+}
+
+.getinjs.ref-page .ref-kpi-label {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6db3f2;
+}
+
+.getinjs.ref-page .ref-kpi-valeur {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--injs-navy, #0a2a5c);
+}
+
+.getinjs.ref-page .ref-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.getinjs.ref-page .ref-tab {
+  padding: 0.42rem 1rem;
+  border: 1px solid var(--injs-border-strong, #bcd3ee);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #42597a;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.getinjs.ref-page .ref-tab:hover {
+  border-color: var(--injs-blue-royal, #14509e);
+  color: var(--injs-blue-royal, #14509e);
+}
+
+.getinjs.ref-page .ref-tab.actif {
+  background: linear-gradient(92deg, var(--injs-navy) 0%, #0a2a5c 55%, var(--injs-blue-royal) 130%);
+  border-color: #0a2a5c;
+  color: #ffffff;
+  box-shadow: 0 10px 20px -10px rgba(10, 42, 92, 0.7);
+}
+
+.getinjs.ref-page .ref-ecole,
+.getinjs.ref-page .ref-maquette {
+  display: inline-block;
+  padding: 0.14rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.getinjs.ref-page .ref-ecole {
+  background: #ffffff;
+  border: 1px solid var(--injs-border-strong, #bcd3ee);
+  color: #42597a;
+}
+
+.getinjs.ref-page .ref-maquette-publiee {
+  background: var(--injs-blue-pale);
+  color: #0a2a5c;
+}
+
+.getinjs.ref-page .ref-maquette-param {
+  background: #ffffff;
+  border: 1px dashed #9db9d9;
+  color: #42597a;
+}
+
+/* ── « Conception » (Documentation technique du module) ──────────────────
+   Cartes couplées au format de référence : couches, algorithme numéroté,
+   contrats d'API, modèle de données, commandes et exigences couvertes. */
+.getinjs.conc-page .conc-couche {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: 0.9rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #e3edf9;
+}
+
+.getinjs.conc-page .conc-couche:last-of-type { border-bottom: none; }
+
+.getinjs.conc-page .conc-couche-nom {
+  font-weight: 800;
+  color: var(--injs-navy, #0a2a5c);
+  font-size: 0.86rem;
+}
+
+.getinjs.conc-page .conc-couche-pile {
+  font-weight: 700;
+  color: #14509e;
+  font-size: 0.84rem;
+}
+
+.getinjs.conc-page .conc-couche-role {
+  font-size: 0.8rem;
+  color: #5b718c;
+}
+
+.getinjs.conc-page .conc-note {
+  margin: 0.8rem 0 0;
+  padding: 0.6rem 0.8rem;
+  background: linear-gradient(180deg, #f4faff, var(--injs-blue-pale));
+  border-left: 3px solid #6db3f2;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: #42597a;
+}
+
+.getinjs.conc-page .conc-etapes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: conc-etape;
+}
+
+.getinjs.conc-page .conc-etapes li {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  padding: 0.45rem 0;
+  font-size: 0.84rem;
+  color: #33475f;
+}
+
+.getinjs.conc-page .conc-etape-num {
+  flex: 0 0 auto;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--injs-navy), var(--injs-blue-royal));
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.05rem;
+}
+
+.getinjs.conc-page .conc-methode {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.getinjs.conc-page .conc-methode-get {
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal, #14509e);
+}
+
+.getinjs.conc-page .conc-methode-post {
+  background: linear-gradient(92deg, var(--injs-navy), #0a2a5c);
+  color: #ffffff;
+}
+
+.getinjs.conc-page .conc-route {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 0.74rem;
+  color: #0a2a5c;
+  white-space: nowrap;
+}
+
+.getinjs.conc-page .conc-commande { margin-bottom: 0.85rem; }
+
+.getinjs.conc-page .conc-commande-etape {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--injs-navy, #0a2a5c);
+  margin-bottom: 0.25rem;
+}
+
+.getinjs.conc-page .conc-commande-code {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  background: #0a2a5c;
+  color: #d9ecff;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.getinjs.conc-page .conc-commande-detail {
+  font-size: 0.76rem;
+  color: #76879e;
+  margin-top: 0.25rem;
+}
+
+.getinjs.conc-page .conc-exigences {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.getinjs.conc-page .conc-exigences li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.4rem 0;
+  font-size: 0.84rem;
+  color: #33475f;
+}
+
+.getinjs.conc-page .conc-coche {
+  flex: 0 0 auto;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 50%;
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal, #14509e);
+  font-size: 0.78rem;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.08rem;
+}
+
+/* — Historique des générations : pagination du chargement explicite ———— */
+.getinjs .gen-pagination {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.2rem;
+  justify-content: space-between; font-size: .82rem; color: #54677e;
+}
+.getinjs .gen-pagination-nav { display: inline-flex; align-items: center; gap: .8rem; }
+.getinjs .gen-pagination-nav strong { color: #0a2a5c; }

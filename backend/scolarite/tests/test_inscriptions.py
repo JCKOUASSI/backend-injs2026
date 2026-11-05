@@ -411,3 +411,45 @@ class InscriptionAPITests(ConversionFixture, TestCase):
         client = APIClient()
         client.force_authenticate(make_user('auditeur_insc', role='AUDITEUR'))
         self.assertEqual(client.get('/api/scolarite/inscriptions/').status_code, 403)
+
+
+class InscriptionChargementExpliciteTests(ConversionFixture, TestCase):
+    """Chargement explicite `page_size` (série « 200 », 05/11/2026).
+
+    Sans `page_size`, le tableau complet historique (plafond 500) est
+    conservé ; avec, enveloppe paginée bornée à 200 lignes.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.client.force_authenticate(self.acteur)
+        from formations.models import Participant
+        from scolarite.models import DossierEtudiant, InscriptionAdministrative
+        for i in range(3):
+            dossier = DossierEtudiant.objects.create(participant=Participant.objects.create(
+                matricule=f'INJS26-90{i}', nom=f'Étudiant {i}', prenom='Test',
+            ))
+            InscriptionAdministrative.objects.create(
+                etudiant=dossier, annee_academique=self.annee,
+                ref_formation=self.formation, niveau=self.niveau,
+            )
+
+    def test_sans_page_size_tableau_historique(self):
+        res = self.client.get('/api/scolarite/inscriptions/')
+        self.assertEqual(res.status_code, 200)
+        self.assertIsInstance(res.data, list)
+        self.assertGreaterEqual(len(res.data), 3)
+
+    def test_page_size_explicite_200(self):
+        res = self.client.get('/api/scolarite/inscriptions/', {'page_size': 2})
+        self.assertGreaterEqual(res.data['count'], 3)
+        self.assertEqual(res.data['page_size'], 2)
+        self.assertEqual(len(res.data['results']), 2)
+        res2 = self.client.get('/api/scolarite/inscriptions/', {'page_size': 2, 'page': 2})
+        self.assertNotEqual(res.data['results'][0]['id'], res2.data['results'][0]['id'])
+
+        total = res.data['count']
+        res = self.client.get('/api/scolarite/inscriptions/', {'page_size': 9999})
+        self.assertEqual(res.data['page_size'], 200)
+        self.assertEqual(len(res.data['results']), total)

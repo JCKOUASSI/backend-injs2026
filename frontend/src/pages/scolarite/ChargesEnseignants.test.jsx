@@ -228,6 +228,50 @@ describe('pages/scolarite/ChargesEnseignants.jsx — chargement et occupation (L
 /* LOT 33 — détail d'un enseignant                                      */
 /* ------------------------------------------------------------------ */
 
+describe('pages/scolarite/ChargesEnseignants.jsx — occupation premium', () => {
+  beforeEach(() => {
+    apiController.reset()
+    window.localStorage.clear()
+  })
+
+  it('affiche la synthèse, les jauges de charge et les avatars', async () => {
+    const { container } = mount()
+    await settle()
+    expect(container.querySelectorAll('.chg-kpi')).toHaveLength(4)
+    expect(screen.getByText('150 h')).toBeInTheDocument()
+    expect(screen.getByText('charge moyenne (seuil 192 h)')).toBeInTheDocument()
+    expect(screen.getByText('surcharge(s) à rééquilibrer')).toBeInTheDocument()
+    expect(container.querySelectorAll('.chg-jauge')).toHaveLength(2)
+    // 80/192 = 42 % du seuil pour Jean Dupont, 70/192 = 36 % pour Awa Koné.
+    expect(screen.getByText('42 % du seuil')).toBeInTheDocument()
+    expect(screen.getByText('36 % du seuil')).toBeInTheDocument()
+    expect(container.querySelectorAll('.chg-avatar')).toHaveLength(2)
+  })
+
+  it('filtre les enseignants par la recherche et réordonne par tri', async () => {
+    const { container } = mount()
+    await settle()
+    fireEvent.change(screen.getByLabelText('Rechercher un enseignant'), {
+      target: { value: 'Awa' },
+    })
+    await waitFor(() => {
+      expect(screen.queryByText('Jean Dupont')).not.toBeInTheDocument()
+    })
+    expect(screen.getByText('1 enseignant(s) affiché(s)')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Rechercher un enseignant'), {
+      target: { value: '' },
+    })
+    await waitFor(() => expect(screen.getByText('Jean Dupont')).toBeInTheDocument())
+    // Tri ascendant sur l'affectée : Awa Koné (70) avant Jean Dupont (80).
+    fireEvent.click(screen.getByRole('button', { name: /Affectée/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Affectée/ }))
+    const lignes = [...container.querySelectorAll('.chg-occ-table tbody tr')]
+    expect(lignes[0].textContent).toContain('Awa Koné')
+    expect(lignes[1].textContent).toContain('Jean Dupont')
+  })
+})
+
 describe('pages/scolarite/ChargesEnseignants.jsx — détail enseignant (LOT 33)', () => {
   beforeEach(() => {
     apiController.reset()

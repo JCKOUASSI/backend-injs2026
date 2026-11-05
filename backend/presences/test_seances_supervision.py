@@ -489,3 +489,223 @@ class ApiSupervisionTests(BaseSupervision):
             for terme in ('cpfae', 'sygepcpfae'):
                 self.assertNotIn(terme, code,
                                  f'{module.__name__} ne doit pas référencer {terme}')
+
+
+class EnrichissementTableauDeBordTests(BaseSupervision):
+    """Refonte du tableau de bord du hub : population, QR, manuels."""
+
+    def test_repartition_par_population_sans_polluer_les_compteurs(self):
+        from formations.models import Formateur
+        formateur = Formateur.objects.create(numerobadge='FB-TB', nom='Traoré',
+                                             prenom='Awa')
+        _pointage(self.participants[0], self.affectation, self.aujourdhui,
+                  statut_assiduite=Pointage.StatutAssiduite.PRESENT)
+        Pointage.objects.create(
+            participant=None, formateur=formateur, seance_edt=self.affectation,
+            date_journee=self.aujourdhui, timestamp_entree=timezone.now(),
+            device_id='MOBILE-ENS')
+        Pointage.objects.create(
+            participant=None, encadrant=self.enseignant, seance_edt=self.affectation,
+            date_journee=self.aujourdhui, timestamp_entree=timezone.now(),
+            device_id='MOBILE-ENC')
+
+        ligne = self.ligne()
+        self.assertEqual(ligne['presences']['par_population'],
+                         {'etudiants': 1, 'enseignants': 1, 'encadrants': 1})
+        # Les compteurs d'assiduité étudiants ne comptent que les étudiants.
+        self.assertEqual(ligne['presences']['presents'], 1)
+
+        donnees = supervision.supervision_seances(self.admin, self.aujourdhui)
+        self.assertEqual(donnees['resume']['par_population'],
+                         {'etudiants': 1, 'enseignants': 1, 'encadrants': 1})
+
+    def test_session_qr_ouverte_et_emargements_manuels(self):
+        _pointage(self.participants[0], self.affectation, self.aujourdhui,
+                  device_id='EMARGEMENT_MANUEL',
+                  statut_assiduite=Pointage.StatutAssiduite.PRESENT)
+        ligne = self.ligne()
+        self.assertFalse(ligne['session_qr_ouverte'])
+        self.assertEqual(ligne['presences']['source_manuelle'], 1)
+
+        QRToken.objects.create(
+            seance_edt=self.affectation, actif=True,
+            expire_at=timezone.now() + timedelta(hours=1))
+        donnees = supervision.supervision_seances(self.admin, self.aujourdhui)
+        self.assertEqual(donnees['resume']['sessions_qr_ouvertes'], 1)
+        self.assertEqual(donnees['resume']['emargements_manuels'], 1)
+        ligne = next(l for l in donnees['seances'] if l['id'] == self.affectation.id)
+        self.assertTrue(ligne['session_qr_ouverte'])
+
+    def test_en_salle_maintenant_et_retard_moyen(self):
+        # Séance de la fixture : commencée il y a ~5 minutes, en cours.
+        _pointage(self.participants[0], self.affectation, self.aujourdhui,
+                  statut_assiduite=Pointage.StatutAssiduite.PRESENT)
+        ligne = self.ligne()
+        self.assertEqual(ligne['presences']['en_salle'], 1)
+        self.assertEqual(ligne['presences']['entrees_en_retard'], 1)
+        self.assertIsNotNone(ligne['presences']['retard_moyen_min'])
+        self.assertGreater(ligne['presences']['retard_moyen_min'], 0)
+
+        # Après sortie, plus personne « en salle ».
+        pointage = Pointage.objects.filter(
+            participant=self.participants[0], seance_edt=self.affectation).first()
+        pointage.timestamp_sortie = timezone.now()
+        pointage.save(update_fields=['timestamp_sortie'])
+        donnees = supervision.supervision_seances(self.admin, self.aujourdhui)
+        self.assertEqual(donnees['resume']['en_salle_maintenant'], 0)
+        self.assertIsNotNone(donnees['resume']['retard_moyen_min'])
+
+    def test_encadrants_habilites_affiches(self):
+        from presences.models import EncadrantSeance
+        EncadrantSeance.objects.create(encadrant=self.enseignant,
+                                       seance_edt=self.affectation, actif=True)
+        ligne = self.ligne()
+        self.assertEqual(len(ligne['encadrants']), 1)
+        # Un lien inactif ne doit plus apparaître.
+        EncadrantSeance.objects.create(encadrant=self.admin,
+                                       seance_edt=self.affectation, actif=False)
+        ligne = self.ligne()
+        self.assertEqual(len(ligne['encadrants']), 1)
+
+    def test_historique_presences_types_modes_et_filtres(self):
+        from datetime import timedelta as _td
+        from formations.models import Formateur
+        from presences.models import AuditLog
+        from presences.seances_supervision import historique_presences
+
+        formateur = Formateur.objects.create(numerobadge='FB-H', nom='Traoré',
+                                             prenom='Awa')
+        pt_etudiant = _pointage(
+            self.participants[0], self.affectation, self.aujourdhui,
+            statut_assiduite=Pointage.StatutAssiduite.PRESENT,
+            mode=Pointage.Mode.QR_AUTOMATIQUE)
+        Pointage.objects.create(
+            participant=None, formateur=formateur, seance_edt=self.affectation,
+            date_journee=self.aujourdhui, timestamp_entree=timezone.now(),
+            device_id='MOBILE-ENS', mode=Pointage.Mode.QR_AUTOMATIQUE)
+        pt_manuel = _pointage(
+            self.participants[1], self.affectation, self.aujourdhui,
+            timestamp_entree=timezone.now(),
+            timestamp_sortie=timezone.now() + _td(minutes=95),
+            statut_assiduite=Pointage.StatutAssiduite.PRESENT,
+            device_id='EMARGEMENT_MANUEL', mode=Pointage.Mode.MANUEL,
+            motif_manuel='QR_NON_LISIBLE')
+        AuditLog.objects.create(action=AuditLog.Action.SCAN_HEARTBEAT,
+                                pointage=pt_etudiant)
+        AuditLog.objects.create(action=AuditLog.Action.FORCE_ENTREE,
+                                pointage=pt_manuel, acteur=self.admin,
+                                acteur_label='Admin Test')
+
+        donnees = historique_presences(self.admin, date_debut=self.aujourdhui,
+                                       date_fin=self.aujourdhui)
+        self.assertEqual(donnees['total'], 3)
+        par_type = {r['type_participant'] for r in donnees['resultats']}
+        self.assertEqual(par_type, {'ETUDIANT', 'ENSEIGNANT'})
+        ligne_manuel = next(r for r in donnees['resultats'] if r['id'] == pt_manuel.id)
+        self.assertEqual(ligne_manuel['mode'], 'MANUEL')
+        self.assertEqual(ligne_manuel['motif_manuel'], 'QR_NON_LISIBLE')
+        self.assertEqual(ligne_manuel['auteur_manuel'], 'Admin Test')
+        self.assertEqual(ligne_manuel['duree_minutes'], 95)
+        self.assertIsNone(ligne_manuel['verdict_geofence'])
+        ligne_qr = next(r for r in donnees['resultats'] if r['id'] == pt_etudiant.id)
+        self.assertEqual(ligne_qr['heartbeats'], 1)
+        self.assertEqual(ligne_qr['verdict_geofence'], 'DANS_PERIMETRE')
+
+        # Filtres serveur : type + mode + nom.
+        self.assertEqual(historique_presences(
+            self.admin, date_debut=self.aujourdhui, date_fin=self.aujourdhui,
+            type_participant='ENSEIGNANT')['total'], 1)
+        self.assertEqual(historique_presences(
+            self.admin, date_debut=self.aujourdhui, date_fin=self.aujourdhui,
+            mode='MANUEL')['total'], 1)
+        self.assertEqual(historique_presences(
+            self.admin, date_debut=self.aujourdhui, date_fin=self.aujourdhui,
+            nom='Participant1')['total'], 1)
+
+
+class PlageSupervisionTests(BaseSupervision):
+    """Chargement explicite plafonné : `?limite=&horizon=` sur la supervision.
+
+    Sans `limite`, l'endpoint garde son comportement historique (une
+    journée) ; avec `limite`, il charge les séances les plus proches de
+    la date repère (jours candidats explorés par proximité dans
+    l'horizon) et tronque à ``limite`` séances (plafond 200), résumé
+    recalculé sur la sélection, lignes en ordre chronologique.
+    """
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.admin)
+
+    def test_fenetre_200_couvre_plusieurs_jours(self):
+        reponse = self.client.get(URL_SUPERVISION, {'limite': '200'})
+        self.assertEqual(reponse.status_code, 200, reponse.data)
+        donnees = reponse.json()
+        self.assertIn('periode', donnees)
+        self.assertEqual(donnees['periode']['limite'], 200)
+        self.assertEqual(donnees['periode']['horizon_jours'], 120)
+        self.assertGreaterEqual(donnees['periode']['date_fin'],
+                                donnees['periode']['date_debut'])
+        # La séance hebdomadaire du jour est chargée au moins une fois,
+        # et les lignes sont restituées par ordre chronologique.
+        self.assertGreaterEqual(len(donnees['seances']), 1)
+        self.assertTrue(any(l['id'] == self.affectation.id
+                            for l in donnees['seances']))
+        dates = [l['date'] for l in donnees['seances']]
+        self.assertEqual(dates, sorted(dates))
+        self.assertEqual(donnees['resume']['seances_total'],
+                         len(donnees['seances']))
+
+    def test_plafond_explicite_et_troncature(self):
+        reponse = self.client.get(URL_SUPERVISION,
+                                  {'limite': '1', 'horizon': '120'})
+        donnees = reponse.json()
+        self.assertEqual(len(donnees['seances']), 1)
+        self.assertTrue(donnees['periode']['tronque'])
+        self.assertEqual(donnees['periode']['limite'], 1)
+
+    def test_sans_limite_comportement_historique(self):
+        reponse = self.client.get(URL_SUPERVISION)
+        donnees = reponse.json()
+        self.assertNotIn('periode', donnees)
+        self.assertEqual(len(donnees['seances']), 1)
+
+
+class HistoriqueLimiteTests(BaseSupervision):
+    """Chargement explicite des derniers pointages : `?limite=` sans borne.
+
+    Avec `limite` et sans `date_debut`, l'historique restitue les
+    derniers pointages jusqu'à `date_fin` (toutes dates confondues) ;
+    sans `limite`, la période Du/Au historique est inchangée.
+    """
+
+    def test_200_derniers_sans_borne_debut(self):
+        from datetime import timedelta as _td
+
+        from presences.seances_supervision import historique_presences
+
+        ancien = self.aujourdhui - _td(days=40)
+        _pointage(self.participants[0], self.affectation, ancien,
+                  statut_assiduite=Pointage.StatutAssiduite.PRESENT,
+                  mode=Pointage.Mode.QR_AUTOMATIQUE)
+        _pointage(self.participants[1], self.affectation, self.aujourdhui,
+                  statut_assiduite=Pointage.StatutAssiduite.PRESENT,
+                  mode=Pointage.Mode.QR_AUTOMATIQUE)
+
+        # Période historique : seul le jour même est visible.
+        jour = historique_presences(self.admin, date_debut=self.aujourdhui,
+                                    date_fin=self.aujourdhui)
+        self.assertEqual(jour['total'], 1)
+
+        # Chargement explicite : les deux, du plus récent au plus ancien.
+        recents = historique_presences(self.admin, date_fin=self.aujourdhui,
+                                       limite=200, borne_debut=False)
+        self.assertEqual(recents['total'], 2)
+        self.assertIsNone(recents['date_debut'])
+        self.assertEqual(recents['resultats'][0]['date_seance'],
+                         self.aujourdhui.isoformat())
+
+        # Le plafond s'applique réellement.
+        plafond = historique_presences(self.admin, date_fin=self.aujourdhui,
+                                       limite=1, borne_debut=False)
+        self.assertEqual(plafond['total'], 1)

@@ -24,6 +24,23 @@ import './styles/designSystem.css'
 import './styles/getinjs.css'
 // Garde-fous d'affichage (page blanche → message lisible).
 import './styles/erreurFatale.css'
+// Design premium Jurys (Sessions LMD + hub Composition/Décisions/PV) :
+// importé ICI, dans le chunk principal toujours chargé, et non seulement
+// dans les chunks paresseux des pages Jurys — sinon le bandeau premium
+// pouvait ne jamais atteindre le navigateur (capture 12:54).
+import './styles/jurys.css'
+// Design premium Diplômation (même mécanisme, chargé d'office).
+import './styles/diplomation.css'
+// Design premium Feature flags (chargé d'office, comme jurys/diplomation).
+import './styles/featureFlags.css'
+// Design premium sobre Statistiques & Bilans (chargé d'office).
+import './styles/statistiques.css'
+// Design premium sobre Personnel administratif & technique.
+import './styles/personnel.css'
+// Design premium sobre Administration générale.
+import './styles/administration.css'
+// Design premium sobre Espace Archives.
+import './styles/archives.css'
 
 /**
  * Erreurs hors rendu React : promesses rejetées, erreurs d'événement, échec

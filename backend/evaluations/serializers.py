@@ -359,6 +359,7 @@ class ReleveNotesSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
+    @extend_schema_field(serializers.JSONField(allow_null=True))
     def get_contenu(self, obj):
         """Contenu canonique archivé (lecture seule du fichier).
 
@@ -371,9 +372,10 @@ class ReleveNotesSerializer(serializers.ModelSerializer):
         except (OSError, ValueError):
             return None
 
-    def get_participant_matricule(self, obj):
+    def get_participant_matricule(self, obj) -> str:
         return obj.inscription.etudiant.participant.matricule
 
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_decision_valeur(self, obj):
         """Décision officielle du jury reproduite telle quelle, ou `None`."""
         contenu = self.get_contenu(obj)

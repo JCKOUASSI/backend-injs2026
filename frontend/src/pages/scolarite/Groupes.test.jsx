@@ -156,3 +156,27 @@ describe('pages/scolarite/Groupes — affichage premium', () => {
     expect(await screen.findByText('4 étudiant(s) affecté(s)')).toBeInTheDocument()
   })
 })
+
+describe('pages/scolarite/Groupes — chargement explicite de 200 groupes', () => {
+  it('demande page_size=200, lit l’enveloppe paginée et l’annonce dans l’écran', async () => {
+    apiController.reset()
+    // Route enveloppe déclarée AVANT setupRoutes (premier motif gagnant).
+    apiController.setRoute('/scolarite/groupes/effectifs/', () => ({
+      count: 1, total_pages: 1, page: 1, page_size: 200,
+      results: [{
+        id: 42, nom: 'G200-TEST', annee_academique: '2026-2027',
+        ref_formation: 'ÉDUCATION ET MOTRICITÉ — LICENCE', niveau: 'L1',
+        capacite_max: 30, effectif: 12, places_restantes: 18, actif: true,
+      }],
+    }))
+    setupRoutes()
+    mount()
+    await settle()
+    expect(screen.getByText('G200-TEST')).toBeInTheDocument()
+    const appel = apiMock.get.mock.calls.find(([p]) => p === '/scolarite/groupes/effectifs/')
+    expect(appel).toBeTruthy()
+    expect(appel[1].params).toMatchObject({ page_size: 200 })
+    expect(screen.getByText(/Chargement explicite : 200 groupes/)).toBeInTheDocument()
+    expect(screen.queryByText(/Affichage limité/)).not.toBeInTheDocument()
+  })
+})

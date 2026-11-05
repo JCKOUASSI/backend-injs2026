@@ -1,5 +1,8 @@
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
@@ -101,6 +104,22 @@ def _serialize_moyenne_module(mm):
     }
 
 
+
+
+# ── Contrats OpenAPI (décisions et moyennes académiques) ─────────────
+
+
+class AcademiqueDetailErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class RecalculAcademiqueSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    count = serializers.IntegerField()
+    moyennes = serializers.JSONField(required=False)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: AcademiqueDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsGestionNotes])
 def formation_decisions_list(request, formation_pk):
@@ -138,6 +157,7 @@ def formation_decisions_list(request, formation_pk):
     })
 
 
+@extend_schema(request=None, responses={200: RecalculAcademiqueSerializer, 404: AcademiqueDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsGestionNotes])
 def formation_decisions_recalc(request, formation_pk):
@@ -149,6 +169,7 @@ def formation_decisions_recalc(request, formation_pk):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: AcademiqueDetailErreurSerializer})
 @api_view(['PATCH'])
 @permission_classes([IsDecisionValidator])
 def decision_detail(request, pk):
@@ -172,6 +193,7 @@ def decision_detail(request, pk):
     return Response(_serialize_decision(decision))
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: AcademiqueDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsGestionNotes])
 def module_moyennes_list(request, module_pk):
@@ -186,6 +208,7 @@ def module_moyennes_list(request, module_pk):
     })
 
 
+@extend_schema(request=None, responses={200: RecalculAcademiqueSerializer, 404: AcademiqueDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsGestionNotes])
 def module_moyennes_recalc(request, module_pk):

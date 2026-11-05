@@ -26,6 +26,62 @@ def make_client(role='ADMIN', username=None):
     return client, user
 
 
+class ContexteAffectationApiTests(TestCase):
+    """Contexte LMD des séances (écran Emplois du temps, exploitation).
+
+    Le sérialiseur expose le rattachement réel de la séance (niveau,
+    semestre, UE/ECUE, groupe, enseignant, capacité) via son affectation
+    pédagogique — jamais de déduction. Sans rattachement : ``None``.
+    """
+
+    def setUp(self):
+        from edts.tests.test_lot2_moteur import FabriqueLMD
+
+        self.f = FabriqueLMD(self).creer_base(perimetre='INJS', filiere='F01')
+        self.f.creer_maquette()
+        groupe = self.f.creer_groupe(nom='L1-G1', capacite=42)
+        self.ap = self.f.creer_affectation(groupe=groupe)
+        self.edt = EmploiDuTemps.objects.create(
+            annee_academique=self.f.annee, titre='EDT contexte',
+            population_type='FORMATION', population_id=self.f.cycle.pk,
+            semaine_debut=1, semaine_fin=12,
+        )
+        creneau = CreneauTemplate.objects.create(
+            jour='LUNDI', heure_debut=time(8, 0), heure_fin=time(10, 0))
+        AffectationCreneau.objects.create(
+            emploi_du_temps=self.edt, creneau_template=creneau,
+            semaine_debut=1, semaine_fin=1, nature='COURS',
+            intitule='Séance rattachée', affectation_pedagogique=self.ap,
+        )
+        AffectationCreneau.objects.create(
+            emploi_du_temps=self.edt, creneau_template=creneau,
+            semaine_debut=1, semaine_fin=1, nature='TP',
+            intitule='Séance libre',
+        )
+        self.client, _ = make_client('ADMIN', 'admin-contexte')
+
+    def test_contexte_expose_dans_affectations_et_grille(self):
+        reponse = self.client.get(
+            '/api/edts/affectations/', {'emploi_du_temps_id': self.edt.pk})
+        self.assertEqual(reponse.status_code, 200)
+        par_intitule = {a['intitule']: a for a in reponse.json()}
+        contexte = par_intitule['Séance rattachée']['contexte']
+        self.assertEqual(contexte['niveau'], 'L1')
+        self.assertEqual(contexte['semestre'], 'S1')
+        self.assertEqual(contexte['ue'], 'UE1')
+        self.assertEqual(contexte['ecue'], 'ECUE1')
+        self.assertEqual(contexte['groupe'], 'L1-G1')
+        self.assertEqual(contexte['effectif'], 42)
+        self.assertTrue(contexte['enseignant'])
+        self.assertIsNone(par_intitule['Séance libre']['contexte'])
+
+        grille = self.client.get(f'/api/edts/emplois/{self.edt.pk}/grille/')
+        self.assertEqual(grille.status_code, 200)
+        cellules = grille.json()['jours'][0]['creneaux'][0]['affectations']
+        rattachee = next(a for a in cellules if a['intitule'] == 'Séance rattachée')
+        self.assertEqual(rattachee['contexte']['ecue'], 'ECUE1')
+
+
 class EdtApiTests(TestCase):
     @classmethod
     def setUpTestData(cls):

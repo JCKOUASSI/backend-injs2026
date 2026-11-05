@@ -22,7 +22,8 @@ const SECTIONS_ATTENDUES = [
   'Tableau de bord',
   'Scolarité',
   'Formations',
-  'GET-INJS',
+  'GET INJS APP',
+  'Présences QR',
   'Évaluations',
   'Jurys',
   'Diplômation',
@@ -82,7 +83,8 @@ describe('GET-INJS — génération annuelle (demande 21)', () => {
       (e) => e.chemin === '/edt/generation-annuelle',
     )
     expect(entree).toBeDefined()
-    expect(entree.libelle).toMatch(/Génération annuelle/i)
+    expect(entree.libelle).toBe('Génération')
+    expect(entree.description).toBe('Moteur LMD')
     expect(entree.droit.curp).toContain('edt.emploi_du_temps.generer')
     // L'écran est un composant dédié : pas de descripteur générique requis.
     expect(entree.ecran).toBeUndefined()
@@ -94,6 +96,78 @@ describe('GET-INJS — génération annuelle (demande 21)', () => {
     const entree = toutesEntrees.find((e) => e.chemin === '/edt/generation-annuelle')
     const cites = entree.droit.curp.filter((code) => CATALOGUE.codes.includes(code))
     expect(cites.length).toBeGreaterThan(0)
+  })
+})
+
+describe('GET INJS APP — contenu du hub (miroir du hub INJS APP)', () => {
+  const section = ARBORESCENCE.find((s) => s.id === 'get_injs')
+  const visibles = section.enfants.filter((e) => !e.masque)
+
+  it('affiche exactement les entrées du hub démo, Tableau de bord en tête', () => {
+    expect(visibles.map((e) => [e.libelle, e.description])).toEqual([
+      ['Tableau de bord', 'Pilotage du module'],
+      ['Emplois du temps', 'Grille hebdomadaire'],
+      ['Génération', 'Moteur LMD'],
+      ['Dimensionnement', 'Besoins de planification'],
+      ['Import étudiants', 'Fichier externe'],
+      ['Étudiants inscrits', 'Populations'],
+      ['Référentiels', 'INJS 2026'],
+      ['Conception', 'Documentation'],
+    ])
+  })
+
+  it('branche chaque entrée sur un écran réel de l’application', () => {
+    const parLibelle = Object.fromEntries(visibles.map((e) => [e.libelle, e]))
+    expect(parLibelle['Tableau de bord'].chemin).toBe('/get-injs-app')
+    expect(parLibelle['Emplois du temps'].chemin).toBe('/edt')
+    expect(parLibelle['Génération'].chemin).toBe('/edt/generation-annuelle')
+    expect(parLibelle.Dimensionnement.chemin).toBe('/edt/dimensionnement')
+    expect(parLibelle['Import étudiants'].chemin).toBe('/edt/import-etudiants')
+    expect(parLibelle['Étudiants inscrits'].chemin).toBe('/edt/etudiants-inscrits')
+    expect(parLibelle['Référentiels'].chemin).toBe('/edt/referentiels')
+    // Conception : page de documentation du hub (téléchargement inclus).
+    expect(parLibelle.Conception.chemin).toBe('/edt/conception')
+  })
+
+  it('conserve les écrans génériques joignables hors menu (routes préservées)', () => {
+    const masquees = Object.fromEntries(
+      section.enfants.filter((e) => e.masque).map((e) => [e.ecran, e]),
+    )
+    expect(masquees.disponibilites.chemin).toBe('/edt/disponibilites')
+    expect(masquees.conflits_edt.chemin).toBe('/edt/conflits')
+    expect(masquees.export_edt.chemin).toBe('/edt/export')
+  })
+})
+
+describe('PRÉSENCES QR — hub du module Présences', () => {
+  const section = ARBORESCENCE.find((s) => s.id === 'presences_qr')
+
+  it('est situé immédiatement après le hub GET INJS APP', () => {
+    const ids = ARBORESCENCE.map((s) => s.id)
+    expect(ids.indexOf('presences_qr')).toBe(ids.indexOf('get_injs') + 1)
+  })
+
+  it('expose exactement les 7 entrées attendues du module', () => {
+    const libelles = section.enfants.map((e) => e.libelle)
+    expect(libelles).toEqual([
+      'Tableau de bord', 'Séances', 'Badgeage', 'Présences',
+      'Audit', 'Configuration', 'Contrat API',
+    ])
+    const parLibelle = Object.fromEntries(
+      section.enfants.map((e) => [e.libelle, e]),
+    )
+    expect(parLibelle['Tableau de bord'].chemin).toBe('/presences')
+    expect(parLibelle['Séances'].chemin).toBe('/presences/seances')
+    expect(parLibelle.Badgeage.chemin).toBe('/presences/poste')
+    expect(parLibelle['Présences'].chemin).toBe('/presences/registre')
+    expect(parLibelle.Audit.chemin).toBe('/presences/audit')
+    expect(parLibelle.Configuration.chemin).toBe('/presences/configuration')
+    expect(parLibelle['Contrat API'].chemin).toBe('/presences/contrat')
+    // Aucun chemin dupliqué dans le module.
+    expect(new Set(section.enfants.map((e) => e.chemin)).size).toBe(7)
+    for (const enfant of section.enfants) {
+      expect(enfant.droit, enfant.id).toBeTruthy()
+    }
   })
 })
 
@@ -345,7 +419,10 @@ describe('non-régression : les écrans historiques restent accessibles', () => 
     '/archives',
     '/finance-encadrants',
     '/finance-parametrage',
-    '/import',
+    // '/import' retiré de cette liste le 2026-11-05 : l'entrée « Imports de
+    // données (Excel) » du hub Référentiels est supprimée du menu à la demande
+    // du commanditaire (la route /import elle-même est conservée, joignable
+    // par URL directe ; voir AUDIT-HUB-REFERENTIELS-2026-11-05.md, §7).
     '/archives/listes-notes',
     '/archives/cahiers-appel',
     '/evaluations/tableau-de-bord',
@@ -402,6 +479,58 @@ describe('L3 — retrait du menu CPFAE, conservation de la route /modules', () =
     const racine = path.resolve(process.cwd(), 'src')
     const source = fs.readFileSync(path.join(racine, 'App.jsx'), 'utf8')
     expect(source).toContain('path="/modules"')
+  })
+})
+
+/**
+ * 2026-11-05 — « Paramètres LMD » et « Imports de données (Excel) » retirés
+ * du hub Référentiels (présence jugée superflue par le commanditaire).
+ *
+ * Retrait strictement navigationnel, même convention que le lot L3 :
+ *  1. les deux entrées ont disparu du MENU du hub ;
+ *  2. le « Tableau de bord » du hub et ses voisines conservées sont intacts ;
+ *  3. les ROUTES `/parametres` et `/import` restent déclarées dans App.jsx —
+ *     /parametres reste d'ailleurs joignable via Utilisateurs & Accès →
+ *     Politique de sécurité, /import par URL directe. Aucune fonctionnalité,
+ *     aucune donnée et aucun backend ne sont supprimés
+ *     (AUDIT-HUB-REFERENTIELS-2026-11-05.md, §7).
+ */
+describe('hub Référentiels — retrait de Paramètres LMD et Imports Excel (2026-11-05)', () => {
+  const hub = ARBORESCENCE.find((n) => n.id === 'referentiels')
+  const ids = new Set(toutesEntrees.map((entree) => entree.id))
+  const chemins = new Set(toutesEntrees.map((entree) => entree.chemin))
+
+  it('le hub ne contient plus que Tableau de bord, drapeaux et Planche de style', () => {
+    expect(hub.enfants.map((e) => e.id)).toEqual([
+      'referentiels.tous',
+      'referentiels.fonctionnalites',
+      'referentiels.planche_style',
+    ])
+  })
+
+  it('les deux entrées retirées ont disparu du menu', () => {
+    expect(ids.has('referentiels.parametres_lmd')).toBe(false)
+    expect(ids.has('referentiels.imports')).toBe(false)
+    expect(chemins.has('/import')).toBe(false)
+    const residus = toutesEntrees
+      .filter((e) => ['Paramètres LMD', 'Imports de données (Excel)'].includes(e.libelle))
+      .map((e) => e.id)
+    expect(residus).toEqual([])
+  })
+
+  it('le Tableau de bord du hub est intact et /parametres reste joignable ailleurs', () => {
+    expect(ids.has('referentiels.tous')).toBe(true)
+    expect(ids.has('utilisateurs.politique')).toBe(true)
+    expect(chemins.has('/parametres')).toBe(true)
+  })
+
+  it('les routes /parametres et /import restent déclarées dans App.jsx', async () => {
+    const fs = await import('node:fs')
+    const path = await import('node:path')
+    const racine = path.resolve(process.cwd(), 'src')
+    const source = fs.readFileSync(path.join(racine, 'App.jsx'), 'utf8')
+    expect(source).toContain('path="/parametres"')
+    expect(source).toContain('path="/import"')
   })
 })
 

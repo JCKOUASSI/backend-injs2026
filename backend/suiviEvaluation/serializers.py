@@ -33,17 +33,17 @@ class QuestionnaireListSerializer(serializers.ModelSerializer):
             'nb_questions', 'created_at',
         ]
 
-    def get_nb_questions(self, obj):
+    def get_nb_questions(self, obj) -> int:
         if hasattr(obj, '_nb_questions'):
             return obj._nb_questions
         return obj.questions.count()
 
-    def get_createur_nom(self, obj):
+    def get_createur_nom(self, obj) -> str:
         if obj.createur:
             return obj.createur.get_full_name() or obj.createur.username
         return ''
 
-    def get_module_intitule(self, obj):
+    def get_module_intitule(self, obj) -> str:
         if obj.module:
             return obj.module.intitule
         return ''
@@ -64,12 +64,12 @@ class QuestionnaireDetailSerializer(serializers.ModelSerializer):
             'questions', 'created_at', 'updated_at',
         ]
 
-    def get_createur_nom(self, obj):
+    def get_createur_nom(self, obj) -> str:
         if obj.createur:
             return obj.createur.get_full_name() or obj.createur.username
         return ''
 
-    def get_module_intitule(self, obj):
+    def get_module_intitule(self, obj) -> str:
         if obj.module:
             return obj.module.intitule
         return ''

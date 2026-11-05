@@ -9,6 +9,9 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.views import APIView
 
 from habilitations.models import (
@@ -56,9 +59,22 @@ def _queryset_comptes():
 # ---------------------------------------------------------------------------
 # Comptes : liste, création, fiche, différentiel, modification, statut
 # ---------------------------------------------------------------------------
+
+
+# ── Contrats OpenAPI (administration des habilitations) ──────────────
+
+
+class ErreurAdminComptesSerializer(serializers.Serializer):
+    """Erreurs du module : {'detail': message, 'code': CODE}."""
+
+    detail = serializers.CharField()
+    code = serializers.CharField(required=False)
+
+
 class CompteListCreateView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT})
     def get(self, request):
         qs = _queryset_comptes()
         recherche = request.query_params.get('search', '').strip()
@@ -98,6 +114,7 @@ class CompteListCreateView(APIView):
         data = [serialiser_compte(c) for c in page_obj]
         return paginator.get_paginated_response(data)
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT})
     def post(self, request):
         serializer = CreationCompteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -116,6 +133,7 @@ class CompteDetailView(APIView):
     def _objet(self, pk):
         return _queryset_comptes().filter(pk=pk).first()
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 404: ErreurAdminComptesSerializer})
     def get(self, request, pk):
         compte = self._objet(pk)
         if compte is None:
@@ -136,6 +154,7 @@ class CompteDetailView(APIView):
 class CompteDifferentialView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 404: ErreurAdminComptesSerializer})
     def post(self, request, pk):
         compte = CompteUtilisateur.objects.filter(pk=pk).first()
         if compte is None:
@@ -152,6 +171,7 @@ class CompteDifferentialView(APIView):
 class CompteModifierView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 404: ErreurAdminComptesSerializer})
     def patch(self, request, pk):
         compte = _queryset_comptes().filter(pk=pk).first()
         if compte is None:
@@ -172,6 +192,7 @@ class CompteModifierView(APIView):
 class CompteStatutView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 404: ErreurAdminComptesSerializer})
     def post(self, request, pk):
         compte = _queryset_comptes().filter(pk=pk).first()
         if compte is None:
@@ -196,6 +217,7 @@ class CompteStatutView(APIView):
 class PersonneRechercheView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
     def get(self, request):
         terme = request.query_params.get('q', '').strip()
         if len(terme) < 2:
@@ -214,6 +236,7 @@ class PersonneRechercheView(APIView):
 class RoleDetailView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 404: ErreurAdminComptesSerializer})
     def get(self, request, code):
         role = RoleMetier.objects.filter(code=code).prefetch_related('permissions').first()
         if role is None:
@@ -239,6 +262,7 @@ class RoleDetailView(APIView):
 class MatriceView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
     def get(self, request):
         """Vue compacte rôle × module (niveaux), pour l'écran matrice."""
         titulaires = dict(
@@ -286,6 +310,7 @@ class MatriceView(APIView):
 class JournalView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
     def get(self, request):
         qs = JournalHabilitation.objects.select_related('acteur')
         if request.query_params.get('type'):
@@ -315,6 +340,7 @@ class JournalView(APIView):
 class JournalIntegriteView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
     def get(self, request):
         anomalies = verifier_chaine()
         return Response({

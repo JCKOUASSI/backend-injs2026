@@ -171,6 +171,40 @@ class SessionProvider extends ChangeNotifier {
     scheduleMicrotask(_heartbeatPulse);
   }
 
+  /// Sortie volontaire de la session ouverte (endpoint dédié).
+  ///
+  /// Envoie la sortie au serveur — c'est sa confirmation qui clôt la
+  /// présence, jamais le seul geste local — puis arrête le heartbeat.
+  /// Retourne la réponse serveur, ou `null` si aucune session n'est
+  /// suivie localement. En cas de refus serveur (ex. aucune entrée
+  /// ouverte), l'exception se propage et le heartbeat reste actif.
+  Future<Map<String, dynamic>?> requestSecureExit() async {
+    final token = _heartbeatTokenQr;
+    final tokenAccess = accessToken;
+    final dev = deviceId;
+    if (token == null || token.isEmpty || tokenAccess == null || dev == null) {
+      return null;
+    }
+    final tel = await _heartbeatTelemetry.capture();
+    final res = await _heartbeatScan.secureExit(
+      baseUrl: baseUrl,
+      accessToken: tokenAccess,
+      tokenQr: token,
+      deviceId: dev,
+      latitude: tel.latitude,
+      longitude: tel.longitude,
+      accuracyM: tel.accuracyM,
+      batteryLevel: tel.batteryLevel,
+      isCharging: tel.isCharging,
+      onRefreshToken: _refreshTokenForApi,
+    );
+    if (res['action']?.toString() == 'SORTIE') {
+      historyRefreshTick++;
+      stopSecureSessionHeartbeat();
+    }
+    return res;
+  }
+
   void stopSecureSessionHeartbeat({bool notify = true}) {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;

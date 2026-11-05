@@ -428,3 +428,43 @@ describe('pages/scolarite/FinancesEtudiantes.jsx — habilitations (LOT 26)', ()
     expect(within(rowFor(5001)).getByText('CAISSE-1')).toBeInTheDocument()
   })
 })
+
+/* ------------------------------------------------------------------ */
+/* Premium dynamique (capture 03/11 : page Bootstrap brute)            */
+/* ------------------------------------------------------------------ */
+
+describe('pages/scolarite/FinancesEtudiantes.jsx — rendu premium (capture 03/11)', () => {
+  beforeEach(() => {
+    apiController.reset()
+    window.localStorage.clear()
+    apiController.setRoute(ECH_PATH, () => ({ results: echeanciers }))
+    apiController.setRoute(PA_PATH, () => paiements)
+  })
+
+  it('affiche hero premium, KPI de synthèse et onglets pilule', async () => {
+    const { container } = mount()
+    await settle()
+    expect(container.querySelector('.fin-page .fin-hero')).toBeTruthy()
+    expect(container.querySelector('.fin-hero-icone i').className).toContain('bi-cash-coin')
+    // Synthèse calculée sur les données chargées : 4 échéanciers,
+    // 3+4+2+1 = 10 lignes, 5 paiements, 2 à confirmer (INITIE + EN_ATTENTE).
+    const kpis = [...container.querySelectorAll('.fin-kpi-valeur')].map((n) => n.textContent)
+    expect(kpis).toEqual(['4', '10', '5', '2'])
+    expect(screen.getByText('1 confirmé')).toBeInTheDocument()
+    expect(container.querySelector('.fin-tab.is-active').textContent).toContain('Échéanciers')
+  })
+
+  it('états vides premium : médaillon + titre conservés', async () => {
+    apiController.reset()
+    const me = makeUser('ADMIN', { username: 'admin' })
+    apiController.setMe(me)
+    apiController.setRoute(ECH_PATH, () => ({ results: [] }))
+    apiController.setRoute(PA_PATH, () => [])
+    const { container } = renderWithProviders(<FinancesEtudiantes />, {
+      authUser: me, routePattern: '/scolarite/finances', initialEntries: ['/scolarite/finances'],
+    })
+    await settle()
+    expect(container.querySelector('.fin-vide-icone')).toBeTruthy()
+    expect(screen.getByText('Aucun échéancier.')).toBeInTheDocument()
+  })
+})

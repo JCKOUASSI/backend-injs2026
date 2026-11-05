@@ -23,7 +23,9 @@ import csv
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.models import Count, Q
 from django.http import HttpResponse
-from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -241,6 +243,7 @@ def _serialize_affectation(a):
         'enseignant_nom': a.enseignant_nom,
         'nature': a.nature,
         'nature_libelle': a.get_nature_display(),
+        'contexte': services.contexte_affectation(a),
         'intitule': a.intitule,
         'commentaire': a.commentaire,
         'salle_nom': a.salle_nom,
@@ -267,11 +270,183 @@ def _serialize_conflit(c):
     }
 
 
+# ── Contrats OpenAPI (formes réelles des _serialize_* ci-dessus) ─────
+
+
+class DetailErreurEdtSerializer(serializers.Serializer):
+    """Erreurs du module : {'detail': ...} ou dict de champs (validation)."""
+
+    detail = serializers.JSONField()
+
+
+class CreneauTemplateReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    jour = serializers.CharField()
+    jour_libelle = serializers.CharField()
+    heure_debut = serializers.TimeField(allow_null=True)
+    heure_fin = serializers.TimeField(allow_null=True)
+    duree_prevue_minutes = serializers.IntegerField()
+    duree_heures = serializers.FloatField(allow_null=True)
+
+
+class CreneauTemplateCreationSerializer(serializers.Serializer):
+    jour = serializers.CharField()
+    heure_debut = serializers.TimeField()
+    heure_fin = serializers.TimeField()
+
+
+class EmploiDuTempsReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    titre = serializers.CharField()
+    statut = serializers.CharField()
+    statut_libelle = serializers.CharField()
+    annee_academique_id = serializers.IntegerField()
+    annee_academique = serializers.CharField()
+    population_type = serializers.CharField()
+    population_id = serializers.IntegerField()
+    population_label = serializers.CharField()
+    rentree = serializers.DateField(allow_null=True)
+    semaine_debut = serializers.IntegerField()
+    semaine_fin = serializers.IntegerField()
+    affectations_count = serializers.IntegerField(allow_null=True)
+    conflits_count = serializers.IntegerField(allow_null=True)
+    cree_par = serializers.CharField(allow_null=True)
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+
+
+class EmploiDuTempsCreationSerializer(serializers.Serializer):
+    annee_academique_id = serializers.IntegerField()
+    population_type = serializers.CharField()
+    population_id = serializers.IntegerField()
+    population_denominateur = serializers.CharField(required=False)
+    titre = serializers.CharField(required=False)
+    semaine_debut = serializers.IntegerField(required=False)
+    semaine_fin = serializers.IntegerField(required=False)
+    rentree = serializers.DateField(required=False)
+
+
+class EdtPublicReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    titre = serializers.CharField()
+    statut = serializers.CharField()
+    annee_academique_id = serializers.IntegerField()
+    annee_academique = serializers.CharField()
+    population_type = serializers.CharField()
+    population_id = serializers.IntegerField()
+    population_label = serializers.CharField()
+    semaine_debut = serializers.IntegerField()
+    semaine_fin = serializers.IntegerField()
+
+
+class AffectationReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    emploi_du_temps_id = serializers.IntegerField()
+    creneau_template_id = serializers.IntegerField(allow_null=True)
+    creneau = CreneauTemplateReponseSerializer(allow_null=True)
+    horaire = serializers.CharField()
+    semaine_debut = serializers.IntegerField()
+    semaine_fin = serializers.IntegerField()
+    formation_id = serializers.IntegerField(allow_null=True)
+    formation = serializers.CharField(allow_null=True)
+    groupe_id = serializers.IntegerField(allow_null=True)
+    groupe = serializers.CharField(allow_null=True)
+    enseignant_id = serializers.IntegerField(allow_null=True)
+    formateur_id = serializers.IntegerField(allow_null=True)
+    enseignant_nom = serializers.CharField()
+    nature = serializers.CharField()
+    nature_libelle = serializers.CharField()
+    contexte = serializers.JSONField()
+    intitule = serializers.CharField()
+    commentaire = serializers.CharField()
+    salle_nom = serializers.CharField()
+    actif = serializers.BooleanField()
+    cree_par = serializers.CharField(allow_null=True)
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+
+
+class AffectationCreationSerializer(serializers.Serializer):
+    emploi_du_temps_id = serializers.IntegerField()
+    creneau_template_id = serializers.IntegerField()
+    semaine_debut = serializers.IntegerField()
+    semaine_fin = serializers.IntegerField(required=False)
+    formation_id = serializers.IntegerField(required=False)
+    groupe_id = serializers.IntegerField(required=False)
+    enseignant_id = serializers.IntegerField(required=False)
+    formateur_id = serializers.IntegerField(required=False)
+    enseignant_nom = serializers.CharField(required=False)
+    nature = serializers.CharField(required=False)
+    intitule = serializers.CharField(required=False)
+    commentaire = serializers.CharField(required=False)
+    salle_nom = serializers.CharField(required=False)
+
+
+class AffectationAvecAvertissementsSerializer(serializers.Serializer):
+    affectation = AffectationReponseSerializer()
+    avertissements_conflits = serializers.JSONField()
+
+
+class AffectationDeplacementSerializer(serializers.Serializer):
+    creneau_template_id = serializers.IntegerField(required=False)
+    semaine_debut = serializers.IntegerField(required=False)
+    semaine_fin = serializers.IntegerField(required=False)
+    forcer = serializers.BooleanField(required=False)
+    motif = serializers.CharField(required=False)
+
+
+class AffectationDeplaceeSerializer(serializers.Serializer):
+    affectation = AffectationReponseSerializer()
+    deplace = serializers.BooleanField()
+    conflits_restants = serializers.JSONField()
+
+
+class DeplacementRefuseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    conflits = serializers.JSONField()
+    conseil = serializers.CharField()
+
+
+class ConflitReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    emploi_du_temps_id = serializers.IntegerField()
+    emploi_du_temps = serializers.CharField()
+    type_conflit = serializers.CharField()
+    type_conflit_libelle = serializers.CharField()
+    description = serializers.CharField()
+    lignes_creneaux = serializers.JSONField()
+    actif = serializers.BooleanField()
+    signale_par = serializers.CharField(allow_null=True)
+    created_at = serializers.DateTimeField()
+    recalcule_le = serializers.DateTimeField()
+
+
+class ConflitSignalementSerializer(serializers.Serializer):
+    emploi_du_temps_id = serializers.IntegerField()
+    description = serializers.CharField()
+    lignes_creneaux = serializers.JSONField(required=False)
+
+
+class DetectionConflitsReponseSerializer(serializers.Serializer):
+    stats = serializers.JSONField()
+    conflits = serializers.JSONField()
+
+
+class EnseignantReferentielSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+    nom_complet = serializers.CharField()
+    role = serializers.CharField()
+
+
+
+
 # ---------------------------------------------------------------------------
 # Créneaux types (référentiel horaire — P01)
 # ---------------------------------------------------------------------------
 
 
+@extend_schema(request=CreneauTemplateCreationSerializer, responses={200: CreneauTemplateReponseSerializer(many=True), 201: CreneauTemplateReponseSerializer, 409: DetailErreurEdtSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def creneaux_types_api(request):
@@ -298,6 +473,7 @@ def creneaux_types_api(request):
     return Response(_serialize_creneau_template(c), status=status.HTTP_201_CREATED)
 
 
+@extend_schema(request=CreneauTemplateCreationSerializer, responses={200: CreneauTemplateReponseSerializer, 204: None, 400: DetailErreurEdtSerializer, 403: DetailErreurEdtSerializer, 404: DetailErreurEdtSerializer, 409: DetailErreurEdtSerializer})
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def creneau_template_detail_api(request, pk):
@@ -340,6 +516,7 @@ def creneau_template_detail_api(request, pk):
 # ---------------------------------------------------------------------------
 
 
+@extend_schema(request=EmploiDuTempsCreationSerializer, responses={200: EmploiDuTempsReponseSerializer(many=True), 201: EmploiDuTempsReponseSerializer, 400: DetailErreurEdtSerializer, 409: DetailErreurEdtSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def emplois_du_temps_api(request):
@@ -414,6 +591,7 @@ def emplois_du_temps_api(request):
     return Response(_serialize_emploi_du_temps(e), status=status.HTTP_201_CREATED)
 
 
+@extend_schema(request=EmploiDuTempsCreationSerializer, responses={200: EmploiDuTempsReponseSerializer, 204: None, 400: DetailErreurEdtSerializer, 403: DetailErreurEdtSerializer, 404: DetailErreurEdtSerializer})
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def emploi_du_temps_detail_api(request, pk):
@@ -554,6 +732,7 @@ def _transition(request, pk, vers):
     return e, None
 
 
+@extend_schema(request=None, responses={200: EmploiDuTempsReponseSerializer, 400: DetailErreurEdtSerializer, 404: DetailErreurEdtSerializer, 409: DetailErreurEdtSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def emploi_du_temps_soumettre_api(request, pk):
@@ -576,6 +755,7 @@ def emploi_du_temps_soumettre_api(request, pk):
     return Response(_serialize_emploi_du_temps(e))
 
 
+@extend_schema(request=None, responses={200: EmploiDuTempsReponseSerializer, 400: DetailErreurEdtSerializer, 404: DetailErreurEdtSerializer, 409: DetailErreurEdtSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtValidation])
 def emploi_du_temps_valider_api(request, pk):
@@ -589,6 +769,7 @@ def emploi_du_temps_valider_api(request, pk):
     return Response(_serialize_emploi_du_temps(e))
 
 
+@extend_schema(request=None, responses={200: EmploiDuTempsReponseSerializer, 400: DetailErreurEdtSerializer, 404: DetailErreurEdtSerializer, 409: DetailErreurEdtSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtValidation])
 def emploi_du_temps_publier_api(request, pk):
@@ -598,6 +779,7 @@ def emploi_du_temps_publier_api(request, pk):
     return Response(_serialize_emploi_du_temps(e))
 
 
+@extend_schema(request=None, responses={200: EmploiDuTempsReponseSerializer, 400: DetailErreurEdtSerializer, 404: DetailErreurEdtSerializer, 409: DetailErreurEdtSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtValidation])
 def emploi_du_temps_depublier_api(request, pk):
@@ -607,6 +789,7 @@ def emploi_du_temps_depublier_api(request, pk):
     return Response(_serialize_emploi_du_temps(e))
 
 
+@extend_schema(request=None, responses={200: EmploiDuTempsReponseSerializer, 400: DetailErreurEdtSerializer, 404: DetailErreurEdtSerializer, 409: DetailErreurEdtSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def emploi_du_temps_archiver_api(request, pk):
@@ -621,6 +804,7 @@ def emploi_du_temps_archiver_api(request, pk):
 # ---------------------------------------------------------------------------
 
 
+@extend_schema(request=None, responses={200: DetectionConflitsReponseSerializer, 404: DetailErreurEdtSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def emploi_du_temps_detecter_conflits_api(request, pk):
@@ -636,6 +820,7 @@ def emploi_du_temps_detecter_conflits_api(request, pk):
     return Response({'stats': stats, 'conflits': conflits})
 
 
+@extend_schema(request=AffectationCreationSerializer, responses={200: AffectationReponseSerializer(many=True), 201: AffectationAvecAvertissementsSerializer, 400: DetailErreurEdtSerializer, 409: DetailErreurEdtSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def affectations_api(request):
@@ -643,6 +828,13 @@ def affectations_api(request):
         qp = request.query_params
         affects = AffectationCreneau.objects.select_related(
             'emploi_du_temps', 'creneau_template', 'formation', 'groupe', 'formateur',
+            'affectation_pedagogique',
+            'affectation_pedagogique__niveau',
+            'affectation_pedagogique__semestre',
+            'affectation_pedagogique__ue',
+            'affectation_pedagogique__ecue',
+            'affectation_pedagogique__groupe',
+            'affectation_pedagogique__enseignant',
         )
         filtres = {
             'emploi_du_temps_id': 'emploi_du_temps_id',
@@ -744,6 +936,7 @@ def affectations_api(request):
                     status=status.HTTP_201_CREATED)
 
 
+@extend_schema(request=AffectationCreationSerializer, responses={200: AffectationReponseSerializer, 204: None, 400: DetailErreurEdtSerializer, 404: DetailErreurEdtSerializer})
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def affectation_detail_api(request, pk):
@@ -801,6 +994,7 @@ def affectation_detail_api(request, pk):
                      'avertissements_conflits': avertissements})
 
 
+@extend_schema(request=AffectationDeplacementSerializer, responses={200: AffectationDeplaceeSerializer, 400: DetailErreurEdtSerializer, 404: DetailErreurEdtSerializer, 409: DeplacementRefuseSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def affectation_deplacer_api(request, pk):
@@ -851,6 +1045,7 @@ def affectation_deplacer_api(request, pk):
 # ---------------------------------------------------------------------------
 
 
+@extend_schema(request=ConflitSignalementSerializer, responses={200: ConflitReponseSerializer(many=True), 201: ConflitReponseSerializer, 400: DetailErreurEdtSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def conflits_api(request):
@@ -889,6 +1084,7 @@ def conflits_api(request):
     return Response(_serialize_conflit(c), status=status.HTTP_201_CREATED)
 
 
+@extend_schema(request=None, responses={200: ConflitReponseSerializer, 404: DetailErreurEdtSerializer, 409: DetailErreurEdtSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def conflit_resoudre_api(request, pk):
@@ -912,6 +1108,7 @@ def conflit_resoudre_api(request, pk):
 # ---------------------------------------------------------------------------
 
 
+@extend_schema(responses={200: EdtPublicReponseSerializer(many=True)})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def edt_publics_api(request):
@@ -944,6 +1141,7 @@ def edt_publics_api(request):
     return Response(data)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: DetailErreurEdtSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def emploi_du_temps_grille_api(request, pk):
@@ -962,6 +1160,7 @@ def emploi_du_temps_grille_api(request, pk):
     return Response(services.grille_hebdomadaire(e, semaine))
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.OBJECT, 404: DetailErreurEdtSerializer, 409: DetailErreurEdtSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def emploi_du_temps_generer_api(request, pk):
@@ -982,6 +1181,7 @@ def emploi_du_temps_generer_api(request, pk):
     return Response(stats)
 
 
+@extend_schema(responses={(200, 'text/csv'): OpenApiTypes.BINARY, 404: DetailErreurEdtSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def emploi_du_temps_export_api(request, pk):
@@ -1023,6 +1223,7 @@ def emploi_du_temps_export_api(request, pk):
     return reponse
 
 
+@extend_schema(responses={200: EnseignantReferentielSerializer(many=True)})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def referentiel_enseignants_api(request):

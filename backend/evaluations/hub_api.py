@@ -6,6 +6,9 @@ métier complets. Aucune écriture : la saisie officielle passe par les
 flux C1/C2 existants (notes_saisie, validation).
 """
 from django.db.models import Count
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
@@ -16,6 +19,17 @@ from .models import (
 )
 
 
+
+
+# ── Contrats OpenAPI ──────────────────────────────────────────────────
+
+
+class HubEvaluationsErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    error = serializers.JSONField(required=False)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([perms.EstConsultantEvaluations])
 def stats_api(request):
@@ -43,6 +57,7 @@ def stats_api(request):
     })
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([perms.EstConsultantEvaluations])
 def sessions_hub_api(request):
@@ -73,6 +88,7 @@ def sessions_hub_api(request):
     ]})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([perms.EstConsultantEvaluations])
 def evaluations_hub_api(request):
@@ -105,6 +121,7 @@ def evaluations_hub_api(request):
     ]})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([perms.EstConsultantEvaluations])
 def notes_hub_api(request):
@@ -141,6 +158,7 @@ def notes_hub_api(request):
     return Response({'results': results})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([perms.EstConsultantEvaluations])
 def releves_hub_api(request):

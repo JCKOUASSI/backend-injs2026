@@ -59,6 +59,16 @@ describe('pages/FeatureFlags.jsx — P00-08', () => {
     window.localStorage.clear()
   })
 
+  it('applique le design premium (héros, KPI, panneau flags)', async () => {
+    apiController.setRoute(/^\/parametres\/$/, [row()])
+    apiController.setRoute('/parametres/flags/', { flags: { [CLE]: false } })
+    mount()
+    expect(await screen.findByText('Flag de test')).toBeInTheDocument()
+    expect(document.querySelector('.flags-hero .flags-compteur')).not.toBeNull()
+    expect(document.querySelector('.flags-kpis')).not.toBeNull()
+    expect(document.querySelector('.flags-panel .flags-table')).not.toBeNull()
+  })
+
   it('affiche les flags livrés désactivés (sélecteur sur Désactivé)', async () => {
     apiController.setRoute(/^\/parametres\/$/, [row()])
     apiController.setRoute('/parametres/flags/', { flags: { [CLE]: false } })

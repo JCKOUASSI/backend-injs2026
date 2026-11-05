@@ -77,6 +77,14 @@ const mount = () => {
 beforeEach(preparer)
 
 describe('Hub Diplômation premium', () => {
+  it('applique le thème premium dédié (hub-diplomation) et le panneau Éligibilité', async () => {
+    const { container } = mount()
+    await waitFor(() => expect(screen.getAllByText('Diplôme préparé').length).toBeGreaterThanOrEqual(1))
+    expect(container.querySelector('.cand-page.hub-diplomation')).not.toBeNull()
+    expect(container.querySelector('.hub-diplomation .cand-hero')).not.toBeNull()
+    expect(container.querySelector('.hub-panel--eligibilite')).not.toBeNull()
+  })
+
   it('affiche l’éligibilité factuelle des fin-de-cycle', async () => {
     const { container } = mount()
     await waitFor(() => expect(screen.getAllByText('Diplôme préparé').length).toBeGreaterThanOrEqual(1))

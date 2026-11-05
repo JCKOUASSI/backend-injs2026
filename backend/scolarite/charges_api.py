@@ -6,6 +6,9 @@ d'occupation. Ne touche pas à la paie formateurs (FinanceSettings /
 FinanceAjustement).
 """
 from django.core.exceptions import ValidationError
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -56,6 +59,46 @@ def _serializer_affectation(affectation):
     }
 
 
+
+
+# ── Contrats OpenAPI (charges d'enseignement, indisponibilités) ──────
+
+
+class ErreurChargesSerializer(serializers.Serializer):
+    error = serializers.JSONField()
+
+
+class AffectationChargeReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    annee_academique_id = serializers.IntegerField()
+    ref_formation_id = serializers.IntegerField(allow_null=True)
+    parcours_id = serializers.IntegerField(allow_null=True)
+    niveau_id = serializers.IntegerField(allow_null=True)
+    semestre_id = serializers.IntegerField(allow_null=True)
+    ue_id = serializers.IntegerField(allow_null=True)
+    ecue_id = serializers.IntegerField(allow_null=True)
+    ecue = serializers.CharField(allow_null=True)
+    groupe_id = serializers.IntegerField(allow_null=True)
+    enseignant_id = serializers.IntegerField()
+    enseignant = serializers.CharField()
+    type_enseignement = serializers.CharField()
+    volume_horaire = serializers.DecimalField(max_digits=6, decimal_places=2)
+    date_debut = serializers.DateField(allow_null=True)
+    date_fin = serializers.DateField(allow_null=True)
+    statut = serializers.CharField()
+
+
+class CreationIdChargesSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+
+
+class RapportChargesSerializer(serializers.Serializer):
+    annee = serializers.CharField()
+    anomalies = serializers.JSONField(required=False)
+    occupation = serializers.JSONField(required=False)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: ErreurChargesSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def charge_enseignant(request, enseignant_id):
@@ -69,6 +112,7 @@ def charge_enseignant(request, enseignant_id):
     return Response(charges_services.charge_enseignant(enseignant, annee))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: AffectationChargeReponseSerializer(many=True), 201: AffectationChargeReponseSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def affectation_list(request):
@@ -105,6 +149,7 @@ def affectation_list(request):
     return Response(_serializer_affectation(affectation), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: AffectationChargeReponseSerializer, 400: OpenApiTypes.OBJECT, 404: ErreurChargesSerializer})
 @api_view(['PATCH', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def affectation_detail(request, pk):
@@ -130,6 +175,7 @@ def affectation_detail(request, pk):
     return Response(_serializer_affectation(affectation))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: CreationIdChargesSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def indisponibilite_list(request):
@@ -159,6 +205,7 @@ def indisponibilite_list(request):
     return Response({'id': indisponibilite.id}, status=201)
 
 
+@extend_schema(responses={200: RapportChargesSerializer, 400: ErreurChargesSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def anomalies_list(request):
@@ -169,6 +216,7 @@ def anomalies_list(request):
     return Response({'annee': annee.libelle, 'anomalies': charges_services.anomalies(annee)})
 
 
+@extend_schema(responses={200: RapportChargesSerializer, 400: ErreurChargesSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def occupation_report(request):

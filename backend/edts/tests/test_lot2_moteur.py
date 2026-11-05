@@ -295,6 +295,28 @@ class TestGeneration(TestCase):
         self.assertTrue(r.non_places)
         self.assertIn('contraintes_bloquantes', r.non_places[0].as_dict())
 
+    def test_motif_placement_impossible_si_conflits_pas_salle(self):
+        """Motif global honnête : bloqué par des conflits C2, pas par les salles.
+
+        Le groupe est déjà occupé sur tous les créneaux (occupations
+        initiales) : aucune séance ne peut être placée alors qu'une salle
+        compatible existe. Le motif ne doit plus annoncer à tort
+        « aucune salle compatible ».
+        """
+        self.f.creer_affectation(volume=2, groupe=self.groupe)
+        occupations = [
+            {'enseignant_id': None, 'groupe_id': self.groupe.pk, 'salle_id': None,
+             'jour': c.jour, 'heure_debut': c.heure_debut, 'heure_fin': c.heure_fin}
+            for c in self.creneaux
+        ]
+        r = self._generer(occupations_initiales=occupations)
+        self.assertEqual(r.status, G.GENERATION_IMPOSSIBLE)
+        self.assertEqual(r.motif_echec, G.MOTIF_PLACEMENT_IMPOSSIBLE)
+        self.assertTrue(r.non_places)
+        self.assertNotIn(
+            'salle compatible', r.non_places[0].raison.lower().replace('’', "'"),
+        )
+
     def test_salle_specialisee_respectee(self):
         """C7 : un TP ne doit jamais finir dans une salle incompatible.
 

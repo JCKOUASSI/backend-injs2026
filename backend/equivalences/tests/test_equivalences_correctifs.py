@@ -138,6 +138,17 @@ class SeedEquivalencesDemoTests(TestCase):
         call_command('seed_equivalences_demo', utilisateur='admin_eq', stdout=None)
         self.assertEqual(DemandeEquivalenceDispense.objects.count(), 2)
 
+    def test_volume_complete_jusqua_la_cible_sans_depasser(self):
+        """--volume N : complète jusqu'à N demandes [Exemple], idempotent."""
+        call_command('seed_equivalences_demo', utilisateur='admin_eq', volume=6, stdout=None)
+        self.assertEqual(DemandeEquivalenceDispense.objects.count(), 6)
+        call_command('seed_equivalences_demo', utilisateur='admin_eq', volume=6, stdout=None)
+        self.assertEqual(DemandeEquivalenceDispense.objects.count(), 6)
+        # Les demandes de volume sont repérables et purgeables.
+        self.assertTrue(DemandeEquivalenceDispense.objects.filter(
+            motif__contains='Demande de volume',
+        ).exists())
+
     def test_purge_retire_les_exemples_non_appliquees(self):
         call_command('seed_equivalences_demo', utilisateur='admin_eq', stdout=None)
         # Cohorte 0 → cibles BROUILLON et SOUMISE : toutes purgeables.

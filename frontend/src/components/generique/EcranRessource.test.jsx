@@ -22,7 +22,7 @@ vi.mock('@/services/api', async (importOriginal) => {
 import { apiController } from '@/test/utils/mockApi'
 import { AllProviders } from '@/test/utils/renderWithProviders'
 import { makeUser } from '@/test/utils/factories'
-import EcranRessource, { formater } from './EcranRessource'
+import EcranRessource, { pluriel } from './EcranRessource'
 import { ECRANS } from '@/menu/ecrans'
 
 /** Réponse de la liste, mutable : chaque test peut la remplacer avant montage. */
@@ -548,6 +548,18 @@ describe('écran livré : résultats concours', () => {
       .getByText('Non calculé')).toBeTruthy()
   })
 
+  it('charge explicitement 200 campagnes par page', async () => {
+    monterResultats()
+    await screen.findByText('Concours — EM')
+    // Demande du 05/11/2026 : chargement explicite borné à 200 (descripteur
+    // `taillePage: 200`), comme le « 200 événements » du hub Présences —
+    // l'API borne `page_size` à 200 et répond en enveloppe paginée.
+    const appel = apiController.findCall('get', '/admissions/campagnes/')
+    expect(appel).toBeTruthy()
+    expect(appel[1].params).toMatchObject({ page: 1, page_size: 200 })
+    expect(screen.getByText(/Chargement explicite : 200 campagnes par page/)).toBeInTheDocument()
+  })
+
   it('ne propose Calculer / Publier que lorsque l’acte est possible', async () => {
     monterResultats()
     await screen.findByText('Concours — EM')
@@ -580,5 +592,111 @@ describe('écran livré : résultats concours', () => {
     fireEvent.click(screen.getAllByRole('button', { name: /fermer/i })[0])
     fireEvent.click(await screen.findByText('Campagne vide'))
     expect(await screen.findByText(/Aucun classement pour cette campagne/)).toBeTruthy()
+  })
+})
+
+describe('Alertes & seuils (régression capture 03/11 : JSON brut)', () => {
+  const PAYLOAD_SEUILS = {
+    seuils: [],
+    indicateurs: [{
+      indicateur: 'taux_presence', libelle: 'Assiduité séance', valeur: 82.5,
+      unite: '%', inverse: false, icone: 'bi-person-check', couleur: '#2277C1',
+      aide: 'Places présentes ÷ places attendues.', echelle_max: 100,
+      niveau: 'non_configure', actif: false, configure: false,
+      seuil_avertissement: 75, seuil_critique: 60,
+    }],
+    synthese: { ok: 0, avertissement: 0, critique: 0, inactif: 0, non_configure: 1 },
+    seuils_vides: true,
+  }
+
+  it('rend synthèse, jauge et état « à initialiser » sans aucun JSON', async () => {
+    apiController.setRoute('/statistiques/alertes/seuils/', () => PAYLOAD_SEUILS)
+    apiController.setRoute('/stats/alertes/', () => ({ annee: '2026-2027', alertes: [] }))
+    monter(ECRANS.stats_alertes, { chemin: '/statistiques/alertes' })
+
+    expect(await screen.findByText('Assiduité séance')).toBeTruthy()
+    expect(screen.getByText('Aucun seuil configuré.')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Initialiser les seuils INJS/ })).toBeTruthy()
+    expect(screen.getAllByText('Non configuré').length).toBeGreaterThanOrEqual(1)
+    // Le cœur de la régression : aucun fragment JSON ne doit subsister.
+    expect(document.body.textContent).not.toContain('"indicateur"')
+    expect(document.body.textContent).not.toContain('"synthese"')
+    expect(document.body.textContent).not.toContain('{')
+  })
+
+  it('onglet Alertes : lit la racine `alertes` de l’enveloppe {annee, alertes}', async () => {
+    apiController.setRoute('/statistiques/alertes/seuils/', () => PAYLOAD_SEUILS)
+    apiController.setRoute('/stats/alertes/', () => ({
+      annee: '2026-2027',
+      alertes: [{ participant_id: 7, matricule: 'INJS21-0007', taux_presence: 40, taux_absence: 60, niveau: 'CRITIQUE' }],
+    }))
+    monter(ECRANS.stats_alertes, { chemin: '/statistiques/alertes' })
+    await screen.findByText('Assiduité séance')
+
+    fireEvent.click(screen.getByTestId('onglet-alertes'))
+    expect(await screen.findByText('INJS21-0007')).toBeTruthy()
+    expect(screen.getByText('CRITIQUE')).toBeTruthy()
+    expect(document.body.textContent).not.toContain('"alertes"')
+  })
+})
+
+describe('Résultats / bilans (régression capture 03/11 : « Élément » répété)', () => {
+  it('rend synthèse, périodes libellées et filtres en français, sans JSON', async () => {
+    apiController.setRoute('/statistiques/bilans/', () => ({
+      annee: 2026, mois: null, bilans: [], total_bilans: 0,
+      categories: [], modules: [], matieres: [], formations: [],
+      periodes: [{ value: 'QUOTIDIEN', label: 'Quotidien' }, { value: 'MENSUEL', label: 'Mensuel' }],
+      filtres_actifs: {
+        annee: 2026, mois: null, categorie: '', module_id: null, formation_id: null,
+        periode: '', periode_label: 'Toutes périodes', calendrier: '', dimension: 'formation',
+      },
+    }))
+    monter(ECRANS.stats_resultats, { chemin: '/statistiques/resultats' })
+
+    expect(await screen.findByText('Aucun bilan publié pour ce périmètre')).toBeTruthy()
+    expect(screen.getAllByText('Toutes périodes').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('Quotidien')).toBeTruthy()
+    expect(screen.getByText('Mensuel')).toBeTruthy()
+    expect(screen.getByText('Tous les mois')).toBeTruthy()
+    expect(document.body.textContent).not.toContain('Élément')
+    expect(document.body.textContent).not.toContain('"periodes"')
+    expect(document.body.textContent).not.toContain('module_id')
+  })
+})
+
+describe('Semestres (régression capture 03/11 : niveau en id brut, « Tous les niveau »)', () => {
+  it('résout le niveau vers son code référentiel et pluralise le filtre', async () => {
+    apiController.setRoute('/scolarite/ref/semestres/', () => ({
+      count: 2,
+      results: [
+        { id: 1, numero: 1, libelle: 'S1', niveau_id: 1, actif: true },
+        { id: 2, numero: 3, libelle: 'S3', niveau_id: 2, actif: true },
+      ],
+    }))
+    apiController.setRoute('/scolarite/ref/niveaux/', () => ({
+      count: 2,
+      results: [
+        { id: 1, code: 'L1', libelle: 'Licence 1', cycle: 'LICENCE', ordre: 1, actif: true },
+        { id: 2, code: 'L2', libelle: 'Licence 2', cycle: 'LICENCE', ordre: 2, actif: true },
+      ],
+    }))
+    monter(ECRANS.semestres, { chemin: '/formations/semestres' })
+
+    // Libellés semestres en chips, niveaux résolus en codes (L1/L2), jamais l'id brut.
+    expect(await screen.findByText('S1')).toBeTruthy()
+    expect(await screen.findByText('L1')).toBeTruthy()
+    const pastilles = [...document.querySelectorAll('.gen-ref-pill')].map((n) => n.textContent)
+    expect(pastilles).toEqual(expect.arrayContaining(['L1', 'L2']))
+    // Le filtre affiche le libellé complet et le pluriel correct.
+    expect(screen.getByText('Tous les niveaux')).toBeTruthy()
+    expect(screen.getByText('Licence 1')).toBeTruthy()
+    expect(screen.queryByText('Tous les niveau')).toBeNull()
+  })
+
+  it('pluriel : -eau→-eaux, -s/-x inchangés, défaut +s', () => {
+    expect(pluriel('Niveau')).toBe('niveaux')
+    expect(pluriel('Mois')).toBe('mois')
+    expect(pluriel('Statut')).toBe('statuts')
+    expect(pluriel('Semestre')).toBe('semestres')
   })
 })

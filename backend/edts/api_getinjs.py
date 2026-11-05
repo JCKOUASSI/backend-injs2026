@@ -18,6 +18,9 @@ from pathlib import Path
 from django.conf import settings
 from django.http import FileResponse
 from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
@@ -133,6 +136,10 @@ def _executer_import(request, *, appliquer):
         contenu=contenu,
         appliquer=appliquer,
         acteur=request.user if request.user.is_authenticated else None,
+        # Écran « Importer les étudiants inscrits » : décocher « Reconstruire
+        # le parcours » interdit la création des groupes/vagues absents.
+        reconstruire_parcours=_booleen(
+            request.data.get('reconstruire_parcours', True)),
     )
     donnees = rapport.as_dict()
 
@@ -145,6 +152,61 @@ def _executer_import(request, *, appliquer):
     return Response(donnees, status=status.HTTP_200_OK)
 
 
+
+
+# ── Contrats OpenAPI (module GET-INJS : imports, campagnes, génération) ──
+
+
+class BlocageGetInjsSerializer(serializers.Serializer):
+    """Refus métier : {'status': 'BLOCKING', 'motif_echec', 'detail'}."""
+
+    status = serializers.CharField()
+    motif_echec = serializers.CharField()
+    detail = serializers.JSONField()
+
+
+class ImportInscritsRequeteSerializer(serializers.Serializer):
+    """Fichier multipart ou contenu texte (contenu + nom_fichier)."""
+
+    fichier = serializers.FileField(required=False)
+    contenu = serializers.CharField(required=False)
+    nom_fichier = serializers.CharField(required=False)
+    annee_academique_id = serializers.IntegerField(required=False)
+    reconstruire_parcours = serializers.BooleanField(required=False)
+
+
+class CampagneCreationGetInjsSerializer(serializers.Serializer):
+    annee_academique_id = serializers.IntegerField()
+    libelle = serializers.CharField()
+    semaines = serializers.JSONField(required=False)
+    perimetre = serializers.JSONField(required=False)
+    parametres = serializers.JSONField(required=False)
+
+
+class CampagnesListeGetInjsSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    results = serializers.JSONField()
+
+
+class HistoriqueGenerationsSerializer(serializers.Serializer):
+    executions = serializers.JSONField()
+    count = serializers.IntegerField()
+
+
+class CampagneDemarrageSerializer(serializers.Serializer):
+    asynchrone = serializers.BooleanField(required=False)
+
+
+class GroupesConstitutionRequeteSerializer(serializers.Serializer):
+    capacite = serializers.IntegerField(required=False)
+    simulation = serializers.BooleanField(required=False)
+
+
+class CampagneMotifSerializer(serializers.Serializer):
+    motif = serializers.CharField(required=False)
+
+
+@extend_schema(request=ImportInscritsRequeteSerializer, responses={200: OpenApiTypes.OBJECT, 409: OpenApiTypes.OBJECT, 413: BlocageGetInjsSerializer, 422: OpenApiTypes.OBJECT})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def analyser_import_api(request):
@@ -157,6 +219,7 @@ def analyser_import_api(request):
     return _executer_import(request, appliquer=False)
 
 
+@extend_schema(request=ImportInscritsRequeteSerializer, responses={200: OpenApiTypes.OBJECT, 409: OpenApiTypes.OBJECT, 413: BlocageGetInjsSerializer, 422: OpenApiTypes.OBJECT})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def importer_inscrits_api(request):
@@ -170,6 +233,7 @@ def importer_inscrits_api(request):
     return _executer_import(request, appliquer=True)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def synthese_import_api(request):
@@ -194,6 +258,420 @@ def synthese_import_api(request):
     })
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def journal_imports_api(request):
+    """GET /api/edts/lmd/import/inscrits/journal/ — journal des imports.
+
+    Reconstruit les lots d'import depuis les inscriptions rattachées
+    (``fichier`` + ``empreinte`` du fichier source) : seules des données
+    réellement tracées sont exposées — lignes rattachées, étudiants
+    inscrits, date de réception du lot. Aucune durée ni aucun rejet
+    n'est inventé : l'import ne persiste que les lignes rattachées.
+    """
+    from django.db.models import Count, Min, Q
+
+    from edts.models import InscriptionImportee
+
+    annee_id, erreur = _annee_de_requete(request)
+    if erreur is not None:
+        return erreur
+
+    lignes = (
+        InscriptionImportee.objects.filter(annee_academique_id=annee_id)
+        .values('fichier', 'empreinte')
+        .annotate(
+            lignes=Count('id'),
+            inscrits=Count('id', filter=Q(statut=InscriptionImportee.Statut.INSCRIT)),
+            formations=Count('ref_formation', distinct=True),
+            groupes=Count('groupe', distinct=True),
+            vagues=Count('vague', distinct=True),
+            recu_le=Min('created_at'),
+        )
+        .order_by('-recu_le')[:10]
+    )
+    lots = [{
+        'fichier': l['fichier'] or '(sans nom de fichier)',
+        'empreinte': (l['empreinte'] or '')[:12],
+        'lignes': l['lignes'],
+        'inscrits': l['inscrits'],
+        # Lignes du lot non comptées comme inscrites (radiées) : le journal
+        # ne connaît que les lignes rattachées, aucun rejet n'est inventé.
+        'ignores': l['lignes'] - l['inscrits'],
+        'formations': l['formations'],
+        'groupes': l['groupes'],
+        'vagues': l['vagues'],
+        'recu_le': l['recu_le'].isoformat() if l['recu_le'] else None,
+    } for l in lignes]
+    return Response({
+        'annee_academique_id': annee_id,
+        'lots': lots,
+        'nb_lots': len(lots),
+    })
+
+
+def _sexe_court(valeur):
+    """Normalise le sexe vers « M » / « F » (la base stocke MASCULIN/FEMININ)."""
+    texte = (valeur or '').strip().upper()
+    if texte.startswith('M'):
+        return 'M'
+    if texte.startswith('F'):
+        return 'F'
+    return ''
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def inscrits_population_api(request):
+    """GET /api/edts/lmd/inscrits/?annee=&q=&formation=&niveau=&page=
+
+    Population des étudiants inscrits d'une année, toutes origines, pour
+    l'écran « Étudiants inscrits » (POPULATIONS LMD) : inscriptions
+    administratives **validées** du processus INJS2026 (source « Base »)
+    et inscriptions lues dans un fichier externe (source « Import »),
+    fusionnées, triées par nom, puis paginées à 25 par page.
+
+    Règles métier :
+    - un même matricule présent dans les deux origines n'apparaît qu'une
+      fois : l'inscription administrative, dossier métier de référence,
+      fait foi (la ligne importée reste consultable dans la synthèse et
+      le journal des imports) ;
+    - une inscription administrative non validée n'est pas un étudiant
+      inscrit : elle reste dans le circuit de validation de la scolarité ;
+    - aucune donnée n'est inventée : le groupe d'un inscrit de la base
+      est son affectation active, la vague son rattachement ; à défaut,
+      le champ est vide et l'écran affiche « — ».
+
+    Les facettes ``formations`` / ``niveaux`` décrivent la population de
+    l'année (avant filtres) pour alimenter les listes déroulantes.
+    """
+    annee_id, erreur = _annee_de_requete(request)
+    if erreur is not None:
+        return erreur
+
+    from edts.models import InscriptionImportee
+    from scolarite.models import InscriptionAdministrative
+
+    lignes = []
+    matricules_base = set()
+    for ins in (
+        InscriptionAdministrative.objects.filter(
+            annee_academique_id=annee_id,
+            statut=InscriptionAdministrative.Statut.VALIDEE,
+        )
+        .select_related('etudiant__participant', 'ref_formation', 'niveau', 'vague')
+        .prefetch_related('affectations__groupe')
+    ):
+        participant = ins.etudiant.participant
+        matricules_base.add(participant.matricule)
+        groupe = next(
+            (a.groupe.nom for a in ins.affectations.all()
+             if a.active and a.groupe_id),
+            '',
+        )
+        lignes.append({
+            'matricule': participant.matricule,
+            'nom': participant.nom,
+            'prenoms': participant.prenom,
+            'sexe': _sexe_court(participant.sexe),
+            'formation_id': ins.ref_formation_id,
+            'formation_code': ins.ref_formation.code or '',
+            'formation': ins.ref_formation.intitule,
+            'niveau_id': ins.niveau_id,
+            'niveau': ins.niveau.code,
+            'niveau_ordre': ins.niveau.ordre,
+            'groupe': groupe,
+            'vague': ins.vague.libelle if ins.vague_id else '',
+            'statut': 'Inscrit',
+            'source': 'Base',
+        })
+
+    for ins in (
+        InscriptionImportee.objects.filter(annee_academique_id=annee_id)
+        .select_related('ref_formation', 'niveau', 'groupe', 'vague')
+    ):
+        if ins.matricule in matricules_base:
+            continue
+        lignes.append({
+            'matricule': ins.matricule,
+            'nom': ins.nom,
+            'prenoms': ins.prenoms,
+            'sexe': _sexe_court(ins.sexe),
+            'formation_id': ins.ref_formation_id,
+            'formation_code': ins.ref_formation.code or '',
+            'formation': ins.ref_formation.intitule,
+            'niveau_id': ins.niveau_id,
+            'niveau': ins.niveau.code,
+            'niveau_ordre': ins.niveau.ordre,
+            'groupe': ins.groupe.nom if ins.groupe_id else '',
+            'vague': ins.vague.libelle if ins.vague_id else '',
+            'statut': ins.get_statut_display(),
+            'source': 'Import',
+        })
+
+    formations = sorted(
+        {
+            l['formation_id']: {
+                'id': l['formation_id'],
+                'code': l['formation_code'],
+                'intitule': l['formation'],
+            }
+            for l in lignes
+        }.values(),
+        key=lambda f: f['intitule'],
+    )
+    niveaux = sorted(
+        {
+            l['niveau_id']: {
+                'id': l['niveau_id'],
+                'code': l['niveau'],
+                'ordre': l['niveau_ordre'],
+            }
+            for l in lignes
+        }.values(),
+        key=lambda n: (n['ordre'], n['code']),
+    )
+
+    recherche = (request.query_params.get('q') or '').strip().casefold()
+    formation_id = _int(request.query_params.get('formation'))
+    niveau_id = _int(request.query_params.get('niveau'))
+    if recherche:
+        lignes = [
+            l for l in lignes
+            if recherche in l['matricule'].casefold()
+            or recherche in l['nom'].casefold()
+            or recherche in l['prenoms'].casefold()
+        ]
+    if formation_id is not None:
+        lignes = [l for l in lignes if l['formation_id'] == formation_id]
+    if niveau_id is not None:
+        lignes = [l for l in lignes if l['niveau_id'] == niveau_id]
+
+    lignes.sort(key=lambda l: (l['nom'].casefold(), l['prenoms'].casefold(),
+                               l['matricule']))
+
+    taille_page = 25
+    total = len(lignes)
+    total_pages = (total + taille_page - 1) // taille_page
+    try:
+        page = int(request.query_params.get('page', 1))
+    except (TypeError, ValueError):
+        page = 1
+    page = min(max(page, 1), total_pages) if total_pages else 1
+    debut = (page - 1) * taille_page
+    resultats = [
+        {cle: ligne[cle] for cle in (
+            'matricule', 'nom', 'prenoms', 'sexe', 'formation_code', 'formation',
+            'niveau', 'groupe', 'vague', 'statut', 'source',
+        )}
+        for ligne in lignes[debut:debut + taille_page]
+    ]
+    return Response({
+        'annee_academique_id': annee_id,
+        'total': total,
+        'page': page,
+        'taille_page': taille_page,
+        'total_pages': total_pages,
+        'formations': formations,
+        'niveaux': niveaux,
+        'resultats': resultats,
+    })
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def referentiels_api(request):
+    """GET /api/edts/lmd/referentiels/?annee= — données de référence INJS.
+
+    Alimente l'écran « Référentiels » du hub GET-INJS (onglets Filières &
+    formations, Maquettes & modules, Bâtiments & salles, Enseignants,
+    Groupes & vagues) avec les référentiels réels qui nourrissent le
+    moteur de génération :
+
+    - « filières » du compteur = mentions officielles (STAPS, STASE) et
+      « formations » = filières métier (parcours) — vocabulaire de l'écran ;
+    - une maquette est « publiée » lorsqu'elle est ACTIVE pour l'année,
+      « paramétrable » lorsqu'elle est encore en brouillon (les autres
+      statuts affichent leur libellé réel) ;
+    - « modules » = ECUE des maquettes actives de l'année, c'est-à-dire
+      exactement ce que le moteur transforme en besoins ;
+    - l'effectif d'un groupe compte ses affectations actives et ses
+      inscriptions importées rattachées — deux sources réelles, jamais
+      d'estimation.
+    """
+    annee_id, erreur = _annee_de_requete(request)
+    if erreur is not None:
+        return erreur
+
+    from django.db.models import Count, Sum
+
+    from edts.models import InscriptionImportee
+    from formations.models import (
+        Formateur, RefBatiment, RefSalle, RefSite, RefVague,
+    )
+    from referentiels.models import RefFiliere, RefMention
+    from scolarite.models import AffectationGroupe, ECUE, Groupe, Maquette
+
+    mentions = [
+        {
+            'code': m.code,
+            'nom': m.nom_complet or m.libelle,
+            'ecole': m.ecole.code if m.ecole_id else '',
+        }
+        for m in RefMention.objects.filter(actif=True, archive=False)
+        .select_related('ecole').order_by('code')
+    ]
+
+    groupes_par_filiere = {
+        ligne['ref_formation__filiere_id']: ligne['n']
+        for ligne in Groupe.objects.filter(annee_academique_id=annee_id)
+        .values('ref_formation__filiere_id').annotate(n=Count('id'))
+    }
+    filieres_publiees = set(
+        Maquette.objects.filter(
+            annee_academique_id=annee_id, statut=Maquette.Statut.ACTIVE,
+        ).values_list('ref_formation__filiere_id', flat=True),
+    )
+    parcours = [
+        {
+            'code': f.code,
+            'libelle': f.libelle,
+            'mention': f.mention.code if f.mention_id else '',
+            'maquette': 'publiée' if f.pk in filieres_publiees else 'paramétrable',
+            'groupes': groupes_par_filiere.get(f.pk, 0),
+        }
+        for f in RefFiliere.objects.filter(actif=True, archive=False)
+        .select_related('mention').order_by('code')
+    ]
+
+    maquettes = [
+        {
+            'id': m.pk,
+            'formation': m.ref_formation.intitule,
+            'niveau': m.niveau.code,
+            'version': m.version,
+            'statut': m.statut,
+            'statut_libelle': (
+                'Publiée' if m.statut == Maquette.Statut.ACTIVE
+                else 'Paramétrable' if m.statut == Maquette.Statut.BROUILLON
+                else m.get_statut_display()
+            ),
+            'publiee': m.statut == Maquette.Statut.ACTIVE,
+            'ues': m.nb_ues,
+            'modules': m.nb_modules,
+            'credits': m.credits or 0,
+        }
+        for m in Maquette.objects.filter(annee_academique_id=annee_id)
+        .select_related('ref_formation', 'niveau')
+        .annotate(
+            nb_ues=Count('unites_enseignement', distinct=True),
+            nb_modules=Count('unites_enseignement__ecues', distinct=True),
+            credits=Sum('unites_enseignement__credits'),
+        )
+        .order_by('ref_formation__intitule', 'niveau__ordre')
+    ]
+    modules = ECUE.objects.filter(
+        ue__maquette__annee_academique_id=annee_id,
+        ue__maquette__statut=Maquette.Statut.ACTIVE,
+    ).count()
+
+    salles = [
+        {
+            'code': s.code,
+            'nom': s.nom,
+            'batiment': s.batiment.nom if s.batiment_id else '',
+            'site': s.site.nom if s.site_id else '',
+            'capacite': s.capacite,
+            'type': s.get_type_lieu_display(),
+        }
+        for s in RefSalle.objects.filter(actif=True)
+        .select_related('batiment', 'site')
+        .order_by('batiment__nom', 'nom')
+    ]
+
+    enseignants = [
+        {
+            'nom': f.nom,
+            'prenom': f.prenom,
+            'specialite': f.specialite or '',
+            'grade': f.grade_ref.libelle if f.grade_ref_id else '',
+            'statut': f.statut_enseignant or '',
+        }
+        for f in Formateur.objects.select_related('grade_ref')
+        .order_by('nom', 'prenom')
+    ]
+
+    effectifs = {}
+    for source in (
+        AffectationGroupe.objects.filter(
+            inscription__annee_academique_id=annee_id, active=True,
+        ).values('groupe_id').annotate(n=Count('id')),
+        InscriptionImportee.objects.filter(
+            annee_academique_id=annee_id, groupe__isnull=False,
+        ).values('groupe_id').annotate(n=Count('id')),
+    ):
+        for ligne in source:
+            effectifs[ligne['groupe_id']] = (
+                effectifs.get(ligne['groupe_id'], 0) + ligne['n']
+            )
+    groupes = [
+        {
+            'nom': g.nom,
+            'formation': g.ref_formation.intitule,
+            'niveau': g.niveau.code,
+            'vague': g.vague.libelle if g.vague_id else '',
+            'capacite': g.capacite_max,
+            'effectif': effectifs.get(g.pk, 0),
+        }
+        for g in Groupe.objects.filter(annee_academique_id=annee_id)
+        .select_related('ref_formation', 'niveau', 'vague')
+        .order_by('ref_formation__intitule', 'niveau__ordre', 'nom')
+    ]
+
+    groupes_par_vague = {
+        ligne['vague_id']: ligne['n']
+        for ligne in Groupe.objects.filter(
+            annee_academique_id=annee_id, vague__isnull=False,
+        ).values('vague_id').annotate(n=Count('id'))
+    }
+    vagues = [
+        {
+            'code': v.code or '',
+            'libelle': v.libelle,
+            'groupes': groupes_par_vague.get(v.pk, 0),
+        }
+        for v in RefVague.objects.filter(actif=True).order_by('ordre', 'libelle')
+    ]
+
+    return Response({
+        'annee_academique_id': annee_id,
+        'compteurs': {
+            'filieres': len(mentions),
+            'formations': len(parcours),
+            'modules': modules,
+            'groupes': len(groupes),
+            'vagues': len(vagues),
+            'salles': len(salles),
+            'enseignants': len(enseignants),
+        },
+        'mentions': mentions,
+        'parcours': parcours,
+        'maquettes': maquettes,
+        'infrastructure': {
+            'sites': RefSite.objects.count(),
+            'batiments': RefBatiment.objects.count(),
+            'salles': salles,
+        },
+        'enseignants': enseignants,
+        'groupes': groupes,
+        'vagues': vagues,
+    })
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 409: OpenApiTypes.OBJECT})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def generate_annee_api(request):
@@ -219,12 +697,27 @@ def generate_annee_api(request):
         semaines = [s for s in semaines.replace(' ', '').split(',') if s]
     semaines = [int(s) for s in semaines if str(s).isdigit()] if semaines else None
 
+    def _ids(cle):
+        brut = request.data.get(cle)
+        if isinstance(brut, str):
+            brut = [x for x in brut.replace(' ', '').split(',') if x]
+        return [int(x) for x in brut if str(x).isdigit()] if brut else None
+
     bilan = generer_annee(
         annee_id,
         semaines=semaines,
         persister=_booleen(request.data.get('persister')),
         remplacer=_booleen(request.data.get('remplacer', True)),
         inclure_maquette=_booleen(request.data.get('inclure_maquette', True)),
+        formation_ids=_ids('formation_ids') or _ids('formations'),
+        niveau_ids=_ids('niveau_ids') or _ids('niveaux'),
+        groupe_ids=_ids('groupe_ids') or _ids('groupes'),
+        semestre_numeros=_ids('semestre_numeros') or _ids('semestres'),
+        inclure_samedi=_booleen(request.data.get('inclure_samedi', True)),
+        eviter_pause_meridienne=_booleen(
+            request.data.get('eviter_pause_meridienne')),
+        max_seances_par_groupe_semaine=_int(
+            request.data.get('max_seances_par_groupe_semaine')),
     )
 
     if bilan['status_global'] == ANNEE_IMPOSSIBLE:
@@ -237,6 +730,7 @@ def generate_annee_api(request):
     )
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: BlocageGetInjsSerializer})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def conception_api(request):
@@ -296,6 +790,7 @@ def _refus(exc):
     )
 
 
+@extend_schema(request=CampagneCreationGetInjsSerializer, responses={200: CampagnesListeGetInjsSerializer, 201: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def campagnes_api(request):
@@ -349,6 +844,124 @@ def campagnes_api(request):
     return Response(campagne_en_dict(campagne), status=status.HTTP_201_CREATED)
 
 
+@extend_schema(responses={200: HistoriqueGenerationsSerializer})
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def historique_generations_api(request):
+    """GET /api/edts/campagnes/historique/ — historique des générations.
+
+    Une ligne par **exécution** de campagne (les campagnes jamais lancées
+    n'y figurent pas : il n'y a rien à tracer). Chaque ligne est calculée
+    depuis le bilan réellement persisté de l'exécution : séances placées /
+    attendues, couverture, conflits cumulés des groupes, semestres
+    couverts (déduits des niveaux du bilan, S1/S2 pour le premier niveau,
+    etc.) et durée mesurée. Le périmètre est résolu en noms lisibles.
+
+    Chargement explicite (additif) : `?limite=` plafonne le nombre
+    d'exécutions restituées (20 par défaut, comportement historique ;
+    maximum 500 — l'écran de génération demande explicitement 500).
+    """
+    from edts.models import ExecutionCampagne
+    from scolarite.models import Groupe, Niveau
+
+    limite = 20
+    limite_brute = (request.query_params.get('limite') or '').strip()
+    if limite_brute:
+        try:
+            limite = max(1, min(int(limite_brute), 500))
+        except (TypeError, ValueError):
+            limite = 20
+
+    executions = list(
+        ExecutionCampagne.objects
+        .select_related('campagne', 'campagne__annee_academique')
+        .order_by('-demarree_le')[:limite]
+    )
+    # Exécutions orphelines (fil mort après un redémarrage serveur) : les
+    # clôturer en ÉCHEC explicite plutôt que les afficher « en cours »
+    # indéfiniment dans l'historique.
+    from edts.moteur.campagnes import reparer_execution_orpheline
+
+    for execution in executions:
+        reparer_execution_orpheline(execution)
+
+    # Résolution des noms du périmètre (identifiants → libellés réels).
+    from formations.referentiel_injs_l6 import formations_injs
+
+    formations_par_id = {
+        f.pk: f for f in formations_injs()
+    }
+    niveaux_par_code = {n.code: n for n in Niveau.objects.all()}
+    groupes_par_id = {
+        g.pk: g.nom for g in Groupe.objects.all().only('pk', 'nom')
+    }
+
+    lignes = []
+    for execution in executions:
+        campagne = execution.campagne
+        perimetre = campagne.perimetre or {}
+        bilan = execution.bilan or {}
+        groupes_bilan = bilan.get('groupes') or []
+        totaux = bilan.get('totaux') or {}
+
+        formation_ids = perimetre.get('formations') or []
+        formations = [
+            formations_par_id[fid].intitule
+            for fid in formation_ids if fid in formations_par_id
+        ]
+        filieres = sorted({
+            formations_par_id[fid].filiere_code
+            for fid in formation_ids
+            if fid in formations_par_id and formations_par_id[fid].filiere_code
+        })
+        niveau_ids = perimetre.get('niveaux') or []
+        niveaux = sorted({
+            n.code for n in Niveau.objects.filter(pk__in=niveau_ids)
+        }) if niveau_ids else []
+        groupe_ids = perimetre.get('groupes') or []
+        groupes = [
+            groupes_par_id[gid] for gid in groupe_ids if gid in groupes_par_id
+        ]
+
+        # Semestres couverts : déduits des niveaux présents dans le bilan
+        # (niveau d'ordre k → semestres S(2k-1) et S(2k)).
+        semestres = set()
+        for ligne_bilan in groupes_bilan:
+            niveau = niveaux_par_code.get(ligne_bilan.get('niveau'))
+            if niveau is not None and niveau.ordre:
+                semestres.add(f'S{2 * niveau.ordre - 1}')
+                semestres.add(f'S{2 * niveau.ordre}')
+
+        placees = totaux.get('seances_placees')
+        attendues = totaux.get('seances_attendues')
+        couverture = (
+            round(placees / attendues * 100, 1)
+            if placees is not None and attendues else None
+        )
+        lignes.append({
+            'id': execution.pk,
+            'campagne_id': campagne.pk,
+            'libelle': campagne.libelle,
+            'annee_academique': campagne.annee_academique.libelle,
+            'date': execution.demarree_le.isoformat() if execution.demarree_le else None,
+            'statut': execution.statut,
+            'duree_ms': execution.duree_ms,
+            'perimetre': {
+                'filieres': filieres,
+                'formations': formations,
+                'niveaux': niveaux,
+                'groupes': groupes,
+            },
+            'semestres': sorted(semestres, key=lambda x: int(x[1:])),
+            'seances_placees': placees,
+            'seances_attendues': attendues,
+            'couverture_pct': couverture,
+            'conflits': sum((l.get('conflits') or 0) for l in groupes_bilan),
+        })
+    return Response({'executions': lignes, 'count': len(lignes)})
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer, 404: BlocageGetInjsSerializer})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def campagne_detail_api(request, pk):
@@ -362,6 +975,7 @@ def campagne_detail_api(request, pk):
     return Response(campagne_en_dict(campagne))
 
 
+@extend_schema(request=CampagneDemarrageSerializer, responses={200: OpenApiTypes.OBJECT, 202: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer, 404: BlocageGetInjsSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def campagne_demarrer_api(request, pk):
@@ -382,6 +996,7 @@ def campagne_demarrer_api(request, pk):
     return Response(resultat, status=status.HTTP_202_ACCEPTED if asynchrone else status.HTTP_200_OK)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer, 404: BlocageGetInjsSerializer})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def campagne_statut_api(request, pk):
@@ -394,6 +1009,7 @@ def campagne_statut_api(request, pk):
         return _refus(exc)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer, 404: BlocageGetInjsSerializer})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def campagne_resultat_api(request, pk):
@@ -406,6 +1022,7 @@ def campagne_resultat_api(request, pk):
         return _refus(exc)
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer, 404: BlocageGetInjsSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def campagne_donnees_pretes_api(request, pk):
@@ -418,6 +1035,7 @@ def campagne_donnees_pretes_api(request, pk):
         return _refus(exc)
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer, 404: BlocageGetInjsSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtValidation])
 def campagne_valider_api(request, pk):
@@ -433,6 +1051,61 @@ def campagne_valider_api(request, pk):
         return _refus(exc)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def dimensionnement_api(request):
+    """GET /api/edts/lmd/dimensionnement/?annee=&capacite= — dimensionnement.
+
+    Rapport calculé sur les données réelles de l'année (inscriptions
+    VALIDÉE, groupes actifs, maquettes actives, salles, formateurs) :
+    promotions à planifier, groupes nécessaires pour la capacité cible
+    demandée (défaut 60), emplois du temps de groupe à produire
+    (**dérivés**, jamais imposés), séances attendues d'après les
+    maquettes actives et anomalies à traiter avant génération.
+    """
+    from edts.moteur.dimensionnement import dimensionner
+
+    annee_id, erreur = _annee_de_requete(request)
+    if erreur is not None:
+        return erreur
+    capacite = _int(request.query_params.get('capacite'))
+    rapport = (
+        dimensionner(annee_id, capacite_cible=capacite)
+        if capacite else dimensionner(annee_id)
+    )
+    return Response(rapport)
+
+
+@extend_schema(request=GroupesConstitutionRequeteSerializer, responses={200: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer})
+@api_view(['POST'])
+@permission_classes([IsEdtPlanification])
+def constituer_groupes_api(request):
+    """POST /api/edts/lmd/dimensionnement/constituer/ — groupes manquants.
+
+    Corps : ``annee_academique_id`` (ou ``?annee=``), ``capacite``
+    (capacité cible par groupe, défaut 60), ``simulation`` (vrai = plan
+    sans écriture). Crée les groupes que le dimensionnement réclame
+    (contenants vides rattachés aux promotions réelles, noms en
+    continuation de l'existant) ; la répartition des étudiants dans ces
+    groupes reste l'opération existante de l'écran Groupes (Scolarité).
+    Idempotent : sans déficit recalculé, rien n'est créé.
+    """
+    from edts.moteur.constitution import constituer_groupes
+
+    annee_id, erreur = _annee_de_requete(request)
+    if erreur is not None:
+        return erreur
+    capacite = _int(request.data.get('capacite'))
+    bilan = constituer_groupes(
+        annee_id,
+        capacite_cible=capacite,
+        simulation=_booleen(request.data.get('simulation')),
+    )
+    return Response(bilan)
+
+
+@extend_schema(request=CampagneMotifSerializer, responses={200: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer, 404: BlocageGetInjsSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtValidation])
 def campagne_publier_api(request, pk):

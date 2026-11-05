@@ -73,6 +73,41 @@ class Pointage(models.Model):
         choices=Statut.choices,
         default=Statut.EN_COURS,
     )
+
+    # ── Finalisation présences QR (migration additive 0030) ──────────────
+    # ``mode`` distingue sans ambiguïté le badgeage automatique (scan QR)
+    # du badgeage manuel (émargement / badgeage unitaire à motif). Les
+    # pointages antérieurs à cette migration restent à NULL (« non
+    # renseigné ») : aucun historique n'est réécrit, le canal d'origine des
+    # lignes anciennes reste lisible via ``device_id`` (EMARGEMENT_MANUEL…).
+    class Mode(models.TextChoices):
+        QR_AUTOMATIQUE = 'QR_AUTOMATIQUE', 'QR automatique'
+        MANUEL = 'MANUEL', 'Badgeage manuel'
+
+    mode = models.CharField(
+        max_length=20, choices=Mode.choices, null=True, blank=True,
+        help_text='Canal du badgeage : QR_AUTOMATIQUE ou MANUEL '
+                  '(NULL = antérieur au suivi du mode).',
+    )
+    #: Motif du badgeage manuel : code du catalogue
+    #: ``seances_edt_services.MOTIFS_EMARGEMENT_MANUEL`` pour le badgeage
+    #: unitaire, texte libre historique pour l'émargement de masse.
+    motif_manuel = models.CharField(max_length=255, blank=True, default='')
+    commentaire_manuel = models.TextField(blank=True, default='')
+
+    # Nature de la clôture, pour distinguer la sortie volontaire du
+    # participant (scan ou endpoint de sortie) de la clôture automatique
+    # de fin de séance (autoclôture, timeout heartbeat, commande). NULL
+    # tant que le pointage est ouvert, ou pour l'historique antérieur.
+    class TypeSortie(models.TextChoices):
+        SORTIE_QR = 'SORTIE_QR', 'Sortie volontaire (QR)'
+        SORTIE_AUTOMATIQUE_FIN_SEANCE = (
+            'SORTIE_AUTOMATIQUE_FIN_SEANCE', 'Sortie automatique (fin de séance)')
+
+    type_sortie = models.CharField(
+        max_length=40, choices=TypeSortie.choices, null=True, blank=True,
+        help_text='SORTIE_QR (volontaire) ou SORTIE_AUTOMATIQUE_FIN_SEANCE.',
+    )
     # Lot L1 - assiduite (alignee sur le referentiel demande). Les 6 statuts
     # ci-dessus decrivent le PROCESSUS de badgeage ; le statut d'assiduite
     # ci-dessous decrit le RESULTAT pedagogique (mapping explicite, aucun
@@ -234,6 +269,52 @@ class Pointage(models.Model):
         if self.timestamp_entree and self.timestamp_sortie:
             self.duree_presence_minutes = pointage_minutes_clampees(self)
         return self.duree_presence_minutes
+
+
+class EncadrantSeance(models.Model):
+    """Habilitation explicite d'un encadrant sur une séance LMD.
+
+    Écart traité (finalisation présences QR) : le canal LMD n'admettait un
+    encadrant que s'il était **l'intervenant désigné** du créneau. Une
+    activité d'encadrement (supervision, encadrement de cohorte) n'est ni
+    un enseignement ni un groupe d'étudiants : elle se déclare donc par
+    cette liaison explicite, jamais par une assimilation ENCADRANT =
+    ENSEIGNANT ni par un rapprochement nominatif. ``on_delete=PROTECT`` :
+    une séance couverte par des habilitations ne disparaît pas en silence.
+    """
+
+    encadrant = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='seances_encadrees',
+        limit_choices_to={'role': 'ENCADRANT'},
+    )
+    seance_edt = models.ForeignKey(
+        'edts.AffectationCreneau',
+        on_delete=models.PROTECT,
+        related_name='encadrants_habilites',
+    )
+    actif = models.BooleanField(default=True)
+    cree_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='encadrants_habilites_crees',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Encadrant habilité (séance LMD)'
+        verbose_name_plural = 'Encadrants habilités (séances LMD)'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['encadrant', 'seance_edt'],
+                name='uniq_encadrant_seance_edt',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.encadrant} → séance EDT #{self.seance_edt_id}'
 
 
 class AuditLog(models.Model):

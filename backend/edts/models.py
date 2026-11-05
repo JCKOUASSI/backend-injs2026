@@ -650,6 +650,10 @@ class InscriptionImportee(models.Model):
     prenoms = models.CharField(max_length=150, blank=True, default='')
     sexe = models.CharField(max_length=1, choices=Sexe.choices, blank=True, default='')
     date_naissance = models.DateField(null=True, blank=True)
+    # Contact lu dans le fichier (colonne acceptée « Contact » de l'écran
+    # d'import) : conservé pour la traçabilité, jamais requis.
+    email = models.CharField(max_length=254, blank=True, default='')
+    telephone = models.CharField(max_length=32, blank=True, default='')
 
     # --- Cohorte pédagogique (les mêmes entités que la chaîne LMD)
     filiere_code = models.CharField(
@@ -1051,3 +1055,17 @@ class PolitiqueContraintesSouples(models.Model):
     def charger(cls):
         """Politique enregistrée, ou ``None`` si personne n'a encore réglé."""
         return cls.objects.filter(pk=1).first()
+
+
+# ── Interopérabilité Présences (extension GET INJS APP) ─────────────────────
+# Modèles annexes tables ``gi_*`` : registre de séances à identité
+# permanente, historique, événements, géolocalisation des salles et
+# instantanés d'étudiants attendus. Importés ici pour l'enregistrement
+# Django ; aucune table existante n'est modifiée.
+from .models_interop import (  # noqa: E402,F401
+    SalleGeolocalisation,
+    SeanceEvenement,
+    SeanceHistorique,
+    SeanceInstantaneAttendus,
+    SeanceRegistre,
+)

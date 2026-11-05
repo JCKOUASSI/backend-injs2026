@@ -5,6 +5,9 @@ explicites, permissions IsSecretariatOrDFRC (traitement staff). Aucune
 suppression : une décision n'est jamais détruite.
 """
 from django.core.exceptions import ValidationError
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -97,6 +100,73 @@ def _dossier_complet_pieces(demande):
     return all(p.est_validee for p in obligatoires)
 
 
+
+
+# ── Contrats OpenAPI (équivalences et dispenses) ─────────────────────
+
+
+class EquivalenceErreurSerializer(serializers.Serializer):
+    error = serializers.JSONField()
+
+
+class PieceEquivalenceReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    type_piece_id = serializers.IntegerField()
+    libelle = serializers.CharField()
+    obligatoire = serializers.BooleanField()
+    statut = serializers.CharField()
+    commentaire = serializers.CharField()
+
+
+class DemandeEquivalenceReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    type_demande = serializers.CharField()
+    etudiant_id = serializers.IntegerField()
+    matricule = serializers.CharField()
+    etudiant_nom = serializers.CharField()
+    annee_academique_id = serializers.IntegerField()
+    annee_academique = serializers.CharField()
+    ref_formation_id = serializers.IntegerField()
+    ref_formation = serializers.CharField()
+    parcours_id = serializers.IntegerField(allow_null=True)
+    niveau_id = serializers.IntegerField()
+    niveau = serializers.CharField()
+    semestre_id = serializers.IntegerField(allow_null=True)
+    ue_id = serializers.IntegerField(allow_null=True)
+    ue_code = serializers.CharField(allow_null=True)
+    ue_intitule = serializers.CharField(allow_null=True)
+    ecue_id = serializers.IntegerField(allow_null=True)
+    ecue_code = serializers.CharField(allow_null=True)
+    ecue_intitule = serializers.CharField(allow_null=True)
+    etablissement_origine = serializers.CharField()
+    diplome_origine = serializers.CharField()
+    motif = serializers.CharField()
+    decision = serializers.CharField()
+    statut = serializers.CharField()
+    credits_reconnus = serializers.IntegerField()
+    date_effet = serializers.DateField(allow_null=True)
+    fin_validite = serializers.DateField(allow_null=True)
+    est_verrouillee = serializers.BooleanField()
+    nb_pieces = serializers.IntegerField()
+    pieces_validees = serializers.IntegerField()
+    dossier_complet = serializers.BooleanField()
+
+
+class DemandeEquivalenceDetailSerializer(DemandeEquivalenceReponseSerializer):
+    annee_obtention = serializers.IntegerField(allow_null=True)
+    analyse_pedagogique = serializers.CharField()
+    commission = serializers.CharField()
+    date_commission = serializers.DateField(allow_null=True)
+    note_transferee = serializers.DecimalField(max_digits=6, decimal_places=2, allow_null=True)
+    autorite_validation = serializers.CharField()
+    appliquee_le = serializers.DateTimeField(allow_null=True)
+    rectifiee_le = serializers.DateTimeField(allow_null=True)
+    motif_rectification = serializers.CharField()
+    pieces = PieceEquivalenceReponseSerializer(many=True)
+    transitions_possibles = serializers.JSONField()
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: DemandeEquivalenceReponseSerializer(many=True), 201: DemandeEquivalenceDetailSerializer, 400: OpenApiTypes.OBJECT, 409: EquivalenceErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def demande_list(request):
@@ -108,6 +178,31 @@ def demande_list(request):
         for champ in ('statut', 'type_demande', 'etudiant_id', 'annee_academique_id'):
             if champ in request.query_params:
                 queryset = queryset.filter(**{champ: request.query_params[champ]})
+        # Chargement explicite (demande du 05/11/2026, écran Équivalences
+        # et dispenses) : si `page_size` est fourni, réponse paginée bornée
+        # à 200 lignes — même convention que le « chargement explicite :
+        # 200 événements » du hub Présences et des écrans Campagnes. Sans
+        # `page_size`, tableau complet historique (plafond 500) inchangé.
+        if 'page_size' in request.query_params:
+            try:
+                page_size = int(request.query_params.get('page_size') or 50)
+            except (TypeError, ValueError):
+                page_size = 50
+            page_size = max(1, min(page_size, 200))
+            try:
+                page = max(1, int(request.query_params.get('page') or 1))
+            except (TypeError, ValueError):
+                page = 1
+            total = queryset.count()
+            debut = (page - 1) * page_size
+            lignes = queryset[debut:debut + page_size]
+            return Response({
+                'count': total,
+                'total_pages': max(1, -(-total // page_size)),
+                'page': page,
+                'page_size': page_size,
+                'results': [_serializer_demande(d) for d in lignes],
+            })
         return Response([_serializer_demande(d) for d in queryset[:500]])
 
     try:
@@ -136,6 +231,7 @@ def demande_list(request):
     return Response(_serializer_demande(demande, detail=True), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: DemandeEquivalenceDetailSerializer, 400: OpenApiTypes.OBJECT, 404: EquivalenceErreurSerializer})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def demande_detail(request, pk):
@@ -164,6 +260,7 @@ def demande_detail(request, pk):
     return Response(_serializer_demande(demande, detail=True))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: DemandeEquivalenceDetailSerializer, 400: OpenApiTypes.OBJECT, 404: EquivalenceErreurSerializer, 409: EquivalenceErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def demande_transition(request, pk):
@@ -187,6 +284,7 @@ def demande_transition(request, pk):
     return Response(_serializer_demande(demande, detail=True))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: DemandeEquivalenceDetailSerializer, 400: OpenApiTypes.OBJECT, 404: EquivalenceErreurSerializer, 409: EquivalenceErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def demande_decision(request, pk):
@@ -223,6 +321,7 @@ def demande_decision(request, pk):
     return Response(_serializer_demande(demande, detail=True))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: DemandeEquivalenceDetailSerializer, 400: OpenApiTypes.OBJECT, 404: EquivalenceErreurSerializer, 409: EquivalenceErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def demande_appliquer(request, pk):
@@ -238,6 +337,7 @@ def demande_appliquer(request, pk):
     return Response(_serializer_demande(demande, detail=True))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: DemandeEquivalenceDetailSerializer, 400: OpenApiTypes.OBJECT, 404: EquivalenceErreurSerializer, 409: EquivalenceErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def demande_rectifier(request, pk):
@@ -258,6 +358,7 @@ def demande_rectifier(request, pk):
     return Response(_serializer_demande(demande, detail=True))
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: EquivalenceErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def demande_historique(request, pk):
@@ -275,6 +376,7 @@ def demande_historique(request, pk):
     ])
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: PieceEquivalenceReponseSerializer, 400: OpenApiTypes.OBJECT, 404: EquivalenceErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def demande_piece_add(request, pk):
@@ -297,6 +399,7 @@ def demande_piece_add(request, pk):
     return Response(_serializer_piece(piece), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: PieceEquivalenceReponseSerializer, 400: OpenApiTypes.OBJECT, 404: EquivalenceErreurSerializer})
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def demande_piece_verifier(request, piece_id):

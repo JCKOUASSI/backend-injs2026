@@ -7,6 +7,9 @@ le service (machine d'états), jamais par écriture directe du modèle.
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.views import APIView
 
 from habilitations.models import DemandeAcces
@@ -61,11 +64,24 @@ def _serialiser(demande):
     }
 
 
+
+
+# ── Contrats OpenAPI (administration des habilitations) ──────────────
+
+
+class ErreurDemandesAccesSerializer(serializers.Serializer):
+    """Erreurs du module : {'detail': message, 'code': CODE}."""
+
+    detail = serializers.CharField()
+    code = serializers.CharField(required=False)
+
+
 class DemandeListCreateView(APIView):
     """GET (liste filtrable) / POST (création) /api/habilitations/demandes/"""
 
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: ErreurDemandesAccesSerializer})
     def get(self, request):
         qs = DemandeAcces.objects.select_related(
             'compte_cible__user', 'role', 'permission',
@@ -82,6 +98,7 @@ class DemandeListCreateView(APIView):
             [_serialiser(d) for d in page]
         )
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: ErreurDemandesAccesSerializer})
     def post(self, request):
         donnees = request.data or {}
 
@@ -114,6 +131,7 @@ class DemandeDetailView(APIView):
 
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 404: ErreurDemandesAccesSerializer})
     def get(self, request, pk):
         demande = DemandeAcces.objects.filter(pk=pk).select_related(
             'compte_cible__user', 'role', 'permission',
@@ -133,6 +151,7 @@ class DemandeActionView(APIView):
 
     permission_classes = GARDE
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: ErreurDemandesAccesSerializer, 404: ErreurDemandesAccesSerializer, 409: ErreurDemandesAccesSerializer})
     def post(self, request, pk):
         demande = DemandeAcces.objects.filter(pk=pk).first()
         if demande is None:

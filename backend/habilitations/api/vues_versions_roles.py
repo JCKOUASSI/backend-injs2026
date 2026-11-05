@@ -5,6 +5,9 @@ Même garde que la console CURP (:data:`GARDE` = drapeau
 """
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.views import APIView
 
 from habilitations.models import RoleMetier
@@ -29,11 +32,24 @@ def _serialiser_version(version):
     }
 
 
+
+
+# ── Contrats OpenAPI (administration des habilitations) ──────────────
+
+
+class ErreurVersionsRolesSerializer(serializers.Serializer):
+    """Erreurs du module : {'detail': message, 'code': CODE}."""
+
+    detail = serializers.CharField()
+    code = serializers.CharField(required=False)
+
+
 class RoleVersionsView(APIView):
     """GET/POST /api/habilitations/roles/<code>/versions/"""
 
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: ErreurVersionsRolesSerializer, 404: ErreurVersionsRolesSerializer})
     def get(self, request, code):
         role = RoleMetier.objects.filter(code=code).first()
         if role is None:
@@ -45,6 +61,7 @@ class RoleVersionsView(APIView):
             'versions': [_serialiser_version(v) for v in versions],
         })
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: ErreurVersionsRolesSerializer, 404: ErreurVersionsRolesSerializer})
     def post(self, request, code):
         role = RoleMetier.objects.filter(code=code).first()
         if role is None:
@@ -66,6 +83,7 @@ class RoleVersionRestaurerView(APIView):
 
     permission_classes = GARDE
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: ErreurVersionsRolesSerializer, 404: ErreurVersionsRolesSerializer})
     def post(self, request, code, numero):
         role = RoleMetier.objects.filter(code=code).first()
         if role is None:
@@ -92,6 +110,7 @@ class RoleComparerView(APIView):
 
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurVersionsRolesSerializer, 404: ErreurVersionsRolesSerializer})
     def get(self, request, code):
         role = RoleMetier.objects.filter(code=code).first()
         if role is None:

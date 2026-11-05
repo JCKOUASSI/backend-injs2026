@@ -197,6 +197,41 @@ class EquivalenceAPITests(EquivalenceBase):
         self.assertEqual(res.status_code, 201, res.data)
         self.assertEqual(res.data['statut'], 'BROUILLON')
 
+    def test_liste_chargement_explicite_200(self):
+        """`page_size` explicite : enveloppe paginée bornée à 200 lignes.
+
+        Sans `page_size`, le tableau complet historique (plafond 500) est
+        conservé.
+        """
+        self.client.force_authenticate(make_user('sec_eq_page', role='SECRETARIAT'))
+        DemandeEquivalenceDispense.objects.create(
+            type_demande='DISPENSE', etudiant=self.dossier,
+            annee_academique=self.annee, ref_formation=self.formation,
+            niveau=self.niveau, etablissement_origine='INJS',
+        )
+        total = DemandeEquivalenceDispense.objects.count()
+        self.assertGreaterEqual(total, 2)
+
+        # Sans paramètre : tableau complet (rétrocompatibilité).
+        res = self.client.get('/api/equivalences/demandes/')
+        self.assertEqual(res.status_code, 200)
+        self.assertIsInstance(res.data, list)
+        self.assertEqual(len(res.data), total)
+
+        # Avec page_size : enveloppe paginée, pages disjointes.
+        res = self.client.get('/api/equivalences/demandes/', {'page_size': 1})
+        self.assertEqual(res.data['count'], total)
+        self.assertEqual(res.data['page_size'], 1)
+        self.assertEqual(len(res.data['results']), 1)
+        res2 = self.client.get('/api/equivalences/demandes/', {'page_size': 1, 'page': 2})
+        self.assertEqual(len(res2.data['results']), 1)
+        self.assertNotEqual(res.data['results'][0]['id'], res2.data['results'][0]['id'])
+
+        # Demande au-delà du plafond : bornée explicitement à 200.
+        res = self.client.get('/api/equivalences/demandes/', {'page_size': 9999})
+        self.assertEqual(res.data['page_size'], 200)
+        self.assertEqual(len(res.data['results']), total)
+
     def test_suppression_impossible(self):
         # Aucun endpoint DELETE : une décision n'est jamais supprimée.
         self.client.force_authenticate(make_user('admin_eq', role='ADMIN'))

@@ -64,6 +64,43 @@ class BaseApiTest(TestCase):
         ]
 
 
+class JournalImportsApiTests(BaseApiTest):
+    """Journal des imports : lots reconstruits des lignes rattachées."""
+
+    def _importer(self, nom, nombre, prefixe):
+        # Matricules distincts par fichier : un même matricule réimporté
+        # change de lot (rattachement courant), ce n'est pas le cas testé ici.
+        lignes = [
+            f'{prefixe}-{i:03d};Nom{i};Prenom;{self.formation.intitule};L1;S1;L1-G1;V1'
+            for i in range(nombre)
+        ]
+        return self.client.post(
+            '/api/edts/lmd/import/inscrits/',
+            {'annee_academique_id': self.annee.pk,
+             'fichier': self.fichier(lignes, nom=nom)},
+            format='multipart',
+        )
+
+    def test_journal_regroupe_par_lot(self):
+        self._importer('inscrits-a.csv', 5, 'A')
+        self._importer('inscrits-b.csv', 3, 'B')
+        reponse = self.client.get(
+            '/api/edts/lmd/import/inscrits/journal/',
+            {'annee': self.annee.pk},
+        )
+        self.assertEqual(reponse.status_code, 200)
+        self.assertEqual(reponse.data['nb_lots'], 2)
+        par_fichier = {l['fichier']: l for l in reponse.data['lots']}
+        self.assertEqual(par_fichier['inscrits-a.csv']['lignes'], 5)
+        self.assertEqual(par_fichier['inscrits-a.csv']['inscrits'], 5)
+        self.assertEqual(par_fichier['inscrits-b.csv']['lignes'], 3)
+        self.assertIsNotNone(par_fichier['inscrits-a.csv']['recu_le'])
+
+    def test_journal_annee_requise(self):
+        reponse = self.client.get('/api/edts/lmd/import/inscrits/journal/')
+        self.assertEqual(reponse.status_code, 400)
+
+
 class ImportApiTests(BaseApiTest):
     def test_analyse_sans_ecriture(self):
         reponse = self.client.post(
@@ -296,3 +333,54 @@ class ConceptionApiTests(BaseApiTest):
         self.assertIn('Conception-GET-INJS.txt', reponse['Content-Disposition'])
         contenu = b''.join(reponse.streaming_content).decode('utf-8')
         self.assertIn('GET-INJS', contenu)
+
+
+class ReconstructionEtJournalEnrichiTests(BaseApiTest):
+    """Écran « Importer les étudiants inscrits » : option et journal."""
+
+    def test_reconstruction_desactivee_rejette_le_groupe_inconnu(self):
+        # Groupe « L1-G9 » absent du référentiel : sans reconstruction, la
+        # ligne est rejetée avec un motif explicite (aucune création).
+        reponse = self.client.post(
+            '/api/edts/lmd/import/inscrits/',
+            {'annee_academique_id': self.annee.pk,
+             'reconstruire_parcours': 'false',
+             'fichier': self.fichier(self.lignes(3, groupe='L1-G9'))},
+            format='multipart',
+        )
+        self.assertEqual(reponse.status_code, 422, reponse.data)
+        self.assertEqual(reponse.data['lignes_valides'], 0)
+        motifs = {e['motif'] for e in reponse.data['erreurs']}
+        self.assertEqual(motifs, {'PARCOURS_NON_RESOLU'})
+
+    def test_reconstruction_activee_cree_le_groupe(self):
+        reponse = self.client.post(
+            '/api/edts/lmd/import/inscrits/',
+            {'annee_academique_id': self.annee.pk,
+             'reconstruire_parcours': 'true',
+             'fichier': self.fichier(self.lignes(3, groupe='L1-G9'))},
+            format='multipart',
+        )
+        self.assertEqual(reponse.status_code, 200, reponse.data)
+        self.assertEqual(reponse.data['lignes_valides'], 3)
+        from scolarite.models import Groupe
+        self.assertTrue(Groupe.objects.filter(
+            annee_academique=self.annee, nom='L1-G9').exists())
+
+    def test_journal_expose_formations_groupes_vagues(self):
+        self.client.post(
+            '/api/edts/lmd/import/inscrits/',
+            {'annee_academique_id': self.annee.pk,
+             'fichier': self.fichier(self.lignes(4))},
+            format='multipart',
+        )
+        reponse = self.client.get(
+            '/api/edts/lmd/import/inscrits/journal/',
+            {'annee': self.annee.pk},
+        )
+        self.assertEqual(reponse.status_code, 200)
+        lot = reponse.data['lots'][0]
+        self.assertEqual(lot['formations'], 1)
+        self.assertEqual(lot['groupes'], 1)
+        self.assertEqual(lot['vagues'], 1)
+        self.assertEqual(lot['ignores'], 0)

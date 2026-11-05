@@ -79,8 +79,29 @@ export function formater(valeur, format, colonne) {
     ))
     return textes.every(Boolean) ? textes.join(', ') : `${valeur.length} élément(s)`
   }
-  if (typeof valeur === 'object') return valeur.libelle || valeur.nom || valeur.code || JSON.stringify(valeur)
+  if (typeof valeur === 'object') return valeur.libelle || valeur.nom || valeur.code || resumeObjet(valeur)
   return String(valeur)
+}
+
+/**
+ * Résumé lisible d'un élément de liste ou d'un objet, SANS JSON brut :
+ * libellé métier en tête, puis valeur/niveau quand ils existent. Utilisé par
+ * les cartes d'indicateurs — `JSON.stringify` y affichait des chaînes
+ * illisibles (capture « Alertes & seuils » du 03/11).
+ */
+export function resumeObjet(valeur) {
+  if (valeur == null) return '—'
+  if (typeof valeur !== 'object') return String(valeur)
+  if (Array.isArray(valeur)) return `${valeur.length} élément(s)`
+  const libelle = valeur.libelle || valeur.label || valeur.nom || valeur.code || valeur.titre
+    || valeur.indicateur || valeur.id || 'Élément'
+  const morceaux = [String(libelle)]
+  if (valeur.valeur != null) {
+    morceaux.push(`${Number(valeur.valeur).toLocaleString('fr-FR')}${valeur.unite || ''}`)
+  }
+  if (valeur.niveau) morceaux.push(String(valeur.niveau).replace(/_/g, ' '))
+  else if (valeur.statut) morceaux.push(String(valeur.statut))
+  return morceaux.join(' — ')
 }
 
 /** Libellés français des champs fréquents (en-têtes de colonnes lisibles). */
@@ -125,6 +146,11 @@ export const LIBELLES_CHAMPS = {
   reference_paiement: 'Référence paiement', echeancier: 'Échéancier',
   facture: 'Facture', quittance: 'Quittance', relance: 'Relance',
   periode: 'Période', exercice: 'Exercice',
+  seuils: 'Seuils', indicateurs: 'Indicateurs', synthese: 'Synthèse',
+  seuils_vides: 'Seuils configurés', taux_presence: 'Taux de présence',
+  taux_absence: "Taux d'absence", ok: 'Conformes',
+  avertissement: 'Avertissements', critique: 'Critiques', inactif: 'Inactifs',
+  non_configure: 'Non configurés',
 }
 
 /** Champs techniques jamais affichés en colonne automatique. */
@@ -190,9 +216,24 @@ export function colonnesPour(ecran, lignes) {
     })
 }
 
+/** Cellule « référence » : résout un identifiant vers le libellé du référentiel. */
+function CelluleReference({ ligne, colonne }) {
+  const { data: options } = useOptionsFiltre(colonne)
+  const valeur = colonne.valeur ? colonne.valeur(ligne) : lireChemin(ligne, colonne.cle)
+  const option = (options || []).find((o) => o.valeur === String(valeur))
+  if (!option) return <>{formater(valeur, undefined, colonne)}</>
+  return <span className="gen-ref-pill">{option.libelle}</span>
+}
+
 function Cellule({ ligne, colonne }) {
+  if (colonne.format === 'reference') {
+    return <CelluleReference ligne={ligne} colonne={colonne} />
+  }
   const valeur = colonne.valeur ? colonne.valeur(ligne) : lireChemin(ligne, colonne.cle)
   const texte = formater(valeur, colonne.format, colonne)
+  if (colonne.format === 'chip' && texte !== '—') {
+    return <span className="gen-code-chip">{texte}</span>
+  }
   if (colonne.format === 'badge' && colonne.couleurs) {
     const cle = String(valeur ?? '').toUpperCase()
     return <span className={`badge ${colonne.couleurs[cle] || 'text-bg-secondary'}`}>{texte}</span>
@@ -234,6 +275,15 @@ function useOptionsFiltre(filtre) {
   })
 }
 
+/** Pluriel français simple pour « Tous les … » (niveau→niveaux, mois→mois). */
+export function pluriel(mot) {
+  const minuscule = String(mot || '').toLowerCase()
+  if (/[sx]$/.test(minuscule)) return minuscule
+  if (/eau$/.test(minuscule)) return `${minuscule}x`
+  if (/al$/.test(minuscule)) return minuscule.replace(/al$/, 'aux')
+  return `${minuscule}s`
+}
+
 function Filtre({ filtre, valeur, onChange }) {
   const { data: options } = useOptionsFiltre(filtre)
   if (filtre.type === 'select') {
@@ -245,7 +295,7 @@ function Filtre({ filtre, valeur, onChange }) {
         onChange={(e) => onChange(e.target.value)}
         aria-label={filtre.libelle}
       >
-        <option value="">{filtre.tous || `Tous les ${filtre.libelle.toLowerCase()}`}</option>
+        <option value="">{filtre.tous || `Tous les ${pluriel(filtre.libelle)}`}</option>
         {choix.map((o) => (
           <option key={o.valeur} value={o.valeur}>{o.libelle}</option>
         ))}
@@ -327,6 +377,283 @@ async function executerActionGenerique(action, ligne) {
   return api.post(chemin, corps ?? {})
 }
 
+const NIVEAUX_ALERTE = {
+  ok: { libelle: 'Conforme', ton: 'green' },
+  avertissement: { libelle: 'Avertissement', ton: 'amber' },
+  critique: { libelle: 'Critique', ton: 'red' },
+  inactif: { libelle: 'Inactif', ton: 'slate' },
+  non_configure: { libelle: 'Non configuré', ton: 'slate' },
+}
+
+/**
+ * Rendu dédié « Alertes & seuils » : l'endpoint renvoie un OBJET structuré
+ * `{seuils, indicateurs, synthese, seuils_vides}` que le rendu générique en
+ * cartes KPI dégradait en JSON brut (capture du 03/11). Ici : synthèse en
+ * pastilles comptées, une carte-jauge par indicateur (valeur, seuils,
+ * niveau) et le tableau des seuils configurés — ou l'état « à initialiser ».
+ */
+function VueAlertesSeuils({ payload, endpoint, onActualise }) {
+  const { showToast } = useToast()
+  const [initialisation, setInitialisation] = useState(false)
+  const indicateurs = Array.isArray(payload?.indicateurs) ? payload.indicateurs : []
+  const seuils = Array.isArray(payload?.seuils) ? payload.seuils : []
+  const synthese = payload?.synthese || {}
+  const seuilsVides = Boolean(payload?.seuils_vides) || seuils.length === 0
+
+  const initialiser = async () => {
+    if (!window.confirm('Initialiser les seuils INJS par défaut pour les 6 indicateurs ?')) return
+    setInitialisation(true)
+    try {
+      const res = await api.post(endpoint)
+      showToast(res?.data?.detail || 'Seuils initialisés.')
+      onActualise?.()
+    } catch (err) {
+      showToast(messageErreur(err, 'Initialisation des seuils refusée.'), 'error')
+    } finally {
+      setInitialisation(false)
+    }
+  }
+
+  return (
+    <div className="alertes-vue">
+      <section className="alertes-panel" aria-label="Synthèse des alertes">
+        <header className="alertes-panel-head">
+          <h2 className="alertes-panel-title"><i className="bi bi-activity"></i>Synthèse de surveillance</h2>
+          <button type="button" className="btn btn-sm alertes-btn-refresh" onClick={onActualise}>
+            <i className="bi bi-arrow-clockwise me-1"></i>Actualiser
+          </button>
+        </header>
+        <div className="alertes-synthese">
+          {Object.entries(NIVEAUX_ALERTE).map(([cle, meta]) => (
+            <div className={`alertes-stat alertes-stat--${meta.ton}`} key={cle}>
+              <span className="alertes-stat-valeur">{synthese[cle] ?? 0}</span>
+              <span className="alertes-stat-libelle">{meta.libelle}</span>
+            </div>
+          ))}
+        </div>
+        {seuilsVides && (
+          <div className="alertes-alerte-config" role="status">
+            <i className="bi bi-exclamation-triangle-fill"></i>
+            <div>
+              <strong>Aucun seuil configuré.</strong>{' '}
+              Les indicateurs ci-dessous affichent les paliers proposés par défaut,
+              sans surveillance active. Initialisez les seuils INJS pour activer les alertes.
+            </div>
+            <button type="button" className="btn btn-sm alertes-btn-init" onClick={initialiser} disabled={initialisation}>
+              {initialisation
+                ? <><span className="spinner-border spinner-border-sm me-1"></span>Initialisation…</>
+                : <><i className="bi bi-magic me-1"></i>Initialiser les seuils INJS</>}
+            </button>
+          </div>
+        )}
+      </section>
+
+      <section className="alertes-panel" aria-label="Indicateurs surveillés">
+        <header className="alertes-panel-head">
+          <h2 className="alertes-panel-title"><i className="bi bi-speedometer2"></i>Indicateurs surveillés</h2>
+          <span className="alertes-count">{indicateurs.length} indicateur{indicateurs.length > 1 ? 's' : ''}</span>
+        </header>
+        <div className="alertes-grille">
+          {indicateurs.map((ind) => {
+            const niveau = NIVEAUX_ALERTE[ind.niveau] || NIVEAUX_ALERTE.non_configure
+            const max = ind.echelle_max || 100
+            const pct = Math.max(0, Math.min(100, (Number(ind.valeur) || 0) / max * 100))
+            const posA = Math.max(0, Math.min(100, (Number(ind.seuil_avertissement) || 0) / max * 100))
+            const posC = Math.max(0, Math.min(100, (Number(ind.seuil_critique) || 0) / max * 100))
+            return (
+              <article className="alertes-carte" key={ind.indicateur}>
+                <div className="alertes-carte-head">
+                  <span className="alertes-carte-icone" style={{ background: `${ind.couleur || '#283A87'}1f`, color: ind.couleur || '#283A87' }}>
+                    <i className={`bi ${ind.icone || 'bi-speedometer2'}`}></i>
+                  </span>
+                  <span className={`alertes-badge alertes-badge--${niveau.ton}`}>{niveau.libelle}</span>
+                </div>
+                <h3 className="alertes-carte-titre">{ind.libelle || ind.indicateur}</h3>
+                <div className="alertes-carte-valeur">
+                  {Number(ind.valeur ?? 0).toLocaleString('fr-FR')}<small>{ind.unite || ''}</small>
+                </div>
+                <div className="alertes-jauge" aria-hidden="true">
+                  <span className={`alertes-jauge-remplissage alertes-jauge--${niveau.ton}`} style={{ width: `${pct}%` }}></span>
+                  <span className="alertes-jauge-seuil alertes-jauge-seuil--avert" style={{ left: `${posA}%` }}></span>
+                  <span className="alertes-jauge-seuil alertes-jauge-seuil--crit" style={{ left: `${posC}%` }}></span>
+                </div>
+                <div className="alertes-carte-seuils">
+                  <span><i className="alertes-point alertes-point--avert"></i>Avert. {ind.seuil_avertissement}{ind.unite}</span>
+                  <span><i className="alertes-point alertes-point--crit"></i>Crit. {ind.seuil_critique}{ind.unite}</span>
+                </div>
+                {ind.aide && <p className="alertes-carte-aide">{ind.aide}</p>}
+              </article>
+            )
+          })}
+          {indicateurs.length === 0 && (
+            <p className="alertes-vide">Aucun indicateur renvoyé par le serveur.</p>
+          )}
+        </div>
+      </section>
+
+      <section className="alertes-panel" aria-label="Seuils configurés">
+        <header className="alertes-panel-head">
+          <h2 className="alertes-panel-title"><i className="bi bi-sliders"></i>Seuils configurés</h2>
+          <span className="alertes-count">{seuils.length} seuil{seuils.length > 1 ? 's' : ''}</span>
+        </header>
+        {seuils.length === 0 ? (
+          <div className="alertes-vide-bloc">
+            <span className="alertes-vide-icone"><i className="bi bi-sliders"></i></span>
+            <p className="alertes-vide-titre">Aucun seuil en base</p>
+            <p className="alertes-vide-texte">
+              Les paliers ci-dessus sont les valeurs proposées par défaut. Utilisez
+              « Initialiser les seuils INJS » pour les enregistrer, puis ajustez-les
+              depuis Statistiques → Alertes (écran complet de configuration).
+            </p>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="table alertes-table mb-0">
+              <thead><tr><th>Indicateur</th><th className="text-center">Avertissement</th><th className="text-center">Critique</th><th className="text-center">Actif</th></tr></thead>
+              <tbody>
+                {seuils.map((s) => (
+                  <tr key={s.id ?? s.indicateur}>
+                    <td><strong>{s.libelle || s.indicateur}</strong></td>
+                    <td className="text-center alertes-cell-avert">{s.seuil_avertissement}</td>
+                    <td className="text-center alertes-cell-crit">{s.seuil_critique}</td>
+                    <td className="text-center">
+                      <span className={`alertes-badge alertes-badge--${s.actif === false ? 'slate' : 'green'}`}>
+                        {s.actif === false ? 'Inactif' : 'Actif'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </div>
+  )
+}
+
+/**
+ * Rendu dédié « Résultats » (bilans statistiques) : l'endpoint renvoie un
+ * OBJET `{annee, mois, bilans, total_bilans, categories, modules, matieres,
+ * formations, periodes, filtres_actifs}` que les cartes génériques éclataient
+ * en « Aucun élément » et en « Élément » répété (les périodes portent `label`,
+ * pas `libelle` — capture du 03/11). Ici : synthèse lisible, périodes en
+ * pastilles, couverture par référentiel et filtres actifs en français.
+ */
+function VueBilansResultats({ payload, onActualise }) {
+  const bilans = Array.isArray(payload?.bilans) ? payload.bilans : []
+  const periodes = Array.isArray(payload?.periodes) ? payload.periodes : []
+  const filtres = payload?.filtres_actifs || {}
+  const total = payload?.total_bilans ?? bilans.length
+  const couverture = [
+    { cle: 'categories', libelle: 'Catégories', icone: 'bi-tags' },
+    { cle: 'modules', libelle: 'Modules', icone: 'bi-journal-bookmark' },
+    { cle: 'matieres', libelle: 'Matières', icone: 'bi-book' },
+    { cle: 'formations', libelle: 'Formations', icone: 'bi-mortarboard' },
+  ]
+  const lignesFiltres = [
+    { libelle: 'Année', valeur: filtres.annee ?? payload?.annee },
+    { libelle: 'Mois', valeur: filtres.mois ?? payload?.mois, defaut: 'Tous les mois' },
+    { libelle: 'Période', valeur: filtres.periode_label, defaut: 'Toutes périodes' },
+    { libelle: 'Dimension', valeur: filtres.dimension },
+    { libelle: 'Catégorie', valeur: filtres.categorie, defaut: 'Toutes' },
+    { libelle: 'Calendrier', valeur: filtres.calendrier, defaut: 'Tous' },
+  ].filter((l) => l.valeur !== undefined)
+
+  return (
+    <div className="bilans-vue">
+      <section className="bilans-panel" aria-label="Synthèse des résultats">
+        <header className="bilans-panel-head">
+          <h2 className="bilans-panel-title"><i className="bi bi-graph-up-arrow"></i>Synthèse des résultats</h2>
+          <button type="button" className="btn btn-sm bilans-btn-refresh" onClick={onActualise}>
+            <i className="bi bi-arrow-clockwise me-1"></i>Actualiser
+          </button>
+        </header>
+        <div className="bilans-stats">
+          <div className="bilans-stat"><span className="bilans-stat-valeur">{payload?.annee ?? '—'}</span><span className="bilans-stat-libelle">Année</span></div>
+          <div className="bilans-stat"><span className="bilans-stat-valeur">{total}</span><span className="bilans-stat-libelle">Bilans publiés</span></div>
+          <div className="bilans-stat"><span className="bilans-stat-valeur bilans-stat-valeur--texte">{filtres.periode_label || 'Toutes périodes'}</span><span className="bilans-stat-libelle">Période active</span></div>
+          <div className="bilans-stat"><span className="bilans-stat-valeur bilans-stat-valeur--texte">{filtres.dimension || 'formation'}</span><span className="bilans-stat-libelle">Dimension</span></div>
+        </div>
+      </section>
+
+      <section className="bilans-panel" aria-label="Bilans publiés">
+        <header className="bilans-panel-head">
+          <h2 className="bilans-panel-title"><i className="bi bi-file-earmark-bar-graph"></i>Bilans publiés</h2>
+          <span className="bilans-count">{total} bilan{total > 1 ? 's' : ''}</span>
+        </header>
+        {bilans.length === 0 ? (
+          <div className="bilans-vide-bloc">
+            <span className="bilans-vide-icone"><i className="bi bi-file-earmark-bar-graph"></i></span>
+            <p className="bilans-vide-titre">Aucun bilan publié pour ce périmètre</p>
+            <p className="bilans-vide-texte">
+              Aucun bilan ne correspond à l’année {payload?.annee ?? ''} avec les filtres actifs.
+              Les bilans apparaissent dès que des séances comptabilisables existent pour une
+              formation ou une matière sur la période choisie.
+            </p>
+            <div className="bilans-periodes" aria-label="Périodes disponibles">
+              {periodes.map((p) => (
+                <span className="bilans-periode" key={p.value || p.label}>{p.label || p.libelle || p.value}</span>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="table bilans-table mb-0">
+              <thead><tr><th>Bilan</th><th>Formation</th><th className="text-center">Inscrits</th><th className="text-center">Pointages</th><th>Période</th></tr></thead>
+              <tbody>
+                {bilans.map((b, i) => (
+                  <tr key={b.id ?? i}>
+                    <td><strong>{b.libelle || b.module || 'Bilan'}</strong>{b.sous_titre && <span className="bilans-sous">{b.sous_titre}</span>}</td>
+                    <td>{b.formation || '—'}</td>
+                    <td className="text-center">{b.inscrits ?? '—'}</td>
+                    <td className="text-center">{b.nb_pointages ?? '—'}</td>
+                    <td>{b.periode_label || b.periode || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <div className="bilans-deux">
+        <section className="bilans-panel" aria-label="Couverture des référentiels">
+          <header className="bilans-panel-head">
+            <h2 className="bilans-panel-title"><i className="bi bi-collection"></i>Couverture</h2>
+          </header>
+          <div className="bilans-couverture">
+            {couverture.map((c) => {
+              const liste = Array.isArray(payload?.[c.cle]) ? payload[c.cle] : []
+              return (
+                <div className="bilans-couv" key={c.cle}>
+                  <span className="bilans-couv-icone"><i className={`bi ${c.icone}`}></i></span>
+                  <span className="bilans-couv-valeur">{liste.length}</span>
+                  <span className="bilans-couv-libelle">{c.libelle}</span>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+
+        <section className="bilans-panel" aria-label="Filtres actifs">
+          <header className="bilans-panel-head">
+            <h2 className="bilans-panel-title"><i className="bi bi-funnel"></i>Filtres actifs</h2>
+          </header>
+          <dl className="bilans-filtres">
+            {lignesFiltres.map((l) => (
+              <div key={l.libelle}>
+                <dt>{l.libelle}</dt>
+                <dd>{l.valeur === null || l.valeur === '' ? (l.defaut || '—') : String(l.valeur)}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      </div>
+    </div>
+  )
+}
+
 /** Liste (ou onglets) générique — cœur du moteur d'écrans. */
 export function ListeGenerique({ ecran, cleBase }) {
   const { showToast } = useToast()
@@ -382,6 +709,14 @@ export function ListeGenerique({ ecran, cleBase }) {
     queryFn: async ({ signal }) => {
       const res = await api.get(ecran.endpoint, { params, signal })
       const brut = res?.data
+      // Racine de liste déclarée (`racineListe`) : la réponse est un objet
+      // enveloppe dont un champ porte le tableau (ex. `{annee, alertes: []}`
+      // de /stats/alertes/). Sans cela, l'écran affichait l'enveloppe comme
+      // des « indicateurs » et l'année comme une carte.
+      if (ecran.racineListe && brut && Array.isArray(brut[ecran.racineListe])) {
+        const extrait = brut[ecran.racineListe]
+        return { results: extrait, count: extrait.length, totalPages: 1 }
+      }
       // Réponse « objet » (statistiques, synthèse, contrôle d'intégrité) :
       // aucune liste à afficher, mais des indicateurs à présenter tels quels.
       const estObjet = brut && !Array.isArray(brut) && !Array.isArray(brut.results)
@@ -533,6 +868,34 @@ export function ListeGenerique({ ecran, cleBase }) {
     )
   }
 
+  // Rendu dédié « Résultats » (bilans) : objet structuré, pas de cartes génériques.
+  if (ecran.rendu === 'bilans_resultats' && indicateurs) {
+    return (
+      <div className="ecran-generique">
+        <VueBilansResultats
+          payload={indicateurs}
+          onActualise={() => queryClient.invalidateQueries({ queryKey: cle })}
+        />
+        {ecran.note && <p className="gen-note mt-3">{ecran.note}</p>}
+      </div>
+    )
+  }
+
+  // Rendu dédié « Alertes & seuils » : l'objet structuré de l'endpoint a son
+  // propre écran (synthèse, jauges, seuils) au lieu des cartes KPI génériques.
+  if (ecran.rendu === 'alertes_seuils' && indicateurs) {
+    return (
+      <div className="ecran-generique">
+        <VueAlertesSeuils
+          payload={indicateurs}
+          endpoint={ecran.endpoint}
+          onActualise={() => queryClient.invalidateQueries({ queryKey: cle })}
+        />
+        {ecran.note && <p className="gen-note mt-3">{ecran.note}</p>}
+      </div>
+    )
+  }
+
   if (indicateurs) {
     // Sans recherche, filtre ni action, la barre ne contiendrait que le
     // rechargement : on la masque pour préserver l'aspect des écrans purs.
@@ -564,13 +927,24 @@ export function ListeGenerique({ ecran, cleBase }) {
                       : Array.isArray(valeur)
                         ? (valeur.length
                           ? <span className="badge text-bg-warning">{valeur.length} élément(s)</span>
-                          : <span className="text-success"><i className="bi bi-shield-check me-1"></i>Aucune</span>)
-                        : formater(valeur, /_le$|_at$|date/.test(cle) ? 'datetime' : undefined)}
+                          : <span className="text-muted"><i className="bi bi-dash-circle me-1"></i>Aucun élément</span>)
+                        : (valeur && typeof valeur === 'object')
+                          ? (
+                            <dl className="gen-kpi-detail">
+                              {Object.entries(valeur).map(([sousCle, sousValeur]) => (
+                                <div key={sousCle}>
+                                  <dt>{LIBELLES_CHAMPS[sousCle] || sousCle.replace(/_/g, ' ')}</dt>
+                                  <dd>{resumeObjet(sousValeur)}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                          )
+                          : formater(valeur, /_le$|_at$|date/.test(cle) ? 'datetime' : undefined)}
                   </div>
                   {Array.isArray(valeur) && valeur.length > 0 && (
                     <ul className="gen-kpi-list">
                       {valeur.slice(0, 6).map((a, i) => (
-                        <li key={i}>{typeof a === 'object' ? JSON.stringify(a) : String(a)}</li>
+                        <li key={i}>{resumeObjet(a)}</li>
                       ))}
                       {valeur.length > 6 && <li>… {valeur.length - 6} autres</li>}
                     </ul>

@@ -5,6 +5,7 @@
  * d’exemple demeurent en brouillon et n’alimentent aucun résultat).
  */
 import ModuleHub from '@/components/hub/ModuleHub'
+import '@/styles/evaluationsHub.css'
 
 const TONS_SESSION = {
   BROUILLON: 'slate', PLANIFIEE: 'cyan', PUBLIEE: 'blue',
@@ -32,25 +33,25 @@ export default function EvaluationsHub({ ongletInitial = 'sessions' }) {
     <ModuleHub
       titre="Évaluations académiques"
       badge="Évaluations"
-      icone="clipboardList"
+      icone="bi-clipboard-check"
       introduction="Sessions d’examen, évaluations par ECUE et avancement de la saisie des notes. Les notes d’exemple restent en brouillon (brouillons de démonstration, jamais soumises ni verrouillées) : seuls des relevés calculés par le moteur officiel produisent des résultats."
       statsEndpoint="/evaluations-academiques/hub/stats/"
       pastilles={(s) => [
-        { icone: 'calendarRange', texte: `${s.sessions ?? 0} sessions · ${s.evaluations ?? 0} évaluations` },
-        { icone: 'users', texte: `${s.participants ?? 0} participations suivies` },
-        { icone: 'percent', texte: s.avancement_validation != null ? `${String(s.avancement_validation).replace('.', ',')} % des notes validées` : 'Aucune note saisie' },
-        { icone: 'info', texte: 'Saisie et validation officielles : écran Évaluations (liste).' },
+        { icone: 'bi-calendar-range', texte: `${s.sessions ?? 0} sessions · ${s.evaluations ?? 0} évaluations` },
+        { icone: 'bi-people', texte: `${s.participants ?? 0} participations suivies` },
+        { icone: 'bi-percent', texte: s.avancement_validation != null ? `${String(s.avancement_validation).replace('.', ',')} % des notes validées` : 'Aucune note saisie' },
+        { icone: 'bi-info-circle', texte: 'Saisie et validation officielles : écran Évaluations (liste).' },
       ]}
       tuiles={(s) => [
-        { valeur: s.sessions, libelle: 'Sessions', sub: `${s.sessions_par_statut?.OUVERTE ?? 0} ouvertes`, icone: 'calendarRange', ton: 'blue' },
-        { valeur: s.evaluations, libelle: 'Évaluations', sub: 'reliées aux ECUE et enseignants', icone: 'clipboardList', ton: 'indigo' },
-        { valeur: s.notes, libelle: 'Notes saisies', sub: `${s.notes_par_statut?.VALIDEE ?? 0} validées · ${s.notes_par_statut?.BROUILLON ?? 0} brouillons`, icone: 'penLine', ton: 'amber' },
-        { valeur: s.releves, libelle: 'Relevés émis', sub: 'versionnés et hachés', icone: 'fileLock2', ton: 'violet' },
-        { valeur: s.types_actifs, libelle: 'Types d’évaluation', sub: 'paramétrables', icone: 'slidersHorizontal', ton: 'cyan' },
+        { valeur: s.sessions, libelle: 'Sessions', sub: `${s.sessions_par_statut?.OUVERTE ?? 0} ouvertes`, icone: 'bi-calendar-range', ton: 'blue' },
+        { valeur: s.evaluations, libelle: 'Évaluations', sub: 'reliées aux ECUE et enseignants', icone: 'bi-clipboard-check', ton: 'indigo' },
+        { valeur: s.notes, libelle: 'Notes saisies', sub: `${s.notes_par_statut?.VALIDEE ?? 0} validées · ${s.notes_par_statut?.BROUILLON ?? 0} brouillons`, icone: 'bi-pencil-square', ton: 'amber' },
+        { valeur: s.releves, libelle: 'Relevés émis', sub: 'versionnés et hachés', icone: 'bi-file-earmark-lock', ton: 'violet' },
+        { valeur: s.types_actifs, libelle: 'Types d’évaluation', sub: 'paramétrables', icone: 'bi-sliders', ton: 'cyan' },
       ]}
       onglets={[
         {
-          id: 'sessions', libelle: 'Sessions', icone: 'calendarRange',
+          id: 'sessions', libelle: 'Sessions', icone: 'bi-calendar-range',
           endpoint: '/evaluations-academiques/hub/sessions/',
           rechercheLocale: ['libelle', 'formation', 'niveau'],
           recherchePlaceholder: 'Formation ou session…',
@@ -72,7 +73,7 @@ export default function EvaluationsHub({ ongletInitial = 'sessions' }) {
           videTexte: 'Les sessions créées depuis l’écran Évaluations apparaîtront ici.',
         },
         {
-          id: 'evaluations', libelle: 'Évaluations', icone: 'clipboardList',
+          id: 'evaluations', libelle: 'Évaluations', icone: 'bi-clipboard-check',
           endpoint: '/evaluations-academiques/hub/evaluations/',
           rechercheLocale: ['libelle', 'ecue', 'formation', 'enseignant'],
           recherchePlaceholder: 'ECUE, enseignant, formation…',
@@ -93,7 +94,7 @@ export default function EvaluationsHub({ ongletInitial = 'sessions' }) {
           videTexte: 'Les évaluations planifiées par ECUE apparaîtront ici.',
         },
         {
-          id: 'notes', libelle: 'Saisie des notes', icone: 'penLine',
+          id: 'notes', libelle: 'Saisie des notes', icone: 'bi-pencil-square',
           endpoint: '/evaluations-academiques/hub/notes/',
           rechercheLocale: ['nom_complet', 'matricule', 'evaluation', 'ecue'],
           recherchePlaceholder: 'Étudiant, évaluation…',
@@ -103,7 +104,7 @@ export default function EvaluationsHub({ ongletInitial = 'sessions' }) {
           videTexte: 'Les notes saisies par les enseignants apparaîtront ici.',
         },
         {
-          id: 'controle', libelle: 'Contrôle & validation', icone: 'badgeCheck',
+          id: 'controle', libelle: 'Contrôle & validation', icone: 'bi-patch-check',
           endpoint: '/evaluations-academiques/hub/notes/',
           paramsBase: { statut: 'SOUMISE' },
           rechercheLocale: ['nom_complet', 'matricule', 'evaluation', 'ecue'],
@@ -114,7 +115,7 @@ export default function EvaluationsHub({ ongletInitial = 'sessions' }) {
           videTexte: 'Les notes soumises à valider apparaîtront ici — les notes d’exemple restent volontairement en brouillon.',
         },
         {
-          id: 'releves', libelle: 'Relevés de notes', icone: 'fileLock2',
+          id: 'releves', libelle: 'Relevés de notes', icone: 'bi-file-earmark-lock',
           endpoint: '/evaluations-academiques/hub/releves/',
           rechercheLocale: ['nom_complet', 'matricule', 'formation'],
           recherchePlaceholder: 'Étudiant…',
@@ -132,7 +133,7 @@ export default function EvaluationsHub({ ongletInitial = 'sessions' }) {
           videTexte: 'Les relevés naissent du calcul officiel des résultats à partir de notes validées et verrouillées.',
         },
         {
-          id: 'types', libelle: 'Types d’évaluation', icone: 'slidersHorizontal',
+          id: 'types', libelle: 'Types d’évaluation', icone: 'bi-sliders',
           endpoint: '/evaluations-academiques/types-evaluation/',
           rechercheLocale: ['libelle', 'code', 'categorie'],
           recherchePlaceholder: 'Type ou catégorie…',
@@ -147,6 +148,7 @@ export default function EvaluationsHub({ ongletInitial = 'sessions' }) {
           videTexte: 'Les types paramétrés par la pédagogie apparaîtront ici.',
         },
       ]}
+      classePage="evalx-page"
       ongletInitial={ongletInitial}
     />
   )

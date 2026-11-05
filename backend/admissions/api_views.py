@@ -3,6 +3,9 @@
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q
 from django.http import FileResponse, Http404
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
@@ -46,6 +49,130 @@ def _payload(fields, data):
     return valeurs
 
 
+
+
+# ── Contrats OpenAPI (candidats, candidatures, admissions) ───────────
+
+
+class AdmissionErreurSerializer(serializers.Serializer):
+    error = serializers.JSONField()
+
+
+class CandidatReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    uuid = serializers.CharField()
+    nom = serializers.CharField()
+    prenom = serializers.CharField()
+    nom_complet = serializers.CharField()
+    sexe = serializers.CharField()
+    date_naissance = serializers.DateField(allow_null=True)
+    lieu_naissance = serializers.CharField()
+    nationalite = serializers.CharField()
+    email = serializers.CharField()
+    telephone = serializers.CharField()
+    telephone2 = serializers.CharField()
+    adresse = serializers.CharField()
+    participant_id = serializers.IntegerField(allow_null=True)
+
+
+class PieceReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    type_piece_id = serializers.IntegerField()
+    type_piece = serializers.CharField()
+    obligatoire = serializers.BooleanField()
+    statut = serializers.CharField()
+    statut_libelle = serializers.CharField()
+    a_fichier = serializers.BooleanField()
+    numero_document = serializers.CharField()
+    date_delivrance = serializers.DateField(allow_null=True)
+    date_expiration = serializers.DateField(allow_null=True)
+    est_expiree = serializers.BooleanField()
+    commentaire = serializers.CharField()
+    verifie_par = serializers.CharField(allow_null=True)
+    verifie_le = serializers.DateTimeField(allow_null=True)
+
+
+class CandidatureReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    numero = serializers.CharField()
+    candidat_id = serializers.IntegerField()
+    candidat = serializers.CharField()
+    annee_academique_id = serializers.IntegerField()
+    annee_academique = serializers.CharField()
+    ref_formation_id = serializers.IntegerField()
+    ref_formation = serializers.CharField()
+    campagne_id = serializers.IntegerField(allow_null=True)
+    campagne = serializers.CharField(allow_null=True)
+    parcours_id = serializers.IntegerField(allow_null=True)
+    niveau_id = serializers.IntegerField()
+    niveau = serializers.CharField()
+    statut = serializers.CharField()
+    statut_libelle = serializers.CharField()
+    date_candidature = serializers.DateTimeField()
+    score = serializers.DecimalField(max_digits=6, decimal_places=2, allow_null=True)
+    pieces_validees = serializers.IntegerField()
+    pieces_obligatoires = serializers.IntegerField()
+    taux_completude = serializers.FloatField()
+    dossier_complet = serializers.BooleanField()
+
+
+class CandidatureDetailSerializer(CandidatureReponseSerializer):
+    type_candidature_id = serializers.IntegerField(allow_null=True)
+    voie_acces_id = serializers.IntegerField(allow_null=True)
+    regime_id = serializers.IntegerField(allow_null=True)
+    vague_id = serializers.IntegerField(allow_null=True)
+    observations = serializers.CharField()
+    date_decision = serializers.DateTimeField(allow_null=True)
+    decide_par = serializers.CharField(allow_null=True)
+    transitions_possibles = serializers.JSONField()
+    pieces = PieceReponseSerializer(many=True)
+
+
+class PiecesCandidatureSerializer(serializers.Serializer):
+    pieces = PieceReponseSerializer(many=True)
+    pieces_validees = serializers.IntegerField()
+    pieces_obligatoires = serializers.IntegerField()
+    taux_completude = serializers.FloatField()
+    dossier_complet = serializers.BooleanField()
+
+
+class AdmissionReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    candidature_id = serializers.IntegerField()
+    candidature_numero = serializers.CharField()
+    candidat_id = serializers.IntegerField()
+    candidat = serializers.CharField()
+    annee_academique_id = serializers.IntegerField()
+    annee_academique = serializers.CharField()
+    ref_formation_id = serializers.IntegerField()
+    ref_formation = serializers.CharField()
+    parcours_id = serializers.IntegerField(allow_null=True)
+    niveau_id = serializers.IntegerField()
+    niveau = serializers.CharField()
+    vague_id = serializers.IntegerField(allow_null=True)
+    categorie_id = serializers.IntegerField(allow_null=True)
+    grade_id = serializers.IntegerField(allow_null=True)
+    voie_acces_id = serializers.IntegerField(allow_null=True)
+    decision = serializers.CharField()
+    decision_libelle = serializers.CharField()
+    date_decision = serializers.DateTimeField(allow_null=True)
+    reference_decision = serializers.CharField()
+    date_limite_inscription = serializers.DateField(allow_null=True)
+    est_expiree = serializers.BooleanField()
+    permet_inscription = serializers.BooleanField()
+    observations = serializers.CharField()
+    decide_par = serializers.CharField(allow_null=True)
+    inscrit = serializers.BooleanField()
+    matricule = serializers.CharField(allow_null=True)
+    etudiant_id = serializers.IntegerField(allow_null=True)
+    inscription_statut = serializers.CharField(allow_null=True)
+
+
+class StatsRepartitionSerializer(serializers.Serializer):
+    total = serializers.IntegerField()
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: AdmissionErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def referentiel_list(request, ressource):
@@ -63,6 +190,7 @@ def referentiel_list(request, ressource):
     return Response(model.objects.filter(pk=obj.pk).values(*fields).first(), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 204: None, 400: OpenApiTypes.OBJECT, 404: AdmissionErreurSerializer, 409: AdmissionErreurSerializer})
 @api_view(['PUT', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def referentiel_detail(request, ressource, pk):
@@ -112,6 +240,7 @@ def _serialize_candidat(candidat):
     }
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: CandidatReponseSerializer(many=True), 201: CandidatReponseSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def candidat_list(request):
@@ -136,6 +265,7 @@ def candidat_list(request):
     return Response(_serialize_candidat(candidat), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: CandidatReponseSerializer, 400: OpenApiTypes.OBJECT, 404: AdmissionErreurSerializer})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def candidat_detail(request, pk):
@@ -209,6 +339,7 @@ def _candidature_queryset():
     ).prefetch_related('pieces')
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: CandidatureReponseSerializer(many=True), 201: CandidatureDetailSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def candidature_list(request):
@@ -224,6 +355,30 @@ def candidature_list(request):
                 | Q(candidat__nom__icontains=recherche)
                 | Q(candidat__prenom__icontains=recherche)
             )
+        # Chargement explicite (extension de la série, 05/11/2026) : si
+        # `page_size` est fourni, réponse paginée bornée à 200 lignes —
+        # même convention que les écrans Campagnes / Équivalences. Sans
+        # `page_size`, tableau complet historique (plafond 500) inchangé.
+        if 'page_size' in request.query_params:
+            try:
+                page_size = int(request.query_params.get('page_size') or 50)
+            except (TypeError, ValueError):
+                page_size = 50
+            page_size = max(1, min(page_size, 200))
+            try:
+                page = max(1, int(request.query_params.get('page') or 1))
+            except (TypeError, ValueError):
+                page = 1
+            total = queryset.count()
+            debut = (page - 1) * page_size
+            lignes = queryset[debut:debut + page_size]
+            return Response({
+                'count': total,
+                'total_pages': max(1, -(-total // page_size)),
+                'page': page,
+                'page_size': page_size,
+                'results': [_serialize_candidature(c) for c in lignes],
+            })
         return Response([_serialize_candidature(c) for c in queryset[:500]])
 
     candidat = Candidat.objects.filter(pk=request.data.get('candidat_id')).first()
@@ -240,6 +395,7 @@ def candidature_list(request):
     return Response(_serialize_candidature(candidature, detail=True), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: CandidatureDetailSerializer, 400: OpenApiTypes.OBJECT, 404: AdmissionErreurSerializer})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def candidature_detail(request, pk):
@@ -259,6 +415,7 @@ def candidature_detail(request, pk):
     return Response(_serialize_candidature(candidature, detail=True))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: CandidatureDetailSerializer, 400: OpenApiTypes.OBJECT, 404: AdmissionErreurSerializer, 409: AdmissionErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def candidature_transition(request, pk):
@@ -282,6 +439,7 @@ def candidature_transition(request, pk):
     return Response(_serialize_candidature(candidature, detail=True))
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def candidature_stats(request):
@@ -320,6 +478,7 @@ def _serialize_piece(piece):
     }
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: PiecesCandidatureSerializer, 201: PieceReponseSerializer, 400: OpenApiTypes.OBJECT, 404: AdmissionErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def candidature_pieces(request, pk):
@@ -340,6 +499,7 @@ def candidature_pieces(request, pk):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: PieceReponseSerializer, 400: OpenApiTypes.OBJECT, 404: AdmissionErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 @parser_classes([MultiPartParser, FormParser])
@@ -356,6 +516,7 @@ def piece_deposer(request, piece_id):
     return Response(_serialize_piece(piece))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: PieceReponseSerializer, 400: OpenApiTypes.OBJECT, 404: AdmissionErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def piece_verifier(request, piece_id):
@@ -431,6 +592,7 @@ def _admission_queryset():
     ).prefetch_related('inscriptions__etudiant')
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: AdmissionReponseSerializer(many=True), 201: AdmissionReponseSerializer, 400: OpenApiTypes.OBJECT, 409: AdmissionErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def admission_list(request):
@@ -468,6 +630,7 @@ def admission_list(request):
     return Response(_serialize_admission(admission), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: AdmissionReponseSerializer, 400: OpenApiTypes.OBJECT, 404: AdmissionErreurSerializer})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def admission_detail(request, pk):
@@ -487,6 +650,7 @@ def admission_detail(request, pk):
     return Response(_serialize_admission(admission))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: AdmissionReponseSerializer, 400: OpenApiTypes.OBJECT, 404: AdmissionErreurSerializer, 409: AdmissionErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def admission_decision(request, pk):
@@ -511,6 +675,7 @@ def admission_decision(request, pk):
     return Response(_serialize_admission(admission))
 
 
+@extend_schema(request=None, responses={200: AdmissionReponseSerializer, 404: AdmissionErreurSerializer, 409: AdmissionErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def admission_annuler(request, pk):
@@ -526,6 +691,7 @@ def admission_annuler(request, pk):
     return Response(_serialize_admission(admission))
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def admission_stats(request):
@@ -554,6 +720,7 @@ def admission_stats(request):
     })
 
 
+@extend_schema(responses={(200, 'application/octet-stream'): OpenApiTypes.BINARY, 404: AdmissionErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def piece_telecharger(request, piece_id):

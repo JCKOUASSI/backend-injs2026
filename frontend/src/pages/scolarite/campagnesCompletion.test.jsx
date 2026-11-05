@@ -173,6 +173,45 @@ describe('Campagnes — création en brouillon', () => {
   })
 })
 
+describe('Campagnes — chargement explicite de 200 campagnes', () => {
+  it('demande page_size=200, lit l’enveloppe paginée et l’annonce dans l’écran', async () => {
+    setupCampagnesRoutes(() => ({
+      count: 2, total_pages: 1, page: 1, page_size: 200,
+      results: [
+        { id: 1, libelle: 'Camp enveloppe A', statut: 'OUVERTE', nb_candidatures: 4 },
+        { id: 2, libelle: 'Camp enveloppe B', statut: 'BROUILLON', nb_candidatures: 0 },
+      ],
+    }))
+    mountCampagnes()
+    await settle()
+
+    // Requête explicite bornée à 200 (convention « 200 événements »).
+    const appel = apiMock.get.mock.calls.find(([p]) => p === '/admissions/campagnes/')
+    expect(appel).toBeTruthy()
+    expect(appel[1].params).toMatchObject({ page_size: 200 })
+    expect(screen.getByText(/Chargement explicite : 200 campagnes/)).toBeInTheDocument()
+    expect(screen.getByText('Camp enveloppe A')).toBeInTheDocument()
+    expect(screen.getByText('Camp enveloppe B')).toBeInTheDocument()
+    // Pas de note de troncature : tout tient dans les 200 chargées.
+    expect(screen.queryByText(/Affichage limité/)).not.toBeInTheDocument()
+  })
+
+  it('signale la troncature quand le total dépasse les 200 chargées', async () => {
+    setupCampagnesRoutes(() => ({
+      count: 250, total_pages: 2, page: 1, page_size: 200,
+      results: [
+        { id: 1, libelle: 'Camp partielle', statut: 'OUVERTE', nb_candidatures: 1 },
+      ],
+    }))
+    mountCampagnes()
+    await settle()
+
+    expect(screen.getByText('Camp partielle')).toBeInTheDocument()
+    expect(screen.getByText(/Affichage limité aux 1 premières campagnes \(250 au total\)/))
+      .toBeInTheDocument()
+  })
+})
+
 describe('Campagnes — transitions de statut restantes', () => {
   const CAMPAGNES = [
     { id: 1, libelle: 'Camp ouverte', statut: 'OUVERTE', nb_candidatures: 3 },

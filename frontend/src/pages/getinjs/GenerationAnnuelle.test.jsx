@@ -85,12 +85,71 @@ const BILAN = {
   persistence_demandee: false,
 }
 
+const RESULTAT_CAMPAGNE = {
+  campagne: { id: 1, status_global: 'PARTIELLE' },
+  totaux: BILAN.totaux,
+  groupes: BILAN.groupes,
+  anomalies: [],
+}
+
+const HISTORIQUE = {
+  count: 1,
+  executions: [{
+    id: 5,
+    campagne_id: 1,
+    libelle: 'Génération 2025-2026',
+    annee_academique: '2025-2026',
+    date: '2026-11-04T02:39:00Z',
+    statut: 'TERMINE',
+    duree_ms: 12500,
+    perimetre: { filieres: [], formations: [], niveaux: [], groupes: [] },
+    semestres: ['S1', 'S2'],
+    seances_placees: 9,
+    seances_attendues: 12,
+    couverture_pct: 75.0,
+    conflits: 0,
+  }],
+}
+
+const VERSIONS = {
+  versions: [{
+    id: 3,
+    version: 1,
+    libelle: 'V1',
+    titre: 'EDT Licence en Journalisme L1 — S1 (exemple GET)',
+    statut: 'PUBLIE',
+    statut_libelle: 'Publié',
+    annee_academique: '2025-2026',
+    creee_le: '2026-11-04T02:39:41Z',
+    nb_seances: 12,
+  }],
+}
+
 function routes({ synthese = SYNTHESE } = {}) {
   apiController.setRoute('/scolarite/ref/annees/', ANNEES)
+  apiController.setRoute('/formations/ref/formations/', [
+    { id: 1, intitule: 'Licence en Journalisme', filiere_code: 'F01' },
+    { id: 2, intitule: 'Licence en Communication', filiere_code: 'F02' },
+  ])
+  apiController.setRoute('/scolarite/ref/niveaux/', [
+    { id: 1, code: 'L1', libelle: 'Licence 1' },
+  ])
+  apiController.setRoute('/scolarite/ref/groupes/', [
+    { id: 11, nom: 'L1-G1', ref_formation_id: 1, niveau_id: 1, capacite_max: 40 },
+  ])
   apiController.setRoute('/edts/lmd/import/inscrits/synthese/', synthese)
   apiController.setRoute('/edts/lmd/import/inscrits/analyser/', RAPPORT)
   apiController.setRoute('/edts/lmd/import/inscrits/', { ...RAPPORT, applique: true, creees: 3 })
   apiController.setRoute('/edts/lmd/generate-annee/', BILAN)
+  apiController.setRoute('/edts/campagnes/historique/', HISTORIQUE)
+  apiController.setRoute('/edts/lmd/versions/', VERSIONS)
+  apiController.setRoute('/edts/campagnes/', { id: 1, libelle: 'Génération 2025-2026' })
+  apiController.setRoute('/edts/campagnes/1/donnees-pretes/', {})
+  apiController.setRoute('/edts/campagnes/1/demarrer/', { campagne_id: 1, execution_id: 5 })
+  apiController.setRoute('/edts/campagnes/1/statut/', {
+    id: 1, statut: 'TERMINE', en_cours: false, erreur: '',
+  })
+  apiController.setRoute('/edts/campagnes/1/resultat/', RESULTAT_CAMPAGNE)
 }
 
 function rendre() {
@@ -103,18 +162,38 @@ function rendre() {
   )
 }
 
-describe('GET-INJS — génération annuelle et import des inscrits', () => {
+describe('GET-INJS — génération des emplois du temps (maquette) et import', () => {
   beforeEach(() => {
     apiController.reset()
     routes()
   })
 
+  it('présente l’en-tête du moteur et les paramètres de la maquette', async () => {
+    rendre()
+    expect(await screen.findByRole('heading', { name: 'Générer les emplois du temps' }))
+      .toBeInTheDocument()
+    expect(screen.getByText('Moteur LMD')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Consulter les grilles/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Vérifier les référentiels/ })).toBeInTheDocument()
+    expect(screen.getByLabelText(/Année académique/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Filière (mention)')).toBeInTheDocument()
+    expect(screen.getByLabelText('Formation / parcours')).toBeInTheDocument()
+    expect(screen.getByLabelText('Niveau')).toBeInTheDocument()
+    expect(screen.getByLabelText('Groupe (optionnel)')).toBeInTheDocument()
+    expect(screen.getByLabelText('Semestre')).toBeInTheDocument()
+    expect(screen.getByLabelText('Séances max / groupe / semaine')).toHaveValue(30)
+    expect(screen.getByLabelText(/Inclure le samedi/)).toBeChecked()
+    expect(screen.getByLabelText(/Éviter la pause méridienne/)).toBeChecked()
+    expect(screen.getByText('Comment le moteur décide')).toBeInTheDocument()
+    expect(screen.getByText('Règles métier appliquées par le moteur')).toBeInTheDocument()
+  })
+
   it('charge les années et sélectionne l’année courante', async () => {
     rendre()
-    const select = await screen.findByLabelText('Année académique')
+    const select = await screen.findByLabelText(/Année académique/)
     await waitFor(() => expect(select).toHaveValue('2'))
     expect(
-      within(select).getByRole('option', { name: '2025-2026 (courante)' }),
+      within(select).getByRole('option', { name: 'Année académique 2025-2026 (courante)' }),
     ).toBeInTheDocument()
   })
 
@@ -122,7 +201,6 @@ describe('GET-INJS — génération annuelle et import des inscrits', () => {
     rendre()
     expect(await screen.findByText('3752')).toBeInTheDocument()
     expect(screen.getByText('étudiants importés')).toBeInTheDocument()
-    expect(screen.getByText('2')).toBeInTheDocument()
     expect(apiMock.get).toHaveBeenCalledWith(
       '/edts/lmd/import/inscrits/synthese/',
       { params: { annee: '2' } },
@@ -134,14 +212,14 @@ describe('GET-INJS — génération annuelle et import des inscrits', () => {
     apiController.setRoute('/scolarite/ref/annees/', ANNEES)
     apiController.setRoute('/edts/lmd/import/inscrits/synthese/', { detail: 'absent' })
     rendre()
-    await screen.findByLabelText('Année académique')
+    await screen.findByLabelText(/Année académique/)
     expect(screen.queryByText('étudiants importés')).not.toBeInTheDocument()
   })
 
   it('analyse le fichier sans écrire et rend le rapport ligne par ligne', async () => {
     const user = userEvent.setup()
     rendre()
-    await screen.findByLabelText('Année académique')
+    await screen.findByLabelText(/Année académique/)
 
     const fichier = new File(['matricule;nom\nM1;Ba'], 'inscrits_2025.csv', { type: 'text/csv' })
     await user.upload(screen.getByLabelText('Fichier des inscrits'), fichier)
@@ -159,12 +237,10 @@ describe('GET-INJS — génération annuelle et import des inscrits', () => {
     expect(envoi.get('annee_academique_id')).toBe('2')
     expect(envoi.get('fichier')).toBe(fichier)
 
-    // Chaque rejet est motivé : aucun rejet silencieux.
     expect(await screen.findByText('MATRICULE_MANQUANT')).toBeInTheDocument()
     expect(screen.getByText('NIVEAU_INCONNU')).toBeInTheDocument()
     expect(screen.getByText('Niveau « L9 » inconnu du référentiel INJS.')).toBeInTheDocument()
 
-    // Compteurs lus dans le rapport, chacun sous son libellé.
     const valides = screen.getByText('valides').closest('.getinjs-compte')
     expect(within(valides).getByText('3')).toBeInTheDocument()
     const rejetees = screen.getByText('rejetées').closest('.getinjs-compte')
@@ -174,7 +250,7 @@ describe('GET-INJS — génération annuelle et import des inscrits', () => {
   it('importe réellement puis réactualise l’effectif', async () => {
     const user = userEvent.setup()
     rendre()
-    await screen.findByLabelText('Année académique')
+    await screen.findByLabelText(/Année académique/)
 
     const fichier = new File(['matricule;nom\nM1;Ba'], 'inscrits_2025.csv', { type: 'text/csv' })
     await user.upload(screen.getByLabelText('Fichier des inscrits'), fichier)
@@ -187,7 +263,6 @@ describe('GET-INJS — génération annuelle et import des inscrits', () => {
         expect.anything(),
       ),
     )
-    // L'effectif affiché vient du backend après import, pas du fichier.
     await waitFor(() =>
       expect(apiMock.get.mock.calls.filter(
         ([chemin]) => chemin === '/edts/lmd/import/inscrits/synthese/',
@@ -208,14 +283,49 @@ describe('GET-INJS — génération annuelle et import des inscrits', () => {
     expect(apiMock.post).not.toHaveBeenCalled()
   })
 
-  it('génère l’année et expose le bilan par groupe, sans masquer les échecs', async () => {
+  it('lance la génération : campagne créée, préparée, démarrée, bilan affiché', async () => {
     const user = userEvent.setup()
     rendre()
-    await screen.findByLabelText('Année académique')
+    await screen.findByLabelText(/Année académique/)
+    await user.click(screen.getByRole('button', { name: /Lancer la génération/i }))
+
+    await waitFor(() =>
+      expect(apiMock.post).toHaveBeenCalledWith('/edts/campagnes/', expect.objectContaining({
+        annee_academique_id: 2,
+        perimetre: { formations: [], niveaux: [], groupes: [], semestres: [] },
+        parametres: expect.objectContaining({
+          persister: true,
+          inclure_samedi: true,
+          eviter_pause_meridienne: true,
+          max_seances_par_groupe_semaine: 30,
+        }),
+      })),
+    )
+    expect(apiMock.post).toHaveBeenCalledWith('/edts/campagnes/1/donnees-pretes/', {})
+    // Démarrage asynchrone (le synchrone expirait en HTTP) + statut suivi.
+    expect(apiMock.post).toHaveBeenCalledWith(
+      '/edts/campagnes/1/demarrer/', { asynchrone: true })
+    expect(apiMock.get).toHaveBeenCalledWith('/edts/campagnes/1/statut/')
+
+    const bilanTable = await screen.findByRole('table', { name: /Bilan par groupe/i })
+    expect(within(bilanTable).getByRole('cell', { name: 'L1-G1' })).toBeInTheDocument()
+    expect(within(bilanTable).getByText('CAPACITE_SALLE_INSUFFISANTE')).toBeInTheDocument()
+    // L'historique et les versions sont rechargés après le passage.
+    await waitFor(() =>
+      expect(apiMock.get.mock.calls.filter(
+        ([chemin]) => chemin === '/edts/campagnes/historique/',
+      ).length).toBeGreaterThanOrEqual(2),
+    )
+  })
+
+  it('prévisualise sans persister (aucun brouillon écrit)', async () => {
+    const user = userEvent.setup()
+    rendre()
+    await screen.findByLabelText(/Année académique/)
 
     await user.clear(screen.getByLabelText('Semaines planifiées'))
     await user.type(screen.getByLabelText('Semaines planifiées'), '1,2')
-    await user.click(screen.getByRole('button', { name: /Générer l’année/i }))
+    await user.click(screen.getByRole('button', { name: /Prévisualiser sans persister/i }))
 
     await waitFor(() =>
       expect(apiMock.post).toHaveBeenCalledWith('/edts/lmd/generate-annee/', {
@@ -224,34 +334,102 @@ describe('GET-INJS — génération annuelle et import des inscrits', () => {
         persister: false,
         remplacer: true,
         inclure_maquette: true,
+        formations: [],
+        niveaux: [],
+        groupes: [],
+        semestres: [],
+        inclure_samedi: true,
+        eviter_pause_meridienne: true,
+        max_seances_par_groupe_semaine: 30,
       }),
     )
 
-    // « Partiel » apparaît deux fois : statut global et statut du groupe G2.
     expect((await screen.findAllByText('Partiel')).length).toBeGreaterThanOrEqual(2)
-    // Le groupe complet et le groupe partiel sont tous deux listés — et
-    // uniquement dans le tableau de bilan (le tableau des cohortes importées
-    // porte les mêmes libellés mais un autre objet).
-    const bilan = screen.getByRole('table', { name: /Bilan par groupe/i })
-    expect(within(bilan).getByRole('cell', { name: 'L1-G1' })).toBeInTheDocument()
-    expect(within(bilan).getByRole('cell', { name: 'L1-G2' })).toBeInTheDocument()
-    expect(within(bilan).getByText('CAPACITE_SALLE_INSUFFISANTE')).toBeInTheDocument()
-    expect(screen.queryByText('Impossible', { selector: '.badge' })).not.toBeInTheDocument()
-    // Totaux réels du moteur (l'effectif de la synthèse apparaît aussi en
-    // haut d'écran : on cible le libellé du bilan).
+    const bilanTable = screen.getByRole('table', { name: /Bilan par groupe/i })
+    expect(within(bilanTable).getByRole('cell', { name: 'L1-G2' })).toBeInTheDocument()
     const couverts = screen.getByText('étudiants couverts').closest('.getinjs-compte')
     expect(within(couverts).getByText('3752')).toBeInTheDocument()
     const nonPlacees = screen.getByText('séances non placées').closest('.getinjs-compte')
     expect(within(nonPlacees).getByText('3')).toBeInTheDocument()
   })
 
-  it('ne persiste pas par défaut : aucun brouillon écrit sans action explicite', async () => {
+  it('traduit le motif d’échec des groupes et compte les non planifiés', async () => {
+    // Route surchargée : reset puis déclaration AVANT routes() (premier
+    // motif gagnant dans le mock, le beforeEach a déjà posé la route type).
+    apiController.reset()
+    apiController.setRoute('/edts/lmd/generate-annee/', {
+      ...BILAN,
+      status_global: 'IMPOSSIBLE',
+      totaux: {
+        ...BILAN.totaux,
+        nb_groupes_planifies: 0, nb_groupes_complets: 0, nb_groupes_non_planifies: 2,
+        seances_placees: 0, seances_non_placees: 12,
+      },
+      groupes: [{
+        groupe_id: 13, groupe: 'L1-G9', formation: 'Licence en Journalisme',
+        parcours: null, niveau: 'L1', vague: null, effectif: 33,
+        statut: 'GENERATION_IMPOSSIBLE', motif_echec: 'PLACEMENT_IMPOSSIBLE',
+        seances_attendues: 12, seances_placees: 0, seances_non_placees: 12,
+      }],
+    })
+    routes()
     const user = userEvent.setup()
     rendre()
-    await screen.findByLabelText('Année académique')
-    await user.click(screen.getByRole('button', { name: /Générer l’année/i }))
-    await waitFor(() => expect(apiMock.post).toHaveBeenCalled())
-    expect(apiMock.post.mock.calls[0][1]).toMatchObject({ persister: false })
+    await screen.findByLabelText(/Année académique/)
+    await user.click(screen.getByRole('button', { name: /Prévisualiser sans persister/i }))
+
+    const bilanTable = await screen.findByRole('table', { name: /Bilan par groupe/i })
+    expect(within(bilanTable).getByText(
+      'Aucune combinaison créneau/salle ne satisfait les contraintes',
+    )).toBeInTheDocument()
+    expect(within(bilanTable).queryByText('PLACEMENT_IMPOSSIBLE')).not.toBeInTheDocument()
+    const nonPlanifies = screen.getByText('non planifiés').closest('.getinjs-compte')
+    expect(within(nonPlanifies).getByText('2')).toBeInTheDocument()
+  })
+
+  it('affiche l’historique réel des générations et les EDT versionnés', async () => {
+    rendre()
+    expect(await screen.findByText('Historique des générations')).toBeInTheDocument()
+    expect(await screen.findByText('Toutes filières')).toBeInTheDocument()
+    expect(screen.getByText('S1, S2')).toBeInTheDocument()
+    expect(screen.getByText('75 %')).toBeInTheDocument()
+    expect(screen.getByText('12,5 s')).toBeInTheDocument()
+    expect(screen.getByText('terminée')).toBeInTheDocument()
+    expect(screen.getByText('Emplois du temps versionnés')).toBeInTheDocument()
+    expect(screen.getByText('EDT Licence en Journalisme L1 — S1 (exemple GET)'))
+      .toBeInTheDocument()
+    expect(screen.getByText(/12 séances · V1/)).toBeInTheDocument()
+  })
+
+  it('charge explicitement 500 événements et pagine l’historique par 15', async () => {
+    const user = userEvent.setup()
+    // 20 exécutions : la première requête demande limite=500 au serveur.
+    apiController.reset()
+    // Déclarée AVANT routes() : premier match gagnant dans le mock.
+    apiController.setRoute('/edts/campagnes/historique/', {
+      executions: Array.from({ length: 20 }, (_, i) => ({
+        id: 50 + i, libelle: `Génération ${i + 1}`, annee_academique: '2026-2027',
+        date: '2026-11-04T02:39:00Z', statut: 'TERMINE', duree_ms: 300,
+        perimetre: { filieres: [], formations: [`Formation ${i + 1}`], niveaux: [], groupes: [] },
+        semestres: ['S1'], seances_placees: 9, seances_attendues: 12,
+        couverture_pct: 75.0, conflits: 0,
+      })),
+    })
+    routes()
+    rendre()
+    expect(await screen.findByText('Formation 1')).toBeInTheDocument()
+    expect(screen.getByText('Chargement explicite : 500 événements')).toBeInTheDocument()
+    expect(screen.getByText('20 chargé(s)')).toBeInTheDocument()
+    const appelHistorique = apiController.api.get.mock.calls
+      .find(([chemin]) => chemin.includes('/edts/campagnes/historique/'))
+    expect(appelHistorique).toBeTruthy()
+    expect(appelHistorique[1]).toEqual({ params: { limite: 500 } })
+    expect(screen.getByText('Événements 1 à 15 sur 20')).toBeInTheDocument()
+    expect(screen.getByText('Page 1 sur 2')).toBeInTheDocument()
+    expect(screen.queryByText('Formation 16')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Suivant/ }))
+    expect(screen.getByText('Formation 16')).toBeInTheDocument()
+    expect(screen.getByText('Événements 16 à 20 sur 20')).toBeInTheDocument()
   })
 
   it('télécharge le document de conception depuis le backend', async () => {
@@ -274,8 +452,8 @@ describe('GET-INJS — génération annuelle et import des inscrits', () => {
   it('nomme chaque tableau par une légende (accessibilité)', async () => {
     const user = userEvent.setup()
     rendre()
-    await screen.findByLabelText('Année académique')
-    await user.click(screen.getByRole('button', { name: /Générer l’année/i }))
+    await screen.findByLabelText(/Année académique/)
+    await user.click(screen.getByRole('button', { name: /Prévisualiser sans persister/i }))
     await screen.findByText('Bilan par groupe — aucune ligne n’est masquée')
     expect(screen.getByRole('table', { name: /Bilan par groupe/i })).toBeInTheDocument()
   })

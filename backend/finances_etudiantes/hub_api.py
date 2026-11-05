@@ -9,6 +9,9 @@ rapprochements restent dans le flux financier officiel.
 from decimal import Decimal
 
 from django.db.models import Count, Sum
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
@@ -38,6 +41,17 @@ def _detailler_echeancier(echeancier, lignes):
     }
 
 
+
+
+# ── Contrats OpenAPI ──────────────────────────────────────────────────
+
+
+class HubFinancesErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    error = serializers.JSONField(required=False)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsFinancesReadOnly])
 def stats_api(request):
@@ -75,6 +89,7 @@ def stats_api(request):
     })
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsFinancesReadOnly])
 def tarifications_api(request):
@@ -92,6 +107,7 @@ def tarifications_api(request):
     ]})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsFinancesReadOnly])
 def echeanciers_api(request):
@@ -108,6 +124,7 @@ def echeanciers_api(request):
     return Response({'results': results})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsFinancesReadOnly])
 def factures_api(request):
@@ -129,6 +146,7 @@ def factures_api(request):
     ]})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsFinancesReadOnly])
 def paiements_api(request):
@@ -155,6 +173,7 @@ def paiements_api(request):
     ]})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsFinancesReadOnly])
 def quittances_api(request):
@@ -175,6 +194,7 @@ def quittances_api(request):
     ]})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsFinancesReadOnly])
 def remboursements_api(request):
@@ -197,6 +217,7 @@ def remboursements_api(request):
     ]})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsFinancesReadOnly])
 def relances_api(request):

@@ -5,6 +5,9 @@ formation, alertes selon ConfigAlerteSeuil, génération de notifications
 in-app. Lecture : staff ; génération : IsSecretariatOrDFRC.
 """
 from django.core.exceptions import ValidationError
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -24,6 +27,33 @@ def _annee(request):
     return AnneeAcademique.courante_ou_none()
 
 
+
+
+# ── Contrats OpenAPI (statistiques de présence, notifications) ───────
+
+
+class StatsPresenceErreurSerializer(serializers.Serializer):
+    error = serializers.JSONField()
+
+
+class TauxPresenceReponseSerializer(serializers.Serializer):
+    annee = serializers.CharField(allow_null=True)
+    resultats = serializers.JSONField()
+
+
+class AlertesPresenceReponseSerializer(serializers.Serializer):
+    annee = serializers.CharField(allow_null=True)
+    alertes = serializers.JSONField()
+
+
+
+
+class NotificationCreationReponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    crees = serializers.IntegerField()
+
+
+@extend_schema(responses={200: TauxPresenceReponseSerializer, 400: StatsPresenceErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def taux(request):
@@ -41,6 +71,7 @@ def taux(request):
     return Response({'annee': annee.libelle if annee else None, 'resultats': fonctions[par](annee)})
 
 
+@extend_schema(responses={200: AlertesPresenceReponseSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def alertes(request):
@@ -50,6 +81,7 @@ def alertes(request):
                      'alertes': stats_services.alertes_absence(annee)})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def notifications_recues(request):
@@ -89,6 +121,7 @@ def notifications_recues(request):
     return Response({'marquees': queryset.filter(id__in=ids).update(lue=True)})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: NotificationCreationReponseSerializer, 201: NotificationCreationReponseSerializer, 400: StatsPresenceErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def notifications(request):

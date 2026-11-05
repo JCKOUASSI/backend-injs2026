@@ -310,14 +310,29 @@ export const ARBORESCENCE = [
   // ------------------------------------------------------------------ GET-INJS
   {
     id: 'get_injs',
-    libelle: 'GET-INJS',
+    libelle: 'GET INJS APP',
     sousTitre: 'Gestion des Emplois du Temps',
     icone: 'bi-calendar-week',
     droit: { legacy: [['web', 'operationnel']] },
     enfants: [
       {
+        // Tableau de bord du module = la page d'accueil GET INJS APP
+        // (pilotage : indicateurs, charge, générations, imports).
+        id: 'get_injs.tableau_bord',
+        libelle: 'Tableau de bord',
+        description: 'Pilotage du module',
+        icone: 'bi-speedometer2',
+        chemin: '/get-injs-app',
+        droit: {
+          curp: ['edt.creneau.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
         id: 'get_injs.tableau',
-        libelle: 'Tableau des emplois du temps',
+        libelle: 'Emplois du temps',
+        description: 'Grille hebdomadaire',
+        icone: 'bi-calendar3',
         chemin: '/edt',
         droit: {
           curp: ['edt.creneau.consulter', 'edt.emploi_du_temps.generer'],
@@ -325,19 +340,12 @@ export const ARBORESCENCE = [
         },
       },
       {
-        id: 'get_injs.generation',
-        libelle: 'Créer un emploi du temps',
-        chemin: '/edt/nouveau',
-        droit: {
-          curp: ['edt.emploi_du_temps.generer', 'edt.emploi_du_temps.creer'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
         // Demande 21 : entrée d'échelle annuelle — import du fichier des
         // inscrits puis EDT de TOUTES les cohortes de l'année en une passe.
         id: 'get_injs.generation_annuelle',
-        libelle: 'Génération annuelle & import',
+        libelle: 'Génération',
+        description: 'Moteur LMD',
+        icone: 'bi-gear',
         chemin: '/edt/generation-annuelle',
         droit: {
           curp: ['edt.emploi_du_temps.generer'],
@@ -345,57 +353,84 @@ export const ARBORESCENCE = [
         },
       },
       {
-        // LOT 2 — campagnes de génération : trace persistante (périmètre,
-        // bilan, anomalies, durée, historique) et publication contrôlée.
-        id: 'get_injs.campagnes',
-        libelle: 'Campagnes de génération',
-        chemin: '/edt/campagnes',
+        // Dimensionnement dynamique : promotions réelles, groupes
+        // nécessaires (capacité cible paramétrable), EDT à produire
+        // dérivés et anomalies — calculés par le moteur, jamais imposés.
+        id: 'get_injs.dimensionnement',
+        libelle: 'Dimensionnement',
+        description: 'Besoins de planification',
+        icone: 'bi-sliders',
+        chemin: '/edt/dimensionnement',
+        droit: {
+          curp: ['edt.creneau.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        // Fenêtre dédiée « Importer les étudiants inscrits » (situation 2,
+        // fichier externe) : dépôt, reconstruction du parcours, génération
+        // enchaînée et journal des imports. La zone d'import de l'écran de
+        // génération reste également disponible.
+        id: 'get_injs.import',
+        libelle: 'Import étudiants',
+        description: 'Fichier externe',
+        icone: 'bi-upload',
+        chemin: '/edt/import-etudiants',
         droit: {
           curp: ['edt.emploi_du_temps.generer'],
           legacy: [['web', 'operationnel']],
         },
       },
       {
-        // Écran « vérifier » : contrôle des données AVANT génération, et
-        // mémoire des versions avec les gestes valider / publier.
-        id: 'get_injs.audit',
-        libelle: 'Audit des données',
-        chemin: '/edt/audit',
+        // Population étudiante réelle d'une année, toutes origines
+        // (inscriptions administratives validées + fichier externe
+        // importé), fusionnée et paginée par le module. La gestion
+        // administrative des inscriptions reste dans le menu Scolarité.
+        id: 'get_injs.inscrits',
+        libelle: 'Étudiants inscrits',
+        description: 'Populations',
+        icone: 'bi-people',
+        chemin: '/edt/etudiants-inscrits',
         droit: {
-          curp: ['edt.emploi_du_temps.generer', 'edt.contrainte.consulter'],
+          curp: ['edt.creneau.consulter', 'scolarite.inscription_administrative.consulter'],
+          legacy: [['web', 'operationnel'], ['scolarite', 'voir']],
+        },
+      },
+      {
+        id: 'get_injs.referentiels',
+        libelle: 'Référentiels',
+        description: 'INJS 2026',
+        icone: 'bi-collection',
+        chemin: '/edt/referentiels',
+        droit: {
+          curp: ['patrimoine.espace.consulter', 'edt.creneau.consulter'],
           legacy: [['web', 'operationnel']],
         },
       },
       {
-        id: 'get_injs.versions',
-        libelle: 'Versions & publication',
-        chemin: '/edt/versions',
+        // Documentation technique du module : page de conception du hub
+        // (architecture, algorithme, API, modèle de données, commandes,
+        // exigences) ; le document complet s'y télécharge au format texte.
+        id: 'get_injs.conception',
+        libelle: 'Conception',
+        description: 'Documentation',
+        icone: 'bi-file-earmark-text',
+        chemin: '/edt/conception',
         droit: {
-          curp: ['edt.emploi_du_temps.valider', 'edt.emploi_du_temps.publier'],
+          curp: ['edt.creneau.consulter'],
           legacy: [['web', 'operationnel']],
         },
       },
       {
-        id: 'get_injs.presences_seance',
-        libelle: 'Présences de séance (QR & émargement)',
-        chemin: '/edt/presences',
-        droit: {
-          curp: ['presences.emargement.consulter'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
-        id: 'get_injs.cours',
-        libelle: 'Cours',
-        chemin: '/cours',
-        droit: {
-          curp: ['edt.seance.creer'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
-        id: 'get_injs.salles',
+        // Écran générique historique « Salles & espaces », conservé hors
+        // menu : la page Référentiels du hub couvre ces données (onglet
+        // Bâtiments & salles) et les liens existants (EDT, Génération,
+        // Scolarité) restent joignables.
+        id: 'get_injs.salles_espaces',
+        masque: true,
         libelle: 'Salles & espaces',
+        description: 'Espaces physiques',
+        icone: 'bi-door-open',
         chemin: '/edt/salles-espaces',
         ecran: 'salles_espaces',
         droit: {
@@ -405,6 +440,7 @@ export const ARBORESCENCE = [
       },
       {
         id: 'get_injs.disponibilites',
+        masque: true,
         libelle: 'Disponibilités',
         chemin: '/edt/disponibilites',
         ecran: 'disponibilites',
@@ -417,16 +453,8 @@ export const ARBORESCENCE = [
         },
       },
       {
-        id: 'get_injs.enseignants',
-        libelle: 'Enseignants',
-        chemin: '/formateurs',
-        droit: {
-          curp: ['enseignants.enseignant.consulter'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
         id: 'get_injs.conflits',
+        masque: true,
         libelle: 'Conflits & contraintes',
         chemin: '/edt/conflits',
         ecran: 'conflits_edt',
@@ -436,21 +464,109 @@ export const ARBORESCENCE = [
         },
       },
       {
-        id: 'get_injs.rattrapages',
-        libelle: 'Rattrapages & examens',
-        chemin: '/rattrapages',
-        droit: {
-          curp: ['edt.rattrapage.consulter', 'edt.examen.consulter'],
-          legacy: [['presences', 'voir']],
-        },
-      },
-      {
         id: 'get_injs.export',
+        masque: true,
         libelle: 'Export / Impression',
         chemin: '/edt/export',
         ecran: 'export_edt',
         droit: {
           curp: ['exports.export.generer', 'exports.export.imprimer'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+    ],
+  },
+
+  // ----------------------------------------------------------------- PRÉSENCES QR
+  {
+    // Hub du module Présences : les séances LMD publiées par GET INJS APP
+    // y deviennent des présences (QR de séance scanné par les auditeurs,
+    // heartbeat géolocalisé, émargement manuel à motif, clôture de séance).
+    id: 'presences_qr',
+    libelle: 'Présences QR',
+    sousTitre: 'Gestion des présences',
+    icone: 'bi-qr-code',
+    droit: { legacy: [['web', 'operationnel']] },
+    enfants: [
+      {
+        id: 'presences_qr.tableau',
+        libelle: 'Tableau de bord',
+        description: 'Vue d’ensemble du jour',
+        icone: 'bi-speedometer2',
+        chemin: '/presences',
+        droit: {
+          curp: ['presences.emargement.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        // Séances LMD du jour (supervision temps réel) : statut, QR,
+        // présences rattachées et anomalies, séance par séance.
+        id: 'presences_qr.seances',
+        libelle: 'Séances',
+        description: 'Registre des séances',
+        icone: 'bi-broadcast',
+        chemin: '/presences/seances',
+        droit: {
+          curp: ['presences.emargement.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        // Poste de badgeage web : QR de séance, géolocalisation,
+        // badgeage/sortie serveur et heartbeat.
+        id: 'presences_qr.badgeage',
+        libelle: 'Badgeage',
+        description: 'Terminal de badgeage',
+        icone: 'bi-phone',
+        chemin: '/presences/poste',
+        droit: {
+          curp: ['presences.emargement.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        // Présences d'une séance : QR, badgeage automatique, émargement
+        // manuel à motif et clôture (enseignant de la séance).
+        id: 'presences_qr.presences',
+        libelle: 'Présences',
+        description: 'Registre historique',
+        icone: 'bi-qr-code-scan',
+        chemin: '/presences/registre',
+        droit: {
+          curp: ['presences.emargement.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        id: 'presences_qr.audit',
+        libelle: 'Audit',
+        description: 'Journal d’audit',
+        icone: 'bi-clock-history',
+        chemin: '/presences/audit',
+        droit: {
+          legacy: [['presences', 'voir']],
+        },
+      },
+      {
+        id: 'presences_qr.configuration',
+        libelle: 'Configuration',
+        description: 'Géofence : sites et périmètres',
+        icone: 'bi-geo-alt',
+        chemin: '/presences/configuration',
+        droit: {
+          curp: ['presences.emargement.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
+        id: 'presences_qr.contrat',
+        libelle: 'Contrat API',
+        description: 'Intégration',
+        icone: 'bi-file-earmark-code',
+        chemin: '/presences/contrat',
+        droit: {
+          curp: ['presences.emargement.consulter'],
           legacy: [['web', 'operationnel']],
         },
       },
@@ -1370,106 +1486,6 @@ export const ARBORESCENCE = [
         },
       },
       {
-        id: 'referentiels.edition',
-        libelle: 'Édition des tables',
-        chemin: '/referentiels/edition',
-        droit: {
-          curp: ['referentiels.referentiel.consulter'],
-          legacy: [['web', 'operationnel']],
-          roles: ['ADMIN', 'CHEF_INJS_ADMIN', 'INJS_ADMIN'],
-        },
-      },
-      {
-        id: 'referentiels.annees',
-        libelle: 'Années académiques',
-        chemin: '/referentiels/annees',
-        ecran: 'ref_annees',
-        droit: {
-          curp: ['scolarite.annee.consulter', 'referentiels.referentiel.consulter'],
-          legacy: [['scolarite', 'voir']],
-        },
-      },
-      {
-        id: 'referentiels.etablissements',
-        libelle: 'Établissements & sites',
-        chemin: '/referentiels/etablissements',
-        ecran: 'ref_etablissements',
-        droit: {
-          curp: ['referentiels.referentiel.consulter'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
-        id: 'referentiels.formations',
-        libelle: 'Formations',
-        chemin: '/referentiels/formations',
-        ecran: 'ref_formations',
-        droit: {
-          curp: ['referentiels.referentiel.consulter'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
-        id: 'referentiels.filieres',
-        libelle: 'Types de formation',
-        chemin: '/referentiels/filieres',
-        ecran: 'ref_filieres',
-        droit: {
-          curp: ['referentiels.referentiel.consulter'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
-        id: 'referentiels.ue_ecue',
-        libelle: 'UE / ECUE',
-        chemin: '/referentiels/ue-ecue',
-        ecran: 'ref_ue_ecue',
-        droit: {
-          curp: ['pedagogie.ue.consulter', 'pedagogie.ecue.consulter'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
-        id: 'referentiels.niveaux',
-        libelle: 'Niveaux',
-        chemin: '/referentiels/niveaux',
-        ecran: 'ref_niveaux',
-        droit: {
-          curp: ['referentiels.referentiel.consulter'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
-        id: 'referentiels.semestres',
-        libelle: 'Semestres',
-        chemin: '/referentiels/semestres',
-        ecran: 'ref_semestres',
-        droit: {
-          curp: ['referentiels.referentiel.consulter'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
-        id: 'referentiels.types_cours',
-        libelle: 'Types de cours',
-        chemin: '/referentiels/types-cours',
-        ecran: 'ref_types_cours',
-        droit: {
-          curp: ['referentiels.referentiel.consulter'],
-          legacy: [['web', 'operationnel']],
-        },
-      },
-      {
-        id: 'referentiels.parametres_lmd',
-        libelle: 'Paramètres LMD',
-        chemin: '/parametres',
-        droit: {
-          curp: ['parametres.parametre.consulter'],
-          legacy: [['web', 'operationnel']],
-          roles: ['ADMIN', 'CHEF_INJS_ADMIN', 'INJS_ADMIN'],
-        },
-      },
-      {
         id: 'referentiels.fonctionnalites',
         libelle: 'Fonctionnalités (drapeaux)',
         chemin: '/parametres/flags',
@@ -1481,8 +1497,9 @@ export const ARBORESCENCE = [
       },
       {
         // Planche de style : documentation vivante du socle visuel, en lecture
-        // seule. Même garde que « Paramètres LMD » (trio d'administration) :
-        // l'écran ne modifie rien, mais il expose l'apparence de référence.
+        // seule. Même garde que le Tableau de bord du hub (trio
+        // d'administration) : l'écran ne modifie rien, mais il expose
+        // l'apparence de référence.
         id: 'referentiels.planche_style',
         libelle: 'Planche de style',
         chemin: '/referentiels/planche-de-style',
@@ -1492,18 +1509,13 @@ export const ARBORESCENCE = [
           roles: ['ADMIN', 'CHEF_INJS_ADMIN', 'INJS_ADMIN'],
         },
       },
-      {
-        // Import Excel (formations, modules, séances, participants) : même garde
-        // que l'ancienne barre latérale (`peut(user, 'participants', 'gerer')`).
-        id: 'referentiels.imports',
-        libelle: 'Imports de données (Excel)',
-        chemin: '/import',
-        droit: {
-          curp: ['scolarite.dossier_etudiant.creer', 'scolarite.inscription_administrative.creer'],
-          legacy: [['participants', 'gerer']],
-          roles: ['ADMIN', 'CHEF_INJS_ADMIN', 'INJS_ADMIN', 'CHEF_SECRETARIAT', 'SECRETARIAT'],
-        },
-      },
+      // 2026-11-05 : « Paramètres LMD » (/parametres) et « Imports de données
+      // (Excel) » (/import) retirés du hub à la demande du commanditaire
+      // (présence jugée superflue ici). Retrait du MENU uniquement : les
+      // routes et les écrans sont conservés — /parametres reste joignable
+      // via Utilisateurs & Accès → Politique de sécurité, /import par son
+      // URL directe — et le Tableau de bord ci-dessus n'en dépend pas
+      // (voir AUDIT-HUB-REFERENTIELS-2026-11-05.md, §7).
     ],
   },
 

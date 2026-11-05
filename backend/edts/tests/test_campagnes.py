@@ -63,6 +63,64 @@ class BaseCampagneTest(TestCase):
         )
 
 
+class ExecutionOrphelineTests(BaseCampagneTest):
+    """Une exécution dont le fil est mort ne doit pas rester « en cours »."""
+
+    def _campagne_en_cours_orpheline(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        campagne = self.campagne()
+        C.marquer_pret(campagne.pk, user=self.admin)
+        campagne.refresh_from_db()
+        execution = ExecutionCampagne.objects.create(
+            campagne=campagne, numero=1,
+            statut=ExecutionCampagne.Statut.EN_COURS,
+            demarree_le=timezone.now() - timedelta(hours=2),
+        )
+        campagne.statut = CampagneGeneration.Statut.EN_COURS
+        campagne.demarree_le = execution.demarree_le
+        campagne.save()
+        return campagne, execution
+
+    def test_statut_repare_l_execution_orpheline(self):
+        campagne, execution = self._campagne_en_cours_orpheline()
+        statut = C.statut_campagne(campagne.pk)
+        self.assertFalse(statut['en_cours'])
+        self.assertEqual(statut['statut'], CampagneGeneration.Statut.ECHEC)
+        self.assertIn('interrompue', statut['erreur'])
+        execution.refresh_from_db()
+        self.assertEqual(execution.statut, ExecutionCampagne.Statut.ECHEC)
+        self.assertIsNotNone(execution.terminee_le)
+
+    def test_relance_possible_apres_reparation(self):
+        campagne, _execution = self._campagne_en_cours_orpheline()
+        # Ne doit plus lever CAMPAGNE_DEJA_EN_COURS : l'orpheline est close.
+        lancee = C.demarrer_campagne(campagne.pk, user=self.admin, asynchrone=False)
+        self.assertEqual(lancee['numero'], 2)
+
+    def test_execution_vivante_jamais_reparee(self):
+        campagne, execution = self._campagne_en_cours_orpheline()
+        C._marquer_execution_active(execution.pk)
+        try:
+            self.assertFalse(C.reparer_execution_orpheline(execution))
+        finally:
+            C._marquer_execution_terminee(execution.pk)
+        execution.refresh_from_db()
+        self.assertEqual(execution.statut, ExecutionCampagne.Statut.EN_COURS)
+
+    def test_execution_jeune_jamais_reparee(self):
+        campagne = self.campagne()
+        C.marquer_pret(campagne.pk, user=self.admin)
+        campagne.refresh_from_db()
+        execution = ExecutionCampagne.objects.create(
+            campagne=campagne, numero=1,
+            statut=ExecutionCampagne.Statut.EN_COURS,
+        )
+        self.assertFalse(C.reparer_execution_orpheline(execution))
+
+
 class CycleDeVieCampagneTests(BaseCampagneTest):
     def test_creation_en_brouillon_avec_effectif_mesure(self):
         campagne = self.campagne()
@@ -318,3 +376,114 @@ class CampagnesApiTests(BaseCampagneTest):
         self.client.force_authenticate(user=self.auditeur)
         refus = self.client.post(f'/api/edts/campagnes/{campagne.pk}/publier/', {}, format='json')
         self.assertEqual(refus.status_code, 403)
+
+
+class HistoriqueEtPerimetresFinsTests(BaseCampagneTest):
+    """Écran « Génération » (maquette) : historique réel + périmètres fins."""
+
+    def _importer_inscrits(self):
+        # Comme le flux réel : l'import crée le groupe L1-G1 de la cohorte.
+        from edts.moteur import import_inscrits as I
+
+        lignes = [
+            f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'
+            for i in range(30)
+        ]
+        I.importer_inscrits(
+            annee_academique_id=self.annee.pk,
+            nom_fichier='inscrits.csv',
+            contenu=('matricule;nom;formation;niveau;semestre;groupe;vague\n'
+                     + '\n'.join(lignes) + '\n').encode('utf-8'),
+            appliquer=True,
+        )
+
+    def _campagne_executee(self, libelle='Campagne historique', **params):
+        self._importer_inscrits()
+        campagne = self.campagne(libelle=libelle, **params)
+        C.marquer_pret(campagne.pk, user=self.admin)
+        C.demarrer_campagne(campagne.pk, user=self.admin, asynchrone=False)
+        return campagne
+
+    def test_historique_expose_lexecution_reelle(self):
+        self._campagne_executee()
+        client = APIClient()
+        client.force_authenticate(user=self.admin)
+        reponse = client.get('/api/edts/campagnes/historique/')
+        self.assertEqual(reponse.status_code, 200, reponse.data)
+        lignes = reponse.data['executions']
+        self.assertEqual(len(lignes), 1)
+        ligne = lignes[0]
+        self.assertEqual(ligne['libelle'], 'Campagne historique')
+        self.assertIsNotNone(ligne['duree_ms'])
+        self.assertIn('seances_placees', ligne)
+        self.assertIn('seances_attendues', ligne)
+        self.assertIn('conflits', ligne)
+        # Le niveau L1 de la fabrique couvre les semestres S1 et S2.
+        self.assertEqual(ligne['semestres'], ['S1', 'S2'])
+
+    def test_historique_vide_sans_execution(self):
+        self.campagne(libelle='Jamais lancée')
+        client = APIClient()
+        client.force_authenticate(user=self.admin)
+        reponse = client.get('/api/edts/campagnes/historique/')
+        self.assertEqual(reponse.status_code, 200, reponse.data)
+        self.assertEqual(reponse.data['executions'], [])
+
+    def test_perimetre_groupe_inconnu_bilan_impossible_explicite(self):
+        from edts.moteur.annee import generer_annee
+
+        bilan = generer_annee(self.annee.pk, groupe_ids=[999999])
+        self.assertEqual(bilan['status_global'], 'IMPOSSIBLE')
+        self.assertEqual(bilan['motif_echec'], 'AUCUN_GROUPE_INJS')
+        self.assertEqual(bilan['groupes_filtres'], [999999])
+
+    def test_semestre_cible_ecarte_les_autres_besoins(self):
+        from edts.moteur.annee import generer_annee
+
+        # La fabrique ne couvre que S1 : cibler S9 ne planifie rien, et le
+        # bilan le dit (aucun groupe planifié) au lieu d'inventer des séances.
+        self._importer_inscrits()
+        bilan = generer_annee(self.annee.pk, semestre_numeros=[9])
+        self.assertEqual(bilan['semestres_filtres'], [9])
+        self.assertTrue(bilan['groupes'])
+        self.assertTrue(all(
+            ligne['statut'] == 'NON_PLANIFIE' for ligne in bilan['groupes']))
+
+
+class HistoriqueLimiteTests(BaseCampagneTest):
+    """Chargement explicite : `?limite=` sur l'historique des générations.
+
+    Par défaut, l'endpoint garde son plafond historique de 20
+    exécutions ; l'écran de génération demande explicitement 500
+    (plafond serveur). Valeur invalide ignorée, jamais d'erreur.
+    """
+
+    def _execution(self, campagne, numero):
+        from edts.models import ExecutionCampagne
+
+        return ExecutionCampagne.objects.create(
+            campagne=campagne, numero=numero,
+            statut=ExecutionCampagne.Statut.TERMINE,
+            bilan={'groupes': [], 'totaux': {}})
+
+    def test_limite_explicite_500(self):
+        client = APIClient()
+        client.force_authenticate(user=self.admin)
+        campagne = self.campagne(libelle='Campagne limite')
+        for numero in (1, 2, 3):
+            self._execution(campagne, numero)
+
+        defaut = client.get('/api/edts/campagnes/historique/')
+        self.assertEqual(len(defaut.data['executions']), 3)
+
+        borne = client.get('/api/edts/campagnes/historique/', {'limite': '2'})
+        self.assertEqual(len(borne.data['executions']), 2)
+
+        explicite = client.get('/api/edts/campagnes/historique/',
+                               {'limite': '500'})
+        self.assertEqual(len(explicite.data['executions']), 3)
+
+        invalide = client.get('/api/edts/campagnes/historique/',
+                              {'limite': 'abc'})
+        self.assertEqual(invalide.status_code, 200)
+        self.assertEqual(len(invalide.data['executions']), 3)

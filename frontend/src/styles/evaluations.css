@@ -567,3 +567,155 @@
   .ev-repartition-ligne { grid-template-columns: 1fr; gap: 0.3rem; }
   .ev-repartition-compte { text-align: left; }
 }
+/* ==========================================================================
+   TABLEAU DE BORD ÉVALUATIONS — premium dynamique (capture 03/11)
+   Chip de code type, jauges de répartition teintées par état, part en %
+   explicite, et habillage navy scopé `.ev-dash` (cette page uniquement :
+   les écrans liste/saisie/sessions du module gardent leur rendu).
+   ========================================================================== */
+
+/* ── Chip de code (EX-CC, EX-TD…) : monospace, fond bleu pâle ── */
+.ev-code-chip {
+  display: inline-block;
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ev-navy);
+  background: #EEF4FF;
+  border: 1px solid #C7D9FB;
+  border-radius: 7px;
+  padding: 0.16rem 0.5rem;
+  white-space: nowrap;
+}
+
+/* ── Jauges de répartition : la couleur suit l'état, plus le % en texte ── */
+.ev-jauge-valeur { transition: width 0.5s ease; }
+.ev-jauge--warn .ev-jauge-valeur { background: linear-gradient(90deg, #D97706, #F59E0B); }
+.ev-jauge--ok .ev-jauge-valeur { background: linear-gradient(90deg, #047857, #10B981); }
+.ev-jauge--info .ev-jauge-valeur { background: linear-gradient(90deg, var(--ev-blue) 0%, var(--ev-blue-light) 100%); }
+
+.ev-repartition-ligne {
+  grid-template-columns: minmax(140px, 200px) 1fr auto auto;
+}
+
+.ev-repartition-part {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ev-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 3rem;
+  text-align: right;
+}
+
+/* ── HERO du tableau de bord : bandeau navy dégradé ── */
+.ev-dash .px-hero {
+  background:
+    radial-gradient(560px 240px at 88% -30%, rgba(56, 189, 248, 0.28), transparent 65%),
+    linear-gradient(120deg, #071B3A 0%, #0B2A5B 55%, #1265D6 130%);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 18px 38px -18px rgba(7, 27, 58, 0.55);
+}
+
+.ev-dash .px-hero-icon {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #FFFFFF;
+  box-shadow: 0 10px 22px -10px rgba(0, 0, 0, 0.5);
+}
+
+.ev-dash .px-hero-title { color: #FFFFFF; }
+.ev-dash .px-hero-intro { color: #C7D8EE; }
+
+.ev-dash .px-hero .ev-btn--ghost {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #E0F2FE;
+}
+
+.ev-dash .px-hero .ev-btn--ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+}
+
+/* ── Tuiles KPI : soulèvement au survol, icônes en dégradés teintés ── */
+.ev-dash .ev-stat {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.ev-dash .ev-stat:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 22px 38px -18px rgba(7, 27, 58, 0.35);
+}
+
+.ev-dash .ev-stat-icone {
+  background: linear-gradient(135deg, #E3EEFF, #CFE3FF);
+  border-color: #B9D4F5;
+  color: #1265D6;
+}
+
+.ev-dash .ev-stat--ok .ev-stat-icone {
+  background: linear-gradient(135deg, #D9FBEA, #B7F0D2);
+  border-color: #8FE3B4;
+  color: #047857;
+}
+
+.ev-dash .ev-stat--warn .ev-stat-icone {
+  background: linear-gradient(135deg, #FFF3D6, #FFE9B8);
+  border-color: #F5D48A;
+  color: #B45309;
+}
+
+/* ── Panneaux : en-têtes navy, compteur translucide ── */
+.ev-dash .px-panel-head {
+  background: linear-gradient(120deg, #071B3A, #0B2A5B 70%, #10397A);
+  color: #FFFFFF;
+}
+
+.ev-dash .px-panel-title { color: #FFFFFF; }
+.ev-dash .px-panel-title i { color: #F5C542; }
+.ev-dash .px-panel-sub { color: #B9CCE6; }
+
+.ev-dash .px-count-pill {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #FFFFFF;
+}
+
+/* ── Tableau d'activité : en-tête navy, cascade, survol doré ── */
+.ev-dash .px-table thead th {
+  background: linear-gradient(180deg, #0B2A5B, #071B3A);
+  color: #DCEBFF;
+  border-bottom: 2px solid #F5C542;
+}
+
+@keyframes evDashLigneIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ev-dash .px-table tbody tr { animation: evDashLigneIn 0.35s ease both; }
+.ev-dash .px-table tbody tr:nth-child(2) { animation-delay: 0.03s; }
+.ev-dash .px-table tbody tr:nth-child(3) { animation-delay: 0.06s; }
+.ev-dash .px-table tbody tr:nth-child(4) { animation-delay: 0.09s; }
+.ev-dash .px-table tbody tr:nth-child(5) { animation-delay: 0.12s; }
+.ev-dash .px-table tbody tr:nth-child(n+6) { animation-delay: 0.15s; }
+
+.ev-dash .px-table tbody tr:hover td:first-child {
+  box-shadow: inset 3px 0 0 #F5C542;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ev-dash .px-table tbody tr { animation: none; }
+  .ev-dash .ev-stat { transition: none; }
+  .ev-dash .ev-stat:hover { transform: none; }
+  .ev-jauge-valeur { transition: none; }
+}
+
+@media (max-width: 768px) {
+  .ev-repartition-ligne {
+    grid-template-columns: 1fr auto auto;
+  }
+  .ev-repartition-ligne .ev-jauge { grid-column: 1 / -1; order: 4; }
+  .ev-repartition-part { min-width: 0; }
+}

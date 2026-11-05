@@ -71,8 +71,34 @@ function BadgeStatut({ statut }) {
     libelle: statut || '—', classe: 'text-bg-light',
   }
   return (
-    <span className={`badge ${definition.classe}`} data-testid={`statut-${statut}`}>
+    <span
+      className={`badge ${definition.classe} uex-badge uex-badge--${String(statut || 'inconnu').toLowerCase()}`}
+      data-testid={`statut-${statut}`}
+    >
       {definition.libelle}
+    </span>
+  )
+}
+
+/** Barre empilée CM/TD/TP d'un ECUE : la répartition des volumes en un coup d'œil. */
+function BarreVolumes({ ecue }) {
+  const cm = Number(ecue.volume_cm) || 0
+  const td = Number(ecue.volume_td) || 0
+  const tp = Number(ecue.volume_tp) || 0
+  const total = cm + td + tp
+  if (!total) return <span className="uex-volumes-vide">—</span>
+  const part = (v) => `${Math.round((v / total) * 1000) / 10}%`
+  return (
+    <span className="uex-volumes">
+      <span className="uex-volumes-barre" role="img" aria-label={`Volumes : CM ${cm} h, TD ${td} h, TP ${tp} h`}>
+        {cm > 0 && <span className="uex-volumes-seg is-cm" style={{ width: part(cm) }}></span>}
+        {td > 0 && <span className="uex-volumes-seg is-td" style={{ width: part(td) }}></span>}
+        {tp > 0 && <span className="uex-volumes-seg is-tp" style={{ width: part(tp) }}></span>}
+      </span>
+      <span className="uex-volumes-texte">
+        CM {cm} · TD {td} · TP {tp}
+        <strong> — {total} h</strong>
+      </span>
     </span>
   )
 }
@@ -318,7 +344,11 @@ export default function EcranUeEcue() {
   const [ueId, setUeId] = useState(null)
   const [formulaire, setFormulaire] = useState(null)
   const [suppression, setSuppression] = useState(null)
+  const [suppressionMasse, setSuppressionMasse] = useState(null)
   const [recherche, setRecherche] = useState('')
+  // Sélection multiple (cases à cocher) : ids des UE et des ECUE cochés.
+  const [selectionUe, setSelectionUe] = useState([])
+  const [selectionEcue, setSelectionEcue] = useState([])
 
   // Écriture : mêmes rôles que le serveur (IsSecretariatOrDFRC), sans créer de
   // système d'habilitation parallèle. Le refus réel vient toujours de l'API.
@@ -338,6 +368,45 @@ export default function EcranUeEcue() {
   const maquettes = useMemo(() => maquettesQuery.data || [], [maquettesQuery.data])
   const maquette = maquettes.find((m) => String(m.id) === String(maquetteId)) || null
   const maquetteEditable = maquette?.statut === 'BROUILLON'
+
+  // Copie de travail (brouillon) d'une maquette : même année, formation,
+  // niveau et parcours. Si plusieurs brouillons existent, la plus récente.
+  const copieTravailDe = (m) => {
+    if (!m) return null
+    const memePerimetre = (c) =>
+      c.id !== m.id &&
+      c.statut === 'BROUILLON' &&
+      c.annee_academique_id === m.annee_academique_id &&
+      c.ref_formation_id === m.ref_formation_id &&
+      c.niveau_id === m.niveau_id &&
+      (c.parcours_id ?? null) === (m.parcours_id ?? null)
+    return maquettes
+      .filter(memePerimetre)
+      .sort((a, b) => (b.version ?? 0) - (a.version ?? 0))[0] || null
+  }
+
+  // Choix d'une maquette dans la liste : un gestionnaire qui choisit une
+  // version officielle gelée est basculé sur sa copie de travail, pour que
+  // créer/modifier/supprimer/activer/désactiver et la sélection par cases
+  // soient disponibles quelle que soit la maquette choisie. Sans copie,
+  // la maquette choisie s'affiche et le clonage reste proposé.
+  const choisirMaquette = (valeur) => {
+    const choisie = maquettes.find((m) => String(m.id) === String(valeur))
+    if (peutGerer && choisie && choisie.statut !== 'BROUILLON') {
+      const copie = copieTravailDe(choisie)
+      if (copie) {
+        setMaquetteId(String(copie.id))
+        showToast(
+          `Maquette officielle gelée : vous travaillez sur sa copie brouillon `
+          + `(v${copie.version ?? '—'}), entièrement modifiable. `
+          + 'L’originale reste intacte.',
+          'info',
+        )
+        return
+      }
+    }
+    setMaquetteId(valeur)
+  }
 
   const famillesQuery = useQuery({
     queryKey: ['ue-ecue', 'familles'],
@@ -381,10 +450,38 @@ export default function EcranUeEcue() {
 
   const ue = ues.find((u) => Number(u.id) === Number(ueId)) || null
 
-  // Sélection par défaut : la première maquette, puis sa première UE.
+  // Synthèse de la maquette sélectionnée, calculée sur les UE déjà chargées.
+  const synthese = useMemo(() => {
+    const ecues = ues.flatMap((u) => u.ecues || [])
+    const volumes = ecues.reduce(
+      (acc, e) => ({
+        cm: acc.cm + (Number(e.volume_cm) || 0),
+        td: acc.td + (Number(e.volume_td) || 0),
+        tp: acc.tp + (Number(e.volume_tp) || 0),
+      }),
+      { cm: 0, td: 0, tp: 0 },
+    )
+    return {
+      nbEcue: ecues.length,
+      ects: ues.reduce((s, u) => s + (Number(u.credits) || 0), 0),
+      volumes,
+      volumeTotal: volumes.cm + volumes.td + volumes.tp,
+      semestres: new Set(ues.map((u) => u.semestre?.id).filter(Boolean)).size,
+    }
+  }, [ues])
+
+  // Sélection par défaut : pour un gestionnaire, la copie de travail
+  // (première maquette en brouillon) plutôt que la version officielle
+  // gelée — c'est là que créer/cocher/modifier est possible ; sinon la
+  // première maquette, puis sa première UE.
   useEffect(() => {
-    if (!maquetteId && maquettes.length) setMaquetteId(String(maquettes[0].id))
-  }, [maquettes, maquetteId])
+    if (!maquetteId && maquettes.length) {
+      const copieTravail = peutGerer
+        ? maquettes.find((m) => m.statut === 'BROUILLON')
+        : null
+      setMaquetteId(String((copieTravail || maquettes[0]).id))
+    }
+  }, [maquettes, maquetteId, peutGerer])
   useEffect(() => {
     if (ueId && !ues.some((u) => Number(u.id) === Number(ueId))) setUeId(null)
   }, [ues, ueId])
@@ -392,6 +489,11 @@ export default function EcranUeEcue() {
     if (!ueId && ues.length) setUeId(ues[0].id)
   }, [ues, ueId])
   useEffect(() => { setUeId(null) }, [maquetteId])
+  // La sélection multiple ne survit ni au changement de maquette (UE),
+  // ni au changement d'UE sélectionnée (ECUE) : cocher dans un contexte
+  // puis agir dans un autre serait un piège.
+  useEffect(() => { setSelectionUe([]); setSelectionEcue([]) }, [maquetteId])
+  useEffect(() => { setSelectionEcue([]) }, [ueId])
 
   const rafraichir = () => {
     queryClient.invalidateQueries({ queryKey: ['ue-ecue'] })
@@ -433,6 +535,12 @@ export default function EcranUeEcue() {
       const url = type === 'ue' ? `/scolarite/ues/${element.id}/` : `/scolarite/ecues/${element.id}/`
       return api.delete(url)
     },
+  })
+
+  // Clonage : seule voie pour modifier le contenu d'une maquette gelée —
+  // le clone naît en brouillon (version suivante), l'original reste intact.
+  const cloner = useMutation({
+    mutationFn: async () => api.post(`/scolarite/maquettes/${maquetteId}/cloner/`),
   })
 
   const soumettreFormulaire = async (corps, creation) => {
@@ -483,19 +591,82 @@ export default function EcranUeEcue() {
     }
   }
 
+  const executerClonage = async () => {
+    try {
+      const res = await cloner.mutateAsync()
+      const clone = res?.data
+      showToast('Version brouillon créée par clonage : son contenu est modifiable.')
+      await queryClient.invalidateQueries({ queryKey: ['ue-ecue', 'maquettes'] })
+      if (clone?.id) setMaquetteId(String(clone.id))
+    } catch (erreur) {
+      showToast(erreurLisible(erreur, 'Clonage refusé par le serveur.'), 'error')
+    }
+  }
+
+  /** Coche/décoche un élément (sélection individuelle). */
+  const basculerSelection = (setSelection) => (id, coche) => {
+    setSelection((prec) => (coche
+      ? [...new Set([...prec, id])]
+      : prec.filter((x) => x !== id)))
+  }
+  const basculerUe = basculerSelection(setSelectionUe)
+  const basculerEcue = basculerSelection(setSelectionEcue)
+
+  /**
+   * Action de masse sur la sélection : seuls les éléments dont la
+   * transition est autorisée sont traités ; les autres sont comptés comme
+   * ignorés, les refus serveur comme échecs — le bilan dit tout.
+   */
+  const executerMasse = async (type, elements, action) => {
+    const eligibles = action === 'SUPPRIMER'
+      ? elements.filter((el) => el.statut === 'BROUILLON')
+      : elements.filter((el) => (TRANSITIONS[el.statut] || []).includes(action))
+    let reussis = 0
+    let echecs = 0
+    for (const element of eligibles) {
+      try {
+        if (action === 'SUPPRIMER') {
+          await supprimer.mutateAsync({ type, element })
+        } else {
+          await changerStatut.mutateAsync({ type, element, statut: action })
+        }
+        reussis += 1
+      } catch {
+        echecs += 1
+      }
+    }
+    const ignores = elements.length - eligibles.length
+    const libelleAction = { ACTIVE: 'Activation', DESACTIVEE: 'Désactivation', SUPPRIMER: 'Suppression' }[action]
+    const genre = type === 'ue' ? 'UE' : 'ECUE'
+    let message = `${libelleAction} groupée : ${reussis} ${genre} traitée${reussis > 1 ? 's' : ''}.`
+    if (ignores) message += ` ${ignores} ignorée${ignores > 1 ? 's' : ''} (transition non autorisée).`
+    if (echecs) message += ` ${echecs} refusée${echecs > 1 ? 's' : ''} par le serveur.`
+    showToast(message, echecs ? 'error' : 'success')
+    if (type === 'ue') setSelectionUe([])
+    else setSelectionEcue([])
+    rafraichir()
+  }
+
+  const confirmerSuppressionMasse = async () => {
+    const { type, elements } = suppressionMasse
+    setSuppressionMasse(null)
+    await executerMasse(type, elements, 'SUPPRIMER')
+  }
+
   const chargement = maquettesQuery.isLoading
 
   return (
-    <div className="ecran-generique" data-testid="ecran-ue-ecue">
-      <div className="ue-ecue-toolbar">
+    <div className="ecran-generique uex-page" data-testid="ecran-ue-ecue">
+      <div className="uex-toolbar">
+        <span className="uex-toolbar-icone" aria-hidden="true"><i className="bi bi-diagram-3"></i></span>
         <div className="ue-ecue-champ ue-ecue-champ--large">
           <label htmlFor="choix-maquette">Maquette</label>
           <select
             id="choix-maquette"
-            className="form-select form-select-sm"
+            className="form-select form-select-sm uex-select"
             data-testid="choix-maquette"
             value={maquetteId}
-            onChange={(e) => setMaquetteId(e.target.value)}
+            onChange={(e) => choisirMaquette(e.target.value)}
             disabled={chargement}
           >
             <option value="">
@@ -510,22 +681,79 @@ export default function EcranUeEcue() {
         </div>
         <div className="ue-ecue-champ">
           <label htmlFor="recherche-ue">Rechercher une UE</label>
-          <input
-            id="recherche-ue"
-            type="search"
-            className="form-control form-control-sm"
-            placeholder="Code ou intitulé…"
-            value={recherche}
-            onChange={(e) => setRecherche(e.target.value)}
-            data-testid="recherche-ue"
-          />
+          <span className="uex-recherche">
+            <i className="bi bi-search" aria-hidden="true"></i>
+            <input
+              id="recherche-ue"
+              type="search"
+              className="form-control form-control-sm"
+              placeholder="Code ou intitulé…"
+              value={recherche}
+              onChange={(e) => setRecherche(e.target.value)}
+              data-testid="recherche-ue"
+            />
+          </span>
         </div>
         {maquette && (
-          <span className="ue-ecue-etat gen-count-pill" data-testid="etat-maquette">
+          <span
+            className={`ue-ecue-etat uex-etat uex-etat--${String(maquette.statut || '').toLowerCase()}`}
+            data-testid="etat-maquette"
+          >
+            <i className="bi bi-lock-fill" aria-hidden="true"></i>
             {STATUT_MAQUETTE[maquette.statut] || maquette.statut}
           </span>
         )}
+        {maquette && !maquetteEditable && peutGerer && (
+          <button
+            type="button"
+            className="btn btn-warning uex-btn-edition"
+            onClick={executerClonage}
+            disabled={cloner.isPending}
+            data-testid="cloner-maquette-barre"
+          >
+            <i className="bi bi-pencil-square me-1" aria-hidden="true"></i>
+            {cloner.isPending ? 'Clonage…' : 'Passer en mode édition (cloner)'}
+          </button>
+        )}
+        {maquette && (
+          <div className="uex-meta">
+            <span><i className="bi bi-mortarboard"></i>{maquette.ref_formation}</span>
+            <span><i className="bi bi-layers"></i>Niveau {maquette.niveau}</span>
+            <span><i className="bi bi-calendar3"></i>{maquette.annee_academique}</span>
+            <span><i className="bi bi-git"></i>Version {maquette.version}</span>
+          </div>
+        )}
       </div>
+
+      {maquette && !uesQuery.isLoading && (
+        <div className="uex-kpis">
+          <div className="uex-kpi">
+            <span className="uex-kpi-icone is-blue"><i className="bi bi-collection"></i></span>
+            <div><strong>{ues.length}</strong><span>unités d’enseignement</span></div>
+          </div>
+          <div className="uex-kpi">
+            <span className="uex-kpi-icone is-indigo"><i className="bi bi-list-check"></i></span>
+            <div><strong>{synthese.nbEcue}</strong><span>ECUE au total</span></div>
+          </div>
+          <div className="uex-kpi">
+            <span className="uex-kpi-icone is-cyan"><i className="bi bi-award"></i></span>
+            <div><strong>{synthese.ects}</strong><span>crédits ECTS</span></div>
+          </div>
+          <div className="uex-kpi uex-kpi--volumes">
+            <div className="uex-kpi-volumes-tete">
+              <span className="uex-kpi-icone is-amber"><i className="bi bi-clock-history"></i></span>
+              <div><strong>{synthese.volumeTotal} h</strong><span>volume horaire (CM {synthese.volumes.cm} · TD {synthese.volumes.td} · TP {synthese.volumes.tp})</span></div>
+            </div>
+            {synthese.volumeTotal > 0 && (
+              <span className="uex-volumes-barre uex-volumes-barre--kpi" role="img" aria-label="Répartition des volumes de la maquette">
+                <span className="uex-volumes-seg is-cm" style={{ width: `${(synthese.volumes.cm / synthese.volumeTotal) * 100}%` }}></span>
+                <span className="uex-volumes-seg is-td" style={{ width: `${(synthese.volumes.td / synthese.volumeTotal) * 100}%` }}></span>
+                <span className="uex-volumes-seg is-tp" style={{ width: `${(synthese.volumes.tp / synthese.volumeTotal) * 100}%` }}></span>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {maquettesQuery.isError && (
         <div className="alert alert-danger py-2" role="alert" data-testid="erreur-maquettes">
@@ -541,17 +769,32 @@ export default function EcranUeEcue() {
       )}
 
       {maquette && !maquetteEditable && (
-        <div className="alert alert-warning py-2" role="status" data-testid="maquette-verrouillee">
-          Cette maquette est <strong>{STATUT_MAQUETTE[maquette.statut]?.toLowerCase()}</strong> :
-          son contenu ne peut plus être modifié. Créez une nouvelle version (clonage) pour
-          faire évoluer le programme.
+        <div className="uex-alerte" role="status" data-testid="maquette-verrouillee">
+          <i className="bi bi-lock-fill" aria-hidden="true"></i>
+          <span>
+            Cette maquette est <strong>{STATUT_MAQUETTE[maquette.statut]?.toLowerCase()}</strong> :
+            son contenu ne peut plus être modifié. Créez une nouvelle version (clonage) pour
+            faire évoluer le programme.
+          </span>
+          {peutGerer && (
+            <button
+              type="button"
+              className="btn btn-sm btn-warning uex-btn-cloner"
+              onClick={executerClonage}
+              disabled={cloner.isPending}
+              data-testid="cloner-maquette"
+            >
+              <i className="bi bi-copy me-1" aria-hidden="true"></i>
+              {cloner.isPending ? 'Clonage…' : 'Créer une version brouillon (cloner)'}
+            </button>
+          )}
         </div>
       )}
 
       <div className="ue-ecue-colonnes">
         {/* ── Niveau 2 : les UE de la maquette ─────────────────────────── */}
         <div className="ue-ecue-panneau">
-          <div className="gen-panel">
+          <div className="gen-panel uex-panel">
             <div className="gen-panel-head">
               <h2 className="gen-panel-title">
                 <i className="bi bi-collection"></i>
@@ -574,10 +817,78 @@ export default function EcranUeEcue() {
                 )}
               </div>
             </div>
+            {peutGerer && maquetteEditable && selectionUe.length > 0 && (
+              <div className="uex-bulkbar" data-testid="barre-actions-ue">
+                <span className="uex-bulkbar-compte">
+                  <i className="bi bi-check2-square" aria-hidden="true"></i>
+                  {selectionUe.length} UE sélectionnée{selectionUe.length > 1 ? 's' : ''}
+                </span>
+                <div className="uex-bulkbar-actions">
+                  <button
+                    type="button" className="btn btn-sm btn-success"
+                    disabled={changerStatut.isPending || supprimer.isPending}
+                    onClick={() => executerMasse('ue', ues.filter((u) => selectionUe.includes(u.id)), 'ACTIVE')}
+                    data-testid="masse-ue-activer"
+                  >
+                    <i className="bi bi-check-circle me-1" aria-hidden="true"></i>Activer
+                  </button>
+                  <button
+                    type="button" className="btn btn-sm btn-warning"
+                    disabled={changerStatut.isPending || supprimer.isPending}
+                    onClick={() => executerMasse('ue', ues.filter((u) => selectionUe.includes(u.id)), 'DESACTIVEE')}
+                    data-testid="masse-ue-desactiver"
+                  >
+                    <i className="bi bi-pause-circle me-1" aria-hidden="true"></i>Désactiver
+                  </button>
+                  <button
+                    type="button" className="btn btn-sm btn-danger"
+                    disabled={changerStatut.isPending || supprimer.isPending}
+                    onClick={() => setSuppressionMasse({
+                      type: 'ue',
+                      elements: ues.filter((u) => selectionUe.includes(u.id)),
+                    })}
+                    data-testid="masse-ue-supprimer"
+                  >
+                    <i className="bi bi-trash me-1" aria-hidden="true"></i>Supprimer
+                  </button>
+                  <button
+                    type="button" className="btn btn-sm btn-outline-secondary"
+                    onClick={() => setSelectionUe([])}
+                    data-testid="masse-ue-effacer"
+                  >
+                    Tout désélectionner
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="table-responsive gen-table-wrap">
               <table className="table table-sm table-hover align-middle mb-0 gen-table">
                 <thead>
                   <tr>
+                    {peutGerer && (
+                      <th scope="col" className="uex-col-check">
+                        <input
+                          type="checkbox"
+                          className="uex-check"
+                          disabled={!maquetteEditable}
+                          title={maquetteEditable ? 'Tout cocher ou décocher les UE affichées' : 'Maquette gelée : clonez-la en version brouillon pour sélectionner et modifier'}
+                          aria-label="Tout cocher ou décocher les UE affichées"
+                          data-testid="tout-cocher-ue"
+                          checked={uesFiltrees.length > 0 && uesFiltrees.every((u) => selectionUe.includes(u.id))}
+                          ref={(el) => {
+                            if (el) {
+                              el.indeterminate = uesFiltrees.some((u) => selectionUe.includes(u.id))
+                                && !uesFiltrees.every((u) => selectionUe.includes(u.id))
+                            }
+                          }}
+                          onChange={(e) => {
+                            setSelectionUe((prec) => (e.target.checked
+                              ? [...new Set([...prec, ...uesFiltrees.map((u) => u.id)])]
+                              : prec.filter((id) => !uesFiltrees.some((u) => u.id === id))))
+                          }}
+                        />
+                      </th>
+                    )}
                     <th scope="col">Code</th>
                     <th scope="col">Intitulé</th>
                     <th scope="col">Sem.</th>
@@ -587,14 +898,28 @@ export default function EcranUeEcue() {
                   </tr>
                 </thead>
                 <tbody>
-                  {uesFiltrees.map((ligne) => (
+                  {uesFiltrees.map((ligne, index) => (
                     <tr
                       key={ligne.id}
-                      className={Number(ligne.id) === Number(ueId) ? 'table-active' : ''}
+                      className={`uex-ligne${Number(ligne.id) === Number(ueId) ? ' table-active uex-ligne--active' : ''}`}
                       onClick={() => setUeId(ligne.id)}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: 'pointer', animationDelay: `${Math.min(index * 40, 400)}ms` }}
                       data-testid={`ligne-ue-${ligne.id}`}
                     >
+                      {peutGerer && (
+                        <td onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            className="uex-check"
+                            disabled={!maquetteEditable}
+                            title={maquetteEditable ? `Sélectionner l’UE ${ligne.code}` : 'Maquette gelée : clonez-la en version brouillon pour sélectionner et modifier'}
+                            aria-label={`Sélectionner l’UE ${ligne.code}`}
+                            data-testid={`cocher-ue-${ligne.id}`}
+                            checked={selectionUe.includes(ligne.id)}
+                            onChange={(e) => basculerUe(ligne.id, e.target.checked)}
+                          />
+                        </td>
+                      )}
                       <td>
                         {/* Seul contrôle focusable de la ligne : au clavier,
                             c'est le code qui « ouvre » l'UE. */}
@@ -609,9 +934,13 @@ export default function EcranUeEcue() {
                           <span className="gen-code-chip">{ligne.code}</span>
                         </button>
                       </td>
-                      <td>{ligne.intitule}</td>
-                      <td>{ligne.semestre?.libelle || '—'}</td>
-                      <td>{afficherValeur(ligne.credits)}</td>
+                      <td className="uex-intitule">{ligne.intitule}</td>
+                      <td>
+                        {ligne.semestre?.libelle
+                          ? <span className="uex-sem">{ligne.semestre.libelle}</span>
+                          : '—'}
+                      </td>
+                      <td><span className="uex-ects">{afficherValeur(ligne.credits)}</span></td>
                       <td><BadgeStatut statut={ligne.statut} /></td>
                       <td onClick={(e) => e.stopPropagation()}>
                         <div className="ue-ecue-actions">
@@ -653,7 +982,7 @@ export default function EcranUeEcue() {
                   ))}
                   {!uesQuery.isLoading && uesFiltrees.length === 0 && (
                     <tr>
-                      <td colSpan={6}>
+                      <td colSpan={peutGerer ? 7 : 6}>
                         <div className="gen-empty">
                           <i className="bi bi-inbox" aria-hidden="true"></i>
                           <span className="gen-empty-title">
@@ -671,12 +1000,10 @@ export default function EcranUeEcue() {
                 </tbody>
               </table>
             </div>
-            <div className="gen-panel-foot">
+            <div className="gen-panel-foot uex-foot">
               <span className="gen-panel-foot-info">
                 <i className="bi bi-info-circle"></i>
-                <code className="gen-endpoint-chip">
-                  /api/scolarite/maquettes/&lt;id&gt;/ues/
-                </code>
+                {ues.length} UE · {synthese.nbEcue} ECUE · {synthese.ects} ECTS · {synthese.volumeTotal} h de cours
               </span>
             </div>
           </div>
@@ -684,13 +1011,36 @@ export default function EcranUeEcue() {
 
         {/* ── Niveau 3 : les ECUE de l'UE sélectionnée ─────────────────── */}
         <div className="ue-ecue-panneau">
-          <div className="gen-panel">
+          <div className="gen-panel uex-panel">
             <div className="gen-panel-head">
               <h2 className="gen-panel-title">
                 <i className="bi bi-list-check"></i>
                 ECUE {ue ? `— ${ue.code}` : ''}
               </h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {peutGerer && ue && ue.ecues.length > 0 && (
+                  <label className="uex-tout-cocher">
+                    <input
+                      type="checkbox"
+                      className="uex-check"
+                      disabled={!maquetteEditable}
+                      title={maquetteEditable ? 'Tout cocher ou décocher les ECUE affichés' : 'Maquette gelée : clonez-la en version brouillon pour sélectionner et modifier'}
+                      aria-label="Tout cocher ou décocher les ECUE affichés"
+                      data-testid="tout-cocher-ecue"
+                      checked={ue.ecues.every((e) => selectionEcue.includes(e.id))}
+                      ref={(el) => {
+                        if (el) {
+                          el.indeterminate = ue.ecues.some((e) => selectionEcue.includes(e.id))
+                            && !ue.ecues.every((e) => selectionEcue.includes(e.id))
+                        }
+                      }}
+                      onChange={(e) => {
+                        setSelectionEcue(e.target.checked ? ue.ecues.map((x) => x.id) : [])
+                      }}
+                    />
+                    Tout cocher
+                  </label>
+                )}
                 <span className="gen-count-pill">
                   {ue ? `${ue.ecues.length} ECUE` : 'Aucune UE sélectionnée'}
                 </span>
@@ -706,32 +1056,88 @@ export default function EcranUeEcue() {
                 )}
               </div>
             </div>
-            <div className="table-responsive gen-table-wrap">
-              <table className="table table-sm table-hover align-middle mb-0 gen-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Code</th>
-                    <th scope="col">Intitulé</th>
-                    <th scope="col">ECTS</th>
-                    <th scope="col">Volumes</th>
-                    <th scope="col">Statut</th>
-                    <th scope="col" className="text-end">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(ue?.ecues || []).map((ecue) => (
-                    <tr key={ecue.id} data-testid={`ligne-ecue-${ecue.id}`}>
-                      <td><span className="gen-code-chip">{ecue.code}</span></td>
-                      <td>{ecue.intitule}</td>
-                      <td>{afficherValeur(ecue.credits)}</td>
-                      <td className="small text-muted">
-                        {Number(ecue.volume_cm) || Number(ecue.volume_td) || Number(ecue.volume_tp)
-                          ? `CM ${Number(ecue.volume_cm)} · TD ${Number(ecue.volume_td)} · TP ${Number(ecue.volume_tp)}`
-                          : '—'}
-                      </td>
-                      <td><BadgeStatut statut={ecue.statut} /></td>
-                      <td>
-                        <div className="ue-ecue-actions">
+            {peutGerer && maquetteEditable && ue && selectionEcue.length > 0 && (
+              <div className="uex-bulkbar" data-testid="barre-actions-ecue">
+                <span className="uex-bulkbar-compte">
+                  <i className="bi bi-check2-square" aria-hidden="true"></i>
+                  {selectionEcue.length} ECUE sélectionnée{selectionEcue.length > 1 ? 's' : ''}
+                </span>
+                <div className="uex-bulkbar-actions">
+                  <button
+                    type="button" className="btn btn-sm btn-success"
+                    disabled={changerStatut.isPending || supprimer.isPending}
+                    onClick={() => executerMasse('ecue', ue.ecues.filter((e) => selectionEcue.includes(e.id)), 'ACTIVE')}
+                    data-testid="masse-ecue-activer"
+                  >
+                    <i className="bi bi-check-circle me-1" aria-hidden="true"></i>Activer
+                  </button>
+                  <button
+                    type="button" className="btn btn-sm btn-warning"
+                    disabled={changerStatut.isPending || supprimer.isPending}
+                    onClick={() => executerMasse('ecue', ue.ecues.filter((e) => selectionEcue.includes(e.id)), 'DESACTIVEE')}
+                    data-testid="masse-ecue-desactiver"
+                  >
+                    <i className="bi bi-pause-circle me-1" aria-hidden="true"></i>Désactiver
+                  </button>
+                  <button
+                    type="button" className="btn btn-sm btn-danger"
+                    disabled={changerStatut.isPending || supprimer.isPending}
+                    onClick={() => setSuppressionMasse({
+                      type: 'ecue',
+                      elements: ue.ecues.filter((e) => selectionEcue.includes(e.id)),
+                    })}
+                    data-testid="masse-ecue-supprimer"
+                  >
+                    <i className="bi bi-trash me-1" aria-hidden="true"></i>Supprimer
+                  </button>
+                  <button
+                    type="button" className="btn btn-sm btn-outline-secondary"
+                    onClick={() => setSelectionEcue([])}
+                    data-testid="masse-ecue-effacer"
+                  >
+                    Tout désélectionner
+                  </button>
+                </div>
+              </div>
+            )}
+            {ue && ue.ecues.length > 0 && (
+              <div className="uex-legende-volumes" aria-hidden="true">
+                <span><i className="uex-pastille is-cm"></i>Cours magistraux</span>
+                <span><i className="uex-pastille is-td"></i>Travaux dirigés</span>
+                <span><i className="uex-pastille is-tp"></i>Travaux pratiques</span>
+              </div>
+            )}
+            <div className="uex-ecue-grille" key={ue?.id || 'aucune'}>
+              {(ue?.ecues || []).map((ecue, index) => (
+                <article
+                  key={ecue.id}
+                  className="uex-ecue-carte"
+                  style={{ animationDelay: `${Math.min(index * 60, 360)}ms` }}
+                  data-testid={`ligne-ecue-${ecue.id}`}
+                >
+                  <header className="uex-ecue-entete">
+                    {peutGerer && (
+                      <input
+                        type="checkbox"
+                        className="uex-check"
+                        disabled={!maquetteEditable}
+                        title={maquetteEditable ? `Sélectionner l’ECUE ${ecue.code}` : 'Maquette gelée : clonez-la en version brouillon pour sélectionner et modifier'}
+                        aria-label={`Sélectionner l’ECUE ${ecue.code}`}
+                        data-testid={`cocher-ecue-${ecue.id}`}
+                        checked={selectionEcue.includes(ecue.id)}
+                        onChange={(e) => basculerEcue(ecue.id, e.target.checked)}
+                      />
+                    )}
+                    <span className="gen-code-chip">{ecue.code}</span>
+                    <BadgeStatut statut={ecue.statut} />
+                  </header>
+                  <h3 className="uex-ecue-intitule">{ecue.intitule}</h3>
+                  <div className="uex-ecue-volumes">
+                    <BarreVolumes ecue={ecue} />
+                  </div>
+                  <footer className="uex-ecue-pied">
+                    <span className="uex-ects" title="Crédits ECTS">{afficherValeur(ecue.credits)} ECTS</span>
+                    <div className="ue-ecue-actions">
                           {peutGerer && maquetteEditable && ecue.statut === 'BROUILLON' && (
                             <>
                               <button
@@ -764,27 +1170,21 @@ export default function EcranUeEcue() {
                               onChanger={(el, statut) => executerStatut('ecue', el, statut)}
                             />
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {(!ue || ue.ecues.length === 0) && (
-                    <tr>
-                      <td colSpan={6}>
-                        <div className="gen-empty">
-                          <i className="bi bi-inbox" aria-hidden="true"></i>
-                          <span className="gen-empty-title">Aucun ECUE</span>
-                          <span className="gen-empty-text">
-                            {ue
-                              ? 'Sélectionnez « Nouvel ECUE » pour ajouter le premier élément constitutif.'
-                              : 'Sélectionnez une UE à gauche pour voir ses éléments constitutifs.'}
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    </div>
+                  </footer>
+                </article>
+              ))}
+              {(!ue || ue.ecues.length === 0) && (
+                <div className="gen-empty uex-vide">
+                  <i className="bi bi-inbox" aria-hidden="true"></i>
+                  <span className="gen-empty-title">Aucun ECUE</span>
+                  <span className="gen-empty-text">
+                    {ue
+                      ? 'Sélectionnez « Nouvel ECUE » pour ajouter le premier élément constitutif.'
+                      : 'Sélectionnez une UE à gauche pour voir ses éléments constitutifs.'}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="gen-panel-foot">
               <span className="gen-panel-foot-info">
@@ -822,6 +1222,20 @@ export default function EcranUeEcue() {
           confirmLabel="Supprimer"
           onConfirm={confirmerSuppression}
           onCancel={() => setSuppression(null)}
+        />
+      )}
+
+      {suppressionMasse && (
+        <ConfirmModal
+          message={`Supprimer les ${suppressionMasse.elements.length} ${suppressionMasse.type === 'ue' ? 'UE' : 'ECUE'} sélectionnée${suppressionMasse.elements.length > 1 ? 's' : ''} ?`}
+          detail={
+            suppressionMasse.type === 'ue'
+              ? 'Seuls les éléments en brouillon sans dépendance sont supprimés : le serveur refuse les autres et le bilan final le signalera. Aucune suppression en cascade n’est effectuée.'
+              : 'Seuls les ECUE en brouillon sont supprimés : le serveur refuse les autres et le bilan final le signalera.'
+          }
+          confirmLabel="Supprimer la sélection"
+          onConfirm={confirmerSuppressionMasse}
+          onCancel={() => setSuppressionMasse(null)}
         />
       )}
     </div>

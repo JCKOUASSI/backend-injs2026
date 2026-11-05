@@ -980,3 +980,49 @@ class MobileConfigApiTest(TestCase):
         self.assertEqual(res.data['role'], 'AUDITEUR')
         self.assertTrue(res.data['evaluations_enabled'])
 
+
+
+# ──────────────────────────────────────────
+# Journal d'audit — chargement explicite paginé (série « 200 », 05/11/2026)
+# ──────────────────────────────────────────
+
+class AuditLogChargementExpliciteTests(TestCase):
+    """`page_size` explicite : enveloppe paginée bornée à 200, total réel.
+
+    Sans `page_size`, le comportement `limite` historique (écran d'audit
+    du hub Présences) est inchangé.
+    """
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.force_authenticate(make_user('audit_page'))
+        from .models import AuditLog
+        for i in range(3):
+            AuditLog.objects.create(
+                action=AuditLog.Action.USER_LOGIN,
+                cible_type='USER', cible_numero=f'U{i}',
+            )
+
+    def test_limite_historique_inchangee(self):
+        res = self.client.get('/api/audit-logs/', {'limite': 2})
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data['results']), 2)
+        # Comportement historique : count = nombre de lignes extraites.
+        self.assertEqual(res.data['count'], 2)
+
+    def test_page_size_explicite_200(self):
+        res = self.client.get('/api/audit-logs/', {'page_size': 2})
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['count'], 3)
+        self.assertEqual(res.data['page_size'], 2)
+        self.assertEqual(res.data['total_pages'], 2)
+        self.assertEqual(len(res.data['results']), 2)
+        res2 = self.client.get('/api/audit-logs/', {'page_size': 2, 'page': 2})
+        self.assertEqual(len(res2.data['results']), 1)
+        self.assertNotEqual(
+            res.data['results'][0]['id'], res2.data['results'][0]['id'])
+
+        # Demande au-delà du plafond : bornée explicitement à 200.
+        res = self.client.get('/api/audit-logs/', {'page_size': 9999})
+        self.assertEqual(res.data['page_size'], 200)
+        self.assertEqual(len(res.data['results']), 3)

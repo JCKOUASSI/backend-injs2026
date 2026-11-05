@@ -16,6 +16,7 @@ en périodes, donc C9 est vérifiée par les seules bornes de semaines de l'EDT.
 """
 
 from dataclasses import dataclass, field
+from functools import lru_cache
 
 # ── Identifiants des contraintes ──────────────────────────────────────────────
 C1_CONFLIT_ENSEIGNANT = 'C1_CONFLIT_ENSEIGNANT'
@@ -506,6 +507,7 @@ def resume_souples(placements, politique=None):
 
 # ── Compatibilité salle / nature de séance (C7) ──────────────────────────────
 
+@lru_cache(maxsize=None)
 def types_salle_compatibles(nature):
     """Types de salle acceptés pour une nature de séance donnée (C7).
 
@@ -513,7 +515,10 @@ def types_salle_compatibles(nature):
     supposer qu'un espace non typé est incompatible — ce serait un rejet
     injustifié. Une salle typée par ailleurs (ex. ``TP``) est refusée pour un CM.
     """
-    return set(SALLES_GENERIQUES) | set(SALLES_PAR_NATURE.get(nature, ()))
+    # Fonction pure des constantes du module : mémoïsée (lru_cache) car
+    # appelée pour chaque couple (salle, besoin) dans la boucle chaude
+    # du solveur. Ensemble figé : les appelants testent l'appartenance.
+    return frozenset(SALLES_GENERIQUES) | frozenset(SALLES_PAR_NATURE.get(nature, ()))
 
 
 def compatible_salle(salle, nature):

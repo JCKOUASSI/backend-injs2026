@@ -20,6 +20,9 @@ Filtres : annee, ref_formation, niveau, semestre, groupe, enseignant, statut,
 type_enseignement, q (recherche ECUE / enseignant / groupe).
 """
 from django.db.models import Count, Q
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -38,6 +41,17 @@ def _int(valeur):
         return None
 
 
+
+
+# ── Contrats OpenAPI (cours LMD) ─────────────────────────────────────
+
+
+class CoursLmdListeSerializer(serializers.Serializer):
+    total = serializers.IntegerField()
+    resultats = serializers.JSONField()
+
+
+@extend_schema(responses={200: CoursLmdListeSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def cours_list(request):

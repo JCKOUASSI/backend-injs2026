@@ -32,6 +32,44 @@ class ScanService {
     );
   }
 
+  /// Sortie volontaire explicite (`POST /api/scan/secure/exit/`).
+  ///
+  /// Pendant du scan pour les parcours qui séparent le geste de sortie du
+  /// toggle entrée/sortie. Le serveur reste l'autorité : sans entrée
+  /// ouverte, la sortie est refusée (`SORTIE_SANS_ENTREE`) et aucune
+  /// présence n'est fabriquée. La position est optionnelle — une sortie
+  /// n'est jamais refusée pour un motif de géofence.
+  Future<Map<String, dynamic>> secureExit({
+    required String baseUrl,
+    required String accessToken,
+    required String tokenQr,
+    required String deviceId,
+    double? latitude,
+    double? longitude,
+    double? accuracyM,
+    int? batteryLevel,
+    bool? isCharging,
+    Future<String?> Function()? onRefreshToken,
+  }) async {
+    final client = ApiClient(
+      baseUrl: baseUrl,
+      accessToken: accessToken,
+      onRefreshToken: onRefreshToken,
+    );
+    return client.post(
+      '/api/scan/secure/exit/',
+      data: {
+        'token_qr': tokenQr,
+        'device_id': deviceId,
+        'latitude': ?latitude,
+        'longitude': ?longitude,
+        'accuracy_m': ?accuracyM,
+        'battery_level': ?batteryLevel,
+        'is_charging': ?isCharging,
+      },
+    );
+  }
+
   Future<Map<String, dynamic>> heartbeat({
     required String baseUrl,
     required String accessToken,

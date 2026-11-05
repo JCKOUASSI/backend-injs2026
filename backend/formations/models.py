@@ -1586,3 +1586,7 @@ class NotificationFinanceAjustement(models.Model):
 
     def __str__(self):
         return f'{self.get_evenement_display()} → {self.destinataire}'
+
+
+# Alias module-level des choix de périmètre de formation (ENUM_NAME_OVERRIDES).
+PERIMETRE_FORMATION_CHOICES = RefFormation.Perimetre.choices

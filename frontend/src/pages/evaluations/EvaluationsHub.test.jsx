@@ -80,6 +80,22 @@ describe('Hub Évaluations premium', () => {
     expect(container.textContent).not.toContain('BROUILLON')
   })
 
+  it('thème premium dédié et icônes Bootstrap valides (capture 03/11)', async () => {
+    const { container } = mount()
+    await waitFor(() => expect(screen.getByText('12,5')).toBeInTheDocument())
+    // Classe de page du thème premium scopé (les autres hubs sont inchangés).
+    expect(container.querySelector('.evalx-page')).toBeTruthy()
+    // Aucune icône « lucide » résiduelle : ModuleHub préfixe `bi`,
+    // un nom comme `clipboardList` ne rendait aucun glyphe.
+    const icones = [...container.querySelectorAll('i.bi')]
+    expect(icones.length).toBeGreaterThan(0)
+    for (const icone of icones) {
+      expect(icone.className).toMatch(/(^|\s)bi-[a-z0-9-]+/)
+      expect(icone.className).not.toMatch(/clipboardList|calendarRange|penLine|fileLock2|slidersHorizontal|badgeCheck/)
+    }
+    expect(container.querySelector('.cand-hero-icone i').className).toContain('bi-clipboard-check')
+  })
+
   it('affiche les sessions avec leurs dates JJ/MM/AAAA', async () => {
     const user = userEvent.setup()
     mount()

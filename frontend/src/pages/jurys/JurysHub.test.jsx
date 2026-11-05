@@ -70,6 +70,18 @@ const mount = () => {
 beforeEach(preparer)
 
 describe('Hub Jurys premium', () => {
+  it('applique le thème premium dédié (hub-jurys) et le panneau Composition', async () => {
+    const { container } = mount()
+    await waitFor(() => expect(screen.getAllByText('Délibération').length).toBeGreaterThanOrEqual(1))
+    // Le thème v2 ne s'applique que si la classe dédiée est sur la racine du hub
+    // et si chaque panneau porte la classe de son onglet (cf. capture 12:46).
+    expect(container.querySelector('.cand-page.hub-jurys')).not.toBeNull()
+    expect(container.querySelector('.hub-jurys .cand-hero')).not.toBeNull()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('tab', { name: /Composition/ }))
+    expect(container.querySelector('.hub-panel--composition')).not.toBeNull()
+  })
+
   it('affiche les sessions avec étape métier et le taux d’admission', async () => {
     const { container } = mount()
     await waitFor(() => expect(screen.getAllByText('Délibération').length).toBeGreaterThanOrEqual(1))

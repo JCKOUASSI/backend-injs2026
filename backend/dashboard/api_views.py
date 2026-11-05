@@ -3,6 +3,9 @@ API Views pour le Dashboard Engine INJS-LMD 2026.
 Fournit des vues synthétiques consolidées évitant les problèmes N+1.
 """
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -11,6 +14,17 @@ from authentication.permissions import IsDFRC, IsSecretariatOrDFRC
 from . import services
 
 
+
+
+# ── Contrats OpenAPI ──────────────────────────────────────────────────
+
+
+class DashboardDetailErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    error = serializers.JSONField(required=False)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def overview(request):
@@ -19,6 +33,7 @@ def overview(request):
     return Response(data)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def admissions_dashboard(request):
@@ -27,6 +42,7 @@ def admissions_dashboard(request):
     return Response(data)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def etudiant_dashboard(request):
@@ -35,6 +51,7 @@ def etudiant_dashboard(request):
     return Response(data)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def enseignant_dashboard(request):
@@ -43,6 +60,7 @@ def enseignant_dashboard(request):
     return Response(data)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def scolarite_dashboard(request):
@@ -51,6 +69,7 @@ def scolarite_dashboard(request):
     return Response(data)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def pedagogie_dashboard(request):
@@ -59,6 +78,7 @@ def pedagogie_dashboard(request):
     return Response(data)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def presences_dashboard(request):
@@ -67,6 +87,7 @@ def presences_dashboard(request):
     return Response(data)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def finances_dashboard(request):
@@ -75,6 +96,7 @@ def finances_dashboard(request):
     return Response(data)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def examens_dashboard(request):
@@ -83,6 +105,7 @@ def examens_dashboard(request):
     return Response(data)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def logistique_dashboard(request):

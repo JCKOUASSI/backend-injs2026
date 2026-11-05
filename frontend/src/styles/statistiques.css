@@ -1,0 +1,88 @@
+/* STYLE DÉDIÉ : STATISTIQUES & BILANS INJS — premium SOBRE et dynamique.
+   Identité INJS assagie : navy profond désaturé, surfaces claires, accents
+   bleu/ciel discrets, micro-animations (apparition en cascade, survol,
+   onglets pilules). Classes préfixées .stats- : les styles inline historiques
+   de la page restent la base, ce fichier apporte la finition. */
+
+.stats-page { display:flex; flex-direction:column; color:#0f172a; }
+
+/* ── Héros sobre ─────────────────────────────────────────────────────────── */
+.stats-hero { position:relative; overflow:hidden; border-radius:18px; color:#fff;
+  padding:1.15rem 1.4rem; margin-bottom:1.1rem !important;
+  background:
+    radial-gradient(560px 200px at 92% -40%, rgba(53,189,245,.28), transparent 60%),
+    linear-gradient(118deg, #0A1B36 0%, #16295C 52%, #283A87 82%, #17457E 100%) !important;
+  box-shadow:0 16px 34px -18px rgba(7,27,58,.5), inset 0 1px 0 rgba(255,255,255,.16); }
+.stats-hero::after { content:""; position:absolute; left:0; right:0; bottom:0; height:3px;
+  background:linear-gradient(90deg, var(--injs-gold) 0 18%, transparent 18%), linear-gradient(90deg, #F59E0B, #38BDF8, #283A87); opacity:.85; }
+.stats-hero-title { color:#fff !important; font-size:1.42rem !important; letter-spacing:-.02em; }
+.stats-hero-title .bi { color:#7DD3FC !important; }
+.stats-hero-meta { color:#B9CFF5 !important; font-size:.74rem !important; font-weight:600; }
+.stats-hero .form-select { border-radius:999px; border:1px solid rgba(255,255,255,.35);
+  background-color:rgba(255,255,255,.96); font-weight:650; box-shadow:0 6px 16px -10px rgba(0,0,0,.5); }
+.stats-hero .btn-outline-secondary { border-radius:999px; border-color:rgba(255,255,255,.55);
+  color:#fff; font-weight:750; background:rgba(255,255,255,.08); }
+.stats-hero .btn-outline-secondary:hover { background:rgba(255,255,255,.2); color:#fff; }
+.stats-hero .badge { border-radius:999px; }
+
+/* ── Panneau période ─────────────────────────────────────────────────────── */
+.stats-page .finance-filter-panel { background:#fff; border:1px solid #e6edf5; border-radius:16px;
+  padding:1rem 1.15rem; box-shadow:0 8px 22px -14px rgba(7,27,58,.22); }
+.stats-page .finance-period-badge { border-radius:12px; }
+
+/* ── Onglets pilules dynamiques ──────────────────────────────────────────── */
+.stats-tabs { display:flex; gap:.35rem; margin-bottom:1.15rem; overflow-x:auto; padding:.35rem;
+  background:#EEF2F7; border:1px solid #E2E8F0; border-radius:999px; scrollbar-width:none; }
+.stats-tabs::-webkit-scrollbar { display:none; }
+.stats-tab { border:none !important; background:transparent; cursor:pointer; white-space:nowrap;
+  padding:.5rem .95rem !important; border-radius:999px; font-size:.82rem !important; font-weight:600;
+  color:#64748B !important; display:flex; align-items:center; gap:.35rem;
+  transition:all .22s ease; margin-bottom:0 !important; }
+.stats-tab:hover { color:var(--injs-navy) !important; background:rgba(255,255,255,.75); }
+.stats-tab.is-active { background:linear-gradient(120deg,#16295C,#283A87) !important; color:#fff !important;
+  font-weight:750; box-shadow:0 8px 18px -8px rgba(22,41,92,.65); }
+.stats-tab.is-active .bi { color:#7DD3FC; }
+
+/* ── Cartes KPI : apparition en cascade + survol ─────────────────────────── */
+@keyframes statsFadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+.stats-kpi { border-radius:14px !important; border:1px solid #E6EDF5; border-left:4px solid var(--stats-accent,#283A87) !important;
+  box-shadow:0 6px 18px -10px rgba(7,27,58,.18) !important; animation:statsFadeUp .5s ease-out both;
+  transition:transform .2s ease, box-shadow .2s ease; }
+.stats-kpi:hover { transform:translateY(-3px); box-shadow:0 14px 26px -12px rgba(7,27,58,.3) !important; }
+/* Cascade douce selon la position dans les grilles */
+.stats-page [style*="grid"] > .stats-kpi:nth-child(2) { animation-delay:.05s; }
+.stats-page [style*="grid"] > .stats-kpi:nth-child(3) { animation-delay:.1s; }
+.stats-page [style*="grid"] > .stats-kpi:nth-child(4) { animation-delay:.15s; }
+.stats-page [style*="grid"] > .stats-kpi:nth-child(5) { animation-delay:.2s; }
+.stats-page [style*="grid"] > .stats-kpi:nth-child(6) { animation-delay:.25s; }
+.stats-page [style*="grid"] > .stats-kpi:nth-child(7) { animation-delay:.3s; }
+.stats-page [style*="grid"] > .stats-kpi:nth-child(8) { animation-delay:.35s; }
+
+/* ── Cartes graphiques et panneaux ───────────────────────────────────────── */
+.stats-card { border-radius:16px !important; border:1px solid #E6EDF5;
+  box-shadow:0 8px 22px -14px rgba(7,27,58,.22) !important; animation:statsFadeUp .5s ease-out both;
+  transition:box-shadow .2s ease; }
+.stats-card:hover { box-shadow:0 14px 30px -14px rgba(7,27,58,.3) !important; }
+.stats-card h4 { color:var(--injs-navy) !important; letter-spacing:.01em; }
+
+/* Navigation latérale des sections (vue d'ensemble / pédagogie) */
+.stats-sidenav { border-radius:16px !important; border:1px solid #E6EDF5;
+  box-shadow:0 8px 22px -14px rgba(7,27,58,.22) !important; }
+.stats-sidenav > button { transition:background .15s ease, padding-left .15s ease; }
+.stats-sidenav > button:hover { background:#F2F7FE !important; padding-left:1rem !important; }
+
+/* Tableaux sobres */
+.stats-page table { border-collapse:separate; border-spacing:0; }
+.stats-page thead th { font-size:.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em;
+  color:#64748B; background:#F8FAFC; border-bottom:1px solid #E6EDF5 !important; white-space:nowrap; }
+.stats-page tbody tr { transition:background .12s ease; }
+.stats-page tbody tr:hover { background:#F6FAFF; }
+
+/* Boutons d'action discrets */
+.stats-page .btn-outline-secondary { border-radius:999px; font-weight:700; }
+.stats-page .btn-outline-danger { border-radius:999px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .stats-kpi, .stats-card { animation:none; transition:none; }
+  .stats-tab, .stats-sidenav > button { transition:none; }
+}

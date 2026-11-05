@@ -501,3 +501,36 @@ class GroupeAPITests(GroupeFixture, TestCase):
         self.assertEqual(response.status_code, 400)
         response = self.client.get('/api/scolarite/groupes/99999/liste/pdf/')
         self.assertEqual(response.status_code, 404)
+
+
+class GroupeEffectifsChargementExpliciteTests(GroupeFixture, TestCase):
+    """Chargement explicite `page_size` (série « 200 », 05/11/2026).
+
+    Sans `page_size`, le tableau complet historique est conservé ; avec,
+    enveloppe paginée bornée à 200 lignes.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.client.force_authenticate(self.acteur)
+
+    def test_sans_page_size_tableau_historique(self):
+        res = self.client.get('/api/scolarite/groupes/effectifs/')
+        self.assertEqual(res.status_code, 200)
+        self.assertIsInstance(res.data, list)
+        self.assertGreaterEqual(len(res.data), 2)
+
+    def test_page_size_explicite_200(self):
+        res = self.client.get('/api/scolarite/groupes/effectifs/', {'page_size': 1})
+        self.assertGreaterEqual(res.data['count'], 2)
+        self.assertEqual(res.data['page_size'], 1)
+        self.assertEqual(len(res.data['results']), 1)
+        res2 = self.client.get('/api/scolarite/groupes/effectifs/', {'page_size': 1, 'page': 2})
+        self.assertEqual(len(res2.data['results']), 1)
+        self.assertNotEqual(res.data['results'][0]['id'], res2.data['results'][0]['id'])
+
+        total = res.data['count']
+        res = self.client.get('/api/scolarite/groupes/effectifs/', {'page_size': 9999})
+        self.assertEqual(res.data['page_size'], 200)
+        self.assertEqual(len(res.data['results']), total)

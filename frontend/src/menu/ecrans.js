@@ -418,6 +418,11 @@ export const ECRANS = {
       + 'saisies, puis publiez-le. Le calcul et la publication sont des '
       + 'actes tracés côté serveur.',
     endpoint: '/admissions/campagnes/',
+    // Chargement explicite : 200 campagnes par page (demande du 05/11/2026,
+    // même convention que le « chargement explicite : 200 événements » du
+    // hub Présences). L'API borne `page_size` à 200 et répond en enveloppe
+    // paginée ; sans ce paramètre elle renvoie le tableau complet.
+    taillePage: 200,
     // L'API lit le paramètre `q` (recherche sur le libellé et la formation) :
     // avec `search`, la recherche était silencieusement ignorée.
     recherche: { param: 'q', libelle: 'Rechercher une campagne', placeholder: 'Libellé, formation…' },
@@ -539,7 +544,7 @@ export const ECRANS = {
         succes: 'Résultats publiés.',
       },
     ],
-    note: 'Source : /api/admissions/campagnes/ + /classement/',
+    note: 'Chargement explicite : 200 campagnes par page — Source : /api/admissions/campagnes/ + /classement/',
   },
 
 
@@ -617,8 +622,10 @@ export const ECRANS = {
     filtres: [{ param: 'niveau_id', libelle: 'Niveau', type: 'select', ...RESSOURCES.niveaux }],
     colonnes: [
       { cle: 'numero', libelle: 'N°' },
-      { cle: 'libelle', libelle: 'Libellé' },
-      { cle: 'niveau_id', libelle: 'Niveau' },
+      { cle: 'libelle', libelle: 'Libellé', format: 'chip' },
+      // L'identifiant du niveau est résolu vers son code référentiel (L1, L2…)
+      // via la ressource `niveaux` : jamais l'id brut dans le tableau.
+      { cle: 'niveau_id', libelle: 'Niveau', format: 'reference', ...RESSOURCES.niveaux, optionsCleLibelle: 'code' },
       { cle: 'actif', libelle: 'Actif', format: 'booleen' },
     ],
     note: 'Source : /api/scolarite/ref/semestres/',
@@ -969,6 +976,9 @@ export const ECRANS = {
     icone: 'bi-graph-up-arrow',
     introduction: 'Bilans de résultats publiés par le service statistiques.',
     endpoint: '/statistiques/bilans/',
+    // Réponse objet structuré {annee, bilans, periodes, filtres_actifs…} :
+    // rendu dédié (synthèse, bilans, couverture, filtres) et non cartes génériques.
+    rendu: 'bilans_resultats',
     note: 'Source : /api/statistiques/bilans/',
   },
 
@@ -1025,6 +1035,9 @@ export const ECRANS = {
         libelle: 'Seuils',
         icone: 'bi-sliders',
         endpoint: '/statistiques/alertes/seuils/',
+        // Réponse objet structuré {seuils, indicateurs, synthese, seuils_vides} :
+        // rendu dédié (synthèse, jauges, seuils) et non cartes génériques.
+        rendu: 'alertes_seuils',
         note: 'Source : /api/statistiques/alertes/seuils/',
       },
       {
@@ -1032,239 +1045,21 @@ export const ECRANS = {
         libelle: 'Alertes',
         icone: 'bi-exclamation-triangle',
         endpoint: '/stats/alertes/',
+        // Réponse enveloppe {annee, alertes: [...]} : le tableau est à la racine.
+        racineListe: 'alertes',
+        colonnes: [
+          { cle: 'matricule', libelle: 'Matricule' },
+          { cle: 'taux_presence', libelle: 'Taux de présence', format: 'pourcentage' },
+          { cle: 'taux_absence', libelle: "Taux d'absence", format: 'pourcentage' },
+          { cle: 'niveau', libelle: 'Niveau', format: 'badge', couleurs: { AVERTISSEMENT: 'text-bg-warning', CRITIQUE: 'text-bg-danger' } },
+        ],
+        vide: 'Aucune alerte déclenchée : aucun étudiant ne franchit les seuils d’absence configurés.',
         note: 'Source : /api/stats/alertes/',
       },
     ],
   },
 
   // -------------------------------------------------------------- RÉFÉRENTIELS
-  ref_annees: {
-    id: 'ref_annees',
-    titre: 'Années académiques',
-    fil: 'Référentiels',
-    icone: 'bi-calendar-range',
-    introduction: 'Années académiques : période, année courante, clôture et '
-      + 'réouverture (actes tracés).',
-    endpoint: '/scolarite/ref/annees/',
-    colonnes: [
-      { cle: 'libelle', libelle: 'Libellé' },
-      { cle: 'date_debut', libelle: 'Début', format: 'date' },
-      { cle: 'date_fin', libelle: 'Fin', format: 'date' },
-      { cle: 'courante', libelle: 'Courante', format: 'booleen' },
-      { cle: 'actif', libelle: 'Actif', format: 'booleen' },
-    ],
-    actions: [
-      {
-        libelle: 'Clôturer',
-        icone: 'bi-lock',
-        apparence: 'btn-outline-warning',
-        methode: 'POST',
-        chemin: (l) => `/scolarite/annees/${l.id}/cloturer/`,
-        confirmation: 'Clôturer cette année académique ?',
-        detail: 'La clôture bloque les saisies de l\'année.',
-        variant: 'danger',
-        succes: 'Année clôturée.',
-      },
-      {
-        libelle: 'Rouvrir',
-        icone: 'bi-unlock',
-        apparence: 'btn-outline-secondary',
-        methode: 'POST',
-        chemin: (l) => `/scolarite/annees/${l.id}/rouvrir/`,
-        confirmation: 'Rouvrir cette année académique ?',
-        succes: 'Année rouverte.',
-      },
-    ],
-    note: 'Source : /api/scolarite/ref/annees/ + /cloturer/ + /rouvrir/',
-  },
-
-  ref_etablissements: {
-    id: 'ref_etablissements',
-    titre: 'Établissements & sites',
-    fil: 'Référentiels',
-    icone: 'bi-geo-alt',
-    introduction: 'Implantations de l\'établissement : sites, bâtiments et salles.',
-    onglets: [
-      {
-        id: 'sites',
-        libelle: 'Sites',
-        icone: 'bi-geo',
-        endpoint: '/formations/ref/sites/',
-        note: 'Source : /api/formations/ref/sites/',
-      },
-      {
-        id: 'batiments',
-        libelle: 'Bâtiments',
-        icone: 'bi-buildings',
-        endpoint: '/formations/ref/batiments/',
-        note: 'Source : /api/formations/ref/batiments/',
-      },
-      {
-        id: 'salles',
-        libelle: 'Salles',
-        icone: 'bi-door-closed',
-        endpoint: '/formations/ref/salles/',
-        note: 'Source : /api/formations/ref/salles/',
-      },
-    ],
-  },
-
-  ref_formations: {
-    id: 'ref_formations',
-    titre: 'Formations (référentiel)',
-    fil: 'Référentiels',
-    icone: 'bi-book',
-    introduction: 'Référentiel des formations LMD.',
-    endpoint: '/formations/ref/formations/',
-    colonnes: [
-      { cle: 'code', libelle: 'Code' },
-      { cle: 'intitule', libelle: 'Intitulé' },
-      // Qualification officielle : elle vient de la source métier, en lecture
-      // seule (elle ne s'édite pas depuis l'écran).
-      { cle: 'filiere_code', libelle: 'Filière' },
-      { cle: 'perimetre', libelle: 'Périmètre' },
-      { cle: 'type_diplome', libelle: 'Diplôme' },
-      { cle: 'domaine', libelle: 'Domaine' },
-      { cle: 'mention', libelle: 'Mention' },
-      { cle: 'duree_annees', libelle: 'Durée (ans)' },
-      { cle: 'nb_credites', libelle: 'Crédits ECTS' },
-      { cle: 'actif', libelle: 'Actif', format: 'booleen' },
-    ],
-    note: 'Source : /api/formations/ref/formations/ — descripteur de cycle (modèle 04.4).',
-    formulaire: FORMULAIRE_FORMATIONS,
-  },
-
-  ref_filieres: {
-    id: 'ref_filieres',
-    titre: 'Types de formation (référentiel)',
-    fil: 'Référentiels',
-    icone: 'bi-signpost-split',
-    introduction: 'Cycles du référentiel LMD (licence, master, formation '
-      + 'initiale ou continue). Les filières métier F01–F08 ne sont pas des '
-      + 'types de formation : elles qualifient les cycles, cf. écran '
-      + '« Formations ».',
-    endpoint: '/scolarite/ref/types-formation/',
-    colonnes: [
-      { cle: 'code', libelle: 'Code', largeur: '26%' },
-      { cle: 'libelle', libelle: 'Libellé', largeur: '52%' },
-      { cle: 'actif', libelle: 'Actif', format: 'booleen', largeur: '150px' },
-    ],
-    note: 'Source : /api/scolarite/ref/types-formation/',
-    formulaire: FORMULAIRE_TYPES_FORMATION,
-  },
-
-  ref_ue_ecue: {
-    id: 'ref_ue_ecue',
-    type: 'ue_ecue',
-    titre: 'UE / ECUE (référentiel)',
-    fil: 'Référentiels',
-    icone: 'bi-collection',
-    introduction: "Unités d'enseignement et ECUE des maquettes LMD, avec "
-      + 'création, modification, suppression et cycle de vie '
-      + 'Brouillon → Activé → Désactivé.',
-    endpoint: '/scolarite/maquettes/',
-    priorite: ['code', 'intitule', 'statut', 'niveau', 'annee_academique'],
-    detail: {
-      titre: (l) => `UE — maquette ${l.code || l.id}`,
-      sousTitre: "Unités d'enseignement",
-      endpoint: (l) => `/scolarite/maquettes/${l.id}/ues/`,
-      priorite: ['code', 'intitule', 'semestre', 'credits'],
-    },
-    note: 'Source : /api/scolarite/maquettes/ + /ues/',
-  },
-
-  ref_niveaux: {
-    id: 'ref_niveaux',
-    titre: 'Niveaux (référentiel)',
-    fil: 'Référentiels',
-    icone: 'bi-bar-chart-steps',
-    introduction: 'Niveaux du cursus (L1, L2, L3, M1, M2…) rattachés à un cycle. '
-      + 'Lecture et mise à jour du référentiel partagé par toutes les maquettes.',
-    endpoint: '/scolarite/ref/niveaux/',
-    colonnes: [
-      { cle: 'code', libelle: 'Code' },
-      { cle: 'libelle', libelle: 'Libellé' },
-      { cle: 'cycle', libelle: 'Cycle' },
-      { cle: 'ordre', libelle: 'Ordre' },
-      { cle: 'credits_requis', libelle: 'Crédits requis' },
-      { cle: 'actif', libelle: 'Actif', format: 'booleen' },
-    ],
-    note: 'Source : /api/scolarite/ref/niveaux/',
-    formulaire: FORMULAIRE_NIVEAUX,
-  },
-
-  ref_semestres: {
-    id: 'ref_semestres',
-    titre: 'Semestres (référentiel)',
-    fil: 'Référentiels',
-    icone: 'bi-calendar3',
-    introduction: 'Semestres d\'enseignement rattachés à un niveau : base de la '
-      + 'répartition des unités d\'enseignement et des sessions d\'examen.',
-    endpoint: '/scolarite/ref/semestres/',
-    filtres: [{ param: 'niveau_id', libelle: 'Niveau', type: 'select', ...RESSOURCES.niveaux }],
-    colonnes: [
-      { cle: 'numero', libelle: 'N°' },
-      { cle: 'libelle', libelle: 'Libellé' },
-      { cle: 'niveau_id', libelle: 'Niveau' },
-      { cle: 'actif', libelle: 'Actif', format: 'booleen' },
-    ],
-    note: 'Source : /api/scolarite/ref/semestres/',
-    formulaire: FORMULAIRE_SEMESTRES,
-  },
-
-  ref_types_cours: {
-    id: 'ref_types_cours',
-    titre: 'Types de cours & catégories',
-    fil: 'Référentiels',
-    icone: 'bi-tags',
-    introduction: 'Catégories de cours, types de candidature, voies d\'accès, '
-      + 'types d\'évaluation et de document.',
-    onglets: [
-      {
-        id: 'categories',
-        libelle: 'Catégories de cours',
-        icone: 'bi-tag',
-        endpoint: '/formations/ref/categories/',
-        note: 'Source : /api/formations/ref/categories/',
-      },
-      {
-        id: 'grades',
-        libelle: 'Grades',
-        icone: 'bi-award',
-        endpoint: '/formations/ref/grades/',
-        note: 'Source : /api/formations/ref/grades/',
-      },
-      {
-        id: 'vagues',
-        libelle: 'Vagues',
-        icone: 'bi-water',
-        endpoint: '/formations/ref/vagues/',
-        note: 'Source : /api/formations/ref/vagues/',
-      },
-      {
-        id: 'types_evaluation',
-        libelle: "Types d'évaluation",
-        icone: 'bi-clipboard-check',
-        endpoint: '/referentiels/types-evaluation/',
-        note: 'Source : /api/referentiels/types-evaluation/',
-      },
-      {
-        id: 'types_document',
-        libelle: 'Types de document',
-        icone: 'bi-file-earmark',
-        endpoint: '/referentiels/types-document/',
-        note: 'Source : /api/referentiels/types-document/',
-      },
-      {
-        id: 'voies_acces',
-        libelle: "Voies d'accès",
-        icone: 'bi-signpost',
-        endpoint: '/admissions/ref/voies-acces/',
-        note: 'Source : /api/admissions/ref/voies-acces/',
-      },
-    ],
-  },
-
   // ------------------------------------------------------- AUDIT & TRAÇABILITÉ
   audit_journal: {
     id: 'audit_journal',
@@ -1275,6 +1070,10 @@ export const ECRANS = {
       + 'séances, auditeurs, connexions). Lecture seule : aucune ligne ne peut '
       + 'être modifiée ou supprimée.',
     endpoint: '/audit-logs/',
+    // Chargement explicite : 200 événements par page (extension de la série
+    // « 200 événements », 05/11/2026) — l'API honore `page_size` (borné à
+    // 200, total réel) dès qu'il est fourni ; sinon `limite` historique.
+    taillePage: 200,
     recherche: { param: 'cible_numero', libelle: 'Rechercher une cible', placeholder: 'N° auditeur, formateur…' },
     filtres: FILTRES_AUDIT,
     colonnes: [
@@ -1286,7 +1085,7 @@ export const ECRANS = {
       { cle: 'cible_numero', libelle: 'N° cible' },
       { cle: 'ip_address', libelle: 'IP' },
     ],
-    note: 'Source : /api/audit-logs/ (journal append-only)',
+    note: 'Chargement explicite : 200 événements par page — Source : /api/audit-logs/ (journal append-only)',
   },
 
   audit_actions: {
@@ -1297,6 +1096,8 @@ export const ECRANS = {
     introduction: 'Actions filtrées par auteur : qui a fait quoi, quand, depuis '
       + 'quelle adresse IP.',
     endpoint: '/audit-logs/',
+    // Chargement explicite : 200 événements par page (série « 200 », 05/11/2026).
+    taillePage: 200,
     recherche: { param: 'cible_numero', libelle: 'Rechercher une cible' },
     filtres: [
       { param: 'acteur_id', libelle: 'Auteur (identifiant)', type: 'nombre' },
@@ -1311,7 +1112,7 @@ export const ECRANS = {
       { cle: 'cible_nom', libelle: 'Cible' },
       { cle: 'ip_address', libelle: 'IP' },
     ],
-    note: 'Source : /api/audit-logs/?acteur_id=…',
+    note: 'Chargement explicite : 200 événements par page — Source : /api/audit-logs/?acteur_id=…',
   },
 
   audit_modifications: {
@@ -1322,6 +1123,8 @@ export const ECRANS = {
     introduction: 'Créations, modifications et suppressions enregistrées dans '
       + 'le journal d\'audit. Choisir un type de modification pour filtrer.',
     endpoint: '/audit-logs/',
+    // Chargement explicite : 200 événements par page (série « 200 », 05/11/2026).
+    taillePage: 200,
     filtres: [
       {
         param: 'action',
@@ -1339,7 +1142,7 @@ export const ECRANS = {
       { cle: 'cible_type', libelle: 'Type de cible' },
       { cle: 'cible_nom', libelle: 'Cible' },
     ],
-    note: 'Source : /api/audit-logs/?action=…',
+    note: 'Chargement explicite : 200 événements par page — Source : /api/audit-logs/?action=…',
   },
 
   audit_securite: {
@@ -1350,6 +1153,8 @@ export const ECRANS = {
     introduction: 'Connexions, forçages, déliaisons d\'appareils et sorties de '
       + 'périmètre géographique.',
     endpoint: '/audit-logs/',
+    // Chargement explicite : 200 événements par page (série « 200 », 05/11/2026).
+    taillePage: 200,
     filtres: [
       {
         param: 'action',
@@ -1367,7 +1172,7 @@ export const ECRANS = {
       { cle: 'device_id', libelle: 'Appareil' },
       { cle: 'ip_address', libelle: 'IP' },
     ],
-    note: 'Source : /api/audit-logs/?action=USER_LOGIN|FORCE_ENTREE|DEVICE_UNBIND…',
+    note: 'Chargement explicite : 200 événements par page — Source : /api/audit-logs/?action=USER_LOGIN|FORCE_ENTREE|DEVICE_UNBIND…',
   },
 
   audit_integrite: {

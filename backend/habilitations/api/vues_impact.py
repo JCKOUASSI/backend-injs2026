@@ -13,6 +13,9 @@ cas d'erreur (404 objet inexistant) aux conventions du projet
 """
 from rest_framework import status
 from rest_framework.response import Response
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.views import APIView
 
 from habilitations.permissions import ExigeDrapeauAdmin
@@ -28,6 +31,18 @@ CODES_INCONNU = {
 }
 
 
+
+
+# ── Contrats OpenAPI (administration des habilitations) ──────────────
+
+
+class ErreurImpactSerializer(serializers.Serializer):
+    """Erreurs du module : {'detail': message, 'code': CODE}."""
+
+    detail = serializers.CharField()
+    code = serializers.CharField(required=False)
+
+
 class ImpactModuleView(APIView):
     """GET /api/habilitations/impact/module/<code>/ — impact d'un module.
 
@@ -37,6 +52,7 @@ class ImpactModuleView(APIView):
 
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurImpactSerializer, 404: ErreurImpactSerializer})
     def get(self, request, code=None):
         code = (code or '').strip()
         if not code:
@@ -61,6 +77,7 @@ class ImpactPermissionView(APIView):
 
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurImpactSerializer, 404: ErreurImpactSerializer})
     def get(self, request, code=None):
         code = (code or '').strip()
         if not code:
@@ -85,6 +102,7 @@ class ImpactRoleView(APIView):
 
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurImpactSerializer, 404: ErreurImpactSerializer})
     def get(self, request, code=None):
         code = (code or '').strip()
         if not code:
@@ -113,6 +131,7 @@ class ImpactUtilisateurView(APIView):
 
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurImpactSerializer, 404: ErreurImpactSerializer})
     def get(self, request, user_id=None):
         try:
             identifiant = int(user_id)

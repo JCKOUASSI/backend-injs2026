@@ -135,3 +135,7 @@ class User(AbstractUser):
     @property
     def is_auditeur(self):
         return self.role == self.Role.AUDITEUR
+
+
+# Alias module-level des choix de rôle utilisateur (référencé par ENUM_NAME_OVERRIDES).
+ROLE_UTILISATEUR_CHOICES = User.Role.choices

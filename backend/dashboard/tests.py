@@ -200,3 +200,82 @@ class AnneeAcademiqueNonInventeeAPITests(APITestCase):
         res = self.client.get('/api/dashboard/overview/')
         self.assertEqual(res.status_code, 200)
         self.assertIsNone(res.data['annee_academique'])
+
+
+class OverviewIndicateursReelsTests(APITestCase):
+    """La vue d'ensemble consolide les modules réels, sans rien inventer."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='dir_test', password='password123', role=User.Role.ADMIN,
+        )
+        self.client.force_authenticate(user=self.user)
+        from datetime import date
+
+        from scolarite.models import (
+            AnneeAcademique, DossierEtudiant, JournalScolarite, StatutEtudiant,
+        )
+        self.annee = AnneeAcademique.objects.create(
+            libelle='2026-2027', date_debut=date(2026, 9, 1), date_fin=date(2027, 7, 31),
+        )
+        actif = StatutEtudiant.objects.create(code='ACTIF', libelle='Actif')
+        abandon = StatutEtudiant.objects.create(code='ABANDON', libelle='Abandon')
+        femme = Participant.objects.create(
+            matricule='INJS26-1001', nom='Une femme', prenom='Awa', sexe='FEMININ',
+        )
+        homme = Participant.objects.create(
+            matricule='INJS26-1002', nom='Koné', prenom='Yao', sexe='MASCULIN',
+        )
+        DossierEtudiant.objects.create(participant=femme, statut=actif)
+        DossierEtudiant.objects.create(participant=homme, statut=abandon)
+        JournalScolarite.objects.create(
+            action='PIECE_DEPOSEE', objet_libelle='Diplôme – X',
+        )
+
+    def test_overview_consolide_les_modules(self):
+        res = self.client.get('/api/dashboard/overview/')
+        self.assertEqual(res.status_code, 200)
+        indicateurs = res.data['indicateurs']
+        # 1 abandon sur 2 dossiers, aucun diplôme, aucune note saisie.
+        self.assertEqual(indicateurs['taux_abandon'], 50.0)
+        # Aucun diplôme délivré : indicateur non calculable (None → jauge
+        # « — »), pas un faux 0 % d'échec — même convention que le taux de
+        # réussite sans note, ci-dessous.
+        self.assertIsNone(indicateurs['taux_diplomation'])
+        self.assertIsNone(indicateurs['taux_reussite'])
+        self.assertEqual(indicateurs['dossiers_etudiants'], 2)
+
+        sexe = {d['label']: d['value'] for d in res.data['charts']['repartition_sexe']}
+        self.assertEqual(sexe, {'Femmes': 1, 'Hommes': 1})
+
+        evolution = res.data['charts']['evolution_effectifs']
+        self.assertIn('2026-2027', evolution['annees'])
+        self.assertEqual(
+            len(evolution['series'][0]['donnees']), len(evolution['annees']),
+        )
+
+        activite = res.data['activite_recente']
+        self.assertTrue(any('Diplôme – X' in a['texte'] for a in activite))
+        self.assertIn('taux_recouvrement', res.data['situation_financiere'])
+        self.assertIn('categories', res.data['charts']['charges_par_cycle'])
+
+    def test_overview_diplomation_calculee_des_le_premier_diplome(self):
+        """Un diplôme délivré : le taux redevient un pourcentage réel."""
+        from formations.models import RefFormation
+        from graduation.models import Diplome
+        from scolarite.models import DossierEtudiant, Niveau
+
+        formation = RefFormation.objects.create(code='STAPS', intitule='STAPS')
+        niveau = Niveau.objects.create(code='M2', libelle='Master 2')
+        dossier = DossierEtudiant.objects.order_by('id').first()
+        Diplome.objects.create(
+            etudiant=dossier, annee_academique=self.annee,
+            ref_formation=formation, niveau=niveau,
+        )
+
+        res = self.client.get('/api/dashboard/overview/')
+        self.assertEqual(res.status_code, 200)
+        indicateurs = res.data['indicateurs']
+        # 1 diplôme délivré pour 2 dossiers étudiants.
+        self.assertEqual(indicateurs['diplomes_delivres'], 1)
+        self.assertEqual(indicateurs['taux_diplomation'], 50.0)

@@ -27,6 +27,7 @@ export default function Groupes() {
   const { showToast } = useToast()
   const [annee, setAnnee] = useState(null)
   const [groupes, setGroupes] = useState([])
+  const [totalGroupes, setTotalGroupes] = useState(0)
   const [formations, setFormations] = useState([])
   const [niveaux, setNiveaux] = useState([])
   const [filtres, setFiltres] = useState({ ref_formation_id: '', niveau_id: '', actif: '' })
@@ -44,8 +45,14 @@ export default function Groupes() {
       Object.entries(params).filter(([, v]) => v !== ''),
     )
     try {
-      const res = await getEffectifsGroupes(propres)
-      setGroupes(enListe(res))
+      // Chargement explicite : 200 groupes (extension de la série
+      // « 200 événements », 05/11/2026). L'API borne `page_size` à 200 et
+      // répond en enveloppe paginée ; le tableau complet historique reste
+      // accepté par repli.
+      const res = await getEffectifsGroupes({ ...propres, page_size: 200 })
+      const lignes = enListe(res)
+      setGroupes(lignes)
+      setTotalGroupes(Array.isArray(res.data) ? res.data.length : (res.data?.count ?? lignes.length))
     } catch (err) {
       showToast(messageErreur(err, 'Chargement des groupes impossible'), 'error')
     } finally {
@@ -282,6 +289,10 @@ export default function Groupes() {
             <i className="bi bi-list-check" aria-hidden="true"></i>Répartition par groupe
           </h2>
           <span className="cand-count-pill">
+            <i className="bi bi-cloud-download" aria-hidden="true"></i>
+            Chargement explicite : 200 groupes
+          </span>
+          <span className="cand-count-pill">
             {groupesVisibles.length} groupe{groupesVisibles.length > 1 ? 's' : ''}
           </span>
         </header>
@@ -462,6 +473,14 @@ export default function Groupes() {
                   </tbody>
                 </table>
               </div>
+              {totalGroupes > groupes.length && (
+                <p className="cand-note-troncature">
+                  <i className="bi bi-info-circle" aria-hidden="true"></i>
+                  Affichage limité aux {groupes.length} premiers groupes
+                  ({totalGroupes} au total) : le chargement explicite est borné
+                  à 200 et les filtres s'appliquent aux groupes chargés.
+                </p>
+              )}
               <p className="cand-defile" aria-hidden="true">
                 <i className="bi bi-arrow-left-right"></i>
                 Faites défiler le tableau horizontalement

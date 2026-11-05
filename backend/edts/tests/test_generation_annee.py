@@ -174,6 +174,33 @@ class GenerationAnneeTests(BaseAnneeTest):
         self.assertEqual(seances_1, seances_2)
         self.assertEqual(EmploiDuTemps.objects.count(), 1)
 
+    def test_totaux_planifies_coherents_quand_rien_n_est_place(self):
+        """Définitions du bilan : 0 placée ⇒ 0 planifié, 1 non planifié.
+
+        Sans aucune salle au référentiel, le groupe a des besoins mais rien
+        n'est placé : il ne doit pas être compté « planifié » (l'écran
+        affichait 135 planifiés / 0 non planifiés dans ce cas de figure).
+        """
+        from formations.models import RefSalle
+
+        self.importer([
+            f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'
+            for i in range(10)
+        ])
+        RefSalle.objects.all().delete()
+        bilan = A.generer_annee(self.annee.pk, semaines=[1])
+
+        self.assertEqual(bilan['totaux']['nb_groupes'], 1)
+        self.assertEqual(bilan['totaux']['nb_groupes_planifies'], 0)
+        self.assertEqual(bilan['totaux']['nb_groupes_non_planifies'], 1)
+        self.assertEqual(bilan['totaux']['nb_groupes_complets'], 0)
+        self.assertEqual(bilan['status_global'], A.ANNEE_IMPOSSIBLE)
+        ligne = bilan['groupes'][0]
+        self.assertGreater(ligne['seances_attendues'], 0)
+        self.assertEqual(ligne['seances_placees'], 0)
+        # Ici le motif « salle » est le vrai : aucune salle n'existe.
+        self.assertEqual(ligne['motif_echec'], G.MOTIF_AUCUNE_SALLE_COMPATIBLE)
+
     def test_groupe_sans_maquette_signale(self):
         from scolarite.models import Groupe
 
@@ -218,6 +245,38 @@ class GenerationAnneeTests(BaseAnneeTest):
         bilan = A.generer_annee(self.annee.pk, semaines=[1])
         self.assertEqual(bilan['totaux']['groupes_hors_perimetre'], 1)
         self.assertEqual(bilan['totaux']['nb_groupes'], 1)
+
+    def test_filtre_formations_restraint_le_perimetre(self):
+        """Une campagne à périmètre « formations » ne génère que ces formations.
+
+        Sans ce filtre, ``generer_annee`` traitait toute l'année : une
+        campagne ciblée régénérait (et remplaçait) les EDT des autres
+        formations — incohérence corrigée par le paramètre ``formation_ids``.
+        """
+        autre = FabriqueLMD(self).creer_base(perimetre='INJS', filiere='F02', suffixe='2')
+        maquette2, _ue2, ecue2 = autre.creer_maquette()
+        ecue2.volume_cm = 4
+        ecue2.volume_td = 2
+        ecue2.save()
+        from scolarite.models import Maquette
+
+        maquette2.statut = Maquette.Statut.ACTIVE
+        maquette2.save()
+
+        self.importer([f'A-{i:03d};Nom;{self.formation.intitule};L1;S1;L1-G1;V1'
+                       for i in range(10)])
+        self.importer([f'B-{i:03d};Nom;{autre.cycle.intitule};L1;S1;L1-G1;V1'
+                       for i in range(10)])
+
+        bilan = A.generer_annee(self.annee.pk, semaines=[1],
+                                formation_ids=[self.formation.pk])
+        self.assertEqual(bilan['formations_filtrees'], [self.formation.pk])
+        self.assertEqual(bilan['totaux']['nb_groupes'], 1)
+        self.assertEqual(bilan['groupes'][0]['formation'], self.formation.intitule)
+
+        bilan_complet = A.generer_annee(self.annee.pk, semaines=[1])
+        self.assertIsNone(bilan_complet['formations_filtrees'])
+        self.assertEqual(bilan_complet['totaux']['nb_groupes'], 2)
 
 
 class EchelleTests(BaseAnneeTest):

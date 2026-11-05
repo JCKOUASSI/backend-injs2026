@@ -2,6 +2,9 @@
 
 Pattern @api_view (cohérent avec graduation/jurys/equivalences).
 """
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -85,6 +88,17 @@ def _serialize_convention(c):
     }
 
 
+
+
+# ── Contrats OpenAPI ──────────────────────────────────────────────────
+
+
+class StagesErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    error = serializers.JSONField(required=False)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def stats_api(request):
@@ -131,6 +145,7 @@ def stats_api(request):
 
 # ---------- Organismes ----------
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def organismes_list_api(request):
@@ -141,6 +156,7 @@ def organismes_list_api(request):
     return Response({'results': [_serialize_organisme(o) for o in qs]})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: OpenApiTypes.OBJECT, 400: StagesErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrEncadrantOrReadOnly])
 def organisme_creer_api(request):
@@ -163,6 +179,7 @@ def organisme_creer_api(request):
     return Response(_serialize_organisme(o), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: StagesErreurSerializer, 404: StagesErreurSerializer})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated, IsSecretariatOrEncadrantOrReadOnly])
 def organisme_detail_api(request, pk):
@@ -182,6 +199,7 @@ def organisme_detail_api(request, pk):
 
 # ---------- Tuteurs ----------
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def tuteurs_list_api(request):
@@ -192,6 +210,7 @@ def tuteurs_list_api(request):
     return Response({'results': [_serialize_tuteur(t) for t in qs]})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: OpenApiTypes.OBJECT, 400: StagesErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrEncadrantOrReadOnly])
 def tuteur_creer_api(request):
@@ -217,6 +236,7 @@ def tuteur_creer_api(request):
 
 # ---------- Conventions ----------
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def conventions_list_api(request):
@@ -236,6 +256,7 @@ def conventions_list_api(request):
     return Response({'results': [_serialize_convention(c) for c in qs]})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: OpenApiTypes.OBJECT, 400: StagesErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrEncadrantOrReadOnly])
 def convention_creer_api(request):
@@ -270,6 +291,7 @@ def convention_creer_api(request):
     return Response(_serialize_convention(c), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: StagesErreurSerializer, 404: StagesErreurSerializer})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated, IsSecretariatOrEncadrantOrReadOnly])
 def convention_detail_api(request, pk):
@@ -295,6 +317,7 @@ def convention_detail_api(request, pk):
 
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: StagesErreurSerializer, 404: StagesErreurSerializer, 409: StagesErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrEncadrant])
 def convention_transition_api(request, pk):
@@ -313,6 +336,7 @@ def convention_transition_api(request, pk):
     return Response(_serialize_convention(c))
 
 
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 404: StagesErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def convention_pdf_api(request, pk):
@@ -333,6 +357,7 @@ def convention_pdf_api(request, pk):
 
 # ---------- Évaluations ----------
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def evaluations_list_api(request):
@@ -340,6 +365,7 @@ def evaluations_list_api(request):
     return Response({'results': [_serialize_evaluation(e) for e in qs]})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: OpenApiTypes.OBJECT, 400: StagesErreurSerializer, 404: StagesErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrEncadrant])
 def evaluation_creer_api(request, convention_id):
@@ -365,6 +391,7 @@ def evaluation_creer_api(request, convention_id):
     return Response(_serialize_evaluation(e), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: StagesErreurSerializer, 404: StagesErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def evaluation_detail_api(request, pk):

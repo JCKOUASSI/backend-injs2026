@@ -6,12 +6,24 @@ Réponse minimale — aucune information sensible (pas de version, pas de DEBUG)
 """
 from django.db import connection
 from django.utils import timezone
-from rest_framework import status
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 
+class HealthReponseSerializer(serializers.Serializer):
+    """Contrat réel de GET /api/health/ (voir health_view)."""
+
+    status = serializers.ChoiceField(choices=['ok', 'degraded'])
+    database = serializers.ChoiceField(choices=['ok', 'unavailable'])
+    timestamp = serializers.DateTimeField()
+
+
+@extend_schema(
+    responses={200: HealthReponseSerializer, 503: HealthReponseSerializer},
+)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def health_view(request):

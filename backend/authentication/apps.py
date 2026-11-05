@@ -76,6 +76,9 @@ class AuthenticationConfig(AppConfig):
     verbose_name = 'Authentification'
 
     def ready(self):
+        # Import précoce : enregistre l'extension OpenAPI de
+        # l'authentificateur JWT flexible auprès de drf-spectacular.
+        from . import auth_classes  # noqa: F401
         from admin_mixins import patch_admin_related_widgets
 
         patch_admin_related_widgets()

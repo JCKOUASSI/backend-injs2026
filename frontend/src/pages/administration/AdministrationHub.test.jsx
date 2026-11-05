@@ -91,3 +91,15 @@ describe('Hub Administration premium', () => {
     expect(container.textContent).toContain('Département scolarité et vie étudiante')
   })
 })
+
+describe('Hub Administration — design premium sobre', () => {
+  it('applique le thème hub-administration et des icônes Bootstrap valides', async () => {
+    const { container } = mount()
+    await waitFor(() => expect(screen.getByText('EX-2026/CE-001')).toBeInTheDocument())
+    expect(container.querySelector('.hub-administration .cand-hero')).not.toBeNull()
+    expect(container.querySelector('.hub-administration .hub-onglet.is-active')).not.toBeNull()
+    expect(container.innerHTML).not.toContain('bi building2')
+    expect(container.innerHTML).not.toContain('bi calendarCheck2')
+    expect(container.innerHTML).not.toContain('bi fileText')
+  })
+})

@@ -22,7 +22,6 @@ import Users from './pages/Users'
 import ImportExcel from './pages/ImportExcel'
 import Secretariats from './pages/Secretariats'
 import Organigramme from './pages/Organigramme'
-import Referentiels from './pages/Referentiels'
 import TableauDeBordReferentiels from './pages/referentiels/TableauDeBordReferentiels'
 import ReferentielGenerique from './pages/referentiels/ReferentielGenerique'
 import Parametres from './pages/Parametres'
@@ -65,12 +64,25 @@ import EvaluationDetail from './pages/EvaluationDetail'
 import EvaluationTake from './pages/EvaluationTake'
 import Edts from './pages/Edts'
 import EdtPresences from './pages/EdtPresences'
+import SeancesRegistre from './pages/presences/SeancesRegistre'
+import PresencesHub from './pages/presences/PresencesHub'
+import PosteBadgeage from './pages/presences/PosteBadgeage'
+import PresencesRegistre from './pages/presences/PresencesRegistre'
+import PresencesAudit from './pages/presences/PresencesAudit'
+import PresencesGeofence from './pages/presences/PresencesGeofence'
+import PresencesContrat from './pages/presences/PresencesContrat'
 import CoursLmd from './pages/CoursLmd'
 import EdtNew from './pages/EdtNew'
+import GetInjsApp from './pages/getinjs/GetInjsApp'
 import GenerationAnnuelle from './pages/getinjs/GenerationAnnuelle'
+import ImportEtudiants from './pages/getinjs/ImportEtudiants'
+import EtudiantsInscrits from './pages/getinjs/EtudiantsInscrits'
+import ReferentielsInjs from './pages/getinjs/Referentiels'
+import Conception from './pages/getinjs/Conception'
 import CampagnesGeneration from './pages/getinjs/CampagnesGeneration'
 import VersionsPublication from './pages/getinjs/VersionsPublication'
 import AuditDonnees from './pages/getinjs/AuditDonnees'
+import Dimensionnement from './pages/getinjs/Dimensionnement'
 import AffectationNew from './pages/AffectationNew'
 
 import FicheAuditeur from './pages/FicheAuditeur'
@@ -582,6 +594,24 @@ function App() {
               </Layout>
             </ProtectedRoute>
           } />
+          <Route path="/personnel/fonctions" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Personnel</li><li className="separator">/</li><li>Fonctions</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <PersonnelHub ongletInitial="fonctions" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/personnel/services" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Personnel</li><li className="separator">/</li><li>Services</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <PersonnelHub ongletInitial="services" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
           <Route path="/administration/courrier" element={
             <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Administration</li><li className="separator">/</li><li>Courrier</li></>}>
@@ -906,13 +936,18 @@ function App() {
               </Layout>
             </ProtectedRoute>
           } />
-          <Route path="/referentiels/edition" element={
-            <ProtectedRoute allowedRoles={ADMIN_LEVEL_ROLES}>
-              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/referentiels">Référentiels</Link></li><li className="separator">/</li><li>Édition des tables</li></>}>
-                <Referentiels />
-              </Layout>
-            </ProtectedRoute>
-          } />
+          {/* Anciens sous-modules du hub retirés (audit 05/11/2026 : ils
+              doublaient le Tableau de bord) — les URL historiques redirigent
+              vers l'écran de gestion du Tableau de bord correspondant. */}
+          <Route path="/referentiels/edition" element={<Navigate to="/referentiels" replace />} />
+          <Route path="/referentiels/annees" element={<Navigate to="/referentiels/gestion/annees" replace />} />
+          <Route path="/referentiels/etablissements" element={<Navigate to="/referentiels/gestion/sites" replace />} />
+          <Route path="/referentiels/formations" element={<Navigate to="/referentiels/gestion/formations" replace />} />
+          <Route path="/referentiels/filieres" element={<Navigate to="/referentiels/gestion/types-formation" replace />} />
+          <Route path="/referentiels/ue-ecue" element={<Navigate to="/scolarite/maquettes" replace />} />
+          <Route path="/referentiels/niveaux" element={<Navigate to="/referentiels/gestion/niveaux" replace />} />
+          <Route path="/referentiels/semestres" element={<Navigate to="/referentiels/gestion/semestres" replace />} />
+          <Route path="/referentiels/types-cours" element={<Navigate to="/referentiels" replace />} />
           <Route path="/referentiels/gestion/:slug" element={
             <ProtectedRoute allowedRoles={ADMIN_LEVEL_ROLES}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/referentiels">Référentiels</Link></li><li className="separator">/</li><li>Gestion</li></>}>
@@ -971,6 +1006,13 @@ function App() {
               </Layout>
             </ProtectedRoute>
           } />
+          <Route path="/get-injs-app" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>GET INJS APP</li></>}>
+                <GetInjsApp />
+              </Layout>
+            </ProtectedRoute>
+          } />
           <Route path="/edt" element={
             <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Emplois du temps</li></>}>
@@ -982,6 +1024,55 @@ function App() {
             <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Cours (LMD)</li></>}>
                 <CoursLmd />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/presences/seances" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Présences QR</li><li className="separator">/</li><li>Séances</li></>}>
+                <SeancesRegistre />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/presences" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Présences QR</li></>}>
+                <PresencesHub />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/presences/poste" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Présences QR</li><li className="separator">/</li><li>Poste de badgeage</li></>}>
+                <PosteBadgeage />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/presences/registre" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Présences QR</li><li className="separator">/</li><li>Registre des présences</li></>}>
+                <PresencesRegistre />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/presences/audit" element={
+            <ProtectedRoute allowedRoles={[...PRESENCE_VIEW_ROLES, 'ADMIN']} capacite={{ module: 'presences', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Présences QR</li><li className="separator">/</li><li>Journal d’audit</li></>}>
+                <PresencesAudit />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/presences/configuration" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Présences QR</li><li className="separator">/</li><li>Configuration géofence</li></>}>
+                <PresencesGeofence />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/presences/contrat" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Présences QR</li><li className="separator">/</li><li>Contrat API</li></>}>
+                <PresencesContrat />
               </Layout>
             </ProtectedRoute>
           } />
@@ -999,10 +1090,45 @@ function App() {
               </Layout>
             </ProtectedRoute>
           } />
+          <Route path="/edt/conception" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Conception</li></>}>
+                <Conception />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/edt/referentiels" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Référentiels</li></>}>
+                <ReferentielsInjs />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/edt/etudiants-inscrits" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Étudiants inscrits</li></>}>
+                <EtudiantsInscrits />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/edt/import-etudiants" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Import étudiants</li></>}>
+                <ImportEtudiants />
+              </Layout>
+            </ProtectedRoute>
+          } />
           <Route path="/edt/generation-annuelle" element={
             <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Génération annuelle</li></>}>
                 <GenerationAnnuelle />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/edt/dimensionnement" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Dimensionnement</li></>}>
+                <Dimensionnement />
               </Layout>
             </ProtectedRoute>
           } />
