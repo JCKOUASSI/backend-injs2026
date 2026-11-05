@@ -553,6 +553,18 @@
 .eq-table tbody tr.eq-ligne--appliquee { box-shadow: inset 3px 0 0 #64748B; }
 .eq-table tbody tr.eq-ligne--rejetee { box-shadow: inset 3px 0 0 #EF4444; }
 
+/* ── Note de troncature (chargement explicite borné à 200) ── */
+.eq-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0;
+  font-size: 0.76rem;
+  color: #64748B;
+}
+
+.eq-note i { color: var(--injs-blue-royal); font-size: 0.85rem; margin-top: 0.1rem; }
+
 /* ── 11. PREMIUM : actions complémentaires ── */
 .eq-action--completer { color: #9A5B00; background: #FFF4E0; border-color: #F3DFAE; }
 .eq-action--completer:hover:not(:disabled) { background: #FDEBC8; border-color: #EBCB84; color: #7A4800; }

@@ -46,6 +46,7 @@ export default function Equivalences() {
   const peutAgir = canActScolarite(user)
 
   const [demandes, setDemandes] = useState([])
+  const [totalDemandes, setTotalDemandes] = useState(0)
   const [chargement, setChargement] = useState(true)
   const [enCours, setEnCours] = useState(false)
   const [selection, setSelection] = useState(null)
@@ -70,8 +71,16 @@ export default function Equivalences() {
   const charger = useCallback(async () => {
     setChargement(true)
     try {
-      const res = await api.get('/equivalences/demandes/')
-      setDemandes(res.data)
+      // Chargement explicite : 200 demandes (demande du 05/11/2026, même
+      // convention que le « chargement explicite : 200 événements » du hub
+      // Présences et des écrans Campagnes). L'API borne `page_size` à 200
+      // et répond en enveloppe paginée ; le tableau complet historique
+      // (plafond 500) reste accepté par repli.
+      const res = await api.get('/equivalences/demandes/', { params: { page_size: 200 } })
+      const data = res.data
+      const lignes = Array.isArray(data) ? data : (data?.results || [])
+      setDemandes(lignes)
+      setTotalDemandes(Array.isArray(data) ? data.length : (data?.count ?? lignes.length))
     } catch (err) {
       toast.showToast(err.response?.data?.error || 'Chargement impossible.', 'error')
     } finally {
@@ -226,7 +235,8 @@ export default function Equivalences() {
   // Indicateurs de pilotage : calcul d'affichage, aucun appel supplémentaire.
   // Les crédits ne comptent que sur les demandes abouties (validées/appliquées).
   const stats = useMemo(() => ({
-    total: demandes.length,
+    // Total réel renvoyé par l'API (peut dépasser les 200 lignes chargées).
+    total: Math.max(totalDemandes, demandes.length),
     enCours: demandes.filter((d) => STATUTS_EN_COURS.includes(d.statut)).length,
     aCompleter: demandes.filter((d) => d.statut === 'A_COMPLETER').length,
     abouties: demandes.filter((d) => STATUTS_ABOUTIES.includes(d.statut)).length,
@@ -236,7 +246,7 @@ export default function Equivalences() {
     credits: demandes
       .filter((d) => STATUTS_ABOUTIES.includes(d.statut))
       .reduce((somme, d) => somme + (Number(d.credits_reconnus) || 0), 0),
-  }), [demandes])
+  }), [demandes, totalDemandes])
 
   const parStatut = useMemo(() => {
     const compte = {}
@@ -608,6 +618,10 @@ export default function Equivalences() {
             Demandes
           </h2>
           <span className="cand-count-pill">
+            <i className="bi bi-cloud-download" aria-hidden="true"></i>
+            Chargement explicite : 200 demandes
+          </span>
+          <span className="cand-count-pill">
             {demandesFiltrees.length} demande{demandesFiltrees.length > 1 ? 's' : ''}
           </span>
         </header>
@@ -833,6 +847,14 @@ export default function Equivalences() {
             </tbody>
           </table>
         </div>
+        {totalDemandes > demandes.length && (
+          <p className="eq-note">
+            <i className="bi bi-info-circle" aria-hidden="true"></i>
+            Affichage limité aux {demandes.length} premières demandes
+            ({totalDemandes} au total) : le chargement explicite est borné
+            à 200 et les filtres s'appliquent aux demandes chargées.
+          </p>
+        )}
         <p className="cand-defile" aria-hidden="true">
           <i className="bi bi-arrow-left-right"></i>
           Faites défiler le tableau horizontalement

@@ -108,6 +108,31 @@ def demande_list(request):
         for champ in ('statut', 'type_demande', 'etudiant_id', 'annee_academique_id'):
             if champ in request.query_params:
                 queryset = queryset.filter(**{champ: request.query_params[champ]})
+        # Chargement explicite (demande du 05/11/2026, écran Équivalences
+        # et dispenses) : si `page_size` est fourni, réponse paginée bornée
+        # à 200 lignes — même convention que le « chargement explicite :
+        # 200 événements » du hub Présences et des écrans Campagnes. Sans
+        # `page_size`, tableau complet historique (plafond 500) inchangé.
+        if 'page_size' in request.query_params:
+            try:
+                page_size = int(request.query_params.get('page_size') or 50)
+            except (TypeError, ValueError):
+                page_size = 50
+            page_size = max(1, min(page_size, 200))
+            try:
+                page = max(1, int(request.query_params.get('page') or 1))
+            except (TypeError, ValueError):
+                page = 1
+            total = queryset.count()
+            debut = (page - 1) * page_size
+            lignes = queryset[debut:debut + page_size]
+            return Response({
+                'count': total,
+                'total_pages': max(1, -(-total // page_size)),
+                'page': page,
+                'page_size': page_size,
+                'results': [_serializer_demande(d) for d in lignes],
+            })
         return Response([_serializer_demande(d) for d in queryset[:500]])
 
     try:
