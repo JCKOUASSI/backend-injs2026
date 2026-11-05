@@ -135,7 +135,11 @@ describe('descripteurs : chaque chemin appelé existe côté backend', () => {
     // Les modules promus en pages dédiées premium (hubs de la tâche 34)
     // consomment leurs endpoints directement ; le périmètre générique
     // diminue d'autant — le seuil reste significatif.
-    expect(tousChemins.length).toBeGreaterThan(60)
+    // Seuil abaissé à 45 le 05/11/2026 : 8 écrans moteur du hub Référentiels
+    // (ref_annees…ref_types_cours) ont été retirés car ils doublaient le
+    // Tableau de bord des référentiels — le périmètre générique restant
+    // doit demeurer significatif.
+    expect(tousChemins.length).toBeGreaterThan(45)
   })
 
   it('aucun endpoint inventé (tous résolus par le catalogue d\'URL)', () => {
@@ -218,8 +222,7 @@ describe('descripteurs : formulaires de gestion (CRUD)', () => {
   const avecFormulaire = Object.entries(ECRANS).filter(([, e]) => e.formulaire)
 
   it('les écrans de référentiel/formation déclarent un formulaire', () => {
-    const attendus = ['filieres', 'parcours', 'niveaux', 'semestres',
-      'ref_filieres', 'ref_niveaux', 'ref_semestres', 'ref_formations']
+    const attendus = ['filieres', 'parcours', 'niveaux', 'semestres']
     for (const id of attendus) {
       expect(ECRANS[id]?.formulaire, `${id} : aucun formulaire déclaré`).toBeTruthy()
     }

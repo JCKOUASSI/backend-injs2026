@@ -22,7 +22,6 @@ import Users from './pages/Users'
 import ImportExcel from './pages/ImportExcel'
 import Secretariats from './pages/Secretariats'
 import Organigramme from './pages/Organigramme'
-import Referentiels from './pages/Referentiels'
 import TableauDeBordReferentiels from './pages/referentiels/TableauDeBordReferentiels'
 import ReferentielGenerique from './pages/referentiels/ReferentielGenerique'
 import Parametres from './pages/Parametres'
@@ -936,13 +935,18 @@ function App() {
               </Layout>
             </ProtectedRoute>
           } />
-          <Route path="/referentiels/edition" element={
-            <ProtectedRoute allowedRoles={ADMIN_LEVEL_ROLES}>
-              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/referentiels">Référentiels</Link></li><li className="separator">/</li><li>Édition des tables</li></>}>
-                <Referentiels />
-              </Layout>
-            </ProtectedRoute>
-          } />
+          {/* Anciens sous-modules du hub retirés (audit 05/11/2026 : ils
+              doublaient le Tableau de bord) — les URL historiques redirigent
+              vers l'écran de gestion du Tableau de bord correspondant. */}
+          <Route path="/referentiels/edition" element={<Navigate to="/referentiels" replace />} />
+          <Route path="/referentiels/annees" element={<Navigate to="/referentiels/gestion/annees" replace />} />
+          <Route path="/referentiels/etablissements" element={<Navigate to="/referentiels/gestion/sites" replace />} />
+          <Route path="/referentiels/formations" element={<Navigate to="/referentiels/gestion/formations" replace />} />
+          <Route path="/referentiels/filieres" element={<Navigate to="/referentiels/gestion/types-formation" replace />} />
+          <Route path="/referentiels/ue-ecue" element={<Navigate to="/scolarite/maquettes" replace />} />
+          <Route path="/referentiels/niveaux" element={<Navigate to="/referentiels/gestion/niveaux" replace />} />
+          <Route path="/referentiels/semestres" element={<Navigate to="/referentiels/gestion/semestres" replace />} />
+          <Route path="/referentiels/types-cours" element={<Navigate to="/referentiels" replace />} />
           <Route path="/referentiels/gestion/:slug" element={
             <ProtectedRoute allowedRoles={ADMIN_LEVEL_ROLES}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/referentiels">Référentiels</Link></li><li className="separator">/</li><li>Gestion</li></>}>

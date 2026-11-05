@@ -54,7 +54,6 @@ import FeatureFlags from '@/pages/FeatureFlags'
 import Participants from '@/pages/Participants'
 import Profile from '@/pages/Profile'
 import Rattrapages from '@/pages/Rattrapages'
-import Referentiels from '@/pages/Referentiels'
 import Secretariats from '@/pages/Secretariats'
 import Statistiques from '@/pages/Statistiques'
 import Users from '@/pages/Users'
@@ -114,7 +113,6 @@ const PAGES = [
   ['Participants', Participants, '/participants', '/participants'],
   ['Profile', Profile, '/profile', '/profile'],
   ['Rattrapages', Rattrapages, '/rattrapages', '/rattrapages'],
-  ['Referentiels', Referentiels, '/referentiels', '/referentiels'],
   ['PlancheDeStyle', PlancheDeStyle, '/referentiels/planche-de-style', '/referentiels/planche-de-style'],
   ['Secretariats', Secretariats, '/secretariats', '/secretariats'],
   ['Statistiques', Statistiques, '/statistiques', '/statistiques'],
