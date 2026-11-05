@@ -978,6 +978,31 @@ def campagne_valider_api(request, pk):
         return _refus(exc)
 
 
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def dimensionnement_api(request):
+    """GET /api/edts/lmd/dimensionnement/?annee=&capacite= — dimensionnement.
+
+    Rapport calculé sur les données réelles de l'année (inscriptions
+    VALIDÉE, groupes actifs, maquettes actives, salles, formateurs) :
+    promotions à planifier, groupes nécessaires pour la capacité cible
+    demandée (défaut 60), emplois du temps de groupe à produire
+    (**dérivés**, jamais imposés), séances attendues d'après les
+    maquettes actives et anomalies à traiter avant génération.
+    """
+    from edts.moteur.dimensionnement import dimensionner
+
+    annee_id, erreur = _annee_de_requete(request)
+    if erreur is not None:
+        return erreur
+    capacite = _int(request.query_params.get('capacite'))
+    rapport = (
+        dimensionner(annee_id, capacite_cible=capacite)
+        if capacite else dimensionner(annee_id)
+    )
+    return Response(rapport)
+
+
 @api_view(['POST'])
 @permission_classes([IsEdtValidation])
 def campagne_publier_api(request, pk):
