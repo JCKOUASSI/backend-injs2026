@@ -41,6 +41,9 @@ OPERATIONNELS = (
     'scolarite.AffectationPedagogique',
     'scolarite.IndisponibiliteEnseignant',
     'edts.DisponibiliteHoraire',
+    # Configuration géographique des salles (interop présences QR + géo) :
+    # donnée de référence administrable, une ligne par salle.
+    'edts.SalleGeolocalisation',
     'administrations.Direction',
     'administrations.Departement',
     'habilitations.DemandeAcces',
@@ -77,6 +80,14 @@ LECTURE_SEULE = (
     # quoi on pourrait réécrire l'historique d'une génération.
     'edts.CampagneGeneration',
     'edts.ExecutionCampagne',
+    # Registre d'identité des séances (interop GET-INJS) et ses journaux :
+    # produits par le moteur (identité permanente, historique non destructif,
+    # file d'événements append-only, instantanés d'attendus) — consultation
+    # seule, jamais de réécriture manuelle de ces traces.
+    'edts.SeanceRegistre',
+    'edts.SeanceHistorique',
+    'edts.SeanceEvenement',
+    'edts.SeanceInstantaneAttendus',
 )
 
 # Champs jamais affichés en liste (volumineux ou techniques).
