@@ -1472,16 +1472,6 @@ export const ARBORESCENCE = [
         },
       },
       {
-        id: 'referentiels.parametres_lmd',
-        libelle: 'Paramètres LMD',
-        chemin: '/parametres',
-        droit: {
-          curp: ['parametres.parametre.consulter'],
-          legacy: [['web', 'operationnel']],
-          roles: ['ADMIN', 'CHEF_INJS_ADMIN', 'INJS_ADMIN'],
-        },
-      },
-      {
         id: 'referentiels.fonctionnalites',
         libelle: 'Fonctionnalités (drapeaux)',
         chemin: '/parametres/flags',
@@ -1493,8 +1483,9 @@ export const ARBORESCENCE = [
       },
       {
         // Planche de style : documentation vivante du socle visuel, en lecture
-        // seule. Même garde que « Paramètres LMD » (trio d'administration) :
-        // l'écran ne modifie rien, mais il expose l'apparence de référence.
+        // seule. Même garde que le Tableau de bord du hub (trio
+        // d'administration) : l'écran ne modifie rien, mais il expose
+        // l'apparence de référence.
         id: 'referentiels.planche_style',
         libelle: 'Planche de style',
         chemin: '/referentiels/planche-de-style',
@@ -1504,18 +1495,13 @@ export const ARBORESCENCE = [
           roles: ['ADMIN', 'CHEF_INJS_ADMIN', 'INJS_ADMIN'],
         },
       },
-      {
-        // Import Excel (formations, modules, séances, participants) : même garde
-        // que l'ancienne barre latérale (`peut(user, 'participants', 'gerer')`).
-        id: 'referentiels.imports',
-        libelle: 'Imports de données (Excel)',
-        chemin: '/import',
-        droit: {
-          curp: ['scolarite.dossier_etudiant.creer', 'scolarite.inscription_administrative.creer'],
-          legacy: [['participants', 'gerer']],
-          roles: ['ADMIN', 'CHEF_INJS_ADMIN', 'INJS_ADMIN', 'CHEF_SECRETARIAT', 'SECRETARIAT'],
-        },
-      },
+      // 2026-11-05 : « Paramètres LMD » (/parametres) et « Imports de données
+      // (Excel) » (/import) retirés du hub à la demande du commanditaire
+      // (présence jugée superflue ici). Retrait du MENU uniquement : les
+      // routes et les écrans sont conservés — /parametres reste joignable
+      // via Utilisateurs & Accès → Politique de sécurité, /import par son
+      // URL directe — et le Tableau de bord ci-dessus n'en dépend pas
+      // (voir AUDIT-HUB-REFERENTIELS-2026-11-05.md, §7).
     ],
   },
 

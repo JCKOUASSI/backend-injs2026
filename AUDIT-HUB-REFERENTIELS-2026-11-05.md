@@ -181,3 +181,31 @@ Restent ouverts (non traités, à arbitrer) : la fusion des référentiels Grade
 (`formations.RefGrade` vs `RefGradeEnseignant`) et l'onglet Modules — disparu
 avec l'écran Édition ; le concept `formations.RefModule` (0 ligne) reste en
 base sans écran.
+
+---
+
+## 7. Suite donnée — retrait de « Paramètres LMD » et « Imports de données (Excel) » (05/11/2026)
+
+Seconde décision du commanditaire : ces deux sous-modules, conservés au §6,
+sont à leur tour jugés superflus dans le hub. Contrairement aux doublons du
+§6, ce ne sont **pas des doublons du Tableau de bord** — leur retrait est donc
+strictement navigationnel, pour ne rien perturber :
+
+- **Arborescence** : les enfants `referentiels.parametres_lmd` et
+  `referentiels.imports` sont retirés. Le hub ne conserve plus que :
+  Tableau de bord, Fonctionnalités (drapeaux), Planche de style.
+- **Routes et écrans conservés** : `/parametres` (écran Paramètres, toutes
+  catégories) reste déclaré dans `App.jsx` et joignable via Utilisateurs &
+  Accès → Politique de sécurité (même chemin) ; `/import` (ImportExcel)
+  reste déclaré et joignable par URL directe. Aucun écran, aucune donnée,
+  aucun endpoint backend n'est supprimé.
+- **Tableau de bord inchangé** : il ne référence ni `/parametres` ni
+  `/import` ; son contenu (7 catégories, 27 référentiels, registre backend)
+  est strictement identique. Un test d'invariant verrouille le retrait du
+  menu et la conservation des routes (`arborescence.test.js`).
+
+Conséquence assumée : l'import Excel (formations, modules, séances,
+participants) n'a plus d'entrée de menu ; il reste accessible par l'URL
+`/import` pour les rôles déjà autorisés. Si le commanditaire souhaite une
+suppression complète de la fonctionnalité, elle devra faire l'objet d'une
+décision séparée (écran, route et endpoint `/formations/import-excel/`).

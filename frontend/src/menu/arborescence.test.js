@@ -417,7 +417,10 @@ describe('non-régression : les écrans historiques restent accessibles', () => 
     '/archives',
     '/finance-encadrants',
     '/finance-parametrage',
-    '/import',
+    // '/import' retiré de cette liste le 2026-11-05 : l'entrée « Imports de
+    // données (Excel) » du hub Référentiels est supprimée du menu à la demande
+    // du commanditaire (la route /import elle-même est conservée, joignable
+    // par URL directe ; voir AUDIT-HUB-REFERENTIELS-2026-11-05.md, §7).
     '/archives/listes-notes',
     '/archives/cahiers-appel',
     '/evaluations/tableau-de-bord',
@@ -474,6 +477,58 @@ describe('L3 — retrait du menu CPFAE, conservation de la route /modules', () =
     const racine = path.resolve(process.cwd(), 'src')
     const source = fs.readFileSync(path.join(racine, 'App.jsx'), 'utf8')
     expect(source).toContain('path="/modules"')
+  })
+})
+
+/**
+ * 2026-11-05 — « Paramètres LMD » et « Imports de données (Excel) » retirés
+ * du hub Référentiels (présence jugée superflue par le commanditaire).
+ *
+ * Retrait strictement navigationnel, même convention que le lot L3 :
+ *  1. les deux entrées ont disparu du MENU du hub ;
+ *  2. le « Tableau de bord » du hub et ses voisines conservées sont intacts ;
+ *  3. les ROUTES `/parametres` et `/import` restent déclarées dans App.jsx —
+ *     /parametres reste d'ailleurs joignable via Utilisateurs & Accès →
+ *     Politique de sécurité, /import par URL directe. Aucune fonctionnalité,
+ *     aucune donnée et aucun backend ne sont supprimés
+ *     (AUDIT-HUB-REFERENTIELS-2026-11-05.md, §7).
+ */
+describe('hub Référentiels — retrait de Paramètres LMD et Imports Excel (2026-11-05)', () => {
+  const hub = ARBORESCENCE.find((n) => n.id === 'referentiels')
+  const ids = new Set(toutesEntrees.map((entree) => entree.id))
+  const chemins = new Set(toutesEntrees.map((entree) => entree.chemin))
+
+  it('le hub ne contient plus que Tableau de bord, drapeaux et Planche de style', () => {
+    expect(hub.enfants.map((e) => e.id)).toEqual([
+      'referentiels.tous',
+      'referentiels.fonctionnalites',
+      'referentiels.planche_style',
+    ])
+  })
+
+  it('les deux entrées retirées ont disparu du menu', () => {
+    expect(ids.has('referentiels.parametres_lmd')).toBe(false)
+    expect(ids.has('referentiels.imports')).toBe(false)
+    expect(chemins.has('/import')).toBe(false)
+    const residus = toutesEntrees
+      .filter((e) => ['Paramètres LMD', 'Imports de données (Excel)'].includes(e.libelle))
+      .map((e) => e.id)
+    expect(residus).toEqual([])
+  })
+
+  it('le Tableau de bord du hub est intact et /parametres reste joignable ailleurs', () => {
+    expect(ids.has('referentiels.tous')).toBe(true)
+    expect(ids.has('utilisateurs.politique')).toBe(true)
+    expect(chemins.has('/parametres')).toBe(true)
+  })
+
+  it('les routes /parametres et /import restent déclarées dans App.jsx', async () => {
+    const fs = await import('node:fs')
+    const path = await import('node:path')
+    const racine = path.resolve(process.cwd(), 'src')
+    const source = fs.readFileSync(path.join(racine, 'App.jsx'), 'utf8')
+    expect(source).toContain('path="/parametres"')
+    expect(source).toContain('path="/import"')
   })
 })
 
