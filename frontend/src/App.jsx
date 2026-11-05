@@ -82,6 +82,7 @@ import Conception from './pages/getinjs/Conception'
 import CampagnesGeneration from './pages/getinjs/CampagnesGeneration'
 import VersionsPublication from './pages/getinjs/VersionsPublication'
 import AuditDonnees from './pages/getinjs/AuditDonnees'
+import Dimensionnement from './pages/getinjs/Dimensionnement'
 import AffectationNew from './pages/AffectationNew'
 
 import FicheAuditeur from './pages/FicheAuditeur'
@@ -1121,6 +1122,13 @@ function App() {
             <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Génération annuelle</li></>}>
                 <GenerationAnnuelle />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/edt/dimensionnement" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Dimensionnement</li></>}>
+                <Dimensionnement />
               </Layout>
             </ProtectedRoute>
           } />

@@ -353,6 +353,20 @@ export const ARBORESCENCE = [
         },
       },
       {
+        // Dimensionnement dynamique : promotions réelles, groupes
+        // nécessaires (capacité cible paramétrable), EDT à produire
+        // dérivés et anomalies — calculés par le moteur, jamais imposés.
+        id: 'get_injs.dimensionnement',
+        libelle: 'Dimensionnement',
+        description: 'Besoins de planification',
+        icone: 'bi-sliders',
+        chemin: '/edt/dimensionnement',
+        droit: {
+          curp: ['edt.creneau.consulter'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
         // Fenêtre dédiée « Importer les étudiants inscrits » (situation 2,
         // fichier externe) : dépôt, reconstruction du parcours, génération
         // enchaînée et journal des imports. La zone d'import de l'écran de
