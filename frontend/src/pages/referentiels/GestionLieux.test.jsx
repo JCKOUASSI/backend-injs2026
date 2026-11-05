@@ -8,7 +8,7 @@
  * dates d'indisponibilité, bâtiment filtré par le site choisi.
  */
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { screen, act, fireEvent } from '@testing-library/react'
+import { screen, act, fireEvent, within } from '@testing-library/react'
 
 vi.mock('@/services/api', async (importOriginal) => {
   const actual = await importOriginal()
@@ -191,6 +191,41 @@ describe('écran générique — présentations liste / cartes et pagination', (
     fireEvent.click(screen.getByRole('button', { name: /Liste/ }))
     await settle()
     expect(screen.getByRole('table')).toBeTruthy()
+  })
+
+  it('visualise la fiche détaillée d’une salle', async () => {
+    monter30()
+    await settle()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Visualiser Salle de cours 01' }))
+    await settle()
+    const dialogue = screen.getByRole('dialog')
+    expect(within(dialogue).getByText('Salle de cours 01')).toBeTruthy()
+    expect(within(dialogue).getByText('Bloc administratif')).toBeTruthy()
+    expect(within(dialogue).getByText('Tableau blanc, Vidéoprojecteur')).toBeTruthy()
+    expect(within(dialogue).getByText('Actif')).toBeTruthy()
+    expect(within(dialogue).getByRole('button', { name: /Modifier/ })).toBeTruthy()
+
+    fireEvent.click(within(dialogue).getByText('Fermer'))
+    await settle()
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('supprime logiquement après confirmation (désactivation tracée)', async () => {
+    monter30()
+    await settle()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Supprimer Salle de cours 01' }))
+    await settle()
+    const alerte = screen.getByRole('alertdialog')
+    expect(within(alerte).getByText('Supprimer cette valeur ?')).toBeTruthy()
+    expect(within(alerte).getByText('désactivée')).toBeTruthy()
+    expect(within(alerte).getByText(/La suppression physique est désactivée/)).toBeTruthy()
+
+    fireEvent.click(within(alerte).getByRole('button', { name: 'Supprimer' }))
+    await settle()
+    expect(apiMock.patch).toHaveBeenCalledWith('/referentiels/salles/1/', { actif: false })
+    expect(screen.queryByRole('alertdialog')).toBeNull()
   })
 
   it('filtre par bâtiment via le sélecteur rapide', async () => {

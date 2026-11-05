@@ -773,3 +773,53 @@
   .ref-cartes { grid-template-columns: 1fr; padding: 0.9rem; }
   .ref-carte-champs { grid-template-columns: 1fr; }
 }
+
+/* ── 10. VISUALISATION (FICHE DÉTAIL) ET SUPPRESSION LOGIQUE ── */
+.ref-action--supprimer { color: #B91C1C; }
+.ref-action--supprimer:hover { background: #FEF2F2; border-color: #F6C9C9; }
+
+.ref-detail-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.ref-detail-grille {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem 1.4rem;
+  margin: 0;
+}
+
+.ref-detail-champ { min-width: 0; }
+
+.ref-detail-champ dt {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #7A8CA3;
+  margin-bottom: 0.15rem;
+}
+
+.ref-detail-champ dd {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #13263F;
+  overflow-wrap: anywhere;
+}
+
+.ref-suppression-note {
+  font-size: 0.82rem;
+  color: #5A6E8C;
+  background: #F6F9FC;
+  border: 1px solid #E1EAF3;
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+}
+
+@media (max-width: 720px) {
+  .ref-detail-grille { grid-template-columns: 1fr; }
+}

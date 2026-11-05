@@ -159,7 +159,8 @@ export default function ReferentielGenerique() {
   const [form, setForm] = useState({})
   const [erreursForm, setErreursForm] = useState({})
   const [envoi, setEnvoi] = useState(false)
-  const [confirmation, setConfirmation] = useState(null)
+  const [detail, setDetail] = useState(null)
+  const [suppression, setSuppression] = useState(null)
   const [lectureSeule, setLectureSeule] = useState(false)
   // Affichage : la liste historique reste le défaut ; la vue « cartes » et
   // la pagination évitent les écrans de centaines de lignes (166 salles).
@@ -430,16 +431,27 @@ export default function ReferentielGenerique() {
     }
   }
 
-  const archiver = async () => {
-    if (!confirmation) return
+  // Suppression LOGIQUE : le socle interdit la suppression physique
+  // (traçabilité + éléments protégés par les données qui les référencent).
+  // Archivage quand le modèle le supporte, désactivation sinon — dans les
+  // deux cas la valeur disparaît des listes actives et reste récupérable.
+  const confirmerSuppression = async () => {
+    if (!suppression) return
     setEnvoi(true)
     try {
-      await api.post(`/referentiels/${slug}/${confirmation.id}/archiver/`, {})
-      toast.success?.('Valeur archivée — elle reste consultable.')
-      setConfirmation(null)
+      if (archivageSupporte) {
+        await api.post(`/referentiels/${slug}/${suppression.id}/archiver/`, {})
+        toast.success?.(
+          `« ${suppression.libelle} » supprimé — consultable via le filtre « Archivés ».`)
+      } else {
+        await api.patch(`/referentiels/${slug}/${suppression.id}/`, { actif: false })
+        toast.success?.(
+          `« ${suppression.libelle} » supprimé — récupérable via le filtre « Inactifs ».`)
+      }
+      setSuppression(null)
       await charger({ silencieux: true })
     } catch {
-      toast.error?.('Archivage impossible.')
+      toast.error?.('Suppression impossible.')
     } finally {
       setEnvoi(false)
     }
@@ -499,47 +511,64 @@ export default function ReferentielGenerique() {
   }
 
   // Actions d'une ligne, partagées par la vue liste et la vue cartes.
+  // « Visualiser » est toujours disponible (y compris en lecture seule) ;
+  // les actions d'écriture suivent le caractère modifiable du référentiel.
   const rendreActions = (ligne) => (
     <div className="cand-actions">
       <button
         type="button"
         className="ref-action"
-        onClick={() => ouvrirEdition(ligne)}
-        title="Modifier"
-        aria-label={`Modifier ${ligne.libelle}`}
+        onClick={() => setDetail(ligne)}
+        title="Visualiser"
+        aria-label={`Visualiser ${ligne.libelle}`}
       >
-        <i className="bi bi-pencil" aria-hidden="true"></i>
+        <i className="bi bi-eye" aria-hidden="true"></i>
       </button>
-      <button
-        type="button"
-        className={`ref-action ref-action--statut${ligne.actif ? ' is-actif' : ''}`}
-        onClick={() => basculerStatut(ligne)}
-        title={ligne.actif ? 'Désactiver' : 'Activer'}
-        aria-label={`${ligne.actif ? 'Désactiver' : 'Activer'} ${ligne.libelle}`}
-      >
-        <i className={`bi ${ligne.actif ? 'bi-toggle-on' : 'bi-toggle-off'}`} aria-hidden="true"></i>
-      </button>
-      {archivageSupporte && (ligne.archive ? (
-        <button
-          type="button"
-          className="ref-action ref-action--reactiver"
-          onClick={() => reactiver(ligne)}
-          title="Réactiver"
-          aria-label={`Réactiver ${ligne.libelle}`}
-        >
-          <i className="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-        </button>
-      ) : (
-        <button
-          type="button"
-          className="ref-action ref-action--archiver"
-          onClick={() => setConfirmation(ligne)}
-          title="Archiver"
-          aria-label={`Archiver ${ligne.libelle}`}
-        >
-          <i className="bi bi-archive" aria-hidden="true"></i>
-        </button>
-      ))}
+      {!lectureSeule && (
+        <>
+          <button
+            type="button"
+            className="ref-action"
+            onClick={() => ouvrirEdition(ligne)}
+            title="Modifier"
+            aria-label={`Modifier ${ligne.libelle}`}
+          >
+            <i className="bi bi-pencil" aria-hidden="true"></i>
+          </button>
+          {!ligne.archive && (
+            <button
+              type="button"
+              className={`ref-action ref-action--statut${ligne.actif ? ' is-actif' : ''}`}
+              onClick={() => basculerStatut(ligne)}
+              title={ligne.actif ? 'Désactiver' : 'Activer'}
+              aria-label={`${ligne.actif ? 'Désactiver' : 'Activer'} ${ligne.libelle}`}
+            >
+              <i className={`bi ${ligne.actif ? 'bi-toggle-on' : 'bi-toggle-off'}`} aria-hidden="true"></i>
+            </button>
+          )}
+          {archivageSupporte && ligne.archive ? (
+            <button
+              type="button"
+              className="ref-action ref-action--reactiver"
+              onClick={() => reactiver(ligne)}
+              title="Réactiver"
+              aria-label={`Réactiver ${ligne.libelle}`}
+            >
+              <i className="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+            </button>
+          ) : (archivageSupporte || ligne.actif) ? (
+            <button
+              type="button"
+              className="ref-action ref-action--supprimer"
+              onClick={() => setSuppression(ligne)}
+              title="Supprimer"
+              aria-label={`Supprimer ${ligne.libelle}`}
+            >
+              <i className="bi bi-trash3" aria-hidden="true"></i>
+            </button>
+          ) : null}
+        </>
+      )}
     </div>
   )
 
@@ -767,9 +796,7 @@ export default function ReferentielGenerique() {
                       </div>
                     ))}
                 </dl>
-                {!lectureSeule && (
-                  <footer className="ref-carte-pied">{rendreActions(ligne)}</footer>
-                )}
+                <footer className="ref-carte-pied">{rendreActions(ligne)}</footer>
               </article>
             ))}
           </div>
@@ -781,9 +808,7 @@ export default function ReferentielGenerique() {
                   {colonnes.map((c) => (
                     <th key={c.cle} scope="col" data-colonne={c.cle}>{c.libelle}</th>
                   ))}
-                  {!lectureSeule && (
-                    <th scope="col" className="cand-th-actions">Actions</th>
-                  )}
+                  <th scope="col" className="cand-th-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -806,11 +831,9 @@ export default function ReferentielGenerique() {
                         )}
                       </td>
                     ))}
-                    {!lectureSeule && (
                     <td className="cand-td-actions">
                       {rendreActions(ligne)}
                     </td>
-                    )}
                   </tr>
                 ))}
               </tbody>
@@ -1040,27 +1063,121 @@ export default function ReferentielGenerique() {
         </div>
       )}
 
-      {confirmation && (
+      {suppression && (
         <div className="ref-modale-voile" role="presentation">
           <div className="ref-modale ref-modale--etroite" role="alertdialog" aria-modal="true">
             <header className="ref-modale-head">
-              <h2 className="ref-modale-titre">Archiver cette valeur ?</h2>
+              <h2 className="ref-modale-titre">Supprimer cette valeur ?</h2>
             </header>
             <div className="ref-modale-corps">
               <p>
-                <strong>{confirmation.libelle}</strong> ne sera plus proposée dans les
-                nouvelles opérations. Les dossiers existants la conservent : aucune
-                donnée n’est supprimée, l’archivage est réversible.
+                <strong>{suppression.libelle}</strong>{' '}
+                {archivageSupporte ? (
+                  <>sera <strong>archivée</strong> : elle ne sera plus proposée dans les
+                  nouvelles opérations, mais reste consultable via le filtre « Archivés »
+                  et réactivable à tout moment.</>
+                ) : (
+                  <>sera <strong>désactivée</strong> : elle disparaîtra de la liste des
+                  valeurs actives, et reste récupérable via le filtre « Inactifs ».</>
+                )}
+              </p>
+              <p className="ref-suppression-note">
+                La suppression physique est désactivée sur les référentiels : une valeur
+                peut être référencée par des données existantes (par exemple des séances
+                d’emploi du temps) et l’historique doit être préservé.
               </p>
             </div>
             <footer className="ref-modale-pied">
               <div className="ref-modale-boutons">
-                <button type="button" className="cand-btn-fantome" onClick={() => setConfirmation(null)}>
+                <button type="button" className="cand-btn-fantome" onClick={() => setSuppression(null)}>
                   Annuler
                 </button>
-                <button type="button" className="ref-btn-danger" onClick={archiver} disabled={envoi}>
-                  {envoi ? 'Archivage…' : 'Archiver'}
+                <button type="button" className="ref-btn-danger" onClick={confirmerSuppression} disabled={envoi}>
+                  {envoi ? 'Suppression…' : 'Supprimer'}
                 </button>
+              </div>
+            </footer>
+          </div>
+        </div>
+      )}
+
+      {detail && (
+        <div className="ref-modale-voile" role="presentation" onClick={() => setDetail(null)}>
+          <div
+            className="ref-modale"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ref-detail-titre"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="ref-modale-head">
+              <h2 className="ref-modale-titre" id="ref-detail-titre">
+                {detail.libelle}
+                <span>{entree.libelle}</span>
+              </h2>
+              <button
+                type="button"
+                className="ref-modale-fermer"
+                onClick={() => setDetail(null)}
+                aria-label="Fermer"
+              >
+                <i className="bi bi-x-lg" aria-hidden="true"></i>
+              </button>
+            </header>
+            <div className="ref-modale-corps">
+              <div className="ref-detail-badges">
+                {aUnCode && detail.code && <span className="ref-carte-code">{detail.code}</span>}
+                {provenanceSuivie && (
+                  <span className={`ref-fiab ref-fiab--${String(detail.fiabilite).toLowerCase()}`}>
+                    {LIBELLE_FIABILITE[detail.fiabilite] || '—'}
+                  </span>
+                )}
+                <span className={`ref-fiab ${detail.archive ? 'ref-fiab--a_renseigner' : detail.actif ? 'ref-fiab--officiel' : 'ref-fiab--cadrage'}`}>
+                  {detail.archive ? 'Archivé' : detail.actif ? 'Actif' : 'Inactif'}
+                </span>
+              </div>
+              <dl className="ref-detail-grille">
+                {colonnes
+                  .filter((c) => !['code', 'libelle', 'fiabilite'].includes(c.cle))
+                  .map((c) => (
+                    <div className="ref-detail-champ" key={c.cle}>
+                      <dt>{c.libelle}</dt>
+                      <dd>
+                        {typeof detail[c.cle] === 'boolean'
+                          ? (detail[c.cle] ? 'Oui' : 'Non')
+                          : afficherCellule(detail, c.cle)}
+                      </dd>
+                    </div>
+                  ))}
+                {provenanceSuivie && detail.source_document && (
+                  <div className="ref-detail-champ">
+                    <dt>Source documentaire</dt>
+                    <dd>{detail.source_document}</dd>
+                  </div>
+                )}
+                {aUneDescription && detail.description && (
+                  <div className="ref-detail-champ">
+                    <dt>Description</dt>
+                    <dd>{detail.description}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+            <footer className="ref-modale-pied">
+              <div className="ref-modale-boutons">
+                <button type="button" className="cand-btn-fantome" onClick={() => setDetail(null)}>
+                  Fermer
+                </button>
+                {!lectureSeule && (
+                  <button
+                    type="button"
+                    className="cand-btn-principal"
+                    onClick={() => { setDetail(null); ouvrirEdition(detail) }}
+                  >
+                    <i className="bi bi-pencil" aria-hidden="true"></i>
+                    Modifier
+                  </button>
+                )}
               </div>
             </footer>
           </div>
