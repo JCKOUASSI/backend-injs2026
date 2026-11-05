@@ -53,6 +53,7 @@ const dateFR = (valeur) => isoVersDateFrancaise(valeur) || '—'
 export default function Inscriptions() {
   const { showToast } = useToast()
   const [inscriptions, setInscriptions] = useState([])
+  const [totalInscriptions, setTotalInscriptions] = useState(0)
   const [loading, setLoading] = useState(true)
   const [enCours, setEnCours] = useState(null)
   const [creation, setCreation] = useState(false)
@@ -71,8 +72,15 @@ export default function Inscriptions() {
     setLoading(true)
     try {
       const params = Object.fromEntries(Object.entries(filtres).filter(([, v]) => v !== ''))
+      // Chargement explicite : 200 dossiers (extension de la série
+      // « 200 événements », 05/11/2026). L'API borne `page_size` à 200 et
+      // répond en enveloppe paginée ; le tableau complet historique
+      // (plafond 500) reste accepté par repli.
+      params.page_size = 200
       const res = await listInscriptions(params)
-      setInscriptions(enListe(res))
+      const lignes = enListe(res)
+      setInscriptions(lignes)
+      setTotalInscriptions(Array.isArray(res.data) ? res.data.length : (res.data?.count ?? lignes.length))
     } catch (err) {
       showToast(messageErreur(err, 'Chargement des inscriptions impossible'), 'error')
     } finally { setLoading(false) }
@@ -248,6 +256,10 @@ export default function Inscriptions() {
             <i className="bi bi-journal-text" aria-hidden="true"></i>
             Dossiers d’inscription
           </h2>
+          <span className="cand-count-pill">
+            <i className="bi bi-cloud-download" aria-hidden="true"></i>
+            Chargement explicite : 200 dossiers
+          </span>
           <span className="cand-count-pill">
             {inscriptions.length} dossier{inscriptions.length > 1 ? 's' : ''}
           </span>
@@ -443,6 +455,14 @@ export default function Inscriptions() {
                   Nouvelle inscription
                 </button>
               </div>
+            )}
+            {totalInscriptions > inscriptions.length && (
+              <p className="cand-note-troncature">
+                <i className="bi bi-info-circle" aria-hidden="true"></i>
+                Affichage limité aux {inscriptions.length} premiers dossiers
+                ({totalInscriptions} au total) : le chargement explicite est borné
+                à 200 et la recherche s'applique au périmètre chargé côté serveur.
+              </p>
             )}
           </div>
         )}

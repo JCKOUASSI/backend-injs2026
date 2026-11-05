@@ -478,3 +478,24 @@ describe('pages/scolarite/Candidatures — calendrier premium de la date de nais
       .not.toBeInTheDocument()
   })
 })
+
+describe('pages/scolarite/Candidatures — chargement explicite de 200 dossiers', () => {
+  it('demande page_size=200, lit l’enveloppe paginée et l’annonce dans l’écran', async () => {
+    apiController.reset()
+    // Route enveloppe déclarée AVANT setupRoutes (premier motif gagnant).
+    apiController.setRoute('/admissions/candidatures/', () => ({
+      count: 1, total_pages: 1, page: 1, page_size: 200,
+      results: [{
+        id: 7, numero: 'C-200', candidat: 'Test Deux Cents', ref_formation: 'L1 LSF',
+        niveau: 'N1', statut: 'SOUMISE', statut_libelle: 'Soumise',
+        pieces_validees: 0, pieces_obligatoires: 2, taux_completude: 0,
+      }],
+    }))
+    setupRoutes()
+    mount()
+    expect(await screen.findByText('C-200')).toBeInTheDocument()
+    expect(listCalls().at(-1).params).toMatchObject({ page_size: 200 })
+    expect(screen.getByText(/Chargement explicite : 200 dossiers/)).toBeInTheDocument()
+    expect(screen.queryByText(/Affichage limité/)).not.toBeInTheDocument()
+  })
+})

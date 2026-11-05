@@ -275,3 +275,20 @@ describe('descripteurs : formulaires de gestion (CRUD)', () => {
     }
   })
 })
+
+describe('série « 200 » — chargement explicite des écrans d’audit (05/11/2026)', () => {
+  it.each(['audit_journal', 'audit_actions', 'audit_modifications', 'audit_securite'])(
+    '%s charge explicitement 200 événements par page',
+    (id) => {
+      const ecran = ecranParId(id)
+      expect(ecran).toBeTruthy()
+      expect(ecran.endpoint).toBe('/audit-logs/')
+      expect(ecran.taillePage).toBe(200)
+      expect(ecran.note).toMatch(/Chargement explicite : 200 événements par page/)
+    },
+  )
+
+  it('resultats_concours conserve son chargement explicite de 200', () => {
+    expect(ecranParId('resultats_concours').taillePage).toBe(200)
+  })
+})

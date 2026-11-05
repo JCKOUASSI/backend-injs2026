@@ -1070,6 +1070,10 @@ export const ECRANS = {
       + 'séances, auditeurs, connexions). Lecture seule : aucune ligne ne peut '
       + 'être modifiée ou supprimée.',
     endpoint: '/audit-logs/',
+    // Chargement explicite : 200 événements par page (extension de la série
+    // « 200 événements », 05/11/2026) — l'API honore `page_size` (borné à
+    // 200, total réel) dès qu'il est fourni ; sinon `limite` historique.
+    taillePage: 200,
     recherche: { param: 'cible_numero', libelle: 'Rechercher une cible', placeholder: 'N° auditeur, formateur…' },
     filtres: FILTRES_AUDIT,
     colonnes: [
@@ -1081,7 +1085,7 @@ export const ECRANS = {
       { cle: 'cible_numero', libelle: 'N° cible' },
       { cle: 'ip_address', libelle: 'IP' },
     ],
-    note: 'Source : /api/audit-logs/ (journal append-only)',
+    note: 'Chargement explicite : 200 événements par page — Source : /api/audit-logs/ (journal append-only)',
   },
 
   audit_actions: {
@@ -1092,6 +1096,8 @@ export const ECRANS = {
     introduction: 'Actions filtrées par auteur : qui a fait quoi, quand, depuis '
       + 'quelle adresse IP.',
     endpoint: '/audit-logs/',
+    // Chargement explicite : 200 événements par page (série « 200 », 05/11/2026).
+    taillePage: 200,
     recherche: { param: 'cible_numero', libelle: 'Rechercher une cible' },
     filtres: [
       { param: 'acteur_id', libelle: 'Auteur (identifiant)', type: 'nombre' },
@@ -1106,7 +1112,7 @@ export const ECRANS = {
       { cle: 'cible_nom', libelle: 'Cible' },
       { cle: 'ip_address', libelle: 'IP' },
     ],
-    note: 'Source : /api/audit-logs/?acteur_id=…',
+    note: 'Chargement explicite : 200 événements par page — Source : /api/audit-logs/?acteur_id=…',
   },
 
   audit_modifications: {
@@ -1117,6 +1123,8 @@ export const ECRANS = {
     introduction: 'Créations, modifications et suppressions enregistrées dans '
       + 'le journal d\'audit. Choisir un type de modification pour filtrer.',
     endpoint: '/audit-logs/',
+    // Chargement explicite : 200 événements par page (série « 200 », 05/11/2026).
+    taillePage: 200,
     filtres: [
       {
         param: 'action',
@@ -1134,7 +1142,7 @@ export const ECRANS = {
       { cle: 'cible_type', libelle: 'Type de cible' },
       { cle: 'cible_nom', libelle: 'Cible' },
     ],
-    note: 'Source : /api/audit-logs/?action=…',
+    note: 'Chargement explicite : 200 événements par page — Source : /api/audit-logs/?action=…',
   },
 
   audit_securite: {
@@ -1145,6 +1153,8 @@ export const ECRANS = {
     introduction: 'Connexions, forçages, déliaisons d\'appareils et sorties de '
       + 'périmètre géographique.',
     endpoint: '/audit-logs/',
+    // Chargement explicite : 200 événements par page (série « 200 », 05/11/2026).
+    taillePage: 200,
     filtres: [
       {
         param: 'action',
@@ -1162,7 +1172,7 @@ export const ECRANS = {
       { cle: 'device_id', libelle: 'Appareil' },
       { cle: 'ip_address', libelle: 'IP' },
     ],
-    note: 'Source : /api/audit-logs/?action=USER_LOGIN|FORCE_ENTREE|DEVICE_UNBIND…',
+    note: 'Chargement explicite : 200 événements par page — Source : /api/audit-logs/?action=USER_LOGIN|FORCE_ENTREE|DEVICE_UNBIND…',
   },
 
   audit_integrite: {

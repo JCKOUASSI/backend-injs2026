@@ -3313,16 +3313,38 @@ def audit_log_list(request):
     if request.user.role == 'ENCADRANT':
         qs = qs.filter(formation__modules__superviseur=request.user)
 
-    limite = 500
-    limite_brute = request.query_params.get('limite')
-    if limite_brute:
+    # Chargement explicite paginé (extension de la série « 200 »,
+    # 05/11/2026) : si `page_size` est fourni (écrans du hub Audit &
+    # Traçabilité), extraction paginée bornée à 200 lignes avec total
+    # réel. Sans `page_size`, comportement `limite` historique ci-dessous
+    # (écran d'audit du hub Présences) inchangé.
+    paginer = 'page_size' in request.query_params
+    total = None
+    if paginer:
         try:
-            limite = max(1, min(int(limite_brute), 500))
+            page_size = int(request.query_params.get('page_size') or 50)
         except (TypeError, ValueError):
-            limite = 500
+            page_size = 50
+        page_size = max(1, min(page_size, 200))
+        try:
+            page = max(1, int(request.query_params.get('page') or 1))
+        except (TypeError, ValueError):
+            page = 1
+        total = qs.count()
+        debut = (page - 1) * page_size
+        selection = qs[debut:debut + page_size]
+    else:
+        limite = 500
+        limite_brute = request.query_params.get('limite')
+        if limite_brute:
+            try:
+                limite = max(1, min(int(limite_brute), 500))
+            except (TypeError, ValueError):
+                limite = 500
+        selection = qs[:limite]
 
     data = []
-    for log in qs[:limite]:
+    for log in selection:
         data.append({
             'id': log.id,
             'timestamp': log.timestamp.isoformat(),
@@ -3342,6 +3364,14 @@ def audit_log_list(request):
             'extra': log.extra,
         })
 
+    if paginer:
+        return Response({
+            'count': total,
+            'total_pages': max(1, -(-total // page_size)),
+            'page': page,
+            'page_size': page_size,
+            'results': data,
+        })
     return Response({'count': len(data), 'results': data})
 
 

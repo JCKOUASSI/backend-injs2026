@@ -191,3 +191,27 @@ describe('pages/scolarite/Inscriptions — refonte premium', () => {
     expect(within(ligne).getByRole('button', { name: 'Dossier' })).toBeInTheDocument()
   })
 })
+
+describe('pages/scolarite/Inscriptions — chargement explicite de 200 dossiers', () => {
+  it('demande page_size=200, lit l’enveloppe paginée et l’annonce dans l’écran', async () => {
+    apiController.reset()
+    // Route enveloppe déclarée AVANT setupRoutes (premier motif gagnant).
+    apiController.setRoute('/scolarite/inscriptions/', () => ({
+      count: 1, total_pages: 1, page: 1, page_size: 200,
+      results: [{
+        id: 9, matricule: 'MAT-200', etudiant: 'Test Deux Cents', etudiant_id: 12,
+        ref_formation: 'L1 LSF', niveau: 'N1', type_inscription_libelle: 'Nouvelle',
+        statut: 'BROUILLON', statut_libelle: 'Brouillon',
+        annee_academique: '2025-2026',
+      }],
+    }))
+    setupRoutes()
+    mount()
+    expect(await screen.findByText('MAT-200')).toBeInTheDocument()
+    const appel = apiMock.get.mock.calls.find(([p]) => p === '/scolarite/inscriptions/')
+    expect(appel).toBeTruthy()
+    expect(appel[1].params).toMatchObject({ page_size: 200 })
+    expect(screen.getByText(/Chargement explicite : 200 dossiers/)).toBeInTheDocument()
+    expect(screen.queryByText(/Affichage limité/)).not.toBeInTheDocument()
+  })
+})

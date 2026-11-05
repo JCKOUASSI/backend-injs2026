@@ -224,6 +224,30 @@ def candidature_list(request):
                 | Q(candidat__nom__icontains=recherche)
                 | Q(candidat__prenom__icontains=recherche)
             )
+        # Chargement explicite (extension de la série, 05/11/2026) : si
+        # `page_size` est fourni, réponse paginée bornée à 200 lignes —
+        # même convention que les écrans Campagnes / Équivalences. Sans
+        # `page_size`, tableau complet historique (plafond 500) inchangé.
+        if 'page_size' in request.query_params:
+            try:
+                page_size = int(request.query_params.get('page_size') or 50)
+            except (TypeError, ValueError):
+                page_size = 50
+            page_size = max(1, min(page_size, 200))
+            try:
+                page = max(1, int(request.query_params.get('page') or 1))
+            except (TypeError, ValueError):
+                page = 1
+            total = queryset.count()
+            debut = (page - 1) * page_size
+            lignes = queryset[debut:debut + page_size]
+            return Response({
+                'count': total,
+                'total_pages': max(1, -(-total // page_size)),
+                'page': page,
+                'page_size': page_size,
+                'results': [_serialize_candidature(c) for c in lignes],
+            })
         return Response([_serialize_candidature(c) for c in queryset[:500]])
 
     candidat = Candidat.objects.filter(pk=request.data.get('candidat_id')).first()

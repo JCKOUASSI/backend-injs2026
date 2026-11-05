@@ -441,6 +441,7 @@ function NouvelleCandidature({ annee, formations, niveaux, onCree, onAnnuler }) 
 export default function Candidatures() {
   const { showToast } = useToast()
   const [candidatures, setCandidatures] = useState([])
+  const [totalCandidatures, setTotalCandidatures] = useState(0)
   const [annee, setAnnee] = useState(null)
   const [formations, setFormations] = useState([])
   const [niveaux, setNiveaux] = useState([])
@@ -455,8 +456,16 @@ export default function Candidatures() {
       const params = {}
       if (filtres.statut) params.statut = filtres.statut
       if (filtres.q) params.q = filtres.q
+      // Chargement explicite : 200 dossiers (extension de la série
+      // « 200 événements », 05/11/2026). L'API borne `page_size` à 200 et
+      // répond en enveloppe paginée ; le tableau complet historique
+      // (plafond 500) reste accepté par repli.
+      params.page_size = 200
       const res = await listCandidatures(params)
-      setCandidatures(res.data)
+      const data = res.data
+      const lignes = Array.isArray(data) ? data : (data?.results || [])
+      setCandidatures(lignes)
+      setTotalCandidatures(Array.isArray(data) ? data.length : (data?.count ?? lignes.length))
     } catch (err) {
       showToast(messageErreur(err, 'Chargement des candidatures impossible'), 'error')
     } finally {
@@ -487,7 +496,8 @@ export default function Candidatures() {
   // supplémentaire) : ils reprennent la logique des tuiles KPI du
   // « Tableau de bord LMD 2026 ».
   const indicateurs = useMemo(() => {
-    const total = candidatures.length
+    // Total réel renvoyé par l'API (peut dépasser les 200 lignes chargées).
+    const total = Math.max(totalCandidatures, candidatures.length)
     const complets = candidatures.filter((c) => (c.taux_completude ?? 0) === 100).length
     const enCours = candidatures.filter((c) =>
       ['SOUMISE', 'EN_ATTENTE_DE_VERIFICATION', 'PIECES_INCOMPLETES', 'EN_ETUDE'].includes(c.statut)
@@ -496,7 +506,7 @@ export default function Candidatures() {
       ['ADMIS', 'ADMIS_SOUS_RESERVE'].includes(c.statut)
     ).length
     return { total, complets, enCours, admis }
-  }, [candidatures])
+  }, [candidatures, totalCandidatures])
 
   return (
     <div className="cand-page">
@@ -577,6 +587,10 @@ export default function Candidatures() {
           <h2 className="cand-panel-title">
             <i className="bi bi-list-check"></i>Dossiers de candidature
           </h2>
+          <span className="cand-count-pill">
+            <i className="bi bi-cloud-download" aria-hidden="true"></i>
+            Chargement explicite : 200 dossiers
+          </span>
           <span className="cand-count-pill">
             {candidatures.length} dossier{candidatures.length > 1 ? 's' : ''}
           </span>
@@ -679,6 +693,14 @@ export default function Candidatures() {
               <i className="bi bi-arrow-left-right"></i>
               Faites défiler le tableau horizontalement
             </p>
+            {totalCandidatures > candidatures.length && (
+              <p className="cand-note-troncature">
+                <i className="bi bi-info-circle" aria-hidden="true"></i>
+                Affichage limité aux {candidatures.length} premiers dossiers
+                ({totalCandidatures} au total) : le chargement explicite est borné
+                à 200 et la recherche s'applique au périmètre chargé côté serveur.
+              </p>
+            )}
             </>
           )}
         </div>

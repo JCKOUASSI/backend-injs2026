@@ -1428,3 +1428,14 @@ select.cand-saisie {
 }
 .cand-cal-effacer:hover { color: #B3261E; background: #FDF2F2; }
 .cand-cal-effacer:focus-visible { outline: var(--injs-focus-outline); outline-offset: 1px; }
+
+/* Note de troncature — chargement explicite borné à 200 (série « 200 »). */
+.cand-note-troncature {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0;
+  font-size: 0.76rem;
+  color: #64748B;
+}
+.cand-note-troncature i { color: var(--injs-blue-royal); font-size: 0.85rem; margin-top: 0.1rem; }
