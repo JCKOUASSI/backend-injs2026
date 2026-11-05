@@ -548,6 +548,18 @@ describe('écran livré : résultats concours', () => {
       .getByText('Non calculé')).toBeTruthy()
   })
 
+  it('charge explicitement 200 campagnes par page', async () => {
+    monterResultats()
+    await screen.findByText('Concours — EM')
+    // Demande du 05/11/2026 : chargement explicite borné à 200 (descripteur
+    // `taillePage: 200`), comme le « 200 événements » du hub Présences —
+    // l'API borne `page_size` à 200 et répond en enveloppe paginée.
+    const appel = apiController.findCall('get', '/admissions/campagnes/')
+    expect(appel).toBeTruthy()
+    expect(appel[1].params).toMatchObject({ page: 1, page_size: 200 })
+    expect(screen.getByText(/Chargement explicite : 200 campagnes par page/)).toBeInTheDocument()
+  })
+
   it('ne propose Calculer / Publier que lorsque l’acte est possible', async () => {
     monterResultats()
     await screen.findByText('Concours — EM')

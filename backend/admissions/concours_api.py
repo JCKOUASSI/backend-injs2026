@@ -92,6 +92,32 @@ def campagne_list(request):
                 Q(libelle__icontains=recherche)
                 | Q(ref_formation__intitule__icontains=recherche)
             )
+        # Chargement explicite (demande du 05/11/2026, écran Résultats
+        # concours) : si `page_size` est fourni, réponse paginée bornée à
+        # 200 lignes — même convention que le « chargement explicite :
+        # 200 événements » du hub Présences. Sans `page_size`, tableau
+        # complet comme historiquement (consommé tel quel par l'écran
+        # Concours & Sélection) : aucun consommateur existant n'est cassé.
+        if 'page_size' in request.query_params:
+            try:
+                page_size = int(request.query_params.get('page_size') or 50)
+            except (TypeError, ValueError):
+                page_size = 50
+            page_size = max(1, min(page_size, 200))
+            try:
+                page = max(1, int(request.query_params.get('page') or 1))
+            except (TypeError, ValueError):
+                page = 1
+            total = queryset.count()
+            debut = (page - 1) * page_size
+            lignes = queryset[debut:debut + page_size]
+            return Response({
+                'count': total,
+                'total_pages': max(1, -(-total // page_size)),
+                'page': page,
+                'page_size': page_size,
+                'results': [_serializer_campagne(c) for c in lignes],
+            })
         return Response([_serializer_campagne(c) for c in queryset])
 
     try:

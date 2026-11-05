@@ -327,5 +327,41 @@ class ConcoursAPITests(ConcoursBase):
         res = self.client.get(f'/api/admissions/campagnes/{self.campagne.pk}/')
         self.assertTrue(res.data['classement_publie'])
 
+    def test_liste_chargement_explicite_200(self):
+        """`page_size` explicite : enveloppe paginée bornée à 200 lignes.
+
+        Sans `page_size`, le tableau complet historique est conservé
+        (consommateur : écran Concours & Sélection).
+        """
+        self.client.force_authenticate(make_user('sec_api_page', role='SECRETARIAT'))
+        for i in range(2):
+            CampagneAdmission.objects.create(
+                libelle=f'Campagne explicite {i}', annee_academique=self.annee,
+                ref_formation=self.formation,
+            )
+        total = CampagneAdmission.objects.count()
+
+        # Sans paramètre : tableau complet (rétrocompatibilité).
+        res = self.client.get('/api/admissions/campagnes/')
+        self.assertEqual(res.status_code, 200)
+        self.assertIsInstance(res.data, list)
+        self.assertEqual(len(res.data), total)
+
+        # Avec page_size : enveloppe paginée, pages cohérentes.
+        res = self.client.get('/api/admissions/campagnes/', {'page_size': 2})
+        self.assertEqual(res.data['count'], total)
+        self.assertEqual(res.data['page_size'], 2)
+        self.assertEqual(len(res.data['results']), 2)
+        self.assertEqual(res.data['total_pages'], 2)
+        res2 = self.client.get('/api/admissions/campagnes/', {'page_size': 2, 'page': 2})
+        self.assertEqual(len(res2.data['results']), total - 2)
+        ids = {c['id'] for c in res.data['results']}
+        self.assertTrue(ids.isdisjoint(c['id'] for c in res2.data['results']))
+
+        # Demande au-delà du plafond : bornée explicitement à 200.
+        res = self.client.get('/api/admissions/campagnes/', {'page_size': 9999})
+        self.assertEqual(res.data['page_size'], 200)
+        self.assertEqual(len(res.data['results']), total)
+
 
 S = CampagneAdmission.Statut

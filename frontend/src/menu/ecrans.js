@@ -418,6 +418,11 @@ export const ECRANS = {
       + 'saisies, puis publiez-le. Le calcul et la publication sont des '
       + 'actes tracés côté serveur.',
     endpoint: '/admissions/campagnes/',
+    // Chargement explicite : 200 campagnes par page (demande du 05/11/2026,
+    // même convention que le « chargement explicite : 200 événements » du
+    // hub Présences). L'API borne `page_size` à 200 et répond en enveloppe
+    // paginée ; sans ce paramètre elle renvoie le tableau complet.
+    taillePage: 200,
     // L'API lit le paramètre `q` (recherche sur le libellé et la formation) :
     // avec `search`, la recherche était silencieusement ignorée.
     recherche: { param: 'q', libelle: 'Rechercher une campagne', placeholder: 'Libellé, formation…' },
@@ -539,7 +544,7 @@ export const ECRANS = {
         succes: 'Résultats publiés.',
       },
     ],
-    note: 'Source : /api/admissions/campagnes/ + /classement/',
+    note: 'Chargement explicite : 200 campagnes par page — Source : /api/admissions/campagnes/ + /classement/',
   },
 
 
