@@ -1,0 +1,10 @@
+id,code,name,zone,provenance
+"1","BP1","Bloc pédagogique 1 — ENSEPS","enseignement","confirme_43_salles_deux_blocs"
+"2","BP2","Bloc pédagogique 2 — ENSEP","enseignement","confirme_43_salles_deux_blocs"
+"3","AMP","Amphithéâtres","enseignement","confirme_ecoles"
+"4","CNMS","Centre National de Médecine du Sport","sante","confirme_centre"
+"5","CNSHN","Centre National du Sport de Haut Niveau","sport","confirme_centre"
+"6","GYM","Gymnases","sport","confirme_infrastructures"
+"7","EXT","Plateaux extérieurs","sport","confirme_infrastructures"
+"8","NUM","Espaces numériques","numerique","modelisation_capacitaire"
+"9","CONF","Espaces de séminaire","enseignement","modelisation_capacitaire"

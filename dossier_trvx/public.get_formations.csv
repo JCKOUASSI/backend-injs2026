@@ -1,0 +1,9 @@
+id,school_id,code,name,mention,parcours,cycle,maquette_source,active
+"1","1","EM","Éducation et Motricité","STAPS","Éducation et Motricité","universitaire","maquette_publiee_injs","true"
+"2","1","ES","Entraînement Sportif","STAPS","Entraînement Sportif","universitaire","maquette_publiee_injs","true"
+"3","1","MS","Management du Sport","STAPS","Management du Sport","universitaire","maquette_publiee_injs","true"
+"4","1","APA","Activités Physiques Adaptées","STAPS","Activités Physiques Adaptées","universitaire","maquette_publiee_injs","true"
+"5","2","AND","Andragogie","STASE","Andragogie","universitaire","canevas_parametrable_maquette_stase_non_publiee","true"
+"6","2","LOI","Loisir","STASE","Loisir","universitaire","canevas_parametrable_maquette_stase_non_publiee","true"
+"7","2","ECJP","Entrepreneuriat Jeunesse et Conduite de Projets","STASE","Entrepreneuriat Jeunesse et Conduite de Projets","universitaire","canevas_parametrable_maquette_stase_non_publiee","true"
+"8","2","GER","Gérontologie","STASE","Gérontologie","universitaire","canevas_parametrable_maquette_stase_non_publiee","true"

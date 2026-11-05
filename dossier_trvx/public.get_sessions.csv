@@ -1,0 +1,1 @@
+id,timetable_id,campaign_id,formation_id,level,semester,group_id,group_code,group_ids,subgroup_code,specialite,half,audience,ue_id,ecue_id,ue_title,ecue_title,activity,teacher_id,teacher_name,room_id,room_code,day_of_week,slot_code,start_time,end_time,week_index,week_start,duration_min,effectif,status,need_key,seq,cancel_reason

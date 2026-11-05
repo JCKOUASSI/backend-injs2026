@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+:root {
+  --inj-green: #0b3b2e;
+  --inj-green-soft: #145544;
+  --inj-orange: #e2762c;
+  --inj-cream: #f5f1e8;
+  --inj-ink: #14201c;
+  --inj-line: #e2dbcc;
+}
+
+body {
+  background-color: var(--inj-cream);
+  background-image: radial-gradient(rgba(11, 59, 46, 0.055) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.font-display {
+  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  letter-spacing: -0.015em;
+}
+
+.card {
+  background: #fffdf8;
+  border: 1px solid var(--inj-line);
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px rgba(20, 32, 28, 0.04), 0 12px 30px -24px rgba(11, 59, 46, 0.5);
+}
+
+.card-flat {
+  background: #fffdf8;
+  border: 1px solid var(--inj-line);
+  border-radius: 0.85rem;
+}
+
+.label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #6b7a71;
+}
+
+.field {
+  width: 100%;
+  border-radius: 0.6rem;
+  border: 1px solid var(--inj-line);
+  background: #fff;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.875rem;
+  color: var(--inj-ink);
+  outline: none;
+}
+
+.field:focus {
+  border-color: var(--inj-green-soft);
+  box-shadow: 0 0 0 3px rgba(20, 85, 68, 0.12);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.6rem;
+  background: var(--inj-green);
+  color: #fdfaf2;
+  padding: 0.6rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background 0.15s ease;
+}
+
+.btn-primary:hover {
+  background: var(--inj-green-soft);
+}
+
+.btn-accent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.6rem;
+  background: var(--inj-orange);
+  color: #24160b;
+  padding: 0.6rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--inj-line);
+  background: #fffdf8;
+  color: var(--inj-green);
+  padding: 0.5rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.table-injs {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.8125rem;
+}
+
+.table-injs thead th {
+  background: #f2eee4;
+  color: #48574f;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  white-space: nowrap;
+}
+
+.table-injs tbody td {
+  border-top: 1px solid #eee8db;
+  padding: 0.55rem 0.75rem;
+  vertical-align: top;
+}
+
+.table-injs tbody tr:hover td {
+  background: #fbf8f0;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  .card {
+    box-shadow: none;
+    border-color: #ccc;
+  }
+}
