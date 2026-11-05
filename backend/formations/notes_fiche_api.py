@@ -1,6 +1,9 @@
 """Endpoints d'impression des fiches de notes (module entier ou auditeur seul)."""
 from django.http import HttpResponse
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
@@ -154,6 +157,16 @@ def _pdf_response(buffer, filename):
     return response
 
 
+
+
+# ── Contrats OpenAPI (fiches de notes PDF) ───────────────────────────
+
+
+class FicheNotesDetailErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 404: FicheNotesDetailErreurSerializer, 503: FicheNotesDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsGestionNotesOrReadOnly])
 def module_notes_fiche_pdf_api(request, formation_pk, module_pk):
@@ -175,6 +188,7 @@ def module_notes_fiche_pdf_api(request, formation_pk, module_pk):
     return _pdf_response(buffer, fiche_module_filename(context['module'], module.pk))
 
 
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 404: FicheNotesDetailErreurSerializer, 503: FicheNotesDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsGestionNotesOrReadOnly])
 def module_notes_fiche_auditeur_pdf_api(request, formation_pk, module_pk, participant_pk):

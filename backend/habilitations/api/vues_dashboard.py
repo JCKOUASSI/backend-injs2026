@@ -14,6 +14,9 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.views import APIView
 
 from habilitations.models import (
@@ -44,11 +47,24 @@ PREAVIS_ECHEANCE_JOURS = 7
 PREAVIS_HABILITATION_JOURS = 30
 
 
+
+
+# ── Contrats OpenAPI (administration des habilitations) ──────────────
+
+
+class ErreurDashboardHabSerializer(serializers.Serializer):
+    """Erreurs du module : {'detail': message, 'code': CODE}."""
+
+    detail = serializers.CharField()
+    code = serializers.CharField(required=False)
+
+
 class DashboardHabilitationsView(APIView):
     """GET /api/habilitations/dashboard/ — vue d'ensemble des habilitations."""
 
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
     def get(self, request):
         aujourdhui = timezone.localdate()
         echeance = aujourdhui + timedelta(days=PREAVIS_ECHEANCE_JOURS)

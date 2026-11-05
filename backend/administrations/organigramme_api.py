@@ -20,6 +20,9 @@ Principes (garde-fous du rapport de mise en œuvre) :
   mais non confidentiel) ; écriture = direction/direction générale (``IsDFRC``).
 """
 from django.db.models import Count, Prefetch, Q
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -202,6 +205,17 @@ def ser_secretariat(s, **kw):
 # Arbre complet (§13.4 : INJS → Directions → Départements → Services)
 # --------------------------------------------------------------------------
 
+
+
+# ── Contrats OpenAPI ──────────────────────────────────────────────────
+
+
+class OrganigrammeErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    error = serializers.JSONField(required=False)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def arbre(request):
@@ -288,6 +302,7 @@ def _direction_get(pk):
     return Direction.objects.filter(pk=pk).first()
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: OrganigrammeErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def directions(request):
@@ -325,6 +340,7 @@ def directions(request):
     return Response(ser_direction(obj), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 204: None, 400: OrganigrammeErreurSerializer, 404: OrganigrammeErreurSerializer})
 @api_view(['GET', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def direction_detail(request, pk):
@@ -381,6 +397,7 @@ def direction_detail(request, pk):
 
 # ---- Départements ----------------------------------------------------------
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: OrganigrammeErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def departements(request):
@@ -419,6 +436,7 @@ def departements(request):
     return Response(ser_departement(obj), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 204: None, 400: OrganigrammeErreurSerializer, 404: OrganigrammeErreurSerializer})
 @api_view(['GET', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def departement_detail(request, pk):
@@ -484,6 +502,7 @@ def departement_detail(request, pk):
 
 # ---- Services ---------------------------------------------------------------
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: OrganigrammeErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def services(request):
@@ -527,6 +546,7 @@ def services(request):
     return Response(ser_service(obj), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 204: None, 400: OrganigrammeErreurSerializer, 404: OrganigrammeErreurSerializer})
 @api_view(['GET', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def service_detail(request, pk):
@@ -611,6 +631,7 @@ def _valider_rattachement(data, obj=None):
     return direction, departement, None
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: OrganigrammeErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def secretariats(request):
@@ -654,6 +675,7 @@ def secretariats(request):
     return Response(ser_secretariat(obj), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 204: None, 400: OrganigrammeErreurSerializer, 404: OrganigrammeErreurSerializer})
 @api_view(['GET', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def secretariat_detail(request, pk):
@@ -717,6 +739,7 @@ def secretariat_detail(request, pk):
     return Response(ser_secretariat(obj))
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def responsables(request):
@@ -730,6 +753,7 @@ def responsables(request):
     ])
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: OrganigrammeErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def types_secretariat(request):

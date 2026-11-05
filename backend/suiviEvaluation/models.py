@@ -101,6 +101,11 @@ class Questionnaire(models.Model):
         return f"{titres_str} ({self.get_cible_display()})"
 
 
+# Alias chargeable des choix de statut d'un questionnaire d'évaluation
+# (brouillon/publié/fermé) pour le nommage OpenAPI — cf. ENUM_NAME_OVERRIDES.
+QUESTIONNAIRE_STATUT_CHOICES = Questionnaire.Statut.choices
+
+
 class Question(models.Model):
     """Question appartenant à un questionnaire."""
 

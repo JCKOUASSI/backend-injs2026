@@ -3,6 +3,9 @@ from datetime import date
 
 from django.db.models import Q
 from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
@@ -96,6 +99,67 @@ def _rattrapages_scoped(user):
     )
 
 
+
+
+# ── Contrats OpenAPI (rattrapages de séances) ────────────────────────
+
+
+class RattrapageDetailErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class SeanceRattrapagePayloadSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    date = serializers.CharField(allow_null=True)
+    numero = serializers.IntegerField()
+    intitule = serializers.CharField()
+    heure_debut = serializers.CharField(allow_null=True)
+    heure_fin = serializers.CharField(allow_null=True)
+
+
+class ModuleRattrapagePayloadSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    intitule = serializers.CharField()
+    formation = serializers.CharField()
+    grade = serializers.CharField()
+    groupe = serializers.CharField()
+    vague = serializers.CharField()
+    cohorte = serializers.CharField()
+
+
+class ParticipantRattrapagePayloadSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    matricule = serializers.CharField()
+    nom = serializers.CharField()
+    prenom = serializers.CharField()
+    grade = serializers.CharField()
+    groupe = serializers.CharField()
+    cohorte = serializers.CharField()
+
+
+class RattrapageReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    statut = serializers.CharField()
+    statut_display = serializers.CharField()
+    motif = serializers.CharField()
+    created_at = serializers.CharField()
+    participant = ParticipantRattrapagePayloadSerializer()
+    seance_rattrapage = SeanceRattrapagePayloadSerializer()
+    module_accueil = ModuleRattrapagePayloadSerializer(allow_null=True)
+    module_origine = ModuleRattrapagePayloadSerializer(allow_null=True)
+    seance_manquee = SeanceRattrapagePayloadSerializer(allow_null=True)
+    pointage_id = serializers.IntegerField(allow_null=True)
+
+
+class RattrapageCreationLotSerializer(serializers.Serializer):
+    created = serializers.JSONField()
+    skipped = serializers.JSONField()
+    reactivated = serializers.JSONField()
+    errors = serializers.JSONField()
+    count = serializers.IntegerField()
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: RattrapageReponseSerializer(many=True), 201: RattrapageCreationLotSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def rattrapage_list_create(request):
@@ -288,6 +352,7 @@ def rattrapage_list_create(request):
     )
 
 
+@extend_schema(request=None, responses={200: RattrapageReponseSerializer, 400: OpenApiTypes.OBJECT, 404: RattrapageDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def rattrapage_generer_presence(request, pk):
@@ -306,6 +371,7 @@ def rattrapage_generer_presence(request, pk):
     return Response(_rattrapage_payload(rattrapage))
 
 
+@extend_schema(request=None, responses={200: RattrapageReponseSerializer, 400: OpenApiTypes.OBJECT, 404: RattrapageDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def rattrapage_annuler(request, pk):
@@ -318,6 +384,7 @@ def rattrapage_annuler(request, pk):
     return Response(_rattrapage_payload(rattrapage))
 
 
+@extend_schema(responses={200: ParticipantRattrapagePayloadSerializer(many=True)})
 @api_view(['GET'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def rattrapage_participants_search(request):
@@ -333,6 +400,7 @@ def rattrapage_participants_search(request):
     return Response([_participant_payload(p) for p in qs])
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def rattrapage_seances_search(request):
@@ -385,6 +453,7 @@ def rattrapage_seances_search(request):
     return Response(out)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def rattrapage_modules_search(request):

@@ -15,6 +15,9 @@ Aucun modèle n'est créé ici : les modèles existants
 suffisent à représenter le référentiel INJS (L6 §4).
 """
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -140,6 +143,12 @@ def _serialiser_cycle(cycle, filiere_code):
     }
 
 
+
+
+# ── Contrats OpenAPI (constantes LMD des formations) ─────────────────
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def formations_lmd_api(request):

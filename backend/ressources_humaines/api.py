@@ -3,6 +3,9 @@
 Pattern @api_view. NB : la paie formateurs (modèle formations) n'est pas
 impactée — ce module couvre le personnel administratif et technique.
 """
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -50,6 +53,17 @@ def _serialize_indispo(d):
     }
 
 
+
+
+# ── Contrats OpenAPI ──────────────────────────────────────────────────
+
+
+class RessourcesHumainesErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    error = serializers.JSONField(required=False)
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: RessourcesHumainesErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def services_api(request):
@@ -57,6 +71,7 @@ def services_api(request):
     return Response({'results': [_serialize_service(s) for s in qs]})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: RessourcesHumainesErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def fonctions_api(request):
@@ -67,6 +82,7 @@ def fonctions_api(request):
     return Response({'results': [_serialize_fonction(f) for f in qs]})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: RessourcesHumainesErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsGestionRHOrReadOnly])
 def agents_api(request):
@@ -90,6 +106,7 @@ def agents_api(request):
         )
     except Exception as exc:
         return Response({'error': str(exc)}, status=400)
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: RessourcesHumainesErreurSerializer, 404: RessourcesHumainesErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsConsultationRH])
 def agent_detail_api(request, pk):
@@ -100,6 +117,7 @@ def agent_detail_api(request, pk):
     return Response(_serialize_agent(a))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: RessourcesHumainesErreurSerializer, 404: RessourcesHumainesErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsGestionRH])
 def agent_affecter_api(request, pk):
@@ -122,6 +140,7 @@ def agent_affecter_api(request, pk):
     return Response({'id': aff.id, 'agent': str(agent), 'fonction': str(fonction)})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: RessourcesHumainesErreurSerializer, 404: RessourcesHumainesErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsGestionRHOrReadOnly])
 def agent_disponibilites_api(request, pk):
@@ -148,6 +167,7 @@ def agent_disponibilites_api(request, pk):
     return Response(_serialize_indispo(dispo), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: RessourcesHumainesErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsGestionRHOrReadOnly])
 def documents_rh_api(request):
@@ -180,6 +200,7 @@ def documents_rh_api(request):
 
 # ---------- Vues globales (hub Personnel premium — tâche 34) ----------
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: RessourcesHumainesErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsGestionRHOrReadOnly])
 def affectations_api(request):
@@ -206,6 +227,7 @@ def affectations_api(request):
     ]})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: RessourcesHumainesErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsGestionRHOrReadOnly])
 def disponibilites_api(request):
@@ -221,6 +243,7 @@ def disponibilites_api(request):
     ]})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsConsultationRH])
 def stats_api(request):

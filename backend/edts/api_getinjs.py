@@ -18,6 +18,9 @@ from pathlib import Path
 from django.conf import settings
 from django.http import FileResponse
 from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
@@ -149,6 +152,61 @@ def _executer_import(request, *, appliquer):
     return Response(donnees, status=status.HTTP_200_OK)
 
 
+
+
+# ── Contrats OpenAPI (module GET-INJS : imports, campagnes, génération) ──
+
+
+class BlocageGetInjsSerializer(serializers.Serializer):
+    """Refus métier : {'status': 'BLOCKING', 'motif_echec', 'detail'}."""
+
+    status = serializers.CharField()
+    motif_echec = serializers.CharField()
+    detail = serializers.JSONField()
+
+
+class ImportInscritsRequeteSerializer(serializers.Serializer):
+    """Fichier multipart ou contenu texte (contenu + nom_fichier)."""
+
+    fichier = serializers.FileField(required=False)
+    contenu = serializers.CharField(required=False)
+    nom_fichier = serializers.CharField(required=False)
+    annee_academique_id = serializers.IntegerField(required=False)
+    reconstruire_parcours = serializers.BooleanField(required=False)
+
+
+class CampagneCreationGetInjsSerializer(serializers.Serializer):
+    annee_academique_id = serializers.IntegerField()
+    libelle = serializers.CharField()
+    semaines = serializers.JSONField(required=False)
+    perimetre = serializers.JSONField(required=False)
+    parametres = serializers.JSONField(required=False)
+
+
+class CampagnesListeGetInjsSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    results = serializers.JSONField()
+
+
+class HistoriqueGenerationsSerializer(serializers.Serializer):
+    executions = serializers.JSONField()
+    count = serializers.IntegerField()
+
+
+class CampagneDemarrageSerializer(serializers.Serializer):
+    asynchrone = serializers.BooleanField(required=False)
+
+
+class GroupesConstitutionRequeteSerializer(serializers.Serializer):
+    capacite = serializers.IntegerField(required=False)
+    simulation = serializers.BooleanField(required=False)
+
+
+class CampagneMotifSerializer(serializers.Serializer):
+    motif = serializers.CharField(required=False)
+
+
+@extend_schema(request=ImportInscritsRequeteSerializer, responses={200: OpenApiTypes.OBJECT, 409: OpenApiTypes.OBJECT, 413: BlocageGetInjsSerializer, 422: OpenApiTypes.OBJECT})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def analyser_import_api(request):
@@ -161,6 +219,7 @@ def analyser_import_api(request):
     return _executer_import(request, appliquer=False)
 
 
+@extend_schema(request=ImportInscritsRequeteSerializer, responses={200: OpenApiTypes.OBJECT, 409: OpenApiTypes.OBJECT, 413: BlocageGetInjsSerializer, 422: OpenApiTypes.OBJECT})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def importer_inscrits_api(request):
@@ -174,6 +233,7 @@ def importer_inscrits_api(request):
     return _executer_import(request, appliquer=True)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def synthese_import_api(request):
@@ -198,6 +258,7 @@ def synthese_import_api(request):
     })
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def journal_imports_api(request):
@@ -260,6 +321,7 @@ def _sexe_court(valeur):
     return ''
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def inscrits_population_api(request):
@@ -418,6 +480,7 @@ def inscrits_population_api(request):
     })
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def referentiels_api(request):
@@ -608,6 +671,7 @@ def referentiels_api(request):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 409: OpenApiTypes.OBJECT})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def generate_annee_api(request):
@@ -666,6 +730,7 @@ def generate_annee_api(request):
     )
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: BlocageGetInjsSerializer})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def conception_api(request):
@@ -725,6 +790,7 @@ def _refus(exc):
     )
 
 
+@extend_schema(request=CampagneCreationGetInjsSerializer, responses={200: CampagnesListeGetInjsSerializer, 201: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def campagnes_api(request):
@@ -778,6 +844,7 @@ def campagnes_api(request):
     return Response(campagne_en_dict(campagne), status=status.HTTP_201_CREATED)
 
 
+@extend_schema(responses={200: HistoriqueGenerationsSerializer})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def historique_generations_api(request):
@@ -894,6 +961,7 @@ def historique_generations_api(request):
     return Response({'executions': lignes, 'count': len(lignes)})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer, 404: BlocageGetInjsSerializer})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def campagne_detail_api(request, pk):
@@ -907,6 +975,7 @@ def campagne_detail_api(request, pk):
     return Response(campagne_en_dict(campagne))
 
 
+@extend_schema(request=CampagneDemarrageSerializer, responses={200: OpenApiTypes.OBJECT, 202: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer, 404: BlocageGetInjsSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def campagne_demarrer_api(request, pk):
@@ -927,6 +996,7 @@ def campagne_demarrer_api(request, pk):
     return Response(resultat, status=status.HTTP_202_ACCEPTED if asynchrone else status.HTTP_200_OK)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer, 404: BlocageGetInjsSerializer})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def campagne_statut_api(request, pk):
@@ -939,6 +1009,7 @@ def campagne_statut_api(request, pk):
         return _refus(exc)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer, 404: BlocageGetInjsSerializer})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def campagne_resultat_api(request, pk):
@@ -951,6 +1022,7 @@ def campagne_resultat_api(request, pk):
         return _refus(exc)
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer, 404: BlocageGetInjsSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def campagne_donnees_pretes_api(request, pk):
@@ -963,6 +1035,7 @@ def campagne_donnees_pretes_api(request, pk):
         return _refus(exc)
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer, 404: BlocageGetInjsSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtValidation])
 def campagne_valider_api(request, pk):
@@ -978,6 +1051,7 @@ def campagne_valider_api(request, pk):
         return _refus(exc)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def dimensionnement_api(request):
@@ -1003,6 +1077,7 @@ def dimensionnement_api(request):
     return Response(rapport)
 
 
+@extend_schema(request=GroupesConstitutionRequeteSerializer, responses={200: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def constituer_groupes_api(request):
@@ -1030,6 +1105,7 @@ def constituer_groupes_api(request):
     return Response(bilan)
 
 
+@extend_schema(request=CampagneMotifSerializer, responses={200: OpenApiTypes.OBJECT, 400: BlocageGetInjsSerializer, 404: BlocageGetInjsSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtValidation])
 def campagne_publier_api(request, pk):

@@ -18,6 +18,9 @@ import csv
 
 from django.db.models import Count, Q
 from django.http import HttpResponse
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -67,6 +70,21 @@ def _reponse_csv(nom_fichier, colonnes, lignes):
     return reponse
 
 
+
+
+# ── Contrats OpenAPI (exports EDT : JSON versionné ou CSV) ───────────
+
+
+class ErreurEdtExportSerializer(serializers.Serializer):
+    error = serializers.JSONField()
+
+
+class ExportEdtReponseSerializer(serializers.Serializer):
+    version = serializers.CharField()
+    resultats = serializers.JSONField()
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def contrat(request):
@@ -107,6 +125,7 @@ def contrat(request):
     })
 
 
+@extend_schema(responses={200: ExportEdtReponseSerializer, (200, 'text/csv'): OpenApiTypes.BINARY})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def groupes(request):
@@ -152,6 +171,7 @@ def groupes(request):
     return Response({'version': VERSION_CONTRAT, 'resultats': lignes})
 
 
+@extend_schema(responses={200: ExportEdtReponseSerializer, (200, 'text/csv'): OpenApiTypes.BINARY})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def enseignements(request):
@@ -230,6 +250,7 @@ def enseignements(request):
     return Response({'version': VERSION_CONTRAT, 'resultats': lignes})
 
 
+@extend_schema(responses={200: ExportEdtReponseSerializer, (200, 'text/csv'): OpenApiTypes.BINARY})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def etudiants(request):
@@ -288,6 +309,7 @@ def etudiants(request):
 # ── Lot L10 (v1.1) — extensions additives du contrat ─────────────────────────
 
 
+@extend_schema(responses={200: ExportEdtReponseSerializer, (200, 'text/csv'): OpenApiTypes.BINARY})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def indisponibilites(request):
@@ -319,6 +341,7 @@ def indisponibilites(request):
     return Response({'version': VERSION_CONTRAT, 'resultats': lignes})
 
 
+@extend_schema(responses={200: ExportEdtReponseSerializer, (200, 'text/csv'): OpenApiTypes.BINARY})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def creneaux(request):
@@ -357,6 +380,7 @@ def creneaux(request):
     return Response({'version': VERSION_CONTRAT, 'resultats': lignes})
 
 
+@extend_schema(responses={200: ExportEdtReponseSerializer, (200, 'text/csv'): OpenApiTypes.BINARY})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def affectations(request):
@@ -409,6 +433,7 @@ def affectations(request):
     return Response({'version': VERSION_CONTRAT, 'resultats': lignes})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, (200, 'text/csv'): OpenApiTypes.BINARY, 404: ErreurEdtExportSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def espaces_occupation(request, salle_id):

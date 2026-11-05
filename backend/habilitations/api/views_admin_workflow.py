@@ -7,6 +7,9 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.views import APIView
 
 from habilitations.models import (
@@ -44,9 +47,22 @@ def _meta(request):
 # ---------------------------------------------------------------------------
 # Dérogations (geste borné : proposition et révocation ; instruction U5)
 # ---------------------------------------------------------------------------
+
+
+# ── Contrats OpenAPI (administration des habilitations) ──────────────
+
+
+class ErreurAdminWorkflowSerializer(serializers.Serializer):
+    """Erreurs du module : {'detail': message, 'code': CODE}."""
+
+    detail = serializers.CharField()
+    code = serializers.CharField(required=False)
+
+
 class DerogationListCreateView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 404: ErreurAdminWorkflowSerializer})
     def get(self, request):
         qs = (
             PermissionAttribuee.objects
@@ -70,6 +86,7 @@ class DerogationListCreateView(APIView):
             for d in page
         ])
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 404: ErreurAdminWorkflowSerializer})
     def post(self, request):
         serializer = DerogationInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -102,6 +119,7 @@ class DerogationListCreateView(APIView):
 class DerogationRevokeView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: ErreurAdminWorkflowSerializer, 404: ErreurAdminWorkflowSerializer})
     def post(self, request, pk):
         derogation = PermissionAttribuee.objects.filter(pk=pk).first()
         if derogation is None:
@@ -126,6 +144,7 @@ class DerogationRevokeView(APIView):
 class DelegationListCreateView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 404: ErreurAdminWorkflowSerializer})
     def get(self, request):
         qs = (
             DelegationHabilitation.objects
@@ -147,6 +166,7 @@ class DelegationListCreateView(APIView):
             for d in page
         ])
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 404: ErreurAdminWorkflowSerializer})
     @transaction.atomic
     def post(self, request):
         serializer = DelegationInputSerializer(data=request.data)
@@ -198,6 +218,7 @@ class DelegationListCreateView(APIView):
 class DelegationTerminateView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: ErreurAdminWorkflowSerializer, 404: ErreurAdminWorkflowSerializer})
     def post(self, request, pk):
         delegation = DelegationHabilitation.objects.filter(pk=pk).first()
         if delegation is None:
@@ -223,6 +244,7 @@ class DelegationTerminateView(APIView):
 class ImportApercuView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         serializer = SimulationImportSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -242,6 +264,7 @@ class ImportApercuView(APIView):
 class RevueConsultationView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
     def get(self, request):
         comptes = (
             CompteUtilisateur.objects

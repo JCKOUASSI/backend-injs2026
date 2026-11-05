@@ -5,6 +5,9 @@ Permissions via ``graduation.permissions`` et ``authentication.role_groups``.
 Lecture publique limitée au portail de vérification (AllowAny + token).
 """
 from django.http import HttpResponse
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -51,6 +54,63 @@ def _serialize_diplome(diplome):
     }
 
 
+
+
+# ── Contrats OpenAPI (diplômes, registres, modèles) ──────────────────
+
+
+class GraduationErreurSerializer(serializers.Serializer):
+    error = serializers.JSONField()
+
+
+class DiplomeReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    etudiant_id = serializers.IntegerField()
+    matricule = serializers.CharField()
+    nom_complet = serializers.CharField()
+    annee_academique_id = serializers.IntegerField()
+    annee_academique = serializers.CharField()
+    ref_formation_id = serializers.IntegerField()
+    ref_formation = serializers.CharField()
+    parcours_id = serializers.IntegerField(allow_null=True)
+    parcours = serializers.CharField(allow_null=True)
+    niveau_id = serializers.IntegerField()
+    niveau = serializers.CharField()
+    session_jury_id = serializers.IntegerField(allow_null=True)
+    decision_jury_id = serializers.IntegerField(allow_null=True)
+    numero_unique = serializers.CharField()
+    mention = serializers.CharField()
+    credits_acquis = serializers.IntegerField()
+    statut = serializers.CharField()
+    statut_display = serializers.CharField()
+    empreinte_pdf = serializers.CharField()
+    pdf_disponible = serializers.BooleanField()
+    date_creation = serializers.CharField(allow_null=True)
+    date_validation = serializers.CharField(allow_null=True)
+    date_revocation = serializers.CharField(allow_null=True)
+    cree_par = serializers.CharField(allow_null=True)
+    valide_par = serializers.CharField(allow_null=True)
+    reeditions_count = serializers.IntegerField()
+
+
+class DiplomesListeSerializer(serializers.Serializer):
+    results = DiplomeReponseSerializer(many=True)
+
+
+class ReeditionReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    motif = serializers.CharField()
+    empreinte_pdf = serializers.CharField()
+    date = serializers.CharField()
+
+
+class ModeleCreationReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    type = serializers.CharField()
+    libelle = serializers.CharField()
+
+
+@extend_schema(responses={200: DiplomesListeSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrAbove])
 def diplomes_list_api(request):
@@ -71,6 +131,7 @@ def diplomes_list_api(request):
     return Response({'results': [_serialize_diplome(d) for d in qs]})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: DiplomeReponseSerializer, 400: OpenApiTypes.OBJECT, 404: GraduationErreurSerializer})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated, IsSecretariatOrReadOnly])
 def diplome_detail_api(request, pk):
@@ -96,6 +157,7 @@ def diplome_detail_api(request, pk):
     return Response(_serialize_diplome(diplome))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: DiplomeReponseSerializer, 400: GraduationErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrAbove])
 def diplome_creer_api(request):
@@ -126,6 +188,7 @@ def diplome_creer_api(request):
     return Response(_serialize_diplome(diplome), status=201)
 
 
+@extend_schema(request=None, responses={200: DiplomeReponseSerializer, 400: OpenApiTypes.OBJECT, 404: GraduationErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsDirectionOrAdmin])
 def diplome_valider_api(request, pk):
@@ -141,6 +204,7 @@ def diplome_valider_api(request, pk):
     return Response(_serialize_diplome(diplome))
 
 
+@extend_schema(request=None, responses={200: DiplomeReponseSerializer, 400: OpenApiTypes.OBJECT, 404: GraduationErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsDirectionOrAdmin])
 def diplome_revoquer_api(request, pk):
@@ -157,6 +221,7 @@ def diplome_revoquer_api(request, pk):
     return Response(_serialize_diplome(diplome))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: ReeditionReponseSerializer, 400: OpenApiTypes.OBJECT, 404: GraduationErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsDirectionOrAdmin])
 def diplome_reedition_api(request, pk):
@@ -177,6 +242,7 @@ def diplome_reedition_api(request, pk):
     }, status=201)
 
 
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 404: GraduationErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrAbove])
 def diplome_pdf_api(request, pk):
@@ -195,6 +261,7 @@ def diplome_pdf_api(request, pk):
     return reponse
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrAbove])
 def registres_list_api(request):
@@ -210,6 +277,7 @@ def registres_list_api(request):
     } for r in qs]})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: GraduationErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrAbove])
 def registre_detail_api(request, pk):
@@ -230,6 +298,7 @@ def registre_detail_api(request, pk):
     return Response({'id': r.id, 'cloture': r.cloture})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrAbove])
 def modeles_list_api(request):
@@ -245,6 +314,7 @@ def modeles_list_api(request):
     } for m in qs]})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: ModeleCreationReponseSerializer, 400: GraduationErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrAbove])
 def modele_creer_api(request):
@@ -266,6 +336,7 @@ def modele_creer_api(request):
     return Response({'id': m.id, 'type': m.type, 'libelle': m.libelle}, status=201)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def verifier_diplome_api(request, token):
@@ -280,6 +351,7 @@ def verifier_diplome_api(request, token):
 
 # ---------- Panorama & éligibilité (hub Diplômation — tâche 34) ----------
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrAbove])
 def stats_api(request):
@@ -306,6 +378,7 @@ def stats_api(request):
     })
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrAbove])
 def eligibles_api(request):

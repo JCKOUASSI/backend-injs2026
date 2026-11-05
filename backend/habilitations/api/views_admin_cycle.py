@@ -8,6 +8,9 @@ from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.views import APIView
 
 from habilitations.models import (
@@ -81,9 +84,22 @@ def _serialiser_proposition(p):
 # ---------------------------------------------------------------------------
 # File de validation humaine
 # ---------------------------------------------------------------------------
+
+
+# ── Contrats OpenAPI (administration des habilitations) ──────────────
+
+
+class ErreurAdminCycleSerializer(serializers.Serializer):
+    """Erreurs du module : {'detail': message, 'code': CODE}."""
+
+    detail = serializers.CharField()
+    code = serializers.CharField(required=False)
+
+
 class PropositionListView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
     def get(self, request):
         qs = PropositionProvisionnement.objects.select_related('compte_cible__user')
         if request.query_params.get('statut'):
@@ -107,6 +123,7 @@ class PropositionListView(APIView):
 class PropositionApprouverView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 404: ErreurAdminCycleSerializer})
     def post(self, request, pk):
         proposition = PropositionProvisionnement.objects.filter(pk=pk).first()
         if proposition is None:
@@ -128,6 +145,7 @@ class PropositionApprouverView(APIView):
 class PropositionRejeterView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 404: ErreurAdminCycleSerializer})
     def post(self, request, pk):
         proposition = PropositionProvisionnement.objects.filter(pk=pk).first()
         if proposition is None:
@@ -149,6 +167,7 @@ class ProvisionScanView(APIView):
 
     permission_classes = GARDE
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         declencheurs = request.data.get('declencheurs')
         try:
@@ -171,6 +190,7 @@ class ProvisionScanView(APIView):
 class ImportExecuterView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 403: ErreurAdminCycleSerializer})
     def post(self, request):
         if not drapeaux.import_masse_actif():
             return Response(
@@ -197,6 +217,7 @@ class ImportExecuterView(APIView):
 class ImportDetailView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 404: ErreurAdminCycleSerializer})
     def get(self, request, reference):
         execution = ExecutionImport.objects.filter(reference=reference).first()
         if execution is None:
@@ -207,6 +228,7 @@ class ImportDetailView(APIView):
 class ImportAnnulerView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 404: ErreurAdminCycleSerializer})
     def post(self, request, reference):
         execution = ExecutionImport.objects.filter(reference=reference).first()
         if execution is None:
@@ -229,6 +251,7 @@ class ImportAnnulerView(APIView):
 class NotificationListView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
     def get(self, request):
         qs = NotificationHabilitation.objects.filter(destinataire=request.user)
         if request.query_params.get('lu') in ('true', 'false'):
@@ -244,6 +267,7 @@ class NotificationListView(APIView):
 class NotificationLireView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 404: ErreurAdminCycleSerializer})
     def post(self, request, pk):
         from django.utils import timezone
         notification = NotificationHabilitation.objects.filter(
@@ -261,6 +285,7 @@ class NotificationLireView(APIView):
 class NotificationToutLireView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         from django.utils import timezone
         nombre = NotificationHabilitation.objects.filter(
@@ -275,6 +300,7 @@ class NotificationToutLireView(APIView):
 class DelegationActiverView(APIView):
     permission_classes = GARDE
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 404: ErreurAdminCycleSerializer})
     def post(self, request, pk):
         delegation = DelegationHabilitation.objects.filter(pk=pk).first()
         if delegation is None:
@@ -305,6 +331,7 @@ class DelegationActionView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 404: ErreurAdminCycleSerializer})
     def post(self, request, pk):
         delegation = DelegationHabilitation.objects.filter(pk=pk).first()
         if delegation is None:

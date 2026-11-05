@@ -3,6 +3,9 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
@@ -41,6 +44,25 @@ from .serializers import (
 # QUESTIONNAIRES — Superviseurs
 # ─────────────────────────────────────────────────────────────
 
+
+
+# ── Contrats OpenAPI (questionnaires d'évaluation) ───────────────────
+
+
+class SuiviEvaluationDetailErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class PublicationQuestionnaireSerializer(serializers.Serializer):
+    statut = serializers.CharField()
+
+
+class SoumissionCreeeSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    id = serializers.IntegerField()
+
+
+@extend_schema(request=QuestionnaireListSerializer, responses={200: OpenApiTypes.OBJECT, 201: QuestionnaireListSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsSuperviseur])
 def questionnaire_list_create(request):
@@ -102,6 +124,7 @@ def questionnaire_list_create(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(request=QuestionnaireListSerializer, responses={200: QuestionnaireDetailSerializer, 204: None, 400: OpenApiTypes.OBJECT, 404: SuiviEvaluationDetailErreurSerializer})
 @api_view(['GET', 'PATCH', 'DELETE'])
 @permission_classes([IsSuperviseur])
 def questionnaire_detail(request, pk):
@@ -129,6 +152,7 @@ def questionnaire_detail(request, pk):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema(request=None, responses={200: PublicationQuestionnaireSerializer, 400: SuiviEvaluationDetailErreurSerializer, 404: SuiviEvaluationDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSuperviseur])
 def questionnaire_publier(request, pk):
@@ -146,6 +170,7 @@ def questionnaire_publier(request, pk):
 # QUESTIONS — Superviseurs
 # ─────────────────────────────────────────────────────────────
 
+@extend_schema(request=QuestionWriteSerializer, responses={201: QuestionWriteSerializer, 400: OpenApiTypes.OBJECT, 404: SuiviEvaluationDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSuperviseur])
 def question_create(request, questionnaire_pk):
@@ -163,6 +188,7 @@ def question_create(request, questionnaire_pk):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(request=QuestionWriteSerializer, responses={200: QuestionWriteSerializer, 204: None, 400: SuiviEvaluationDetailErreurSerializer, 404: SuiviEvaluationDetailErreurSerializer})
 @api_view(['PATCH', 'DELETE'])
 @permission_classes([IsSuperviseur])
 def question_detail(request, questionnaire_pk, pk):
@@ -192,6 +218,7 @@ def question_detail(request, questionnaire_pk, pk):
 # ÉVALUATION — Auditeurs
 # ─────────────────────────────────────────────────────────────
 
+@extend_schema(responses={200: QuestionnaireDetailSerializer(many=True), 404: SuiviEvaluationDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuditeur])
 def questionnaires_disponibles(request):
@@ -226,6 +253,7 @@ def questionnaires_disponibles(request):
     return Response(serializer.data)
 
 
+@extend_schema(request=SoumissionSerializer, responses={201: SoumissionCreeeSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['POST'])
 @permission_classes([IsAuditeur])
 def soumettre_evaluation(request):
@@ -252,6 +280,7 @@ def soumettre_evaluation(request):
 # RÉSULTATS — Superviseurs
 # ─────────────────────────────────────────────────────────────
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: SuiviEvaluationDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsSuperviseur])
 def resultats_questionnaire(request, pk):
@@ -262,6 +291,7 @@ def resultats_questionnaire(request, pk):
     return Response(build_resultats_payload(questionnaire, groupe_filtre))
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsSuperviseur])
 def resultats_par_module(request, module_pk):
@@ -273,6 +303,7 @@ def resultats_par_module(request, module_pk):
     ])
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: SuiviEvaluationDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsSuperviseur])
 def analyse_qualitative(request, pk):
@@ -459,6 +490,7 @@ def analyse_qualitative(request, pk):
     })
 
 
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, (200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, 400: SuiviEvaluationDetailErreurSerializer, 404: SuiviEvaluationDetailErreurSerializer, 503: SuiviEvaluationDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsSuperviseur])
 def export_questionnaire_analyse(request, pk, fmt):

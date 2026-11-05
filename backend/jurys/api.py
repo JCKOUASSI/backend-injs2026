@@ -10,6 +10,7 @@ Routes préfixées par ``/api/juries/`` (cf. jurys/urls.py).
 from django.core.exceptions import ValidationError
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -129,6 +130,229 @@ def _serializer_pv(pv):
     }
 
 
+# ── Contrats OpenAPI (réponses réelles des vues ci-dessous) ──────────
+# Ces serializers décrivent EXACTEMENT les dictionnaires construits par
+# les fonctions _serializer_* ci-dessus et les réponses des vues du hub :
+# ils ne servent qu'à documenter, aucune logique d'exécution n'en dépend.
+
+
+class DetailErreurSerializer(serializers.Serializer):
+    """Forme d'erreur commune : ``{'detail': ...}`` (texte, liste ou dict)."""
+
+    detail = serializers.JSONField()
+
+
+class MembreJuryReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    user_id = serializers.IntegerField()
+    nom = serializers.CharField()
+    nom_affiche = serializers.CharField()
+    fonction = serializers.CharField()
+    ajoute_par_id = serializers.IntegerField(allow_null=True)
+
+
+class MembreJuryCreeSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    user_id = serializers.IntegerField()
+    fonction = serializers.CharField()
+
+
+class MembreAjoutRequeteSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+    fonction = serializers.CharField(required=False)
+
+
+class SessionJuryReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    libelle = serializers.CharField()
+    annee_academique_id = serializers.IntegerField(allow_null=True)
+    ref_formation_id = serializers.IntegerField(allow_null=True)
+    parcours_id = serializers.IntegerField(allow_null=True)
+    niveau_id = serializers.IntegerField(allow_null=True)
+    semestre_id = serializers.IntegerField(allow_null=True)
+    maquette_id = serializers.IntegerField(allow_null=True)
+    type_session = serializers.CharField()
+    statut = serializers.CharField()
+    verrouillee = serializers.BooleanField()
+    created_at = serializers.DateTimeField()
+
+
+class _SessionMembreSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    user_id = serializers.IntegerField()
+    nom = serializers.CharField()
+    fonction = serializers.CharField()
+
+
+class _SessionPVSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    sha256 = serializers.CharField()
+    genere_le = serializers.DateTimeField()
+    fichier = serializers.CharField(allow_null=True)
+
+
+class _SessionDecisionSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    inscription_id = serializers.IntegerField()
+    participant_id = serializers.IntegerField()
+    matricule = serializers.CharField()
+    nom = serializers.CharField()
+    decision = serializers.CharField()
+    credits_acquis = serializers.FloatField()
+    moyenne_generale = serializers.FloatField(allow_null=True)
+    mention = serializers.CharField(allow_null=True)
+    decision_manuelle = serializers.BooleanField()
+    justification = serializers.CharField(allow_null=True)
+
+
+class _SessionPropositionSerializer(serializers.Serializer):
+    inscription_id = serializers.IntegerField()
+    participant_id = serializers.IntegerField()
+    matricule = serializers.CharField()
+    nom = serializers.CharField()
+    decision_proposee = serializers.CharField()
+    credits_acquis = serializers.FloatField()
+    empreinte = serializers.CharField()
+    complet = serializers.BooleanField(allow_null=True)
+    semestres = serializers.JSONField()
+
+
+class SessionJuryDetailReponseSerializer(SessionJuryReponseSerializer):
+    membres = _SessionMembreSerializer(many=True)
+    decisions = _SessionDecisionSerializer(many=True)
+    pv = _SessionPVSerializer(allow_null=True)
+    prochain_statut = serializers.CharField(allow_null=True)
+    propositions = _SessionPropositionSerializer(many=True, required=False)
+
+
+class SessionJuryListeReponseSerializer(serializers.Serializer):
+    """Enveloppe de pagination globale (PageNumberPagination)."""
+
+    count = serializers.IntegerField()
+    next = serializers.CharField(allow_null=True)
+    previous = serializers.CharField(allow_null=True)
+    results = SessionJuryReponseSerializer(many=True)
+
+
+class SessionCreationRequeteSerializer(serializers.Serializer):
+    libelle = serializers.CharField(required=False)
+    annee_academique = serializers.IntegerField()
+    ref_formation = serializers.IntegerField()
+    parcours = serializers.IntegerField(required=False)
+    niveau = serializers.IntegerField()
+    maquette = serializers.IntegerField()
+    semestre = serializers.IntegerField(required=False)
+    type_session = serializers.CharField(required=False)
+
+
+class SessionActionRequeteSerializer(serializers.Serializer):
+    action = serializers.CharField(
+        help_text='transition | calcul | generer_pv | publier | verifier_decisions',
+    )
+
+
+class SessionActionMessageSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    calculees = serializers.IntegerField(required=False)
+
+
+class DecisionSaisieRequeteSerializer(serializers.Serializer):
+    inscription_id = serializers.IntegerField()
+    decision = serializers.CharField()
+    justification = serializers.CharField(required=False)
+    mention = serializers.CharField(required=False)
+    decision_manuelle = serializers.BooleanField(required=False)
+
+
+class DecisionSaisieReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    decision = serializers.CharField()
+    decision_manuelle = serializers.BooleanField()
+
+
+class _NotificationJurySerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    message = serializers.CharField()
+    session_id = serializers.IntegerField()
+    lu = serializers.BooleanField()
+    created_at = serializers.DateTimeField()
+
+
+class NotificationsJuryReponseSerializer(serializers.Serializer):
+    notifications = _NotificationJurySerializer(many=True)
+    non_lues = serializers.IntegerField()
+
+
+class NotificationsPatchRequeteSerializer(serializers.Serializer):
+    ids = serializers.ListField(child=serializers.IntegerField(), required=False)
+
+
+class HubStatsReponseSerializer(serializers.Serializer):
+    sessions = serializers.IntegerField()
+    par_statut = serializers.DictField(child=serializers.IntegerField())
+    sessions_publiees = serializers.IntegerField()
+    pv_generes = serializers.IntegerField()
+    membres = serializers.IntegerField()
+    propositions = serializers.IntegerField()
+    decisions = serializers.IntegerField()
+    par_decision = serializers.DictField(child=serializers.IntegerField())
+    taux_admis = serializers.FloatField(allow_null=True)
+
+
+class _HubSessionSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    libelle = serializers.CharField()
+    formation = serializers.CharField()
+    niveau = serializers.CharField()
+    semestre = serializers.CharField()
+    annee = serializers.CharField()
+    type_session = serializers.CharField()
+    type_session_display = serializers.CharField()
+    statut = serializers.CharField()
+    statut_display = serializers.CharField()
+    nb_membres = serializers.IntegerField()
+    nb_decisions = serializers.IntegerField()
+    pv = serializers.BooleanField()
+    created_at = serializers.CharField()
+
+
+class HubSessionsReponseSerializer(serializers.Serializer):
+    results = _HubSessionSerializer(many=True)
+
+
+class _HubMembreSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    nom = serializers.CharField()
+    fonction = serializers.CharField()
+    fonction_display = serializers.CharField()
+    session = serializers.CharField()
+    formation = serializers.CharField()
+    niveau = serializers.CharField()
+
+
+class HubMembresReponseSerializer(serializers.Serializer):
+    results = _HubMembreSerializer(many=True)
+
+
+class _HubDecisionSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    etudiant_id = serializers.IntegerField()
+    matricule = serializers.CharField()
+    nom = serializers.CharField()
+    formation = serializers.CharField()
+    niveau = serializers.CharField()
+    decision = serializers.CharField()
+    decision_display = serializers.CharField()
+    credits_acquis = serializers.FloatField()
+    moyenne_generale = serializers.FloatField(allow_null=True)
+    mention = serializers.CharField(allow_null=True)
+    justification = serializers.CharField(allow_null=True)
+
+
+class HubDecisionsReponseSerializer(serializers.Serializer):
+    results = _HubDecisionSerializer(many=True)
+
+
 def _propositions_courantes(session):
     """Dernière proposition par inscription (le moteur est append-only)."""
     courantes = {}
@@ -230,6 +454,13 @@ def _has_role_complet(user):
         OpenApiParameter('page', OpenApiTypes.INT, required=False,
                          description='Page demandée (pagination globale, page size 50).'),
     ],
+    request=SessionCreationRequeteSerializer,
+    responses={
+        200: SessionJuryListeReponseSerializer,
+        201: SessionJuryDetailReponseSerializer,
+        400: DetailErreurSerializer,
+        403: DetailErreurSerializer,
+    },
 )
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
@@ -293,6 +524,7 @@ def session_list(request):
     )
 
 
+@extend_schema(responses={200: SessionJuryDetailReponseSerializer, 404: DetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def session_detail(request, pk):
@@ -318,6 +550,7 @@ def session_detail(request, pk):
     return Response(data)
 
 
+@extend_schema(request=SessionActionRequeteSerializer, responses={200: SessionJuryDetailReponseSerializer, 400: DetailErreurSerializer, 403: DetailErreurSerializer, 404: DetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def session_action(request, pk):
@@ -360,7 +593,13 @@ def session_action(request, pk):
         'GET : liste des membres de la session. '
         'POST : ajoute un membre (session non verrouillée).'
     ),
-    responses={200: OpenApiTypes.OBJECT},
+    request=MembreAjoutRequeteSerializer,
+    responses={
+        200: MembreJuryReponseSerializer(many=True),
+        201: MembreJuryCreeSerializer,
+        400: DetailErreurSerializer,
+        404: DetailErreurSerializer,
+    },
 )
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
@@ -380,6 +619,7 @@ def membre_liste_ou_ajout(request, pk):
     return _ajouter_membre(request, pk)
 
 
+@extend_schema(request=MembreAjoutRequeteSerializer, responses={201: MembreJuryCreeSerializer, 400: DetailErreurSerializer, 404: DetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def membre_ajout(request, pk):
@@ -410,6 +650,7 @@ def _ajouter_membre(request, pk):
     )
 
 
+@extend_schema(request=DecisionSaisieRequeteSerializer, responses={201: DecisionSaisieReponseSerializer, 400: DetailErreurSerializer, 404: DetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def decision_saisie(request, pk):
@@ -439,6 +680,7 @@ def decision_saisie(request, pk):
     )
 
 
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 404: DetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def pv_telechargement(request, pk):
@@ -456,6 +698,7 @@ def pv_telechargement(request, pk):
     return reponse
 
 
+@extend_schema(request=NotificationsPatchRequeteSerializer, responses={200: NotificationsJuryReponseSerializer, 403: DetailErreurSerializer})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def notifications_jury(request):
@@ -529,6 +772,7 @@ def session_statistiques(request, pk):
 
 # ---------- Hub Jurys premium (consultation staff — tâche 34) ----------
 
+@extend_schema(responses={200: HubStatsReponseSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def hub_stats_api(request):
@@ -561,6 +805,7 @@ def hub_stats_api(request):
     })
 
 
+@extend_schema(responses={200: HubSessionsReponseSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def hub_sessions_api(request):
@@ -599,6 +844,7 @@ def hub_sessions_api(request):
     ]})
 
 
+@extend_schema(responses={200: HubMembresReponseSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def hub_membres_api(request):
@@ -621,6 +867,7 @@ def hub_membres_api(request):
     ]})
 
 
+@extend_schema(responses={200: HubDecisionsReponseSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def hub_decisions_api(request):

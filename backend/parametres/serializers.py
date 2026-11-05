@@ -99,21 +99,21 @@ class ParametreSerializer(serializers.ModelSerializer):
             'modifie_par_username',
         ]
 
-    def get_can_edit(self, obj):
+    def get_can_edit(self, obj) -> bool:
         """Vérifie si l'utilisateur peut éditer ce paramètre."""
         request = self.context.get('request')
         if not request or not request.user:
             return False
         return obj.can_be_modified_by(request.user)
 
-    def get_can_view(self, obj):
+    def get_can_view(self, obj) -> bool:
         """Vérifie si l'utilisateur peut consulter ce paramètre."""
         request = self.context.get('request')
         if not request or not request.user:
             return False
         return obj.can_be_read_by(request.user)
 
-    def get_est_critique(self, obj):
+    def get_est_critique(self, obj) -> bool:
         return obj.cle in CLES_CRITIQUES
 
 

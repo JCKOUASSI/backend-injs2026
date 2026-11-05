@@ -4,6 +4,9 @@ Pattern @api_view (cohérent avec graduation/jurys/equivalences). Permissions :
 lecture pour authentifié gestion (IsAuthenticated) ; opérations sensibles
 (confirmer paiement, remboursement, rapprochement) réservées à FINANCE/DIRECTION.
 """
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -35,6 +38,17 @@ def _serialize_paiement(p):
     }
 
 
+
+
+# ── Contrats OpenAPI ──────────────────────────────────────────────────
+
+
+class FinancesEtudiantesErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    error = serializers.JSONField(required=False)
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: FinancesEtudiantesErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def echeanciers_list_api(request):
@@ -71,6 +85,7 @@ def echeanciers_list_api(request):
     return Response({'id': echeancier.id, 'statut_global': echeancier.statut_global}, status=201)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: FinancesEtudiantesErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def echeancier_detail_api(request, pk):
@@ -91,6 +106,7 @@ def echeancier_detail_api(request, pk):
     })
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: FinancesEtudiantesErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def lignes_echeancier_api(request, pk):
@@ -104,6 +120,7 @@ def lignes_echeancier_api(request, pk):
     } for l in e.lignes.all()]})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 404: FinancesEtudiantesErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def facture_generer_api(request, pk):
@@ -122,6 +139,7 @@ def facture_generer_api(request, pk):
     }, status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: FinancesEtudiantesErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def paiements_list_api(request):
@@ -152,6 +170,7 @@ def paiements_list_api(request):
     return Response(_serialize_paiement(paiement), status=201 if created else 200)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: FinancesEtudiantesErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def paiement_detail_api(request, pk):
@@ -162,6 +181,7 @@ def paiement_detail_api(request, pk):
     return Response(_serialize_paiement(p))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: FinancesEtudiantesErreurSerializer, 404: FinancesEtudiantesErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsDFRC,
                      ExigePermission.pour('finances_etud.paiement.valider')])
@@ -185,6 +205,7 @@ def paiement_confirmer_api(request, pk):
     return Response(_serialize_paiement(p))
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def quittances_list_api(request):
@@ -195,6 +216,7 @@ def quittances_list_api(request):
     } for q in qs]})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: FinancesEtudiantesErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def remboursements_list_api(request):
@@ -225,6 +247,7 @@ def remboursements_list_api(request):
     return Response({'id': r.id, 'statut': r.statut}, status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: FinancesEtudiantesErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def remboursement_creer_api(request):
@@ -232,6 +255,7 @@ def remboursement_creer_api(request):
     return remboursements_list_api(request)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def relances_list_api(request):
@@ -243,6 +267,7 @@ def relances_list_api(request):
     } for r in qs]})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: FinancesEtudiantesErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def rapprochements_list_api(request):
@@ -274,6 +299,7 @@ def _rapprochement_creer(request):
     return Response({'id': r.id, 'date_periode': r.date_periode.isoformat()}, status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: FinancesEtudiantesErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def rapprochement_creer_api(request):

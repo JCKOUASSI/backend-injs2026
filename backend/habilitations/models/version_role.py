@@ -76,3 +76,7 @@ class RoleVersion(models.Model):
 
     def __str__(self):
         return f'{self.role.code} v{self.numero} [{self.source}]'
+
+
+# Alias module-level des choix de source de version de rôle (ENUM_NAME_OVERRIDES).
+ROLE_VERSION_SOURCE_CHOICES = RoleVersion.Source.choices

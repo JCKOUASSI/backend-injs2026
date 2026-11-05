@@ -1,6 +1,9 @@
 """API des inscriptions pédagogiques."""
 
 from django.core.exceptions import ValidationError
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -48,6 +51,48 @@ def _lignes(inscription_id):
     )
 
 
+
+
+# ── Contrats OpenAPI (inscriptions pédagogiques) ─────────────────────
+
+
+class ErreurPedagogieSerializer(serializers.Serializer):
+    error = serializers.JSONField()
+
+
+class LignePedagogiqueReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    inscription_id = serializers.IntegerField()
+    ecue_id = serializers.IntegerField()
+    ecue_code = serializers.CharField()
+    ecue_intitule = serializers.CharField()
+    ue_id = serializers.IntegerField()
+    ue_code = serializers.CharField()
+    semestre_id = serializers.IntegerField()
+    semestre = serializers.CharField()
+    groupe_id = serializers.IntegerField(allow_null=True)
+    groupe = serializers.CharField(allow_null=True)
+    type_enseignement = serializers.CharField()
+    credits = serializers.IntegerField()
+    volume_horaire = serializers.DecimalField(max_digits=6, decimal_places=2)
+    statut = serializers.CharField()
+    origine = serializers.CharField()
+    ref_module_id = serializers.IntegerField(allow_null=True)
+    module_participant_id = serializers.IntegerField(allow_null=True)
+
+
+class LignesPedagogiquesSerializer(serializers.Serializer):
+    lignes = LignePedagogiqueReponseSerializer(many=True)
+    recapitulatif = serializers.JSONField()
+
+
+class GenerationPedagogiqueSerializer(serializers.Serializer):
+    creees = serializers.IntegerField()
+    lignes = LignePedagogiqueReponseSerializer(many=True)
+    recapitulatif = serializers.JSONField()
+
+
+@extend_schema(responses={200: LignesPedagogiquesSerializer, 404: ErreurPedagogieSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def inscription_pedagogique_list(request, pk):
@@ -64,6 +109,7 @@ def inscription_pedagogique_list(request, pk):
     })
 
 
+@extend_schema(request=None, responses={200: GenerationPedagogiqueSerializer, 400: OpenApiTypes.OBJECT, 404: ErreurPedagogieSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def inscription_pedagogique_generer(request, pk):
@@ -102,6 +148,7 @@ def inscription_pedagogique_generer(request, pk):
     }, status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: LignePedagogiqueReponseSerializer, 400: OpenApiTypes.OBJECT, 404: ErreurPedagogieSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def inscription_pedagogique_ajouter(request, pk):
@@ -126,6 +173,7 @@ def inscription_pedagogique_ajouter(request, pk):
     return Response(_serialize_ligne(ligne), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: LignePedagogiqueReponseSerializer, 204: None, 400: OpenApiTypes.OBJECT, 404: ErreurPedagogieSerializer})
 @api_view(['PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def inscription_pedagogique_detail(request, ligne_id):

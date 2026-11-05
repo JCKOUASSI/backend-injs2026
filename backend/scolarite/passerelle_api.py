@@ -1,5 +1,8 @@
 """API de la passerelle LMD → modules opérationnels."""
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -15,6 +18,16 @@ def _formation_depuis(data):
     return Formation.objects.filter(pk=data.get('formation_id')).first()
 
 
+
+
+# ── Contrats OpenAPI (passerelle modules → ECUE) ─────────────────────
+
+
+class ErreurPasserelleSerializer(serializers.Serializer):
+    error = serializers.JSONField()
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: ErreurPasserelleSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def passerelle_analyser(request, pk):
@@ -39,6 +52,7 @@ def passerelle_analyser(request, pk):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: ErreurPasserelleSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def passerelle_synchroniser(request, pk):
@@ -61,6 +75,7 @@ def passerelle_synchroniser(request, pk):
     return Response(resultat)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def passerelle_lot(request):

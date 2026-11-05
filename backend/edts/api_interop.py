@@ -30,6 +30,9 @@ jamais le moteur de présence.
 from datetime import date
 
 from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -86,6 +89,24 @@ def _registre_ou_404(uuid):
     ).filter(uuid=uuid).first()
 
 
+
+
+# ── Contrats OpenAPI (interopérabilité séances publiées) ─────────────
+
+
+class ErreurInteropSerializer(serializers.Serializer):
+    """Erreurs du module : {'error': message} (+ statuts si applicable)."""
+
+    error = serializers.CharField()
+    statuts = serializers.JSONField(required=False)
+
+
+class EvenementsInteropSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    results = serializers.JSONField()
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def seances_publiees_api(request):
@@ -113,6 +134,7 @@ def seances_publiees_api(request):
     return Response(_paginer(request, elements))
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: ErreurInteropSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def seance_detail_api(request, uuid):
@@ -133,6 +155,7 @@ def seance_detail_api(request, uuid):
     return Response(payload)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurInteropSerializer, 404: ErreurInteropSerializer, 409: ErreurInteropSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def seance_etudiants_attendus_api(request, uuid):
@@ -160,6 +183,7 @@ def seance_etudiants_attendus_api(request, uuid):
     return Response(attendus)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: ErreurInteropSerializer, 404: ErreurInteropSerializer, 409: ErreurInteropSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def seance_instantane_api(request, uuid):
@@ -194,6 +218,7 @@ def seance_instantane_api(request, uuid):
     )
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: ErreurInteropSerializer, 403: ErreurInteropSerializer, 404: ErreurInteropSerializer, 409: ErreurInteropSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def seance_transition_api(request, uuid):
@@ -221,6 +246,7 @@ def seance_transition_api(request, uuid):
     return Response(svc.contexte_seance(registre))
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.OBJECT, 404: ErreurInteropSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def emploi_reconcilier_api(request, pk):
@@ -233,6 +259,7 @@ def emploi_reconcilier_api(request, pk):
     return Response({'emploi_du_temps_id': emploi.id, **bilan})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def salles_geolocalisation_api(request):
@@ -264,6 +291,7 @@ def salles_geolocalisation_api(request):
     return Response(_paginer(request, elements))
 
 
+@extend_schema(responses={200: EvenementsInteropSerializer, 400: ErreurInteropSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def evenements_api(request):

@@ -14,6 +14,7 @@ pas transmettre certains en-têtes ou cookies dans une iframe cross-site :
 En production, seul le chemin n°1 est utilisé : les autres restent présents
 mais ne sont jamais alimentés par le frontend de production.
 """
+from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken
 
@@ -47,3 +48,31 @@ class FlexibleJWTAuthentication(JWTAuthentication):
             except InvalidToken:
                 return None
         return super().authenticate(request)
+
+
+class FlexibleJWTScheme(OpenApiAuthenticationExtension):
+    """Extension OpenAPI décrivant FlexibleJWTAuthentication.
+
+    Sans elle, drf-spectacular ne sait pas documenter
+    l'authentificateur (avertissement W001 répété sur chaque vue) et
+    l'ignore. Le schéma déclaré reflète le mécanisme principal réel :
+    jeton JWT transmis en « Authorization: Bearer <token> » (les voies
+    de secours X-JWT-Access et ?access_token= sont des mécanismes
+    d'aperçu, documentés dans le docstring du module).
+    """
+
+    target_class = 'authentication.auth_classes.FlexibleJWTAuthentication'
+    name = 'BearerAuth'
+    match_subclasses = True
+    priority = 1
+
+    def get_security_definition(self, auto_schema):
+        return {
+            'type': 'http',
+            'scheme': 'bearer',
+            'bearerFormat': 'JWT',
+            'description': (
+                'Jeton JWT SimpleJWT transmis via '
+                '« Authorization: Bearer <token> ».'
+            ),
+        }

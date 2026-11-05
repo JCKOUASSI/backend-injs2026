@@ -2,6 +2,9 @@
 
 Pattern @api_view (cohérent avec stages/jurys/graduation).
 """
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -42,6 +45,17 @@ def _serialize_document(d):
 
 # ---------- Courriers ----------
 
+
+
+# ── Contrats OpenAPI ──────────────────────────────────────────────────
+
+
+class AdministrationsErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    error = serializers.JSONField(required=False)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def courriers_list_api(request):
@@ -55,6 +69,7 @@ def courriers_list_api(request):
     return Response({'results': [_serialize_courrier(c) for c in qs]})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: OpenApiTypes.OBJECT, 400: AdministrationsErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsGestionAdministration])
 def courrier_creer_api(request):
@@ -75,6 +90,7 @@ def courrier_creer_api(request):
     return Response(_serialize_courrier(c), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: AdministrationsErreurSerializer, 404: AdministrationsErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsGestionAdministration])
 def courrier_transition_api(request, pk):
@@ -94,6 +110,7 @@ def courrier_transition_api(request, pk):
 
 # ---------- Documents officiels ----------
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def documents_list_api(request):
@@ -104,6 +121,7 @@ def documents_list_api(request):
     return Response({'results': [_serialize_document(d) for d in qs]})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: OpenApiTypes.OBJECT, 400: AdministrationsErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsGestionAdministration])
 def document_creer_api(request):
@@ -122,6 +140,7 @@ def document_creer_api(request):
     return Response(_serialize_document(d), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: AdministrationsErreurSerializer, 404: AdministrationsErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsGestionAdministration])
 def document_transition_api(request, pk):
@@ -171,6 +190,7 @@ def _serialize_mission(m):
 
 # ---------- Réunions ----------
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: AdministrationsErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsGestionOrReadOnly])
 def reunions_api(request):
@@ -192,6 +212,7 @@ def reunions_api(request):
     return Response(_serialize_reunion(r), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: AdministrationsErreurSerializer, 404: AdministrationsErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsGestionAdministration])
 def reunion_transition_api(request, pk):
@@ -213,6 +234,7 @@ def reunion_transition_api(request, pk):
 
 # ---------- Missions ----------
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: AdministrationsErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsGestionOrReadOnly])
 def missions_api(request):
@@ -237,6 +259,7 @@ def missions_api(request):
     return Response(_serialize_mission(m), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: AdministrationsErreurSerializer, 404: AdministrationsErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsDirectionOrAdminAdministration])
 def mission_transition_api(request, pk):
@@ -256,6 +279,7 @@ def mission_transition_api(request, pk):
 
 # ---------- Panorama (hub Administration premium — tâche 34) ----------
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def stats_api(request):

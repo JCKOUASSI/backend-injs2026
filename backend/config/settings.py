@@ -524,6 +524,31 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API de gestion LMD, scolarité, formations, participants et badgeage QR de l\'INJS.',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    # Noms d'énumérations explicites : drf-spectacular nomme par défaut
+    # les énumérations d'après le nom du champ (« role », « source »),
+    # ce qui fait entrer en collision des concepts métier DIFFÉRENTS.
+    # Chaque ensemble de choix reçoit ici le nom de son concept réel ;
+    # aucun choix ni aucune valeur stockée n'est modifié.
+    'ENUM_NAME_OVERRIDES': {
+        # Rôle d'un utilisateur du système (12 rôles INJS).
+        'UtilisateurRoleEnum': 'authentication.models.ROLE_UTILISATEUR_CHOICES',
+        # Rôle d'un intervenant d'épreuve (titulaire/surveillant/correcteur).
+        'EpreuveSurveillantRoleEnum': 'evaluations.models.EPREUVE_SURVEILLANT_ROLE_CHOICES',
+        # Module émetteur d'un événement d'audit.
+        'EvenementAuditSourceEnum': 'core.models.EVENEMENT_AUDIT_SOURCE_CHOICES',
+        # Origine d'une capture de version de rôle (habilitations).
+        'RoleVersionSourceEnum': 'habilitations.models.version_role.ROLE_VERSION_SOURCE_CHOICES',
+        # Génération d'une participation d'évaluation (automatique/manuelle).
+        'EvaluationParticipantSourceEnum': [('AUTO', 'Généré'), ('MANUEL', 'Manuel')],
+        # Source d'un résultat d'évaluation (moteur LMD, compat, saisie).
+        'ResultatSourceEnum': 'evaluations.models.SOURCES_RESULTAT',
+        # Périmètre de validité d'une formation du référentiel.
+        'PerimetreFormationEnum': 'formations.models.PERIMETRE_FORMATION_CHOICES',
+        # Statut d'un questionnaire d'évaluation (brouillon/publié/fermé).
+        'StatutQuestionnaireEnum': 'suiviEvaluation.models.QUESTIONNAIRE_STATUT_CHOICES',
+        # Type de périmètre d'habilitation (rôle métier et périmètre partagent ce concept).
+        'PerimetreHabilitationTypeEnum': 'habilitations.models.perimetre.PERIMETRE_HABILITATION_TYPE_CHOICES',
+    },
 }
 
 # URL publique de l'application web (lien « Dashboard web » dans l'admin).

@@ -21,6 +21,9 @@ from datetime import date as _date_cls
 from uuid import UUID
 
 from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -80,6 +83,41 @@ def _parse_date_param(request, nom):
         return None, {'detail': f'Paramètre « {nom} » invalide (JJJJ-MM-JJ attendu).'}
 
 
+
+
+# ── Contrats OpenAPI (séances EDT : supervision, QR, émargement) ─────
+
+
+class SeanceEdtDetailErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class SeanceEdtCodeErreurSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    detail = serializers.CharField()
+
+
+class QrSeanceReponseSerializer(serializers.Serializer):
+    actif = serializers.BooleanField()
+    token = serializers.CharField(allow_null=True)
+    expire_a = serializers.CharField(allow_null=True)
+    ouvre_a = serializers.CharField(required=False)
+    url_badgeage = serializers.CharField(required=False)
+
+
+class EmargementSeanceReponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    journal = serializers.JSONField()
+
+
+class EmargementUnitaireReponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    participant = serializers.JSONField()
+    statut = serializers.CharField()
+    pointage_id = serializers.IntegerField(allow_null=True)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, ExigePermission.pour('presences.emargement.consulter')])
 def historique_api(request):
@@ -115,6 +153,7 @@ def historique_api(request):
     ))
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, ExigePermission.pour('presences.emargement.consulter')])
 def supervision_api(request):
@@ -160,6 +199,7 @@ def supervision_api(request):
     return Response(supervision.supervision_seances(request.user, jour, **filtres))
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def seances_du_jour(request):
@@ -169,6 +209,7 @@ def seances_du_jour(request):
     return Response(service.seances_du_jour(request.user, date))
 
 
+@extend_schema(request=None, responses={200: QrSeanceReponseSerializer, 400: SeanceEdtDetailErreurSerializer, 403: SeanceEdtDetailErreurSerializer, 404: SeanceEdtDetailErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, ExigePermission.pour('presences.qr.generer')])
 def qr_seance(request, pk):
@@ -200,6 +241,7 @@ def qr_seance(request, pk):
     }, status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: SeanceEdtCodeErreurSerializer, 403: SeanceEdtCodeErreurSerializer})
 @api_view(['POST'])
 @throttle_classes([ScanRateThrottle])
 @permission_classes([IsAuthenticated])
@@ -277,6 +319,7 @@ def scan_seance(request):
     }, status=status.HTTP_201_CREATED if action == 'ENTREE' else status.HTTP_200_OK)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: SeanceEdtDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, ExigePermission.pour('presences.emargement.consulter')])
 def presences_seance(request, pk):
@@ -348,6 +391,7 @@ def presences_seance(request, pk):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: EmargementSeanceReponseSerializer, 400: OpenApiTypes.OBJECT, 404: SeanceEdtDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, ExigePermission.pour('presences.emargement.saisir')])
 def emargement_seance(request, pk):
@@ -376,6 +420,7 @@ def emargement_seance(request, pk):
                      'journal': journal}, status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: EmargementUnitaireReponseSerializer, 400: OpenApiTypes.OBJECT, 404: SeanceEdtDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, ExigePermission.pour('presences.emargement.saisir')])
 def emargement_unitaire(request, pk):
@@ -422,6 +467,7 @@ def emargement_unitaire(request, pk):
     }, status=201)
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: SeanceEdtDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, ExigePermission.pour('presences.seance_emargement.cloturer')])
 def autoclore_seance(request, pk):

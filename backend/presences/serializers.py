@@ -11,7 +11,7 @@ class PointageSerializer(serializers.ModelSerializer):
     formation_titre = serializers.CharField(source='session.module.formation.formation', read_only=True)
     type_personne = serializers.CharField(read_only=True)
 
-    def get_encadrant_detail(self, obj):
+    def get_encadrant_detail(self, obj) -> dict | None:
         if not obj.encadrant:
             return None
         return {

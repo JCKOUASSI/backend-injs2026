@@ -16,6 +16,9 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework import generics, status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -47,6 +50,19 @@ from .serializers import (
 User = get_user_model()
 
 
+
+
+# ── Contrats OpenAPI (administration des habilitations) ──────────────
+
+
+class ErreurHabBaseSerializer(serializers.Serializer):
+    """Erreurs du module : {'detail': message, 'code': CODE}."""
+
+    detail = serializers.CharField()
+    code = serializers.CharField(required=False)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def mes_acces_view(request):
@@ -132,6 +148,7 @@ class EvaluerView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 403: ErreurHabBaseSerializer, 404: ErreurHabBaseSerializer})
     def post(self, request):
         serializer = DemandeEvaluationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -232,6 +249,7 @@ class PermissionListView(generics.ListAPIView):
 class ObservationsSyntheseView(APIView):
     permission_classes = [IsAuthenticated, EstAdministrateurHabilitations]
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
     def get(self, request):
         return Response(observation_service.synthese_pour_api())
 
@@ -239,6 +257,7 @@ class ObservationsSyntheseView(APIView):
 class ObservationsResetView(APIView):
     permission_classes = [IsAuthenticated, EstAdministrateurHabilitations]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         etat = observation_service.remettre_a_zero()
         journaliser(

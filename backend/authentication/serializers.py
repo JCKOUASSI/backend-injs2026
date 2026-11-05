@@ -58,16 +58,16 @@ class UserSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'secretariat_nom', 'must_change_password', 'role', 'roles']
 
-    def get_role(self, obj):
+    def get_role(self, obj) -> str:
         return get_user_role(obj) or obj.role
 
-    def get_roles(self, obj):
+    def get_roles(self, obj) -> list[str]:
         roles = sorted(get_user_roles(obj))
         if roles:
             return roles
         return [obj.role] if obj.role else []
 
-    def get_secretariat_nom(self, obj):
+    def get_secretariat_nom(self, obj) -> str | None:
         if obj.secretariat:
             return obj.secretariat.nom
         return None

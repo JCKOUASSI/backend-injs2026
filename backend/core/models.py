@@ -137,3 +137,7 @@ class EvenementAudit(models.Model):
         raise JournalImmuableError(
             f'L’événement d’audit {self.code} est immuable : suppression interdite.'
         )
+
+
+# Alias module-level des choix de source d'événement d'audit (ENUM_NAME_OVERRIDES).
+EVENEMENT_AUDIT_SOURCE_CHOICES = EvenementAudit.Source.choices

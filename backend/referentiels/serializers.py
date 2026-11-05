@@ -156,6 +156,19 @@ def _libelle_de_la_cible(obj, fk):
     return str(cible)
 
 
+def _fabriquer_getter_libelle(fk):
+    """Construit le getter ``get_<fk>_libelle`` des serializers dynamiques.
+
+    Une fonction nommée et annotée (plutôt qu'une lambda) permet à
+    drf-spectacular de résoudre le type du champ calculé : libellé
+    textuel de la cible, ou None quand la relation est vide.
+    """
+    def getter(self, obj) -> str | None:
+        return _libelle_de_la_cible(obj, fk)
+
+    getter.__name__ = f'get_{fk}_libelle'
+    return getter
+
 def serializer_pour_ref(slug):
     """Construit (et mémorise) le sérialiseur d'une entrée du registre.
 
@@ -203,9 +216,7 @@ def serializer_pour_ref(slug):
         attributs[f'{fk}_libelle'] = serializers.SerializerMethodField(
             method_name=nom_getter,
         )
-        attributs[nom_getter] = (
-            lambda self, obj, _fk=fk: _libelle_de_la_cible(obj, _fk)
-        )
+        attributs[nom_getter] = _fabriquer_getter_libelle(fk)
 
     bascule = entree.get('bascule_unique')
     if bascule and bascule in champs:

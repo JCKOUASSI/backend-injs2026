@@ -10,6 +10,9 @@ from django.db.models import Count, Sum
 from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import SAFE_METHODS, BasePermission, IsAuthenticated
 from rest_framework.response import Response
@@ -197,6 +200,100 @@ class LectureScolariteEcritureDFRC(BasePermission):
         return IsDFRC().has_permission(request, view)
 
 
+
+
+# ── Contrats OpenAPI (référentiels et maquettes de formation) ────────
+
+
+class ErreurScolariteSerializer(serializers.Serializer):
+    """Erreurs du module : {'error': message} (+ compléments éventuels)."""
+
+    error = serializers.CharField()
+    problemes = serializers.JSONField(required=False)
+    statut = serializers.CharField(required=False)
+
+
+class FamilleModuleReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    code = serializers.CharField()
+    libelle = serializers.CharField()
+
+
+class EcueReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    code = serializers.CharField()
+    intitule = serializers.CharField()
+    credits = serializers.IntegerField()
+    coefficient = serializers.DecimalField(max_digits=5, decimal_places=2)
+    volume_cm = serializers.DecimalField(max_digits=6, decimal_places=2)
+    volume_td = serializers.DecimalField(max_digits=6, decimal_places=2)
+    volume_tp = serializers.DecimalField(max_digits=6, decimal_places=2)
+    volume_total = serializers.DecimalField(max_digits=6, decimal_places=2)
+    ref_module_id = serializers.IntegerField(allow_null=True)
+    ordre = serializers.IntegerField()
+    archive = serializers.BooleanField()
+    statut = serializers.CharField()
+
+
+class EcueAvecUeSerializer(EcueReponseSerializer):
+    ue_id = serializers.IntegerField()
+    ue_code = serializers.CharField()
+
+
+class SemestreResumeSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    numero = serializers.IntegerField()
+    libelle = serializers.CharField()
+
+
+class UeReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    code = serializers.CharField()
+    intitule = serializers.CharField()
+    credits = serializers.IntegerField()
+    caractere = serializers.CharField()
+    statut = serializers.CharField()
+    ordre = serializers.IntegerField()
+    famille = serializers.CharField(allow_null=True)
+    famille_code = serializers.CharField(allow_null=True)
+    semestre = SemestreResumeSerializer()
+    ecues = EcueReponseSerializer(many=True)
+
+
+class MaquetteReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    libelle = serializers.CharField()
+    annee_academique_id = serializers.IntegerField()
+    ref_formation_id = serializers.IntegerField()
+    parcours_id = serializers.IntegerField(allow_null=True)
+    niveau_id = serializers.IntegerField()
+    version = serializers.IntegerField()
+    statut = serializers.CharField()
+    validee_par = serializers.IntegerField(allow_null=True)
+    validee_le = serializers.DateTimeField(allow_null=True)
+    activee_par = serializers.IntegerField(allow_null=True)
+    activee_le = serializers.DateTimeField(allow_null=True)
+    commentaire_validation = serializers.CharField()
+    credits_total = serializers.IntegerField()
+    volume_horaire_total = serializers.CharField()
+    problemes_coherence = serializers.JSONField()
+    completude = serializers.JSONField()
+
+
+class MaquetteCreationSerializer(serializers.Serializer):
+    annee_academique_id = serializers.IntegerField()
+    ref_formation_id = serializers.IntegerField()
+    niveau_id = serializers.IntegerField()
+    parcours_id = serializers.IntegerField(required=False)
+
+
+class ValidationLotMaquettesSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    validees = serializers.JSONField()
+    echecs = serializers.JSONField()
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: ErreurScolariteSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, LectureScolariteEcritureDFRC])
 def referentiel_list(request, ressource):
@@ -205,6 +302,7 @@ def referentiel_list(request, ressource):
     return _referentiel_list(request, ressource)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 204: None, 400: OpenApiTypes.OBJECT, 404: ErreurScolariteSerializer, 409: ErreurScolariteSerializer})
 @api_view(['PUT', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def referentiel_detail(request, ressource, pk):
@@ -213,6 +311,7 @@ def referentiel_detail(request, ressource, pk):
     return _referentiel_detail(request, ressource, pk)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def annee_courante(request):
@@ -270,6 +369,7 @@ def _serialize_ue(ue):
     }
 
 
+@extend_schema(responses={200: FamilleModuleReponseSerializer(many=True)})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def famille_list(request):
@@ -285,6 +385,7 @@ def famille_list(request):
     ])
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurScolariteSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def maquette_list(request):
@@ -339,6 +440,7 @@ def maquette_list(request):
     ])
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: ErreurScolariteSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def maquette_detail(request, pk):
@@ -370,6 +472,7 @@ def maquette_detail(request, pk):
     })
 
 
+@extend_schema(responses={200: EcueAvecUeSerializer(many=True), 404: ErreurScolariteSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def maquette_ecues_semestre(request, pk, semestre_id):
@@ -427,6 +530,7 @@ def _get_maquette(pk):
     return Maquette.objects.filter(pk=pk).first()
 
 
+@extend_schema(request=MaquetteCreationSerializer, responses={201: MaquetteReponseSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def maquette_create(request):
@@ -461,6 +565,7 @@ def maquette_create(request):
     return Response(_serializer_maquette(maquette), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: MaquetteReponseSerializer, 400: OpenApiTypes.OBJECT, 404: ErreurScolariteSerializer})
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def maquette_update(request, pk):
@@ -485,6 +590,7 @@ def maquette_update(request, pk):
     return Response(_serializer_maquette(maquette))
 
 
+@extend_schema(request=None, responses={200: MaquetteReponseSerializer, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def maquette_valider(request, pk):
@@ -517,6 +623,7 @@ class _EchecValidationLot(Exception):
         self.problemes = problemes
 
 
+@extend_schema(request=None, responses={200: ValidationLotMaquettesSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def maquette_valider_toutes(request):
@@ -557,6 +664,7 @@ def maquette_valider_toutes(request):
     return Response({'detail': detail + '.', 'validees': validees, 'echecs': echecs})
 
 
+@extend_schema(request=None, responses={200: MaquetteReponseSerializer, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def maquette_activer(request, pk):
@@ -577,6 +685,7 @@ def maquette_activer(request, pk):
     return Response(_serializer_maquette(maquette))
 
 
+@extend_schema(request=None, responses={200: MaquetteReponseSerializer, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def maquette_archiver(request, pk):
@@ -592,6 +701,7 @@ def maquette_archiver(request, pk):
     return Response(_serializer_maquette(maquette))
 
 
+@extend_schema(request=None, responses={201: MaquetteReponseSerializer, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def maquette_cloner(request, pk):
@@ -605,6 +715,7 @@ def maquette_cloner(request, pk):
     return Response(_serializer_maquette(clone), status=201)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: ErreurScolariteSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def maquette_journal(request, pk):
@@ -623,6 +734,7 @@ def maquette_journal(request, pk):
     ])
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: UeReponseSerializer(many=True), 201: UeReponseSerializer, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def maquette_ue_create(request, pk):
@@ -686,6 +798,7 @@ def maquette_ue_create(request, pk):
     return Response(_serialize_ue(ue), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: UeReponseSerializer, 204: None, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
 @api_view(['PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def ue_detail(request, pk):
@@ -806,6 +919,7 @@ def _changer_statut(element, statut_demande, request, journal_detail):
     return payload, 200
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def ue_statut(request, pk):
@@ -821,6 +935,7 @@ def ue_statut(request, pk):
     return Response(payload, status=code)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def ecue_statut(request, pk):
@@ -838,6 +953,7 @@ def ecue_statut(request, pk):
     return Response(payload, status=code)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: EcueReponseSerializer, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def ue_ecue_create(request, pk):
@@ -880,6 +996,7 @@ def ue_ecue_create(request, pk):
     return Response(_serialize_ecue(ecue), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 204: None, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
 @api_view(['PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def ecue_detail(request, pk):

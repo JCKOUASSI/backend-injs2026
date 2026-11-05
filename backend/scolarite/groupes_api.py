@@ -2,6 +2,9 @@
 
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -49,6 +52,50 @@ def _serialize_evenement(evenement):
     }
 
 
+
+
+# ── Contrats OpenAPI (groupes, affectations, réinscriptions) ─────────
+
+
+class ErreurGroupesSerializer(serializers.Serializer):
+    error = serializers.JSONField()
+
+
+class AffectationGroupeReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    inscription_id = serializers.IntegerField()
+    groupe_id = serializers.IntegerField()
+    groupe = serializers.CharField()
+    date_debut = serializers.DateField()
+    date_fin = serializers.DateField(allow_null=True)
+    active = serializers.BooleanField()
+    motif = serializers.CharField()
+    affecte_par = serializers.CharField(allow_null=True)
+
+
+class EvenementEtudiantReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    etudiant_id = serializers.IntegerField()
+    inscription_id = serializers.IntegerField(allow_null=True)
+    type_evenement = serializers.CharField()
+    type_libelle = serializers.CharField()
+    date_evenement = serializers.DateField()
+    ancienne_valeur = serializers.CharField()
+    nouvelle_valeur = serializers.CharField()
+    commentaire = serializers.CharField()
+    enregistre_par = serializers.CharField(allow_null=True)
+
+
+class RepartitionAutomatiqueSerializer(serializers.Serializer):
+    affectations = serializers.IntegerField()
+    echecs = serializers.JSONField()
+
+
+class NonAffectesSerializer(serializers.Serializer):
+    non_affectes = serializers.IntegerField()
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def groupe_effectifs(request):
@@ -111,6 +158,7 @@ def groupe_effectifs(request):
     return Response([_ligne(groupe) for groupe in queryset])
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: AffectationGroupeReponseSerializer(many=True), 400: OpenApiTypes.OBJECT, 404: ErreurGroupesSerializer, 409: ErreurGroupesSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def inscription_affectations(request, pk):
@@ -138,6 +186,7 @@ def inscription_affectations(request, pk):
     return Response([_serialize_affectation(a) for a in affectations])
 
 
+@extend_schema(request=None, responses={200: AffectationGroupeReponseSerializer, 400: OpenApiTypes.OBJECT, 404: ErreurGroupesSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def inscription_retirer_groupe(request, pk):
@@ -153,6 +202,7 @@ def inscription_retirer_groupe(request, pk):
     return Response(_serialize_affectation(affectation))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: RepartitionAutomatiqueSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def repartition_automatique(request):
@@ -179,6 +229,7 @@ def repartition_automatique(request):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def reinscrire(request):
@@ -276,6 +327,7 @@ def reinscrire(request):
     return Response(_serialize_inscription(inscription, detail=True), status=201)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurGroupesSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def reinscriptions_stats(request):
@@ -329,6 +381,7 @@ def reinscriptions_stats(request):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: EvenementEtudiantReponseSerializer(many=True), 400: OpenApiTypes.OBJECT, 404: ErreurGroupesSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def etudiant_evenements(request, pk):
@@ -356,6 +409,7 @@ def etudiant_evenements(request, pk):
 
 
 
+@extend_schema(responses={200: NonAffectesSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def groupe_non_affectes(request):
@@ -377,6 +431,7 @@ def groupe_non_affectes(request):
     return Response({'non_affectes': inscriptions.count()})
 
 
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, (200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, 400: ErreurGroupesSerializer, 404: ErreurGroupesSerializer, 503: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def groupe_liste_export(request, pk, fmt):

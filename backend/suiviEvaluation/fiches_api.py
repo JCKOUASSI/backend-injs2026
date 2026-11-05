@@ -25,6 +25,9 @@ from django.db.models import Avg
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
@@ -196,6 +199,17 @@ def construire_fiche_auditeur(participant, formation):
     }
 
 
+
+
+# ── Contrats OpenAPI ──────────────────────────────────────────────────
+
+
+class FicheSuiviErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    error = serializers.JSONField(required=False)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: FicheSuiviErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsConsultationFiche])
 def fiche_auditeur(request, participant_pk, formation_pk):
@@ -203,6 +217,7 @@ def fiche_auditeur(request, participant_pk, formation_pk):
     return Response(construire_fiche_auditeur(participant, formation))
 
 
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, (200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, 400: FicheSuiviErreurSerializer, 404: FicheSuiviErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsFicheExport])
 def exporter_fiche_auditeur(request, participant_pk, formation_pk, fmt):
@@ -300,6 +315,7 @@ def construire_fiche_formateur(formateur, module):
     }
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: FicheSuiviErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsConsultationFiche])
 def fiche_formateur(request, formateur_pk, module_pk):
@@ -307,6 +323,7 @@ def fiche_formateur(request, formateur_pk, module_pk):
     return Response(construire_fiche_formateur(formateur, module))
 
 
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, (200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, 400: FicheSuiviErreurSerializer, 404: FicheSuiviErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsFicheExport])
 def exporter_fiche_formateur(request, formateur_pk, module_pk, fmt):

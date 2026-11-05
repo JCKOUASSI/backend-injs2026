@@ -14,6 +14,9 @@ from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -1120,10 +1123,23 @@ def _build_dashboard_payload(scope: StatsScope, sections, user, period=None):
 
 # ── Vues ──────────────────────────────────────────────────────────────────────
 
+
+
+# ── Contrats OpenAPI (administration des habilitations) ──────────────
+
+
+class ErreurStatistiquesSerializer(serializers.Serializer):
+    """Erreurs du module : {'detail': message, 'code': CODE}."""
+
+    detail = serializers.CharField()
+    code = serializers.CharField(required=False)
+
+
 class DashboardView(APIView):
     """GET /api/statistiques/?formation_id=&secretariat_id="""
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurStatistiquesSerializer, 403: ErreurStatistiquesSerializer})
     def get(self, request):
         if not user_has_stats_access(request.user):
             return Response({'detail': 'Accès non autorisé.'}, status=403)
@@ -1269,6 +1285,7 @@ class SecretariatsStatsView(APIView):
     """GET /api/statistiques/secretariats/ — Synthèse KPIs par secrétariat."""
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurStatistiquesSerializer, 403: ErreurStatistiquesSerializer})
     def get(self, request):
         if not user_has_stats_access(request.user):
             return Response({'detail': 'Accès non autorisé.'}, status=403)
@@ -1307,6 +1324,7 @@ class AlertesSeuilsView(APIView):
     def _scope(self, request):
         return _scope_from_request(request)
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 403: ErreurStatistiquesSerializer})
     def get(self, request):
         if not user_has_stats_access(request.user):
             return Response({'detail': 'Accès non autorisé.'}, status=403)
@@ -1335,6 +1353,7 @@ class AlertesSeuilsView(APIView):
             'seuils_vides': len(seuils) == 0,
         })
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 403: ErreurStatistiquesSerializer})
     def post(self, request):
         """Initialise les seuils par défaut (format INJS-LMD)."""
         if not _check_role(request.user, VALIDATION_ROLES):
@@ -1349,6 +1368,7 @@ class AlertesSeuilsView(APIView):
             'indicateurs': _indicateurs_suivi(scope.formation_id, scope.secretariat_id, scope.module_ids),
         })
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 403: ErreurStatistiquesSerializer})
     def put(self, request):
         if not _check_role(request.user, VALIDATION_ROLES):
             return Response({'detail': 'Accès non autorisé.'}, status=403)
@@ -1375,6 +1395,7 @@ class AlertesSeuilsView(APIView):
 class RapportsListView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 403: ErreurStatistiquesSerializer})
     def get(self, request):
         if not user_has_stats_access(request.user):
             return Response({'detail': 'Accès non autorisé.'}, status=403)
@@ -1390,6 +1411,7 @@ class RapportsListView(APIView):
             )[:100]
         ))
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 403: ErreurStatistiquesSerializer})
     def post(self, request):
         if not _check_role(request.user, GENERATION_ROLES):
             return Response({'detail': 'Accès non autorisé.'}, status=403)
@@ -1439,6 +1461,7 @@ class RapportDetailView(APIView):
             'signatures':   list(rapport.signatures.values('id','signataire__username','role_signataire','date_signature','commentaire')),
         }
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 403: ErreurStatistiquesSerializer})
     def get(self, request, rapport_id):
         if not user_has_stats_access(request.user):
             return Response({'detail': 'Accès non autorisé.'}, status=403)
@@ -1447,6 +1470,7 @@ class RapportDetailView(APIView):
             return Response({'detail': 'Accès non autorisé.'}, status=403)
         return Response(self._data(rapport))
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: ErreurStatistiquesSerializer, 403: ErreurStatistiquesSerializer})
     def patch(self, request, rapport_id):
         rapport = get_object_or_404(Rapport, id=rapport_id)
         if not rapport_accessible(request.user, rapport):
@@ -1491,6 +1515,7 @@ class RapportDetailView(APIView):
         )
         return Response(self._data(rapport))
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 204: None, 403: ErreurStatistiquesSerializer})
     def delete(self, request, rapport_id):
         if not _check_role(request.user, ADMIN_RAPPORT_ROLES):
             return Response({'detail': 'Accès réservé aux administrateurs.'}, status=403)
@@ -1521,6 +1546,7 @@ class RapportNotificationsView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 403: ErreurStatistiquesSerializer})
     def get(self, request):
         if not user_has_stats_access(request.user):
             return Response({'detail': 'Accès non autorisé.'}, status=403)
@@ -1543,6 +1569,7 @@ class RapportNotificationsView(APIView):
             'non_lues': qs.filter(lu=False).count(),
         })
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 403: ErreurStatistiquesSerializer})
     def patch(self, request):
         """Marquer des notifications comme lues : { "ids": [1,2] } ou { "tout": true }."""
         if not user_has_stats_access(request.user):
@@ -1561,6 +1588,7 @@ class RapportNotificationsView(APIView):
 class RapportWorkflowView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: ErreurStatistiquesSerializer, 403: ErreurStatistiquesSerializer})
     def post(self, request, rapport_id):
         rapport = get_object_or_404(Rapport, id=rapport_id)
         if not rapport_accessible(request.user, rapport):
@@ -1611,6 +1639,7 @@ class PointJournalierView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurStatistiquesSerializer, 403: ErreurStatistiquesSerializer, 404: ErreurStatistiquesSerializer})
     def get(self, request):
         if not user_has_stats_access(request.user):
             return Response({'detail': 'Accès non autorisé.'}, status=403)
@@ -1661,6 +1690,7 @@ class PointJournalierView(APIView):
         ))
 
 
+@extend_schema(responses={(200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, (200, 'application/pdf'): OpenApiTypes.BINARY, 400: ErreurStatistiquesSerializer, 403: ErreurStatistiquesSerializer, 404: ErreurStatistiquesSerializer, 500: ErreurStatistiquesSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def point_journalier_export(request):
@@ -1703,6 +1733,7 @@ def point_journalier_export(request):
         return Response({'detail': f'Erreur export : {exc}'}, status=500)
 
 
+@extend_schema(responses={(200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, (200, 'application/pdf'): OpenApiTypes.BINARY, 400: ErreurStatistiquesSerializer, 403: ErreurStatistiquesSerializer, 404: ErreurStatistiquesSerializer, 500: ErreurStatistiquesSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def bilans_export(request):
@@ -1870,6 +1901,7 @@ class BilansView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 403: ErreurStatistiquesSerializer})
     def get(self, request):
         if not user_has_stats_access(request.user):
             return Response({'detail': 'Accès non autorisé.'}, status=403)
@@ -1903,6 +1935,7 @@ class BilansView(APIView):
 class ObservationsView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 403: ErreurStatistiquesSerializer})
     def get(self, request, rapport_id):
         if not user_has_stats_access(request.user):
             return Response({'detail': 'Accès non autorisé.'}, status=403)
@@ -1913,6 +1946,7 @@ class ObservationsView(APIView):
             'id','type','description','auteur__username','created_at'
         )))
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 403: ErreurStatistiquesSerializer})
     def post(self, request, rapport_id):
         if not _check_role(request.user, GENERATION_ROLES):
             return Response({'detail': 'Accès non autorisé.'}, status=403)
@@ -1943,6 +1977,7 @@ class BilanFACView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurStatistiquesSerializer, 403: ErreurStatistiquesSerializer, 404: ErreurStatistiquesSerializer})
     def get(self, request):
         if not user_has_stats_access(request.user):
             return Response({'detail': 'Accès non autorisé.'}, status=403)
@@ -1991,6 +2026,7 @@ class BilanFACPerimetreView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurStatistiquesSerializer, 403: ErreurStatistiquesSerializer})
     def get(self, request):
         if not user_has_stats_access(request.user):
             return Response({'detail': 'Accès non autorisé.'}, status=403)
@@ -2019,6 +2055,7 @@ class BilanFACPerimetreView(APIView):
         ))
 
 
+@extend_schema(responses={(200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, (200, 'application/pdf'): OpenApiTypes.BINARY, 400: ErreurStatistiquesSerializer, 403: ErreurStatistiquesSerializer, 404: ErreurStatistiquesSerializer, 500: ErreurStatistiquesSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def bilan_fac_export(request):

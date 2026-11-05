@@ -89,3 +89,7 @@ class Perimetre(models.Model):
         if existant is not None:
             return existant
         return cls.objects.create(type=type_p)
+
+
+# Alias module-level des choix de type de périmètre (référencé par ENUM_NAME_OVERRIDES).
+PERIMETRE_HABILITATION_TYPE_CHOICES = Perimetre.Type.choices

@@ -16,6 +16,9 @@ s'appliquent telles quelles.
 
 from django.utils import timezone
 from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
@@ -177,6 +180,35 @@ def _parametres_lmd(request):
 
 # ── Audit de pré-génération ──────────────────────────────────────────────────
 
+
+
+# ── Contrats OpenAPI (moteur LMD : génération, validation, exports) ──
+
+
+class DetailErreurLmdSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class ValidationEdtLmdSerializer(serializers.Serializer):
+    valide = serializers.BooleanField()
+    statut_edt = serializers.CharField()
+    version = serializers.IntegerField()
+    statut = serializers.CharField()
+    violations = serializers.JSONField()
+
+
+class AnnulationItemLmdSerializer(serializers.Serializer):
+    annulee = serializers.BooleanField()
+    reactivee = serializers.BooleanField()
+    affectation_id = serializers.IntegerField()
+    affectation_pedagogique_id = serializers.IntegerField(allow_null=True)
+
+
+class VersionsEdtLmdSerializer(serializers.Serializer):
+    versions = serializers.JSONField()
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def audit_api(request):
@@ -357,6 +389,7 @@ def _disponibilites(request, cible):
     })
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def disponibilites_enseignants_api(request):
@@ -364,6 +397,7 @@ def disponibilites_enseignants_api(request):
     return _disponibilites(request, 'enseignants')
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def disponibilites_salles_api(request):
@@ -373,6 +407,7 @@ def disponibilites_salles_api(request):
 
 # ── Créneaux (modèle CreneauTemplate unique) ─────────────────────────────────
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def slots_api(request):
@@ -416,6 +451,7 @@ def slots_api(request):
 
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def contraintes_api(request):
@@ -489,6 +525,7 @@ def _resume_resultat(resultat):
     }
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: DetailErreurLmdSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def generate_api(request):
@@ -575,6 +612,7 @@ def generate_api(request):
 
 # ── Validation / publication (réutilise LOT 2, aucune seconde logique) ───────
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: DetailErreurLmdSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def generate_coordinated_api(request):
@@ -640,6 +678,7 @@ def generate_coordinated_api(request):
     return Response(bilan, status=code)
 
 
+@extend_schema(request=None, responses={200: ValidationEdtLmdSerializer, 404: DetailErreurLmdSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtValidation])
 def validate_api(request, pk):
@@ -703,6 +742,7 @@ def _besoins_attendus_pour_publication(edt):
     return seances_attendues, None
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.OBJECT, 404: DetailErreurLmdSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtValidation])
 def publish_api(request, pk):
@@ -909,6 +949,7 @@ def _candidats_deplacement(affectation):
     return Response(reponse)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: DetailErreurLmdSerializer, 404: DetailErreurLmdSerializer, 409: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsEdtPlanification])
 def item_move_api(request, pk):
@@ -1010,6 +1051,7 @@ def item_move_api(request, pk):
     return Response(reponse)
 
 
+@extend_schema(request=None, responses={200: AnnulationItemLmdSerializer, 404: DetailErreurLmdSerializer})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
 def item_cancel_api(request, pk):
@@ -1070,6 +1112,7 @@ def item_cancel_api(request, pk):
 
 # ── Versionnement, résultat et grille ────────────────────────────────────────
 
+@extend_schema(responses={200: VersionsEdtLmdSerializer})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def versions_api(request):
@@ -1162,6 +1205,7 @@ def _seances_filtrees(request, edt):
                        'intitule')
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: DetailErreurLmdSerializer})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def result_api(request, pk):
@@ -1211,6 +1255,7 @@ def result_api(request, pk):
     })
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: DetailErreurLmdSerializer})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def grille_api(request, pk):
@@ -1244,6 +1289,7 @@ def grille_api(request, pk):
     })
 
 
+@extend_schema(responses={(200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, 404: DetailErreurLmdSerializer})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def export_xlsx_api(request, pk):
@@ -1363,6 +1409,7 @@ def export_xlsx_api(request, pk):
     return reponse
 
 
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 404: DetailErreurLmdSerializer})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def export_pdf_api(request, pk):
@@ -1521,6 +1568,7 @@ def export_pdf_api(request, pk):
     return reponse
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: DetailErreurLmdSerializer})
 @api_view(['GET'])
 @permission_classes([IsEdtReadOnlyOrPlanification])
 def edt_audit_api(request, pk):

@@ -1,4 +1,7 @@
 """Endpoints légers pour l'espace Archives (consultation en lecture seule)."""
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -20,6 +23,18 @@ from .access import archived_modules_queryset
 from .serializers import ParticipantSerializer
 
 
+
+
+# ── Contrats OpenAPI (archives de formation) ─────────────────────────
+
+
+class CahierAppelArchiveSerializer(serializers.Serializer):
+    sessions = serializers.JSONField()
+    participants = serializers.JSONField()
+    presences = serializers.JSONField()
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def archives_stats_api(request):
@@ -63,6 +78,7 @@ def archives_stats_api(request):
     return Response(payload)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def archives_modules_list_api(request):
@@ -99,6 +115,7 @@ def archives_modules_list_api(request):
     })
 
 
+@extend_schema(responses={200: CahierAppelArchiveSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def archives_cahier_appel_api(request, formation_pk, module_pk):

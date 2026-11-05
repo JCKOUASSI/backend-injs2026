@@ -1102,3 +1102,6 @@ class ReleveNotes(models.Model):
 
     def __str__(self):
         return f'Relevé v{self.version} — {self.inscription}'
+
+# Alias module-level des choix de rôle d'intervenant d'épreuve (ENUM_NAME_OVERRIDES).
+EPREUVE_SURVEILLANT_ROLE_CHOICES = EpreuveSurveillant.Role.choices

@@ -6,6 +6,9 @@ staff) — même contrat que les autres endpoints de l'app admissions.
 """
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -76,6 +79,85 @@ def _get_epreuve(pk):
     return Epreuve.objects.select_related('campagne', 'salle').filter(pk=pk).first()
 
 
+
+
+# ── Contrats OpenAPI (campagnes de concours, épreuves, classements) ──
+
+
+class ConcoursErreurSerializer(serializers.Serializer):
+    error = serializers.JSONField()
+
+
+class CampagneConcoursReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    libelle = serializers.CharField()
+    annee_academique_id = serializers.IntegerField()
+    annee_academique = serializers.CharField()
+    ref_formation_id = serializers.IntegerField()
+    ref_formation = serializers.CharField()
+    parcours_id = serializers.IntegerField(allow_null=True)
+    date_ouverture = serializers.DateField()
+    date_fermeture = serializers.DateField()
+    quota_admissibles = serializers.IntegerField()
+    quota_admis = serializers.IntegerField()
+    statut = serializers.CharField()
+    statut_libelle = serializers.CharField()
+    nb_candidatures = serializers.IntegerField()
+    nb_epreuves = serializers.IntegerField()
+    classement_calcule = serializers.BooleanField()
+    classement_publie = serializers.BooleanField()
+
+
+class EpreuveReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    campagne_id = serializers.IntegerField()
+    type = serializers.CharField()
+    type_libelle = serializers.CharField()
+    intitule = serializers.CharField()
+    date = serializers.DateField()
+    heure_debut = serializers.TimeField(allow_null=True)
+    duree_minutes = serializers.IntegerField()
+    centre_id = serializers.IntegerField(allow_null=True)
+    centre = serializers.CharField(allow_null=True)
+    salle_id = serializers.IntegerField(allow_null=True)
+    salle = serializers.CharField(allow_null=True)
+    coefficient = serializers.DecimalField(max_digits=5, decimal_places=2)
+    verrouillee = serializers.BooleanField()
+    nb_convocations = serializers.IntegerField()
+    surveillants = serializers.ListField(child=serializers.IntegerField())
+
+
+class DetailConcoursSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class SurveillanceCreationSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    epreuve_id = serializers.IntegerField()
+
+
+class ConvocationsGenerationSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    creees = serializers.IntegerField()
+
+
+class VerrouillageEpreuveSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    verrouillee = serializers.BooleanField()
+
+
+class NoteEpreuveReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    note = serializers.DecimalField(max_digits=6, decimal_places=2, allow_null=True)
+    absent = serializers.BooleanField()
+
+
+class ConvocationPresenceSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    presente = serializers.BooleanField()
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: CampagneConcoursReponseSerializer(many=True), 201: CampagneConcoursReponseSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def campagne_list(request):
@@ -144,6 +226,7 @@ def campagne_list(request):
     return Response(_serializer_campagne(campagne), status=201)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: ConcoursErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def campagne_detail(request, pk):
@@ -161,6 +244,7 @@ def campagne_detail(request, pk):
     return Response(data)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: CampagneConcoursReponseSerializer, 400: OpenApiTypes.OBJECT, 404: ConcoursErreurSerializer, 409: ConcoursErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def campagne_transition(request, pk):
@@ -180,6 +264,7 @@ def campagne_transition(request, pk):
     return Response(_serializer_campagne(campagne))
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: EpreuveReponseSerializer, 400: OpenApiTypes.OBJECT, 404: ConcoursErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def campagne_epreuve_create(request, pk):
@@ -208,6 +293,7 @@ def campagne_epreuve_create(request, pk):
     return Response(_serializer_epreuve(epreuve), status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: SurveillanceCreationSerializer, 400: OpenApiTypes.OBJECT, 404: ConcoursErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def epreuve_surveillant_add(request, pk):
@@ -227,6 +313,7 @@ def epreuve_surveillant_add(request, pk):
     return Response({'id': surveillance.id, 'epreuve_id': epreuve.id}, status=201)
 
 
+@extend_schema(request=None, responses={200: ConvocationsGenerationSerializer, 404: ConcoursErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def epreuve_convocations_generer(request, pk):
@@ -241,6 +328,7 @@ def epreuve_convocations_generer(request, pk):
     return Response({'detail': f'{crees} convocation(s) créée(s).', 'crees': crees})
 
 
+@extend_schema(request=None, responses={200: VerrouillageEpreuveSerializer, 400: OpenApiTypes.OBJECT, 404: ConcoursErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def epreuve_verrouiller(request, pk):
@@ -252,6 +340,7 @@ def epreuve_verrouiller(request, pk):
     return Response({'detail': 'Épreuve verrouillée.', 'verrouillee': True})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: NoteEpreuveReponseSerializer, 400: OpenApiTypes.OBJECT, 404: ConcoursErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def epreuve_notes(request, pk):
@@ -286,6 +375,7 @@ def epreuve_notes(request, pk):
     return Response({'id': note.id, 'note': note.note, 'absent': note.absent}, status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: ConvocationPresenceSerializer, 400: OpenApiTypes.OBJECT, 404: ConcoursErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def convocation_presence(request, pk):
@@ -298,6 +388,7 @@ def convocation_presence(request, pk):
     return Response({'id': convocation.id, 'presente': convocation.presente})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: ConcoursErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def campagne_classement(request, pk):
@@ -323,6 +414,7 @@ def campagne_classement(request, pk):
     ])
 
 
+@extend_schema(request=None, responses={200: DetailConcoursSerializer, 400: ConcoursErreurSerializer, 404: ConcoursErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def campagne_classement_calculer(request, pk):
@@ -337,6 +429,7 @@ def campagne_classement_calculer(request, pk):
     return Response({'detail': f'{len(lignes)} ligne(s) de classement.'}, status=200)
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.OBJECT, 400: ConcoursErreurSerializer, 404: ConcoursErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def campagne_classement_publier(request, pk):

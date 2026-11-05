@@ -5,6 +5,9 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -975,6 +978,16 @@ def _get_formation_data(pk, module_pk=None):
 # EXPORT PDF
 # ──────────────────────────────────────────────
 
+
+
+# ── Contrats OpenAPI (exports binaires PDF / Excel) ──────────────────
+
+
+class ExportDetailErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 400: ExportDetailErreurSerializer, 403: ExportDetailErreurSerializer, 404: ExportDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_pdf(request, pk):
@@ -1194,6 +1207,7 @@ def export_pdf(request, pk):
 # EXPORT EXCEL
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={(200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, 400: ExportDetailErreurSerializer, 403: ExportDetailErreurSerializer, 404: ExportDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_excel(request, pk):
@@ -1392,6 +1406,7 @@ def export_excel(request, pk):
 # MODULE-BASED EXPORTS (toutes séances d'un module)
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={(200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, 400: ExportDetailErreurSerializer, 403: ExportDetailErreurSerializer, 404: ExportDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_pdf_module(request, module_pk):
@@ -1590,6 +1605,7 @@ def export_pdf_module(request, module_pk):
     return response
 
 
+@extend_schema(responses={(200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, 400: ExportDetailErreurSerializer, 403: ExportDetailErreurSerializer, 404: ExportDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_excel_module(request, module_pk):
@@ -1974,6 +1990,7 @@ def _get_session_data(session_pk):
     return session, formation, rows, stats
 
 
+@extend_schema(responses={(200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, 400: ExportDetailErreurSerializer, 403: ExportDetailErreurSerializer, 404: ExportDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_pdf_session(request, session_pk):
@@ -2184,6 +2201,7 @@ def export_pdf_session(request, session_pk):
     return response
 
 
+@extend_schema(responses={(200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, 400: ExportDetailErreurSerializer, 403: ExportDetailErreurSerializer, 404: ExportDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_excel_session(request, session_pk):
@@ -2372,6 +2390,7 @@ def export_excel_session(request, session_pk):
     return response
 
 
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 400: ExportDetailErreurSerializer, 403: ExportDetailErreurSerializer, 404: ExportDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_finance_formateur_pdf(request, formateur_pk):
@@ -2613,6 +2632,7 @@ def export_finance_formateur_pdf(request, formateur_pk):
     return response
 
 
+@extend_schema(responses={(200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, 400: ExportDetailErreurSerializer, 403: ExportDetailErreurSerializer, 404: ExportDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_finance_formateur_excel(request, formateur_pk):
@@ -2822,6 +2842,7 @@ def export_finance_formateur_excel(request, formateur_pk):
     return response
 
 
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 400: ExportDetailErreurSerializer, 403: ExportDetailErreurSerializer, 404: ExportDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_finance_synthese_pdf(request):
@@ -2971,6 +2992,7 @@ def export_finance_synthese_pdf(request):
     return response
 
 
+@extend_schema(responses={(200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, 400: ExportDetailErreurSerializer, 403: ExportDetailErreurSerializer, 404: ExportDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_finance_synthese_excel(request):
@@ -3192,6 +3214,7 @@ def _finance_encadrants_export_context(request):
     }, None
 
 
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 400: ExportDetailErreurSerializer, 403: ExportDetailErreurSerializer, 404: ExportDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_finance_encadrants_pdf(request):
@@ -3302,6 +3325,7 @@ def export_finance_encadrants_pdf(request):
     return response
 
 
+@extend_schema(responses={(200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, 400: ExportDetailErreurSerializer, 403: ExportDetailErreurSerializer, 404: ExportDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_finance_encadrants_excel(request):
@@ -3410,6 +3434,7 @@ def export_finance_encadrants_excel(request):
     return response
 
 
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 400: ExportDetailErreurSerializer, 403: ExportDetailErreurSerializer, 404: ExportDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_liste_classe_pdf(request):
@@ -3431,6 +3456,7 @@ def export_liste_classe_pdf(request):
     return response
 
 
+@extend_schema(responses={(200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, 400: ExportDetailErreurSerializer, 403: ExportDetailErreurSerializer, 404: ExportDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_liste_classe_excel(request):

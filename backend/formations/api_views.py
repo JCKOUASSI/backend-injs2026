@@ -12,6 +12,9 @@ from django.http import HttpResponse
 from django.db.models import Count, Q, F, Prefetch, Case, When, Value, IntegerField, OuterRef, Subquery
 from django.db import IntegrityError, transaction
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -177,6 +180,112 @@ def _get_module_in_formation(user, formation_pk, module_pk):
     return module_or_response(user, formation_pk, module_pk)
 
 
+
+
+# ── Contrats OpenAPI (formations, finances, référentiels, notes) ────
+
+
+class FormationApiDetailErreurSerializer(serializers.Serializer):
+    """Erreurs du module : {'detail': message} (+ 'errors' si lot)."""
+
+    detail = serializers.CharField()
+    errors = serializers.JSONField(required=False)
+
+
+class FormationApiErreurSerializer(serializers.Serializer):
+    error = serializers.JSONField()
+
+
+class FormationsPagineesSerializer(serializers.Serializer):
+    results = FormationListSerializer(many=True)
+    count = serializers.IntegerField()
+    total_pages = serializers.IntegerField()
+    current_page = serializers.IntegerField()
+
+
+class ParticipantsPaginesSerializer(serializers.Serializer):
+    results = ParticipantSerializer(many=True)
+    count = serializers.IntegerField()
+    total_pages = serializers.IntegerField()
+    current_page = serializers.IntegerField()
+
+
+class FormateursPaginesSerializer(serializers.Serializer):
+    results = FormateurSerializer(many=True)
+    count = serializers.IntegerField()
+    total_pages = serializers.IntegerField()
+    current_page = serializers.IntegerField()
+
+
+class RefBatimentReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    nom = serializers.CharField()
+    site_id = serializers.IntegerField(allow_null=True)
+    actif = serializers.BooleanField()
+
+
+class RefLibelleReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    libelle = serializers.CharField()
+    actif = serializers.BooleanField()
+
+
+class RefGradeReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    libelle = serializers.CharField()
+    categorie_id = serializers.IntegerField(allow_null=True)
+    actif = serializers.BooleanField()
+
+
+class RefVagueReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    libelle = serializers.CharField()
+    ordre = serializers.IntegerField()
+    actif = serializers.BooleanField()
+
+
+class ModuleArchiveReponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    archived = serializers.BooleanField()
+    archived_at = serializers.DateTimeField(allow_null=True, required=False)
+
+
+class ModulePresencesReponseSerializer(serializers.Serializer):
+    presences = serializers.JSONField()
+
+
+class NotesModuleReponseSerializer(serializers.Serializer):
+    colonnes = serializers.JSONField()
+    criteres = serializers.JSONField()
+    rows = serializers.JSONField()
+
+
+class NotesBulkReponseSerializer(serializers.Serializer):
+    saved = serializers.IntegerField()
+    errors = serializers.JSONField()
+
+
+class NotificationsNonLuesSerializer(serializers.Serializer):
+    non_lues = serializers.IntegerField()
+
+
+class ImportExcelReponseSerializer(serializers.Serializer):
+    created = serializers.IntegerField()
+    updated = serializers.IntegerField(required=False)
+    errors = serializers.JSONField()
+    debug_headers = serializers.JSONField()
+
+
+class AjustementsFinanceListeSerializer(serializers.Serializer):
+    items = serializers.JSONField()
+    pending_count = serializers.IntegerField()
+
+
+class FichierExcelRequeteSerializer(serializers.Serializer):
+    file = serializers.FileField()
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: FormationApiDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def dashboard_stats(request):
@@ -762,6 +871,7 @@ def _batch_resume_module_participants(module, inscriptions, valeurs_map, critere
     return resumes
 
 
+@extend_schema(responses={200: FormationsPagineesSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def formation_list_api(request):
@@ -815,6 +925,7 @@ def formation_list_api(request):
     })
 
 
+@extend_schema(responses={200: ParticipantsPaginesSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, CanListParticipants])
 def participant_list_api(request):
@@ -949,6 +1060,7 @@ def participant_list_api(request):
     })
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: FormationApiErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, CanListParticipants])
 def participant_formations_api(request, pk):
@@ -988,6 +1100,7 @@ def participant_formations_api(request, pk):
     return Response(data)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def formateur_stats_api(request):
@@ -1075,6 +1188,7 @@ def formateur_stats_api(request):
     })
 
 
+@extend_schema(responses={200: FormateursPaginesSerializer, 403: FormationApiDetailErreurSerializer, 404: FormationApiDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def formateur_list_api(request):
@@ -2413,6 +2527,7 @@ def _finance_report_rows(
     return results
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: FormationApiDetailErreurSerializer, 403: FormationApiDetailErreurSerializer, 404: FormationApiDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def formateur_finance_report_api(request):
@@ -2536,6 +2651,7 @@ def formateur_finance_report_api(request):
     return Response(list_payload)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 403: FormationApiDetailErreurSerializer, 404: FormationApiDetailErreurSerializer})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def formateur_donnees_sensibles_api(request, pk):
@@ -2564,6 +2680,7 @@ def formateur_donnees_sensibles_api(request, pk):
     return Response(formateur_sensitive_payload(formateur))
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: FormationApiDetailErreurSerializer, 403: FormationApiDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def finance_dashboard_api(request):
@@ -2734,6 +2851,7 @@ def finance_dashboard_api(request):
     return Response(dashboard_payload)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: FormationApiDetailErreurSerializer, 403: FormationApiDetailErreurSerializer})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def finance_settings_api(request):
@@ -2860,6 +2978,7 @@ def finance_settings_api(request):
     return Response(payload)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: FormationApiDetailErreurSerializer, 403: FormationApiDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def finance_encadrants_api(request):
@@ -2879,6 +2998,7 @@ def finance_encadrants_api(request):
     return Response(data)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: AjustementsFinanceListeSerializer, 201: OpenApiTypes.OBJECT, 400: FormationApiDetailErreurSerializer, 403: FormationApiDetailErreurSerializer, 404: FormationApiDetailErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def finance_ajustements_api(request):
@@ -2938,6 +3058,7 @@ def finance_ajustements_api(request):
     return Response(serialize_ajustement(ajustement), status=201)
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.OBJECT, 400: FormationApiDetailErreurSerializer, 403: FormationApiDetailErreurSerializer, 404: FormationApiDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def finance_ajustement_valider_api(request, pk):
@@ -2958,6 +3079,7 @@ def finance_ajustement_valider_api(request, pk):
     return Response(serialize_ajustement(ajustement))
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.OBJECT, 400: FormationApiDetailErreurSerializer, 403: FormationApiDetailErreurSerializer, 404: FormationApiDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def finance_ajustement_rejeter_api(request, pk):
@@ -2981,6 +3103,7 @@ def finance_ajustement_rejeter_api(request, pk):
     return Response(serialize_ajustement(ajustement))
 
 
+@extend_schema(responses={200: FormationDetailSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def formation_detail_api(request, pk):
@@ -3015,6 +3138,7 @@ def formation_detail_api(request, pk):
     return Response(serializer.data)
 
 
+@extend_schema(request=None, responses={201: OpenApiTypes.OBJECT, 400: FormationApiDetailErreurSerializer, 404: FormationApiDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrEncadrantOrDFRC])
 def api_generate_qr(request, formation_pk, session_pk=None):
@@ -3063,6 +3187,7 @@ def api_generate_qr(request, formation_pk, session_pk=None):
     return Response(payload, status=201)
 
 
+@extend_schema(request=FichierExcelRequeteSerializer, responses={200: ImportExcelReponseSerializer, 400: FormationApiErreurSerializer, 403: FormationApiErreurSerializer, 404: FormationApiErreurSerializer, 500: FormationApiErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSecretariatOrDFRC])
 @parser_classes([MultiPartParser])
@@ -3289,6 +3414,7 @@ def _ref_formation_nettoye(data, obj=None):
     return payload, None
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_formation_list(request):
@@ -3301,6 +3427,7 @@ def ref_formation_list(request):
     obj = RefFormation.objects.create(**payload)
     return Response(_ref_formation_payload(obj), status=201)
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 204: None, 400: OpenApiTypes.OBJECT, 404: FormationApiErreurSerializer, 409: FormationApiErreurSerializer})
 @api_view(['PUT', 'DELETE'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_formation_detail(request, pk):
@@ -3454,6 +3581,7 @@ def _apply_ref_module_formations(obj, formation_ids, *, merge=False):
     return None
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_module_list(request):
@@ -3515,6 +3643,7 @@ def ref_module_list(request):
         return err
     return Response(_serialize_ref_module(obj), status=201)
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 204: None, 400: OpenApiTypes.OBJECT, 404: FormationApiErreurSerializer, 409: FormationApiErreurSerializer})
 @api_view(['PUT', 'DELETE'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_module_detail(request, pk):
@@ -3594,6 +3723,7 @@ def _coerce_decimal(value):
         return None
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_site_list(request):
@@ -3609,6 +3739,7 @@ def ref_site_list(request):
     )
     return Response(_serialize_site(obj), status=201)
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 204: None, 400: OpenApiTypes.OBJECT, 404: FormationApiErreurSerializer, 409: FormationApiErreurSerializer})
 @api_view(['PUT', 'DELETE'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_site_detail(request, pk):
@@ -3632,6 +3763,7 @@ def ref_site_detail(request, pk):
     return Response(status=204)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: RefBatimentReponseSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_batiment_list(request):
@@ -3645,6 +3777,7 @@ def ref_batiment_list(request):
     )
     return Response({'id': obj.id, 'nom': obj.nom, 'site_id': obj.site_id, 'actif': obj.actif}, status=201)
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: RefBatimentReponseSerializer, 204: None, 404: FormationApiErreurSerializer})
 @api_view(['PUT', 'DELETE'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_batiment_detail(request, pk):
@@ -3777,6 +3910,7 @@ def _create_or_update_ref_salle(obj, data, *, exclude_pk=None):
     return obj, None
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_salle_list(request):
@@ -3791,6 +3925,7 @@ def ref_salle_list(request):
         return err
     return Response(_serialize_ref_salle(obj), status=201)
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 204: None, 400: OpenApiTypes.OBJECT, 404: FormationApiErreurSerializer, 409: FormationApiErreurSerializer})
 @api_view(['PUT', 'DELETE'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_salle_detail(request, pk):
@@ -3816,6 +3951,7 @@ def ref_salle_detail(request, pk):
     return Response(status=204)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: RefLibelleReponseSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_categorie_list(request):
@@ -3828,6 +3964,7 @@ def ref_categorie_list(request):
     )
     return Response({'id': obj.id, 'libelle': obj.libelle, 'actif': obj.actif}, status=201)
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: RefLibelleReponseSerializer, 204: None, 404: FormationApiErreurSerializer})
 @api_view(['PUT', 'DELETE'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_categorie_detail(request, pk):
@@ -3844,6 +3981,7 @@ def ref_categorie_detail(request, pk):
     return Response(status=204)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: RefGradeReponseSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_grade_list(request):
@@ -3857,6 +3995,7 @@ def ref_grade_list(request):
     )
     return Response({'id': obj.id, 'libelle': obj.libelle, 'categorie_id': obj.categorie_id, 'actif': obj.actif}, status=201)
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: RefGradeReponseSerializer, 204: None, 404: FormationApiErreurSerializer})
 @api_view(['PUT', 'DELETE'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_grade_detail(request, pk):
@@ -3874,6 +4013,7 @@ def ref_grade_detail(request, pk):
     return Response(status=204)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: RefLibelleReponseSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_type_secretariat_list(request):
@@ -3887,6 +4027,7 @@ def ref_type_secretariat_list(request):
     return Response({'id': obj.id, 'libelle': obj.libelle, 'actif': obj.actif}, status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: RefLibelleReponseSerializer, 204: None, 404: FormationApiErreurSerializer})
 @api_view(['PUT', 'DELETE'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_type_secretariat_detail(request, pk):
@@ -3903,6 +4044,7 @@ def ref_type_secretariat_detail(request, pk):
     return Response(status=204)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: ModuleSerializer(many=True), 201: ModuleSerializer, 400: FormationApiDetailErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def module_list_api(request, formation_pk):
@@ -3962,6 +4104,7 @@ def module_list_api(request, formation_pk):
     return Response(ModuleSerializer(module).data, status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: ModuleSerializer, 204: None, 400: FormationApiDetailErreurSerializer, 404: FormationApiDetailErreurSerializer})
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def module_detail_api(request, formation_pk, module_pk):
@@ -4054,6 +4197,7 @@ def module_detail_api(request, formation_pk, module_pk):
     return Response(status=204)
 
 
+@extend_schema(request=None, responses={200: ModuleArchiveReponseSerializer, 400: FormationApiDetailErreurSerializer, 403: FormationApiDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def module_archive_api(request, formation_pk, module_pk):
@@ -4106,6 +4250,7 @@ def module_archive_api(request, formation_pk, module_pk):
     })
 
 
+@extend_schema(request=None, responses={200: ModuleArchiveReponseSerializer, 400: FormationApiDetailErreurSerializer, 403: FormationApiDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def module_unarchive_api(request, formation_pk, module_pk):
@@ -4242,6 +4387,7 @@ def _build_module_presences_list(module):
     return presences
 
 
+@extend_schema(responses={200: ModulePresencesReponseSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def module_presences_api(request, formation_pk, module_pk):
@@ -4257,6 +4403,7 @@ def module_presences_api(request, formation_pk, module_pk):
     return Response({'presences': _build_module_presences_list(module)})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def module_full_detail_api(request, formation_pk, module_pk):
@@ -4385,6 +4532,7 @@ def module_full_detail_api(request, formation_pk, module_pk):
     })
 
 
+@extend_schema(responses={200: NotesModuleReponseSerializer})
 @api_view(['GET'])
 @permission_classes([IsGestionNotesOrReadOnly])
 def module_notes_list_api(request, formation_pk, module_pk):
@@ -4480,6 +4628,7 @@ def module_notes_list_api(request, formation_pk, module_pk):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: FormationApiDetailErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsGestionNotes])
 def module_notes_colonnes_api(request, formation_pk, module_pk):
@@ -4523,6 +4672,7 @@ def module_notes_colonnes_api(request, formation_pk, module_pk):
     return Response(_serialize_colonne(colonne), status=201)
 
 
+@extend_schema(responses={204: None, 400: FormationApiDetailErreurSerializer, 404: FormationApiDetailErreurSerializer})
 @api_view(['DELETE'])
 @permission_classes([IsGestionNotes])
 def module_notes_colonne_delete_api(request, formation_pk, module_pk, colonne_pk):
@@ -4547,6 +4697,7 @@ def module_notes_colonne_delete_api(request, formation_pk, module_pk, colonne_pk
     return Response(status=204)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: NotesBulkReponseSerializer, 400: FormationApiDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsGestionNotes])
 def module_notes_bulk_api(request, formation_pk, module_pk):
@@ -4735,6 +4886,7 @@ def module_notes_bulk_api(request, formation_pk, module_pk):
     return Response({'saved': saved, 'errors': errors})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: FormationApiDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsGestionNotes])
 def module_notes_workflow_api(request, formation_pk, module_pk):
@@ -4762,6 +4914,7 @@ def module_notes_workflow_api(request, formation_pk, module_pk):
     return Response(appliquer_workflow(module, action, request.data.get('items'), request.user))
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsGestionNotesOrReadOnly])
 def module_notes_historique_api(request, formation_pk, module_pk):
@@ -4797,6 +4950,7 @@ def module_notes_historique_api(request, formation_pk, module_pk):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 403: FormationApiDetailErreurSerializer})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def note_modifications_notifications_api(request):
@@ -4843,6 +4997,7 @@ def note_modifications_notifications_api(request):
     return Response({'non_lues': non_lues})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 403: FormationApiDetailErreurSerializer})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def finance_ajustements_notifications_api(request):
@@ -4883,6 +5038,7 @@ def finance_ajustements_notifications_api(request):
     return Response({'non_lues': non_lues})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: FormationApiDetailErreurSerializer, 400: FormationApiDetailErreurSerializer, 404: FormationApiDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([CanManageModuleParticipant])
 def module_add_participant(request, formation_pk, module_pk):
@@ -4904,6 +5060,7 @@ def module_add_participant(request, formation_pk, module_pk):
     return Response({'detail': f'{participant} inscrit au module.'}, status=201)
 
 
+@extend_schema(responses={204: None, 404: FormationApiDetailErreurSerializer})
 @api_view(['DELETE'])
 @permission_classes([CanManageModuleParticipant])
 def module_remove_participant(request, formation_pk, module_pk, participant_id):
@@ -4917,6 +5074,7 @@ def module_remove_participant(request, formation_pk, module_pk, participant_id):
     return Response(status=204)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: FormationApiDetailErreurSerializer, 400: FormationApiDetailErreurSerializer, 404: FormationApiDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def module_add_formateur(request, formation_pk, module_pk):
@@ -4940,6 +5098,7 @@ def module_add_formateur(request, formation_pk, module_pk):
     return Response({'detail': f'{formateur} assigné au module.'}, status=201)
 
 
+@extend_schema(responses={204: None, 404: FormationApiDetailErreurSerializer})
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def module_remove_formateur(request, formation_pk, module_pk, formateur_id):
@@ -4955,6 +5114,7 @@ def module_remove_formateur(request, formation_pk, module_pk, formateur_id):
     return Response(status=204)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: FormationApiDetailErreurSerializer, 403: FormationApiDetailErreurSerializer, 404: FormationApiDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSecretariatOrDFRC])
 def module_assign_superviseur(request, formation_pk, module_pk):
@@ -5027,6 +5187,7 @@ def module_assign_superviseur(request, formation_pk, module_pk):
     })
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def referentiels_api(request):
@@ -5119,6 +5280,7 @@ def referentiels_api(request):
     return Response(payload)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def referentiels_gestion_api(request):
@@ -5146,6 +5308,7 @@ def referentiels_gestion_api(request):
     })
 
 
+@extend_schema(request=FichierExcelRequeteSerializer, responses={200: OpenApiTypes.OBJECT, 400: FormationApiDetailErreurSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsDFRC])
 @parser_classes([MultiPartParser])
@@ -5173,6 +5336,7 @@ def referentiel_excel_api(request, kind):
     return Response(result)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: RefVagueReponseSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def refvague_list_api(request):
@@ -5188,6 +5352,7 @@ def refvague_list_api(request):
     return Response({'id': obj.id, 'libelle': obj.libelle, 'ordre': obj.ordre, 'actif': obj.actif}, status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: RefVagueReponseSerializer, 204: None, 404: FormationApiDetailErreurSerializer})
 @api_view(['PUT', 'DELETE'])
 @permission_classes([IsAuthenticated, IsDFRC])
 def refvague_detail_api(request, pk):
@@ -5206,6 +5371,7 @@ def refvague_detail_api(request, pk):
     return Response({'id': obj.id, 'libelle': obj.libelle, 'ordre': obj.ordre, 'actif': obj.actif})
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, CanListParticipants])
 def participant_stats_api(request):

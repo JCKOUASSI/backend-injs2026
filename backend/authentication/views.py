@@ -1,7 +1,7 @@
 import logging
 import os
 
-from rest_framework import generics, status
+from rest_framework import generics, serializers, status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes, authentication_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -39,6 +39,7 @@ from .throttles import LoginRateThrottle
 from . import connexion_sure
 from .emails import send_welcome_email
 from .capabilities import CapabilitiesResponseSerializer, compute_capabilities
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from presences.models import DeviceBinding, AuditLog, _log_audit
 from config.client_ip import get_client_ip
@@ -113,6 +114,29 @@ def _delete_refresh_cookie(response):
     response.delete_cookie(REFRESH_COOKIE_NAME, path=REFRESH_COOKIE_PATH)
 
 
+
+
+# ── Contrats OpenAPI (authentification, MFA, rôles) ──────────────────
+
+
+class AuthDetailSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class AuthCodeErreurSerializer(serializers.Serializer):
+    """Erreurs codées : {'code': CODE, 'detail': message}."""
+
+    code = serializers.CharField()
+    detail = serializers.CharField()
+
+
+class MfaSetupReponseSerializer(serializers.Serializer):
+    secret = serializers.CharField()
+    otpauth_url = serializers.CharField()
+    detail = serializers.CharField()
+
+
+@extend_schema(request=None, responses={200: AuthDetailSerializer})
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def logout_view(request):
@@ -151,6 +175,7 @@ class CookieTokenRefreshView(SimpleJWTTokenRefreshView):
         return response
 
 
+@extend_schema(request=LoginSerializer, responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 401: AuthCodeErreurSerializer, 403: AuthCodeErreurSerializer})
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @authentication_classes([])
@@ -311,6 +336,7 @@ def login_view(request):
     return connexion_sure.finaliser_connexion(user, request, device_id=device_id)
 
 
+@extend_schema(request=UserSelfProfileSerializer, responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def me_view(request):
@@ -336,6 +362,7 @@ def me_view(request):
     return Response(data)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def roles_view(request):
@@ -359,6 +386,7 @@ def capabilities_view(request):
     return Response(compute_capabilities(request.user))
 
 
+@extend_schema(request=ChangePasswordSerializer, responses={200: AuthDetailSerializer, 400: OpenApiTypes.OBJECT})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def change_password_view(request):
@@ -668,6 +696,7 @@ def _compte_cible_mfa(request):
         )
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: AuthCodeErreurSerializer, 403: AuthCodeErreurSerializer})
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @throttle_classes([LoginRateThrottle])
@@ -719,6 +748,7 @@ def mfa_verify_view(request):
         user, request, device_id=(request.data.get('device_id') or '').strip())
 
 
+@extend_schema(request=None, responses={200: MfaSetupReponseSerializer, 403: AuthDetailSerializer, 404: AuthDetailSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def mfa_setup_view(request):
@@ -735,6 +765,7 @@ def mfa_setup_view(request):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: AuthDetailSerializer, 400: AuthDetailSerializer, 403: AuthDetailSerializer, 404: AuthDetailSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def mfa_confirm_view(request):
@@ -751,6 +782,7 @@ def mfa_confirm_view(request):
     return Response({'detail': 'MFA activé : la prochaine connexion exigera un code.'})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: AuthDetailSerializer, 400: AuthDetailSerializer, 403: AuthDetailSerializer, 404: AuthDetailSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def mfa_disable_view(request):

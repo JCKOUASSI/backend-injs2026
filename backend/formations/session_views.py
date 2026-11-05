@@ -7,6 +7,9 @@ from zoneinfo import ZoneInfo
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -307,6 +310,21 @@ def _auto_manage_sessions(formation):
             module.save(update_fields=['statut'])
 
 
+
+
+# ── Contrats OpenAPI (cycle de vie des séances) ──────────────────────
+
+
+class SessionDetailErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class SessionActionReponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    session = SessionSerializer()
+
+
+@extend_schema(request=None, responses={200: SessionActionReponseSerializer, 400: SessionDetailErreurSerializer, 403: SessionDetailErreurSerializer, 404: SessionDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def session_start(request, formation_pk, session_pk):
@@ -369,6 +387,7 @@ def session_start(request, formation_pk, session_pk):
     })
 
 
+@extend_schema(request=None, responses={200: SessionActionReponseSerializer, 400: SessionDetailErreurSerializer, 403: SessionDetailErreurSerializer, 404: SessionDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def session_stop(request, formation_pk, session_pk):
@@ -411,6 +430,7 @@ def session_stop(request, formation_pk, session_pk):
     })
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: SessionActionReponseSerializer, 400: SessionDetailErreurSerializer, 404: SessionDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSecretariatOrDFRC])
 def session_create(request, formation_pk, module_pk):
@@ -469,6 +489,7 @@ def session_create(request, formation_pk, module_pk):
     }, status=201)
 
 
+@extend_schema(responses={204: None, 400: SessionDetailErreurSerializer, 404: SessionDetailErreurSerializer})
 @api_view(['DELETE'])
 @permission_classes([IsDFRC])
 def session_delete(request, formation_pk, session_pk):
@@ -495,6 +516,7 @@ def session_delete(request, formation_pk, session_pk):
     return Response({'detail': 'Séance supprimée.'}, status=204)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: SessionSerializer, 400: SessionDetailErreurSerializer, 404: SessionDetailErreurSerializer})
 @api_view(['PATCH'])
 @permission_classes([IsSecretariatOrDFRC])
 def session_update(request, formation_pk, session_pk):
@@ -585,6 +607,7 @@ def session_update(request, formation_pk, session_pk):
     return Response(payload)
 
 
+@extend_schema(responses={200: ModuleSerializer(many=True)})
 @api_view(['GET'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def session_list(request, formation_pk):

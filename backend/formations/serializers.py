@@ -1,4 +1,5 @@
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from .models import Formation, RefFormation, Participant, Secretariat, ModuleParticipant, ModuleFormateur, Formateur, QRToken, SessionModule, Module
 from .formateur_privacy import can_view_formateur_sensitive_data, can_edit_formateur_sensitive_data
@@ -35,20 +36,20 @@ class ModuleSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at']
 
-    def get_nb_participants(self, obj):
+    def get_nb_participants(self, obj) -> int:
         if hasattr(obj, '_nb_participants'):
             return obj._nb_participants
         return ModuleParticipant.objects.filter(module=obj).count()
 
-    def get_sessions(self, obj):
+    def get_sessions(self, obj) -> list:
         return SessionSerializer(obj.sessions.all(), many=True).data
 
-    def get_formateur_nom(self, obj):
+    def get_formateur_nom(self, obj) -> str | None:
         if obj.formateur:
             return f"{obj.formateur.prenom} {obj.formateur.nom}".strip()
         return None
 
-    def get_site(self, obj):
+    def get_site(self, obj) -> str:
         # Compat API: renvoyer un libellé (string) comme avant.
         if getattr(obj, 'site', None) is not None and getattr(obj.site, 'nom', None):
             return obj.site.nom
@@ -73,22 +74,22 @@ class SecretariatSerializer(serializers.ModelSerializer):
             )
         return value
 
-    def get_nb_participants(self, obj):
+    def get_nb_participants(self, obj) -> int:
         if hasattr(obj, '_nb_participants'):
             return obj._nb_participants
         return obj.nb_participants
 
-    def get_nb_formations(self, obj):
+    def get_nb_formations(self, obj) -> int:
         if hasattr(obj, '_nb_formations'):
             return obj._nb_formations
         return obj.nb_formations
 
-    def get_nb_modules(self, obj):
+    def get_nb_modules(self, obj) -> int:
         if hasattr(obj, '_nb_modules'):
             return obj._nb_modules
         return obj.nb_modules
 
-    def get_membres(self, obj):
+    def get_membres(self, obj) -> list:
         return [
             {'id': u.id, 'nom': u.get_full_name() or u.username, 'role': u.role, 'is_active': u.is_active}
             for u in obj.membres.all()
@@ -117,14 +118,14 @@ class SessionSerializer(serializers.ModelSerializer):
             'module_id', 'module_intitule', 'module_groupe',
         ]
 
-    def get_formateur_nom(self, obj):
+    def get_formateur_nom(self, obj) -> str | None:
         if obj.module and obj.module.formateur:
             f = obj.module.formateur
             return f"{f.prenom} {f.nom}".strip()
         mf = ModuleFormateur.objects.filter(module=obj.module).select_related('formateur').first() if obj.module else None
         return f"{mf.formateur.prenom} {mf.formateur.nom}".strip() if mf and mf.formateur else None
 
-    def get_nb_presences(self, obj):
+    def get_nb_presences(self, obj) -> int:
         if hasattr(obj, '_nb_presences_part'):
             return obj._nb_presences_part + getattr(obj, '_nb_presences_fmt', 0)
         from presences.models import Pointage
@@ -133,7 +134,7 @@ class SessionSerializer(serializers.ModelSerializer):
         nb_formateurs = qs.filter(formateur__isnull=False).values('formateur').distinct().count()
         return nb_participants + nb_formateurs
 
-    def get_nb_attendus(self, obj):
+    def get_nb_attendus(self, obj) -> int:
         if hasattr(obj, '_nb_attendus_part'):
             return obj._nb_attendus_part + getattr(obj, '_nb_attendus_fmt', 0)
         nb_p = ModuleParticipant.objects.filter(module=obj.module).values('participant').distinct().count()
@@ -162,10 +163,10 @@ class ParticipantSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at']
 
-    def get_formation_actuelle(self, obj):
+    def get_formation_actuelle(self, obj) -> str | None:
         return getattr(obj, 'formation_actuelle', None) or None
 
-    def get_niveau_actuel(self, obj):
+    def get_niveau_actuel(self, obj) -> str | None:
         return getattr(obj, 'niveau_actuel', None) or None
 
     def validate_matricule(self, value):
@@ -225,7 +226,7 @@ class FormateurSerializer(serializers.ModelSerializer):
             attrs.pop('numero_compte_bancaire', None)
         return super().validate(attrs)
 
-    def get_grade(self, obj):
+    def get_grade(self, obj) -> dict | None:
         # Grade académique (referentiels.RefGradeEnseignant) — distinct des
         # grades administratifs d'admission portés par les inscriptions.
         if obj.grade_ref_id is None:
@@ -236,10 +237,10 @@ class FormateurSerializer(serializers.ModelSerializer):
             return None
         return {'id': grade.id, 'code': grade.code, 'libelle': grade.libelle}
 
-    def get_secretariats_noms(self, obj):
+    def get_secretariats_noms(self, obj) -> list[str]:
         return [f"{s.nom} ({s.numero})" for s in obj.secretariats.all()]
 
-    def get_nb_formations(self, obj):
+    def get_nb_formations(self, obj) -> int:
         return obj.modules_assignes.count()
 
     def create(self, validated_data):
@@ -329,17 +330,17 @@ class FormationListSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
-    def get_ref_formation_intitule(self, obj):
+    def get_ref_formation_intitule(self, obj) -> str:
         return obj.ref_formation.intitule if obj.ref_formation_id else ''
 
-    def get_module(self, obj):
+    def get_module(self, obj) -> str:
         """Retourne l'intitulé du premier module lié (compatibilité)."""
         first = obj.modules.order_by('ordre', 'intitule').first()
         if first:
             return first.intitule
         return ''
 
-    def get_modules_list(self, obj):
+    def get_modules_list(self, obj) -> list:
         """Retourne la liste de tous les modules avec leurs infos propres (grade, groupe, secrétariat…)."""
         from presences.models import Pointage
         today = timezone.localdate()
@@ -390,10 +391,10 @@ class FormationListSerializer(serializers.ModelSerializer):
         self._sync_module(instance, validated_data)
         return super().update(instance, validated_data)
 
-    def get_nb_participants(self, obj):
+    def get_nb_participants(self, obj) -> int:
         return ModuleParticipant.objects.filter(module__formation=obj).count()
 
-    def get_nb_presents(self, obj):
+    def get_nb_presents(self, obj) -> int:
         from presences.models import Pointage
         today = timezone.localdate()
         return (
@@ -418,6 +419,7 @@ class FormationDetailSerializer(FormationListSerializer):
             'participants_attendus', 'sessions', 'modules', 'participants', 'formateurs',
         ]
 
+    @extend_schema_field(ParticipantSerializer(many=True))
     def get_participants_attendus(self, obj):
         inscriptions = ModuleParticipant.objects.filter(
             module__formation=obj
@@ -430,10 +432,12 @@ class FormationDetailSerializer(FormationListSerializer):
                 participants.append(mp.participant)
         return ParticipantSerializer(participants, many=True).data
 
+    @extend_schema_field(ParticipantSerializer(many=True))
     def get_participants(self, obj):
         """Alias for frontend compatibility."""
         return self.get_participants_attendus(obj)
 
+    @extend_schema_field(ModuleSerializer(many=True))
     def get_modules(self, obj):
         from .serializer_querysets import annotate_modules_for_serializer
         cached = getattr(obj, '_prefetched_objects_cache', {})
@@ -445,14 +449,14 @@ class FormationDetailSerializer(FormationListSerializer):
             )
         return ModuleSerializer(modules, many=True).data
 
-    def get_sessions(self, obj):
+    def get_sessions(self, obj) -> list:
         from .serializer_querysets import annotate_sessions_for_serializer
         sessions = annotate_sessions_for_serializer(
             SessionModule.objects.filter(module__formation=obj)
         ).order_by('date_journee', 'numero')
         return SessionSerializer(sessions, many=True).data
 
-    def get_formateurs(self, obj):
+    def get_formateurs(self, obj) -> list:
         return [
             {'id': mf.formateur.id, 'nom': mf.formateur.nom, 'prenom': mf.formateur.prenom, 'numero': mf.formateur.numerobadge}
             for mf in ModuleFormateur.objects.filter(module__formation=obj).select_related('formateur').distinct()
@@ -478,7 +482,7 @@ class QRTokenSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'token', 'genere_par', 'created_at']
 
-    def get_session_intitule(self, obj):
+    def get_session_intitule(self, obj) -> str:
         return obj.session.intitule or f"Session {obj.session.numero}"
 
 

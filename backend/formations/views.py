@@ -5,6 +5,9 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from rest_framework import generics, status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
@@ -154,6 +157,36 @@ class FormationDetailView(generics.RetrieveUpdateDestroyAPIView):
 # DFRC — Assigner superviseur
 # ──────────────────────────────────────────────
 
+
+
+# ── Contrats OpenAPI (vues fonctionnelles formations) ────────────────
+
+
+class FormationVueDetailErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class AssignationSuperviseurReponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    formation = FormationDetailSerializer()
+
+
+class InscriptionModuleReponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    inscription = FormationParticipantSerializer()
+
+
+class AssignationFormateurReponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    formateur = FormateurSerializer()
+
+
+class QrGenereReponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    qr_token = QRTokenSerializer()
+
+
+@extend_schema(request=AssignSuperviseurSerializer, responses={200: AssignationSuperviseurReponseSerializer, 400: FormationVueDetailErreurSerializer, 404: FormationVueDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSecretariatOrDFRC])
 def assign_superviseur(request, pk):
@@ -336,6 +369,7 @@ class ParticipantDetailView(generics.RetrieveUpdateDestroyAPIView):
 # DFRC — Inscrire participants à une formation
 # ──────────────────────────────────────────────
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: InscriptionModuleReponseSerializer, 400: FormationVueDetailErreurSerializer, 404: FormationVueDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([CanManageModuleParticipant])
 def add_participant_to_formation(request, pk):
@@ -424,6 +458,7 @@ def add_participant_to_formation(request, pk):
     }, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(responses={200: FormationVueDetailErreurSerializer, 404: FormationVueDetailErreurSerializer})
 @api_view(['DELETE'])
 @permission_classes([IsSecretariatOrDFRC])
 def remove_participant_from_formation(request, pk, participant_id):
@@ -459,6 +494,7 @@ def remove_participant_from_formation(request, pk, participant_id):
 # DFRC/SECRETARIAT — Assigner formateurs à une formation
 # ──────────────────────────────────────────────
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: AssignationFormateurReponseSerializer, 400: FormationVueDetailErreurSerializer, 404: FormationVueDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSecretariatOrDFRC])
 def add_formateur_to_formation(request, pk):
@@ -509,6 +545,7 @@ def add_formateur_to_formation(request, pk):
     }, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(responses={200: FormationVueDetailErreurSerializer, 404: FormationVueDetailErreurSerializer})
 @api_view(['DELETE'])
 @permission_classes([IsSecretariatOrDFRC])
 def remove_formateur_from_formation(request, pk, formateur_id):
@@ -531,6 +568,7 @@ def remove_formateur_from_formation(request, pk, formateur_id):
     return Response({'detail': 'Formateur retiré de la formation.'})
 
 
+@extend_schema(responses={200: FormateurSerializer(many=True), 404: FormationVueDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def list_formateurs_of_formation(request, pk):
@@ -547,6 +585,7 @@ def list_formateurs_of_formation(request, pk):
 # SUPERVISEUR — Mes formations
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: FormationListSerializer(many=True)})
 @api_view(['GET'])
 @permission_classes([IsDFRCOrEncadrant])
 def superviseur_formations(request):
@@ -558,6 +597,7 @@ def superviseur_formations(request):
     return Response(serializer.data)
 
 
+@extend_schema(responses={200: FormationDetailSerializer, 404: FormationVueDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsDFRCOrEncadrant])
 def superviseur_formation_detail(request, pk):
@@ -576,6 +616,7 @@ def superviseur_formation_detail(request, pk):
 # SUPERVISEUR — Générer QR code (R1)
 # ──────────────────────────────────────────────
 
+@extend_schema(request=None, responses={201: QrGenereReponseSerializer, 400: FormationVueDetailErreurSerializer, 403: FormationVueDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsDFRCOrEncadrant])
 def generate_qr(request, pk):
@@ -652,6 +693,7 @@ def generate_qr(request, pk):
     }, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(responses={200: QRTokenSerializer, 404: FormationVueDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsDFRCOrEncadrant])
 def get_active_qr(request, pk):
@@ -689,6 +731,7 @@ def get_active_qr(request, pk):
     return Response(QRTokenSerializer(qr_token).data)
 
 
+@extend_schema(responses={(200, 'image/png'): OpenApiTypes.BINARY, 400: OpenApiTypes.OBJECT, 404: FormationVueDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def qr_image(request, pk):
@@ -776,6 +819,7 @@ def qr_image(request, pk):
     return response
 
 
+@extend_schema(responses={(200, 'image/png'): OpenApiTypes.BINARY, 400: OpenApiTypes.OBJECT, 404: FormationVueDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsOperationalWebStaff])
 def session_qr_image(request, pk, session_pk):
@@ -957,6 +1001,7 @@ class SecretariatDetailView(generics.RetrieveUpdateDestroyAPIView):
 # DFRC/SECRETARIAT — Participants d'un secrétariat
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: ParticipantSerializer(many=True), 403: FormationVueDetailErreurSerializer, 404: FormationVueDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsDFRC])
 def secretariat_participants(request, pk):

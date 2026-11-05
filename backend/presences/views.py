@@ -13,6 +13,9 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django.db.models import Q
 from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes, throttle_classes, authentication_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -729,6 +732,34 @@ def _public_scan_disabled_response():
     )
 
 
+
+
+# ── Contrats OpenAPI (scan QR, pointage, fiches présences) ───────────
+
+
+class ErreurCodePresenceSerializer(serializers.Serializer):
+    """Erreurs de badgeage : {'code': CODE, 'detail': message}."""
+
+    code = serializers.CharField()
+    detail = serializers.CharField()
+
+
+class PresenceDetailErreurSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class ForcePointageReponseSerializer(serializers.Serializer):
+    action = serializers.CharField()
+    detail = serializers.CharField()
+    pointage = PointageSerializer()
+
+
+class ParticipantHistoriquePresenceSerializer(serializers.Serializer):
+    participant = ParticipantSerializer()
+    pointages = PointageSerializer(many=True)
+
+
+@extend_schema(request=ScanSerializer, responses={200: OpenApiTypes.OBJECT, 400: ErreurCodePresenceSerializer, 403: ErreurCodePresenceSerializer})
 @api_view(['POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
@@ -974,6 +1005,7 @@ def scan_view(request):
 # Le numéro est déduit du user connecté : impossible de badger pour autrui.
 # ──────────────────────────────────────────────
 
+@extend_schema(request=SecureScanSerializer, responses={200: OpenApiTypes.OBJECT, 400: ErreurCodePresenceSerializer, 403: ErreurCodePresenceSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @throttle_classes([ScanRateThrottle])
@@ -1327,6 +1359,7 @@ def secure_scan_view(request):
         }, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(request=SecureHeartbeatSerializer, responses={200: OpenApiTypes.OBJECT, 400: ErreurCodePresenceSerializer, 403: ErreurCodePresenceSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @throttle_classes([ScanRateThrottle])
@@ -1627,6 +1660,7 @@ def secure_scan_heartbeat(request):
 # Config app mobile (heartbeat, etc.)
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def mobile_config(request):
@@ -1651,6 +1685,7 @@ def mobile_config(request):
 # Historique personnel (app mobile)
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def my_historique(request):
@@ -1929,6 +1964,7 @@ def _compute_volume_horaire_stats(modules_data, pointages_qs):
     }
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 403: PresenceDetailErreurSerializer})
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def my_fiche(request):
@@ -1999,6 +2035,7 @@ def my_fiche(request):
 # Gestion des liaisons appareils (superviseur / DFRC)
 # ──────────────────────────────────────────────
 
+@extend_schema(request=None, responses={200: PresenceDetailErreurSerializer, 404: PresenceDetailErreurSerializer})
 @api_view(['DELETE'])
 @permission_classes([IsDFRCOrEncadrant])
 def unbind_device(request, device_id):
@@ -2022,6 +2059,7 @@ def unbind_device(request, device_id):
         )
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsDFRCOrEncadrant])
 def list_device_bindings(request):
@@ -2042,6 +2080,7 @@ def list_device_bindings(request):
 # DFRC — Dashboard temps réel (polling)
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def formation_dashboard(request, pk):
@@ -2340,6 +2379,7 @@ def formation_dashboard(request, pk):
 # DFRC — Liste des présences d'une formation
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def formation_presences(request, pk):
@@ -2388,6 +2428,7 @@ def formation_presences(request, pk):
 # SUPERVISEUR / DFRC — Fermer session ouverte d'un participant
 # ──────────────────────────────────────────────
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: PresenceDetailErreurSerializer, 404: PresenceDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def close_session(request, pk):
@@ -2479,6 +2520,7 @@ def close_session(request, pk):
 # DFRC / SUPERVISEUR — Pointage forcé (R6)
 # ──────────────────────────────────────────────
 
+@extend_schema(request=ForcePointageSerializer, responses={200: ForcePointageReponseSerializer, 201: ForcePointageReponseSerializer, 400: PresenceDetailErreurSerializer, 404: PresenceDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def force_pointage(request, pk):
@@ -2669,6 +2711,7 @@ def _force_pointage_impl(request, pk):
     return Response({'detail': 'Action non reconnue.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(request=ForceBadgeageBulkAuditeursSerializer, responses={201: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 403: PresenceDetailErreurSerializer, 404: PresenceDetailErreurSerializer})
 @api_view(['POST'])
 @permission_classes([IsSecretariatOrEncadrantOrDFRC])
 def force_badgeage_auditeurs_bulk(request, pk):
@@ -2734,6 +2777,7 @@ def force_badgeage_auditeurs_bulk(request, pk):
 # PARTICIPANT — Historique personnel
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: ParticipantHistoriquePresenceSerializer, 403: PresenceDetailErreurSerializer, 404: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def participant_historique(request, pk):
@@ -2764,6 +2808,7 @@ def participant_historique(request, pk):
 # PARTICIPANT — Fiche complète (Secrétariat / Direction)
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 403: PresenceDetailErreurSerializer, 404: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def participant_fiche_admin(request, pk):
@@ -2947,6 +2992,7 @@ def _build_notes_fiche_payload(participant, inscriptions):
     }
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 403: PresenceDetailErreurSerializer, 404: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def participant_notes_fiche(request, pk):
@@ -2970,6 +3016,7 @@ def participant_notes_fiche(request, pk):
     return Response(_build_notes_fiche_payload(participant, inscriptions))
 
 
+@extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, (200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'): OpenApiTypes.BINARY, 400: PresenceDetailErreurSerializer, 403: PresenceDetailErreurSerializer, 503: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def participant_notes_fiche_export(request, pk, fmt):
@@ -3186,6 +3233,7 @@ def _get_formation_offline_data_payload(token):
     }
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @authentication_classes([])
 @permission_classes([AllowAny])
@@ -3217,6 +3265,7 @@ def scan_offline_data(request):
     return _cached_offline_data_response(token)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @authentication_classes([])
 @permission_classes([AllowAny])
@@ -3235,6 +3284,7 @@ def formation_offline_data(request, token):
     return _cached_offline_data_response(token)
 
 
+@extend_schema(responses={200: ParticipantSerializer, 400: PresenceDetailErreurSerializer, 403: PresenceDetailErreurSerializer, 404: PresenceDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def participant_lookup(request):
@@ -3267,6 +3317,7 @@ def participant_lookup(request):
 # DFRC / ENCADRANT — Journal d'audit
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsDFRCOrEncadrant])
 def audit_log_list(request):
@@ -3379,6 +3430,7 @@ def audit_log_list(request):
 # Vérification statut badgeage sécurisé (app mobile, authentifié)
 # ──────────────────────────────────────────────
 
+@extend_schema(request=SecureScanSerializer, responses={200: OpenApiTypes.OBJECT, 400: ErreurCodePresenceSerializer, 403: ErreurCodePresenceSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def secure_scan_exit(request):
@@ -3553,6 +3605,7 @@ def secure_scan_exit(request):
     })
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurCodePresenceSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def secure_check_badge_status(request):
@@ -3703,6 +3756,7 @@ def secure_check_badge_status(request):
 # Vérification statut badgeage avant confirmation (endpoint public)
 # ──────────────────────────────────────────────
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @authentication_classes([])
 @permission_classes([AllowAny])
