@@ -106,6 +106,13 @@ class VehiculeReponseSerializer(serializers.Serializer):
     prochaine_revision = serializers.DateField(allow_null=True)
 
 
+class VehiculeCreationSerializer(serializers.Serializer):
+    immatriculation = serializers.CharField()
+    marque = serializers.CharField(required=False)
+    modele = serializers.CharField(required=False)
+    kilometrage = serializers.IntegerField(required=False)
+
+
 class VehiculeListeSerializer(serializers.Serializer):
     results = VehiculeReponseSerializer(many=True)
 
@@ -235,6 +242,7 @@ def equipements_api(request):
     return Response(_serialize_equipement(e), status=201)
 
 
+@extend_schema(request=VehiculeCreationSerializer, responses={200: VehiculeListeSerializer, 201: VehiculeReponseSerializer, 400: ErreurPatrimoineSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsGestionPatrimoineOrReadOnly])
 def vehicules_api(request):
@@ -252,6 +260,7 @@ def vehicules_api(request):
         )
     except Exception as exc:
         return Response({'error': str(exc)}, status=400)
+    return Response(_serialize_vehicule(v), status=201)
 @extend_schema(request=InventaireCreationSerializer, responses={200: InventaireListeSerializer, 201: InventaireCreeSerializer, 400: ErreurPatrimoineSerializer})
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsGestionPatrimoineOrReadOnly])
@@ -385,4 +394,3 @@ def mouvements_api(request):
          'created_at': m.created_at.isoformat()}
         for m in qs
     ]})
-    return Response(_serialize_vehicule(v), status=201)
