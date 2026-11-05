@@ -1,0 +1,227 @@
+# Tables attendues dans injs_lmd_prod_20261026 — dérivées du code (modèles Django) de main@767dabf
+# Format : table | modèle Django | nature | clé primaire
+# Modèles : 202 | tables de liaison M2M : 19 | hors modèles : django_migrations
+# TOTAL PHYSIQUE ATTENDU : 222
+
+administrations_courrier | administrations.Courrier | modele | -
+administrations_departement | administrations.Departement | modele | -
+administrations_direction | administrations.Direction | modele | -
+administrations_documentofficiel | administrations.DocumentOfficiel | modele | -
+administrations_mission | administrations.Mission | modele | -
+administrations_reunioncommission | administrations.ReunionCommission | modele | -
+administrations_reunioncommission_participants | (liaison M2M) | liaison | -
+administrations_versiondocument | administrations.VersionDocument | modele | -
+admissions_admission | admissions.Admission | modele | -
+admissions_campagneadmission | admissions.CampagneAdmission | modele | -
+admissions_candidat | admissions.Candidat | modele | -
+admissions_candidature | admissions.Candidature | modele | -
+admissions_classementconcours | admissions.ClassementConcours | modele | -
+admissions_convocationepreuve | admissions.ConvocationEpreuve | modele | -
+admissions_epreuve | admissions.Epreuve | modele | -
+admissions_noteconcours | admissions.NoteConcours | modele | -
+admissions_noteconcourshistorique | admissions.NoteConcoursHistorique | modele | -
+admissions_piececandidature | admissions.PieceCandidature | modele | -
+admissions_reglepiece | admissions.ReglePiece | modele | -
+admissions_surveillanceepreuve | admissions.SurveillanceEpreuve | modele | -
+admissions_typecandidature | admissions.TypeCandidature | modele | -
+admissions_typepiece | admissions.TypePiece | modele | -
+admissions_voieacces | admissions.VoieAcces | modele | -
+auth_group | auth.Group | modele | -
+auth_group_permissions | (liaison M2M) | liaison | -
+auth_permission | auth.Permission | modele | -
+authentication_user | authentication.User | modele | -
+authentication_user_groups | (liaison M2M) | liaison | -
+authentication_user_user_permissions | (liaison M2M) | liaison | -
+core_compteurcode | core.CompteurCode | modele | -
+core_evenementaudit | core.EvenementAudit | modele | -
+django_admin_log | admin.LogEntry | modele | -
+django_content_type | contenttypes.ContentType | modele | -
+django_session | sessions.Session | modele | -
+edts_affectationcreneau | edts.AffectationCreneau | modele | -
+edts_campagnegeneration | edts.CampagneGeneration | modele | -
+edts_conflitcreneau | edts.ConflitCreneau | modele | -
+edts_creneautemplate | edts.CreneauTemplate | modele | -
+edts_disponibilitehoraire | edts.DisponibiliteHoraire | modele | -
+edts_emploidutemps | edts.EmploiDuTemps | modele | -
+edts_executioncampagne | edts.ExecutionCampagne | modele | -
+edts_inscriptionimportee | edts.InscriptionImportee | modele | -
+edts_politiquecontraintessouples | edts.PolitiqueContraintesSouples | modele | -
+equivalences_demandeequivalencedispense | equivalences.DemandeEquivalenceDispense | modele | -
+equivalences_historiqueequivalence | equivalences.HistoriqueEquivalence | modele | -
+equivalences_pieceequivalence | equivalences.PieceEquivalence | modele | -
+evaluations_convocationevaluation | evaluations.ConvocationEvaluation | modele | -
+evaluations_ecueresult | evaluations.ECUEResult | modele | -
+evaluations_epreuve | evaluations.Epreuve | modele | -
+evaluations_epreuvesurveillant | evaluations.EpreuveSurveillant | modele | -
+evaluations_evaluation | evaluations.Evaluation | modele | -
+evaluations_evaluationattendance | evaluations.EvaluationAttendance | modele | -
+evaluations_evaluationcomponent | evaluations.EvaluationComponent | modele | -
+evaluations_evaluationgrade | evaluations.EvaluationGrade | modele | -
+evaluations_evaluationgradehistory | evaluations.EvaluationGradeHistory | modele | -
+evaluations_evaluationparticipant | evaluations.EvaluationParticipant | modele | -
+evaluations_reglecalcul | evaluations.RegleCalcul | modele | -
+evaluations_reglecalculversion | evaluations.RegleCalculVersion | modele | -
+evaluations_relevenotes | evaluations.ReleveNotes | modele | -
+evaluations_semesterresult | evaluations.SemesterResult | modele | -
+evaluations_sessionevaluation | evaluations.SessionEvaluation | modele | -
+evaluations_typeevaluation | evaluations.TypeEvaluation | modele | -
+evaluations_ueresult | evaluations.UEResult | modele | -
+finances_etudiantes_echeancier | finances_etudiantes.Echeancier | modele | -
+finances_etudiantes_echeancier_lignes | (liaison M2M) | liaison | -
+finances_etudiantes_facture | finances_etudiantes.Facture | modele | -
+finances_etudiantes_facture_lignes | (liaison M2M) | liaison | -
+finances_etudiantes_ligneecheancier | finances_etudiantes.LigneEcheancier | modele | -
+finances_etudiantes_paiement | finances_etudiantes.Paiement | modele | -
+finances_etudiantes_quittance | finances_etudiantes.Quittance | modele | -
+finances_etudiantes_rapprochementcomptable | finances_etudiantes.RapprochementComptable | modele | -
+finances_etudiantes_rapprochementcomptable_transactions | (liaison M2M) | liaison | -
+finances_etudiantes_relance | finances_etudiantes.Relance | modele | -
+finances_etudiantes_remboursement | finances_etudiantes.Remboursement | modele | -
+finances_etudiantes_tarification | finances_etudiantes.Tarification | modele | -
+formations_correctionnotemodule | formations.CorrectionNoteModule | modele | -
+formations_financeajustement | formations.FinanceAjustement | modele | -
+formations_financesettings | formations.FinanceSettings | modele | -
+formations_formateur | formations.Formateur | modele | -
+formations_formateur_secretariats | (liaison M2M) | liaison | -
+formations_formation | formations.Formation | modele | -
+formations_module | formations.Module | modele | -
+formations_moduleformateur | formations.ModuleFormateur | modele | -
+formations_moduleparticipant | formations.ModuleParticipant | modele | -
+formations_notemodule | formations.NoteModule | modele | -
+formations_notemodulecolonne | formations.NoteModuleColonne | modele | -
+formations_notemodulesynthese | formations.NoteModuleSynthese | modele | -
+formations_notificationfinanceajustement | formations.NotificationFinanceAjustement | modele | -
+formations_notificationmodificationnote | formations.NotificationModificationNote | modele | -
+formations_participant | formations.Participant | modele | -
+formations_qrtoken | formations.QRToken | modele | -
+formations_refbatiment | formations.RefBatiment | modele | -
+formations_refcategorie | formations.RefCategorie | modele | -
+formations_refformation | formations.RefFormation | modele | -
+formations_refgrade | formations.RefGrade | modele | -
+formations_refmodule | formations.RefModule | modele | -
+formations_refmodule_formations | (liaison M2M) | liaison | -
+formations_refmodulevolumehoraire | formations.RefModuleVolumeHoraire | modele | -
+formations_refsalle | formations.RefSalle | modele | -
+formations_refsite | formations.RefSite | modele | -
+formations_reftypesecretariat | formations.RefTypeSecretariat | modele | -
+formations_refvague | formations.RefVague | modele | -
+formations_secretariat | formations.Secretariat | modele | -
+formations_sessionmodule | formations.SessionModule | modele | -
+gi_salle_geolocalisation | edts.SalleGeolocalisation | modele | -
+gi_seance_evenement | edts.SeanceEvenement | modele | -
+gi_seance_historique | edts.SeanceHistorique | modele | -
+gi_seance_instantane | edts.SeanceInstantaneAttendus | modele | -
+gi_seance_registre | edts.SeanceRegistre | modele | -
+graduation_diplome | graduation.Diplome | modele | -
+graduation_modeledocument | graduation.ModeleDocument | modele | -
+graduation_reedition | graduation.Reedition | modele | -
+graduation_registrediplomes | graduation.RegistreDiplomes | modele | -
+graduation_registrediplomes_diplomes | (liaison M2M) | liaison | -
+habilitations_attributionrole | habilitations.AttributionRole | modele | -
+habilitations_attributionrole_perimetres | (liaison M2M) | liaison | -
+habilitations_compteutilisateur | habilitations.CompteUtilisateur | modele | -
+habilitations_compteutilisateur_departements | (liaison M2M) | liaison | -
+habilitations_compteutilisateur_services | (liaison M2M) | liaison | -
+habilitations_delegationhabilitation | habilitations.DelegationHabilitation | modele | -
+habilitations_delegationhabilitation_perimetres | (liaison M2M) | liaison | -
+habilitations_delegationhabilitation_permissions | (liaison M2M) | liaison | -
+habilitations_delegationhabilitation_roles | (liaison M2M) | liaison | -
+habilitations_demandeacces | habilitations.DemandeAcces | modele | -
+habilitations_executionimport | habilitations.ExecutionImport | modele | -
+habilitations_journalhabilitation | habilitations.JournalHabilitation | modele | -
+habilitations_notificationhabilitation | habilitations.NotificationHabilitation | modele | -
+habilitations_perimetre | habilitations.Perimetre | modele | -
+habilitations_permissionattribuee | habilitations.PermissionAttribuee | modele | -
+habilitations_permissionmetier | habilitations.PermissionMetier | modele | -
+habilitations_personne | habilitations.Personne | modele | -
+habilitations_politiquesecurite | habilitations.PolitiqueSecurite | modele | -
+habilitations_propositionprovisionnement | habilitations.PropositionProvisionnement | modele | -
+habilitations_rolemetier | habilitations.RoleMetier | modele | -
+habilitations_rolemetier_incompatible_avec | (liaison M2M) | liaison | -
+habilitations_rolemetier_permissions | (liaison M2M) | liaison | -
+habilitations_roleversion | habilitations.RoleVersion | modele | -
+jurys_decisionjury | jurys.DecisionJury | modele | -
+jurys_membrejury | jurys.MembreJury | modele | -
+jurys_notificationjury | jurys.NotificationJury | modele | -
+jurys_propositionjury | jurys.PropositionJury | modele | -
+jurys_pvjury | jurys.PVJury | modele | -
+jurys_sessionjury | jurys.SessionJury | modele | -
+parametres_parametre | parametres.Parametre | modele | -
+parametres_parametrehistorique | parametres.ParametreHistorique | modele | -
+patrimoine_equipement | patrimoine.Equipement | modele | -
+patrimoine_inventaire | patrimoine.Inventaire | modele | -
+patrimoine_ligneinventaire | patrimoine.LigneInventaire | modele | -
+patrimoine_maintenance | patrimoine.Maintenance | modele | -
+patrimoine_mouvementpatrimonial | patrimoine.MouvementPatrimonial | modele | -
+patrimoine_reservationespace | patrimoine.ReservationEspace | modele | -
+patrimoine_vehicule | patrimoine.Vehicule | modele | -
+presences_auditlog | presences.AuditLog | modele | -
+presences_devicebinding | presences.DeviceBinding | modele | -
+presences_encadrantseance | presences.EncadrantSeance | modele | -
+presences_notificationabsence | presences.NotificationAbsence | modele | -
+presences_pointage | presences.Pointage | modele | -
+presences_rattrapage | presences.Rattrapage | modele | -
+referentiels_refecole | referentiels.RefEcole | modele | -
+referentiels_referentieljournal | referentiels.ReferentielJournal | modele | -
+referentiels_reffiliere | referentiels.RefFiliere | modele | -
+referentiels_refgradeenseignant | referentiels.RefGradeEnseignant | modele | -
+referentiels_refmention | referentiels.RefMention | modele | -
+referentiels_refmodepaiement | referentiels.RefModePaiement | modele | -
+referentiels_refmoduleofficiel | referentiels.RefModuleOfficiel | modele | -
+referentiels_refstatutvague | referentiels.RefStatutVague | modele | -
+referentiels_reftypecursus | referentiels.RefTypeCursus | modele | -
+referentiels_reftypedecision | referentiels.RefTypeDecision | modele | -
+referentiels_reftypedocument | referentiels.RefTypeDocument | modele | -
+referentiels_reftypeenseignement | referentiels.RefTypeEnseignement | modele | -
+referentiels_reftypeespacesportif | referentiels.RefTypeEspaceSportif | modele | -
+referentiels_reftypeevaluation | referentiels.RefTypeEvaluation | modele | -
+referentiels_reftypefrais | referentiels.RefTypeFrais | modele | -
+referentiels_reftypenotification | referentiels.RefTypeNotification | modele | -
+referentiels_refvolumehoraireformation | referentiels.RefVolumeHoraireFormation | modele | -
+ressources_humaines_affectationrh | ressources_humaines.AffectationRH | modele | -
+ressources_humaines_agent | ressources_humaines.Agent | modele | -
+ressources_humaines_disponibiliteagent | ressources_humaines.DisponibiliteAgent | modele | -
+ressources_humaines_documentrh | ressources_humaines.DocumentRH | modele | -
+ressources_humaines_fonction | ressources_humaines.Fonction | modele | -
+ressources_humaines_service | ressources_humaines.Service | modele | -
+scolarite_affectationgroupe | scolarite.AffectationGroupe | modele | -
+scolarite_affectationpedagogique | scolarite.AffectationPedagogique | modele | -
+scolarite_anneeacademique | scolarite.AnneeAcademique | modele | -
+scolarite_dossieretudiant | scolarite.DossierEtudiant | modele | -
+scolarite_ecue | scolarite.ECUE | modele | -
+scolarite_evenementscolarite | scolarite.EvenementScolarite | modele | -
+scolarite_famillemodule | scolarite.FamilleModule | modele | -
+scolarite_groupe | scolarite.Groupe | modele | -
+scolarite_indisponibiliteenseignant | scolarite.IndisponibiliteEnseignant | modele | -
+scolarite_inscriptionadministrative | scolarite.InscriptionAdministrative | modele | -
+scolarite_inscriptionpedagogique | scolarite.InscriptionPedagogique | modele | -
+scolarite_journalscolarite | scolarite.JournalScolarite | modele | -
+scolarite_maquette | scolarite.Maquette | modele | -
+scolarite_maquettejournal | scolarite.MaquetteJournal | modele | -
+scolarite_niveau | scolarite.Niveau | modele | -
+scolarite_parcours | scolarite.Parcours | modele | -
+scolarite_regimeetudes | scolarite.RegimeEtudes | modele | -
+scolarite_reglevalidationlmd | scolarite.RegleValidationLMD | modele | -
+scolarite_semestre | scolarite.Semestre | modele | -
+scolarite_statutetudiant | scolarite.StatutEtudiant | modele | -
+scolarite_typeformation | scolarite.TypeFormation | modele | -
+scolarite_ue | scolarite.UE | modele | -
+stages_conventionstage | stages.ConventionStage | modele | -
+stages_evaluationstage | stages.EvaluationStage | modele | -
+stages_organismeaccueil | stages.OrganismeAccueil | modele | -
+stages_tuteurexterne | stages.TuteurExterne | modele | -
+statistiques_configalerteseuil | statistiques.ConfigAlerteSeuil | modele | -
+statistiques_notificationrapport | statistiques.NotificationRapport | modele | -
+statistiques_observationqualitative | statistiques.ObservationQualitative | modele | -
+statistiques_rapport | statistiques.Rapport | modele | -
+statistiques_signaturerapport | statistiques.SignatureRapport | modele | -
+suiviEvaluation_choixquestion | suiviEvaluation.ChoixQuestion | modele | -
+suiviEvaluation_decisionpedagogique | suiviEvaluation.DecisionPedagogique | modele | -
+suiviEvaluation_moyennemodule | suiviEvaluation.MoyenneModule | modele | -
+suiviEvaluation_parametresevaluation | suiviEvaluation.ParametresEvaluation | modele | -
+suiviEvaluation_question | suiviEvaluation.Question | modele | -
+suiviEvaluation_questionnaire | suiviEvaluation.Questionnaire | modele | -
+suiviEvaluation_reponsequestion | suiviEvaluation.ReponseQuestion | modele | -
+suiviEvaluation_reponsequestion_choix_multiples | (liaison M2M) | liaison | -
+suiviEvaluation_reponsequestionnaire | suiviEvaluation.ReponseQuestionnaire | modele | -
+django_migrations | - | technique | -
