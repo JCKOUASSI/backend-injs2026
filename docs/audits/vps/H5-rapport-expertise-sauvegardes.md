@@ -66,7 +66,7 @@ Les statuts possibles étant : *NON EXPERTISÉE · STRUCTURE IDENTIFIÉE · INT�
 
 ## 4. Tests réellement exécutés sur le kit
 
-Les tests ne portent pas sur les fichiers du VPS (inaccessibles) mais sur des artefacts **équivalents, générés localement** avec `pg_dump`/`pg_restore` 16.2 : une archive custom, un dump texte, un dump texte partiel et un `.gz`. Cela valide la mécanique de lecture, pas le contenu de vos sauvegardes.
+Les tests ne portent pas sur les fichiers du VPS (inaccessibles) mais sur des artefacts **équivalents, générés localement** avec `pg_dump`/`pg_restore` 16.2 : une archive custom, un dump texte, un dump texte partiel et un `.gz`. Cela valide la mécanique de lecture, pas le contenu de vos sauvegardes. Les jeux d'essai sont désormais fabriqués par le harnais lui-même, ce qui rend la vérification reproductible chez vous sans dépendre de mes fichiers temporaires.
 
 | # | Test | Nature | Résultat |
 |---|---|---|---|
@@ -78,10 +78,38 @@ Les tests ne portent pas sur les fichiers du VPS (inaccessibles) mais sur des ar
 | T6 | Fichiers **absents** | **réel** | PASS : 4 messages `FICHIER ABSENT`, synthèse `non_lue`, code de retour 0 |
 | T7 | Archive **tronquée** | **réel** | PASS : erreur `pg_restore: could not read from input file`, pas d'arrêt brutal |
 | T8 | gzip **corrompu** | **réel** | PASS après correction : `gzip -t` échoue, analyse ignorée, synthèse `s2_gzip=corrompue` |
+| T9 | **non-régression** : aucune analyse partielle du gzip corrompu | **réel** — comptage des accès au fichier | PASS : 0 décompression, 0 marqueur, colonne gzip vide, statut `corrompue` conservé |
 
-**Deux défauts trouvés par ces tests, et corrigés** :
+**Trois défauts trouvés par ces tests, et corrigés** :
 1. les sections 2.5 à 2.7 lisaient le sommaire avec un décalage de colonnes (type en `$4`, et non `$3`) — toutes les valeurs sortaient à 0 ; corrigé par une normalisation unique du sommaire ;
-2. un gzip corrompu laissait fuiter son message d'erreur dans le bloc de synthèse et faisait passer l'archive pour « lue » ; corrigé par un indicateur d'intégrité qui conditionne l'analyse.
+2. un gzip corrompu laissait fuiter son message d'erreur dans le bloc de synthèse et faisait passer l'archive pour « lue » ; corrigé par un indicateur d'intégrité qui conditionne l'analyse ;
+3. **un gzip corrompu restait réanalysé après l'échec de `gzip -t`** : la constitution de la liste de tables de l'étape 5 et les indices de valeurs de §5.2 relisaient l'archive, et la taille décompressée était publiée comme une mesure valide alors qu'elle ne portait que sur un fragment. Cinq relectures partielles mesurées sur la version antérieure, zéro après correction.
+
+### 4 bis. Test de non-régression du défaut n° 3
+
+Le harnais `docs/audits/vps/tests/h5_tests.sh` rejoue l'ensemble et ajoute **T9**, qui ne se contente pas de relire le code : il **compte les accès réels au fichier** au moyen d'un relais `gzip` placé en tête de `PATH`, et place dans la partie encore décompressable de l'archive un marqueur de table (`zzz_marqueur_analyse_partielle`) qu'une analyse partielle ne manquerait pas de faire apparaître.
+
+Journal des garanties vérifiées :
+
+| Assertion | Contrôle |
+|---|---|
+| T9.0 | le jeu d'essai échoue bien à `gzip -t` (sinon le test serait vacant) |
+| T9.1 | le marqueur est bien présent dans la partie lisible (sinon l'absence de marqueur ne prouverait rien) |
+| T9.2 | **0 décompression** de l'archive corrompue — 5 sur la version antérieure |
+| T9.3 | exactement 1 contrôle d'intégrité |
+| T9.4 | le marqueur n'apparaît nulle part dans le journal |
+| T9.5 | colonne « gzip » de la matrice de conformité entièrement à 0 |
+| T9.6 | section 3 : « ANALYSE IGNORÉE » affichée |
+| T9.7 | taille décompressée annoncée « NON MESURABLE » |
+| T9.8 | §5.2 : archive illisible explicitement non analysée |
+| T9.9 | statut `s2_gzip=corrompue` conservé |
+| T9.10 | code de retour 0 malgré l'archive corrompue |
+| T9.11 | contrôle de non-vacuité : le compteur détecte bien les lectures sur un gzip sain |
+
+Exécution : `sh docs/audits/vps/tests/h5_tests.sh docs/audits/vps/h5_expertise_sauvegardes.sh`
+(ajouter `H5_DUMP_FIXTURE=/chemin/archive.dump` pour activer T2 et T7 ; sans ce paramètre ils sont marqués SKIP, jamais PASS).
+
+Résultat sur la version corrigée : **35 PASS, 0 FAIL, 0 SKIP**. Résultat sur la version antérieure : **31 PASS, 4 FAIL** — le défaut est donc bien détecté, et le comportement nominal est inchangé (journaux identiques hors horodatage).
 
 **Ce que ces tests ne prouvent pas** : que vos quatre fichiers sont lisibles. Un dump PostgreSQL 15 lu par un `pg_restore` 15 le sera ; une archive produite par une version **plus récente** que le binaire échouera avec un message explicite, que le kit affiche.
 

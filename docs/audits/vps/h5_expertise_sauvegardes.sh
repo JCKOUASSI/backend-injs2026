@@ -168,7 +168,11 @@ if [ -f "$S2_GZ" ]; then
   else
     echo "  intégrité gzip : ÉCHEC — fichier corrompu ou tronqué"; sed 's/^/    /' "$TMP/gz.err"; GZ_OK=0
   fi
-  printf '  taille décompressée : %s octets\n' "$(flux "$S2_GZ" | wc -c | tr -d ' ')"
+  if [ "${GZ_OK:-0}" = "1" ]; then
+    printf '  taille décompressée : %s octets\n' "$(flux "$S2_GZ" | wc -c | tr -d ' ')"
+  else
+    echo "  taille décompressée : NON MESURABLE — archive illisible, aucune valeur partielle n'est publiée"
+  fi
 
   if [ "${GZ_OK:-0}" = "1" ]; then
   sous "3.2 Nature du contenu (pg_dump ? dumpall ?)"
@@ -244,7 +248,12 @@ titre "ÉTAPE 5 — INDICES DE CONFORMITÉ INJS 2026"
 # Présence des objets structurants dans chaque source. Aucune valeur métier
 # n'est affichée ; seul le nombre d'objets correspondants est indiqué.
 if [ -f "$S1_DUMP" ] && [ -s "$TMP/s1.tables" ]; then cp "$TMP/s1.tables" "$TMP/t_s1"; else : > "$TMP/t_s1"; fi
-if [ -f "$S2_GZ" ]; then tables_du_flux "$S2_GZ" > "$TMP/t_s2"; else : > "$TMP/t_s2"; fi
+if [ -f "$S2_GZ" ] && [ "${GZ_OK:-0}" = "1" ]; then
+  if [ -s "$TMP/s2.tables" ]; then cp "$TMP/s2.tables" "$TMP/t_s2"; else tables_du_flux "$S2_GZ" > "$TMP/t_s2"; fi
+else
+  : > "$TMP/t_s2"
+  [ -f "$S2_GZ" ] && echo "  [gzip] archive illisible : colonne « gzip » volontairement vide, aucune lecture de l'archive"
+fi
 [ -f "$A" ] && cp "$A" "$TMP/t_s3a" || : > "$TMP/t_s3a"
 [ -f "$B" ] && cp "$B" "$TMP/t_s3b" || : > "$TMP/t_s3b"
 
@@ -280,6 +289,10 @@ for src in "$S1_DUMP" "$S2_GZ" "$S3_SQL_A" "$S3_SQL_B"; do
   case "$src" in
     *.dump) printf '  %-46s : archive custom (valeurs non inspectées par ce script)\n' "$(basename "$src")"; continue ;;
   esac
+  if [ "$src" = "$S2_GZ" ] && [ "${GZ_OK:-0}" != "1" ]; then
+    printf '  %-46s : archive illisible — non analysée (aucune valeur partielle)\n' "$(basename "$src")"
+    continue
+  fi
   printf '  %-46s : ENSEP=%s  S1..S10=%s  ECTS=%s\n' "$(basename "$src")" \
     "$(compte "$src" 'ENSEP')" \
     "$(compte "$src" '\bS([1-9]|10)\b')" \
