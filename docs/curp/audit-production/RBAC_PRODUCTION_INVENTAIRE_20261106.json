@@ -1,0 +1,67 @@
+{
+  "document": "RBAC_PRODUCTION_INVENTAIRE_20261106",
+  "mission": "RBAC-PROD-01 — audit exhaustif des comptes et habilitations RBAC en production INJS",
+  "date_audit": "2026-11-06",
+  "regime": "LECTURE SEULE — aucune initialisation déclenchée",
+  "statut": "NON PRODUIT",
+  "motif_statut": "Base de production non identifiable et non joignable depuis l'environnement d'audit (Phase 1 concluant à l'arrêt de mission). Aucune donnée de production n'a été lue ; aucune valeur n'est inférée depuis le bac à sable.",
+
+  "base_cible": {
+    "nom_attendu": "injs_lmd_prod_20261026",
+    "serveur_postgresql": null,
+    "version_postgresql": null,
+    "conteneur": null,
+    "identite_connexion": null,
+    "disponible": false,
+    "confirmee": false
+  },
+
+  "base_reellement_interrogee": null,
+
+  "base_de_l_environnement_d_audit": {
+    "usage": "IDENTIFICATION UNIQUEMENT — n'est PAS la production",
+    "engine": "django.db.backends.sqlite3",
+    "name": "/home/user/backend-injs2026/backend/db.sqlite3",
+    "version": "SQLite 3.40.1",
+    "resultat_attendu_si_production": "aucun — cette base n'a jamais été considérée comme la production"
+  },
+
+  "preuves_phase_1": [
+    "Binaire absent : psql, pg_isready, pg_dump, pg_ctl, postgres, pg_config",
+    "Runtime absent : docker, docker-compose",
+    "Pilote absent : ModuleNotFoundError: No module named 'psycopg'",
+    "Port 5432 : ConnectionRefusedError sur localhost et 127.0.0.1",
+    "Résolution DNS impossible : postgres, db, injs-postgres, host.docker.internal",
+    "Sortie réseau restreinte : seuls github.com et pypi.org répondent ; injs.ci, api.injs, 10.0.0.5 inaccessibles",
+    "Aucune variable d'environnement POSTGRES_* définie ; POSTGRES_HOST vide dans deploy/production/.env.example",
+    "Nom de base injs_lmd_prod_20261026 absent du dépôt (une seule occurrence : le constat d'inaccessibilité)",
+    "~/.ssh absent : aucun tunnel SSH possible",
+    "Aucun dump ni sauvegarde de production présent dans l'espace de travail"
+  ],
+
+  "inventaire": null,
+  "compteurs": null,
+  "attributions": null,
+  "roles_sensibles": null,
+  "anomalies_perimetre": null,
+
+  "ecritures_effectuees": {
+    "apply": 0,
+    "insert_update_delete": 0,
+    "drop_reset_flush": 0,
+    "migrations": 0,
+    "profils_crees": 0,
+    "attributions_creees_ou_revoquees": 0,
+    "roles_ou_permissions_modifies": 0,
+    "changements_de_statut": 0,
+    "elargissements_de_perimetre": 0,
+    "total": 0
+  },
+
+  "procedure_de_production_des_donnees": {
+    "ou": "sur le serveur de production (VPS), par un opérateur habilité",
+    "prealable": "psql -c \"SELECT current_database(), version();\" DOIT retourner injs_lmd_prod_20261026",
+    "commande_inventaire": "docker compose -f deploy/production/compose.yml exec backend python manage.py rbac_initialisation --json RBAC_PRODUCTION_INVENTAIRE_20261106.json",
+    "note": "La commande est en lecture seule par défaut ; --apply reste interdit jusqu'à validation humaine."
+  }
+}
