@@ -1,0 +1,1150 @@
+{
+  "horodatage": "2026-11-06T13:14:52+00:00",
+  "drapeaux": {
+    "flag.lot01_socle_referentiels_rbac": {
+      "present": true,
+      "actif": false
+    },
+    "flag.curp_module_utilisateurs": {
+      "present": false,
+      "actif": false
+    }
+  },
+  "ecriture_autorisee": false,
+  "motifs_ecriture": [
+    "DRAPEAU_INACTIF : flag.lot01_socle_referentiels_rbac est fermé.",
+    "DRAPEAU_ABSENT : flag.curp_module_utilisateurs n’existe pas dans les paramètres."
+  ],
+  "anomalies_globales": [
+    "Toutes les permissions actives ont pour portée maximale INJS_ENTIER : le plafond des permissions ne restreint donc aucun rôle — la seule borne effective est le périmètre de l’attribution. À faire arbitrer avant toute initialisation en production."
+  ],
+  "totaux": {
+    "utilisateurs_analyses": 32,
+    "comptes_a_creer": 32,
+    "attributions_prevues": 12,
+    "propositions_sensibles_prevues": 6,
+    "roles_bloques_perimetre_local": 34
+  },
+  "lignes": [
+    {
+      "username": "temoin_admin",
+      "role_legacy": "ADMIN",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ADMIN_SYSTEME",
+          "sensible": true,
+          "niveau": "N4",
+          "perimetre_defaut": "INJS_ENTIER",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "PROPOSEE",
+          "posable": true,
+          "anomalies": [
+            "ROLE_SENSIBLE_PROPOSE"
+          ]
+        }
+      ]
+    },
+    {
+      "username": "temoin_archive",
+      "role_legacy": "ARCHIVE",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ARCHIVISTE",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "INJS_ENTIER",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": true,
+          "anomalies": []
+        }
+      ]
+    },
+    {
+      "username": "p001",
+      "role_legacy": "AUDITEUR",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ETUDIANT",
+          "sensible": false,
+          "niveau": "N1",
+          "perimetre_defaut": "PROPRE_COMPTE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": true,
+          "anomalies": []
+        }
+      ]
+    },
+    {
+      "username": "p002",
+      "role_legacy": "AUDITEUR",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ETUDIANT",
+          "sensible": false,
+          "niveau": "N1",
+          "perimetre_defaut": "PROPRE_COMPTE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": true,
+          "anomalies": []
+        }
+      ]
+    },
+    {
+      "username": "p003",
+      "role_legacy": "AUDITEUR",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ETUDIANT",
+          "sensible": false,
+          "niveau": "N1",
+          "perimetre_defaut": "PROPRE_COMPTE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": true,
+          "anomalies": []
+        }
+      ]
+    },
+    {
+      "username": "p004",
+      "role_legacy": "AUDITEUR",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ETUDIANT",
+          "sensible": false,
+          "niveau": "N1",
+          "perimetre_defaut": "PROPRE_COMPTE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": true,
+          "anomalies": []
+        }
+      ]
+    },
+    {
+      "username": "p005",
+      "role_legacy": "AUDITEUR",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ETUDIANT",
+          "sensible": false,
+          "niveau": "N1",
+          "perimetre_defaut": "PROPRE_COMPTE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": true,
+          "anomalies": []
+        }
+      ]
+    },
+    {
+      "username": "p006",
+      "role_legacy": "AUDITEUR",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ETUDIANT",
+          "sensible": false,
+          "niveau": "N1",
+          "perimetre_defaut": "PROPRE_COMPTE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": true,
+          "anomalies": []
+        }
+      ]
+    },
+    {
+      "username": "p007",
+      "role_legacy": "AUDITEUR",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ETUDIANT",
+          "sensible": false,
+          "niveau": "N1",
+          "perimetre_defaut": "PROPRE_COMPTE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": true,
+          "anomalies": []
+        }
+      ]
+    },
+    {
+      "username": "p008",
+      "role_legacy": "AUDITEUR",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ETUDIANT",
+          "sensible": false,
+          "niveau": "N1",
+          "perimetre_defaut": "PROPRE_COMPTE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": true,
+          "anomalies": []
+        }
+      ]
+    },
+    {
+      "username": "p009",
+      "role_legacy": "AUDITEUR",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ETUDIANT",
+          "sensible": false,
+          "niveau": "N1",
+          "perimetre_defaut": "PROPRE_COMPTE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": true,
+          "anomalies": []
+        }
+      ]
+    },
+    {
+      "username": "p010",
+      "role_legacy": "AUDITEUR",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ETUDIANT",
+          "sensible": false,
+          "niveau": "N1",
+          "perimetre_defaut": "PROPRE_COMPTE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": true,
+          "anomalies": []
+        }
+      ]
+    },
+    {
+      "username": "temoin_auditeur",
+      "role_legacy": "AUDITEUR",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ETUDIANT",
+          "sensible": false,
+          "niveau": "N1",
+          "perimetre_defaut": "PROPRE_COMPTE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": true,
+          "anomalies": []
+        }
+      ]
+    },
+    {
+      "username": "temoin_chef_cpfae_admin",
+      "role_legacy": "CHEF_INJS_ADMIN",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ADMIN_SYSTEME",
+          "sensible": true,
+          "niveau": "N4",
+          "perimetre_defaut": "INJS_ENTIER",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "PROPOSEE",
+          "posable": true,
+          "anomalies": [
+            "ROLE_SENSIBLE_PROPOSE"
+          ]
+        },
+        {
+          "code": "DIRECTION_ETUDES",
+          "sensible": true,
+          "niveau": "N4",
+          "perimetre_defaut": "INJS_ENTIER",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "PROPOSEE",
+          "posable": true,
+          "anomalies": [
+            "ROLE_SENSIBLE_PROPOSE"
+          ]
+        }
+      ]
+    },
+    {
+      "username": "temoin_chef_secretariat_a",
+      "role_legacy": "CHEF_SECRETARIAT",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [
+        "AUCUNE_ATTRIBUTION_AUTO_SANS_PERIMETRE : tous les rôles A6 exigent un périmètre local — à créer dans la console."
+      ],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "SCOLARITE",
+          "sensible": false,
+          "niveau": "N3",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "AGENT_INSCRIPTIONS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "AGENT_ADMISSIONS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "GESTIONNAIRE_ETUDIANTS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        }
+      ]
+    },
+    {
+      "username": "temoin_chef_secretariat_b",
+      "role_legacy": "CHEF_SECRETARIAT",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [
+        "AUCUNE_ATTRIBUTION_AUTO_SANS_PERIMETRE : tous les rôles A6 exigent un périmètre local — à créer dans la console."
+      ],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "SCOLARITE",
+          "sensible": false,
+          "niveau": "N3",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "AGENT_INSCRIPTIONS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "AGENT_ADMISSIONS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "GESTIONNAIRE_ETUDIANTS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        }
+      ]
+    },
+    {
+      "username": "temoin_direction",
+      "role_legacy": "DIRECTION",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "DIRECTION_GENERALE",
+          "sensible": true,
+          "niveau": "N4",
+          "perimetre_defaut": "INJS_ENTIER",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "PROPOSEE",
+          "posable": true,
+          "anomalies": [
+            "ROLE_SENSIBLE_PROPOSE"
+          ]
+        }
+      ]
+    },
+    {
+      "username": "superviseur1",
+      "role_legacy": "ENCADRANT",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [
+        "AUCUNE_ATTRIBUTION_AUTO_SANS_PERIMETRE : tous les rôles A6 exigent un périmètre local — à créer dans la console."
+      ],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ENSEIGNANT",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "MODULE_ECUE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « MODULE_ECUE » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "GESTIONNAIRE_GROUPES",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "FORMATION",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « FORMATION » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        }
+      ]
+    },
+    {
+      "username": "superviseur2",
+      "role_legacy": "ENCADRANT",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [
+        "AUCUNE_ATTRIBUTION_AUTO_SANS_PERIMETRE : tous les rôles A6 exigent un périmètre local — à créer dans la console."
+      ],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ENSEIGNANT",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "MODULE_ECUE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « MODULE_ECUE » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "GESTIONNAIRE_GROUPES",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "FORMATION",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « FORMATION » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        }
+      ]
+    },
+    {
+      "username": "temoin_encadrant",
+      "role_legacy": "ENCADRANT",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [
+        "AUCUNE_ATTRIBUTION_AUTO_SANS_PERIMETRE : tous les rôles A6 exigent un périmètre local — à créer dans la console."
+      ],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ENSEIGNANT",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "MODULE_ECUE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « MODULE_ECUE » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "GESTIONNAIRE_GROUPES",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "FORMATION",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « FORMATION » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        }
+      ]
+    },
+    {
+      "username": "temoin_finance",
+      "role_legacy": "FINANCE",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "GESTIONNAIRE_FINANCES_ETUD",
+          "sensible": true,
+          "niveau": "N2",
+          "perimetre_defaut": "INJS_ENTIER",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "PROPOSEE",
+          "posable": true,
+          "anomalies": [
+            "ROLE_SENSIBLE_PROPOSE"
+          ]
+        },
+        {
+          "code": "GESTIONNAIRE_VACATIONS",
+          "sensible": true,
+          "niveau": "N2",
+          "perimetre_defaut": "INJS_ENTIER",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "PROPOSEE",
+          "posable": true,
+          "anomalies": [
+            "ROLE_SENSIBLE_PROPOSE"
+          ]
+        }
+      ]
+    },
+    {
+      "username": "f001",
+      "role_legacy": "FORMATEUR",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [
+        "AUCUNE_ATTRIBUTION_AUTO_SANS_PERIMETRE : tous les rôles A6 exigent un périmètre local — à créer dans la console."
+      ],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ENSEIGNANT",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "MODULE_ECUE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « MODULE_ECUE » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        }
+      ]
+    },
+    {
+      "username": "f002",
+      "role_legacy": "FORMATEUR",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [
+        "AUCUNE_ATTRIBUTION_AUTO_SANS_PERIMETRE : tous les rôles A6 exigent un périmètre local — à créer dans la console."
+      ],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ENSEIGNANT",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "MODULE_ECUE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « MODULE_ECUE » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        }
+      ]
+    },
+    {
+      "username": "f003",
+      "role_legacy": "FORMATEUR",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [
+        "AUCUNE_ATTRIBUTION_AUTO_SANS_PERIMETRE : tous les rôles A6 exigent un périmètre local — à créer dans la console."
+      ],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ENSEIGNANT",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "MODULE_ECUE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « MODULE_ECUE » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        }
+      ]
+    },
+    {
+      "username": "temoin_formateur",
+      "role_legacy": "FORMATEUR",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [
+        "AUCUNE_ATTRIBUTION_AUTO_SANS_PERIMETRE : tous les rôles A6 exigent un périmètre local — à créer dans la console."
+      ],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "ENSEIGNANT",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "MODULE_ECUE",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « MODULE_ECUE » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        }
+      ]
+    },
+    {
+      "username": "dfrc",
+      "role_legacy": "INJS_ADMIN",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [
+        "AUCUNE_ATTRIBUTION_AUTO_SANS_PERIMETRE : tous les rôles A6 exigent un périmètre local — à créer dans la console."
+      ],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "SCOLARITE",
+          "sensible": false,
+          "niveau": "N3",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "GESTIONNAIRE_COURS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "FORMATION",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « FORMATION » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        }
+      ]
+    },
+    {
+      "username": "injs",
+      "role_legacy": "INJS_ADMIN",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [
+        "AUCUNE_ATTRIBUTION_AUTO_SANS_PERIMETRE : tous les rôles A6 exigent un périmètre local — à créer dans la console."
+      ],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "SCOLARITE",
+          "sensible": false,
+          "niveau": "N3",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "GESTIONNAIRE_COURS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "FORMATION",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « FORMATION » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        }
+      ]
+    },
+    {
+      "username": "temoin_cpfae_admin",
+      "role_legacy": "INJS_ADMIN",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [
+        "AUCUNE_ATTRIBUTION_AUTO_SANS_PERIMETRE : tous les rôles A6 exigent un périmètre local — à créer dans la console."
+      ],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "SCOLARITE",
+          "sensible": false,
+          "niveau": "N3",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "GESTIONNAIRE_COURS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "FORMATION",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « FORMATION » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        }
+      ]
+    },
+    {
+      "username": "secretariat",
+      "role_legacy": "SECRETARIAT",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [
+        "AUCUNE_ATTRIBUTION_AUTO_SANS_PERIMETRE : tous les rôles A6 exigent un périmètre local — à créer dans la console."
+      ],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "AGENT_INSCRIPTIONS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "AGENT_ADMISSIONS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "GESTIONNAIRE_ETUDIANTS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        }
+      ]
+    },
+    {
+      "username": "temoin_secretariat_a",
+      "role_legacy": "SECRETARIAT",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [
+        "AUCUNE_ATTRIBUTION_AUTO_SANS_PERIMETRE : tous les rôles A6 exigent un périmètre local — à créer dans la console."
+      ],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "AGENT_INSCRIPTIONS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "AGENT_ADMISSIONS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "GESTIONNAIRE_ETUDIANTS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        }
+      ]
+    },
+    {
+      "username": "temoin_secretariat_b",
+      "role_legacy": "SECRETARIAT",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [
+        "AUCUNE_ATTRIBUTION_AUTO_SANS_PERIMETRE : tous les rôles A6 exigent un périmètre local — à créer dans la console."
+      ],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "AGENT_INSCRIPTIONS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "AGENT_ADMISSIONS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        },
+        {
+          "code": "GESTIONNAIRE_ETUDIANTS",
+          "sensible": false,
+          "niveau": "N2",
+          "perimetre_defaut": "SECRETARIAT",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « SECRETARIAT » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        }
+      ]
+    },
+    {
+      "username": "temoin_superviseur",
+      "role_legacy": "SUPERVISEUR",
+      "est_superutilisateur": false,
+      "compte_existant": false,
+      "applique": false,
+      "detail": "",
+      "anomalies": [
+        "AUCUNE_ATTRIBUTION_AUTO_SANS_PERIMETRE : tous les rôles A6 exigent un périmètre local — à créer dans la console."
+      ],
+      "roles_absents_catalogue": [],
+      "roles": [
+        {
+          "code": "RESPONSABLE_PEDAGOGIQUE",
+          "sensible": false,
+          "niveau": "N3",
+          "perimetre_defaut": "FORMATION",
+          "plafonds_permissions": [
+            "INJS_ENTIER"
+          ],
+          "statut_prevu": "ACTIVE",
+          "posable": false,
+          "anomalies": [
+            "PERIMETRE_LOCAL_A_RENSEIGNER : « FORMATION » exige la désignation d’un objet métier — attribution non créée automatiquement."
+          ]
+        }
+      ]
+    }
+  ]
+}
