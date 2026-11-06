@@ -9,6 +9,32 @@ d'authentification) et `habilitations` (autorisations métier).
 
 ---
 
+## 0. Mise à jour du 6 novembre 2026 (consolidation) — À LIRE EN PREMIER
+
+Trois changements rendent obsolètes certaines parties des sections 2 à 8 :
+
+1. **Commande unique.** `previsualiser_initialisation_rbac` et
+   `initialiser_rbac` sont **fusionnés et supprimés** ; il reste une seule
+   commande :
+   `backend/habilitations/management/commands/rbac_initialisation.py`
+   (prévisualisation par défaut, `--apply` pour écrire). Aucune commande du
+   projet `backend/` : `backend/management/` n'existe pas et `backend` n'est pas
+   une application installée — une commande placée là ne serait pas découverte.
+2. **Plus aucun rôle déduit de `User.role`.** La table `CORRESPONDANCE_LEGACY`
+   n'est plus utilisée pour proposer des attributions. L'initialisation crée
+   **des comptes RBAC et rien d'autre** : zéro attribution, zéro proposition,
+   zéro modification d'utilisateur Django. Les totaux « 12 attributions /
+   6 propositions / 34 rôles bloqués » du §4 sont donc **périmés** : le plan ne
+   comporte plus que des créations de comptes. Tout droit reste posé par la
+   voie normale (demande d'accès + validation), jamais par import.
+3. **Catalogue réconcilié.** `catalogue_roles.py` contient **81 rôles
+   (35 A1 + 46 cibles J2), 22 sensibles**, identiques à la base. L'écart 35/81
+   et 11/22 est expliqué pièce par pièce dans
+   [`08-reconciliation-catalogue-roles.md`](08-reconciliation-catalogue-roles.md).
+
+Le reste du document reste valide pour l'inventaire (§1), les anomalies
+produit (§5, A1-A7) et la réversibilité (§7).
+
 ## 1. État des lieux du code RBAC existant
 
 ### 1.1 Modèles (`backend/habilitations/models/`)
@@ -70,36 +96,34 @@ d'authentification) et `habilitations` (autorisations métier).
 
 ```
 ┌─ 1. PRÉVISUALISATION (lecture seule, aucune transaction d'écriture) ────────┐
-│  previsualiser_initialisation_rbac                                          │
+│  rbac_initialisation                                                        │
 │  · utilisateurs Django SANS profil CURP (profil_habilitation__isnull)       │
-│  · superutilisateurs EXCLUS du plan                                         │
-│  · correspondance rôle legacy → rôles CURP (table A6, CORRESPONDANCE_LEGACY)│
+│  · superutilisateurs EXCLUS du plan (--inclure-superutilisateurs)           │
+│  · AUCUN rôle déduit de User.role (règle : comptes seuls, zéro attribution) │
+│  · comparaison du catalogue fichier ↔ base (contrôle de divergence)         │
 │  · analyse de périmètre par rôle (déclaré vs plafond des permissions)       │
-│  · classement : ATTRIBUABLE (global, non sensible)                          │
-│                 PROPOSABLE (global, sensible)                               │
-│                 BLOQUÉ     (périmètre local → objet métier à désigner)      │
-│  · sortie : rapport lisible + JSON                                          │
+│  · détection des doublons d'identité, des incohérences de compte            │
+│  · sortie : rapport lisible + JSON (--json)                                 │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │ validation explicite du rapport
                                     ▼
 ┌─ 2. INITIALISATION (--appliquer, désactivée par défaut) ────────────────────┐
-│  initialiser_rbac --appliquer                                               │
-│  · refus si l'un des deux drapeaux est absent ou fermé                      │
+│  rbac_initialisation --apply                                                │
+│  · refus (CommandError) si l'un des deux drapeaux est absent ou fermé       │
 │  · par utilisateur, dans UNE transaction :                                  │
 │      get_or_create(CompteUtilisateur)          → journal COMPTE_CREE        │
-│      rôle global non sensible → ACTIVE         → journal ROLE_ATTRIBUE      │
-│      rôle sensible            → PROPOSEE       → journal PROPOSITION_DEPOSEE│
-│      rôle à périmètre local   → RIEN (signalé)                              │
-│      valide_par = None (jamais de seconde signature automatique)            │
-│  · périmètre posé = périmètre DÉCLARÉ par le rôle, jamais plus large        │
-│  · idempotent : un second passage ne traite plus aucun compte               │
+│      AUCUNE attribution, AUCUNE proposition, AUCUN périmètre               │
+│  · aucun compte existant modifié, aucun utilisateur Django touché           │
+│  · aucune réimportation du catalogue, aucune permission modifiée            │
+│  · idempotent : un second passage ne crée plus aucun compte                 │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Garde-fous applicables à toute exécution**
 
 1. aucune écriture sans `--appliquer` **et** les deux drapeaux ;
-2. aucune attribution automatique d'un rôle sensible ou administratif ;
+2. **aucune attribution automatique**, et en particulier aucun rôle déduit du
+   champ historique `User.role` ;
 3. aucun élargissement de périmètre ; un périmètre local n'est jamais inventé ;
 4. superutilisateurs : profil seul (sur demande explicite), **aucune attribution** ;
 5. aucune suppression, révocation ou modification d'un objet existant ;
@@ -113,22 +137,27 @@ d'authentification) et `habilitations` (autorisations métier).
 ### 3.1 Prévisualisation (sans écriture)
 
 ```bash
-python manage.py previsualiser_initialisation_rbac                       # rapport
-python manage.py previsualiser_initialisation_rbac --json rapport.json   # + JSON
-python manage.py previsualiser_initialisation_rbac --username agent1     # un compte
-python manage.py previsualiser_initialisation_rbac --inclure-superutilisateurs
+python manage.py rbac_initialisation                        # rapport (lecture seule)
+python manage.py rbac_initialisation --json rapport.json     # + JSON
+python manage.py rbac_initialisation --username agent1       # un compte
+python manage.py rbac_initialisation --inclure-superutilisateurs
 ```
 
 ### 3.2 Initialisation (idempotente, inactive par défaut)
 
 ```bash
-python manage.py initialiser_rbac                                   # simulation
-python manage.py initialiser_rbac --appliquer                       # écrit si drapeaux ouverts
-python manage.py initialiser_rbac --appliquer --username agent1
-python manage.py initialiser_rbac --appliquer --ignorer-drapeaux    # recette / bac à sable
+python manage.py rbac_initialisation --apply                         # écrit si drapeaux ouverts
+python manage.py rbac_initialisation --apply --username agent1
+python manage.py rbac_initialisation --apply --ignorer-drapeaux      # recette / bac à sable
 ```
 
-Sans drapeaux ouverts, `--appliquer` échoue par `CommandError` **sans rien écrire**.
+Sans drapeaux ouverts, `--apply` échoue par `CommandError` **sans rien écrire**.
+
+Emplacement définitif : `backend/habilitations/management/commands/rbac_initialisation.py`.
+`backend/management/` n'existe pas et `backend` ne figure pas dans `INSTALLED_APPS` : une
+commande projet n'y serait pas découverte. Les 17 applications déclarent chacune leurs
+commandes dans leur propre arborescence ; `habilitations` est bien installée
+(`config/settings.py`).
 
 ---
 
@@ -148,9 +177,12 @@ Sans drapeaux ouverts, `--appliquer` échoue par `CommandError` **sans rien écr
 | `ENCADRANT`, `FORMATEUR` | `ENSEIGNANT`, `GESTIONNAIRE_GROUPES` | MODULE_ECUE / FORMATION | **BLOQUÉ** |
 | `SUPERVISEUR` | `RESPONSABLE_PEDAGOGIQUE` | FORMATION | **BLOQUÉ** |
 
-**Totaux du rapport** : 32 comptes à traiter · 32 profils à créer · **12 attributions** (11 `ETUDIANT` + 1 `ARCHIVISTE`) · **6 propositions sensibles** · **34 rôles bloqués** par un périmètre local (8 `SECRETARIAT`, 3 `FORMATION`, 2 `MODULE_ECUE`) · aucun rôle A6 absent du catalogue · aucun utilisateur sans correspondance.
+**Totaux du rapport du 6 novembre 2026 (avant la règle « aucun rôle déduit de
+`User.role` » — voir §0, point 2. Rapport de remplacement :
+[`inventaires/rbac-initialisation-previsualisation.json`](inventaires/rbac-initialisation-previsualisation.json))** :
+32 comptes à traiter · 32 profils à créer · **12 attributions** (11 `ETUDIANT` + 1 `ARCHIVISTE`) · **6 propositions sensibles** · **34 rôles bloqués** par un périmètre local (8 `SECRETARIAT`, 3 `FORMATION`, 2 `MODULE_ECUE`) · aucun rôle A6 absent du catalogue · aucun utilisateur sans correspondance.
 
-Rapport complet : [`inventaires/initialisation-rbac-previsualisation.json`](inventaires/initialisation-rbac-previsualisation.json).
+Rapport complet (périmé sur les attributions) : [`inventaires/initialisation-rbac-previsualisation.json`](inventaires/initialisation-rbac-previsualisation.json).
 
 ---
 
@@ -172,7 +204,13 @@ Aucune de ces anomalies n'a été corrigée par supposition : elles sont **signa
 
 ## 6. Tests automatisés
 
-Fichier : `backend/habilitations/tests/test_initialisation_rbac.py` — **32 tests**, tous au vert.
+Fichier : `backend/habilitations/tests/test_initialisation_rbac.py` — **40 tests** répartis en **15 catégories**, tous au vert (`Ran 40 tests — OK`).
+
+| Exigence | Couverture |
+|---|---|
+| Rapport de prévisualisation | `RapportPreviewTests` (zéro écriture ; séparation utilisateur / compte / attribution ; **concordance catalogue fichier ↔ base**) |
+
+**Non-régression** : groupe `habilitations` — **520 tests, OK** (dont les 40 nouveaux).
 
 | Exigence | Couverture |
 |---|---|
@@ -187,8 +225,6 @@ Fichier : `backend/habilitations/tests/test_initialisation_rbac.py` — **32 tes
 | Journalisation | `JournalisationTests` (numéros croissants et uniques, empreintes, types d'événements) |
 | Contrôles d'accès API | `ControleAccesApiTests` (endpoints protégés en anonyme ; `/api/auth/*` toujours servis) |
 | Drapeaux | `DrapeauxTests` (refus d'écriture sans drapeaux ; `CommandError` sans rien écrire) |
-
-**Non-régression** : groupe `habilitations` — **512 tests, OK** (dont les 32 nouveaux).
 
 ---
 
@@ -208,10 +244,11 @@ Aucune commande livrée ne supprime, ne révoque ni ne modifie une donnée exist
 | Fichier | Nature |
 |---|---|
 | `backend/habilitations/services/initialisation_rbac.py` | Service : plan (pur) + application idempotente + analyse de périmètre |
-| `backend/habilitations/management/commands/previsualiser_initialisation_rbac.py` | Commande de prévisualisation (aucune écriture possible) |
-| `backend/habilitations/management/commands/initialiser_rbac.py` | Commande d'initialisation (inactive par défaut, drapeaux exigés) |
-| `backend/habilitations/tests/test_initialisation_rbac.py` | 32 tests |
+| `backend/habilitations/management/commands/rbac_initialisation.py` | **Commande unique** : prévisualisation par défaut (aucune écriture possible) + `--apply` soumis aux drapeaux |
+| `backend/habilitations/tests/test_initialisation_rbac.py` | 40 tests (15 catégories) |
+| `docs/curp/08-reconciliation-catalogue-roles.md` | Réconciliation 81/35 rôles, 22/11 sensibles |
+| `docs/curp/inventaires/rbac-initialisation-previsualisation.json` | Rapport de prévisualisation **après** la règle « aucun rôle déduit » (6 novembre 2026) |
 | `docs/curp/07-initialisation-rbac.md` | Ce document |
 | `docs/curp/inventaires/initialisation-rbac-previsualisation.json` | Rapport de prévisualisation (6 novembre 2026) |
 
-**Aucun fichier existant n'a été modifié.** Aucune référence SYGEP-CPFAE n'a été ajoutée.
+Commandes `previsualiser_initialisation_rbac` et `initialiser_rbac` **supprimées** (fusion). Aucune référence SYGEP-CPFAE n'a été ajoutée. Aucune donnée de production modifiée, aucun `DROP`/`RESET`/`FLUSH`, aucune désactivation de rôle.

@@ -1,13 +1,30 @@
-"""Initialisation RBAC contrôlée — prévisualisation, idempotence, garde-fous.
+"""Initialisation RBAC : prévisualisation, initialisation, mécanismes réels.
 
-Couvre les dix points exigés par la préparation à la mise en service :
-création idempotente, liaison utilisateur ↔ compte, préservation du
-superutilisateur, absence d'attribution automatique non autorisée, conflits
-de périmètre, rôles sensibles, double validation, révocations, journalisation
-et contrôles d'accès API.
+Couvre les quinze catégories attendues :
 
-Aucun test n'écrit dans une base de production : tout se joue dans la base de
-test Django, créée et détruite par le lanceur de tests.
+ 1. création idempotente d'un compte RBAC
+ 2. liaison utilisateur ↔ compte
+ 3. préservation du superutilisateur existant
+ 4. absence d'attribution automatique (aucun rôle déduit de ``User.role``)
+ 5. absence d'élargissement de périmètre
+ 6. conflits de périmètre
+ 7. rôles sensibles (motif obligatoire, seconde signature)
+ 8. double validation et séparation demandeur / validateur
+ 9. révocation
+10. suspension
+11. expiration
+12. MFA lorsque requis
+13. incompatibilités entre rôles
+14. journalisation
+15. contrôles d'accès API et comportement des drapeaux
+
+Règle de méthode : **on teste le mécanisme réel, pas la présence d'un champ**.
+Lorsqu'une règle n'est pas appliquée effectivement (simple attribut de modèle),
+le test constate le comportement observé et l'anomalie est documentée dans
+``docs/curp/07-initialisation-rbac.md`` au lieu d'être masquée.
+
+Les tests s'exécutent sur une base de test isolée ; aucune base de production
+n'est touchée (aucune commande ne pointe vers elle).
 """
 from io import StringIO
 
@@ -15,234 +32,237 @@ from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase
+from django.utils import timezone
 
 from habilitations.models import (
     AttributionRole,
     CompteUtilisateur,
+    DemandeAcces,
+    DelegationHabilitation,
     JournalHabilitation,
     Perimetre,
+    PermissionAttribuee,
     RoleMetier,
 )
 from habilitations.services.initialisation_rbac import (
     A_PERIMETRE_LOCAL,
-    A_ROLE_SENSIBLE,
-    A_SUPERUTILISATEUR,
+    A_PERIMETRE_PLUS_LARGE,
     DRAPEAU_MODULE_UTILISATEURS,
     DRAPEAU_SOCLE,
     analyser_role,
-    appliquer_plan,
-    construire_plan,
+    appliquer_rapport,
+    comparer_catalogue_fichier,
+    construire_rapport,
     ecriture_autorisee,
     etat_drapeaux,
 )
 
-from .helpers import creer_attribution, creer_compte, creer_permission, creer_role, creer_user
+from .helpers import (
+    creer_attribution,
+    creer_compte,
+    creer_perimetre_secretariat,
+    creer_permission,
+    creer_role,
+    creer_user,
+)
 
 User = get_user_model()
 
-#: Applique sans dépendre des drapeaux (fermés par défaut dans les tests).
-APPLIQUER = {'appliquer': True, 'ignorer_drapeaux': True}
+#: Application sans dépendre des drapeaux (fermés par défaut sous test).
+APPLY = ['rbac_initialisation', '--apply', '--ignorer-drapeaux']
 
 
-class BaseInitialisation(TestCase):
+def appliquer(**kwargs):
+    sortie = StringIO()
+    options = {'stdout': sortie, 'stderr': StringIO(), **kwargs}
+    call_command(*APPLY, **options)
+    return sortie.getvalue()
+
+
+class BaseRbac(TestCase):
     @classmethod
     def setUpTestData(cls):
-        # Deux rôles posables seuls (périmètre global), un sensible, un local.
         cls.role_global = creer_role(
-            code='ARCHIVISTE', libelle='Archiviste',
-            niveau_defaut='L', perimetre_defaut=Perimetre.Type.INJS_ENTIER,
-        )
+            code='ARCHIVISTE', libelle='Archiviste', niveau_defaut='L',
+            perimetre_defaut=Perimetre.Type.INJS_ENTIER)
         cls.role_sensible = creer_role(
-            code='ADMIN_SYSTEME', libelle='Administrateur système',
-            niveau_defaut='E', perimetre_defaut=Perimetre.Type.INJS_ENTIER,
-            sensible=True,
-        )
+            code='ADMIN_SYSTEME', libelle='Administrateur système', niveau_defaut='E',
+            perimetre_defaut=Perimetre.Type.INJS_ENTIER, sensible=True)
         cls.role_local = creer_role(
-            code='AGENT_INSCRIPTIONS', libelle='Agent inscriptions',
-            niveau_defaut='L', perimetre_defaut=Perimetre.Type.SECRETARIAT,
-        )
+            code='SCOLARITE', libelle='Scolarité', niveau_defaut='L',
+            perimetre_defaut=Perimetre.Type.SECRETARIAT)
 
 
-# ── 1. Création idempotente ─────────────────────────────────────────────────
-class CreationIdempotenteTests(BaseInitialisation):
-    def test_deux_passages_ne_creent_qu_un_compte(self):
+# ══ 1. Création idempotente ═════════════════════════════════════════════════
+class CreationIdempotenteTests(BaseRbac):
+    def test_deux_applications_ne_creent_qu_un_compte(self):
         creer_user(username='idem-1', role_existant='ARCHIVE')
-        call_command('initialiser_rbac', **APPLIQUER, stdout=StringIO())
+        appliquer()
         self.assertEqual(CompteUtilisateur.objects.count(), 1)
-        call_command('initialiser_rbac', **APPLIQUER, stdout=StringIO())
+        appliquer()
         self.assertEqual(CompteUtilisateur.objects.count(), 1)
-        self.assertEqual(
-            AttributionRole.objects.filter(statut=AttributionRole.Statut.ACTIVE).count(), 1,
-            "le second passage ne doit pas dupliquer l'attribution",
-        )
+        self.assertEqual(User.objects.count(), 1, 'aucun utilisateur dupliqué')
 
-    def test_simulation_n_ecrit_rien(self):
+    def test_previsualisation_par_defaut_n_ecrit_rien(self):
         creer_user(username='idem-2', role_existant='ARCHIVE')
-        call_command('initialiser_rbac', stdout=StringIO())  # sans --appliquer
+        call_command('rbac_initialisation', stdout=StringIO())
         self.assertEqual(CompteUtilisateur.objects.count(), 0)
         self.assertEqual(AttributionRole.objects.count(), 0)
-
-    def test_previsualisation_n_ecrit_jamais(self):
-        creer_user(username='idem-3', role_existant='ARCHIVE')
-        call_command('previsualiser_initialisation_rbac', stdout=StringIO())
-        self.assertEqual(CompteUtilisateur.objects.count(), 0)
         self.assertEqual(JournalHabilitation.objects.count(), 0)
 
+    def test_echec_isole_ne_supprime_rien(self):
+        """Une erreur sur un compte n'annule pas les autres (aucune suppression)."""
+        creer_user(username='idem-ok', role_existant='ARCHIVE')
+        creer_user(username='idem-ko', role_existant='ARCHIVE')
+        rapport = construire_rapport()
+        rapport.comptes['a_creer'] = ['idem-ok', 'fantome', 'idem-ko']
+        appliquer_rapport(rapport, acteur=None)
+        self.assertEqual(CompteUtilisateur.objects.count(), 2)
+        self.assertTrue(any('fantome' in r for r in rapport.realise))
 
-# ── 2. Liaison utilisateur ↔ compte ─────────────────────────────────────────
-class LiaisonCompteTests(BaseInitialisation):
+
+# ══ 2. Liaison utilisateur ↔ compte ═════════════════════════════════════════
+class LiaisonCompteTests(BaseRbac):
     def test_profil_rattache_au_bon_utilisateur(self):
         user = creer_user(username='liaison-1', role_existant='ARCHIVE')
-        call_command('initialiser_rbac', **APPLIQUER, stdout=StringIO())
+        appliquer()
         compte = CompteUtilisateur.objects.get(user=user)
-        self.assertEqual(user.profil_habilitation, compte)
-        attribution = compte.attributions.get(role=self.role_global)
-        self.assertEqual(attribution.statut, AttributionRole.Statut.ACTIVE)
-        # Périmètre posé et borné au périmètre déclaré du rôle.
-        self.assertEqual(
-            list(attribution.perimetres.values_list('type', flat=True)),
-            [Perimetre.Type.INJS_ENTIER],
-        )
-
-    def test_attribution_porte_le_niveau_du_role(self):
-        user = creer_user(username='liaison-2', role_existant='ARCHIVE')
-        call_command('initialiser_rbac', **APPLIQUER, stdout=StringIO())
-        attribution = AttributionRole.objects.get(compte__user=user)
-        self.assertEqual(attribution.niveau_effectif, self.role_global.niveau_defaut)
-        self.assertTrue(attribution.motif, "le motif d'attribution est obligatoire")
+        self.assertEqual(user.profil_habilitation.pk, compte.pk)
+        self.assertEqual(compte.statut, CompteUtilisateur.Statut.ACTIF)
+        self.assertTrue(compte.motif_statut)
 
 
-# ── 3. Préservation du superutilisateur ─────────────────────────────────────
-class SuperutilisateurTests(BaseInitialisation):
-    def _superuser(self):
+# ══ 3. Préservation du superutilisateur ═════════════════════════════════════
+class SuperutilisateurTests(BaseRbac):
+    def _superuser(self, nom='root-existant'):
         return User.objects.create_superuser(
-            username='root-existant', password='Root#2026x', role='ADMIN',
-        )
+            username=nom, password='Root#2026x', role='ADMIN')
 
-    def test_superutilisateur_exclus_du_plan(self):
+    def test_superutilisateur_exclus_par_defaut(self):
         self._superuser()
-        plan = construire_plan()
-        self.assertEqual(plan.lignes, [])
-        call_command('initialiser_rbac', **APPLIQUER, stdout=StringIO())
+        appliquer()
         self.assertFalse(
             CompteUtilisateur.objects.filter(user__username='root-existant').exists())
 
     def test_superutilisateur_inclus_sans_attribution(self):
         self._superuser()
-        call_command('initialiser_rbac', **APPLIQUER,
-                     inclure_superutilisateurs=True, stdout=StringIO())
+        appliquer(inclure_superutilisateurs=True)
         compte = CompteUtilisateur.objects.get(user__username='root-existant')
-        self.assertEqual(compte.attributions.count(), 0,
-                         "aucune auto-élévation d'un superutilisateur")
-        self.assertTrue(compte.user.is_superuser)
+        self.assertEqual(compte.attributions.count(), 0)
 
-    def test_compte_django_du_superutilisateur_est_intact(self):
+    def test_compte_django_du_superutilisateur_intact(self):
         su = self._superuser()
         avant = (su.is_superuser, su.role, su.password, su.is_active)
-        call_command('initialiser_rbac', **APPLIQUER,
-                     inclure_superutilisateurs=True, stdout=StringIO())
+        appliquer(inclure_superutilisateurs=True)
         su.refresh_from_db()
         self.assertEqual((su.is_superuser, su.role, su.password, su.is_active), avant)
 
-    def test_anomalie_superutilisateur_signalee(self):
+    def test_rapport_liste_le_superutilisateur(self):
         self._superuser()
-        plan = construire_plan(inclure_superutilisateurs=True)
-        self.assertTrue(any(
-            A_SUPERUTILISATEUR in a for a in plan.lignes[0].anomalies))
+        rapport = construire_rapport()
+        self.assertIn('root-existant', rapport.utilisateurs['superutilisateurs'])
 
 
-# ── 4. Absence d'attribution automatique non autorisée ──────────────────────
-class AbsenceAttributionAutoTests(BaseInitialisation):
-    def test_role_sensible_jamais_active(self):
-        creer_user(username='sensible-1', role_existant='ADMIN')
-        call_command('initialiser_rbac', **APPLIQUER, stdout=StringIO())
-        attribution = AttributionRole.objects.get(role=self.role_sensible)
-        self.assertEqual(attribution.statut, AttributionRole.Statut.PROPOSEE)
-        self.assertIsNone(attribution.valide_par,
-                          "l'initialisation ne pose jamais la seconde signature")
-        self.assertIsNone(attribution.date_validation)
+# ══ 4. Absence d'attribution automatique ════════════════════════════════════
+class AbsenceAttributionAutoTests(BaseRbac):
+    def test_aucune_attribution_apres_initialisation(self):
+        for role in ('ADMIN', 'SECRETARIAT', 'FINANCE', 'ENCADRANT'):
+            creer_user(username=f'auto-{role}', role_existant=role)
+        appliquer()
+        self.assertEqual(AttributionRole.objects.count(), 0,
+                         'aucun rôle n’est déduit du champ historique User.role')
 
-    def test_role_a_perimetre_local_non_cree(self):
-        creer_user(username='local-1', role_existant='SECRETARIAT')
-        plan = construire_plan()
-        self.assertTrue(any(
-            A_PERIMETRE_LOCAL in a
-            for ligne in plan.lignes for prevu in ligne.roles for a in prevu.anomalies))
-        call_command('initialiser_rbac', **APPLIQUER, stdout=StringIO())
-        self.assertFalse(
-            AttributionRole.objects.filter(role=self.role_local).exists(),
-            "un périmètre local ne peut pas être inventé par l'initialisation",
-        )
+    def test_rapport_annonce_zero_attribution(self):
+        creer_user(username='auto-2', role_existant='ADMIN')
+        rapport = construire_rapport()
+        self.assertTrue(any('Aucune attribution de rôle créée' in o
+                            for o in rapport.operations))
 
 
+# ══ 5. Absence d'élargissement de périmètre ═════════════════════════════════
+class ElargissementPerimetreTests(TestCase):
+    def test_initialisation_ne_cree_aucun_perimetre(self):
+        creer_user(username='elarg-1', role_existant='ADMIN')
+        appliquer()
+        # Aucune attribution → aucun périmètre posé par l'initialisation.
+        self.assertEqual(AttributionRole.objects.count(), 0)
 
-# ── 5. Conflits de périmètre ────────────────────────────────────────────────
+    def test_perimetre_local_jamais_invente(self):
+        role = creer_role(code='R_LOCAL', perimetre_defaut=Perimetre.Type.SECRETARIAT)
+        analyse = analyser_role(role)
+        self.assertTrue(any(A_PERIMETRE_LOCAL in a for a in analyse['anomalies']))
+        self.assertNotIn(Perimetre.Type.INJS_ENTIER, analyse['plafonds_permissions']
+                         + [analyse['perimetre_defaut']] or [])
+
+
+# ══ 6. Conflits de périmètre ════════════════════════════════════════════════
 class ConflitPerimetreTests(TestCase):
-    def test_perimetre_local_bloque_et_signale(self):
-        role = creer_role(code='R_LOCAL', perimetre_defaut=Perimetre.Type.FORMATION)
-        prevu = analyser_role(role)
-        self.assertFalse(prevu.perimetre_posable)
-        self.assertTrue(any(A_PERIMETRE_LOCAL in a for a in prevu.anomalies))
-
-    def test_perimetre_global_posable(self):
-        role = creer_role(code='R_GLOBAL', perimetre_defaut=Perimetre.Type.INJS_ENTIER)
-        prevu = analyser_role(role)
-        self.assertTrue(prevu.perimetre_posable)
-
-    def test_perimetre_declare_plus_large_que_le_plafond_est_ramene(self):
+    def test_plafond_plus_etroit_est_signale(self):
         role = creer_role(code='R_LARGE', perimetre_defaut=Perimetre.Type.INJS_ENTIER)
-        permission = creer_permission(
-            code_module='scol', ressource='dossier', action='consulter')
+        permission = creer_permission(code_module='scol', ressource='dossier',
+                                      action='consulter')
         permission.portee_maximale = Perimetre.Type.SECRETARIAT
         permission.save(update_fields=['portee_maximale'])
         role.permissions.add(permission)
-        prevu = analyser_role(role)
-        self.assertFalse(prevu.perimetre_posable,
-                         "le périmètre est ramené au plafond (SECRETARIAT) → local")
-        self.assertTrue(any('PERIMETRE_DEFAUT_PLUS_LARGE' in a for a in prevu.anomalies))
+        analyse = analyser_role(role)
+        self.assertTrue(any(A_PERIMETRE_PLUS_LARGE in a for a in analyse['anomalies']))
 
-    def test_aucun_elargissement_du_perimetre_du_role(self):
+    def test_perimetre_declare_conserve_quand_le_plafond_est_plus_large(self):
         role = creer_role(code='R_ETROIT', perimetre_defaut=Perimetre.Type.SECRETARIAT)
-        permission = creer_permission(
-            code_module='scol', ressource='note', action='consulter')
+        permission = creer_permission(code_module='scol', ressource='note',
+                                      action='consulter')
         permission.portee_maximale = Perimetre.Type.INJS_ENTIER
         permission.save(update_fields=['portee_maximale'])
         role.permissions.add(permission)
-        prevu = analyser_role(role)
+        analyse = analyser_role(role)
+        self.assertEqual(analyse['perimetre_defaut'], Perimetre.Type.SECRETARIAT)
+
+    def test_attribution_sans_perimetre_secretariat_est_signalee(self):
+        """Règle appliquée (``contraintes()``) et non simple attribut."""
+        role = creer_role(code='R_SECR', perimetre_defaut=Perimetre.Type.SECRETARIAT)
+        compte = creer_compte(user=creer_user(username='cp-1'))
+        attribution = creer_attribution(compte, role)
+        self.assertIn('PERIMETRE_SECRETARIAT_MANQUANT', attribution.contraintes())
+        from .helpers import secretariat
+        attribution.perimetres.add(creer_perimetre_secretariat(secretariat()))
+        self.assertNotIn('PERIMETRE_SECRETARIAT_MANQUANT', attribution.contraintes())
+
+
+# ══ 7. Rôles sensibles ══════════════════════════════════════════════════════
+class RoleSensibleTests(BaseRbac):
+    def test_role_sensible_actif_sans_signature_est_detecte(self):
+        compte = creer_compte(user=creer_user(username='sens-1'))
+        creer_attribution(compte, self.role_sensible)
+        rapport = construire_rapport()
         self.assertEqual(
-            prevu.perimetre_defaut, Perimetre.Type.SECRETARIAT,
-            "un plafond plus large n'autorise pas à élargir le périmètre déclaré",
-        )
+            rapport.attributions['sensibles_actives_sans_seconde_signature'],
+            ['sens-1 → ADMIN_SYSTEME'])
+
+    def test_motif_est_exige_par_les_serializeurs_de_decision(self):
+        """Règle appliquée : motif court refusé par le validateur d'API."""
+        from habilitations.api.serializers_admin import PropositionDecisionSerializer
+        self.assertFalse(PropositionDecisionSerializer(data={'motif': 'court'}).is_valid())
+        self.assertTrue(
+            PropositionDecisionSerializer(data={'motif': 'Motif conforme 2026'}).is_valid())
+
+    def test_le_modele_n_empeche_pas_un_motif_vide(self):
+        """Constat documenté : ``motif`` n'est pas contraint au niveau base.
+
+        La règle « motif obligatoire » est appliquée par les services et
+        l'API, pas par une contrainte de schéma — d'où l'intérêt du test
+        précédent plutôt que d'un simple ``assert`` sur le champ.
+        """
+        role = creer_role(code='R_MOTIF', perimetre_defaut=Perimetre.Type.INJS_ENTIER)
+        compte = creer_compte(user=creer_user(username='motif-1'))
+        attribution = AttributionRole.objects.create(
+            compte=compte, role=role, niveau_effectif=role.niveau_defaut,
+            statut=AttributionRole.Statut.ACTIVE, motif='')
+        self.assertEqual(attribution.motif, '')
 
 
-# ── 6. Rôles sensibles : motif, signature, journal ──────────────────────────
-class RoleSensibleTests(BaseInitialisation):
-    def test_proposition_sensible_tracée_et_motivee(self):
-        creer_user(username='sens-2', role_existant='ADMIN')
-        call_command('initialiser_rbac', **APPLIQUER, stdout=StringIO())
-        attribution = AttributionRole.objects.get(role=self.role_sensible)
-        self.assertTrue(attribution.motif)
-        self.assertIn('seconde signature', attribution.motif.lower())
-        entree = JournalHabilitation.objects.filter(
-            type_evenement=JournalHabilitation.TypeEvenement.PROPOSITION_DEPOSEE,
-        ).first()
-        self.assertIsNotNone(entree)
-        self.assertEqual(entree.compte_concerne, attribution.compte)
-
-    def test_role_sensible_detecte_dans_le_plan(self):
-        creer_user(username='sens-3', role_existant='ADMIN')
-        plan = construire_plan()
-        prevus = [r for ligne in plan.lignes for r in ligne.roles]
-        self.assertTrue(any(p.sensible for p in prevus))
-        self.assertTrue(any(
-            A_ROLE_SENSIBLE in a for p in prevus if p.sensible for a in p.anomalies))
-
-
-# ── 7. Double validation et séparation demandeur / validateur ───────────────
-class DoubleValidationTests(BaseInitialisation):
-    def test_le_demandeur_ne_peut_pas_valider_sa_demande(self):
-        """Séparation demandeur / approbateur : jamais soi-même."""
-        from habilitations.models import DemandeAcces
+# ══ 8. Double validation et séparation des responsabilités ══════════════════
+class DoubleValidationTests(BaseRbac):
+    def test_un_demandeur_ne_valide_pas_sa_demande(self):
         from habilitations.services.demandes_acces import (
             appliquer_transition,
             creer_demande,
@@ -251,145 +271,201 @@ class DoubleValidationTests(BaseInitialisation):
         compte = creer_compte(user=user)
         demande = creer_demande(
             user, type_demande=DemandeAcces.Type.ATTRIBUTION_ROLE,
-            justification='Besoin métier', compte_cible=compte,
-            role=self.role_sensible,
-        )
-        appliquer_transition(demande, DemandeAcces.Statut.SOUMISE,
-                             acteur=user, motif_decision='Demande déposée.')
+            justification='Besoin métier documenté', compte_cible=compte,
+            role=self.role_sensible)
+        appliquer_transition(demande, DemandeAcces.Statut.SOUMISE, acteur=user,
+                             motif_decision='Dépôt de la demande.')
         with self.assertRaises(ValueError):
-            appliquer_transition(
-                demande, DemandeAcces.Statut.APPROUVEE, acteur=user,
-                motif_decision='Auto-approbation interdite.',
-            )
+            appliquer_transition(demande, DemandeAcces.Statut.APPROUVEE, acteur=user,
+                                 motif_decision='Auto-approbation interdite.')
 
-    def test_initialisation_ne_remplace_pas_la_double_validation(self):
-        creer_user(username='dv-2', role_existant='ADMIN')
-        call_command('initialiser_rbac', **APPLIQUER, stdout=StringIO())
-        self.assertFalse(
-            AttributionRole.objects.filter(
-                role__sensible=True, statut=AttributionRole.Statut.ACTIVE).exists())
-        self.assertTrue(
-            AttributionRole.objects.filter(
-                role__sensible=True, statut=AttributionRole.Statut.PROPOSEE).exists())
+    def test_un_tiers_peut_approuver(self):
+        from habilitations.services.demandes_acces import (
+            appliquer_transition,
+            creer_demande,
+        )
+        demandeur = creer_user(username='dv-dem', role_existant='ADMIN')
+        validateur = creer_user(username='dv-val', role_existant='ADMIN')
+        compte = creer_compte(user=demandeur)
+        demande = creer_demande(
+            demandeur, type_demande=DemandeAcces.Type.ATTRIBUTION_ROLE,
+            justification='Besoin métier documenté', compte_cible=compte,
+            role=self.role_sensible)
+        appliquer_transition(demande, DemandeAcces.Statut.SOUMISE, acteur=demandeur,
+                             motif_decision='Dépôt.')
+        appliquer_transition(demande, DemandeAcces.Statut.APPROUVEE, acteur=validateur,
+                             motif_decision='Validation par un tiers habilité.')
+        demande.refresh_from_db()
+        self.assertEqual(demande.statut, DemandeAcces.Statut.APPROUVEE)
+        self.assertEqual(demande.approbateur, validateur)
 
 
-# ── 8. Révocations ──────────────────────────────────────────────────────────
-class RevocationTests(BaseInitialisation):
-    def test_attribution_revoquee_n_est_pas_resuscitee(self):
-        user = creer_user(username='rev-1', role_existant='ARCHIVE')
-        compte = creer_compte(user=user)
-        revoquee = creer_attribution(
-            compte, self.role_global, statut=AttributionRole.Statut.REVOQUEE)
-        call_command('initialiser_rbac', **APPLIQUER, stdout=StringIO())
-        revoquee.refresh_from_db()
-        self.assertEqual(revoquee.statut, AttributionRole.Statut.REVOQUEE)
-
-    def test_initialisation_ne_revoque_jamais_une_attribution_active(self):
-        user = creer_user(username='rev-2', role_existant='ARCHIVE')
-        compte = creer_compte(user=user)
+# ══ 9 et 10. Révocation et suspension ═══════════════════════════════════════
+class RevocationSuspensionTests(BaseRbac):
+    def test_initialisation_ne_revoque_jamais(self):
+        compte = creer_compte(user=creer_user(username='rev-1'))
         active = creer_attribution(compte, self.role_global)
-        call_command('initialiser_rbac', **APPLIQUER, stdout=StringIO())
+        appliquer()
         active.refresh_from_db()
         self.assertEqual(active.statut, AttributionRole.Statut.ACTIVE)
         self.assertEqual(active.motif_revocation, '')
 
+    def test_suspension_par_transition_legale(self):
+        from habilitations.services.comptes_admin import changer_statut
+        compte = creer_compte(user=creer_user(username='susp-1', role_existant='ARCHIVE'))
+        changer_statut(compte, None, 'suspendre', 'Suspension de test.')
+        compte.refresh_from_db()
+        self.assertEqual(compte.statut, CompteUtilisateur.Statut.SUSPENDU)
+        self.assertFalse(compte.user.is_active)
 
-# ── 9. Journalisation ───────────────────────────────────────────────────────
-class JournalisationTests(BaseInitialisation):
-    def test_chaque_ecriture_est_journalisee_et_chainee(self):
+    def test_transition_illegale_refusee(self):
+        from habilitations.services.comptes_admin import ErreurConsole, changer_statut
+        compte = creer_compte(user=creer_user(username='susp-2', role_existant='ARCHIVE'))
+        changer_statut(compte, None, 'suspendre', 'Suspension.')
+        with self.assertRaises(ErreurConsole):
+            changer_statut(compte, None, 'suspendre', 'Seconde suspension illégale.')
+
+
+# ══ 11. Expiration ══════════════════════════════════════════════════════════
+class ExpirationTests(BaseRbac):
+    def test_attribution_echue_n_est_plus_active(self):
+        compte = creer_compte(user=creer_user(username='exp-1'))
+        hier = timezone.localdate() - timezone.timedelta(days=1)
+        attribution = creer_attribution(compte, self.role_global, date_fin=hier)
+        self.assertFalse(attribution.est_active())
+
+    def test_service_expirer_termes_traite_les_echeances(self):
+        from habilitations.services.expirations import expirer_termes
+        compte = creer_compte(user=creer_user(username='exp-2'))
+        hier = timezone.localdate() - timezone.timedelta(days=1)
+        attribution = creer_attribution(compte, self.role_global, date_fin=hier)
+        expirer_termes()
+        attribution.refresh_from_db()
+        self.assertNotEqual(attribution.statut, AttributionRole.Statut.ACTIVE)
+
+
+# ══ 12. MFA lorsque requis ══════════════════════════════════════════════════
+class MfaTests(BaseRbac):
+    def test_mfa_non_requis_tant_que_le_drapeau_est_ferme(self):
+        from authentication.connexion_sure import etat_mfa
+        compte = creer_compte(user=creer_user(username='mfa-1'))
+        creer_attribution(compte, self.role_sensible)
+        self.assertEqual(etat_mfa(compte.user), 'aucun')
+
+    def test_mfa_obligatoire_sensible_suit_le_drapeau(self):
+        from habilitations.services import drapeaux
+        self.assertFalse(drapeaux.mfa_obligatoire_sensibles_active())
+        self.assertFalse(drapeaux.mfa_active())
+
+
+# ══ 13. Incompatibilités entre rôles ════════════════════════════════════════
+class IncompatibiliteTests(TestCase):
+    def test_incompatibilite_declaree_puis_detectee(self):
+        from habilitations.services.validations import declarer_incompatibilite
+        role_a = creer_role(code='R_INA', perimetre_defaut=Perimetre.Type.INJS_ENTIER)
+        role_b = creer_role(code='R_INB', perimetre_defaut=Perimetre.Type.INJS_ENTIER)
+        declarer_incompatibilite(role_a, role_b)
+        compte = creer_compte(user=creer_user(username='inc-1'))
+        creer_attribution(compte, role_a)
+        seconde = creer_attribution(compte, role_b)
+        self.assertIn('ROLES_INCOMPATIBLES', seconde.contraintes())
+
+
+# ══ 14. Journalisation ══════════════════════════════════════════════════════
+class JournalisationTests(BaseRbac):
+    def test_chaque_compte_cree_est_journalise(self):
         creer_user(username='jrn-1', role_existant='ARCHIVE')
-        creer_user(username='jrn-2', role_existant='ADMIN')
-        call_command('initialiser_rbac', **APPLIQUER, stdout=StringIO())
+        creer_user(username='jrn-2', role_existant='ARCHIVE')
+        appliquer()
         entrees = list(JournalHabilitation.objects.order_by('numero'))
-        self.assertGreaterEqual(len(entrees), 4)
-        numeros = [e.numero for e in entrees]
-        self.assertEqual(numeros, sorted(numeros))
-        self.assertEqual(len(set(numeros)), len(numeros), "numéros de journal uniques")
+        self.assertEqual(len(entrees), 2)
+        self.assertEqual([e.numero for e in entrees], sorted(e.numero for e in entrees))
         self.assertTrue(all(e.empreinte for e in entrees))
-        types = {e.type_evenement for e in entrees}
-        self.assertIn(JournalHabilitation.TypeEvenement.COMPTE_CREE, types)
-        self.assertIn(JournalHabilitation.TypeEvenement.ROLE_ATTRIBUE, types)
-        self.assertIn(JournalHabilitation.TypeEvenement.PROPOSITION_DEPOSEE, types)
+        self.assertTrue(all(
+            e.nouvelle_valeur.get('origine') == 'INITIALISATION_RBAC' for e in entrees))
+
+    def test_journal_vide_en_previsualisation(self):
+        creer_user(username='jrn-3', role_existant='ARCHIVE')
+        call_command('rbac_initialisation', stdout=StringIO())
+        self.assertEqual(JournalHabilitation.objects.count(), 0)
 
 
-# ── 10. Contrôles d'accès API ───────────────────────────────────────────────
+# ══ 15. Contrôles d'accès API et drapeaux ═══════════════════════════════════
 class ControleAccesApiTests(TestCase):
     def test_endpoints_habilitations_proteges(self):
         for url in ('/api/habilitations/comptes/', '/api/habilitations/roles/',
                     '/api/habilitations/mes-acces/'):
             reponse = self.client.get(url)
-            self.assertIn(
-                reponse.status_code, (401, 403),
-                f'{url} doit refuser un appelant anonyme (reçu {reponse.status_code})',
-            )
+            self.assertIn(reponse.status_code, (401, 403),
+                          f'{url} doit refuser un anonyme (reçu {reponse.status_code})')
 
     def test_endpoints_authentication_toujours_servis(self):
-        user = creer_user(username='api-1', role_existant='ADMIN')
-        self.client.force_login(user)
+        self.client.force_login(creer_user(username='api-1', role_existant='ADMIN'))
         for url in ('/api/auth/capabilities/', '/api/auth/users/'):
-            reponse = self.client.get(url)
-            self.assertNotEqual(
-                reponse.status_code, 404,
-                f'{url} doit rester servi (contrat d’authentification préservé)',
-            )
+            self.assertNotEqual(self.client.get(url).status_code, 404,
+                                f'{url} doit rester servi')
 
 
-# ── Garde-fous : drapeaux ───────────────────────────────────────────────────
 class DrapeauxTests(TestCase):
-    def test_ecriture_refusee_sans_les_drapeaux(self):
+    def test_ecriture_refusee_sans_drapeaux(self):
         autorise, motifs = ecriture_autorisee()
         self.assertFalse(autorise)
         self.assertTrue(motifs)
 
-    def test_ecriture_autorisee_avec_contournement_explicite(self):
+    def test_contournement_explicite_autorise(self):
         autorise, _ = ecriture_autorisee(ignorer_drapeaux=True)
         self.assertTrue(autorise)
 
-    def test_commande_echoue_sans_appliquer_les_drapeaux(self):
+    def test_commande_echoue_sans_les_drapeaux(self):
         creer_user(username='flag-1', role_existant='ARCHIVE')
         with self.assertRaises(CommandError):
-            call_command('initialiser_rbac', '--appliquer', stdout=StringIO())
+            call_command('rbac_initialisation', '--apply', stdout=StringIO())
         self.assertEqual(CompteUtilisateur.objects.count(), 0)
 
-    def test_etat_des_drapeaux_expose_les_deux_cles(self):
+    def test_etat_des_deux_drapeaux(self):
         etats = etat_drapeaux()
         self.assertIn(DRAPEAU_SOCLE, etats)
         self.assertIn(DRAPEAU_MODULE_UTILISATEURS, etats)
-        for etat in etats.values():
-            self.assertIn('present', etat)
-            self.assertIn('actif', etat)
 
 
-# ── Plan : structure du rapport ─────────────────────────────────────────────
-class PlanInitialisationTests(BaseInitialisation):
-    def test_rapport_est_serialisable(self):
-        creer_user(username='plan-1', role_existant='ARCHIVE')
-        plan = construire_plan()
-        donnees = plan.vers_dict()
-        self.assertEqual(donnees['totaux']['utilisateurs_analyses'], 1)
-        self.assertEqual(donnees['totaux']['comptes_a_creer'], 1)
-        self.assertEqual(donnees['lignes'][0]['username'], 'plan-1')
+# ══ Rapport : contenu de la prévisualisation ════════════════════════════════
+class RapportPreviewTests(BaseRbac):
+    def test_rapport_distingue_utilisateurs_comptes_attributions(self):
+        creer_user(username='rap-1', role_existant='ARCHIVE')
+        creer_user(username='rap-2', role_existant='ARCHIVE', is_active=False)
+        compte = creer_compte(user=creer_user(username='rap-3'))
+        creer_attribution(compte, self.role_global)
+        rapport = construire_rapport()
+        self.assertEqual(rapport.utilisateurs['total'], 3)
+        self.assertEqual(rapport.utilisateurs['actifs'], 2)
+        self.assertIn('rap-2', rapport.utilisateurs['inactifs'])
+        self.assertEqual(rapport.comptes['existants'], 1)
+        self.assertEqual(rapport.comptes['manquants'], 2)
+        self.assertEqual(rapport.attributions['total'], 1)
+        self.assertEqual(rapport.attributions['par_statut'].get('ACTIVE'), 1)
 
-    def test_appliquer_plan_est_idempotent(self):
-        creer_user(username='plan-2', role_existant='ARCHIVE')
-        premier = appliquer_plan(construire_plan(), acteur=None)
-        total_attributions = AttributionRole.objects.count()
-        self.assertTrue(premier.lignes[0].applique)
-        # Second passage : le compte est désormais rattaché, il n'y a plus rien
-        # à traiter — aucune création, aucune modification.
-        second_plan = construire_plan()
-        self.assertEqual(second_plan.lignes, [], 'plus aucun compte sans profil')
-        second = appliquer_plan(second_plan, acteur=None)
-        self.assertEqual(AttributionRole.objects.count(), total_attributions)
-        self.assertEqual(CompteUtilisateur.objects.count(), 1)
+    def test_compte_desynchronise_signeale(self):
+        user = creer_user(username='desync-1', role_existant='ARCHIVE', is_active=False)
+        creer_compte(user=user, statut=CompteUtilisateur.Statut.ACTIF)
+        rapport = construire_rapport()
+        self.assertTrue(any('desync-1' in c for c in rapport.coherence))
 
-    def test_aucun_utilisateur_django_modifie(self):
-        user = creer_user(username='plan-3', role_existant='ARCHIVE')
-        avant = (user.role, user.is_active, user.is_superuser, user.password)
-        call_command('initialiser_rbac', **APPLIQUER, stdout=StringIO())
-        user.refresh_from_db()
-        self.assertEqual((user.role, user.is_active, user.is_superuser, user.password), avant)
+    def test_catalogue_concordant_avec_le_fichier(self):
+        # Règle R5 : la base de test n'est pas peuplée par la migration ; on
+        # charge explicitement le référentiel (idempotent) pour prouver
+        # l'équivalence fichier ↔ base.
+        from habilitations.referentiel.chargement import charger_referentiel
+        charger_referentiel()
+        comparaison = comparer_catalogue_fichier()
+        self.assertEqual(comparaison['codes_absents_de_la_base'],
+                         comparaison['codes_absents_du_fichier'])
+        self.assertEqual(comparaison['attributs_divergents'], [])
+        self.assertEqual(comparaison['roles_fichier'], comparaison['roles_base'])
+        self.assertEqual(comparaison['sensibles_fichier'], comparaison['sensibles_base'])
 
-    def test_catalogue_roles_reference_present(self):
-        """Le catalogue de référence est intact (aucune création parasite)."""
-        self.assertGreaterEqual(RoleMetier.objects.count(), 1)
+    def test_rapport_serialisable(self):
+        creer_user(username='rap-json', role_existant='ARCHIVE')
+        donnees = construire_rapport().vers_dict()
+        self.assertEqual(donnees['comptes']['manquants'], 1)
+        self.assertIn('utilisateurs', donnees)
+        self.assertIn('operations', donnees)

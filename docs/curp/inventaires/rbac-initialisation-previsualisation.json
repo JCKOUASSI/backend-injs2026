@@ -1,0 +1,148 @@
+{
+  "horodatage": "2026-11-06T15:00:18+00:00",
+  "base": "/home/user/backend-injs2026/backend/db.sqlite3",
+  "drapeaux": {
+    "flag.lot01_socle_referentiels_rbac": {
+      "present": true,
+      "actif": false
+    },
+    "flag.curp_module_utilisateurs": {
+      "present": false,
+      "actif": false
+    }
+  },
+  "ecriture_autorisee": false,
+  "motifs_ecriture": [
+    "DRAPEAU_INACTIF : flag.lot01_socle_referentiels_rbac est fermé.",
+    "DRAPEAU_ABSENT : flag.curp_module_utilisateurs n’existe pas dans les paramètres."
+  ],
+  "utilisateurs": {
+    "total": 34,
+    "actifs": 34,
+    "inactifs": [],
+    "superutilisateurs": [
+      "admin",
+      "jckouassi"
+    ]
+  },
+  "comptes": {
+    "existants": 0,
+    "manquants": 32,
+    "a_creer": [
+      "dfrc",
+      "f001",
+      "f002",
+      "f003",
+      "injs",
+      "p001",
+      "p002",
+      "p003",
+      "p004",
+      "p005",
+      "p006",
+      "p007",
+      "p008",
+      "p009",
+      "p010",
+      "secretariat",
+      "superviseur1",
+      "superviseur2",
+      "temoin_admin",
+      "temoin_archive",
+      "temoin_auditeur",
+      "temoin_chef_cpfae_admin",
+      "temoin_chef_secretariat_a",
+      "temoin_chef_secretariat_b",
+      "temoin_cpfae_admin",
+      "temoin_direction",
+      "temoin_encadrant",
+      "temoin_finance",
+      "temoin_formateur",
+      "temoin_secretariat_a",
+      "temoin_secretariat_b",
+      "temoin_superviseur"
+    ],
+    "superutilisateurs_exclus": true
+  },
+  "attributions": {
+    "total": 0,
+    "par_statut": {},
+    "sensibles_actives_sans_seconde_signature": [],
+    "violations_contraintes": []
+  },
+  "roles": {
+    "total": 81,
+    "actifs": 81,
+    "sensibles": 22,
+    "permissions": 1157,
+    "anomalies": [
+      "SCOLARITE : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « SECRETARIAT » exige un objet métier.",
+      "RESPONSABLE_PEDAGOGIQUE : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+      "CHEF_DEPARTEMENT : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « DIRECTION » exige un objet métier.",
+      "GESTIONNAIRE_COURRIERS : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « SERVICE » exige un objet métier.",
+      "ENSEIGNANT : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « MODULE_ECUE » exige un objet métier.",
+      "RESPONSABLE_UE_ECUE : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « MODULE_ECUE » exige un objet métier.",
+      "GESTIONNAIRE_CHARGES : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+      "VACATAIRE : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « MODULE_ECUE » exige un objet métier.",
+      "GESTIONNAIRE_NOTES : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+      "MEMBRE_JURY : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+      "RESPONSABLE_JURY : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+      "SECRETAIRE_JURY : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+      "GESTIONNAIRE_PATRIMOINE : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « SITE » exige un objet métier.",
+      "GESTIONNAIRE_ESPACES : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « SITE » exige un objet métier.",
+      "RESPONSABLE_FORMATION : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+      "GESTIONNAIRE_GROUPES : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+      "GESTIONNAIRE_COURS : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+      "GESTIONNAIRE_MAQUETTES : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+      "RESPONSABLE_PARCOURS : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « PARCOURS » exige un objet métier.",
+      "AGENT_ADMISSIONS : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « SECRETARIAT » exige un objet métier.",
+      "AGENT_INSCRIPTIONS : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « SECRETARIAT » exige un objet métier.",
+      "GESTIONNAIRE_ETUDIANTS : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « SECRETARIAT » exige un objet métier.",
+      "GESTIONNAIRE_STAGES : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier."
+    ],
+    "comparaison_fichier": {
+      "roles_fichier": 81,
+      "roles_base": 81,
+      "sensibles_fichier": 22,
+      "sensibles_base": 22,
+      "codes_absents_de_la_base": [],
+      "codes_absents_du_fichier": [],
+      "attributs_divergents": []
+    }
+  },
+  "coherence": [],
+  "doublons": [],
+  "anomalies_perimetre": [
+    "Toutes les permissions actives plafonnent à INJS_ENTIER : le plafond ne restreint aucun rôle — la seule borne est le périmètre de l’attribution. À arbitrer avant toute montée en charge.",
+    "SCOLARITE : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « SECRETARIAT » exige un objet métier.",
+    "RESPONSABLE_PEDAGOGIQUE : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+    "CHEF_DEPARTEMENT : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « DIRECTION » exige un objet métier.",
+    "GESTIONNAIRE_COURRIERS : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « SERVICE » exige un objet métier.",
+    "ENSEIGNANT : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « MODULE_ECUE » exige un objet métier.",
+    "RESPONSABLE_UE_ECUE : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « MODULE_ECUE » exige un objet métier.",
+    "GESTIONNAIRE_CHARGES : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+    "VACATAIRE : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « MODULE_ECUE » exige un objet métier.",
+    "GESTIONNAIRE_NOTES : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+    "MEMBRE_JURY : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+    "RESPONSABLE_JURY : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+    "SECRETAIRE_JURY : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+    "GESTIONNAIRE_PATRIMOINE : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « SITE » exige un objet métier.",
+    "GESTIONNAIRE_ESPACES : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « SITE » exige un objet métier.",
+    "RESPONSABLE_FORMATION : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+    "GESTIONNAIRE_GROUPES : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+    "GESTIONNAIRE_COURS : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+    "GESTIONNAIRE_MAQUETTES : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier.",
+    "RESPONSABLE_PARCOURS : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « PARCOURS » exige un objet métier.",
+    "AGENT_ADMISSIONS : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « SECRETARIAT » exige un objet métier.",
+    "AGENT_INSCRIPTIONS : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « SECRETARIAT » exige un objet métier.",
+    "GESTIONNAIRE_ETUDIANTS : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « SECRETARIAT » exige un objet métier.",
+    "GESTIONNAIRE_STAGES : PERIMETRE_LOCAL_NON_AUTO_POSABLE : « FORMATION » exige un objet métier."
+  ],
+  "operations": [
+    "Créer 32 compte(s) RBAC manquant(s) : dfrc, f001, f002, f003, injs, p001, p002, p003, p004, p005, p006, p007, p008, p009, p010, secretariat, superviseur1, superviseur2, temoin_admin, temoin_archive…",
+    "Aucune attribution de rôle créée (règle : aucun rôle déduit de User.role).",
+    "Aucune modification d’utilisateur Django, de compte existant ou d’attribution existante.",
+    "Aucune réinitialisation ni réimportation du catalogue de rôles."
+  ],
+  "realise": []
+}
