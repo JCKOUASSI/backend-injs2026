@@ -1,5 +1,25 @@
 name: CI
 
+# Intégration continue de la branche de livraison.
+#
+# Alignement des environnements (mission 02) :
+#   * Python 3.12 = version de l'image de production `python:3.12-slim`.
+#     Toute divergence serait un angle mort : les tests valideraient une
+#     version qui n'est jamais déployée.
+#   * PostgreSQL 16 en service, comme en production (jamais SQLite).
+#
+# Avertissements CONNUS et JUSTIFIÉS, non bloquants :
+#   * `drf_spectacular.W001/W002` (~1 100 occurrences) : infos de type non
+#     résolues et serializers non inférables lors de la génération du schéma
+#     OpenAPI. Aucun impact à l'exécution ; le schéma reste publié avec ces
+#     approximations documentées. `check --deploy` ne renvoie donc aucune
+#     erreur, seulement des avertissements.
+#   * `security.W008` (SECURE_SSL_REDIRECT non activé) : choix VOLONTAIRE.
+#     Le TLS est terminé par Nginx Proxy Manager, qui transmet
+#     `X-Forwarded-Proto` ; `SECURE_PROXY_SSL_HEADER` est configuré en
+#     conséquence et les cookies sont sécurisés. Activer la redirection
+#     provoquerait une boucle derrière le proxy.
+#
 # Intégration continue minimale mais bloquante.
 #
 # Créée à la suite de l'audit backend : le dépôt n'avait aucun workflow, ce qui
@@ -62,7 +82,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: pip
           cache-dependency-path: backend/requirements.txt
 
@@ -71,6 +91,15 @@ jobs:
 
       - name: Vérifier la configuration Django
         run: python manage.py check
+
+      - name: Intégrité des dépendances
+        run: pip check
+
+      - name: Contrôle de déploiement (avertissements connus tolérés)
+        env:
+          DJANGO_ALLOWED_HOSTS: 'injs.badge-qr-code.pro'
+          CSRF_TRUSTED_ORIGINS: 'https://injs.badge-qr-code.pro'
+        run: python manage.py check --deploy
 
       - name: Aucune migration manquante
         run: python manage.py makemigrations --check --dry-run
@@ -152,3 +181,6 @@ jobs:
 
       - name: Tests
         run: npx vitest run
+
+      - name: Construction de production
+        run: npm run build

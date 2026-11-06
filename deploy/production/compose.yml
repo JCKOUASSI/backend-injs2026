@@ -40,6 +40,24 @@ services:
       PORT: "8000"
       GUNICORN_WORKERS: "${GUNICORN_WORKERS:-auto}"
       GUNICORN_TIMEOUT: "${GUNICORN_TIMEOUT:-120}"
+      # ── BLOCAGE B2 : SKIP_DB_SETUP est TRANSMIS au conteneur ──────────────
+      # Sans cette ligne, l'entrypoint appliquait `manage.py migrate`
+      # IMPLICITEMENT au démarrage de la production (la variable documentée
+      # dans .env.example n'atteignait jamais le processus).
+      # Défaut sûr : true -> aucune migration implicite.
+      # Mettre SKIP_DB_SETUP=false dans .env pour autoriser les migrations au
+      # démarrage (démarche déconseillée en production : préférer l'exécution
+      # explicite documentée dans
+      # docs/deploiement/mission-02/DEPLOY_INJS_MISSION_02_DOCKER.md).
+      SKIP_DB_SETUP: "${SKIP_DB_SETUP:-true}"
+      # Variables optionnelles : vides par défaut, donc sans effet. Les
+      # renseigner dans deploy/production/.env si les services correspondants
+      # sont utilisés.
+      REDIS_URL: "${REDIS_URL:-}"
+      BADGE_BASE_URL: "${BADGE_BASE_URL:-}"
+      PUBLIC_APP_URL: "${PUBLIC_APP_URL:-}"
+      # DJANGO_SUPERUSER_* sont VOLONTAIREMENT non transmis : aucun
+      # superutilisateur n'est créé automatiquement en production.
     volumes:
       - ${INJS_HOST_MEDIA_DIR:-injs_media}:/app/media
       - ${INJS_HOST_STATIC_DIR:-injs_staticfiles}:/app/staticfiles

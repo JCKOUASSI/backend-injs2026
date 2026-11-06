@@ -121,28 +121,50 @@ class SeedEdtDemoTests(TestCase):
         })
 
     def test_seances_aujourdhui_et_kpi_reellement_mesures(self):
+        # Contexte temporel UNIQUE et déterministe : les données semées et le
+        # tableau de bord doivent être évalués au même instant de référence.
+        # Sans ce patch commun, le tableau de bord se calcule à la date réelle
+        # de la machine : `taux_assiduite_moyen` vaut alors None, ce qui est le
+        # comportement normal du service (aucun taux sans dénominateur) mais
+        # faisait échouer le test à partir du 4 novembre 2026. Le test ne doit
+        # jamais dépendre du jour d'exécution.
         self.seed()
         client = APIClient()
         client.force_authenticate(self.admin)
         with patch(COMMAND, return_value=NOW):
             res = client.get('/api/presences/seances-edt/supervision/', {'date': '2026-11-03'})
-        self.assertEqual(res.status_code, 200)
-        self.assertEqual(len(res.data['seances']), 6)
-        self.assertTrue(all(s['est_exemple'] for s in res.data['seances']))
-        self.assertGreater(res.data['resume']['participants_presents'], 0)
-        self.assertTrue(all(s['presences']['source_exemple'] > 0 or s['statut'] == 'A_VENIR'
-                            for s in res.data['seances']))
-        self.assertGreater(Pointage.objects.filter(date_journee=NOW.date()).count(), 0)
-        res = client.get('/api/dashboard/overview/')
-        self.assertIsNotNone(res.data['kpis']['taux_presence'])
-        res = client.get('/api/dashboard/presences/')
-        self.assertIsNotNone(res.data['kpis']['taux_assiduite_moyen'])
-        from config.admin_dashboard import _build_admin_charts
-        charts = _build_admin_charts()
-        self.assertIsNotNone(charts['pointages_mensuels'])
-        self.assertIsNotNone(charts['sessions_mensuelles'])
-        self.assertNotEqual(charts['taux_presence'][-1]['display'], '—')
-        self.assertGreater(charts['taux_presence'][-2]['presents'], 0)
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(len(res.data['seances']), 6)
+            self.assertTrue(all(s['est_exemple'] for s in res.data['seances']))
+            self.assertGreater(res.data['resume']['participants_presents'], 0)
+            self.assertTrue(all(s['presences']['source_exemple'] > 0 or s['statut'] == 'A_VENIR'
+                                for s in res.data['seances']))
+            self.assertGreater(Pointage.objects.filter(date_journee=NOW.date()).count(), 0)
+
+        # Le tableau de bord est évalué à la MÊME date de référence que les
+        # données semées (2026-11-03) : sans ce patch, il se calcule à la date
+        # réelle de la machine et `taux_assiduite_moyen` vaut None (comportement
+        # normal du service : aucun taux sans dénominateur).
+        # ATTENTION : ce patch ne doit PAS envelopper le semis — mesuré le
+        # 6 novembre 2026, un semis sous `localdate` figée ne rend que 3 séances
+        # mesurables (taux 83,3 %) au lieu de 6 (taux 41,7 %) : les données
+        # générées ne sont alors pas les mêmes. Le contexte ci-dessous reste
+        # déterministe et indépendant du jour d'exécution.
+        with patch('django.utils.timezone.localdate', return_value=NOW.date()):
+            res = client.get('/api/dashboard/overview/')
+            self.assertIsNotNone(res.data['kpis']['taux_presence'])
+
+            res = client.get('/api/dashboard/presences/')
+            self.assertEqual(res.data['date'], str(NOW.date()))
+            self.assertEqual(res.data['kpis']['taux_assiduite_moyen'], 41.7)
+            self.assertEqual(res.data['kpis']['presence_seances_mesurees'], 6)
+
+            from config.admin_dashboard import _build_admin_charts
+            charts = _build_admin_charts()
+            self.assertIsNotNone(charts['pointages_mensuels'])
+            self.assertIsNotNone(charts['sessions_mensuelles'])
+            self.assertNotEqual(charts['taux_presence'][-1]['display'], '—')
+            self.assertGreater(charts['taux_presence'][-2]['presents'], 0)
 
     def test_idempotence_et_corrections_manuelles_conservees(self):
         self.seed()

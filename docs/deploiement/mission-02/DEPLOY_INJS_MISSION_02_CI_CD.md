@@ -1,0 +1,120 @@
+# MISSION 02 — RÉCONCILIATION DES WORKFLOWS ET VALIDATION CI
+
+**Date** : 6 novembre 2026 · **Branche** : `arena/4524a57c-backend-injs2026`
+**Objet** : blocages **B3** (workflows) et **B4** (validation CI), cohérence
+**Python 3.12** (§9).
+
+---
+
+## 1. ÉTAT DES LIEUX (B3)
+
+| Branche | Workflows présents |
+|---|---|
+| `arena/4524a57c-backend-injs2026` (livraison) | `ci.yml` |
+| `origin/main` | `ci.yml`, `publish-injs-lmd.yml`, `deploy-injs-lmd.yml` |
+
+Vérification préalable **avant toute réconciliation** :
+
+```
+$ git diff origin/main -- .github/workflows/ci.yml
+(aucune différence)
+```
+
+Le `ci.yml` de la branche était **identique** à celui de `main` : le rapporter
+depuis `main` n'écrase donc aucune modification récente. Les deux workflows
+manquants ont été repris **tels quels** depuis `origin/main` (aucune réécriture
+de leur logique), avec un ajout de sécurité décrit au §3.
+
+Références vérifiées dans `publish-injs-lmd.yml` : `actions/checkout@v4`,
+`docker/setup-buildx-action@v3`, `docker/login-action@v3`,
+`docker/build-push-action@v6`, secrets `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN`.
+Contextes de build : `./backend` et `./frontend` — cohérents avec les
+Dockerfiles et avec les `.dockerignore` créés dans cette mission.
+
+## 2. CI RECONFIGURÉE (B4)
+
+Fichier : `.github/workflows/ci.yml` — modifications :
+
+| Point | Avant | Après |
+|---|---|---|
+| Version Python | `3.11` | **`3.12`** (version de l'image `python:3.12-slim`) |
+| Intégrité des dépendances | absente | `pip check` |
+| Contrôle de déploiement | `manage.py check` seul | `check` **et** `check --deploy` (hôte `injs.badge-qr-code.pro`) |
+| Build frontend | absent | `npm run build` |
+| Justifications | — | en-tête documentant les avertissements OpenAPI et le choix `SECURE_SSL_REDIRECT` |
+
+Déjà en place et conservé : `makemigrations --check --dry-run`,
+`manage.py check`, `check_repo_hygiene`, `collectstatic`, suite de tests
+complète (`manage.py test`) sur **PostgreSQL 16** (moteur de production),
+artefact du journal de tests, annotations `::error` des échecs.
+
+### Couverture exigée par la mission
+
+| Exigence | Implémentation |
+|---|---|
+| Tests backend | `python manage.py test` — **tous** les tests, aucun groupe exclu |
+| Vérification des migrations | `makemigrations --check --dry-run` |
+| Contrôle des dépendances | `pip check` |
+| `check --deploy` | job `backend`, étape dédiée |
+| Installation reproductible | `npm ci` (lockfile v3) |
+| Tests frontend | `npx vitest run` |
+| ESLint | `npm run lint` |
+| Build de production | `npm run build` |
+
+**Règle appliquée** : la CI ne sera déclarée verte que si **tous** les tests
+sont exécutés et réussis. Le déclenchement est `push` (branche `main`),
+`pull_request` et `workflow_dispatch` — un push sur la branche de livraison
+déclenche donc l'exécution via l'événement `pull_request` de la PR #5.
+
+## 3. PUBLICATION : GARDE-FOU (mission 02 — aucune publication)
+
+`publish-injs-lmd.yml` est présent mais **ne peut pas se déclencher par
+mégarde** :
+
+1. **Déclenchement manuel** : un champ `confirmation` a été ajouté ; les deux
+   jobs de construction portent désormais
+
+   ```yaml
+   if: >-
+     github.event_name == 'push' ||
+     inputs.confirmation == 'PUBLIER-IMAGES'
+   ```
+
+   Sans `PUBLIER-IMAGES` saisi, le workflow s'arrête **sans rien construire**.
+2. **Déclenchement automatique** : limité aux tags `deploy-*` — **aucun tag de
+   ce type n'a été créé pendant cette mission** et aucun ne sera poussé sans
+   validation humaine.
+
+Tags produits : `<SHA Git complet>` (immuable, traçable au commit) + `stable`
+(pointeur de commodité, jamais utilisé seul en production).
+
+`deploy-injs-lmd.yml` (déploiement VPS) est repris à l'identique : déclenchement
+**manuel uniquement**, environnement GitHub `production` (approbation requise),
+modes `inventaire` / `sauvegarde` / `plan` / `deployer` / `rollback`, avec le mot
+de confirmation `DEPLOYER`.
+
+**Aucun des deux workflows n'a été exécuté pendant cette mission.**
+
+## 4. COHÉRENCE PYTHON 3.12 (§9)
+
+| Environnement | Version | Statut |
+|---|---|---|
+| Image Docker backend | `python:3.12-slim` | ✅ déjà 3.12 |
+| CI GitHub Actions | **3.12** | ✅ aligné (modification de cette mission) |
+| Environnement de développement de référence | **3.12** déclaré (`backend/.python-version`) | ⚠️ le bac à sable d'audit reste en 3.11.2 |
+| Scripts de contrôle | `./arena/tests_par_groupe.sh` (interpréteur du venv) | ✅ inchangé, exécute la même suite |
+
+**Anomalie documentée** : l'environnement d'audit (bac à sable) n'expose que
+Python 3.11.2 et l'installation d'un 3.12 y est impossible — le téléchargement
+des builds autonomes échoue sur une erreur TLS de l'infrastructure
+(`invalid peer certificate: UnknownIssuer` / `tls handshake eof`), le trafic
+sortant étant intercepté. La validation 3.12 est donc apportée par
+**l'exécution CI réelle** (§5), qui est aussi l'environnement de référence pour
+la livraison.
+
+Aucune version de Django ou de dépendance n'a été modifiée : `pip check` ne
+signale aucune dépendance cassée et les 30 paquets restent épinglés.
+
+## 5. RÉSULTATS DE L'EXÉCUTION CI
+
+*(section complétée après exécution — voir le rapport de mission)*

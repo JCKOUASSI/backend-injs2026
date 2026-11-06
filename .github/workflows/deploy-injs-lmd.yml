@@ -1,0 +1,203 @@
+name: Déploiement VPS INJS-LMD (manuel)
+
+# Déploiement CONTRÔLÉ de GET-INJS2026 sur le VPS de production.
+#
+# Principes :
+#   - déclenchement MANUEL uniquement (aucun déploiement automatique
+#     sur push/merge) ;
+#   - job rattaché à l'environnement GitHub `production` : configurer
+#     une approbation requise dans Settings → Environments → production
+#     pour qu'une validation humaine précède toute exécution ;
+#   - le tag d'image est explicite et immuable : `stable` et `latest`
+#     sont refusés par une étape de validation ;
+#   - connexion SSH par clé ED25519 avec StrictHostKeyChecking=yes et
+#     empreinte vérifiée (secret VPS_KNOWN_HOSTS) ;
+#   - le fichier .env du serveur (secrets applicatifs) n'est JAMAIS
+#     transféré ni écrasé : il est créé une seule fois sur le VPS ;
+#   - chaque étape s'arrête à la première erreur (set -euo pipefail) ;
+#   - la bascule Nginx Proxy Manager reste MANUELLE, hors workflow.
+#
+# Secrets requis (Settings → Secrets and variables → Actions) :
+#   SSH_HOST, SSH_USER, SSH_PORT, SSH_PRIVATE_KEY, VPS_KNOWN_HOSTS.
+#
+# Modes :
+#   inventaire  → état des lieux du VPS, lecture seule ;
+#   sauvegarde  → dump PostgreSQL horodaté et vérifié (pg_restore --list) ;
+#   plan        → migrate --plan + analyse des opérations destructrices ;
+#   deployer    → sauvegarde → plan → migrations validées → stack sur le
+#                 port de validation → contrôles de santé et comptages ;
+#   rollback    → arrête la nouvelle stack (jamais de suppression de
+#                 volumes, jamais de restauration de base).
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Opération à exécuter sur le VPS"
+        type: choice
+        required: true
+        default: "inventaire"
+        options:
+          - inventaire
+          - sauvegarde
+          - plan
+          - deployer
+          - rollback
+      tag_images:
+        description: "Tag Docker immuable à déployer (SHA Git complet) — requis pour le mode deployer"
+        type: string
+        required: false
+        default: ""
+      confirmation:
+        description: "Pour le mode deployer uniquement : taper DEPLOYER pour confirmer"
+        type: string
+        required: false
+        default: ""
+
+concurrency:
+  group: deploiement-production-injs
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deployer:
+    name: "VPS — ${{ inputs.mode }}"
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 45
+    steps:
+      # Actions épinglées par SHA complet (chaîne d'approvisionnement).
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Valider les entrées (tag immuable, confirmation)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.mode }}" = "deployer" ]; then
+            tag="${{ inputs.tag_images }}"
+            if [ -z "$tag" ] || [ "$tag" = "stable" ] || [ "$tag" = "latest" ]; then
+              echo "::error::Tag d'image invalide (« $tag ») : un SHA Git complet publié est requis, jamais stable/latest."
+              exit 1
+            fi
+            if ! printf '%s' "$tag" | grep -Eq '^[0-9a-f]{40}$|^v?[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9.-]+)?$'; then
+              echo "::error::Format de tag non reconnu : « $tag »."
+              exit 1
+            fi
+            if [ "${{ inputs.confirmation }}" != "DEPLOYER" ]; then
+              echo "::error::Confirmation absente : taper DEPLOYER dans le champ confirmation."
+              exit 1
+            fi
+          fi
+          echo "Entrées validées : mode=${{ inputs.mode }}"
+
+      - name: Installer la clé SSH et l'empreinte du serveur
+        shell: bash
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+          echo "Clé et known_hosts installés (aucun secret affiché)."
+
+      - name: Tester la connexion SSH (lecture seule)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o StrictHostKeyChecking=yes -o BatchMode=yes \
+              -p "${{ secrets.SSH_PORT }}" \
+              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+              'echo "Connexion SSH OK sur $(hostname)"; docker --version; docker compose version'
+
+      # Inventaire PRÉ-TRANSFERT : à ce stade, aucun fichier de la
+      # chaîne n'existe encore sur le VPS, l'inventaire est donc fait
+      # de commandes SSH de consultation pures. La référence métier
+      # unique de l'inventaire reste `deploy.sh inventaire` (utilisable
+      # dès que la chaîne est transférée, modes suivants) : les deux
+      # couvrent le même périmètre en lecture seule (RUNBOOK.md §10).
+      - name: "Inventaire VPS (lecture seule, aucun transfert ni écriture)"
+        if: inputs.mode == 'inventaire'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o StrictHostKeyChecking=yes -o BatchMode=yes \
+              -p "${{ secrets.SSH_PORT }}" \
+              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" '
+                set -eu
+                echo "== Système =="; cat /etc/almalinux-release; docker --version; docker compose version
+                echo "== Conteneurs =="; docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+                echo "== Volumes =="; docker volume ls
+                echo "== Réseaux =="; docker network ls
+                echo "== Disque / mémoire =="; df -h; free -h
+              '
+          echo "Inventaire terminé : aucune écriture n'a été faite sur le VPS."
+
+      - name: Transférer la chaîne de déploiement (sans .env)
+        if: inputs.mode != 'inventaire'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o StrictHostKeyChecking=yes -p "${{ secrets.SSH_PORT }}" \
+              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+              'mkdir -p /opt/injs/injs-lmd'
+          # -R (relatif) : reproduit exactement deploy/production et
+          # docker/ sous /opt/injs/injs-lmd, donc le chemin relatif
+          # ../../docker/nginx/default.conf du compose se résout.
+          rsync -azR --exclude '.env' --exclude 'logs/' --exclude '.env.bak-*' \
+              -e "ssh -o StrictHostKeyChecking=yes -p ${{ secrets.SSH_PORT }}" \
+              deploy/production docker \
+              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/injs/injs-lmd/"
+          ssh -o StrictHostKeyChecking=yes -p "${{ secrets.SSH_PORT }}" \
+              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+              'chmod +x /opt/injs/injs-lmd/deploy/production/deploy.sh && test -f /opt/injs/injs-lmd/deploy/production/compose.yml && test -f /opt/injs/injs-lmd/docker/nginx/default.conf && echo "Arborescence vérifiée sur le VPS."'
+          echo "Chaîne transférée dans /opt/injs/injs-lmd (le .env du serveur est préservé)."
+
+      - name: "Exécuter : ${{ inputs.mode }}"
+        if: inputs.mode != 'inventaire'
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=""
+          if [ "${{ inputs.mode }}" = "deployer" ]; then
+            args="--tag ${{ inputs.tag_images }}"
+          fi
+          ssh -o StrictHostKeyChecking=yes -p "${{ secrets.SSH_PORT }}" \
+              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+              "cd /opt/injs/injs-lmd/deploy/production && ./deploy.sh ${{ inputs.mode }} $args"
+
+      - name: Récupérer les journaux du déploiement
+        if: always() && inputs.mode != 'inventaire'
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p journaux-vps
+          scp -o StrictHostKeyChecking=yes -P "${{ secrets.SSH_PORT }}" -r \
+              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/injs/injs-lmd/deploy/production/logs/*" \
+              journaux-vps/ || echo "Aucun journal à récupérer."
+
+      - name: Archiver les journaux
+        if: always() && inputs.mode != 'inventaire'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: deploiement-${{ inputs.mode }}-${{ github.run_id }}
+          path: journaux-vps/
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Résumé
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Déploiement VPS INJS-LMD — mode \`${{ inputs.mode }}\`"
+            echo ""
+            echo "- Tag d'images demandé : \`${{ inputs.tag_images }}\`"
+            echo "- Voir l'onglet du job pour le détail ; journaux archivés en artefact."
+            echo "- Bascule Nginx Proxy Manager : **manuelle** (RUNBOOK.md §7), après recette sur le port de validation."
+          } >> "$GITHUB_STEP_SUMMARY"

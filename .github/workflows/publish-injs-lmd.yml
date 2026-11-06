@@ -1,0 +1,160 @@
+name: Publication images INJS-LMD
+
+# Chaîne de publication des images de production INJS-LMD.
+#
+# Construit et publie sur Docker Hub :
+#   - jckouassi/injs-be  (backend Django, contexte backend/)
+#   - jckouassi/injs-fe  (frontend React/Vite, contexte frontend/)
+#
+# Tags publiés (immuables, traçables au commit) :
+#   - <SHA Git complet>   ← tag à renseigner dans deploy/production/.env
+#   - stable              ← pointeur de commodité, jamais utilisé seul en prod
+#
+# Déclencheurs :
+#   - manuellement (workflow_dispatch), depuis la branche de référence ;
+#   - sur poussée d'un tag Git `deploy-*` (publication d'un commit validé
+#     sans attendre la fusion de la branche).
+#
+# Secrets GitHub requis (Paramètres du dépôt → Secrets and variables → Actions) :
+#   - DOCKERHUB_USERNAME : compte Docker Hub propriétaire des images
+#   - DOCKERHUB_TOKEN    : jeton d'accès Docker Hub (jamais le mot de passe du compte)
+#
+# Ce workflow ne déploie rien sur le serveur : il publie uniquement les
+# images. Le déploiement (compose) reste une étape serveur séparée et
+# réversible (voir deploy/production/compose.yml).
+
+on:
+  workflow_dispatch:
+    inputs:
+      vite_api_url:
+        description: "URL publique de l'API intégrée au build frontend"
+        required: false
+        default: "https://injs.badge-qr-code.pro/api"
+      vite_badge_base_url:
+        description: "Base publique des URL de badgeage (QR codes)"
+        required: false
+        default: "https://injs.badge-qr-code.pro"
+      confirmation:
+        description: >-
+          Taper exactement PUBLIER-IMAGES pour confirmer la publication.
+          Sans cette confirmation, le workflow s'arrête sans rien construire
+          (garde-fou mission 02 : aucune publication non voulue).
+        required: false
+        default: ""
+  push:
+    tags:
+      - "deploy-*"
+
+concurrency:
+  group: publish-injs-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    # GARDE-FOU : publication interdite sans confirmation explicite.
+    # Un tag `deploy-*` reste le seul chemin automatique (jamais poussé pendant
+    # la mission 02) ; le déclenchement manuel exige PUBLIER-IMAGES.
+    if: >-
+      github.event_name == 'push' ||
+      inputs.confirmation == 'PUBLIER-IMAGES'
+    name: Image backend (jckouassi/injs-be)
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.refs.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Connexion Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Construire et publier l'image backend
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            jckouassi/injs-be:${{ github.sha }}
+            jckouassi/injs-be:stable
+          cache-from: type=gha,scope=injs-be
+          cache-to: type=gha,mode=max,scope=injs-be
+
+      - name: Référence publiée
+        id: refs
+        run: |
+          echo "image=jckouassi/injs-be:${{ github.sha }}@${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
+          echo "Backend publié : jckouassi/injs-be:${{ github.sha }}@${{ steps.build.outputs.digest }}"
+
+  frontend:
+    # GARDE-FOU : publication interdite sans confirmation explicite.
+    # Un tag `deploy-*` reste le seul chemin automatique (jamais poussé pendant
+    # la mission 02) ; le déclenchement manuel exige PUBLIER-IMAGES.
+    if: >-
+      github.event_name == 'push' ||
+      inputs.confirmation == 'PUBLIER-IMAGES'
+    name: Image frontend (jckouassi/injs-fe)
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.refs.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Connexion Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Construire et publier l'image frontend
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            VITE_API_URL=${{ inputs.vite_api_url || 'https://injs.badge-qr-code.pro/api' }}
+            VITE_BADGE_BASE_URL=${{ inputs.vite_badge_base_url || 'https://injs.badge-qr-code.pro' }}
+            VERSION=${{ github.sha }}
+          tags: |
+            jckouassi/injs-fe:${{ github.sha }}
+            jckouassi/injs-fe:stable
+          cache-from: type=gha,scope=injs-fe
+          cache-to: type=gha,mode=max,scope=injs-fe
+
+      - name: Référence publiée
+        id: refs
+        run: |
+          echo "image=jckouassi/injs-fe:${{ github.sha }}@${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
+          echo "Frontend publié : jckouassi/injs-fe:${{ github.sha }}@${{ steps.build.outputs.digest }}"
+
+  resume:
+    name: Résumé de publication
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Images à déployer (tags immuables pour deploy/production/.env)
+        run: |
+          {
+            echo "## Images publiées — commit ${{ github.sha }}"
+            echo ""
+            echo "| Service | Image (tag immuable) |"
+            echo "|---|---|"
+            echo "| Backend | \`${{ needs.backend.outputs.image }}\` |"
+            echo "| Frontend | \`${{ needs.frontend.outputs.image }}\` |"
+            echo ""
+            echo "Dans \`deploy/production/.env\` : \`INJS_BACKEND_TAG=${{ github.sha }}\` et \`INJS_FRONTEND_TAG=${{ github.sha }}\`."
+          } >> "$GITHUB_STEP_SUMMARY"

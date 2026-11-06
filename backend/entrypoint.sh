@@ -1,30 +1,54 @@
 #!/bin/sh
 set -e
 
-# Entrypoint backend INJS-LMD — mécanisme automatique (monorepo injs-app-ref)
-# 1. permissions media  2. attente PostgreSQL  3. migrate  4. collectstatic
-# 5. superuser idempotent  6. gunicorn (workers auto ou fixes)
+# Entrypoint backend INJS-LMD — démarrage sous contrôle
+# 1. permissions media  2. décision de migration (config.demarrage)
+# 3. exécution éventuelle : attente PostgreSQL, migrate, collectstatic, superuser
+# 4. gunicorn (workers auto ou fixes)
+#
+# BLOCAGE B2 (mission 02, 6 novembre 2026) : `manage.py migrate` n'est PLUS
+# exécuté implicitement. La décision est rendue par `python3 -m config.demarrage`
+# (fonction pure, testée) selon la variable SKIP_DB_SETUP :
+#   0  -> aucune migration (défaut sûr, y compris si la variable est absente)
+#   10 -> migrations explicites (SKIP_DB_SETUP=false)
+#   2  -> valeur invalide -> arrêt du conteneur, aucun comportement implicite.
 
 if [ "$(id -u)" = "0" ]; then
   mkdir -p /app/media/students/qr
   chown -R appuser:appuser /app/media /app/staticfiles
+  if ! command -v gosu >/dev/null 2>&1; then
+    echo "[injs-be] ERREUR : démarrage en root, mais 'gosu' est introuvable dans l'image." >&2
+    echo "[injs-be] L'image s'exécute normalement sous l'utilisateur 'appuser'." >&2
+    exit 1
+  fi
   exec gosu appuser /app/entrypoint.sh "$@"
 fi
 
 mkdir -p /app/media/students/qr
 
-if [ "${SKIP_DB_SETUP:-}" = "true" ]; then
-  if [ "$#" -gt 0 ]; then
-    echo "[injs-be] SKIP_DB_SETUP exec: $*"
-    exec "$@"
-  fi
-  echo "[injs-be] SKIP_DB_SETUP sans commande" >&2
-  exit 1
-fi
+# ── Décision de démarrage (aucune migration implicite) ──────────────────────
+set +e
+python3 -m config.demarrage
+CODE_DEMARRAGE=$?
+set -e
 
-if [ "${USE_POSTGRES:-true}" = "true" ]; then
-  echo "[injs-be] waiting for database..."
-  python3 - <<'PY'
+case "$CODE_DEMARRAGE" in
+
+  0)
+    # Défaut sûr : aucune migration, aucun collectstatic, aucune création de compte.
+    if [ "$#" -gt 0 ]; then
+      echo "[injs-be] SKIP_DB_SETUP exec: $*"
+      exec "$@"
+    fi
+    echo "[injs-be] SKIP_DB_SETUP sans commande" >&2
+    exit 1
+    ;;
+
+  10)
+    # Demande EXPLICITE et contraire au défaut : on applique les migrations.
+    if [ "${USE_POSTGRES:-true}" = "true" ]; then
+      echo "[injs-be] waiting for database..."
+      python3 - <<'PY'
 import os, sys, time
 import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -41,17 +65,17 @@ for attempt in range(60):
 print('[injs-be] database unavailable', file=sys.stderr)
 sys.exit(1)
 PY
-fi
+    fi
 
-echo "[injs-be] migrate..."
-python manage.py migrate --noinput
+    echo "[injs-be] migrate..."
+    python manage.py migrate --noinput
 
-echo "[injs-be] collectstatic..."
-python manage.py collectstatic --noinput
+    echo "[injs-be] collectstatic..."
+    python manage.py collectstatic --noinput
 
-if [ -n "${DJANGO_SUPERUSER_EMAIL:-}" ] && [ -n "${DJANGO_SUPERUSER_PASSWORD:-}" ]; then
-  echo "[injs-be] ensure superuser..."
-  python3 - <<'PY'
+    if [ -n "${DJANGO_SUPERUSER_EMAIL:-}" ] && [ -n "${DJANGO_SUPERUSER_PASSWORD:-}" ]; then
+      echo "[injs-be] ensure superuser..."
+      python3 - <<'PY'
 import os, django
 from django.contrib.auth import get_user_model
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -72,7 +96,15 @@ if not User.objects.filter(email=email).exists():
 else:
     print(f'[injs-be] superuser already exists: {email}')
 PY
-fi
+    fi
+    ;;
+
+  *)
+    echo "[injs-be] arrêt : configuration de démarrage invalide (code $CODE_DEMARRAGE)." >&2
+    exit "$CODE_DEMARRAGE"
+    ;;
+
+esac
 
 if [ "$#" -gt 0 ]; then
   echo "[injs-be] exec: $*"

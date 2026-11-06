@@ -1,0 +1,83 @@
+# Contexte de construction de l'image backend (contexte = ./backend)
+# Créé le 6 novembre 2026 — mission 02 (blocage identifié à l'audit : aucun
+# .dockerignore n'existait, un build local embarquait alors .venv (139 Mo) et
+# db.sqlite3 (15 Mo, contenant des empreintes de mots de passe)).
+#
+# Règle : n'exclure QUE ce qui n'est pas nécessaire à l'exécution ou à la
+# construction. Le code applicatif, les migrations, les données de référentiel
+# et les scripts d'entrée doivent rester dans le contexte.
+
+# ── Métadonnées de dépôt ────────────────────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+.github
+*.md
+!README.md
+
+# ── Environnements Python locaux ────────────────────────────────────────────
+.venv
+venv
+env
+ENV
+*.egg-info
+*.egg-info/
+__pycache__
+*.py[cod]
+*$py.class
+.mypy_cache
+.ruff_cache
+.pytest_cache
+
+# ── Bases de données locales (NE JAMAIS embarquer : données et empreintes) ──
+db.sqlite3
+*.sqlite3
+*.sqlite3-journal
+*.db
+
+# ── Données générées à l'exécution (recréées par l'entrypoint) ──────────────
+media/
+staticfiles/
+static_root/
+
+# ── Secrets, clés et configuration locale ───────────────────────────────────
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+*.crt
+secrets/
+*.secret
+
+# ── Sauvegardes, journaux et fichiers temporaires ───────────────────────────
+backups/
+backup/
+*.log
+*.bak
+*.old
+*.orig
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Couverture et rapports de tests ─────────────────────────────────────────
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+coverage/
+.coverage_html/
+
+# ── Archives de travail (jamais nécessaires à l'exécution) ──────────────────
+dossier_trvx/
+node_modules/
