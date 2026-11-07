@@ -105,3 +105,16 @@ backend/nohup.out
 
 # Livrable tableur généré (conservé localement, hygiène du dépôt)
 dossier_trvx/Documentation_TableauDeBord_Referentiels_INJS.xlsx
+
+# Durcissement mission 02 — environnements virtuels, sauvegardes de fichiers
+# et residus de fusion : jamais versionnés, quel que soit leur nom exact
+# (.venv312, .venv-ci, venv39…). Les fichiers suivis existants ne sont pas
+# affectés par ces règles.
+.venv*/
+**/.venv*/
+venv*/
+**/*.bak
+**/*.orig
+**/*.rej
+**/*.swp
+entrypoint.sh.bak

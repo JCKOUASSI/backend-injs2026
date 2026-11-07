@@ -175,7 +175,7 @@ def _refus_journalises(compte=None):
 
 @override_settings(**APPLICATION)
 class SocleLot4(APITestCase):
-    """Référentiel chargé (81 rôles / 1 155 permissions) + compteurs à zéro."""
+    """Référentiel chargé (81 rôles / 1 157 permissions) + compteurs à zéro."""
 
     @classmethod
     def setUpTestData(cls):

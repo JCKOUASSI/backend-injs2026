@@ -378,8 +378,9 @@ ROLES = [
 # Index rapide par code.
 ROLES_PAR_CODE = {ligne[0]: ligne for ligne in ROLES}
 
-#: Les onze rôles sensibles (colonne « Sens. » de l'annexe A1) — rappel
-#: explicite, déduit aussi du fanion ``sensible`` des lignes ci-dessus.
+#: Les rôles sensibles (colonne « Sens. » de l'annexe A1) — rappel explicite,
+#: déduit du fanion ``sensible`` des lignes ci-dessus. Comptage RÉEL au
+#: 06/11/2026 : 22 rôles (le commentaire annonçait « onze », chiffre périmé).
 ROLES_SENSIBLES = tuple(
     ligne[0] for ligne in ROLES if ligne[6]
 )

@@ -130,8 +130,16 @@ jobs:
       - name: Fichiers statiques (manifeste requis par les tests)
         run: python manage.py collectstatic --noinput
 
+      # `set -o pipefail` est OBLIGATOIRE ici : sans lui, le code retour du
+      # tube est celui de `tee` (toujours 0) et un échec de Django serait
+      # silencieusement transformé en succès. Les runners GitHub utilisent déjà
+      # `bash -eo pipefail` par défaut, mais la garantie est rendue explicite :
+      # elle ne dépend plus d'un réglage implicite du runner.
       - name: Tests
-        run: python manage.py test --verbosity 1 2>&1 | tee /tmp/backend-tests.log
+        shell: bash
+        run: |
+          set -o pipefail
+          python manage.py test --verbosity 1 2>&1 | tee /tmp/backend-tests.log
 
       # Les journaux d'exécution ne sont pas toujours accessibles depuis un
       # environnement restreint : on republie l'essentiel des échecs sous forme
