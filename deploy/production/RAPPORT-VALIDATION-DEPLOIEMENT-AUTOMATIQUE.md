@@ -47,11 +47,11 @@ PYTHON=.venv-ci/bin/python ./scripts/valider-deploiement-injs.sh
 
 | Groupe | Contenu | Résultat |
 |---|---|---|
-| A. YAML et scripts embarqués | chargeabilité des 4 workflows, `yamllint` strict, `bash -n` sur les **21 blocs `run:`** et sur les **5 scripts distants embarqués** (heredocs), absence de tabulation | 11 OK |
+| A. YAML et scripts embarqués | chargeabilité des 4 workflows, `yamllint` strict, `bash -n` sur les **21 blocs `run:`** et sur les **5 scripts distants embarqués** (heredocs), absence de tabulation | 10 OK |
 | B. Déclenchement et dépendance | `workflow_run` pointé sur le **nom exact** de `publish-injs-lmd.yml`, `types: [completed]`, `workflow_dispatch`, garde `conclusion == 'success'`, garde `head_branch == 'main'`, cible issue de `head_sha`, `github.sha` jamais utilisé comme tag | 7 OK |
-| C. Protection et sécurité | concurrence partagée sans annulation, permissions ⊆ {`contents: read`, `actions: read`}, **16 motifs destructifs** absents, `latest`/`stable` refusés, SSH strict + `known_hosts` par secret, environnement `production`, **3 actions épinglées par SHA 40 caractères**, **aucune expression GitHub dans un script** (anti-injection), `.env` exclu du transfert, `rsync` sans `--delete`, `SKIP_DB_SETUP`, compose sans `container_name` ni PostgreSQL, instantanés avant/après sanctionnés | 20 OK |
+| C. Protection et sécurité | concurrence partagée sans annulation, permissions ⊆ {`contents: read`, `actions: read`}, **14 motifs destructifs** absents, `latest`/`stable` refusés, SSH strict + `known_hosts` par secret, environnement `production`, **3 actions épinglées par SHA 40 caractères**, **aucune expression GitHub dans un script** (anti-injection), `.env` exclu du transfert, `rsync` sans `--delete`, `SKIP_DB_SETUP`, compose sans `container_name` ni PostgreSQL, instantanés avant/après sanctionnés | 19 OK |
 | D. Cohérence avec le dépôt | images identiques entre workflow de déploiement, workflow de publication et compose ; `PROJET_COMPOSE` = `name:` du compose ; `/api/health/` présent dans `backend/config/urls.py` ; `docker/nginx/default.conf` présent et arborescence de transfert correcte ; modes du workflow ⊆ modes de `deploy.sh` ; variables du compose documentées dans `.env.example` ; entrypoint vérifié = `backend/Dockerfile` ; `LABEL version` = `frontend/Dockerfile` ; worker/cron protégés et absents du compose ; secrets documentés dans le guide | 13 OK |
-| E. Vérifications et rapport | archivage des preuves, récupération par le job de rapport, résumé publié, **31 annotations `::error::`**, tests HTTP services + domaine, état des conteneurs contrôlé, workflow de validation en lecture seule | 8 OK |
+| E. Vérifications et rapport | archivage des preuves, récupération par le job de rapport, résumé publié, **35 annotations `::error::`**, tests HTTP services + domaine, état des conteneurs contrôlé, workflow de validation en lecture seule | 8 OK |
 
 ### 2.2 Tests fonctionnels — `scripts/tester-deploiement-injs.sh`
 
@@ -87,13 +87,16 @@ vrai sur ses modes qui n'exigent ni Docker ni PostgreSQL.
 
 Le workflow `valider-chaine-deploiement.yml` a été déclenché par la pull
 request #6 et a exécuté les deux scripts **sur un runner `ubuntu-latest`
-réel** :
+réel**, à deux reprises (une fois par état de la branche) :
 
-* Exécution : <https://github.com/JCKOUASSI/backend-injs2026/actions/runs/42414292292>
-* Job « Contrôles statiques et tests fonctionnels » : **success** (14 s)
-* Étapes en succès : `Installer PyYAML et yamllint`, `Contrôles statiques de
-  la chaîne`, `Tests fonctionnels (sans VPS, sans Docker Hub, sans
-  déploiement)`, `Synthèse`.
+| Exécution | Commit testé | Résultat | Durée |
+|---|---|---|---|
+| [42414292292](https://github.com/JCKOUASSI/backend-injs2026/actions/runs/42414292292) | `0729de0` (workflow + scripts) | **success** | 14 s |
+| [42415102665](https://github.com/JCKOUASSI/backend-injs2026/actions/runs/42415102665) | `5820a38` (rapport ajouté) | **success** | 12 s |
+
+Étapes en succès dans les deux cas : `Installer PyYAML et yamllint`,
+`Contrôles statiques de la chaîne`, `Tests fonctionnels (sans VPS, sans
+Docker Hub, sans déploiement)`, `Synthèse`. Python 3.12 sur le runner.
 
 C'est la preuve que les deux scripts passent dans l'environnement cible, et
 pas seulement dans le sandbox de développement.
@@ -169,11 +172,11 @@ le mode `preflight` (et `deployer` si l'opt-in double est positionné).
 | 7 | Vérifier l'état des conteneurs | `compose ps`, `.State.Status`, `.State.Health.Status`, `.RestartCount`, identifiants d'image | §2.1 E5, T6.6–T6.7 |
 | 8 | Tests HTTP sur les services | `/api/health/`, `/`, `/admin/login/` sur le port de validation ; `/api/health/` et `/` sur le domaine (code, TLS, empreinte) | §2.1 E4, §2.1 D3 |
 | 9 | Rapport de déploiement | Résumé d'exécution + artefact 90 jours + exemplaire déposé sur le VPS | T7.1–T7.4, §2.1 E1–E2 |
-| 10 | Signaler clairement les échecs | 31 annotations `::error::`, job rouge, rapport final toujours produit | §2.1 E3 |
+| 10 | Signaler clairement les échecs | 35 annotations `::error::`, job rouge, rapport final toujours produit | §2.1 E3 |
 | — | Secrets GitHub, jamais affichés | 4 secrets SSH requis + 2 Docker Hub optionnels ; aucune valeur imprimée ; aucune expression GitHub dans un script ; jeton transmis par stdin | §2.1 C8, T7.4 |
 | — | Permissions minimales | `contents: read`, `actions: read` | §2.1 C2 |
 | — | Protection contre déploiements simultanés | `concurrency: deploiement-production-injs`, `cancel-in-progress: false` | §2.1 C1 |
-| — | Jamais `down -v`, `prune`, `flush`, `dropdb` | 16 motifs absents du workflow + garde-fou `deploy.sh` testé en exécution réelle | §2.1 C3, T8.1–T8.5 |
+| — | Jamais `down -v`, `prune`, `flush`, `dropdb` | 14 motifs absents du workflow + garde-fou `deploy.sh` testé en exécution réelle | §2.1 C3, T8.1–T8.5 |
 | — | Jamais supprimer volumes / PostgreSQL | Instantanés avant/après sanctionnés | T3.3–T3.6 |
 | — | Ne pas supprimer les anciens conteneurs avant validation | Conteneurs protégés comparés nom + image + date de création | T3.3, T3.4 |
 | — | Préserver configurations et variables d'environnement | `.env` exclu du transfert, jamais écrasé, `deploy.sh` en fait une sauvegarde `.env.bak-*` | §2.1 C9, T4.8 |
@@ -232,7 +235,7 @@ considérées comme acquises.
 | Déclenchement `workflow_run` effectif | Un workflow `workflow_run` s'exécute dans la version de la **branche par défaut** : il n'est actif qu'après fusion sur `main` | Après fusion : relancer `publish-injs-lmd.yml` et observer l'exécution `preflight` déclenchée |
 | Approbation de l'environnement `production` | Configuration côté GitHub, hors dépôt | Settings → Environments → production → Required reviewers |
 | `actionlint` | Binaire téléchargeable uniquement depuis `release-assets.githubusercontent.com`, hôte non joignable | Compensé par `yamllint` strict + `bash -n` sur chaque bloc + exécution réelle des étapes sur runner |
-| CI backend Django de la PR | Suite longue, encore en cours à la rédaction de ce rapport ; **aucun fichier backend n'est modifié par cette PR** | Vérification `ci.yml` sur la PR #6 |
+| CI backend Django de la PR | Job historique long (~1 h 50 sur `main`, run 42079925844 : 17:59 → 19:48) ; **aucun fichier backend n'est modifié par cette PR** | Suivre `ci.yml` sur la PR #6 jusqu'à la fin ; le job `Contrôles statiques et tests fonctionnels`, lui, passe en ~12 s |
 
 **Limitation connue à signaler explicitement** : le nom du workflow enregistré
 côté GitHub est encore « Déploiement VPS INJS-LMD (manuel) », car GitHub
