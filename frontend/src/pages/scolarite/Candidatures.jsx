@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useToast } from '../../context/ToastContext'
 import CompletudeBar from '../../components/scolarite/CompletudeBar'
 import StatutBadge from '../../components/scolarite/StatutBadge'

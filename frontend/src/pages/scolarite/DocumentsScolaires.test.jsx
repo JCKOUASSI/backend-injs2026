@@ -4,7 +4,7 @@
  * d'export réellement appelés.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { screen, act, fireEvent, waitFor } from '@testing-library/react'
+import { screen, act, fireEvent } from '@testing-library/react'
 
 vi.mock('@/services/api', async (importOriginal) => {
   const actual = await importOriginal()

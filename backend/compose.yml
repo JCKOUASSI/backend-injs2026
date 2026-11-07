@@ -37,6 +37,10 @@ services:
       POSTGRES_PORT: 5432
       REDIS_URL: redis://redis:6379/0
       FRONTEND_URL: http://localhost
+      # Pile de DEVELOPPEMENT uniquement : la preparation de base au demarrage
+      # est demandee EXPLICITEMENT. Le defaut du systeme est desormais
+      # "ne jamais migrer implicitement" (backend/scripts/db_setup_policy.sh).
+      SKIP_DB_SETUP: 'false'
       CORS_ALLOWED_ORIGINS: http://localhost,http://127.0.0.1,http://localhost:3000,http://127.0.0.1:3000
       CSRF_TRUSTED_ORIGINS: http://localhost,http://127.0.0.1,http://localhost:8001,http://127.0.0.1:8001
     depends_on:

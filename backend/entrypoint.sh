@@ -1,26 +1,60 @@
 #!/bin/sh
 set -e
 
-# Entrypoint backend INJS-LMD — mécanisme automatique (monorepo injs-app-ref)
+# Entrypoint backend INJS-LMD.
+#
+# MISSION 02 / BLOCAGE B2 — la préparation de la base n'est plus implicite.
+#
+# La décision est déléguée à `scripts/db_setup_policy.sh`, testable sans Django :
+#   * SKIP_DB_SETUP absent, vide, true/1/yes/on -> aucune préparation (skip) ;
+#   * SKIP_DB_SETUP = false/0/no/off            -> préparation explicite (run) ;
+#   * toute autre valeur                        -> arrêt immédiat (code 64).
+#
+# Conséquence : un conteneur démarré sans SKIP_DB_SETUP ne migre plus la base
+# par accident. Les migrations s'exécutent uniquement sur demande explicite,
+# via `python manage.py migrate` ou `scripts/migrate_explicit.sh`.
+#
+# Séquence lorsque la préparation est explicitement demandée (run) :
 # 1. permissions media  2. attente PostgreSQL  3. migrate  4. collectstatic
-# 5. superuser idempotent  6. gunicorn (workers auto ou fixes)
+# 5. superuser idempotent  6. commande fournie ou gunicorn (workers auto/fixes)
 
-if [ "$(id -u)" = "0" ]; then
-  mkdir -p /app/media/students/qr
-  chown -R appuser:appuser /app/media /app/staticfiles
-  exec gosu appuser /app/entrypoint.sh "$@"
+POLITIQUE_DB="${INJS_DB_SETUP_POLICY:-/app/scripts/db_setup_policy.sh}"
+if [ ! -r "$POLITIQUE_DB" ]; then
+  echo "[injs-be] Politique de base introuvable : $POLITIQUE_DB" >&2
+  exit 78
+fi
+# shellcheck source=/dev/null
+. "$POLITIQUE_DB"
+
+# Politique résolue AVANT toute action : une valeur inutilisable arrête le
+# conteneur sans rien exécuter (jamais de repli silencieux vers migrate).
+if ! injs_resoudre_politique_db; then
+  exit "$INJS_EXIT_POLITIQUE_INVALIDE"
 fi
 
-mkdir -p /app/media/students/qr
+MEDIA_DIR="${INJS_MEDIA_DIR:-/app/media}"
+STATIC_DIR="${INJS_STATIC_DIR:-/app/staticfiles}"
+SELF="${INJS_ENTRYPOINT_PATH:-/app/entrypoint.sh}"
 
-if [ "${SKIP_DB_SETUP:-}" = "true" ]; then
+if [ "$(id -u)" = "0" ] && command -v gosu >/dev/null 2>&1; then
+  mkdir -p "$MEDIA_DIR/students/qr"
+  chown -R appuser:appuser "$MEDIA_DIR" "$STATIC_DIR"
+  exec gosu appuser "$SELF" "$@"
+fi
+
+mkdir -p "$MEDIA_DIR/students/qr"
+
+if [ "$INJS_DB_SETUP_MODE" = "skip" ]; then
   if [ "$#" -gt 0 ]; then
-    echo "[injs-be] SKIP_DB_SETUP exec: $*"
+    echo "[injs-be] preparation de base ignoree (SKIP_DB_SETUP=${SKIP_DB_SETUP:-absent}) -> exec: $*"
     exec "$@"
   fi
-  echo "[injs-be] SKIP_DB_SETUP sans commande" >&2
+  echo "[injs-be] SKIP_DB_SETUP actif mais aucune commande fournie :" >&2
+  echo "[injs-be] fournir une commande explicite (gunicorn ... ou manage.py migrate)." >&2
   exit 1
 fi
+
+echo "[injs-be] SKIP_DB_SETUP=${SKIP_DB_SETUP:-absent} -> preparation explicite de la base demandee."
 
 if [ "${USE_POSTGRES:-true}" = "true" ]; then
   echo "[injs-be] waiting for database..."

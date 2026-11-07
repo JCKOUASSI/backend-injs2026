@@ -46,7 +46,28 @@ permissions:
   contents: read
 
 jobs:
+  # ---------------------------------------------------------------------
+  # GARDE-FOU DE PUBLICATION (mission 02) : rien n'est publié par défaut.
+  # La variable de dépôt INJS_PUBLISH_ENABLED doit valoir exactement "true"
+  # (Settings -> Secrets and variables -> Actions -> Variables).
+  # Sans elle, les deux jobs d'image sont bloqués AVANT toute connexion
+  # à Docker Hub : aucun identifiant n'est même utilisé.
+  # ---------------------------------------------------------------------
+  garde:
+    name: Autorisation de publication
+    runs-on: ubuntu-latest
+    steps:
+      - name: Vérifier l'autorisation explicite
+        if: vars.INJS_PUBLISH_ENABLED != 'true'
+        run: |
+          echo "::error::Publication désactivée (INJS_PUBLISH_ENABLED absent ou différent de 'true')."
+          echo "::error::Aucune image n'a été construite ni publiée."
+          exit 1
+      - name: Autorisation accordée
+        run: echo "Publication autorisée par la variable de dépôt INJS_PUBLISH_ENABLED=true"
+
   backend:
+    needs: garde
     name: Image backend (jckouassi/injs-be)
     runs-on: ubuntu-latest
     outputs:
@@ -84,6 +105,7 @@ jobs:
 
   frontend:
     name: Image frontend (jckouassi/injs-fe)
+    needs: garde
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.refs.outputs.image }}

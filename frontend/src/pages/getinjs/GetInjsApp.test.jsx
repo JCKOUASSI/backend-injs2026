@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 vi.mock('@/services/api', async (importOriginal) => {
@@ -8,7 +8,7 @@ vi.mock('@/services/api', async (importOriginal) => {
   return { ...actual, default: mod.default, setSessionExpiredCallback: vi.fn() }
 })
 
-import apiMock, { apiController } from '@/test/utils/mockApi'
+import { apiController } from '@/test/utils/mockApi'
 import { AllProviders } from '@/test/utils/renderWithProviders'
 import GetInjsApp from './GetInjsApp'
 

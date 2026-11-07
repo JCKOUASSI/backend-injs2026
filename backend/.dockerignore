@@ -1,0 +1,107 @@
+# =============================================================================
+# INJS-LMD — contexte de construction backend (mission 02, §7)
+#
+# Le contexte est `./backend` (voir .github/workflows/publish-injs-lmd.yml).
+# Objectif : ne jamais envoyer au démon Docker ce qui n'est pas nécessaire à
+# l'exécution — ni secrets, ni environnement virtuel, ni base locale, ni
+# archives de travail.
+#
+# Règle de prudence : tout ce qui est indispensable au runtime est CONSERVÉ
+# explicitement en fin de fichier (requirements.txt, entrypoint.sh, scripts/,
+# referentiels/data/, apps Django).
+# =============================================================================
+
+# --- Contrôle de version ----------------------------------------------------
+.git
+.gitignore
+.gitattributes
+.github
+
+# --- Environnements virtuels ------------------------------------------------
+.venv
+venv
+env
+ENV
+.python-version
+
+# --- Dépendances installées localement --------------------------------------
+node_modules
+
+# --- Artefacts Python -------------------------------------------------------
+__pycache__
+**/__pycache__
+*.py[cod]
+*.pyd
+*.so
+*.egg-info
+.eggs
+build
+dist
+*.whl
+
+# --- Base de données locale (jamais dans une image) -------------------------
+*.sqlite3
+db.sqlite3
+db.sqlite3-journal
+
+# --- Sauvegardes et archives de travail (hors périmètre applicatif) ---------
+*.sql
+*.sql.gz
+*.dump
+*.bak
+*.backup
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+backups
+backup
+sauvegardes
+
+# --- Secrets et configuration locale ---------------------------------------
+.env
+.env.*
+*.pem
+*.key
+*.crt
+id_rsa*
+secrets*
+# Le modèle de configuration, lui, reste disponible pour documentation :
+!.env.example
+
+# --- Journaux, caches et rapports ------------------------------------------
+*.log
+logs
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+.coverage.*
+htmlcov
+coverage.xml
+coverage.json
+*.cover
+
+# --- Fichiers temporaires et systèmes --------------------------------------
+*.tmp
+*.temp
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# --- Médias et statiques générés localement --------------------------------
+# Ce sont des VOLUMES en production (compose), jamais du contenu d'image.
+media
+staticfiles
+
+# --- Documentation et archives hors exécution ------------------------------
+docs
+dossier_trvx
+
+# =============================================================================
+# EXPLICITEMENT CONSERVÉ (ne pas exclure) :
+#   manage.py, config/, <apps>/, requirements.txt, entrypoint.sh, scripts/,
+#   referentiels/data/ (référentiels INJS/LMD nécessaires à l'initialisation),
+#   templates/, fixtures/ versionnées.
+# =============================================================================

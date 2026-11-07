@@ -1,0 +1,28 @@
+# =============================================================================
+# INJS-LMD — liste d'accès à /admin/ (modèle, sans adresse réelle)
+#
+# Ce fichier est inclus dans le bloc `location /admin/` de
+# deploy/production/nginx/injs-lmd.candidate.conf.
+#
+# Politique appliquée : refus par défaut. Tant que ce fichier ne contient que
+# le refus, l'administration est inaccessible depuis Internet — état voulu pour
+# la livraison tant que les adresses autorisées n'ont pas été décidées par le
+# commanditaire.
+#
+# Deux options d'accès, à choisir à l'application (voir la procédure) :
+#
+#   Option 1 — plage d'administration INJS (recommandée) :
+#       allow 203.0.113.0/24;     # remplacer par la plage réelle du site
+#       allow 198.51.100.10;      # poste du responsable scolarité
+#       deny  all;
+#
+#   Option 2 — accès par tunnel/VPN uniquement :
+#       # aucune IP publique ; l'admin n'est joignable que depuis le réseau
+#       # Docker ou via un tunnel SSH. On garde alors :
+#       deny all;
+#
+# NE JAMAIS mettre `allow all;` : l'administration Django permet de modifier
+# les inscriptions, les décisions de jury et les données personnelles.
+# =============================================================================
+
+deny all;

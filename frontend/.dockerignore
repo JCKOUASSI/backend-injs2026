@@ -1,0 +1,61 @@
+# =============================================================================
+# INJS-LMD — contexte de construction frontend (mission 02, §7)
+#
+# Le contexte est `./frontend`. L'image est construite en deux étapes :
+#   1. `npm ci` + `npm run build`  → nécessite package*.json, src/, public/,
+#      index.html, vite.config.js, eslint.config.js ;
+#   2. copie du `dist/` dans nginx → le dist du poste de travail est INUTILE,
+#      il est régénéré dans l'étape 1.
+# =============================================================================
+
+# --- Contrôle de version ----------------------------------------------------
+.git
+.gitignore
+.gitattributes
+.github
+
+# --- Dépendances installées localement --------------------------------------
+node_modules
+
+# --- Sortie de build locale (régénérée dans l'image) ------------------------
+dist
+dist-ssr
+.vite
+*.local
+
+# --- Secrets et configuration locale ---------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# --- Journaux, caches et rapports ------------------------------------------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+coverage
+.nyc_output
+.eslintcache
+
+# --- Sauvegardes et archives ------------------------------------------------
+*.bak
+*.tar
+*.tar.gz
+*.zip
+backups
+
+# --- Temporaires et systèmes -------------------------------------------------
+*.tmp
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# =============================================================================
+# EXPLICITEMENT CONSERVÉ : package.json, package-lock.json, index.html,
+# vite.config.js, eslint.config.js, src/, public/, nginx.conf.
+# =============================================================================

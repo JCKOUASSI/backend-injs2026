@@ -1,32 +1,68 @@
 name: CI
 
-# Intégration continue minimale mais bloquante.
+# Intégration continue bloquante — MISSION 02 / blocage B4.
 #
-# Créée à la suite de l'audit backend : le dépôt n'avait aucun workflow, ce qui
-# a laissé passer une dérive de modèle (migration `formations/0098` manquante)
-# et des avertissements de schéma OpenAPI. Les trois garde-fous ci-dessous
-# auraient échoué avant correction :
-#   * `makemigrations --check`  → dérive de schéma ;
-#   * `manage.py check`         → configuration invalide ;
-#   * suites de tests           → régressions fonctionnelles.
+# Historique : le dépôt n'avait aucun workflow, ce qui a laissé passer une
+# dérive de modèle (migration `formations/0098` manquante) et des
+# avertissements de schéma OpenAPI. Les garde-fous ci-dessous auraient échoué
+# avant correction.
+#
+# Alignement Python 3.12 (mission 02, §9) : la CI utilise la MÊME version que
+# l'image de production (`backend/Dockerfile` → `python:3.12-slim`). Une CI en
+# 3.11 validait un environnement qui n'était pas celui déployé.
 #
 # Le job backend tourne sur PostgreSQL (et non SQLite) : c'est le moteur de
 # production, et c'est la seule façon de vérifier les comportements qui en
 # dépendent (verrous, contraintes, index).
+#
+# Ce workflow ne publie AUCUNE image : voir publish-injs-lmd.yml, qui exige en
+# plus la variable de dépôt INJS_PUBLISH_ENABLED.
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'deploy-injs-2026/**'
+      - 'arena/**'
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # B2 — la politique de préparation de base est testée sans Django ni Docker.
+  # Job volontairement séparé et rapide : il doit échouer AVANT tout le reste
+  # si le démarrage du conteneur redevenait capable de migrer implicitement.
+  # ---------------------------------------------------------------------------
+  politique-base:
+    name: Démarrage conteneur (SKIP_DB_SETUP)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vérifier la syntaxe des scripts
+        run: |
+          sh -n backend/entrypoint.sh
+          sh -n backend/scripts/db_setup_policy.sh
+          sh -n backend/scripts/migrate_explicit.sh
+
+      - name: Tests de la politique de préparation de base
+        run: sh backend/docker_tests/db_setup_policy_test.sh
+
+      - name: La valeur par défaut de l'image ne migre pas
+        run: |
+          grep -q '^ENV SKIP_DB_SETUP=true' backend/Dockerfile \
+            || { echo "::error::Dockerfile : ENV SKIP_DB_SETUP=true absent"; exit 1; }
+
+  # ---------------------------------------------------------------------------
   backend:
-    name: Backend (Django + PostgreSQL)
+    name: Backend (Django + PostgreSQL, Python 3.12)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -62,15 +98,28 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: pip
           cache-dependency-path: backend/requirements.txt
+
+      - name: Version de Python
+        run: python -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version; print(sys.version)"
 
       - name: Installer les dépendances
         run: pip install -r requirements.txt
 
+      - name: Cohérence des dépendances installées
+        run: python -m pip check
+
       - name: Vérifier la configuration Django
         run: python manage.py check
+
+      # `--fail-level ERROR` : les avertissements de sécurité sont PUBLIÉS et
+      # documentés (voir docs/deploiement/mission-02/DEPLOY_INJS_MISSION_02_CI_CD.md),
+      # seules les erreurs bloquent. Ils ne sont jamais tus : la sortie complète
+      # est conservée dans l'artefact du job.
+      - name: Contrôle de sécurité du déploiement
+        run: python manage.py check --deploy --fail-level ERROR
 
       - name: Aucune migration manquante
         run: python manage.py makemigrations --check --dry-run
@@ -128,6 +177,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  # ---------------------------------------------------------------------------
   frontend:
     name: Frontend (React + Vite)
     runs-on: ubuntu-latest
@@ -144,11 +194,67 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Installer les dépendances
+      - name: Installer les dépendances (reproductible)
         run: npm ci
 
-      - name: Analyse statique
-        run: npm run lint
+      - name: Analyse statique (ESLint)
+        run: npx eslint src --ext js,jsx --max-warnings 0
 
-      - name: Tests
+      - name: Tests (Vitest)
         run: npx vitest run
+
+      - name: Build de production
+        run: npm run build
+
+  # ---------------------------------------------------------------------------
+  docker:
+    name: Configuration Docker (validation, sans publication)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Les .dockerignore sont présents
+        run: |
+          test -s backend/.dockerignore  || { echo "::error::backend/.dockerignore absent"; exit 1; }
+          test -s frontend/.dockerignore || { echo "::error::frontend/.dockerignore absent"; exit 1; }
+
+      - name: Les secrets sont exclus des contextes de build
+        run: |
+          for motif in '.venv' 'db.sqlite3' '.env' 'node_modules' 'dist'; do
+            grep -qxF "$motif" backend/.dockerignore || grep -qxF "$motif" frontend/.dockerignore \
+              || { echo "::error::motif '$motif' absent des .dockerignore"; exit 1; }
+          done
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Compose de production analysable
+        run: |
+          cp deploy/production/.env.example /tmp/injs.env
+          sed -i 's/^DJANGO_SECRET_KEY=.*/DJANGO_SECRET_KEY=ci-only-0000000000000000000000000000000000000000/' /tmp/injs.env
+          docker compose -f deploy/production/compose.yml --env-file /tmp/injs.env config >/dev/null
+          echo "compose de production : syntaxe et variables validées"
+
+      - name: Image backend construite (sans publication)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: false
+          cache-from: type=gha,scope=injs-be-ci
+          cache-to: type=gha,mode=max,scope=injs-be-ci
+
+      - name: Image frontend construite (sans publication)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: false
+          build-args: |
+            VITE_API_URL=https://injs.badge-qr-code.pro/api
+            VERSION=ci
+          cache-from: type=gha,scope=injs-fe-ci
+          cache-to: type=gha,mode=max,scope=injs-fe-ci

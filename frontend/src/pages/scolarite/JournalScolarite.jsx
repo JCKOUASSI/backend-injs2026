@@ -89,7 +89,7 @@ export default function JournalScolarite() {
   const [pagesAu, setPagesAu] = useState(1)
   const [pageAu, setPageAu] = useState(1)
   const [chargementAu, setChargementAu] = useState(false)
-  const [auditCharge, setAuditCharge] = useState(false)
+  const [_auditCharge, setAuditCharge] = useState(false)
   const [actionFiltre, setActionFiltre] = useState('')
   const [objetFiltre, setObjetFiltre] = useState('')
   const [rechercheAu, setRechercheAu] = useState('')

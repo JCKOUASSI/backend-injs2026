@@ -38,11 +38,13 @@ services:
       CSRF_TRUSTED_ORIGINS: "${CSRF_TRUSTED_ORIGINS}"
       CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS}"
       PORT: "8000"
-      # Contrôle des migrations : avec SKIP_DB_SETUP=true, l'entrypoint
-      # n'applique AUCUNE migration au démarrage (il exécute directement
-      # la commande). Les migrations sont revues (migrate --plan) puis
-      # appliquées explicitement par deploy/production/deploy.sh.
-      # Ne passer à false que si l'on accepte la migration automatique.
+      # Controle des migrations (B2) : la valeur est TRANSMISE au conteneur et
+      # interpretee par backend/scripts/db_setup_policy.sh.
+      #   true|1|yes|on|absente  -> aucune migration au demarrage
+      #   false|0|no|off         -> migrate + collectstatic + superuser
+      #   toute autre valeur     -> arret du conteneur (code 64)
+      # Les migrations sont revues (migrate_explicit.sh --plan) puis appliquees
+      # explicitement (--apply) par deploy/production/deploy.sh.
       SKIP_DB_SETUP: "${SKIP_DB_SETUP:-true}"
       GUNICORN_WORKERS: "${GUNICORN_WORKERS:-auto}"
       GUNICORN_TIMEOUT: "${GUNICORN_TIMEOUT:-120}"
