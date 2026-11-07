@@ -115,14 +115,23 @@ charger_env() {
 # valider un fichier de configuration (ex. .env.bak-* d'un rollback)
 # avant de le charger réellement.
 lire_var_env() {
-  local fichier="$1" nom="$2" v
+  local fichier="$1" nom="$2" v reste
   v="$(grep -E "^${nom}=" "$fichier" 2>/dev/null | tail -1 | cut -d= -f2- || true)"
-  v="$(printf '%s' "$v" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+  v="${v#"${v%%[![:space:]]*}"}"
+  # Même sémantique qu'un « . fichier » lu par bash : valeur entre guillemets
+  # englobants extraite telle quelle (un # intérieur y est une donnée),
+  # commentaire en ligne d'une valeur nue retiré. Sans ce retrait, un
+  # .env.bak-* issu de .env.example (« INJS_BACKEND_TAG=<sha>  # requis :
+  # ex. … ») ferait échouer valider_tag et BLOQUERAIT un rollback alors que
+  # la valeur réellement restaurée (cp du .env.bak-*) est correcte.
   case "$v" in
-    \"*\") v="${v#\"}"; v="${v%\"}" ;;
-    \'*\') v="${v#\'}"; v="${v%\'}" ;;
+    \"*) reste="${v#\"}"; v="${reste%%\"*}" ;;
+    \'*) reste="${v#\'}"; v="${reste%%\'*}" ;;
+    '#'*) v="" ;;
+    *) v="${v%%[[:space:]]#*}"
+       v="${v%"${v##*[![:space:]]}"}" ;;
   esac
-  printf '%s' "$v" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
+  printf '%s' "$v"
 }
 
 # Valide UNE valeur de secret : rejette l'absence, le vide, la valeur

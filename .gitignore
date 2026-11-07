@@ -105,3 +105,8 @@ backend/nohup.out
 
 # Livrable tableur généré (conservé localement, hygiène du dépôt)
 dossier_trvx/Documentation_TableauDeBord_Referentiels_INJS.xlsx
+
+# Chaîne de déploiement INJS-LMD — fichiers locaux au VPS, jamais publiés
+deploy/production/logs/
+deploy/production/.env.bak-*
+deploy/production/.env.avant-rollback-*

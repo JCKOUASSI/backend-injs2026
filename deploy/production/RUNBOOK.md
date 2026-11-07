@@ -222,11 +222,20 @@ Les étapes §1 à §8 peuvent être exécutées par la chaîne automatisée,
 sans jamais court-circuiter les contrôles :
 
 - `.github/workflows/deploy-injs-lmd.yml` — déclenchement **manuel**
-  uniquement, environnement GitHub `production`, cinq secrets SSH
-  (`SSH_HOST`, `SSH_USER`, `SSH_PORT`, `SSH_PRIVATE_KEY`,
-  `VPS_KNOWN_HOSTS`), `StrictHostKeyChecking=yes`, tag d'image
-  explicite et immuable (`stable`/`latest` refusés), confirmation
-  `DEPLOYER` tapée pour le mode `deployer`.
+  (`workflow_dispatch`, six modes dont `preflight` en lecture seule) et
+  **automatique** à la fin du workflow de publication (`workflow_run`),
+  sous trois conditions cumulatives : workflow déclencheur = « Publication
+  images INJS-LMD », conclusion `success`, branche de tête `main`. En
+  automatique, le mode par défaut est `preflight` (aucune écriture sur le
+  VPS) ; le mode `deployer` exige les deux variables de dépôt
+  `INJS_DEPLOIEMENT_AUTO=deployer` et `INJS_CONFIRMATION_AUTO=DEPLOYER`.
+  Environnement GitHub `production`, cinq secrets SSH (`SSH_HOST`,
+  `SSH_USER`, `SSH_PORT`, `SSH_PRIVATE_KEY`, `VPS_KNOWN_HOSTS`),
+  `StrictHostKeyChecking=yes`, tag d'image explicite et immuable
+  (`stable`/`latest` refusés), confirmation `DEPLOYER` tapée pour le mode
+  `deployer`. La cible est `workflow_run.head_sha` — le commit réellement
+  publié — et les images sont tirées **par digest** puis comparées au tag.
+  Détail complet : [GUIDE-DEPLOIEMENT-AUTOMATIQUE.md](GUIDE-DEPLOIEMENT-AUTOMATIQUE.md).
 - `deploy/production/deploy.sh` — exécuté sur le VPS ; modes
   `inventaire` (lecture seule), `sauvegarde` (§2–3 ci-dessus :
   comptages en une seule instruction, dump à instantané propre,
@@ -249,9 +258,15 @@ sans jamais court-circuiter les contrôles :
 - Le `.env` du serveur n'est jamais transféré par le workflow
   (exclusion explicite) : il est créé une fois sur le VPS depuis
   `.env.example`.
+- Le workflow ajoute une protection supplémentaire : un **instantané** des
+  conteneurs, volumes et réseaux est pris avant et après l'intervention, et
+  toute disparition ou modification d'un conteneur protégé (`injs-db`,
+  `injs-be`, `injs-fe`, `injs-worker`, `injs-cron`, Redis, RabbitMQ, Nginx
+  Proxy Manager), d'un volume ou d'un réseau **fait échouer** l'exécution.
 - La bascule Nginx Proxy Manager (§7) reste **manuelle**, même via
   la chaîne automatisée.
-- Premier usage recommandé : mode `inventaire`, puis `sauvegarde`
+- Premier usage recommandé : mode `preflight` (tout vérifier sans rien
+  écrire), puis `inventaire`, puis `sauvegarde`
   seule, puis `plan`, avant tout `deployer`.
 
 **Approbation humaine (environnement GitHub `production`)** : le
@@ -260,9 +275,24 @@ d'approbation se configure côté GitHub (Settings → Environments →
 production → *Required reviewers*). Tant qu'aucun relecteur n'y est
 exigé, un déclenchement manuel suffit à exécuter le job : configurer
 au moins un relecteur avant le premier usage en mode `deployer`.
-Le mode `inventaire` du workflow est intégralement en lecture seule :
-aucun transfert, aucune création de fichier ou de répertoire sur le
-VPS, journaux uniquement dans le journal du job GitHub.
+Les modes `preflight` et `inventaire` du workflow sont intégralement en
+lecture seule : aucun transfert, aucune création de fichier ou de
+répertoire sur le VPS, journaux uniquement dans le journal du job GitHub.
+Le mode `preflight` ajoute la résolution des digests des images publiées,
+le contrôle de l'état du domaine public et la comparaison d'instantanés
+avant/après, qui prouve l'absence d'écriture.
+
+**Déclenchement automatique** : le workflow est aussi déclenché par
+`workflow_run` à la fin de « Publication images INJS-LMD ». La garde
+d'entrée exige une conclusion `success` et une branche de tête `main` ;
+la cible déployée est `workflow_run.head_sha`, c'est-à-dire le commit
+réellement publié. En automatique, le mode est `preflight` tant que les
+variables de dépôt `INJS_DEPLOIEMENT_AUTO=deployer` et
+`INJS_CONFIRMATION_AUTO=DEPLOYER` ne sont pas toutes deux positionnées.
+Un workflow déclenché par `workflow_run` s'exécutant dans la version de la
+branche par défaut, le déclenchement automatique n'est actif qu'après
+fusion de ce fichier sur `main`. Détail complet :
+[GUIDE-DEPLOIEMENT-AUTOMATIQUE.md](GUIDE-DEPLOIEMENT-AUTOMATIQUE.md).
 
 Le script historique `scripts/backup_injs_lmd.sh` (base
 `injs_lmd_current` en local hôte) n'est pas la référence sur le VPS :
