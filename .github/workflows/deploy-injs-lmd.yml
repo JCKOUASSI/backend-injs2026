@@ -1,203 +1,1338 @@
-name: Déploiement VPS INJS-LMD (manuel)
+name: Déploiement VPS INJS-LMD
 
-# Déploiement CONTRÔLÉ de GET-INJS2026 sur le VPS de production.
+# ============================================================================
+# Déploiement sur le VPS de production (AlmaLinux + Docker) des images
+# publiées par .github/workflows/publish-injs-lmd.yml :
+#   - jckouassi/injs-be  (backend Django, entrypoint /app/entrypoint.sh)
+#   - jckouassi/injs-fe  (frontend React/Vite servi par nginx:1.27-alpine)
+# Domaine public : https://injs.badge-qr-code.pro
 #
-# Principes :
-#   - déclenchement MANUEL uniquement (aucun déploiement automatique
-#     sur push/merge) ;
-#   - job rattaché à l'environnement GitHub `production` : configurer
-#     une approbation requise dans Settings → Environments → production
-#     pour qu'une validation humaine précède toute exécution ;
-#   - le tag d'image est explicite et immuable : `stable` et `latest`
-#     sont refusés par une étape de validation ;
-#   - connexion SSH par clé ED25519 avec StrictHostKeyChecking=yes et
-#     empreinte vérifiée (secret VPS_KNOWN_HOSTS) ;
-#   - le fichier .env du serveur (secrets applicatifs) n'est JAMAIS
-#     transféré ni écrasé : il est créé une seule fois sur le VPS ;
-#   - chaque étape s'arrête à la première erreur (set -euo pipefail) ;
-#   - la bascule Nginx Proxy Manager reste MANUELLE, hors workflow.
+# CHAÎNE COMPLÈTE
+#   GitHub main → publish-injs-lmd.yml → Docker Hub (tag = SHA Git complet)
+#               → deploy-injs-lmd.yml  → SSH → contrôle des images
+#               → deploy/production/deploy.sh → vérifications → rapport
 #
-# Secrets requis (Settings → Secrets and variables → Actions) :
-#   SSH_HOST, SSH_USER, SSH_PORT, SSH_PRIVATE_KEY, VPS_KNOWN_HOSTS.
+# Ce workflow est INDÉPENDANT du workflow de publication : il ne construit
+# aucune image, il déploie uniquement celles qui ont été publiées.
 #
-# Modes :
-#   inventaire  → état des lieux du VPS, lecture seule ;
-#   sauvegarde  → dump PostgreSQL horodaté et vérifié (pg_restore --list) ;
-#   plan        → migrate --plan + analyse des opérations destructrices ;
-#   deployer    → sauvegarde → plan → migrations validées → stack sur le
-#                 port de validation → contrôles de santé et comptages ;
-#   rollback    → arrête la nouvelle stack (jamais de suppression de
-#                 volumes, jamais de restauration de base).
+# ---------------------------------------------------------------------------
+# DÉCLENCHEMENT
+# ---------------------------------------------------------------------------
+# 1) Automatique : à la fin de « Publication images INJS-LMD » (événement
+#    workflow_run). La garde d'entrée du job de résolution REFUSE l'exécution
+#    sauf si :
+#      - le workflow déclencheur est bien celui de publication ;
+#      - sa conclusion est `success` ;
+#      - sa branche de tête est `main`.
+#    Le SHA déployé est `workflow_run.head_sha`, c'est-à-dire le commit dont
+#    les images ont été publiées — PAS la tête de la branche par défaut
+#    (`github.sha` vaut autre chose dans un contexte workflow_run).
+#    Le mode automatique est `preflight` (lecture seule) par défaut. Il ne
+#    devient `deployer` que si les DEUX variables de dépôt ci-dessous sont
+#    explicitement positionnées (double opt-in auditable) :
+#      INJS_DEPLOIEMENT_AUTO  = deployer
+#      INJS_CONFIRMATION_AUTO = DEPLOYER
+#    LIMITATION GitHub à connaître : un workflow déclenché par workflow_run
+#    s'exécute dans la version présente sur la BRANCHE PAR DÉFAUT. Le
+#    déclenchement automatique n'est donc actif qu'après fusion sur main.
+#
+# 2) Manuel : workflow_dispatch, avec choix du mode et tag immuable explicite.
+#
+# ---------------------------------------------------------------------------
+# PROTECTION DE LA PRODUCTION (règles non négociables)
+# ---------------------------------------------------------------------------
+#   * PostgreSQL (`injs-db`), les volumes, les réseaux et les conteneurs
+#     historiques (`injs-be`, `injs-fe`, `injs-worker`, `injs-cron`, Redis,
+#     RabbitMQ, Nginx Proxy Manager) ne sont JAMAIS supprimés ni recréés :
+#     un instantané est pris AVANT et APRÈS l'intervention ; la disparition
+#     ou la modification d'un conteneur protégé, d'un volume ou d'un réseau
+#     fait ÉCHOUER le déploiement.
+#   * Aucune commande destructive n'est émise ici (`down -v`, `system prune`,
+#     `volume rm|prune`, `image prune`, `flush`, `dropdb`, restauration de
+#     dump). L'exécution réelle passe par deploy/production/deploy.sh, qui
+#     applique son propre garde-fou statique.
+#   * Les images sont tirées PAR DIGEST (`repo@sha256:…`) puis le tag est tiré
+#     et comparé : l'image déployée est prouvée identique à l'image publiée.
+#     `latest` et `stable` sont refusés partout (workflow ET deploy.sh).
+#   * Le `.env` du serveur (secrets applicatifs) n'est JAMAIS transféré,
+#     écrasé ni affiché : seules la présence et la validité de ses variables
+#     sont contrôlées, valeurs masquées.
+#   * Les migrations Django ne partent jamais toutes seules : le compose
+#     transmet SKIP_DB_SETUP=true et deploy.sh n'applique `migrate` qu'après
+#     la porte de contrôle `migrate --plan` analysée.
+#   * Worker et Cron historiques ne sont PAS définis dans
+#     deploy/production/compose.yml : ce workflow ne les remplace donc pas.
+#     Leur état est relevé avant/après ; toute modification bloque.
+#   * La bascule Nginx Proxy Manager reste MANUELLE (RUNBOOK.md §7) : la
+#     nouvelle stack est exposée sur un port de validation et l'ancienne
+#     stack continue de servir le domaine tant que la bascule n'est pas faite.
+#   * SSH par clé avec StrictHostKeyChecking=yes et empreinte vérifiée.
+#     Aucune expression GitHub n'est interpolée dans un script : tout passe
+#     par `env:`, ce qui écarte l'injection de commandes. Les secrets ne
+#     transitent jamais en argument d'une commande distante (le jeton Docker
+#     Hub éventuel passe par stdin).
+#
+# ---------------------------------------------------------------------------
+# SECRETS (Settings → Secrets and variables → Actions → Secrets)
+# ---------------------------------------------------------------------------
+#   SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, VPS_KNOWN_HOSTS  (requis)
+#   SSH_PORT                                              (optionnel, 22 sinon)
+#   DOCKERHUB_USERNAME, DOCKERHUB_TOKEN                   (optionnels ici :
+#     nécessaires seulement si les images Docker Hub sont privées)
+# VARIABLES DE DÉPÔT (onglet Variables)
+#   INJS_DEPLOIEMENT_AUTO, INJS_CONFIRMATION_AUTO         (opt-in automatique)
+#
+# Documentation : deploy/production/GUIDE-DEPLOIEMENT-AUTOMATIQUE.md
+# Runbook serveur : deploy/production/RUNBOOK.md
+# ============================================================================
 
 on:
+  workflow_run:
+    workflows: ["Publication images INJS-LMD"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       mode:
         description: "Opération à exécuter sur le VPS"
         type: choice
         required: true
-        default: "inventaire"
+        default: "preflight"
         options:
+          - preflight
           - inventaire
           - sauvegarde
           - plan
           - deployer
           - rollback
       tag_images:
-        description: "Tag Docker immuable à déployer (SHA Git complet) — requis pour le mode deployer"
+        description: "Tag Docker immuable (SHA Git complet). Vide = déduit de la dernière publication réussie sur main (preflight/plan seulement, jamais deployer)"
         type: string
         required: false
         default: ""
       confirmation:
-        description: "Pour le mode deployer uniquement : taper DEPLOYER pour confirmer"
+        description: "Mode deployer uniquement : taper DEPLOYER pour confirmer"
         type: string
         required: false
         default: ""
+      autoriser_examen_migrations:
+        description: "Autoriser les migrations « à examiner » (altérations, index, données) après lecture du plan"
+        type: boolean
+        required: false
+        default: false
+      autoriser_migrations_destructives:
+        description: "Autoriser les migrations BLOQUANTES (Delete/Rename model, Remove/Rename field) — rend l'ancienne application incompatible"
+        type: boolean
+        required: false
+        default: false
 
+# Un seul déploiement à la fois, manuel comme automatique : groupe partagé et
+# aucune annulation d'une exécution en cours.
 concurrency:
   group: deploiement-production-injs
   cancel-in-progress: false
 
+# Permissions minimales : lecture du dépôt (chaîne de déploiement) et lecture
+# des exécutions Actions (contrôle de la réussite de la publication).
 permissions:
   contents: read
+  actions: read
+
+env:
+  WORKFLOW_PUBLICATION: "Publication images INJS-LMD"
+  IMAGE_BACKEND: "jckouassi/injs-be"
+  IMAGE_FRONTEND: "jckouassi/injs-fe"
+  PROJET_COMPOSE: "injs-lmd-production"
+  RESEAU_PROJET: "injs-lmd-production"
+  DOSSIER_VPS: "/opt/injs/injs-lmd"
+  DOMAINE_PUBLIC: "https://injs.badge-qr-code.pro"
+  PG_CONTAINER: "injs-db"
+  SEUIL_DISQUE_GO: "5"
+  # Conteneurs historiques à protéger : aucun ne doit disparaître ni changer.
+  SERVICES_PROTEGES: "injs-db injs-be injs-fe injs-worker injs-cron"
 
 jobs:
-  deployer:
-    name: "VPS — ${{ inputs.mode }}"
+  # ==========================================================================
+  # 1. RÉSOLUTION — quelle publication, quel tag, quel digest, quel mode ?
+  #    Aucune connexion au VPS : ce job ne parle qu'à GitHub et au registre.
+  # ==========================================================================
+  resolution:
+    name: Résolution de la cible (publication, tags, digests)
     runs-on: ubuntu-latest
-    environment: production
-    timeout-minutes: 45
+    timeout-minutes: 15
+    env:
+      # `gh` interroge l'API Actions pour prouver la réussite de la
+      # publication : lecture seule (permission `actions: read`).
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.name == 'Publication images INJS-LMD' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    outputs:
+      mode: ${{ steps.cible.outputs.mode }}
+      cible_sha: ${{ steps.deduction.outputs.cible_sha }}
+      cible_tag: ${{ steps.deduction.outputs.cible_tag }}
+      cible_deduite: ${{ steps.deduction.outputs.cible_deduite }}
+      digest_backend: ${{ steps.digests.outputs.digest_backend }}
+      digest_frontend: ${{ steps.digests.outputs.digest_frontend }}
+      digest_backend_amd64: ${{ steps.digests.outputs.digest_backend_amd64 }}
+      digest_frontend_amd64: ${{ steps.digests.outputs.digest_frontend_amd64 }}
+      images_sur_registre: ${{ steps.digests.outputs.images_sur_registre }}
+      publication_id: ${{ steps.publication.outputs.publication_id }}
+      publication_url: ${{ steps.publication.outputs.publication_url }}
+      publication_evenement: ${{ steps.publication.outputs.publication_evenement }}
     steps:
-      # Actions épinglées par SHA complet (chaîne d'approvisionnement).
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-
-      - name: Valider les entrées (tag immuable, confirmation)
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ "${{ inputs.mode }}" = "deployer" ]; then
-            tag="${{ inputs.tag_images }}"
-            if [ -z "$tag" ] || [ "$tag" = "stable" ] || [ "$tag" = "latest" ]; then
-              echo "::error::Tag d'image invalide (« $tag ») : un SHA Git complet publié est requis, jamais stable/latest."
-              exit 1
-            fi
-            if ! printf '%s' "$tag" | grep -Eq '^[0-9a-f]{40}$|^v?[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9.-]+)?$'; then
-              echo "::error::Format de tag non reconnu : « $tag »."
-              exit 1
-            fi
-            if [ "${{ inputs.confirmation }}" != "DEPLOYER" ]; then
-              echo "::error::Confirmation absente : taper DEPLOYER dans le champ confirmation."
-              exit 1
-            fi
-          fi
-          echo "Entrées validées : mode=${{ inputs.mode }}"
-
-      - name: Installer la clé SSH et l'empreinte du serveur
-        shell: bash
+      - name: Déterminer le mode et la cible demandée
+        id: cible
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          EVENEMENT: ${{ github.event_name }}
+          MODE_DEMANDE: ${{ inputs.mode }}
+          TAG_DEMANDE: ${{ inputs.tag_images }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          PUBLICATION_NOM: ${{ github.event.workflow_run.name }}
+          PUBLICATION_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          PUBLICATION_BRANCHE: ${{ github.event.workflow_run.head_branch }}
+          PUBLICATION_SHA: ${{ github.event.workflow_run.head_sha }}
+          PUBLICATION_ID_EVENEMENT: ${{ github.event.workflow_run.id }}
+          PUBLICATION_URL_EVENEMENT: ${{ github.event.workflow_run.html_url }}
+          DEPLOIEMENT_AUTO: ${{ vars.INJS_DEPLOIEMENT_AUTO }}
+          CONFIRMATION_AUTO: ${{ vars.INJS_CONFIRMATION_AUTO }}
         run: |
           set -euo pipefail
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
-          echo "Clé et known_hosts installés (aucun secret affiché)."
+          {
+            echo "## Déclenchement"
+            echo "- Événement : \`$EVENEMENT\`"
+            if [ "$EVENEMENT" = "workflow_dispatch" ]; then
+              echo "- Mode demandé : \`${MODE_DEMANDE:-<absent>}\`"
+              echo "- Tag demandé : \`${TAG_DEMANDE:-<vide>}\`"
+            else
+              echo "- Publication : ${PUBLICATION_NOM:-<inconnue>} (exécution ${PUBLICATION_ID_EVENEMENT:-?})"
+              echo "- Conclusion de la publication : **${PUBLICATION_CONCLUSION:-<inconnue>}**"
+              echo "- Branche de tête : \`${PUBLICATION_BRANCHE:-<inconnue>}\`"
+              echo "- SHA publié : \`${PUBLICATION_SHA:-<inconnu>}\`"
+              echo "- Variable INJS_DEPLOIEMENT_AUTO : \`${DEPLOIEMENT_AUTO:-<non défini>}\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Tester la connexion SSH (lecture seule)
-        shell: bash
-        run: |
-          set -euo pipefail
-          ssh -o StrictHostKeyChecking=yes -o BatchMode=yes \
-              -p "${{ secrets.SSH_PORT }}" \
-              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-              'echo "Connexion SSH OK sur $(hostname)"; docker --version; docker compose version'
-
-      # Inventaire PRÉ-TRANSFERT : à ce stade, aucun fichier de la
-      # chaîne n'existe encore sur le VPS, l'inventaire est donc fait
-      # de commandes SSH de consultation pures. La référence métier
-      # unique de l'inventaire reste `deploy.sh inventaire` (utilisable
-      # dès que la chaîne est transférée, modes suivants) : les deux
-      # couvrent le même périmètre en lecture seule (RUNBOOK.md §10).
-      - name: "Inventaire VPS (lecture seule, aucun transfert ni écriture)"
-        if: inputs.mode == 'inventaire'
-        shell: bash
-        run: |
-          set -euo pipefail
-          ssh -o StrictHostKeyChecking=yes -o BatchMode=yes \
-              -p "${{ secrets.SSH_PORT }}" \
-              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" '
-                set -eu
-                echo "== Système =="; cat /etc/almalinux-release; docker --version; docker compose version
-                echo "== Conteneurs =="; docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
-                echo "== Volumes =="; docker volume ls
-                echo "== Réseaux =="; docker network ls
-                echo "== Disque / mémoire =="; df -h; free -h
-              '
-          echo "Inventaire terminé : aucune écriture n'a été faite sur le VPS."
-
-      - name: Transférer la chaîne de déploiement (sans .env)
-        if: inputs.mode != 'inventaire'
-        shell: bash
-        run: |
-          set -euo pipefail
-          ssh -o StrictHostKeyChecking=yes -p "${{ secrets.SSH_PORT }}" \
-              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-              'mkdir -p /opt/injs/injs-lmd'
-          # -R (relatif) : reproduit exactement deploy/production et
-          # docker/ sous /opt/injs/injs-lmd, donc le chemin relatif
-          # ../../docker/nginx/default.conf du compose se résout.
-          rsync -azR --exclude '.env' --exclude 'logs/' --exclude '.env.bak-*' \
-              -e "ssh -o StrictHostKeyChecking=yes -p ${{ secrets.SSH_PORT }}" \
-              deploy/production docker \
-              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/injs/injs-lmd/"
-          ssh -o StrictHostKeyChecking=yes -p "${{ secrets.SSH_PORT }}" \
-              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-              'chmod +x /opt/injs/injs-lmd/deploy/production/deploy.sh && test -f /opt/injs/injs-lmd/deploy/production/compose.yml && test -f /opt/injs/injs-lmd/docker/nginx/default.conf && echo "Arborescence vérifiée sur le VPS."'
-          echo "Chaîne transférée dans /opt/injs/injs-lmd (le .env du serveur est préservé)."
-
-      - name: "Exécuter : ${{ inputs.mode }}"
-        if: inputs.mode != 'inventaire'
-        shell: bash
-        run: |
-          set -euo pipefail
-          args=""
-          if [ "${{ inputs.mode }}" = "deployer" ]; then
-            args="--tag ${{ inputs.tag_images }}"
+          if [ "$EVENEMENT" = "workflow_dispatch" ]; then
+            mode="${MODE_DEMANDE:?mode absent}"
+            sha="${TAG_DEMANDE:-}"
+            deduite="non"
+            # Confirmation humaine explicite pour tout déploiement manuel.
+            if [ "$mode" = "deployer" ]; then
+              [ -n "$sha" ] || {
+                echo "::error::Mode deployer sans tag : renseigner tag_images (SHA Git complet publié). Aucun déploiement sur une cible devinée."
+                exit 1; }
+              [ "$CONFIRMATION" = "DEPLOYER" ] || {
+                echo "::error::Confirmation absente : taper DEPLOYER dans le champ confirmation."
+                exit 1; }
+            fi
+          else
+            # Automatique : la garde d'entrée du job a déjà établi
+            # « publication réussie, issue de main, workflow attendu ».
+            sha="${PUBLICATION_SHA:-}"
+            deduite="non"
+            if [ "${DEPLOIEMENT_AUTO:-}" = "deployer" ] && [ "${CONFIRMATION_AUTO:-}" = "DEPLOYER" ]; then
+              mode="deployer"
+              echo "Déploiement automatique ARMÉ par les variables de dépôt (double opt-in)."
+            else
+              mode="preflight"
+              echo "Déploiement automatique non armé : mode preflight (lecture seule, rien n'est écrit sur le VPS)."
+              echo "Pour armer : INJS_DEPLOIEMENT_AUTO=deployer ET INJS_CONFIRMATION_AUTO=DEPLOYER."
+            fi
+            [ -n "$sha" ] || {
+              echo "::error::workflow_run sans head_sha : cible introuvable, aucune intervention."
+              exit 1; }
           fi
-          ssh -o StrictHostKeyChecking=yes -p "${{ secrets.SSH_PORT }}" \
-              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-              "cd /opt/injs/injs-lmd/deploy/production && ./deploy.sh ${{ inputs.mode }} $args"
 
-      - name: Récupérer les journaux du déploiement
-        if: always() && inputs.mode != 'inventaire'
-        shell: bash
+          {
+            echo "mode=$mode"
+            echo "cible_sha=$sha"
+            echo "cible_deduite=$deduite"
+          } >> "$GITHUB_OUTPUT"
+          echo "Mode retenu : $mode — cible : ${sha:-<à déduire>}"
+
+      # Pour les modes de contrôle sans cible explicite (preflight, plan), la
+      # dernière publication RÉUSSIE sur main est déduite et signalée comme
+      # telle. Jamais pour deployer : un déploiement ne cible pas un SHA deviné.
+      - name: Déduire la cible si nécessaire (jamais pour deployer)
+        id: deduction
+        env:
+          MODE: ${{ steps.cible.outputs.mode }}
+          SHA: ${{ steps.cible.outputs.cible_sha }}
+          DEDUITE: ${{ steps.cible.outputs.cible_deduite }}
         run: |
           set -uo pipefail
-          mkdir -p journaux-vps
-          scp -o StrictHostKeyChecking=yes -P "${{ secrets.SSH_PORT }}" -r \
-              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/injs/injs-lmd/deploy/production/logs/*" \
-              journaux-vps/ || echo "Aucun journal à récupérer."
-
-      - name: Archiver les journaux
-        if: always() && inputs.mode != 'inventaire'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: deploiement-${{ inputs.mode }}-${{ github.run_id }}
-          path: journaux-vps/
-          if-no-files-found: ignore
-          retention-days: 30
-
-      - name: Résumé
-        if: always()
-        shell: bash
-        run: |
+          sha="$SHA"; deduite="$DEDUITE"
+          if [ -z "$sha" ] && [ "$MODE" != "deployer" ]; then
+            ligne="$(gh api --paginate \
+              "repos/$GITHUB_REPOSITORY/actions/runs?branch=main&status=success&per_page=100" \
+              --jq '.workflow_runs[] | select(.name == env.WORKFLOW_PUBLICATION) | [.id, .head_sha, .created_at] | @tsv' \
+              | head -1 || true)"
+            if [ -n "$ligne" ]; then
+              sha="$(printf '%s' "$ligne" | cut -f2)"
+              deduite="oui"
+              echo "::notice::Cible déduite (non demandée explicitement) : SHA $sha, publication n°$(printf '%s' "$ligne" | cut -f1)."
+            else
+              echo "::warning::Aucune publication réussie trouvée sur main : les contrôles d'images seront sautés."
+            fi
+          fi
           {
-            echo "## Déploiement VPS INJS-LMD — mode \`${{ inputs.mode }}\`"
+            echo "cible_sha=$sha"
+            echo "cible_tag=$sha"
+            echo "cible_deduite=$deduite"
+          } >> "$GITHUB_OUTPUT"
+          echo "Cible finale : ${sha:-<aucune>} (déduite : $deduite)"
+
+      # EXIGENCE 1 : la publication Docker correspondante a bien réussi.
+      # En automatique la garde d'entrée l'a établi ; cette étape le re-prouve
+      # par l'API et fournit la trace (n° d'exécution, événement, URL).
+      - name: Vérifier la réussite de la publication (API GitHub)
+        id: publication
+        env:
+          MODE: ${{ steps.cible.outputs.mode }}
+          SHA: ${{ steps.deduction.outputs.cible_sha }}
+        run: |
+          set -uo pipefail
+          if [ -z "$SHA" ]; then
+            echo "Aucun SHA cible (mode $MODE) : contrôle de publication ignoré."
+            printf 'publication_id=\npublication_url=\npublication_evenement=\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          printf '%s' "$SHA" | grep -Eq '^[0-9a-f]{40}$' || {
+            echo "::error::SHA cible invalide (« $SHA ») : 40 caractères hexadécimaux attendus."
+            exit 1; }
+          echo "Recherche d'une publication pour le commit $SHA …"
+          resultat="$(gh api --paginate \
+            "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$SHA&per_page=100" \
+            --jq '.workflow_runs[] | select(.name == env.WORKFLOW_PUBLICATION) | [.id, .conclusion, .event, .head_branch, .html_url, .created_at] | @tsv' \
+            | sort -t$'\t' -k6 -r || true)"
+          if [ -z "$resultat" ]; then
+            echo "::error::Aucune exécution de « $WORKFLOW_PUBLICATION » pour le commit $SHA : les images n'ont jamais été publiées pour cette cible."
+            printf 'publication_id=\npublication_url=\npublication_evenement=\n' >> "$GITHUB_OUTPUT"
+            [ "$MODE" = "deployer" ] && exit 1
+            exit 0
+          fi
+          printf '%s\n' "$resultat" | sed 's/^/  trouvée : /'
+          succes="$(printf '%s\n' "$resultat" | awk -F'\t' '$2 == "success"' | head -1 || true)"
+          if [ -z "$succes" ]; then
+            echo "::error::Aucune publication RÉUSSIE pour $SHA (exécutions trouvées, mais aucune en succès). Déploiement refusé."
+            exit 1
+          fi
+          id="$(printf '%s' "$succes" | cut -f1)"
+          evenement="$(printf '%s' "$succes" | cut -f3)"
+          url="$(printf '%s' "$succes" | cut -f5)"
+          echo "PUBLICATION VÉRIFIÉE : exécution n°$id (déclenchée par $evenement) en succès pour $SHA."
+          {
+            echo "publication_id=$id"
+            echo "publication_url=$url"
+            echo "publication_evenement=$evenement"
+          } >> "$GITHUB_OUTPUT"
+          {
             echo ""
-            echo "- Tag d'images demandé : \`${{ inputs.tag_images }}\`"
-            echo "- Voir l'onglet du job pour le détail ; journaux archivés en artefact."
-            echo "- Bascule Nginx Proxy Manager : **manuelle** (RUNBOOK.md §7), après recette sur le port de validation."
+            echo "### Contrôle de la publication"
+            echo "- Exécution : [n°$id]($url)"
+            echo "- Conclusion : **success** — déclenchée par \`$evenement\`"
+            echo "- Commit publié : \`$SHA\`"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Valider le tag (immuable, jamais latest ni stable)
+        env:
+          MODE: ${{ steps.cible.outputs.mode }}
+          TAG: ${{ steps.deduction.outputs.cible_tag }}
+        run: |
+          set -euo pipefail
+          if [ -z "$TAG" ]; then
+            echo "Aucun tag cible pour le mode $MODE : validation de tag ignorée."
+            exit 0
+          fi
+          case "$TAG" in
+            latest|stable)
+              echo "::error::Tag interdit en production : « $TAG » est un pointeur mutable. Utiliser le SHA Git complet publié."
+              exit 1 ;;
+          esac
+          if ! printf '%s' "$TAG" | grep -Eq '^[0-9a-f]{40}$|^v?[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9.-]+)?$'; then
+            echo "::error::Format de tag non reconnu : « $TAG » (attendu : SHA Git complet ou version sémantique)."
+            exit 1
+          fi
+          echo "Tag validé (immuable) : $TAG"
+
+      # EXIGENCES 2 et 5 : résolution des digests exacts sur le registre.
+      # Le digest est l'identifiant content-addressed de l'image publiée :
+      # c'est lui qui servira au tirage sur le VPS.
+      - name: Résoudre les tags et digests exacts sur le registre
+        id: digests
+        env:
+          MODE: ${{ steps.cible.outputs.mode }}
+          TAG: ${{ steps.deduction.outputs.cible_tag }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          for cle in digest_backend digest_frontend digest_backend_amd64 digest_frontend_amd64; do
+            echo "$cle=" >> "$GITHUB_OUTPUT"
+          done
+          if [ -z "$TAG" ]; then
+            echo "Aucun tag cible : résolution des digests ignorée (mode $MODE)."
+            echo "images_sur_registre=non" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          accept=(-H 'Accept: application/vnd.oci.image.index.v1+json'
+                  -H 'Accept: application/vnd.docker.distribution.manifest.list.v2+json'
+                  -H 'Accept: application/vnd.docker.distribution.manifest.v2+json')
+
+          jeton() { # repo -> jeton de tirage (anonyme si aucun identifiant fourni)
+            local repo="$1" args=(-fsS --max-time 30)
+            if [ -n "${DOCKERHUB_USERNAME:-}" ] && [ -n "${DOCKERHUB_TOKEN:-}" ]; then
+              args+=(--user "$DOCKERHUB_USERNAME:$DOCKERHUB_TOKEN")
+            fi
+            curl "${args[@]}" \
+              "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${repo}:pull" \
+              | jq -r '.token // empty'
+          }
+
+          resoudre() { # repo tag -> "<digest_du_tag> <digest_linux_amd64>"
+            local repo="$1" t="$2" tok digest corps amd64
+            tok="$(jeton "$repo")" || return 1
+            [ -n "$tok" ] || return 1
+            digest="$(curl -fsS -I --max-time 30 -H "Authorization: Bearer $tok" "${accept[@]}" \
+                        "https://registry-1.docker.io/v2/${repo}/manifests/${t}" \
+                        | tr -d '\r' | awk 'tolower($1)=="docker-content-digest:"{print $2}')" || return 1
+            [ -n "$digest" ] || return 1
+            corps="$(curl -fsS --max-time 30 -H "Authorization: Bearer $tok" "${accept[@]}" \
+                       "https://registry-1.docker.io/v2/${repo}/manifests/${t}")" || corps=""
+            amd64="$(jq -r '[.manifests[]? | select(.platform.os=="linux" and .platform.architecture=="amd64") | .digest] | first // empty' <<<"$corps" 2>/dev/null || true)"
+            printf '%s %s\n' "$digest" "$amd64"
+          }
+
+          echec=0; d_be=""; d_fe=""; a_be=""; a_fe=""
+          for entree in "backend|$IMAGE_BACKEND" "frontend|$IMAGE_FRONTEND"; do
+            role="${entree%%|*}"; repo="${entree##*|}"
+            echo "--- $repo:$TAG"
+            if ! lecture="$(resoudre "$repo" "$TAG")"; then
+              echo "::error::Image introuvable sur le registre : $repo:$TAG — la publication n'a pas poussé ce tag (ou dépôt privé sans identifiants Docker Hub)."
+              echec=1; continue
+            fi
+            digest="${lecture%% *}"; amd64="${lecture##* }"
+            [ "$amd64" = "$digest" ] && amd64=""
+            if ! printf '%s' "$digest" | grep -Eq '^sha256:[0-9a-f]{64}$'; then
+              echo "::error::Digest illisible pour $repo:$TAG (« $digest »)."
+              echec=1; continue
+            fi
+            echo "  digest du tag      : $digest"
+            echo "  digest linux/amd64 : ${amd64:-<manifeste unique>}"
+            echo "digest_${role}=$digest" >> "$GITHUB_OUTPUT"
+            echo "digest_${role}_amd64=$amd64" >> "$GITHUB_OUTPUT"
+            if [ "$role" = "backend" ]; then d_be="$digest"; a_be="$amd64"; else d_fe="$digest"; a_fe="$amd64"; fi
+          done
+
+          if [ "$echec" != "0" ]; then
+            echo "images_sur_registre=non" >> "$GITHUB_OUTPUT"
+            if [ "$MODE" = "deployer" ] || [ "$MODE" = "preflight" ]; then
+              echo "::error::Résolution des digests en échec : rien ne sera déployé ni vérifié sur une référence incertaine."
+              exit 1
+            fi
+            echo "::warning::Digests non résolus (mode $MODE) : poursuite sans contrôle d'image."
+            exit 0
+          fi
+          echo "images_sur_registre=oui" >> "$GITHUB_OUTPUT"
+          {
+            echo ""
+            echo "### Images publiées — références exactes"
+            echo "| Service | Image | Digest du tag | Digest linux/amd64 |"
+            echo "|---|---|---|---|"
+            echo "| Backend | \`$IMAGE_BACKEND:$TAG\` | \`$d_be\` | \`${a_be:-manifeste unique}\` |"
+            echo "| Frontend | \`$IMAGE_FRONTEND:$TAG\` | \`$d_fe\` | \`${a_fe:-manifeste unique}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ==========================================================================
+  # 2. DÉPLOIEMENT — SSH, contrôle des images, exécution, vérifications
+  #    Rattaché à l'environnement GitHub `production` : y configurer des
+  #    « Required reviewers » impose une approbation humaine avant exécution.
+  # ==========================================================================
+  deploiement:
+    name: "VPS — ${{ needs.resolution.outputs.mode }}"
+    needs: resolution
+    if: needs.resolution.result == 'success'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 60
+    env:
+      MODE: ${{ needs.resolution.outputs.mode }}
+      CIBLE_SHA: ${{ needs.resolution.outputs.cible_sha }}
+      CIBLE_TAG: ${{ needs.resolution.outputs.cible_tag }}
+      DIGEST_BACKEND: ${{ needs.resolution.outputs.digest_backend }}
+      DIGEST_FRONTEND: ${{ needs.resolution.outputs.digest_frontend }}
+      IMAGES_SUR_REGISTRE: ${{ needs.resolution.outputs.images_sur_registre }}
+      PUBLICATION_ID: ${{ needs.resolution.outputs.publication_id }}
+      PUBLICATION_URL: ${{ needs.resolution.outputs.publication_url }}
+      AUTORISER_EXAMEN: ${{ inputs.autoriser_examen_migrations }}
+      AUTORISER_DESTRUCTIVES: ${{ inputs.autoriser_migrations_destructives }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+    outputs:
+      port_validation: ${{ steps.precontroles.outputs.port_validation }}
+      http_api: ${{ steps.controles.outputs.http_api }}
+      http_frontend: ${{ steps.controles.outputs.http_frontend }}
+      sante_backend: ${{ steps.controles.outputs.sante_backend }}
+      domaine_avant: ${{ steps.domaine-avant.outputs.code }}
+      domaine_apres: ${{ steps.domaine-apres.outputs.code }}
+      domaine_servi_par: ${{ steps.domaine-apres.outputs.domaine_servi_par }}
+      preservation: ${{ steps.preservation.outputs.verdict }}
+    steps:
+      # Actions épinglées par SHA complet (chaîne d'approvisionnement).
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+
+      - name: Vérifier les secrets SSH requis
+        run: |
+          set -uo pipefail
+          manquants=""
+          for v in SSH_HOST SSH_USER SSH_PRIVATE_KEY VPS_KNOWN_HOSTS; do
+            [ -n "${!v:-}" ] || manquants="$manquants $v"
+          done
+          if [ -n "$manquants" ]; then
+            echo "::error::Secrets GitHub absents ou vides :$manquants — les créer dans Settings → Secrets and variables → Actions (voir GUIDE-DEPLOIEMENT-AUTOMATIQUE.md §2)."
+            exit 1
+          fi
+          echo "Secrets SSH présents : SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, VPS_KNOWN_HOSTS (valeurs jamais affichées)."
+          if [ -n "${SSH_PORT:-}" ]; then echo "Port SSH : fourni par le secret SSH_PORT."
+          else echo "SSH_PORT non défini : port 22 utilisé par défaut."; fi
+
+      - name: Installer la clé SSH, l'empreinte du serveur et l'utilitaire de connexion
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+          echo "Lignes known_hosts installées : $(grep -c . "$HOME/.ssh/known_hosts")"
+          # Utilitaire unique de connexion : StrictHostKeyChecking=yes (jamais
+          # accept-new ni no), BatchMode (aucune invite), clé dédiée.
+          cat > "$RUNNER_TEMP/vps-ssh" <<'EOS'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          exec ssh -o StrictHostKeyChecking=yes -o BatchMode=yes -o IdentitiesOnly=yes \
+               -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
+               -p "${SSH_PORT:-22}" "${SSH_USER:?secret SSH_USER absent}@${SSH_HOST:?secret SSH_HOST absent}" "$@"
+          EOS
+          chmod +x "$RUNNER_TEMP/vps-ssh"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+          echo "Clé, known_hosts et utilitaire vps-ssh installés (aucun secret affiché)."
+
+      - name: Vérifier la connexion SSH (lecture seule)
+        run: |
+          set -euo pipefail
+          vps-ssh 'set -eu
+            echo "HOTE=$(hostname)"
+            echo "UTILISATEUR=$(id -un)"
+            cat /etc/almalinux-release 2>/dev/null || head -2 /etc/os-release
+            docker --version
+            docker compose version
+            docker info --format "DOCKER_INFO={{.ServerVersion}} conteneurs={{.Containers}} images={{.Images}}"'
+          echo "Connexion SSH établie et outillage Docker présent."
+
+      # Lecture seule intégrale : état du système, de PostgreSQL, de la
+      # configuration serveur (valeurs sensibles masquées), des conteneurs
+      # historiques et de l'espace disque. Décision bloquante côté runner.
+      - name: Pré-contrôles du VPS (lecture seule)
+        id: precontroles
+        run: |
+          set -uo pipefail
+          mkdir -p evidence
+          cat > "$RUNNER_TEMP/distant-precontroles.sh" <<'EOS'
+          set -uo pipefail
+          DOSSIER="$1"; PG="${2:-injs-db}"; SEUIL="${3:-5}"
+          lire() { # fichier variable -> valeur, SANS exécuter le fichier
+            # Reproduit la sémantique d'un « . fichier » lu par bash : espaces
+            # extrêmes retirés, valeur entre guillemets englobants extraite
+            # telle quelle (un # intérieur y est une donnée), commentaire en
+            # ligne d'une valeur nue retiré. Sans cela, « VAR=valeur  # note »
+            # serait lu « valeur  # note » : tag refusé, port illisible et
+            # secrets faussement signalés comme provisoires.
+            local brut reste
+            brut="$(grep -E "^$2=" "$1" 2>/dev/null | tail -1 | cut -d= -f2- || true)"
+            brut="${brut#"${brut%%[![:space:]]*}"}"
+            case "$brut" in
+              \"*) reste="${brut#\"}"; brut="${reste%%\"*}" ;;
+              \'*) reste="${brut#\'}"; brut="${reste%%\'*}" ;;
+              '#'*) brut="" ;;
+              *) brut="${brut%%[[:space:]]#*}"
+                 brut="${brut%"${brut##*[![:space:]]}"}" ;;
+            esac
+            printf '%s' "$brut"
+          }
+          echo "== Système =="
+          echo "OS=$(cat /etc/almalinux-release 2>/dev/null || head -1 /etc/os-release)"
+          echo "DOCKER=$(docker --version 2>/dev/null || echo absent)"
+          echo "COMPOSE=$(docker compose version 2>/dev/null || echo absent)"
+          echo "== Espace disque =="
+          dispo=""
+          for point in / /opt /var/lib/docker; do
+            [ -d "$point" ] || continue
+            go=$(df -Pk "$point" | awk 'NR==2{printf "%d", $4/1048576}')
+            cle=$(printf '%s' "$point" | tr '/' '_')
+            echo "DISQUE_${cle}=${go}Go"
+            [ "$point" = "/var/lib/docker" ] && dispo="$go"
+          done
+          [ -n "$dispo" ] || dispo=$(df -Pk / | awk 'NR==2{printf "%d", $4/1048576}')
+          echo "DISPO_DOCKER_GO=$dispo"
+          echo "SEUIL_DISQUE_GO=$SEUIL"
+          echo "== Configuration serveur =="
+          ENV="$DOSSIER/deploy/production/.env"
+          pg_user=""; pg_db=""
+          echo "ENV_FICHIER=$ENV"
+          if [ -f "$ENV" ]; then
+            echo "ENV_PRESENT=oui"
+            for v in INJS_BACKEND_TAG INJS_FRONTEND_TAG INJS_BACKEND_IMAGE INJS_FRONTEND_IMAGE \
+                     POSTGRES_DB POSTGRES_USER INJS_PUBLIC_PORT INJS_NETWORK_NAME \
+                     INJS_NETWORK_EXTERNAL INJS_HOST_MEDIA_DIR INJS_HOST_STATIC_DIR \
+                     SKIP_DB_SETUP INJS_VOLUME_MEDIA INJS_VOLUME_STATIC; do
+              echo "ENV_$v=$(lire "$ENV" "$v")"
+            done
+            # POSTGRES_HOST : présence seule (la valeur est une information
+            # d'infrastructure, elle n'est pas nécessaire au contrôle).
+            if [ -n "$(lire "$ENV" POSTGRES_HOST)" ]; then echo "ENV_POSTGRES_HOST=defini"
+            else echo "ENV_POSTGRES_HOST=VIDE"; fi
+            for s in POSTGRES_PASSWORD DJANGO_SECRET_KEY; do
+              v="$(lire "$ENV" "$s")"
+              if [ -z "$v" ]; then
+                echo "SECRET_$s=ABSENT"
+              else
+                case "$(printf '%s' "$v" | tr '[:upper:]' '[:lower:]')" in
+                  change-me|changez-moi|changeme|mot-de-passe|password|secret|exemple|a-renseigner|django-insecure*)
+                    echo "SECRET_$s=PLACEHOLDER" ;;
+                  *) echo "SECRET_$s=renseigne" ;;
+                esac
+              fi
+            done
+            pg_user="$(lire "$ENV" POSTGRES_USER)"; pg_db="$(lire "$ENV" POSTGRES_DB)"
+          else
+            echo "ENV_PRESENT=non"
+          fi
+          echo "== PostgreSQL =="
+          if docker inspect "$PG" >/dev/null 2>&1; then
+            echo "PG_CONTENEUR=$PG"
+            echo "PG_ETAT=$(docker inspect -f '{{.State.Status}}' "$PG" 2>/dev/null || echo '?')"
+            echo "PG_IMAGE=$(docker inspect -f '{{.Config.Image}}' "$PG" 2>/dev/null || echo '?')"
+            echo "PG_CREE=$(docker inspect -f '{{.Created}}' "$PG" 2>/dev/null || echo '?')"
+            if docker exec "$PG" pg_isready >/dev/null 2>&1; then echo "PG_PRET=oui"
+            else echo "PG_PRET=non"; fi
+            if [ -n "$pg_user" ] && [ -n "$pg_db" ]; then
+              echo "PG_VERSION=$(docker exec "$PG" psql -U "$pg_user" -d "$pg_db" -Atc 'SHOW server_version;' 2>/dev/null || echo illisible)"
+              echo "PG_BASE=$pg_db PG_UTILISATEUR=$pg_user"
+            else
+              echo "PG_VERSION=non_testee_(.env_absent)"
+            fi
+          else
+            echo "PG_CONTENEUR=$PG"; echo "PG_ETAT=absent"; echo "PG_PRET=non"
+          fi
+          echo "== Conteneurs historiques protégés =="
+          for c in ${PROTEGES:-}; do
+            if docker inspect "$c" >/dev/null 2>&1; then
+              echo "SERVICE_$c=$(docker inspect -f '{{.State.Status}}' "$c")|image=$(docker inspect -f '{{.Config.Image}}' "$c")"
+            else
+              echo "SERVICE_$c=absent"
+            fi
+          done
+          echo "== Infrastructure détectée par son nom =="
+          docker ps -a --format '{{.Names}}' | grep -iE 'redis|rabbit|proxy|npm|nginx' | sed 's/^/INFRA_/' || echo "INFRA_aucun"
+          echo "== Stack candidate ($PROJET_CANDIDAT) =="
+          docker ps -a --filter "label=com.docker.compose.project=${PROJET_CANDIDAT:-}" \
+            --format 'CANDIDAT_{{.Names}}|{{.State}}|{{.Image}}' || true
+          echo "== FIN DES PRÉ-CONTRÔLES (aucune écriture effectuée) =="
+          EOS
+          # Les listes non sensibles (conteneurs protégés, projet compose) sont
+          # transmises en préfixe d'environnement de la commande distante :
+          # ssh ne propage pas l'environnement local, et un argument unique
+          # contenant des espaces serait découpé en plusieurs paramètres.
+          vps-ssh "PROTEGES='$SERVICES_PROTEGES' PROJET_CANDIDAT='$PROJET_COMPOSE' bash -s --" \
+            "$DOSSIER_VPS" "$PG_CONTAINER" "$SEUIL_DISQUE_GO" \
+            < "$RUNNER_TEMP/distant-precontroles.sh" | tee evidence/precontroles-vps.txt
+
+          valeur() { awk -F= -v k="$1" '$1==k{v=$2} END{printf "%s", v}' evidence/precontroles-vps.txt; }
+          port="$(valeur ENV_INJS_PUBLIC_PORT)"; port="${port:-8080}"
+          env_present="$(valeur ENV_PRESENT)"
+          pg_pret="$(valeur PG_PRET)"
+          dispo="$(valeur DISPO_DOCKER_GO | tr -dc '0-9')"
+          echo "port_validation=$port" >> "$GITHUB_OUTPUT"
+          echo "env_present=$env_present" >> "$GITHUB_OUTPUT"
+          echo "PORT_VALIDATION=$port" >> "$GITHUB_ENV"
+
+          if [ "$MODE" != "preflight" ] && [ "$MODE" != "inventaire" ]; then
+            if [ "$env_present" != "oui" ]; then
+              echo "::error::.env serveur absent ($DOSSIER_VPS/deploy/production/.env) : le mode $MODE l'exige."
+              echo "::error::Le créer sur le VPS depuis .env.example (RUNBOOK.md §4), jamais depuis un poste local."
+              exit 1
+            fi
+            for s in POSTGRES_PASSWORD DJANGO_SECRET_KEY; do
+              if [ "$(valeur "SECRET_$s")" != "renseigne" ]; then
+                echo "::error::Secret applicatif $s absent ou encore à sa valeur d'exemple dans le .env du VPS : deploy.sh le refuserait. Arrêt avant toute intervention (valeur jamais affichée)."
+                exit 1
+              fi
+            done
+          fi
+          if [ "$pg_pret" != "oui" ]; then
+            echo "::error::PostgreSQL ($PG_CONTAINER) ne répond pas : aucune intervention n'est tentée."
+            exit 1
+          fi
+          if [ "${dispo:-0}" -lt "$SEUIL_DISQUE_GO" ]; then
+            echo "::error::Espace disque insuffisant (${dispo:-0} Go disponibles, seuil ${SEUIL_DISQUE_GO} Go). Libérer de l'espace SANS prune ni suppression de volumes, puis relancer."
+            exit 1
+          fi
+          echo "Pré-contrôles validés : PostgreSQL prêt, ${dispo} Go disponibles, configuration serveur ${env_present}, port de validation $port."
+
+      - name: État du domaine public AVANT intervention
+        id: domaine-avant
+        run: |
+          set -uo pipefail
+          code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "$DOMAINE_PUBLIC/api/health/" || echo 000)"
+          racine="$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "$DOMAINE_PUBLIC/" || echo 000)"
+          tls="$(curl -s -o /dev/null -w '%{ssl_verify_result}' --max-time 25 "$DOMAINE_PUBLIC/" || echo 9)"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          mkdir -p evidence
+          echo "DOMAINE_API_AVANT=$code DOMAINE_RACINE_AVANT=$racine TLS_AVANT=$tls" | tee evidence/domaine-avant.txt
+          if [ "$code" = "200" ]; then
+            echo "Domaine accessible avant intervention (API 200, racine $racine, TLS $tls)."
+          else
+            echo "::warning::Le domaine ne répondait pas correctement AVANT intervention (API=$code, racine=$racine) : état préexistant, à ne pas imputer à ce déploiement."
+          fi
+
+      - name: Instantané de protection AVANT intervention
+        if: env.MODE != 'inventaire'
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          cat > "$RUNNER_TEMP/distant-instantane.sh" <<'EOS'
+          set -uo pipefail
+          echo "# instantane $(date -u +%Y-%m-%dT%H:%M:%SZ) hote=$(hostname)"
+          echo "## conteneurs"
+          docker ps -a --format '{{.Names}}' | sort | while read -r n; do
+            [ -n "$n" ] || continue
+            image=$(docker inspect -f '{{.Config.Image}}' "$n" 2>/dev/null || echo '?')
+            cree=$(docker inspect -f '{{.Created}}' "$n" 2>/dev/null || echo '?')
+            projet=$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.project" }}' "$n" 2>/dev/null || true)
+            [ "$projet" = "<no value>" ] && projet="aucun"
+            printf '%s|%s|%s|%s\n' "$n" "$image" "$cree" "${projet:-aucun}"
+          done
+          echo "## volumes"
+          docker volume ls --format '{{.Name}}' | sort
+          echo "## reseaux"
+          docker network ls --format '{{.Name}}' | sort
+          echo "## images_injs"
+          docker images --format '{{.Repository}}:{{.Tag}}|{{.ID}}' | grep -E 'injs-(be|fe)' | sort || true
+          EOS
+          vps-ssh 'bash -s --' < "$RUNNER_TEMP/distant-instantane.sh" | tee evidence/instantane-avant.txt
+          compter() { awk -v s="## $1" '$0==s{f=1;next}/^## /{f=0}f&&NF' "$2" | wc -l; }
+          echo "Instantané avant :"
+          echo "  conteneurs : $(compter conteneurs evidence/instantane-avant.txt)"
+          echo "  volumes    : $(compter volumes evidence/instantane-avant.txt)"
+          echo "  réseaux    : $(compter reseaux evidence/instantane-avant.txt)"
+
+      # EXIGENCES 4 et 5 : tirage PAR DIGEST (octets exacts de la publication),
+      # puis tirage du tag et comparaison des identifiants d'image. Seule
+      # écriture sur le VPS : le stockage d'images. Aucun conteneur en place
+      # n'est touché, aucun volume n'est monté.
+      - name: Récupérer et vérifier les images publiées sur le VPS
+        if: (env.MODE == 'deployer' || env.MODE == 'plan') && env.IMAGES_SUR_REGISTRE == 'oui'
+        run: |
+          set -uo pipefail
+          mkdir -p evidence
+          cat > "$RUNNER_TEMP/distant-images.sh" <<'EOS'
+          set -uo pipefail
+          TAG="$1"; BE="$2"; FE="$3"; DBE="$4"; DFE="$5"
+          verifier() { # repo digest role
+            local repo="$1" dig="$2" role="$3" err id_dig id_tag arch
+            echo "--- $role : $repo"
+            if [ -z "$dig" ]; then echo "DIGEST_ABSENT=$role"; return 1; fi
+            if ! err=$(docker pull "$repo@$dig" 2>&1); then
+              printf '%s\n' "$err" | tail -3 | sed 's/^/    /'
+              if printf '%s\n' "$err" | grep -qiE 'denied|unauthorized|authentication required|requested access to the resource'; then
+                echo "AUTH_REQUISE=$role"; return 2
+              fi
+              echo "TIRAGE_ECHEC=$role"; return 1
+            fi
+            if ! docker pull "$repo:$TAG" >/dev/null 2>&1; then
+              echo "TIRAGE_TAG_ECHEC=$role"; return 1
+            fi
+            id_dig=$(docker image inspect "$repo@$dig" --format '{{.Id}}')
+            id_tag=$(docker image inspect "$repo:$TAG" --format '{{.Id}}')
+            arch=$(docker image inspect "$repo@$dig" --format '{{.Os}}/{{.Architecture}}')
+            echo "ID_IMAGE_PAR_DIGEST=$id_dig"
+            echo "ID_IMAGE_PAR_TAG=$id_tag"
+            echo "PLATEFORME=$arch"
+            echo "REPO_DIGESTS=$(docker image inspect "$repo@$dig" --format '{{json .RepoDigests}}')"
+            if [ "$id_dig" != "$id_tag" ]; then
+              echo "ECART_TAG_DIGEST=$role"; return 1
+            fi
+            echo "COHERENCE_TAG_DIGEST=ok"
+            case "$arch" in
+              linux/amd64) echo "PLATEFORME_OK=oui" ;;
+              *) echo "PLATEFORME_INATTENDUE=$role ($arch)"; return 1 ;;
+            esac
+            if printf '%s' "$(docker image inspect "$repo@$dig" --format '{{json .RepoDigests}}')" | grep -qF "$dig"; then
+              echo "DIGEST_PRESENT_DANS_REPODIGESTS=oui"
+            else
+              echo "AVERTISSEMENT_DIGEST_ABSENT_REPODIGESTS=$role"
+            fi
+          }
+          verifier "$BE" "$DBE" backend; rcbe=$?
+          verifier "$FE" "$DFE" frontend; rcfe=$?
+          rc=0
+          [ "$rcbe" = 0 ] || rc=1
+          [ "$rcfe" = 0 ] || rc=1
+          { [ "$rcbe" = 2 ] || [ "$rcfe" = 2 ]; } && rc=2
+
+          echo "--- configuration Docker réelle des images"
+          echo "ENTRYPOINT_BACKEND=$(docker image inspect "$BE@$DBE" --format '{{json .Config.Entrypoint}}' 2>/dev/null || echo illisible)"
+          echo "CMD_BACKEND=$(docker image inspect "$BE@$DBE" --format '{{json .Config.Cmd}}' 2>/dev/null || echo illisible)"
+          echo "PORTS_BACKEND=$(docker image inspect "$BE@$DBE" --format '{{json .Config.ExposedPorts}}' 2>/dev/null || echo illisible)"
+          echo "PORTS_FRONTEND=$(docker image inspect "$FE@$DFE" --format '{{json .Config.ExposedPorts}}' 2>/dev/null || echo illisible)"
+          echo "CMD_FRONTEND=$(docker image inspect "$FE@$DFE" --format '{{json .Config.Cmd}}' 2>/dev/null || echo illisible)"
+          label=$(docker image inspect "$FE@$DFE" --format '{{ index .Config.Labels "version" }}' 2>/dev/null || true)
+          echo "LABEL_VERSION_FRONTEND=${label:-<absent>}"
+          if [ "${label:-}" = "$TAG" ]; then echo "LABEL_VERSION_COHERENT=oui"
+          else echo "LABEL_VERSION_COHERENT=non"; fi
+
+          echo "--- contenu réel (exécution jetable : aucun volume, aucun réseau)"
+          docker run --rm --entrypoint /bin/sh "$BE@$DBE" \
+            -c 'test -f /app/manage.py && test -d /app/staticfiles && test -x /app/entrypoint.sh && echo CONTENU_BACKEND_OK' 2>&1 | tail -2
+          docker run --rm --entrypoint /bin/sh "$FE@$DFE" \
+            -c 'test -f /usr/share/nginx/html/index.html && test -f /etc/nginx/conf.d/default.conf && echo CONTENU_FRONTEND_OK' 2>&1 | tail -2
+          exit $rc
+          EOS
+          vps-ssh 'bash -s --' "$CIBLE_TAG" "$IMAGE_BACKEND" "$IMAGE_FRONTEND" "$DIGEST_BACKEND" "$DIGEST_FRONTEND" \
+            < "$RUNNER_TEMP/distant-images.sh" > evidence/images-vps.txt 2>&1
+          statut=$?
+          cat evidence/images-vps.txt
+          if [ "$statut" = 2 ]; then
+            echo "::notice::Images privées : authentification Docker Hub requise sur le VPS."
+            if [ -z "${DOCKERHUB_USERNAME:-}" ] || [ -z "${DOCKERHUB_TOKEN:-}" ]; then
+              echo "::error::Tirage refusé (accès non autorisé) et secrets DOCKERHUB_USERNAME / DOCKERHUB_TOKEN absents : impossible de vérifier les images publiées."
+              exit 1
+            fi
+            # Le jeton passe UNIQUEMENT par stdin : jamais en argument (il
+            # serait visible dans la table des processus du VPS), jamais dans
+            # les journaux (masqué par GitHub). L'identifiant, non sensible,
+            # est transmis en $0 de la commande distante.
+            commande='umask 077; f=$(mktemp); cat > "$f"; docker login -u "$0" --password-stdin < "$f" >/dev/null; rm -f "$f"; echo "Connexion Docker Hub établie sur le VPS."'
+            printf '%s' "$DOCKERHUB_TOKEN" | vps-ssh "$commande" "$DOCKERHUB_USERNAME"
+            vps-ssh 'bash -s --' "$CIBLE_TAG" "$IMAGE_BACKEND" "$IMAGE_FRONTEND" "$DIGEST_BACKEND" "$DIGEST_FRONTEND" \
+              < "$RUNNER_TEMP/distant-images.sh" > evidence/images-vps-apres-auth.txt 2>&1
+            statut=$?
+            cat evidence/images-vps-apres-auth.txt
+          fi
+          if [ "$statut" != 0 ]; then
+            echo "::error::Vérification des images en échec (code $statut) : le déploiement est arrêté AVANT toute modification du VPS."
+            exit 1
+          fi
+          for attendu in COHERENCE_TAG_DIGEST=ok PLATEFORME_OK=oui CONTENU_BACKEND_OK CONTENU_FRONTEND_OK; do
+            if ! grep -qF "$attendu" evidence/images-vps*.txt; then
+              echo "::error::Contrôle d'image manquant : « $attendu » non obtenu."
+              exit 1
+            fi
+          done
+          if ! grep -qF 'LABEL_VERSION_COHERENT=oui' evidence/images-vps*.txt; then
+            echo "::warning::Le LABEL version de l'image frontend ne correspond pas au tag déployé : vérifier la publication concernée."
+          fi
+          if ! grep -qF 'ENTRYPOINT_BACKEND=["/app/entrypoint.sh"]' evidence/images-vps*.txt; then
+            echo "::warning::Entrypoint backend différent de /app/entrypoint.sh (le compose le force explicitement) : vérifier la cohérence avec backend/Dockerfile."
+          fi
+          echo "Images vérifiées : tirées par digest, identiques au tag, plateforme linux/amd64, contenu conforme aux Dockerfile."
+
+      - name: Transférer la chaîne de déploiement (sans .env)
+        if: env.MODE != 'preflight' && env.MODE != 'inventaire'
+        run: |
+          set -euo pipefail
+          vps-ssh "mkdir -p '$DOSSIER_VPS'"
+          # rsync doit exister côté serveur : aucune méthode de transfert de
+          # secours n'est improvisée (un scp récursif écraserait sans contrôle).
+          vps-ssh 'command -v rsync >/dev/null 2>&1' || {
+            echo "::error::rsync absent du VPS : l'installer (dnf install -y rsync) puis relancer."
+            exit 1
+          }
+          # -R (relatif) : reproduit exactement deploy/production et docker/
+          # sous $DOSSIER_VPS ; le chemin relatif ../../docker/nginx/default.conf
+          # du compose se résout donc. Aucun --delete : rien n'est supprimé.
+          rsync -azR \
+            --exclude '.env' --exclude '.env.bak-*' --exclude '.env.avant-rollback-*' --exclude 'logs/' \
+            -e "ssh -o StrictHostKeyChecking=yes -o BatchMode=yes -o IdentitiesOnly=yes -p ${SSH_PORT:-22}" \
+            deploy/production docker \
+            "$SSH_USER@$SSH_HOST:$DOSSIER_VPS/"
+          vps-ssh "set -eu
+            cd '$DOSSIER_VPS/deploy/production'
+            chmod +x deploy.sh
+            test -f compose.yml
+            test -f ../../docker/nginx/default.conf
+            if [ -f .env ]; then echo '.env serveur présent et préservé (jamais transféré).'; else echo 'ATTENTION : .env absent sur le VPS.'; fi
+            echo 'Arborescence vérifiée sur le VPS.'"
+          echo "Chaîne transférée dans $DOSSIER_VPS."
+
+      - name: Inventaire VPS (mode inventaire — lecture seule intégrale)
+        if: env.MODE == 'inventaire'
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          vps-ssh 'set -eu
+            echo "== Système =="; cat /etc/almalinux-release 2>/dev/null || head -2 /etc/os-release
+            docker --version; docker compose version
+            echo "== Conteneurs =="; docker ps -a --format "table {{.Names}}\t{{.Image}}\t{{.State}}\t{{.Status}}\t{{.Ports}}"
+            echo "== Volumes =="; docker volume ls
+            echo "== Réseaux =="; docker network ls
+            echo "== Disque / mémoire =="; df -h; free -h' | tee evidence/inventaire-vps.txt
+          echo "Inventaire terminé : aucune écriture n'a été faite sur le VPS."
+
+      # Exécution réelle : UNIQUEMENT par deploy.sh, qui applique ses propres
+      # garde-fous (sauvegarde vérifiée par SHA-256, plan de migrations
+      # analysé et bloquant, aucune commande destructive, ancienne stack et
+      # PostgreSQL jamais touchés).
+      - name: "Exécuter deploy.sh — mode ${{ needs.resolution.outputs.mode }}"
+        if: env.MODE != 'preflight' && env.MODE != 'inventaire'
+        id: execution
+        run: |
+          set -uo pipefail
+          mkdir -p evidence
+          prefixe=""
+          args=""
+          if [ "$MODE" = "deployer" ]; then
+            [ "${AUTORISER_EXAMEN:-false}" = "true" ] && prefixe="DEPLOY_AUTORISER_EXAMEN_MIGRATIONS=oui-explicite"
+            [ "${AUTORISER_DESTRUCTIVES:-false}" = "true" ] && prefixe="$prefixe DEPLOY_AUTORISER_MIGRATIONS_DESTRUCTIVES=oui-explicite"
+            [ -n "$prefixe" ] && echo "::warning::Autorisations de migrations demandées explicitement :$prefixe"
+            args="--tag $CIBLE_TAG"
+          fi
+          echo "Commande distante : cd $DOSSIER_VPS/deploy/production &&$prefixe ./deploy.sh $MODE $args"
+          vps-ssh "cd '$DOSSIER_VPS/deploy/production' && $prefixe ./deploy.sh $MODE $args" 2>&1 | tee "evidence/deploy-sh-$MODE.txt"
+          code=${PIPESTATUS[0]}
+          echo "code_retour=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" != 0 ]; then
+            echo "::error::deploy.sh $MODE en échec (code $code) : lire le journal ci-dessus et l'artefact."
+            echo "::error::Ce workflow n'a supprimé ni PostgreSQL, ni volume, ni réseau, ni conteneur historique."
+            exit "$code"
+          fi
+          echo "deploy.sh $MODE terminé avec succès."
+
+      - name: Contrôles post-exécution sur le VPS (conteneurs, santé, HTTP)
+        if: env.MODE != 'inventaire'
+        id: controles
+        run: |
+          set -uo pipefail
+          mkdir -p evidence
+          cat > "$RUNNER_TEMP/distant-controles.sh" <<'EOS'
+          set -uo pipefail
+          DOSSIER="$1"; MODE="$2"; PORT="${3:-8080}"
+          REP="$DOSSIER/deploy/production"
+          echo "PORT_VALIDATION=$PORT"
+          echo "MODE_CONTROLE=$MODE"
+          compose() { docker compose -f "$REP/compose.yml" --env-file "$REP/.env" "$@"; }
+          echo "== état des conteneurs de la stack candidate =="
+          if [ -f "$REP/.env" ] && [ -f "$REP/compose.yml" ]; then
+            compose ps 2>&1 | sed 's/^/  /'
+            for svc in backend frontend gateway; do
+              cid=$(compose ps -q "$svc" 2>/dev/null || true)
+              if [ -z "$cid" ]; then echo "SERVICE_$svc=absent"; continue; fi
+              etat=$(docker inspect -f '{{.State.Status}}' "$cid" 2>/dev/null || echo '?')
+              sante=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}sans-healthcheck{{end}}' "$cid" 2>/dev/null || echo '?')
+              image=$(docker inspect -f '{{.Config.Image}}' "$cid" 2>/dev/null || echo '?')
+              demarre=$(docker inspect -f '{{.State.StartedAt}}' "$cid" 2>/dev/null || echo '?')
+              redemarrages=$(docker inspect -f '{{.RestartCount}}' "$cid" 2>/dev/null || echo '?')
+              echo "SERVICE_$svc=etat:$etat|sante:$sante|image:$image|demarre:$demarre|redemarrages:$redemarrages"
+              echo "IMAGE_ID_$svc=$(docker inspect -f '{{.Image}}' "$cid" 2>/dev/null || echo '?')"
+            done
+          else
+            echo "compose ps ignoré : .env ou compose.yml absent de $REP"
+            for svc in backend frontend gateway; do echo "SERVICE_$svc=absent"; done
+          fi
+          echo "== tests HTTP sur le port de validation =="
+          tester() { # url nom
+            local sortie code corps
+            sortie=$(curl -s --max-time 20 -w '\nHTTPCODE=%{http_code}' "$1" 2>/dev/null || printf '\nHTTPCODE=000')
+            code="${sortie##*HTTPCODE=}"; corps="${sortie%$'\n'HTTPCODE=*}"
+            echo "HTTP_$2=$code"
+            printf 'CORPS_%s=%s\n' "$2" "$(printf '%s' "$corps" | head -c 300 | tr -d '\n\r')"
+            printf 'EMPREINTE_%s=%s\n' "$2" "$(printf '%s' "$corps" | sha256sum | awk '{print $1}')"
+          }
+          tester "http://127.0.0.1:$PORT/api/health/" api
+          tester "http://127.0.0.1:$PORT/" frontend
+          tester "http://127.0.0.1:$PORT/admin/login/" admin
+          echo "== FIN DES CONTRÔLES VPS =="
+          EOS
+          vps-ssh 'bash -s --' "$DOSSIER_VPS" "$MODE" "${PORT_VALIDATION:-8080}" \
+            < "$RUNNER_TEMP/distant-controles.sh" > evidence/controles-vps.txt 2>&1
+          cat evidence/controles-vps.txt
+          valeur() { awk -F= -v k="$1" '$1==k{v=$2} END{printf "%s", v}' evidence/controles-vps.txt; }
+          api="$(valeur HTTP_api)"; front="$(valeur HTTP_frontend)"; admin="$(valeur HTTP_admin)"
+          port="$(valeur PORT_VALIDATION)"; port="${port:-${PORT_VALIDATION:-8080}}"
+          sante="$(grep -oE 'SERVICE_backend=etat:[a-z]+\|sante:[a-z-]+' evidence/controles-vps.txt | head -1 || true)"
+          {
+            echo "http_api=${api:-000}"
+            echo "http_frontend=${front:-000}"
+            echo "http_admin=${admin:-000}"
+            echo "sante_backend=${sante:-inconnue}"
+          } >> "$GITHUB_OUTPUT"
+          echo "EMPREINTE_FRONTEND_VPS=$(valeur EMPREINTE_frontend)" >> "$GITHUB_ENV"
+
+          # Exigence de réussite HTTP seulement quand la stack candidate doit
+          # être en service (deployer, rollback). En preflight/plan/sauvegarde,
+          # une stack absente est un constat, pas un échec.
+          if [ "$MODE" = "deployer" ] || [ "$MODE" = "rollback" ]; then
+            if [ "${api:-000}" != "200" ]; then
+              echo "::error::Backend injoignable sur le port de validation $port (HTTP ${api:-000})."
+              docker_logs=1
+            fi
+            if [ "${front:-000}" != "200" ]; then
+              echo "::error::Frontend injoignable sur le port de validation $port (HTTP ${front:-000})."
+              docker_logs=1
+            fi
+            if [ -n "${docker_logs:-}" ]; then
+              vps-ssh "cd '$DOSSIER_VPS/deploy/production' && docker compose -f compose.yml --env-file .env logs --tail 120" 2>&1 | tail -150 || true
+              exit 1
+            fi
+            printf '%s' "$sante" | grep -q 'sante:healthy' \
+              || echo "::warning::Le healthcheck du backend n'est pas « healthy » (démarrage en cours ou sonde en échec) : vérifier docker inspect."
+            corps_api="$(valeur CORPS_api)"
+            printf '%s' "$corps_api" | grep -q '"status":"ok"\|"status": "ok"' \
+              || echo "::warning::/api/health/ n'annonce pas status=ok : $corps_api"
+            printf '%s' "$corps_api" | grep -q '"database":"ok"\|"database": "ok"' \
+              || echo "::warning::/api/health/ n'annonce pas database=ok : vérifier la connexion à PostgreSQL."
+            echo "Tests HTTP réussis sur le port de validation $port : API ${api}, frontend ${front}, admin ${admin:-?}."
+          else
+            if [ "${api:-000}" = "200" ]; then
+              echo "Stack candidate déjà en service sur le port $port (API 200, frontend ${front:-?})."
+            else
+              echo "Aucune stack candidate en service sur le port $port (API ${api:-000}) — constat normal en mode $MODE si elle n'a jamais été déployée."
+            fi
+          fi
+
+      - name: Instantané de protection APRÈS intervention et comparaison
+        if: env.MODE != 'inventaire'
+        id: preservation
+        run: |
+          set -uo pipefail
+          vps-ssh 'bash -s --' < "$RUNNER_TEMP/distant-instantane.sh" | tee evidence/instantane-apres.txt
+          # LC_ALL=C : le tri des sections et celui attendu par comm doivent
+          # utiliser exactement le même ordre, indépendamment de la locale.
+          section() { awk -v s="## $1" '$0==s{f=1;next}/^## /{f=0}f&&NF' "$2" | LC_ALL=C sort; }
+          section conteneurs evidence/instantane-avant.txt > evidence/avant-conteneurs.txt
+          section conteneurs evidence/instantane-apres.txt  > evidence/apres-conteneurs.txt
+          section volumes    evidence/instantane-avant.txt > evidence/avant-volumes.txt
+          section volumes    evidence/instantane-apres.txt  > evidence/apres-volumes.txt
+          section reseaux    evidence/instantane-avant.txt > evidence/avant-reseaux.txt
+          section reseaux    evidence/instantane-apres.txt  > evidence/apres-reseaux.txt
+
+          violations=0
+          # 1) Volumes : tout volume présent avant doit l'être encore après.
+          while read -r v; do
+            [ -n "$v" ] || continue
+            grep -qxF "$v" evidence/apres-volumes.txt || {
+              echo "::error::VOLUME SUPPRIMÉ pendant l'intervention : $v — violation de la protection de la production."
+              violations=$((violations + 1)); }
+          done < evidence/avant-volumes.txt
+          # 2) Réseaux : idem, sauf le réseau propre du projet candidat
+          #    lorsqu'il n'est pas externe (compose down le retire alors).
+          while read -r r; do
+            [ -n "$r" ] || continue
+            [ "$r" = "$RESEAU_PROJET" ] && continue
+            grep -qxF "$r" evidence/apres-reseaux.txt || {
+              echo "::error::RÉSEAU SUPPRIMÉ pendant l'intervention : $r — violation de la protection de la production."
+              violations=$((violations + 1)); }
+          done < evidence/avant-reseaux.txt
+          # 3) Conteneurs protégés (tout ce qui n'appartient pas au projet
+          #    candidat) : présents, avec la MÊME image et la MÊME date de
+          #    création — donc ni supprimés, ni recréés, ni remplacés.
+          while IFS='|' read -r nom image cree projet; do
+            [ -n "$nom" ] || continue
+            [ "$projet" = "$PROJET_COMPOSE" ] && continue
+            ligne="$(awk -F'|' -v n="$nom" '$1==n{print;exit}' evidence/apres-conteneurs.txt)"
+            if [ -z "$ligne" ]; then
+              echo "::error::CONTENEUR PROTÉGÉ SUPPRIMÉ pendant l'intervention : $nom (image $image)."
+              violations=$((violations + 1)); continue
+            fi
+            if [ "$ligne" != "$nom|$image|$cree|$projet" ]; then
+              echo "::error::CONTENEUR PROTÉGÉ MODIFIÉ : $nom — avant « $nom|$image|$cree|$projet », après « $ligne »."
+              violations=$((violations + 1))
+            fi
+          done < evidence/avant-conteneurs.txt
+          # 4) Stack candidate : son évolution est attendue, on la documente.
+          echo "Évolution de la stack candidate ($PROJET_COMPOSE) :"
+          awk -F'|' -v p="$PROJET_COMPOSE" '$4==p{printf "  avant : %s (%s)\n", $1, $2}' evidence/avant-conteneurs.txt || true
+          awk -F'|' -v p="$PROJET_COMPOSE" '$4==p{printf "  après : %s (%s)\n", $1, $2}' evidence/apres-conteneurs.txt || true
+          echo "Conteneurs apparus :"
+          noms() { cut -d'|' -f1 "$1" | LC_ALL=C sort; }
+          LC_ALL=C comm -13 <(noms evidence/avant-conteneurs.txt) <(noms evidence/apres-conteneurs.txt) | sed 's/^/  + /' || true
+          echo "Conteneurs retirés :"
+          LC_ALL=C comm -23 <(noms evidence/avant-conteneurs.txt) <(noms evidence/apres-conteneurs.txt) | sed 's/^/  - /' || true
+
+          # 5) En mode lecture seule, toute différence est un signal.
+          if [ "$MODE" = "preflight" ]; then
+            if diff -q evidence/avant-conteneurs.txt evidence/apres-conteneurs.txt >/dev/null \
+               && diff -q evidence/avant-volumes.txt evidence/apres-volumes.txt >/dev/null \
+               && diff -q evidence/avant-reseaux.txt evidence/apres-reseaux.txt >/dev/null; then
+              echo "Mode preflight : instantanés avant/après strictement identiques — aucune écriture sur le VPS."
+            else
+              echo "::warning::Différence constatée entre les instantanés en mode preflight (lecture seule attendue) : analyser evidence/instantane-*.txt (activité tierce possible sur le VPS)."
+            fi
+          fi
+
+          if [ "$violations" -gt 0 ]; then
+            echo "verdict=VIOLATION ($violations)" >> "$GITHUB_OUTPUT"
+            echo "::error::$violations violation(s) de la protection de la production. Ne pas basculer le proxy ; analyser les instantanés archivés."
+            exit 1
+          fi
+          echo "verdict=conforme" >> "$GITHUB_OUTPUT"
+          echo "Protection de la production vérifiée : volumes, réseaux et conteneurs protégés intacts."
+
+      - name: Vérifier l'accessibilité du domaine public
+        if: env.MODE != 'inventaire'
+        id: domaine-apres
+        env:
+          # Comparaison avant/après : la valeur vient de la sortie d'étape,
+          # jamais d'une variable d'environnement posée dans un fichier.
+          DOMAINE_API_AVANT: ${{ steps.domaine-avant.outputs.code }}
+        run: |
+          set -uo pipefail
+          mkdir -p evidence
+          code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "$DOMAINE_PUBLIC/api/health/" || echo 000)"
+          racine="$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "$DOMAINE_PUBLIC/" || echo 000)"
+          tls="$(curl -s -o /dev/null -w '%{ssl_verify_result}' --max-time 25 "$DOMAINE_PUBLIC/" || echo 9)"
+          corps="$(curl -s --max-time 25 "$DOMAINE_PUBLIC/" || true)"
+          empreinte="$(printf '%s' "$corps" | sha256sum | awk '{print $1}')"
+          corps_api="$(curl -s --max-time 25 "$DOMAINE_PUBLIC/api/health/" || true)"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "DOMAINE_API_APRES=$code DOMAINE_RACINE_APRES=$racine TLS_APRES=$tls EMPREINTE_RACINE=$empreinte" | tee evidence/domaine-apres.txt
+          echo "CORPS_API_DOMAINE=$(printf '%s' "$corps_api" | head -c 300 | tr -d '\n\r')" >> evidence/domaine-apres.txt
+          if [ "$code" = "200" ] && [ "$racine" = "200" ] && [ "$tls" = "0" ]; then
+            echo "Domaine public accessible : API 200, racine 200, certificat TLS valide."
+          elif [ "$code" = "200" ] || [ "$racine" = "200" ]; then
+            echo "::warning::Domaine partiellement accessible (API=$code, racine=$racine, TLS=$tls)."
+          else
+            echo "::warning::Domaine injoignable (API=$code, racine=$racine, TLS=$tls)."
+          fi
+          # La bascule Nginx Proxy Manager étant MANUELLE, le domaine sert
+          # l'ancienne stack tant qu'elle n'a pas été faite : on le constate,
+          # on ne l'exige pas.
+          if [ -n "${EMPREINTE_FRONTEND_VPS:-}" ] && [ "$empreinte" = "$EMPREINTE_FRONTEND_VPS" ]; then
+            echo "La page servie par le domaine est IDENTIQUE à celle de la stack candidate : le domaine sert déjà cette version."
+            echo "domaine_servi_par=candidate" >> "$GITHUB_OUTPUT"
+          else
+            echo "La page servie par le domaine DIFFÈRE de celle de la stack candidate : bascule Nginx Proxy Manager encore à faire (RUNBOOK.md §7)."
+            echo "domaine_servi_par=ancienne" >> "$GITHUB_OUTPUT"
+          fi
+          # Régression : ce qui répondait avant doit répondre après.
+          if [ "${DOMAINE_API_AVANT:-000}" = "200" ] && [ "$code" != "200" ]; then
+            echo "::error::RÉGRESSION du domaine public : /api/health/ répondait 200 avant l'intervention et répond $code après. Bascule interdite."
+            exit 1
+          fi
+
+      - name: Rédiger le rapport de déploiement
+        if: always()
+        env:
+          PRESERVATION: ${{ steps.preservation.outputs.verdict }}
+          CODE_EXECUTION: ${{ steps.execution.outputs.code_retour }}
+          HTTP_API: ${{ steps.controles.outputs.http_api }}
+          HTTP_FRONTEND: ${{ steps.controles.outputs.http_frontend }}
+          HTTP_ADMIN: ${{ steps.controles.outputs.http_admin }}
+          SANTE_BACKEND: ${{ steps.controles.outputs.sante_backend }}
+          DOMAINE_AVANT: ${{ steps.domaine-avant.outputs.code }}
+          DOMAINE_APRES: ${{ steps.domaine-apres.outputs.code }}
+          DOMAINE_SERVI_PAR: ${{ steps.domaine-apres.outputs.domaine_servi_par }}
+        run: |
+          set -uo pipefail
+          mkdir -p evidence
+          {
+            echo "# Rapport de déploiement INJS-LMD"
+            echo ""
+            echo "- Exécution GitHub : $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo "- Déclencheur : $GITHUB_EVENT_NAME"
+            echo "- Mode : $MODE"
+            echo "- Commit / tag cible : ${CIBLE_SHA:-<aucun>}"
+            echo "- Publication contrôlée : ${PUBLICATION_ID:-<aucune>} ${PUBLICATION_URL:-}"
+            echo "- Image backend : $IMAGE_BACKEND:${CIBLE_TAG:-?} @ ${DIGEST_BACKEND:-<non résolu>}"
+            echo "- Image frontend : $IMAGE_FRONTEND:${CIBLE_TAG:-?} @ ${DIGEST_FRONTEND:-<non résolu>}"
+            echo "- Port de validation : ${PORT_VALIDATION:-?}"
+            echo "- deploy.sh : code de retour ${CODE_EXECUTION:-<non exécuté>}"
+            echo ""
+            echo "## Contrôles"
+            echo ""
+            echo "| Contrôle | Résultat |"
+            echo "|---|---|"
+            echo "| Domaine /api/health/ avant → après | ${DOMAINE_AVANT:-?} → ${DOMAINE_APRES:-?} |"
+            echo "| Domaine servi par | ${DOMAINE_SERVI_PAR:-<non déterminé>} |"
+            echo "| HTTP API (port de validation) | ${HTTP_API:-?} |"
+            echo "| HTTP frontend (port de validation) | ${HTTP_FRONTEND:-?} |"
+            echo "| HTTP admin (port de validation) | ${HTTP_ADMIN:-?} |"
+            echo "| Santé du backend | ${SANTE_BACKEND:-?} |"
+            echo "| Protection de la production | ${PRESERVATION:-<non évaluée>} |"
+            for f in evidence/precontroles-vps.txt evidence/images-vps.txt evidence/images-vps-apres-auth.txt evidence/controles-vps.txt; do
+              [ -f "$f" ] || continue
+              case "$f" in
+                *precontroles*)
+                  grep -E '^(PG_PRET|PG_VERSION|PG_ETAT|ENV_PRESENT|SECRET_|DISPO_DOCKER_GO|SERVICE_injs|CANDIDAT_)' "$f" \
+                    | sed 's/^/| pré-contrôles VPS | /; s/$/ |/' ;;
+                *images-vps*)
+                  grep -E '^(ID_IMAGE_PAR_DIGEST|ID_IMAGE_PAR_TAG|PLATEFORME|COHERENCE_TAG_DIGEST|PLATEFORME_OK|LABEL_VERSION|CONTENU_|ENTRYPOINT_BACKEND|DIGEST_PRESENT|AVERTISSEMENT_)' "$f" \
+                    | sed 's/^/| images | /; s/$/ |/' ;;
+                *controles-vps*)
+                  grep -E '^(SERVICE_|HTTP_|IMAGE_ID_|PORT_VALIDATION)' "$f" | sed 's/^/| VPS | /; s/$/ |/' ;;
+              esac
+            done
+            echo ""
+            echo "## Protection de la production"
+            echo "- Volumes avant : $(wc -l < evidence/avant-volumes.txt 2>/dev/null || echo 0) ; après : $(wc -l < evidence/apres-volumes.txt 2>/dev/null || echo 0)"
+            echo "- Réseaux avant : $(wc -l < evidence/avant-reseaux.txt 2>/dev/null || echo 0) ; après : $(wc -l < evidence/apres-reseaux.txt 2>/dev/null || echo 0)"
+            echo "- Conteneurs avant : $(wc -l < evidence/avant-conteneurs.txt 2>/dev/null || echo 0) ; après : $(wc -l < evidence/apres-conteneurs.txt 2>/dev/null || echo 0)"
+            echo "- Aucune commande destructive émise (suppression de volumes, purge Docker, vidage ou suppression de base, restauration de dump)."
+            echo ""
+            echo "## Étapes restantes (manuelles)"
+            echo "1. Recette sur le port de validation ${PORT_VALIDATION:-?} (RUNBOOK.md §6)."
+            echo "2. Bascule Nginx Proxy Manager vers la nouvelle passerelle (RUNBOOK.md §7)."
+            echo "3. Retour arrière si besoin : repointer NPM puis \`deploy.sh rollback\` (RUNBOOK.md §8)."
+          } > evidence/rapport.md
+          cat evidence/rapport.md
+          # Exemplaire serveur du rapport (traçabilité côté VPS). Jamais en
+          # mode lecture seule : preflight et inventaire n'écrivent rien.
+          if [ "$MODE" != "preflight" ] && [ "$MODE" != "inventaire" ]; then
+            vps-ssh "mkdir -p '$DOSSIER_VPS/deploy/production/logs'" >/dev/null 2>&1 || true
+            vps-ssh "cat > '$DOSSIER_VPS/deploy/production/logs/rapport-github-$GITHUB_RUN_ID.md'" < evidence/rapport.md >/dev/null 2>&1 || true
+            echo "Rapport copié sur le VPS : $DOSSIER_VPS/deploy/production/logs/rapport-github-$GITHUB_RUN_ID.md"
+          fi
+
+      - name: Récupérer les journaux du VPS
+        if: always() && env.MODE != 'inventaire' && env.MODE != 'preflight'
+        run: |
+          set -uo pipefail
+          mkdir -p evidence/journaux-vps
+          scp -o StrictHostKeyChecking=yes -o BatchMode=yes -o IdentitiesOnly=yes \
+              -P "${SSH_PORT:-22}" -r \
+              "$SSH_USER@$SSH_HOST:$DOSSIER_VPS/deploy/production/logs/." \
+              evidence/journaux-vps/ 2>/dev/null \
+            || echo "Aucun journal à récupérer (répertoire logs absent ou vide)."
+          find evidence/journaux-vps -type f 2>/dev/null | head -20 | sed 's/^/  /'
+
+      - name: Archiver les preuves et le rapport
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: deploiement-${{ needs.resolution.outputs.mode }}-${{ needs.resolution.outputs.cible_tag }}-${{ github.run_id }}
+          path: evidence/
+          if-no-files-found: ignore
+          retention-days: 90
+
+  # ==========================================================================
+  # 3. RAPPORT — consolidation et signalement explicite des échecs.
+  #    Tourne toujours : un déploiement en échec doit rester lisible.
+  # ==========================================================================
+  rapport:
+    name: Rapport final
+    needs: [resolution, deploiement]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RESULTAT_RESOLUTION: ${{ needs.resolution.result }}
+      RESULTAT_DEPLOIEMENT: ${{ needs.deploiement.result }}
+      MODE: ${{ needs.resolution.outputs.mode }}
+      CIBLE_TAG: ${{ needs.resolution.outputs.cible_tag }}
+      CIBLE_DEDUITE: ${{ needs.resolution.outputs.cible_deduite }}
+      DIGEST_BACKEND: ${{ needs.resolution.outputs.digest_backend }}
+      DIGEST_FRONTEND: ${{ needs.resolution.outputs.digest_frontend }}
+      PUBLICATION_ID: ${{ needs.resolution.outputs.publication_id }}
+      PUBLICATION_URL: ${{ needs.resolution.outputs.publication_url }}
+      PUBLICATION_EVENEMENT: ${{ needs.resolution.outputs.publication_evenement }}
+      CONCLUSION_PUBLICATION: ${{ github.event.workflow_run.conclusion }}
+      BRANCHE_PUBLICATION: ${{ github.event.workflow_run.head_branch }}
+      PORT_VALIDATION: ${{ needs.deploiement.outputs.port_validation }}
+      HTTP_API: ${{ needs.deploiement.outputs.http_api }}
+      HTTP_FRONTEND: ${{ needs.deploiement.outputs.http_frontend }}
+      SANTE_BACKEND: ${{ needs.deploiement.outputs.sante_backend }}
+      DOMAINE_AVANT: ${{ needs.deploiement.outputs.domaine_avant }}
+      DOMAINE_APRES: ${{ needs.deploiement.outputs.domaine_apres }}
+      DOMAINE_SERVI_PAR: ${{ needs.deploiement.outputs.domaine_servi_par }}
+      PRESERVATION: ${{ needs.deploiement.outputs.preservation }}
+      URL_EXECUTION: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Récupérer le rapport et les preuves
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          name: deploiement-${{ needs.resolution.outputs.mode }}-${{ needs.resolution.outputs.cible_tag }}-${{ github.run_id }}
+          path: evidence/
+
+      - name: Publier le rapport final
+        run: |
+          set -uo pipefail
+          icone() {
+            case "$1" in
+              success) echo "✅" ;; failure) echo "❌" ;; cancelled) echo "⛔" ;;
+              skipped) echo "⏭️" ;; *) echo "ℹ️" ;;
+            esac
+          }
+          {
+            echo "## Déploiement VPS INJS-LMD — $(icone "$RESULTAT_DEPLOIEMENT") \`$RESULTAT_DEPLOIEMENT\`"
+            echo ""
+            if [ "$RESULTAT_RESOLUTION" = "skipped" ]; then
+              echo "**Aucune intervention sur le VPS.** La garde d'entrée a refusé cette exécution :"
+              echo "publication « ${CONCLUSION_PUBLICATION:-<inconnue>} » issue de « ${BRANCHE_PUBLICATION:-<inconnue>} »."
+              echo ""
+              echo "Le déclenchement automatique n'accepte qu'une publication **réussie**, issue de **main**,"
+              echo "produite par « $WORKFLOW_PUBLICATION »."
+              exit 0
+            fi
+            echo "| Élément | Valeur |"
+            echo "|---|---|"
+            echo "| Mode | \`$MODE\` |"
+            echo "| Résolution de la cible | $(icone "$RESULTAT_RESOLUTION") \`$RESULTAT_RESOLUTION\` |"
+            echo "| Intervention VPS | $(icone "$RESULTAT_DEPLOIEMENT") \`$RESULTAT_DEPLOIEMENT\` |"
+            echo "| Tag déployé | \`${CIBLE_TAG:-<aucun>}\` (cible déduite : ${CIBLE_DEDUITE:-non}) |"
+            echo "| Digest backend | \`${DIGEST_BACKEND:-<non résolu>}\` |"
+            echo "| Digest frontend | \`${DIGEST_FRONTEND:-<non résolu>}\` |"
+            echo "| Publication contrôlée | ${PUBLICATION_ID:+[n°$PUBLICATION_ID]($PUBLICATION_URL) }(${PUBLICATION_EVENEMENT:-?}) |"
+            echo "| Port de validation | \`${PORT_VALIDATION:-?}\` |"
+            echo "| HTTP \`/api/health/\` | \`${HTTP_API:-?}\` |"
+            echo "| HTTP \`/\` | \`${HTTP_FRONTEND:-?}\` |"
+            echo "| Santé backend | \`${SANTE_BACKEND:-?}\` |"
+            echo "| Domaine API avant → après | \`${DOMAINE_AVANT:-?}\` → \`${DOMAINE_APRES:-?}\` |"
+            echo "| Domaine servi par | \`${DOMAINE_SERVI_PAR:-<non déterminé>}\` |"
+            echo "| Protection de la production | \`${PRESERVATION:-<non évaluée>}\` |"
+            echo ""
+            if [ -f evidence/rapport.md ]; then
+              echo "<details><summary>Rapport détaillé (evidence/rapport.md)</summary>"
+              echo ""
+              cat evidence/rapport.md
+              echo ""
+              echo "</details>"
+              echo ""
+            fi
+            echo "**Étapes manuelles restantes** — recette sur le port de validation, bascule Nginx Proxy Manager"
+            echo "(RUNBOOK.md §7) ; retour arrière : repointer NPM puis \`deploy.sh rollback\` (RUNBOOK.md §8)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Signalement explicite des échecs (annotations visibles dans le job
+          # et dans la liste des exécutions).
+          if [ "$RESULTAT_RESOLUTION" = "failure" ]; then
+            echo "::error::Résolution de la cible en échec : publication non vérifiée, tag invalide ou digests introuvables. Rien n'a été envoyé au VPS."
+          fi
+          if [ "$RESULTAT_DEPLOIEMENT" = "failure" ]; then
+            echo "::error::Déploiement en échec (mode $MODE, cible ${CIBLE_TAG:-<aucune>})."
+            echo "::error::Lire le journal du job « VPS » et l'artefact de preuves. Ce workflow n'a rien supprimé."
+            case "$PRESERVATION" in
+              *VIOLATION*) echo "::error::VIOLATION de la protection de la production détectée : ne PAS basculer le proxy, analyser les instantanés archivés." ;;
+            esac
+          fi
+          if [ "$RESULTAT_DEPLOIEMENT" = "success" ] && { [ "$MODE" = "deployer" ] || [ "$MODE" = "rollback" ]; }; then
+            echo "::notice::Intervention réussie en mode $MODE sur le port de validation ${PORT_VALIDATION:-?}. La bascule du domaine reste MANUELLE (RUNBOOK.md §7)."
+          fi
+          if [ "$MODE" = "preflight" ]; then
+            echo "::notice::Mode preflight : vérification en lecture seule. Aucun fichier créé ni modifié sur le VPS, aucun conteneur touché."
+          fi
+          if [ "$RESULTAT_DEPLOIEMENT" = "skipped" ]; then
+            echo "::notice::Aucune intervention VPS : le job de résolution n'a pas produit de cible exploitable."
+          fi
+          echo "Rapport publié : $URL_EXECUTION"
