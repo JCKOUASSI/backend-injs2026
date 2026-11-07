@@ -178,7 +178,35 @@ sont explicitement rattachées à un environnement où elles seront mesurées.
 Le workflow `ci.yml` a été rendu déclenchable sur la branche de livraison
 (`push: branches: [main, 'deploy-injs-2026/**', 'arena/**']`).
 
-L'exécution réelle et son verdict sont consignés **après** le push de la branche
-— voir `DEPLOY_INJS_MISSION_02_GO_NO_GO.md`, section « État de la CI ». Le
-résultat n'est pas anticipé ici : tant qu'aucun run n'a été observé, la CI est
-déclarée **non encore exécutée**, jamais « verte ».
+### 6.1 Run `42344821705` — résultat observé
+
+| Job | Conclusion |
+|---|---|
+| `Démarrage conteneur (SKIP_DB_SETUP)` | **success** |
+| `Backend (Django + PostgreSQL, Python 3.12)` | **success** |
+| `Frontend (React + Vite)` | **success** |
+| `Configuration Docker (validation, sans publication)` | **success** |
+| **Run complet** | **completed / success** |
+
+Étapes du job backend toutes en succès : version Python 3.12, installation,
+`pip check`, `manage.py check`, `check --deploy`, `makemigrations --check`,
+`check_repo_hygiene`, `collectstatic`, **Tests**. L'étape « Détail des échecs »
+est `skipped` (elle ne s'exécute qu'en cas d'échec).
+
+### 6.2 Limite de traçabilité
+
+Le texte des journaux (`Ran 3 103 tests … OK`) n'a pas pu être téléchargé :
+GitHub les sert depuis `results-receiver.actions.githubusercontent.com` et
+`*.blob.core.windows.net`, hôtes **injoignables** depuis cet environnement
+(`EOF` à la connexion). Le verdict s'appuie donc sur le **statut des étapes**,
+qui reste probant : une suite en échec fait échouer l'étape « Tests » et le job.
+
+Les décomptes de tests cités dans ce document proviennent des **exécutions
+locales** (3 103 / 496 / 5 backend, 2 216 frontend) et ne sont pas une lecture du
+journal CI.
+
+### 6.3 Publication
+
+Le run n'a déclenché **aucune** publication : le workflow de publication exige
+`INJS_PUBLISH_ENABLED=true` et la variable de dépôt n'existe pas. Les seuls
+artefacts produits sont le journal de tests et les caches de construction Docker.
