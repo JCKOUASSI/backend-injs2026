@@ -362,32 +362,68 @@ inconnu, une ligne mal formée ou un fichier de contrôles absent produisent un
 Répertoire contrôlé : `/opt/injs/backups` (même chemin que `BACKUP_DIR` de
 `deploy.sh`, constante `DOSSIER_BACKUPS` du workflow).
 
+**Source unique des seuils** : `deploy/production/normaliser-controles.sh`
+(variables surchargeables, mais définies **nulle part ailleurs** — vérifié par
+le test T15.12 et le contrôle statique F6).
+
 | Paramètre | Valeur | Signification |
 |---|---|---|
-| `SEUIL_DUMP_RECENT_JOURS` | **7** | en deçà : sauvegarde considérée fraîche → `PASS` |
-| `SEUIL_DUMP_ANCIEN_JOURS` | **30** | au-delà : sauvegarde `WARN` (ancienne), à rafraîchir |
+| `SEUIL_DUMP_RECENT_JOURS` | **7** | 0 à 7 jours inclus : sauvegarde fraîche → `PASS` |
+| `SEUIL_DUMP_ANCIEN_JOURS` | **30** | 8 à 30 jours inclus : `WARN` ; au-delà : voir ci-dessous |
 | `TAILLE_MIN_DUMP_OCTETS` | **1 048 576** (1 Mio) | plancher de vraisemblance d'un dump |
 
-**Méthode d'identification** : un dump PostgreSQL au format custom commence
-par la signature binaire `PGDMP`, lue avec `head -c 5`. C'est une **lecture**
-— il n'y a **ni `pg_restore`, ni restauration, même à blanc**.
+#### Politique de fraîcheur (appliquée par `sauvegardes_classifier`)
+
+| Ancienneté du dump PostgreSQL | Statut du fichier |
+|---|---|
+| **0 à 7 jours inclus** | `PASS` |
+| **8 à 30 jours inclus** | `WARN` |
+| **Plus de 30 jours** | `FAIL` **si aucune autre sauvegarde PostgreSQL récente et admissible n'existe** ; `WARN` sinon |
+
+La **disponibilité globale** (`SAU-DISPO`, contrôle obligatoire) est calculée
+sur l'ensemble des dumps admissibles (signature `PGDMP` **et** taille ≥
+plancher) :
+
+| Situation | `SAU-DISPO` |
+|---|---|
+| Au moins un dump admissible de 7 jours ou moins | `PASS` |
+| Des dumps admissibles, aucun de 7 jours ou moins | `FAIL` |
+| Aucun dump admissible | `FAIL` |
+| Aucun dump du tout | `FAIL` |
+
+Conséquence directe : un dump ancien **n'entraîne jamais à lui seul** un
+`FAIL` de disponibilité lorsqu'une autre sauvegarde récente existe, alors que
+l'**absence totale** de sauvegarde récente est toujours bloquante.
+
+#### Autres constats
 
 | Constat | Statut |
 |---|---|
 | Répertoire absent | `FAIL` (obligatoire) |
 | Répertoire illisible | `FAIL` (obligatoire) |
-| Aucun dump | `FAIL` (obligatoire) |
-| Dump `PGDMP` récent et au-dessus du plancher | `PASS` — présence et signature seulement |
-| Dump ancien (> 7 j) | `WARN` |
-| Signature incorrecte ou taille sous le plancher | `WARN` (archive non vérifiable) |
-| Aucune sauvegarde fraîche mais des dumps valides anciens | `FAIL` de disponibilité |
+| Aucun dump PostgreSQL | `FAIL` (obligatoire) |
+| Archive complémentaire seule | `FAIL` — une archive ne remplace **jamais** un dump |
+| Signature incorrecte ou taille sous le plancher | `WARN` (non admissible, non vérifiable) |
+| Inventaire interrompu ou script distant en échec | `NON_EXECUTE` → préflight refusé |
 
-> **Limite assumée et affichée dans le rapport** : la signature `PGDMP` et la
-> taille ne démontrent **ni l'intégrité complète ni la restaurabilité** du
-> dump. La vérification forte (`pg_restore --list`, empreinte SHA-256
-> bout-en-bout) n'est faite que par `deploy.sh sauvegarde`, au moment de
-> produire une sauvegarde — jamais sur une sauvegarde existante, car cela
-> exigerait d'ouvrir une base ou un outil de restauration.
+#### Les quatre niveaux de certitude
+
+| Niveau | Ce que le contrôle établit | Verdict |
+|---|---|---|
+| **N1 — Identification** | signature `PGDMP` lue par `head -c 5`, type de fichier reconnu | **apparent seulement** |
+| **N2 — Présence et fraîcheur** | fichier présent, taille ≥ plancher, date connue, ancienneté conforme | établi |
+| **N3 — Intégrité** | — | **NON démontrée** |
+| **N4 — Restaurabilité** | — | **NON démontrée**, aucune restauration effectuée |
+
+> La présence de la signature PGDMP confirme uniquement l'identification
+> apparente d'un dump PostgreSQL au format personnalisé. Elle ne garantit ni
+> son intégrité complète ni sa restaurabilité.
+
+Cette phrase est publiée telle quelle dans le résumé d'exécution du workflow.
+`pg_restore -l` n'est **pas** utilisé, même à blanc. La vérification forte
+(`pg_restore --list`, empreinte SHA-256 bout-en-bout) n'existe que dans
+`deploy.sh sauvegarde`, au moment de **produire** une sauvegarde — jamais sur
+une sauvegarde existante.
 
 Le contrôle est **strictement en lecture seule** : il n'utilise que `test`,
 `stat`, `head`, `date` et écrit uniquement sur la sortie standard du runner.

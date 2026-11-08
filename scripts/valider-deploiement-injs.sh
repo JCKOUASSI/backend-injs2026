@@ -552,9 +552,14 @@ grep -qF '| Contrôle | Statut | Obligatoire | Résultat | Observation |' "$DEPL
 grep -qF 'controles_tableau' "$DEPLOY_WF" && grep -qF 'controles_bilan' "$DEPLOY_WF" \
   && ok "F3 — tableau et bilan produits par la bibliothèque commune" \
   || echec "F3 — tableau ou bilan non produit"
-grep -qF 'controle_non_execute' "$DEPLOY_WF" \
-  && ok "F3 — un contrôle non exécuté a un traitement explicite" \
-  || echec "F3 — NON_EXECUTE non produit"
+if grep -qF 'controle_non_execute' "$DEPLOY_WF" || grep -qF 'NON_EXECUTE' "$DEPLOY_WF"; then
+  ok "F3 — un contrôle non exécuté a un traitement explicite dans le workflow"
+else
+  echec "F3 — NON_EXECUTE non produit"
+fi
+grep -qF 'NON_EXECUTE' deploy/production/normaliser-controles.sh \
+  && ok "F3 — NON_EXECUTE produit par la bibliothèque" \
+  || echec "F3 — NON_EXECUTE absent de la bibliothèque"
 
 # F4 : conditions de protection du mode preflight conservées
 grep -qF "if: env.MODE != 'preflight' && env.MODE != 'inventaire'" "$DEPLOY_WF" \
@@ -584,6 +589,71 @@ else
 fi
 
 # ────────────────────────────────────────────────────────────────────────────
+# F6 : source unique des seuils de sauvegarde (point A.5)
+LIB_NORM="deploy/production/normaliser-controles.sh"
+if [ -f "$LIB_NORM" ]; then
+  for seuil in SEUIL_DUMP_RECENT_JOURS SEUIL_DUMP_ANCIEN_JOURS TAILLE_MIN_DUMP_OCTETS; do
+    nb="$(grep -c "${seuil}:=" "$LIB_NORM")"
+    [ "$nb" = "1" ] \
+      && ok "F6 — $seuil défini une seule fois dans la bibliothèque" \
+      || echec "F6 — $seuil défini $nb fois dans la bibliothèque"
+    grep -rqE "${seuil}: " .github/workflows/deploy-injs-lmd.yml \
+      && echec "F6 — $seuil redéfini dans le workflow (duplication de politique)" \
+      || ok "F6 — $seuil absent du workflow (aucune duplication)"
+  done
+  grep -q 'sauvegardes_classifier' "$LIB_NORM" \
+    && ok "F6 — la politique de fraîcheur est centralisée dans sauvegardes_classifier" \
+    || echec "F6 — fonction de classification absente"
+  grep -q 'sauvegardes_classifier' "$DEPLOY_WF" \
+    && ok "F6 — le workflow appelle la fonction de classification" \
+    || echec "F6 — le workflow ne délègue pas la classification"
+  # Aucune logique de seuil ne doit subsister dans le workflow.
+  if grep -qE 'SEUIL_DUMP_(RECENT|ANCIEN)_JOURS' "$DEPLOY_WF"; then
+    echec "F6 — une logique de seuil subsiste dans le workflow"
+  else
+    ok "F6 — aucune logique de seuil dans le workflow"
+  fi
+else
+  echec "F6 — bibliothèque absente : $LIB_NORM"
+fi
+
+# F7 : les quatre niveaux N1/N3/N4 sont explicites (point B)
+if [ -f "$LIB_NORM" ]; then
+  for niveau in 'N1' 'N3 intégrité NON démontrée' 'N4 restaurabilité NON démontrée'; do
+    grep -qF "$niveau" "$LIB_NORM" \
+      && ok "F7 — niveau « $niveau » présent dans la classification" \
+      || echec "F7 — niveau « $niveau » absent"
+  done
+  grep -qF "identification apparente d'un dump PostgreSQL au format" "$DEPLOY_WF" \
+    && ok "F7 — mise en garde d'identification publiée dans le résumé" \
+    || echec "F7 — mise en garde d'identification absente"
+  grep -qF 'ne garantit ni son intégrité complète ni sa' "$DEPLOY_WF" \
+    && ok "F7 — la mise en garde couvre intégrité et restaurabilité" \
+    || echec "F7 — mise en garde incomplète"
+  grep -qE '(^|[[:space:];&|(])pg_restore' <(sed -e 's/[[:space:]]#.*$//' "$DEPLOY_WF") \
+    && echec "F7 — pg_restore présent dans le code du workflow" \
+    || ok "F7 — pg_restore absent du code (aucune restauration, même à blanc)"
+fi
+
+# F8 : la documentation décrit EXACTEMENT la politique du code
+GUIDE="deploy/production/GUIDE-DEPLOIEMENT-AUTOMATIQUE.md"
+if [ -f "$GUIDE" ]; then
+  grep -qE '\*\*0 à 7 jours inclus\*\*' "$GUIDE" \
+    && ok "F8 — guide : 0 à 7 jours → PASS" || echec "F8 — guide : borne 7 j absente ou divergente"
+  grep -qE '\*\*8 à 30 jours inclus\*\*' "$GUIDE" \
+    && ok "F8 — guide : 8 à 30 jours → WARN" || echec "F8 — guide : borne 30 j absente ou divergente"
+  grep -qiE 'plus de 30 jours.*FAIL' "$GUIDE" \
+    && ok "F8 — guide : plus de 30 jours → FAIL conditionnel" || echec "F8 — guide : règle > 30 j absente"
+  grep -qF 'Elle ne garantit ni' "$GUIDE" \
+    && ok "F8 — guide : mise en garde N1/N3/N4 présente" || echec "F8 — guide : mise en garde absente"
+  # Le guide ne doit pas décrire l'ancienne règle « > 7 j → WARN ».
+  grep -qE 'Dump ancien \(> 7 j\) \| `WARN`' "$GUIDE" \
+    && echec "F8 — guide : ancienne règle contradictoire encore présente" \
+    || ok "F8 — guide : aucune règle contradictoire résiduelle"
+else
+  echec "F8 — guide absent : $GUIDE"
+fi
+
 printf '\n────────────────────────────────────────────────────────\n'
 printf 'BILAN : %d OK, %d ÉCHEC, %d IGNORE\n' "$nb_ok" "$nb_echec" "$nb_ignore"
 if [ "$nb_echec" -gt 0 ]; then

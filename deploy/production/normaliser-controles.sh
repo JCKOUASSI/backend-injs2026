@@ -32,6 +32,23 @@
 # passent explicitement à `controles_analyser`.
 : "${CONTROLES_FICHIER:=controles.txt}"
 
+# ---------------------------------------------------------------------------
+# SOURCE UNIQUE DES SEUILS DE SAUVEGARDE.
+# Ces trois valeurs sont les seules définitions du dépôt : le workflow, les
+# tests et la documentation s'y réfèrent. Elles restent surchargeables par
+# variable d'environnement (utile pour un test ou une dérogation explicite),
+# mais aucune autre copie ne doit exister ailleurs.
+#
+#   SEUIL_DUMP_RECENT_JOURS  : 0 à N jours  -> PASS (sauvegarde fraîche)
+#   SEUIL_DUMP_ANCIEN_JOURS  : N+1 à M jours -> WARN (à rafraîchir)
+#                              au-delà de M   -> WARN si une autre sauvegarde
+#                                                récente existe, sinon FAIL
+#   TAILLE_MIN_DUMP_OCTETS   : plancher de vraisemblance d'un dump
+# ---------------------------------------------------------------------------
+: "${SEUIL_DUMP_RECENT_JOURS:=7}"
+: "${SEUIL_DUMP_ANCIEN_JOURS:=30}"
+: "${TAILLE_MIN_DUMP_OCTETS:=1048576}"
+
 # controle <id> <statut> <obligatoire> <resultat> <observation> [fichier]
 controle() {
   local id="$1" statut="$2" obligatoire="$3" resultat="$4" observation="$5"
@@ -151,4 +168,151 @@ controles_bilan() {
     RESERVES) echo "**Verdict : PRÉFLIGHT VALIDÉ AVEC RÉSERVES** — prérequis obligatoires satisfaits, anomalies non bloquantes à examiner." ;;
     *) echo "**Verdict : PRÉFLIGHT REFUSÉ** — au moins un contrôle obligatoire est en FAIL ou NON_EXECUTE." ;;
   esac
+}
+
+# ---------------------------------------------------------------------------
+# Classification des sauvegardes.
+#
+# sauvegardes_classifier <inventaire> [fichier_controles] [dossier] [code_ssh]
+#
+# Politique de fraîcheur — appliquée ici et NULLE PART AILLEURS :
+#
+#   ancienneté du dump          statut
+#   0 à SEUIL_DUMP_RECENT_JOURS        PASS
+#   +1 à SEUIL_DUMP_ANCIEN_JOURS       WARN
+#   au-delà de SEUIL_DUMP_ANCIEN_JOURS FAIL si aucune autre sauvegarde
+#                                      récente et admissible n'existe,
+#                                      WARN sinon
+#
+#   Disponibilité globale (SAU-DISPO) : PASS si au moins un dump admissible
+#   (signature PGDMP + taille ≥ plancher) est fraîche ; FAIL sinon. Un dump
+#   ancien n'entraîne donc jamais à lui seul un FAIL de disponibilité quand
+#   une sauvegarde récente existe ; l'absence totale de sauvegarde récente
+#   est toujours un FAIL.
+#
+#   Les archives complémentaires sont inventoriées mais ne valent JAMAIS
+#   sauvegarde PostgreSQL.
+#
+# Quatre niveaux distingués dans chaque observation :
+#   N1 identification (signature PGDMP) — apparente seulement ;
+#   N2 présence et fraîcheur (taille, date, ancienneté) ;
+#   N3 intégrité — NON démontrée ;
+#   N4 restaurabilité — NON démontrée, aucune restauration effectuée.
+# ---------------------------------------------------------------------------
+sauvegardes_classifier() {
+  local inventaire="$1"
+  local fichier="${2:-$CONTROLES_FICHIER}"
+  local dossier="${3:-/opt/injs/backups}"
+  local code_ssh="${4:-0}"
+  local etat lisibilite fin
+
+  _sau_valeur() {
+    awk -F= -v k="$1" '$1 == k { v = substr($0, length(k) + 2) } END { printf "%s", v }' \
+      "$inventaire" 2>/dev/null
+  }
+
+  etat="$(_sau_valeur SAU_ETAT)"
+  lisibilite="$(_sau_valeur SAU_LISIBLE)"
+  fin="$(_sau_valeur SAU_FIN)"
+
+  # --- Accès impossible : NON_EXECUTE, jamais un PASS par défaut -----------
+  if [ "$code_ssh" != 0 ] ||
+     { [ "$etat" = "present" ] && [ "$lisibilite" = "oui" ] && [ "$fin" != "ok" ]; }; then
+    controle SAU-ACCES NON_EXECUTE oui "non mesuré" \
+      "script distant en échec (code $code_ssh, marqueur de fin « ${fin:-absent} »)" "$fichier"
+    controle_non_execute SAU-DISPO oui "inventaire incomplet : aucune conclusion possible" "$fichier"
+    return 0
+  fi
+
+  if [ "$etat" = "absent" ]; then
+    controle SAU-EXISTE FAIL oui "absent" \
+      "répertoire $dossier absent : aucune sauvegarde de production" "$fichier"
+    controle_non_execute SAU-DISPO oui "répertoire absent" "$fichier"
+    return 0
+  fi
+  if [ "$etat" = "pas_un_repertoire" ]; then
+    controle SAU-EXISTE FAIL oui "pas un répertoire" \
+      "$dossier existe mais n'est pas un répertoire" "$fichier"
+    controle_non_execute SAU-DISPO oui "chemin inexploitable" "$fichier"
+    return 0
+  fi
+  if [ "$lisibilite" != "oui" ]; then
+    controle SAU-EXISTE PASS oui "présent" "répertoire $dossier présent" "$fichier"
+    controle SAU-LISIBLE FAIL oui "illisible" \
+      "droits de lecture insuffisants pour l'utilisateur SSH (corriger côté serveur, jamais depuis ce workflow)" "$fichier"
+    controle_non_execute SAU-DISPO oui "inventaire impossible sans droit de lecture" "$fichier"
+    return 0
+  fi
+
+  local nb_dump nb_autre
+  nb_dump="$(grep -c '^SAU_DUMP=' "$inventaire" 2>/dev/null || true)"
+  nb_autre="$(grep -c '^SAU_AUTRE=' "$inventaire" 2>/dev/null || true)"
+  nb_dump="${nb_dump:-0}"; nb_autre="${nb_autre:-0}"
+
+  controle SAU-EXISTE PASS oui "présent" "répertoire $dossier présent" "$fichier"
+  controle SAU-LISIBLE PASS oui "lisible" "lecture autorisée" "$fichier"
+  controle SAU-INVENTAIRE PASS oui "${nb_dump} dump(s), ${nb_autre} archive(s)" \
+    "inventaire en lecture seule (stat/head) : aucune écriture, aucune restauration" "$fichier"
+
+  if [ "$nb_dump" -eq 0 ]; then
+    if [ "$nb_autre" -gt 0 ]; then
+      controle SAU-DISPO FAIL oui "0 dump, ${nb_autre} archive(s)" \
+        "aucune sauvegarde PostgreSQL : une archive complémentaire ne remplace pas un dump" "$fichier"
+    else
+      controle SAU-DISPO FAIL oui "0 dump" "aucune sauvegarde PostgreSQL : préflight refusé" "$fichier"
+    fi
+    return 0
+  fi
+
+  # --- Passe 1 : combien de dumps admissibles, dont frais ? ----------------
+  local nom taille age signature compagnon
+  local admissibles=0 recents=0
+  while IFS='|' read -r nom taille age signature compagnon; do
+    [ -n "$nom" ] || continue
+    [ "$signature" = "PGDMP" ] || continue
+    [ "${taille:-0}" -ge "$TAILLE_MIN_DUMP_OCTETS" ] || continue
+    admissibles=$((admissibles + 1))
+    [ "${age:-9999}" -le "$SEUIL_DUMP_RECENT_JOURS" ] && recents=$((recents + 1))
+  done <<< "$(grep '^SAU_DUMP=' "$inventaire" 2>/dev/null | sed 's/^SAU_DUMP=//')"
+
+  # --- Passe 2 : statut de chaque dump selon la politique -----------------
+  while IFS='|' read -r nom taille age signature compagnon; do
+    [ -n "$nom" ] || continue
+    age="${age:-9999}"; taille="${taille:-0}"
+    if [ "$signature" != "PGDMP" ]; then
+      controle "SAU-DUMP-$nom" WARN non "${taille} o, ${age} j" \
+        "N1 signature PGDMP absente : identification impossible, archive non vérifiable · N3/N4 non démontrées" "$fichier"
+      continue
+    fi
+    if [ "$taille" -lt "$TAILLE_MIN_DUMP_OCTETS" ]; then
+      controle "SAU-DUMP-$nom" WARN non "${taille} o, ${age} j" \
+        "N1 PGDMP identifié · N2 taille sous le plancher de ${TAILLE_MIN_DUMP_OCTETS} o : dump suspect · N3/N4 non démontrées" "$fichier"
+      continue
+    fi
+    if [ "$age" -le "$SEUIL_DUMP_RECENT_JOURS" ]; then
+      controle "SAU-DUMP-$nom" PASS oui "${taille} o, ${age} j" \
+        "N1 PGDMP · N2 présent, taille et ancienneté conformes (≤ ${SEUIL_DUMP_RECENT_JOURS} j) · N3 intégrité NON démontrée · N4 restaurabilité NON démontrée" "$fichier"
+    elif [ "$age" -le "$SEUIL_DUMP_ANCIEN_JOURS" ]; then
+      controle "SAU-DUMP-$nom" WARN non "${taille} o, ${age} j" \
+        "N1 PGDMP · N2 ancienneté ${age} j dans la zone ${SEUIL_DUMP_RECENT_JOURS}+1..${SEUIL_DUMP_ANCIEN_JOURS} j : à rafraîchir avant déploiement · N3/N4 non démontrées" "$fichier"
+    elif [ "${recents:-0}" -gt 0 ]; then
+      controle "SAU-DUMP-$nom" WARN non "${taille} o, ${age} j" \
+        "N1 PGDMP · N2 ${age} j > ${SEUIL_DUMP_ANCIEN_JOURS} j, mais une autre sauvegarde récente existe : pas de FAIL individuel · N3/N4 non démontrées" "$fichier"
+    else
+      controle "SAU-DUMP-$nom" FAIL oui "${taille} o, ${age} j" \
+        "N1 PGDMP · N2 ${age} j > ${SEUIL_DUMP_ANCIEN_JOURS} j et aucune autre sauvegarde récente et admissible · N3/N4 non démontrées" "$fichier"
+    fi
+  done <<< "$(grep '^SAU_DUMP=' "$inventaire" 2>/dev/null | sed 's/^SAU_DUMP=//')"
+
+  # --- Disponibilité globale ----------------------------------------------
+  if [ "${recents:-0}" -gt 0 ]; then
+    controle SAU-DISPO PASS oui "${recents} fraîche(s) sur ${admissibles} admissible(s)" \
+      "au moins une sauvegarde PostgreSQL fraîche (≤ ${SEUIL_DUMP_RECENT_JOURS} j)" "$fichier"
+  elif [ "${admissibles:-0}" -gt 0 ]; then
+    controle SAU-DISPO FAIL oui "0 fraîche sur ${admissibles}" \
+      "aucune sauvegarde de ${SEUIL_DUMP_RECENT_JOURS} j ou moins : produire une sauvegarde vérifiée avant tout déploiement" "$fichier"
+  else
+    controle SAU-DISPO FAIL oui "0 admissible" \
+      "aucun dump exploitable (signature PGDMP ou taille non conformes)" "$fichier"
+  fi
 }

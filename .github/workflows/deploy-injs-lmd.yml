@@ -750,10 +750,6 @@ jobs:
       - name: Contrôle des sauvegardes du VPS (lecture seule)
         if: env.MODE == 'preflight' || env.MODE == 'inventaire'
         id: sauvegardes
-        env:
-          SEUIL_DUMP_RECENT_JOURS: 7
-          SEUIL_DUMP_ANCIEN_JOURS: 30
-          TAILLE_MIN_DUMP_OCTETS: 1048576
         run: |
           set -uo pipefail
           mkdir -p evidence
@@ -764,8 +760,6 @@ jobs:
           cat > "$RUNNER_TEMP/distant-sauvegardes.sh" <<'EOS'
           set -uo pipefail
           DOSSIER="${1:-/opt/injs/backups}"
-          SEUIL_RECENT="${2:-7}"
-          TAILLE_MIN="${4:-1048576}"
 
           # Toutes les opérations ci-dessous sont des LECTURES.
           echo "SAU_DOSSIER=$DOSSIER"
@@ -806,78 +800,20 @@ jobs:
           echo "SAU_FIN=ok"
           EOS
 
+          # Les seuils ne sont PAS transmis : le script distant ne fait que
+          # mesurer (taille, date, signature), la politique de fraîcheur est
+          # appliquée par la bibliothèque (source unique).
           vps-ssh 'bash -s --' "$DOSSIER_BACKUPS" \
-            "$SEUIL_DUMP_RECENT_JOURS" "$SEUIL_DUMP_ANCIEN_JOURS" "$TAILLE_MIN_DUMP_OCTETS" \
             < "$RUNNER_TEMP/distant-sauvegardes.sh" > evidence/sauvegardes-vps.txt 2>&1
           code_ssh=$?
           cat evidence/sauvegardes-vps.txt
 
-          valeur() { awk -F= -v k="$1" '$1==k{v=substr($0, length(k)+2)} END{printf "%s", v}' evidence/sauvegardes-vps.txt; }
-          etat="$(valeur SAU_ETAT)"
-          fin="$(valeur SAU_FIN)"
-          nb_dump="$(grep -c '^SAU_DUMP=' evidence/sauvegardes-vps.txt || true)"
-          nb_autre="$(grep -c '^SAU_AUTRE=' evidence/sauvegardes-vps.txt || true)"
-
-          # ---- Décision, en trois branches explicites ----------------------
-          # 1. Le script distant n'a pas abouti : NON_EXECUTE, jamais un PASS.
-          # 2. Le répertoire est absent ou illisible : FAIL obligatoire.
-          # 3. Inventaire complet : on classe chaque dump.
-          if [ "$code_ssh" != 0 ] || { [ "$etat" = "present" ] && [ "$(valeur SAU_LISIBLE)" = "oui" ] && [ "$fin" != "ok" ]; }; then
-            controle_non_execute SAU-ACCES oui "script distant en échec (code $code_ssh, marqueur de fin « ${fin:-absent} »)"
-            controle_non_execute SAU-DISPO oui "inventaire incomplet : aucune conclusion possible"
-          elif [ "$etat" = "absent" ]; then
-            controle SAU-EXISTE FAIL oui "absent" "répertoire $DOSSIER_BACKUPS absent : aucune sauvegarde de production"
-            controle_non_execute SAU-DISPO oui "répertoire absent"
-          elif [ "$etat" = "pas_un_repertoire" ]; then
-            controle SAU-EXISTE FAIL oui "pas un répertoire" "$DOSSIER_BACKUPS existe mais n'est pas un répertoire"
-            controle_non_execute SAU-DISPO oui "chemin inexploitable"
-          elif [ "$(valeur SAU_LISIBLE)" != "oui" ]; then
-            controle SAU-EXISTE PASS oui "présent" "répertoire $DOSSIER_BACKUPS présent"
-            controle SAU-LISIBLE FAIL oui "illisible" "droits de lecture insuffisants pour l'utilisateur SSH (corriger les permissions côté serveur, jamais depuis ce workflow)"
-            controle_non_execute SAU-DISPO oui "inventaire impossible sans droit de lecture"
-          else
-            controle SAU-EXISTE PASS oui "présent" "répertoire $DOSSIER_BACKUPS présent"
-            controle SAU-LISIBLE PASS oui "lisible" "lecture autorisée"
-            controle SAU-INVENTAIRE PASS oui "${nb_dump} dump(s), ${nb_autre} archive(s)" "inventaire en lecture seule (stat/head) — aucune écriture"
-
-            if [ "${nb_dump:-0}" -eq 0 ]; then
-              controle SAU-DISPO FAIL oui "aucun dump" "aucune sauvegarde PostgreSQL : préflight refusé"
-            else
-              # Examen de chaque dump : signature, taille, fraîcheur.
-              valides=0; recents=0; anciens=0; invalides=0
-              while IFS='|' read -r nom taille age signature compagnon; do
-                [ -n "$nom" ] || continue
-                age="${age:-9999}"; taille="${taille:-0}"
-                if [ "$signature" != "PGDMP" ]; then
-                  invalides=$((invalides + 1))
-                  controle "SAU-DUMP-$nom" WARN non "${taille} o, ${age} j" "signature PGDMP absente : archive non vérifiable, non exploitable en l'état"
-                  continue
-                fi
-                if [ "$taille" -lt "$TAILLE_MIN_DUMP_OCTETS" ]; then
-                  invalides=$((invalides + 1))
-                  controle "SAU-DUMP-$nom" WARN non "${taille} o, ${age} j" "signature PGDMP présente mais taille sous le plancher de ${TAILLE_MIN_DUMP_OCTETS} o : dump suspect"
-                  continue
-                fi
-                valides=$((valides + 1))
-                if [ "$age" -le "$SEUIL_DUMP_RECENT_JOURS" ]; then
-                  recents=$((recents + 1))
-                  observation="dump présent, signature PGDMP, récent (≤ ${SEUIL_DUMP_RECENT_JOURS} j) — intégrité et restaurabilité NON démontrées"
-                  controle "SAU-DUMP-$nom" PASS oui "${taille} o, ${age} j, sha256 compagnon ${compagnon}" "$observation"
-                else
-                  anciens=$((anciens + 1))
-                  controle "SAU-DUMP-$nom" WARN non "${taille} o, ${age} j" "dump présent et signé mais ancien (> ${SEUIL_DUMP_RECENT_JOURS} j) : le rafraîchir avant tout déploiement"
-                fi
-              done <<< "$(grep '^SAU_DUMP=' evidence/sauvegardes-vps.txt | sed 's/^SAU_DUMP=//')"
-
-              if [ "${recents:-0}" -gt 0 ]; then
-                controle SAU-DISPO PASS oui "${recents} récent(s), ${anciens} ancien(s)" "au moins une sauvegarde exploitable en apparence (≤ ${SEUIL_DUMP_RECENT_JOURS} j)"
-              elif [ "${valides:-0}" -gt 0 ]; then
-                controle SAU-DISPO FAIL oui "${valides} valide(s), 0 récent" "aucune sauvegarde de moins de ${SEUIL_DUMP_RECENT_JOURS} j : produire une sauvegarde vérifiée avant déploiement"
-              else
-                controle SAU-DISPO FAIL oui "0 exploitable" "aucun dump exploitable (signature ou taille invalide)"
-              fi
-            fi
-          fi
+          # Toute la politique de fraîcheur et de disponibilité vit dans
+          # deploy/production/normaliser-controles.sh (source unique) : le
+          # workflow ne fait que lui transmettre l'inventaire. Aucune règle
+          # de seuil n'est réimplémentée ici.
+          sauvegardes_classifier evidence/sauvegardes-vps.txt "$CONTROLES_FICHIER" \
+            "$DOSSIER_BACKUPS" "$code_ssh"
 
           # Bilan et verdict, calculés par la bibliothèque (source unique).
           analyse="$(controles_analyser "$CONTROLES_FICHIER")"
@@ -886,6 +822,11 @@ jobs:
           echo "code=$(printf '%s\n' "$analyse" | sed -n 's/^code=//p')" >> "$GITHUB_OUTPUT"
           {
             echo "## Sauvegardes — contrôles normalisés"
+            echo ""
+            echo "> La présence de la signature PGDMP confirme uniquement"
+            echo "> l'identification apparente d'un dump PostgreSQL au format"
+            echo "> personnalisé. Elle ne garantit ni son intégrité complète ni sa"
+            echo "> restaurabilité."
             echo ""
             controles_tableau "$CONTROLES_FICHIER"
             echo ""

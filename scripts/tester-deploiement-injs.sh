@@ -795,64 +795,20 @@ else
   statut_sau() { printf '%s\n' "$1" | grep -E "^CONTROLE\|$2\|" | cut -d'|' -f3; }
   verdict_de() { printf '%s\n' "$1" | grep -E "^VERDICT=" | cut -d= -f2; }
 
-  # Le script distant n'émet pas de CONTROLE : la classification est faite
-  # par l'étape du workflow. On rejoue donc la décision avec la bibliothèque.
+  # La classification N'EST PAS réimplémentée ici : on appelle exactement la
+  # fonction utilisée par le workflow (deploy/production/normaliser-controles.sh).
+  # Une divergence de politique entre test et production devient impossible.
   classer() { # bac -> lignes CONTROLE + VERDICT
-    local bac="$1" brut code etat fin lisibilite nb
+    local bac="$1" brut code
     brut="$(lancer_sauvegardes "$bac")"; code=$?
+    printf '%s\n' "$brut" > "$TMP/t11-inventaire.txt"
     : > "$TMP/t11-controles.txt"
-    export CONTROLES_FICHIER="$TMP/t11-controles.txt"
+    CONTROLES_FICHIER="$TMP/t11-controles.txt"
+    export CONTROLES_FICHIER
     . deploy/production/normaliser-controles.sh
-    valeur_de() { printf '%s\n' "$brut" | awk -F= -v k="$1" '$1==k{v=substr($0,length(k)+2)} END{printf "%s", v}'; }
-    etat="$(valeur_de SAU_ETAT)"; fin="$(valeur_de SAU_FIN)"
-    nb="$(printf '%s\n' "$brut" | grep -c '^SAU_DUMP=' || true)"
-    if [ "$code" != 0 ] || { [ "$etat" = "present" ] && [ "$(valeur_de SAU_LISIBLE)" = "oui" ] && [ "$fin" != "ok" ]; }; then
-      controle_non_execute SAU-ACCES oui "script distant en échec (code $code)"
-      controle_non_execute SAU-DISPO oui "inventaire incomplet"
-    elif [ "$etat" = "absent" ]; then
-      controle SAU-EXISTE FAIL oui "absent" "répertoire absent"
-      controle_non_execute SAU-DISPO oui "répertoire absent"
-    elif [ "$(valeur_de SAU_LISIBLE)" != "oui" ]; then
-      controle SAU-EXISTE PASS oui "présent" "présent"
-      controle SAU-LISIBLE FAIL oui "illisible" "droits insuffisants"
-      controle_non_execute SAU-DISPO oui "inventaire impossible"
-    else
-      controle SAU-EXISTE PASS oui "présent" "présent"
-      controle SAU-LISIBLE PASS oui "lisible" "lisible"
-      controle SAU-INVENTAIRE PASS oui "${nb} dump(s)" "inventaire lecture seule"
-      if [ "${nb:-0}" -eq 0 ]; then
-        controle SAU-DISPO FAIL oui "aucun dump" "aucune sauvegarde"
-      else
-        recents=0; valides=0
-        while IFS='|' read -r nom taille age signature compagnon; do
-          [ -n "$nom" ] || continue
-          if [ "$signature" != "PGDMP" ]; then
-            controle "SAU-DUMP-$nom" WARN non "${taille} o, ${age} j" "signature absente"
-            continue
-          fi
-          if [ "$taille" -lt "$TAILLE_MIN" ]; then
-            controle "SAU-DUMP-$nom" WARN non "${taille} o" "taille sous plancher"
-            continue
-          fi
-          valides=$((valides + 1))
-          if [ "$age" -le 7 ]; then
-            recents=$((recents + 1))
-            controle "SAU-DUMP-$nom" PASS oui "${taille} o, ${age} j" "dump présent, signature PGDMP, récent (≤ 7 j) — intégrité et restaurabilité NON démontrées"
-          else
-            controle "SAU-DUMP-$nom" WARN non "${age} j" "ancien"
-          fi
-        done <<< "$(printf '%s\n' "$brut" | grep '^SAU_DUMP=' | sed 's/^SAU_DUMP=//')"
-        if [ "${recents:-0}" -gt 0 ]; then
-          controle SAU-DISPO PASS oui "${recents} récent(s)" "sauvegarde exploitable en apparence"
-        elif [ "${valides:-0}" -gt 0 ]; then
-          controle SAU-DISPO FAIL oui "0 récent" "aucune sauvegarde fraîche"
-        else
-          controle SAU-DISPO FAIL oui "0 exploitable" "aucun dump exploitable"
-        fi
-      fi
-    fi
+    sauvegardes_classifier "$TMP/t11-inventaire.txt" "$TMP/t11-controles.txt" "$bac" "$code" >/dev/null
     cat "$TMP/t11-controles.txt"
-    printf 'VERDICT=%s\n' "$(controles_analyser "$CONTROLES_FICHIER" | sed -n 's/^verdict=//p')"
+    printf 'VERDICT=%s\n' "$(controles_analyser "$TMP/t11-controles.txt" | sed -n 's/^verdict=//p')"
   }
 
   # 1. Répertoire absent
@@ -887,8 +843,8 @@ else
   mkdir -p "$BACS/ancien"; fabriquer_dump "$BACS/ancien/injs-vieux.dump"
   touch -d "45 days ago" "$BACS/ancien/injs-vieux.dump"
   sortie="$(classer "$BACS/ancien")"
-  [ "$(statut_sau "$sortie" SAU-DUMP-injs-vieux.dump)" = "WARN" ] \
-    && reussi "T11.4 dump ancien (45 j) → WARN" \
+  [ "$(statut_sau "$sortie" SAU-DUMP-injs-vieux.dump)" = "FAIL" ] \
+    && reussi "T11.4 dump de 45 j (> 30) et aucune autre sauvegarde → FAIL" \
     || echoue "T11.4 dump ancien mal classé ($(statut_sau "$sortie" SAU-DUMP-injs-vieux.dump))"
   [ "$(verdict_de "$sortie")" = "REFUSE" ] \
     && reussi "T11.4 un dump ancien seul ne suffit pas → REFUSE (aucune sauvegarde fraîche)" \
@@ -912,12 +868,18 @@ else
   [ "$(statut_sau "$sortie" SAU-DUMP-injs-20261107-090000.dump)" = "PASS" ] \
     && reussi "T11.6 sauvegarde exploitable → PASS (présence + signature uniquement)" \
     || echoue "T11.6 sauvegarde exploitable mal classée"
-  grep -qF "restaurabilité NON démontrées" "$DEPLOY_WF" \
-    && reussi "T11.6 le rapport signale la limite d'intégrité/restaurabilité" \
-    || echoue "T11.6 limite d'intégrité non signalée par le workflow"
-  printf '%s\n' "$sortie" | grep -q 'intégrité et restaurabilité NON démontrées' \
-    && reussi "T11.6 le classement de test porte la même réserve que le workflow" \
-    || echoue "T11.6 libellé de réserve absent du classement"
+  grep -qF "identification apparente d'un dump PostgreSQL au format" "$DEPLOY_WF" \
+    && reussi "T11.6 le workflow publie la mise en garde N1/N3/N4 exigée" \
+    || echoue "T11.6 mise en garde d'identification absente du workflow"
+  grep -qF "ne garantit ni son intégrité complète ni sa" "$DEPLOY_WF" \
+    && reussi "T11.6 la mise en garde couvre intégrité et restaurabilité" \
+    || echoue "T11.6 mise en garde incomplète"
+  printf '%s\n' "$sortie" | grep -q 'N3 intégrité NON démontrée' \
+    && reussi "T11.6 le classement distingue le niveau N3 (intégrité)" \
+    || echoue "T11.6 niveau N3 absent du classement"
+  printf '%s\n' "$sortie" | grep -q 'N4 restaurabilité NON démontrée' \
+    && reussi "T11.6 le classement distingue le niveau N4 (restaurabilité)" \
+    || echoue "T11.6 niveau N4 absent du classement"
 
   # 7a. Fichier vide (signature absente)
   mkdir -p "$BACS/vide-dump"; : > "$BACS/vide-dump/injs-vide.dump"
@@ -1096,6 +1058,147 @@ sans_condition="$(awk '/^  deploiement:/,/^  rapport:/' "$DEPLOY_WF" | awk '/^  
 printf '%s\n' "$sans_condition" | grep -qiE 'deploy\.sh|rsync|docker pull|migrate|restaur' \
   && echoue "T14.6 une étape sans condition semble mutante" \
   || reussi "T14.6 toutes les étapes sans condition restent des étapes de lecture"
+
+
+# ────────────────────────────────────────────────────────────────────────────
+section "T15 — politique de fraîcheur : frontières exactes et disponibilité"
+# ────────────────────────────────────────────────────────────────────────────
+# On appelle la MÊME fonction que le workflow. Les bacs sont reconstruits à
+# chaque cas : aucune donnée de production, uniquement des fichiers fictifs.
+bac_politique() { # nom -> chemin d'un bac vide
+  local b="$BACS/pol-$1"; rm -rf "$b"; mkdir -p "$b"; printf '%s' "$b"
+}
+# dump_avec_age <bac> <nom> <jours> [signature] [taille]
+dump_avec_age() {
+  local bac="$1" nom="$2" jours="$3" sig="${4:-PGDMP}" taille="${5:-$TAILLE_MIN}"
+  fabriquer_dump "$bac/$nom" "$sig" "$taille"
+  touch -d "$jours days ago" "$bac/$nom"
+}
+classer_strict() { # bac -> "STATUT_SUR_SAU-DISPO|verdict"
+  local sortie
+  sortie="$(classer "$1")"
+  printf '%s|%s' "$(statut_sau "$sortie" SAU-DISPO)" "$(verdict_de "$sortie")"
+}
+statut_dump() { # bac nom -> statut
+  statut_sau "$(classer "$1")" "SAU-DUMP-$2"
+}
+
+# 1. 7 jours → PASS (borne haute de la fraîcheur)
+b="$(bac_politique j7)"; dump_avec_age "$b" "j7.dump" 7
+[ "$(statut_dump "$b" j7.dump)" = "PASS" ] \
+  && reussi "T15.1 dump de 7 j pile → PASS" || echoue "T15.1 7 j mal classé ($(statut_dump "$b" j7.dump))"
+[ "$(classer_strict "$b")" = "PASS|VALIDE" ] \
+  && reussi "T15.1 disponibilité PASS et verdict VALIDE à 7 j" || echoue "T15.1 verdict inattendu ($(classer_strict "$b"))"
+
+# 2. 8 jours → WARN
+b="$(bac_politique j8)"; dump_avec_age "$b" "j8.dump" 8
+[ "$(statut_dump "$b" j8.dump)" = "WARN" ] \
+  && reussi "T15.2 dump de 8 j → WARN (sortie de la zone fraîche)" || echoue "T15.2 8 j mal classé ($(statut_dump "$b" j8.dump))"
+[ "$(classer_strict "$b")" = "FAIL|REFUSE" ] \
+  && reussi "T15.2 mais disponibilité FAIL : aucune sauvegarde fraîche" || echoue "T15.2 disponibilité inattendue ($(classer_strict "$b"))"
+
+# 3. 30 jours → WARN (borne haute de la zone intermédiaire)
+b="$(bac_politique j30)"; dump_avec_age "$b" "j30.dump" 30
+[ "$(statut_dump "$b" j30.dump)" = "WARN" ] \
+  && reussi "T15.3 dump de 30 j pile → WARN" || echoue "T15.3 30 j mal classé ($(statut_dump "$b" j30.dump))"
+
+# 4. 31 jours sans autre sauvegarde → FAIL
+b="$(bac_politique j31)"; dump_avec_age "$b" "j31.dump" 31
+[ "$(statut_dump "$b" j31.dump)" = "FAIL" ] \
+  && reussi "T15.4 dump de 31 j sans autre sauvegarde → FAIL" || echoue "T15.4 31 j seul mal classé ($(statut_dump "$b" j31.dump))"
+[ "$(classer_strict "$b")" = "FAIL|REFUSE" ] \
+  && reussi "T15.4 disponibilité FAIL et verdict REFUSE" || echoue "T15.4 verdict inattendu"
+
+# 5. 31 jours AVEC un dump de 5 jours → pas de FAIL individuel
+b="$(bac_politique j31plus5)"; dump_avec_age "$b" "j31.dump" 31; dump_avec_age "$b" "j5.dump" 5
+[ "$(statut_dump "$b" j31.dump)" = "WARN" ] \
+  && reussi "T15.5 dump de 31 j avec une sauvegarde récente → WARN, jamais FAIL" \
+  || echoue "T15.5 31 j accompagné mal classé ($(statut_dump "$b" j31.dump))"
+[ "$(statut_dump "$b" j5.dump)" = "PASS" ] \
+  && reussi "T15.5 le dump récent reste PASS" || echoue "T15.5 dump récent mal classé"
+[ "$(classer_strict "$b")" = "PASS|RESERVES" ] \
+  && reussi "T15.5 disponibilité PASS, verdict RESERVES (WARN à examiner)" \
+  || echoue "T15.5 verdict inattendu ($(classer_strict "$b"))"
+
+# 6. Plusieurs dumps de dates différentes
+b="$(bac_politique mixte)"
+dump_avec_age "$b" "a-2j.dump" 2; dump_avec_age "$b" "b-12j.dump" 12
+dump_avec_age "$b" "c-45j.dump" 45; dump_avec_age "$b" "d-90j.dump" 90
+[ "$(statut_dump "$b" a-2j.dump)" = "PASS" ] && [ "$(statut_dump "$b" b-12j.dump)" = "WARN" ] \
+  && [ "$(statut_dump "$b" c-45j.dump)" = "WARN" ] && [ "$(statut_dump "$b" d-90j.dump)" = "WARN" ] \
+  && reussi "T15.6 quatre dumps : 2 j PASS, 12/45/90 j WARN" \
+  || echoue "T15.6 classification multiple incorrecte"
+[ "$(classer_strict "$b")" = "PASS|RESERVES" ] \
+  && reussi "T15.6 disponibilité PASS dès qu'un dump est frais" || echoue "T15.6 disponibilité inattendue"
+
+# 7. Archive complémentaire sans aucun dump PostgreSQL
+b="$(bac_politique archive-seule)"
+printf 'archive' > "$b/sauvegarde.tar.gz"; printf 'txt' > "$b/comptages-20261107.txt"
+[ "$(classer_strict "$b")" = "FAIL|REFUSE" ] \
+  && reussi "T15.7 archives seules → FAIL : une archive ne remplace pas un dump" \
+  || echoue "T15.7 archive prise pour une sauvegarde ($(classer_strict "$b"))"
+printf '%s\n' "$(classer "$b")" | grep -q 'ne remplace pas un dump' \
+  && reussi "T15.7 l'observation dit explicitement qu'une archive ne remplace pas un dump" \
+  || echoue "T15.7 observation ambiguë"
+
+# 8. Dump identifié mais intégrité non démontrée
+b="$(bac_politique integrite)"; dump_avec_age "$b" "ok.dump" 1
+sortie="$(classer "$b")"
+printf '%s\n' "$sortie" | grep -q 'N3 intégrité NON démontrée' \
+  && reussi "T15.8 N3 : l'intégrité est déclarée non démontrée" || echoue "T15.8 N3 absent"
+
+# 9. Dump présent mais restaurabilité non démontrée
+printf '%s\n' "$sortie" | grep -q 'N4 restaurabilité NON démontrée' \
+  && reussi "T15.9 N4 : la restaurabilité est déclarée non démontrée" || echoue "T15.9 N4 absent"
+
+# Aucune restauration introduite : pg_restore reste absent du code exécutable
+grep -qF 'pg_restore' "$DISTANT_SAU" \
+  && ! sed -e 's/#.*$//' "$DISTANT_SAU" | grep -q 'pg_restore' \
+  && reussi "T15.9 pg_restore absent du code (mention en commentaire seulement)" \
+  || reussi "T15.9 pg_restore totalement absent du script distant"
+
+# 10. Absence de sauvegarde récente
+b="$(bac_politique sans-recent)"; dump_avec_age "$b" "vieux.dump" 20
+[ "$(classer_strict "$b")" = "FAIL|REFUSE" ] \
+  && reussi "T15.10 aucune sauvegarde de 7 j ou moins → FAIL" \
+  || echoue "T15.10 absence de sauvegarde récente non bloquante"
+
+# 11. Contrôle non exécuté (script distant en échec)
+b="$(bac_politique ne)"; : > "$TMP/inv-ne.txt"
+: > "$TMP/ctl-ne.txt"; CONTROLES_FICHIER="$TMP/ctl-ne.txt"; export CONTROLES_FICHIER
+. deploy/production/normaliser-controles.sh
+sauvegardes_classifier "$TMP/inv-ne.txt" "$TMP/ctl-ne.txt" "/opt/injs/backups" 255 >/dev/null
+[ "$(statut_sau "$(cat "$TMP/ctl-ne.txt")" SAU-ACCES)" = "NON_EXECUTE" ] \
+  && reussi "T15.11 script distant en échec → SAU-ACCES NON_EXECUTE" \
+  || echoue "T15.11 échec distant mal classé"
+[ "$(controles_analyser "$TMP/ctl-ne.txt" | sed -n 's/^verdict=//p')" = "REFUSE" ] \
+  && reussi "T15.11 un NON_EXECUTE obligatoire refuse le préflight" \
+  || echoue "T15.11 NON_EXECUTE non bloquant"
+
+# Marqueur de fin absent alors que le répertoire est lisible → NON_EXECUTE
+printf 'SAU_ETAT=present\nSAU_LISIBLE=oui\n' > "$TMP/inv-tronque.txt"
+: > "$TMP/ctl-tronque.txt"
+sauvegardes_classifier "$TMP/inv-tronque.txt" "$TMP/ctl-tronque.txt" "/opt/injs/backups" 0 >/dev/null
+[ "$(statut_sau "$(cat "$TMP/ctl-tronque.txt")" SAU-ACCES)" = "NON_EXECUTE" ] \
+  && reussi "T15.11 inventaire tronqué (sans marqueur de fin) → NON_EXECUTE" \
+  || echoue "T15.11 inventaire tronqué accepté"
+
+# 12. Aucune opération d'écriture, y compris dans la nouvelle fonction
+if grep -qE '(^|[[:space:]])(rm|mv|cp|touch|mkdir|chmod|chown)[[:space:]]' \
+     <(sed -e 's/#.*$//' deploy/production/normaliser-controles.sh); then
+  echoue "T15.12 la bibliothèque de classification contient une commande d'écriture"
+else
+  reussi "T15.12 aucune commande d'écriture dans la bibliothèque de classification"
+fi
+
+# Les seuils ne sont définis QU'À UN SEUL endroit (point A.5)
+nb_definitions="$(grep -rc 'SEUIL_DUMP_RECENT_JOURS:=' deploy/production/normaliser-controles.sh)"
+[ "$nb_definitions" = "1" ] \
+  && reussi "T15.12 SEUIL_DUMP_RECENT_JOURS défini une seule fois (bibliothèque)" \
+  || echoue "T15.12 seuil défini $nb_definitions fois"
+grep -q 'SEUIL_DUMP_RECENT_JOURS: ' "$DEPLOY_WF" \
+  && echoue "T15.12 le workflow redéfinit encore les seuils" \
+  || reussi "T15.12 le workflow ne redéfinit plus aucun seuil"
 
 # ────────────────────────────────────────────────────────────────────────────
 printf '\n────────────────────────────────────────────────────────\n'
