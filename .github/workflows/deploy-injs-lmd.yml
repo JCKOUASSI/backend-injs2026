@@ -634,28 +634,33 @@ jobs:
               exit 1
             fi
             echo "ÉPINGLAGE VÉRIFIÉ : l'empreinte capturée correspond à VPS_EMPREINTE_EPINGLEE."
+            echo "CONFIANCE_VPS=VERIFIEE" >> "$GITHUB_ENV"
           else
             # AUCUNE CONFIANCE AUTOMATIQUE. Une empreinte capturée par
             # ssh-keyscan n'est PAS une preuve d'identité : elle doit avoir été
             # comparée à la console de l'hébergeur AVANT d'être épinglée.
             # Sans épinglage, le préflight s'arrête : il ne peut pas prétendre
             # avoir établi l'identité du serveur.
-            echo "::error::EMPREINTE NON ÉPINGLÉE — le préflight ne peut pas vérifier l'identité du VPS."
-            echo "::error::Une empreinte capturée automatiquement n'est PAS une preuve d'identité."
+            # Pas encore épinglé : la connexion reste AUTORISÉE pour la LECTURE
+            # SEULE (preflight/inventaire ne modifient rien), mais l'identité
+            # n'est PAS prouvée — le mode deployer sera refusé par la garde.
+            echo "::warning::EMPREINTE NON ÉPINGLÉE — l'identité du VPS n'est PAS prouvée."
+            echo "::warning::Une empreinte capturée automatiquement n'est pas une preuve."
+            echo "CONFIANCE_VPS=NON_EPINGLEE" >> "$GITHUB_ENV"
             echo ""
             echo "=== EMPREINTES CAPTURÉES (à vérifier AVANT tout épinglage) ==="
             ssh-keygen -lf "$BRUT" 2>/dev/null | sed 's/^/  /'
             echo "=============================================================="
             echo ""
-            echo "PROCÉDURE D'ÉPINGLAGE (dans cet ordre strict) :"
-            echo "  1. Sur une machine de confiance :"
-            echo "       ssh-keyscan -t ed25519 \${SSH_HOST} 2>/dev/null | ssh-keygen -lf -"
-            echo "  2. COMPARER l'empreinte SHA256 ED25519 avec la console de l'hébergeur."
+            echo "PROCÉDURE D'ÉPINGLAGE :"
+            echo "  1. Relever l'empreinte SHA256 ED25519 ci-dessus."
+            echo "  2. La COMPARER avec la console de l'hébergeur (vérification indépendante)."
             echo "  3. Créer le secret VPS_EMPREINTE_EPINGLEE = SHA256:... (empreinte vérifiée)."
-            echo "  4. Relancer le préflight : la correspondance sera alors exigée."
+            echo "  4. Relancer : toute divergence fera alors échouer la connexion."
             echo ""
-            echo "::error::Arrêt AVANT toute authentification : aucune commande n'a été exécutée sur le VPS."
-            exit 1
+            echo "NOTE : ce préflight (lecture seule) continue. Le mode deployer, lui,"
+            echo "       restera REFUSÉ tant que l'empreinte n'est pas épinglée."
+            echo ""
           fi
 
           cp "$BRUT" "$KH"
@@ -1253,6 +1258,21 @@ jobs:
       # garde-fous (sauvegarde vérifiée par SHA-256, plan de migrations
       # analysé et bloquant, aucune commande destructive, ancienne stack et
       # PostgreSQL jamais touchés).
+      # ------------------------------------------------------------------
+      # GARDE ABSOLUE : aucun déploiement sans identité PROUVÉE du serveur.
+      # Une empreinte capturée automatiquement n'est pas une preuve ; seule
+      # une empreinte ÉPINGLÉE (comparée à la console de l'hébergeur) l'est.
+      # preflight/inventaire (lecture seule) restent autorisés sans épinglage.
+      # ------------------------------------------------------------------
+      - name: "Refuser le déploiement sans empreinte SSH épinglée"
+        if: env.MODE == 'deployer' && env.CONFIANCE_VPS != 'VERIFIEE'
+        run: |
+          echo "::error::DÉPLOIEMENT REFUSÉ — identité du serveur non prouvée."
+          echo "::error::Le mode deployer exige VPS_EMPREINTE_EPINGLEE (empreinte ED25519 vérifiée)."
+          echo "::error::État courant : CONFIANCE_VPS=${CONFIANCE_VPS:-absente}."
+          echo "::error::Aucune commande exécutée sur le VPS, aucun conteneur touché."
+          exit 1
+
       - name: "Exécuter deploy.sh — mode ${{ needs.resolution.outputs.mode }}"
         if: env.MODE != 'preflight' && env.MODE != 'inventaire'
         id: execution
