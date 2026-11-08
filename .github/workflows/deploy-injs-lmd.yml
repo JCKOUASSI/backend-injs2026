@@ -144,6 +144,8 @@ env:
   PROJET_COMPOSE: "injs-lmd-production"
   RESEAU_PROJET: "injs-lmd-production"
   DOSSIER_VPS: "/opt/injs/injs-lmd"
+  # Répertoire des sauvegardes de production (BACKUP_DIR de deploy.sh).
+  DOSSIER_BACKUPS: "/opt/injs/backups"
   DOMAINE_PUBLIC: "https://injs.badge-qr-code.pro"
   PG_CONTAINER: "injs-db"
   SEUIL_DISQUE_GO: "5"
@@ -475,6 +477,7 @@ jobs:
       SSH_PORT: ${{ secrets.SSH_PORT }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+      VPS_EMPREINTE_EPINGLEE: ${{ secrets.VPS_EMPREINTE_EPINGLEE }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
     outputs:
@@ -486,6 +489,8 @@ jobs:
       domaine_apres: ${{ steps.domaine-apres.outputs.code }}
       domaine_servi_par: ${{ steps.domaine-apres.outputs.domaine_servi_par }}
       preservation: ${{ steps.preservation.outputs.verdict }}
+      verdict_precontroles: ${{ steps.precontroles.outputs.verdict_precontroles }}
+      verdict_sauvegardes: ${{ steps.sauvegardes.outputs.verdict }}
     steps:
       # Actions épinglées par SHA complet (chaîne d'approvisionnement).
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
@@ -494,51 +499,244 @@ jobs:
         run: |
           set -uo pipefail
           manquants=""
-          for v in SSH_HOST SSH_USER SSH_PRIVATE_KEY VPS_KNOWN_HOSTS; do
+          # VPS_KNOWN_HOSTS n'est PLUS exigé : l'étape suivante reconstruit
+          # l'empreinte du serveur depuis le runner (ssh-keyscan), puis
+          # l'ÉPINGLE dans le secret d'épinglage. Le fournir reste possible et
+          # prioritaire — il sert alors de source et doit correspondre.
+          for v in SSH_HOST SSH_USER SSH_PRIVATE_KEY; do
             [ -n "${!v:-}" ] || manquants="$manquants $v"
           done
           if [ -n "$manquants" ]; then
             echo "::error::Secrets GitHub absents ou vides :$manquants — les créer dans Settings → Secrets and variables → Actions (voir GUIDE-DEPLOIEMENT-AUTOMATIQUE.md §2)."
             exit 1
           fi
-          echo "Secrets SSH présents : SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, VPS_KNOWN_HOSTS (valeurs jamais affichées)."
+          echo "Secrets SSH requis présents : SSH_HOST, SSH_USER, SSH_PRIVATE_KEY (valeurs jamais affichées)."
+          if [ -n "${VPS_KNOWN_HOSTS:-}" ]; then
+            echo "VPS_KNOWN_HOSTS fourni : il servira de SOURCE d'empreinte prioritaire."
+          else
+            echo "VPS_KNOWN_HOSTS absent : l'empreinte sera reconstruite depuis le VPS (ssh-keyscan) puis épinglée."
+          fi
+          if [ -n "${VPS_EMPREINTE_EPINGLEE:-}" ]; then
+            echo "VPS_EMPREINTE_EPINGLEE fourni : toute empreinte différente fera ÉCHOUER la connexion (anti-interposition)."
+          else
+            echo "VPS_EMPREINTE_EPINGLEE non fourni : première capture, l'empreinte sera affichée pour être épinglée."
+          fi
           if [ -n "${SSH_PORT:-}" ]; then echo "Port SSH : fourni par le secret SSH_PORT."
           else echo "SSH_PORT non défini : port 22 utilisé par défaut."; fi
 
-      - name: Installer la clé SSH, l'empreinte du serveur et l'utilitaire de connexion
+      - name: Installer la clé SSH et ÉPINGLER l'empreinte du serveur
         run: |
           set -euo pipefail
           umask 077
           mkdir -p "$HOME/.ssh"
           printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
           chmod 600 "$HOME/.ssh/id_ed25519"
-          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
-          chmod 600 "$HOME/.ssh/known_hosts"
-          echo "Lignes known_hosts installées : $(grep -c . "$HOME/.ssh/known_hosts")"
+          KH="$HOME/.ssh/known_hosts"
+          PORT="${SSH_PORT:-22}"
+
+          # ==================================================================
+          # EMPREINTE DU SERVEUR — reconstruction AUTOMATIQUE puis ÉPINGLAGE.
+          #
+          # Pourquoi : « No ED25519 host key is known for <hôte> » signifie que
+          # le known_hosts fourni ne contient pas de clé ASSOCIÉE À CET HÔTE.
+          # Plutôt que d'exiger de l'opérateur un format parfait, on capture la
+          # clé hôte depuis le VPS, on l'ÉPINGLE, et toute divergence échoue.
+          #
+          # Ordre de priorité de la source :
+          #   1. VPS_KNOWN_HOSTS (secret)      — s'il est exploitable
+          #   2. ssh-keyscan sur SSH_HOST      — sinon
+          # Puis : vérification contre VPS_EMPREINTE_EPINGLEE si fourni.
+          # Aucune valeur de clé privée ni d'hôte n'est écrite dans les journaux.
+          # ==================================================================
+          SOURCE=""
+          BRUT="$RUNNER_TEMP/known_hosts.brut"
+          : > "$BRUT"
+
+          if [ -n "${VPS_KNOWN_HOSTS:-}" ]; then
+            printf '%s\n' "$VPS_KNOWN_HOSTS" > "$RUNNER_TEMP/kh.secret"
+            if grep -q $'\r' "$RUNNER_TEMP/kh.secret"; then
+              echo "known_hosts (secret) : fins de ligne CRLF détectées — normalisées."
+              tr -d '\r' < "$RUNNER_TEMP/kh.secret" > "$RUNNER_TEMP/kh.secret.lf"
+              mv "$RUNNER_TEMP/kh.secret.lf" "$RUNNER_TEMP/kh.secret"
+            fi
+            if grep -qiE '^(SHA256|MD5):' "$RUNNER_TEMP/kh.secret"; then
+              echo "::warning::VPS_KNOWN_HOSTS contient une EMPREINTE (SHA256:/MD5:) et non une clé hôte : il sera ignoré au profit de ssh-keyscan."
+            elif grep -q 'PRIVATE KEY' "$RUNNER_TEMP/kh.secret"; then
+              echo "::warning::VPS_KNOWN_HOSTS contient une CLÉ PRIVÉE : il sera ignoré."
+            else
+              # Reconstruction : champ hôte forcé à SSH_HOST (+ alias multi-port)
+              awk -v hote="$SSH_HOST" -v port_ssh="$PORT" '
+                NF >= 3 && $2 ~ /^(ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp|sk-ssh-ed25519|sk-ecdsa-sha2-nistp)/ {
+                  cle = $2; b64 = $3; for (i = 4; i <= NF; i++) b64 = b64 " " $i
+                  if ($1 ~ /^(\||@)/) { next }
+                  print hote, cle, b64
+                  alias = (port_ssh == 22 ? hote : "[" hote "]:" port_ssh)
+                  if (alias != hote) print hote "," alias, cle, b64
+                  garde++; next
+                }
+                NF == 2 && $1 ~ /^(ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp)/ {
+                  print hote, $1, $2
+                  alias = (port_ssh == 22 ? hote : "[" hote "]:" port_ssh)
+                  if (alias != hote) print hote "," alias, $1, $2
+                  reparees++; garde++; next
+                }
+                END { if (garde > 0) printf "known_hosts (secret) : %d clé(s) normalisée(s), %d sans hôte réparée(s).\n", garde, reparees }
+              ' "$RUNNER_TEMP/kh.secret" >> "$BRUT" || true
+              SOURCE="secret"
+            fi
+          fi
+
+          if [ -s "$BRUT" ] && ssh-keygen -F "$SSH_HOST" -f "$BRUT" >/dev/null 2>&1; then
+            SOURCE="secret"
+            echo "Empreinte serveur : source = VPS_KNOWN_HOSTS (fourni par secret), normalisée."
+          else
+            [ -n "$SOURCE" ] && echo "VPS_KNOWN_HOSTS fourni mais inexploitable pour l'hôte cible : recours à ssh-keyscan."
+            echo "Empreinte serveur : capture depuis le VPS (ssh-keyscan -p $PORT) …"
+            : > "$BRUT"
+            if ! timeout 25 ssh-keyscan -T 10 -p "$PORT" -t ed25519,ecdsa,rsa "$SSH_HOST" > "$RUNNER_TEMP/scan.txt" 2>"$RUNNER_TEMP/scan.err"; then
+              echo "::error::ssh-keyscan a échoué : le VPS ne répond pas sur le port $PORT.\n::error::Vérifier SSH_HOST / SSH_PORT, le pare-feu de l'hébergeur et que sshd est démarré."
+              sed 's/^/  ssh-keyscan: /' "$RUNNER_TEMP/scan.err" || true
+              exit 1
+            fi
+            if [ ! -s "$RUNNER_TEMP/scan.txt" ]; then
+              echo "::error::ssh-keyscan n'a retourné AUCUNE clé hôte pour l'hôte cible sur le port $PORT."
+              exit 1
+            fi
+            awk -v hote="$SSH_HOST" -v port_ssh="$PORT" '
+              NF >= 3 && $2 ~ /^(ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp)/ {
+                cle = $2; b64 = $3
+                print hote, cle, b64
+                alias = (port_ssh == 22 ? hote : "[" hote "]:" port_ssh)
+                if (alias != hote) print hote "," alias, cle, b64
+                n++
+              }
+              END { printf "known_hosts (ssh-keyscan) : %d clé(s) capturée(s).\n", n }
+            ' "$RUNNER_TEMP/scan.txt" > "$BRUT"
+            SOURCE="ssh-keyscan"
+          fi
+
+          if [ ! -s "$BRUT" ]; then
+            echo "::error::Aucune clé hôte exploitable — connexion impossible."
+            exit 1
+          fi
+
+          # ---- ÉPINGLAGE : comparaison des empreintes SHA256 ----------------
+          echo "=== EMPREINTES SHA256 DU SERVEUR (clés publiques — information publique) ==="
+          ssh-keygen -lf "$BRUT" 2>/dev/null | sed 's/^/  /' || echo "  (empreintes illisibles)"
+          echo "====================================================================="
+
+          if [ -n "${VPS_EMPREINTE_EPINGLEE:-}" ]; then
+            attendu="$(printf '%s' "$VPS_EMPREINTE_EPINGLEE" | tr -d '[:space:]')"
+            if ! ssh-keygen -lf "$BRUT" 2>/dev/null | grep -qF "$attendu"; then
+              echo "::error::ÉPINGLAGE ROMPU — aucune empreinte capturée ne correspond à VPS_EMPREINTE_EPINGLEE."
+              echo "::error::Cause probable : interposition, VPS réinstallé, ou empreinte épinglée obsolète."
+              echo "::error::Connexion REFUSÉE par sécurité (aucune commande n'a été exécutée)."
+              exit 1
+            fi
+            echo "ÉPINGLAGE VÉRIFIÉ : l'empreinte capturée correspond à VPS_EMPREINTE_EPINGLEE."
+          else
+            prem="$(ssh-keygen -lf "$BRUT" 2>/dev/null | head -1 | awk '{print $2}')"
+            echo "::notice::Aucune empreinte épinglée (VPS_EMPREINTE_EPINGLEE vide)."
+            echo "::notice::Pour figer durablement ce serveur, créer le secret VPS_EMPREINTE_EPINGLEE = ${prem}"
+            echo "::notice::Toute divergence ultérieure fera alors échouer la connexion (anti-interposition)."
+          fi
+
+          cp "$BRUT" "$KH"
+          chmod 600 "$KH"
+          if ! ssh-keygen -F "$SSH_HOST" -f "$KH" >/dev/null 2>&1; then
+            echo "::error::known_hosts ne correspond toujours pas à l'hôte cible après reconstruction."
+            exit 1
+          fi
+          echo "known_hosts prêt : $(grep -c . "$KH") ligne(s), source = $SOURCE, hôte cible vérifié."
+
           # Utilitaire unique de connexion : StrictHostKeyChecking=yes (jamais
-          # accept-new ni no), BatchMode (aucune invite), clé dédiée.
-          cat > "$RUNNER_TEMP/vps-ssh" <<'EOS'
+          # accept-new ni no), BatchMode (aucune invite), clé dédiée, et
+          # known_hosts EXPLICITE pour ne dépendre d'aucun état hérité du runner.
+          cat > "$RUNNER_TEMP/vps-ssh" <<EOS
           #!/usr/bin/env bash
           set -euo pipefail
           exec ssh -o StrictHostKeyChecking=yes -o BatchMode=yes -o IdentitiesOnly=yes \
+               -o UserKnownHostsFile="$KH" -o GlobalKnownHostsFile=/dev/null \
                -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
-               -p "${SSH_PORT:-22}" "${SSH_USER:?secret SSH_USER absent}@${SSH_HOST:?secret SSH_HOST absent}" "$@"
+               -p "\${SSH_PORT:-22}" "\${SSH_USER:?secret SSH_USER absent}@\${SSH_HOST:?secret SSH_HOST absent}" "\$@"
           EOS
           chmod +x "$RUNNER_TEMP/vps-ssh"
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
-          echo "Clé, known_hosts et utilitaire vps-ssh installés (aucun secret affiché)."
+          echo "Clé, empreinte épinglée et utilitaire vps-ssh installés (aucun secret affiché)."
 
       - name: Vérifier la connexion SSH (lecture seule)
         run: |
-          set -euo pipefail
-          vps-ssh 'set -eu
+          set -uo pipefail
+          # Diagnostic classifié : un échec doit être IDENTIFIABLE sans lire un
+          # code de sortie nu. Chaque cause connue est rapportée par un message
+          # explicite (::error::), puis l'étape échoue. Aucune écriture, aucun
+          # secret affiché (ni clé, ni empreinte du serveur, ni valeur).
+          ssh_err=""
+          if ssh_err="$(vps-ssh 'set -eu
             echo "HOTE=$(hostname)"
             echo "UTILISATEUR=$(id -un)"
             cat /etc/almalinux-release 2>/dev/null || head -2 /etc/os-release
             docker --version
             docker compose version
-            docker info --format "DOCKER_INFO={{.ServerVersion}} conteneurs={{.Containers}} images={{.Images}}"'
-          echo "Connexion SSH établie et outillage Docker présent."
+            docker info --format "DOCKER_INFO={{.ServerVersion}} conteneurs={{.Containers}} images={{.Images}}"' 2>&1)"; then
+            printf '%s\n' "$ssh_err"
+            echo "Connexion SSH établie et outillage Docker présent."
+            exit 0
+          fi
+          printf '%s\n' "$ssh_err"
+          echo
+          echo "=== DIAGNOSTIC DE LA CONNEXION SSH (lecture seule) ==="
+          # Sonde 1 — résolution du nom (aucune valeur d'hôte affichée)
+          if getent hosts "${SSH_HOST:?}" >/dev/null 2>&1; then
+            echo "1. RÉSOLUTION      : ok (SSH_HOST résolu)"
+          else
+            echo "1. RÉSOLUTION      : ÉCHEC — SSH_HOST non résolu (utiliser l'IP de l'hébergeur)"
+          fi
+          # Sonde 2 — ouverture TCP du port (timeout court, aucune donnée envoyée)
+          if timeout 8 bash -c "cat < /dev/null > /dev/tcp/${SSH_HOST}/${SSH_PORT:-22}" 2>/dev/null; then
+            echo "2. PORT ${SSH_PORT:-22}         : OUVERT — le service SSH répond au niveau TCP"
+          else
+            echo "2. PORT ${SSH_PORT:-22}         : FERMÉ / FILTRÉ — pare-feu, port différent, ou service arrêté"
+          fi
+          # Sonde 3 — empreinte de la clé hôte réellement présentée.
+          # ssh-keyscan n'écrit RIEN (pas de redirection vers known_hosts) : la clé
+          # publique du serveur est une information publique, pas un secret.
+          echo "3. EMPREINTES SERVEUR (clés publiques réellement présentées) :"
+          cles="$(timeout 15 ssh-keyscan -T 10 -p "${SSH_PORT:-22}" "${SSH_HOST}" 2>/dev/null || true)"
+          if [ -n "$cles" ]; then
+            printf '%s\n' "$cles" | ssh-keygen -lf - 2>/dev/null | sed 's/^/     /' || echo "     (empreintes illisibles)"
+            echo "     → comparer ces empreintes avec le contenu du secret VPS_KNOWN_HOSTS."
+            echo "     → régénérer avec : ssh-keyscan -p ${SSH_PORT:-22} HOTE > known_hosts"
+          else
+            echo "     aucune clé hôte obtenue — le port ne délivre pas de bannière SSH."
+          fi
+          echo
+          case "$ssh_err" in
+            *"Host key verification failed"*)
+              echo "::error::CAUSE 1/5 — EMPREINTE SERVEUR DIFFÉRENTE."
+              echo "::error::VPS_KNOWN_HOSTS ne contient pas la clé hôte du VPS (format attendu : « hôte type base64 »). Le secret contient-il la clé publique brute ou une empreinte SHA256 au lieu d'une ligne known_hosts ?"
+              echo "::error::Correctif : régénérer VPS_KNOWN_HOSTS avec « ssh-keyscan -p \${SSH_PORT:-22} HOTE » et vérifier l'empreinte ci-dessus." ;;
+            *"Permission denied"*)
+              echo "::error::CAUSE 2/5 — AUTHENTIFICATION REFUSÉE."
+              echo "::error::Le VPS a répondu (TCP ouvert, empreinte acceptée) mais refuse la clé : SSH_PRIVATE_KEY ne correspond pas à une clé publique présente dans ~/.ssh/authorized_keys du compte SSH_USER." ;;
+            *"Connection refused"*)
+              echo "::error::CAUSE 3/5 — PORT FERMÉ."
+              echo "::error::Le port \${SSH_PORT:-22} refuse la connexion : service SSH arrêté, ou port différent (renseigner le secret SSH_PORT)." ;;
+            *"Connection timed out"* | *"Operation timed out"*)
+              echo "::error::CAUSE 4/5 — DÉLAI DÉPASSÉ."
+              echo "::error::Aucune réponse de SSH_HOST sur le port \${SSH_PORT:-22} : pare-feu, adresse incorrecte, ou VPS éteint." ;;
+            *"No route to host"*)
+              echo "::error::CAUSE 4/5 — HÔTE INJOIGNABLE."
+              echo "::error::Aucune route réseau jusqu'à SSH_HOST : adresse erronée, ou réseau du runner filtré." ;;
+            *"Could not resolve hostname"*)
+              echo "::error::CAUSE 5/5 — NOM D'HÔTE NON RÉSOLU."
+              echo "::error::SSH_HOST n'est pas un nom résoluble : utiliser l'adresse IP fournie par l'hébergeur." ;;
+            *)
+              echo "::error::CAUSE NON CLASSÉE — lire le message ssh ci-dessus et les trois sondes (aucun secret n'est affiché)." ;;
+          esac
+          echo "=== FIN DU DIAGNOSTIC ==="
+          echo "::error::Connexion SSH au VPS impossible : le préflight s'arrête ici (aucun pré-contrôle sensible exécuté, aucune écriture)."
+          exit 1
 
       # Lecture seule intégrale : état du système, de PostgreSQL, de la
       # configuration serveur (valeurs sensibles masquées), des conteneurs
@@ -667,28 +865,172 @@ jobs:
           echo "env_present=$env_present" >> "$GITHUB_OUTPUT"
           echo "PORT_VALIDATION=$port" >> "$GITHUB_ENV"
 
-          if [ "$MODE" != "preflight" ] && [ "$MODE" != "inventaire" ]; then
-            if [ "$env_present" != "oui" ]; then
-              echo "::error::.env serveur absent ($DOSSIER_VPS/deploy/production/.env) : le mode $MODE l'exige."
-              echo "::error::Le créer sur le VPS depuis .env.example (RUNBOOK.md §4), jamais depuis un poste local."
-              exit 1
+          # Normalisation : chaque pré-contrôle produit une ligne
+          # CONTROLE|id|STATUT|OBLIGATOIRE|RESULTAT|OBSERVATION. Les contrôles
+          # d'infrastructure sont OBLIGATOIRES dans tous les modes ; les
+          # contrôles de configuration (.env, secrets applicatifs) ne sont
+          # obligatoires que pour les modes qui écrivent sur le VPS.
+          export CONTROLES_FICHIER="evidence/controles.txt"
+          if [ ! -f "$CONTROLES_FICHIER" ]; then : > "$CONTROLES_FICHIER"; fi
+          . deploy/production/normaliser-controles.sh
+
+          if [ "$pg_pret" = "oui" ]; then
+            controle PG-PRET PASS oui "$pg_pret" "PostgreSQL ($PG_CONTAINER) répond à pg_isready"
+          else
+            controle PG-PRET FAIL oui "${pg_pret:-inconnu}" "PostgreSQL ($PG_CONTAINER) ne répond pas : aucune intervention tentée"
+          fi
+          version_pg="$(valeur PG_VERSION)"; version_pg="${version_pg:-non testée}"
+          if [ "$version_pg" = "non testée" ] || [ "$version_pg" = "illisible" ] || [ "$version_pg" = "?" ]; then
+            controle PG-VERSION NON_EXECUTE oui "$version_pg" "version du serveur non lisible (utilisateur ou base du .env non concordant)"
+          else
+            controle PG-VERSION PASS oui "$version_pg" "version du serveur PostgreSQL lue"
+          fi
+          if [ "${dispo:-0}" -ge "$SEUIL_DISQUE_GO" ]; then
+            controle DISQUE PASS oui "${dispo:-0} Go" "espace disponible au-dessus du seuil de ${SEUIL_DISQUE_GO} Go"
+          else
+            controle DISQUE FAIL oui "${dispo:-0} Go" "espace insuffisant (seuil ${SEUIL_DISQUE_GO} Go) : libérer SANS prune ni suppression de volumes"
+          fi
+          for c in $(printf '%s' "$SERVICES_PROTEGES"); do
+            ligne="$(valeur "SERVICE_$c")"
+            if [ -z "$ligne" ] || [ "$ligne" = "absent" ]; then
+              controle "PROT-$c" FAIL oui "absent" "conteneur historique protégé introuvable"
+            else
+              controle "PROT-$c" PASS oui "$ligne" "conteneur historique en place"
             fi
-            for s in POSTGRES_PASSWORD DJANGO_SECRET_KEY; do
-              if [ "$(valeur "SECRET_$s")" != "renseigne" ]; then
-                echo "::error::Secret applicatif $s absent ou encore à sa valeur d'exemple dans le .env du VPS : deploy.sh le refuserait. Arrêt avant toute intervention (valeur jamais affichée)."
-                exit 1
-              fi
-            done
+          done
+          if [ "$env_present" = "oui" ]; then
+            controle ENV-PRESENT PASS oui "oui" "$DOSSIER_VPS/deploy/production/.env présent"
+          elif [ "$MODE" = "preflight" ] || [ "$MODE" = "inventaire" ]; then
+            controle ENV-PRESENT WARN non "non" "aucun .env serveur : lecture seule possible, tout déploiement restera impossible"
+          else
+            controle ENV-PRESENT FAIL oui "non" ".env serveur absent : le mode $MODE l'exige (RUNBOOK.md §4)"
           fi
-          if [ "$pg_pret" != "oui" ]; then
-            echo "::error::PostgreSQL ($PG_CONTAINER) ne répond pas : aucune intervention n'est tentée."
+          for s in POSTGRES_PASSWORD DJANGO_SECRET_KEY; do
+            etat_secret="$(valeur "SECRET_$s")"
+            if [ "$etat_secret" = "renseigne" ]; then
+              controle "SECRET-$s" PASS oui "renseigné" "valeur non provisoire (valeur jamais affichée)"
+            elif [ "$MODE" = "preflight" ] || [ "$MODE" = "inventaire" ]; then
+              controle "SECRET-$s" WARN non "${etat_secret:-absent}" "secret applicatif absent ou provisoire : bloquant pour un déploiement, pas pour un contrôle"
+            else
+              controle "SECRET-$s" FAIL oui "${etat_secret:-absent}" "secret absent ou provisoire : deploy.sh le refuserait (valeur jamais affichée)"
+            fi
+          done
+
+          analyse="$(controles_analyser "$CONTROLES_FICHIER")"
+          verdict="$(printf '%s\n' "$analyse" | sed -n 's/^verdict=//p')"
+          echo "verdict_precontroles=$verdict" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Pré-contrôles VPS — contrôles normalisés"
+            echo ""
+            controles_tableau "$CONTROLES_FICHIER"
+            echo ""
+            controles_bilan "$CONTROLES_FICHIER"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$verdict" = "REFUSE" ]; then
+            echo "::error::Pré-contrôles en échec : un prérequis obligatoire n'est pas satisfait. Aucune intervention sur la production."
             exit 1
           fi
-          if [ "${dispo:-0}" -lt "$SEUIL_DISQUE_GO" ]; then
-            echo "::error::Espace disque insuffisant (${dispo:-0} Go disponibles, seuil ${SEUIL_DISQUE_GO} Go). Libérer de l'espace SANS prune ni suppression de volumes, puis relancer."
+          echo "Pré-contrôles : verdict $verdict (PostgreSQL prêt, ${dispo} Go disponibles, configuration serveur ${env_present}, port $port)."
+
+      # ------------------------------------------------------------------
+      # Contrôle des sauvegardes — STRICTEMENT LECTURE SEULE.
+      # Exécuté en preflight et en inventaire (modes de contrôle). Le script
+      # distant n'émet que des commandes de lecture (test, ls, find, stat,
+      # head, sha256sum, date) et n'écrit que sur la sortie standard du
+      # runner. Aucun fichier n'est créé, déplacé, renommé, modifié ou
+      # restauré sur le VPS ; aucune permission n'est changée ; PostgreSQL et
+      # les conteneurs ne sont pas sollicités.
+      # ------------------------------------------------------------------
+      - name: Contrôle des sauvegardes du VPS (lecture seule)
+        if: env.MODE == 'preflight' || env.MODE == 'inventaire'
+        id: sauvegardes
+        run: |
+          set -uo pipefail
+          mkdir -p evidence
+          export CONTROLES_FICHIER="evidence/controles.txt"
+          : > "$CONTROLES_FICHIER"
+          . deploy/production/normaliser-controles.sh
+
+          cat > "$RUNNER_TEMP/distant-sauvegardes.sh" <<'EOS'
+          set -uo pipefail
+          DOSSIER="${1:-/opt/injs/backups}"
+
+          # Toutes les opérations ci-dessous sont des LECTURES.
+          echo "SAU_DOSSIER=$DOSSIER"
+          if [ ! -e "$DOSSIER" ]; then echo "SAU_ETAT=absent"; exit 0; fi
+          if [ ! -d "$DOSSIER" ]; then echo "SAU_ETAT=pas_un_repertoire"; exit 0; fi
+          echo "SAU_ETAT=present"
+          if [ ! -r "$DOSSIER" ] || [ ! -x "$DOSSIER" ]; then echo "SAU_LISIBLE=non"; exit 0; fi
+          echo "SAU_LISIBLE=oui"
+
+          maintenant="$(date +%s)"
+
+          # Dumps PostgreSQL : format custom, signature binaire PGDMP.
+          # `head -c 5` lit ; il n'y a NI pg_restore NI restauration.
+          for f in "$DOSSIER"/*.dump; do
+            [ -f "$f" ] || continue
+            nom="$(basename "$f")"
+            taille="$(stat -c '%s' "$f" 2>/dev/null || echo 0)"
+            mtime="$(stat -c '%Y' "$f" 2>/dev/null || echo "$maintenant")"
+            age=$(( (maintenant - mtime) / 86400 ))
+            signature="$(head -c 5 "$f" 2>/dev/null || true)"
+            # Le fichier .sha256 compagnon est SIGNALÉ, jamais utilisé comme
+            # preuve : sa seule présence ne prouve pas la conformité du dump.
+            if [ -f "$f.sha256" ]; then compagnon=oui; else compagnon=non; fi
+            echo "SAU_DUMP=${nom}|${taille}|${age}|${signature:-vide}|${compagnon}"
+          done
+
+          # Archives complémentaires : inventoriées, jamais assimilées à une
+          # sauvegarde de base de données.
+          for f in "$DOSSIER"/*; do
+            [ -f "$f" ] || continue
+            case "$f" in *.dump|*.dump.sha256) continue ;; esac
+            taille="$(stat -c '%s' "$f" 2>/dev/null || echo 0)"
+            mtime="$(stat -c '%Y' "$f" 2>/dev/null || echo "$maintenant")"
+            age=$(( (maintenant - mtime) / 86400 ))
+            echo "SAU_AUTRE=$(basename "$f")|${taille}|${age}"
+          done
+
+          echo "SAU_FIN=ok"
+          EOS
+
+          # Les seuils ne sont PAS transmis : le script distant ne fait que
+          # mesurer (taille, date, signature), la politique de fraîcheur est
+          # appliquée par la bibliothèque (source unique).
+          vps-ssh 'bash -s --' "$DOSSIER_BACKUPS" \
+            < "$RUNNER_TEMP/distant-sauvegardes.sh" > evidence/sauvegardes-vps.txt 2>&1
+          code_ssh=$?
+          cat evidence/sauvegardes-vps.txt
+
+          # Toute la politique de fraîcheur et de disponibilité vit dans
+          # deploy/production/normaliser-controles.sh (source unique) : le
+          # workflow ne fait que lui transmettre l'inventaire. Aucune règle
+          # de seuil n'est réimplémentée ici.
+          sauvegardes_classifier evidence/sauvegardes-vps.txt "$CONTROLES_FICHIER" \
+            "$DOSSIER_BACKUPS" "$code_ssh"
+
+          # Bilan et verdict, calculés par la bibliothèque (source unique).
+          analyse="$(controles_analyser "$CONTROLES_FICHIER")"
+          verdict="$(printf '%s\n' "$analyse" | sed -n 's/^verdict=//p')"
+          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+          echo "code=$(printf '%s\n' "$analyse" | sed -n 's/^code=//p')" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Sauvegardes — contrôles normalisés"
+            echo ""
+            echo "> La présence de la signature PGDMP confirme uniquement"
+            echo "> l'identification apparente d'un dump PostgreSQL au format"
+            echo "> personnalisé. Elle ne garantit ni son intégrité complète ni sa"
+            echo "> restaurabilité."
+            echo ""
+            controles_tableau "$CONTROLES_FICHIER"
+            echo ""
+            controles_bilan "$CONTROLES_FICHIER"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$verdict" = "REFUSE" ]; then
+            echo "::error::Contrôles de sauvegarde en échec : une sauvegarde exploitable est un prérequis obligatoire. Aucune intervention."
             exit 1
           fi
-          echo "Pré-contrôles validés : PostgreSQL prêt, ${dispo} Go disponibles, configuration serveur ${env_present}, port de validation $port."
+          echo "Contrôles de sauvegarde : verdict $verdict."
 
       - name: État du domaine public AVANT intervention
         id: domaine-avant
@@ -1145,6 +1487,8 @@ jobs:
           DOMAINE_SERVI_PAR: ${{ steps.domaine-apres.outputs.domaine_servi_par }}
         run: |
           set -uo pipefail
+          # Bibliothèque de normalisation : source unique du calcul du verdict.
+          . deploy/production/normaliser-controles.sh
           mkdir -p evidence
           {
             echo "# Rapport de déploiement INJS-LMD"
@@ -1159,7 +1503,21 @@ jobs:
             echo "- Port de validation : ${PORT_VALIDATION:-?}"
             echo "- deploy.sh : code de retour ${CODE_EXECUTION:-<non exécuté>}"
             echo ""
-            echo "## Contrôles"
+            echo "## Contrôles normalisés (PASS / WARN / FAIL / NON_EXECUTE)"
+            echo ""
+            if [ -s evidence/controles.txt ]; then
+              controles_tableau evidence/controles.txt
+              echo ""
+              controles_bilan evidence/controles.txt
+            else
+              echo "| Contrôle | Statut | Obligatoire | Résultat | Observation |"
+              echo "|---|---|---|---|---|"
+              echo "| — | ⛔ NON_EXECUTE | oui | non mesuré | Aucun contrôle enregistré dans ce mode |"
+              echo ""
+              echo "**Verdict : NON EVALUÉ** — ce mode n'exécute pas les contrôles normalisés du préflight."
+            fi
+            echo ""
+            echo "## Contrôles bruts (instantanés de preuves)"
             echo ""
             echo "| Contrôle | Résultat |"
             echo "|---|---|"
@@ -1256,6 +1614,8 @@ jobs:
       DOMAINE_APRES: ${{ needs.deploiement.outputs.domaine_apres }}
       DOMAINE_SERVI_PAR: ${{ needs.deploiement.outputs.domaine_servi_par }}
       PRESERVATION: ${{ needs.deploiement.outputs.preservation }}
+      VERDICT_PRECONTROLES: ${{ needs.deploiement.outputs.verdict_precontroles }}
+      VERDICT_SAUVEGARDES: ${{ needs.deploiement.outputs.verdict_sauvegardes }}
       URL_EXECUTION: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
       - name: Récupérer le rapport et les preuves
@@ -1301,6 +1661,10 @@ jobs:
             echo "| Domaine API avant → après | \`${DOMAINE_AVANT:-?}\` → \`${DOMAINE_APRES:-?}\` |"
             echo "| Domaine servi par | \`${DOMAINE_SERVI_PAR:-<non déterminé>}\` |"
             echo "| Protection de la production | \`${PRESERVATION:-<non évaluée>}\` |"
+            if [ "$MODE" = "preflight" ] || [ "$MODE" = "inventaire" ]; then
+              echo "| Préflight — prérequis | \`${VERDICT_PRECONTROLES:-<non évalué>}\` |"
+              echo "| Préflight — sauvegardes | \`${VERDICT_SAUVEGARDES:-<non évalué>}\` |"
+            fi
             echo ""
             if [ -f evidence/rapport.md ]; then
               echo "<details><summary>Rapport détaillé (evidence/rapport.md)</summary>"
@@ -1331,6 +1695,19 @@ jobs:
           fi
           if [ "$MODE" = "preflight" ]; then
             echo "::notice::Mode preflight : vérification en lecture seule. Aucun fichier créé ni modifié sur le VPS, aucun conteneur touché."
+            if [ "${VERDICT_PRECONTROLES:-}" = "REFUSE" ]; then
+              echo "::error::Préflight REFUSÉ : un prérequis obligatoire des pré-contrôles n'est pas satisfait."
+            fi
+            if [ "${VERDICT_SAUVEGARDES:-}" = "REFUSE" ]; then
+              echo "::error::Préflight REFUSÉ : aucune sauvegarde de production exploitable."
+            fi
+            if [ "${VERDICT_PRECONTROLES:-}" != "REFUSE" ] && [ "${VERDICT_SAUVEGARDES:-}" != "REFUSE" ]; then
+              if [ "${VERDICT_SAUVEGARDES:-}" = "RESERVES" ] || [ "${VERDICT_PRECONTROLES:-}" = "RESERVES" ]; then
+                echo "::warning::Préflight validé AVEC RÉSERVES : anomalies non bloquantes à examiner avant décision de déploiement."
+              else
+                echo "::notice::Préflight VALIDÉ : tous les prérequis obligatoires sont satisfaits."
+              fi
+            fi
           fi
           if [ "$RESULTAT_DEPLOIEMENT" = "skipped" ]; then
             echo "::notice::Aucune intervention VPS : le job de résolution n'a pas produit de cible exploitable."
