@@ -472,6 +472,118 @@ else
 fi
 
 # ────────────────────────────────────────────────────────────────────────────
+echo "== F. Préflight : sauvegardes et normalisation =="
+
+NORMALISATION="deploy/production/normaliser-controles.sh"
+if [ -f "$NORMALISATION" ]; then
+  bash -n "$NORMALISATION" \
+    && ok "F0 — $NORMALISATION : syntaxe bash valide" \
+    || echec "F0 — $NORMALISATION : syntaxe invalide"
+  for statut in PASS WARN FAIL NON_EXECUTE; do
+    grep -qF "$statut" "$NORMALISATION" \
+      && ok "F0 — statut $statut défini dans la bibliothèque" \
+      || echec "F0 — statut $statut absent de la bibliothèque"
+  done
+  grep -qF 'verdict == "REFUSE"' "$NORMALISATION" || grep -qF 'verdict = "REFUSE"' "$NORMALISATION" \
+    && ok "F0 — la bibliothèque calcule un verdict explicite" \
+    || echec "F0 — verdict absent de la bibliothèque"
+else
+  echec "F0 — bibliothèque de normalisation absente : $NORMALISATION"
+fi
+
+ETAPE_SAU="$(sed -n "/- name: Contrôle des sauvegardes du VPS/,/^      - name: État du domaine public/p" "$DEPLOY_WF")"
+if [ -n "$ETAPE_SAU" ]; then
+  ok "F1 — étape de contrôle des sauvegardes présente dans le workflow"
+  # Le script distant est le bloc heredoc de cette étape.
+  SCRIPT_SAU="$(printf '%s\n' "$ETAPE_SAU" | "$PYTHON" -c '
+import re, sys
+texte = sys.stdin.read()
+blocs = re.findall(r"<<-?.?(\w+).?\n(.*?)\n[ \t]*\1\n", texte, re.S)
+print(blocs[0][1] if blocs else "")
+')"
+  if [ -n "$SCRIPT_SAU" ]; then
+    ok "F1 — script distant des sauvegardes extrait"
+    # F1 : aucune commande d'écriture, commentaires retirés avant analyse.
+    SANS_COMMENTAIRES="$(printf '%s\n' "$SCRIPT_SAU" | sed -e 's/[[:space:]]#.*$//' -e 's/^#.*$//')"
+    faute=0
+    for interdit in 'rm ' 'mv ' 'cp ' 'touch ' 'mkdir ' 'chmod ' 'chown ' 'tee ' 'dd ' \
+                    'pg_restore' 'psql ' 'truncate ' 'docker '; do
+      if printf '%s\n' "$SANS_COMMENTAIRES" | grep -qE "(^|[[:space:]|;&(])${interdit}"; then
+        echec "F1 — commande d'écriture ou de restauration dans le contrôle des sauvegardes : « $interdit »"
+        faute=1
+      fi
+    done
+    [ "$faute" = 0 ] && ok "F1 — aucune commande d'écriture/restauration dans le script distant (13 motifs)"
+    printf '%s\n' "$SANS_COMMENTAIRES" | grep -qE '(^|[^0-9&])>[[:space:]]*[^&/]' \
+      && echec "F1 — redirection d'écriture vers un fichier détectée" \
+      || ok "F1 — aucune redirection d'écriture vers un fichier"
+    printf '%s\n' "$SCRIPT_SAU" | grep -qF 'head -c 5' \
+      && ok "F1 — signature binaire lue par head -c 5 (lecture seule)" \
+      || echec "F1 — lecture de la signature PGDMP absente"
+    # Analyse sur le code SANS commentaires : la mention « il n'y a NI
+    # pg_restore » est une documentation, pas une commande.
+    printf '%s\n' "$SANS_COMMENTAIRES" | grep -qE "(^|[[:space:];&|(])pg_restore" \
+      && echec "F1 — pg_restore présent alors qu'il est proscrit" \
+      || ok "F1 — pg_restore absent du code (aucune restauration, même à blanc)"
+  else
+    echec "F1 — script distant des sauvegardes introuvable"
+  fi
+else
+  echec "F1 — étape de contrôle des sauvegardes absente"
+fi
+
+# F2 : chemin de référence et variable d'environnement
+grep -qF 'DOSSIER_BACKUPS: "/opt/injs/backups"' "$DEPLOY_WF" \
+  && ok "F2 — /opt/injs/backups défini comme constante du workflow" \
+  || echec "F2 — chemin des sauvegardes non défini (/opt/injs/backups attendu)"
+grep -qF 'BACKUP_DIR="${BACKUP_DIR:-/opt/injs/backups}"' deploy/production/deploy.sh \
+  && ok "F2 — même chemin que BACKUP_DIR de deploy.sh (source unique)" \
+  || echec "F2 — divergence avec le BACKUP_DIR de deploy.sh"
+
+# F3 : les quatre statuts sont produits ET rendus dans le rapport
+for statut in PASS WARN FAIL NON_EXECUTE; do
+  grep -qF "$statut" "$DEPLOY_WF" \
+    && ok "F3 — statut $statut utilisé par le workflow" \
+    || echec "F3 — statut $statut absent du workflow"
+done
+grep -qF '| Contrôle | Statut | Obligatoire | Résultat | Observation |' "$DEPLOY_WF" \
+  && ok "F3 — tableau à 5 colonnes présent dans le rapport" \
+  || echec "F3 — format de tableau attendu absent"
+grep -qF 'controles_tableau' "$DEPLOY_WF" && grep -qF 'controles_bilan' "$DEPLOY_WF" \
+  && ok "F3 — tableau et bilan produits par la bibliothèque commune" \
+  || echec "F3 — tableau ou bilan non produit"
+grep -qF 'controle_non_execute' "$DEPLOY_WF" \
+  && ok "F3 — un contrôle non exécuté a un traitement explicite" \
+  || echec "F3 — NON_EXECUTE non produit"
+
+# F4 : conditions de protection du mode preflight conservées
+grep -qF "if: env.MODE != 'preflight' && env.MODE != 'inventaire'" "$DEPLOY_WF" \
+  && ok "F4 — transfert rsync et deploy.sh toujours exclus du preflight" \
+  || echec "F4 — condition de protection du preflight modifiée"
+[ "$(grep -cF "if: env.MODE != 'preflight' && env.MODE != 'inventaire'" "$DEPLOY_WF")" -ge 2 ] \
+  && ok "F4 — la condition protège au moins deux étapes" \
+  || echec "F4 — protection présente sur une seule étape"
+grep -qF "if: (env.MODE == 'deployer' || env.MODE == 'plan') && env.IMAGES_SUR_REGISTRE == 'oui'" "$DEPLOY_WF" \
+  && ok "F4 — docker pull limité à deployer et plan" \
+  || echec "F4 — condition du docker pull modifiée"
+grep -qF "if: always() && env.MODE != 'inventaire' && env.MODE != 'preflight'" "$DEPLOY_WF" \
+  && ok "F4 — journaux VPS exclus du preflight" \
+  || echec "F4 — exclusion du preflight modifiée"
+grep -qE "if: env.MODE == 'preflight' \|\| env.MODE == 'inventaire'" "$DEPLOY_WF" \
+  && ok "F4 — contrôle des sauvegardes limité aux modes de contrôle" \
+  || echec "F4 — condition du contrôle des sauvegardes absente"
+
+# F5 : aucun secret introduit par cette évolution
+grep -qE 'CONTROLES_FICHIER|verdict_precontroles|verdict_sauvegardes' "$DEPLOY_WF" \
+  && ok "F5 — nouvelles sorties internes non secrètes" \
+  || echec "F5 — sorties attendues absentes"
+if grep -nE '(POSTGRES_PASSWORD|DJANGO_SECRET_KEY)=[^"$r ]' "$DEPLOY_WF" >/dev/null 2>&1; then
+  echec "F5 — une valeur de secret applicatif semble écrite en clair"
+else
+  ok "F5 — aucune valeur de secret applicatif en clair"
+fi
+
+# ────────────────────────────────────────────────────────────────────────────
 printf '\n────────────────────────────────────────────────────────\n'
 printf 'BILAN : %d OK, %d ÉCHEC, %d IGNORE\n' "$nb_ok" "$nb_echec" "$nb_ignore"
 if [ "$nb_echec" -gt 0 ]; then

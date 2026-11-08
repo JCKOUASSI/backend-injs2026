@@ -769,6 +769,334 @@ scolarite.0036_retour
 EOS
 tester_plan plan-annulation.txt 1 "examiner" "T10.12 opération « Undo » (annulation) → à examiner, jamais présumée sûre"
 
+
+# ────────────────────────────────────────────────────────────────────────────
+section "T11 — contrôle des sauvegardes (exécution réelle du script distant)"
+# ────────────────────────────────────────────────────────────────────────────
+# Le script distant du contrôle des sauvegardes est extrait du YAML puis
+# exécuté sur un répertoire TEMPORAIRE LOCAL, avec des fichiers fictifs.
+# Aucune donnée de production n'est utilisée, aucun accès réseau.
+DISTANT_SAU="$(fichier_etape "controle_des_sauvegardes_du_vps_lecture_seule")"
+DISTANT_SAU="${DISTANT_SAU%.sh}.distant0.sh"
+if [ ! -f "$DISTANT_SAU" ]; then
+  echoue "T11 script distant du contrôle des sauvegardes introuvable ($DISTANT_SAU)"
+else
+  BACS="$TMP/bacs"; mkdir -p "$BACS"
+  TAILLE_MIN=1048576
+
+  # Fabrique un faux dump PostgreSQL (signature PGDMP + taille plancher).
+  fabriquer_dump() { # chemin [signature] [taille]
+    local f="$1" sig="${2:-PGDMP}" taille="${3:-$TAILLE_MIN}"
+    { printf '%s' "$sig"; head -c $((taille - ${#sig})) /dev/zero | tr '\0' 'x'; } > "$f"
+  }
+  lancer_sauvegardes() { # bac -> sortie standard (code de retour du script)
+    bash "$DISTANT_SAU" "$1" 7 30 "$TAILLE_MIN" 2>&1
+  }
+  statut_sau() { printf '%s\n' "$1" | grep -E "^CONTROLE\|$2\|" | cut -d'|' -f3; }
+  verdict_de() { printf '%s\n' "$1" | grep -E "^VERDICT=" | cut -d= -f2; }
+
+  # Le script distant n'émet pas de CONTROLE : la classification est faite
+  # par l'étape du workflow. On rejoue donc la décision avec la bibliothèque.
+  classer() { # bac -> lignes CONTROLE + VERDICT
+    local bac="$1" brut code etat fin lisibilite nb
+    brut="$(lancer_sauvegardes "$bac")"; code=$?
+    : > "$TMP/t11-controles.txt"
+    export CONTROLES_FICHIER="$TMP/t11-controles.txt"
+    . deploy/production/normaliser-controles.sh
+    valeur_de() { printf '%s\n' "$brut" | awk -F= -v k="$1" '$1==k{v=substr($0,length(k)+2)} END{printf "%s", v}'; }
+    etat="$(valeur_de SAU_ETAT)"; fin="$(valeur_de SAU_FIN)"
+    nb="$(printf '%s\n' "$brut" | grep -c '^SAU_DUMP=' || true)"
+    if [ "$code" != 0 ] || { [ "$etat" = "present" ] && [ "$(valeur_de SAU_LISIBLE)" = "oui" ] && [ "$fin" != "ok" ]; }; then
+      controle_non_execute SAU-ACCES oui "script distant en échec (code $code)"
+      controle_non_execute SAU-DISPO oui "inventaire incomplet"
+    elif [ "$etat" = "absent" ]; then
+      controle SAU-EXISTE FAIL oui "absent" "répertoire absent"
+      controle_non_execute SAU-DISPO oui "répertoire absent"
+    elif [ "$(valeur_de SAU_LISIBLE)" != "oui" ]; then
+      controle SAU-EXISTE PASS oui "présent" "présent"
+      controle SAU-LISIBLE FAIL oui "illisible" "droits insuffisants"
+      controle_non_execute SAU-DISPO oui "inventaire impossible"
+    else
+      controle SAU-EXISTE PASS oui "présent" "présent"
+      controle SAU-LISIBLE PASS oui "lisible" "lisible"
+      controle SAU-INVENTAIRE PASS oui "${nb} dump(s)" "inventaire lecture seule"
+      if [ "${nb:-0}" -eq 0 ]; then
+        controle SAU-DISPO FAIL oui "aucun dump" "aucune sauvegarde"
+      else
+        recents=0; valides=0
+        while IFS='|' read -r nom taille age signature compagnon; do
+          [ -n "$nom" ] || continue
+          if [ "$signature" != "PGDMP" ]; then
+            controle "SAU-DUMP-$nom" WARN non "${taille} o, ${age} j" "signature absente"
+            continue
+          fi
+          if [ "$taille" -lt "$TAILLE_MIN" ]; then
+            controle "SAU-DUMP-$nom" WARN non "${taille} o" "taille sous plancher"
+            continue
+          fi
+          valides=$((valides + 1))
+          if [ "$age" -le 7 ]; then
+            recents=$((recents + 1))
+            controle "SAU-DUMP-$nom" PASS oui "${taille} o, ${age} j" "dump présent, signature PGDMP, récent (≤ 7 j) — intégrité et restaurabilité NON démontrées"
+          else
+            controle "SAU-DUMP-$nom" WARN non "${age} j" "ancien"
+          fi
+        done <<< "$(printf '%s\n' "$brut" | grep '^SAU_DUMP=' | sed 's/^SAU_DUMP=//')"
+        if [ "${recents:-0}" -gt 0 ]; then
+          controle SAU-DISPO PASS oui "${recents} récent(s)" "sauvegarde exploitable en apparence"
+        elif [ "${valides:-0}" -gt 0 ]; then
+          controle SAU-DISPO FAIL oui "0 récent" "aucune sauvegarde fraîche"
+        else
+          controle SAU-DISPO FAIL oui "0 exploitable" "aucun dump exploitable"
+        fi
+      fi
+    fi
+    cat "$TMP/t11-controles.txt"
+    printf 'VERDICT=%s\n' "$(controles_analyser "$CONTROLES_FICHIER" | sed -n 's/^verdict=//p')"
+  }
+
+  # 1. Répertoire absent
+  sortie="$(classer "$BACS/inexistant")"
+  [ "$(statut_sau "$sortie" SAU-EXISTE)" = "FAIL" ] \
+    && reussi "T11.1 répertoire absent → FAIL obligatoire" \
+    || echoue "T11.1 répertoire absent mal classé ($(statut_sau "$sortie" SAU-EXISTE))"
+  [ "$(verdict_de "$sortie")" = "REFUSE" ] \
+    && reussi "T11.1 verdict REFUSE quand le répertoire manque" \
+    || echoue "T11.1 verdict non REFUSE ($(verdict_de "$sortie"))"
+
+  # 2. Répertoire vide
+  mkdir -p "$BACS/vide"; sortie="$(classer "$BACS/vide")"
+  [ "$(statut_sau "$sortie" SAU-DISPO)" = "FAIL" ] \
+    && reussi "T11.2 répertoire vide → FAIL (aucune sauvegarde exploitable)" \
+    || echoue "T11.2 répertoire vide mal classé ($(statut_sau "$sortie" SAU-DISPO))"
+  [ "$(verdict_de "$sortie")" = "REFUSE" ] \
+    && reussi "T11.2 verdict REFUSE sur répertoire vide" \
+    || echoue "T11.2 verdict non REFUSE"
+
+  # 3. Dump PostgreSQL présent et récent
+  mkdir -p "$BACS/recent"; fabriquer_dump "$BACS/recent/injs-20261106-120000.dump"
+  sortie="$(classer "$BACS/recent")"
+  [ "$(statut_sau "$sortie" SAU-DUMP-injs-20261106-120000.dump)" = "PASS" ] \
+    && reussi "T11.3 dump PGDMP récent → PASS" \
+    || echoue "T11.3 dump récent mal classé ($(statut_sau "$sortie" SAU-DUMP-injs-20261106-120000.dump))"
+  [ "$(verdict_de "$sortie")" = "VALIDE" ] \
+    && reussi "T11.3 verdict VALIDE avec un dump récent" \
+    || echoue "T11.3 verdict non VALIDE ($(verdict_de "$sortie"))"
+
+  # 4. Dump ancien
+  mkdir -p "$BACS/ancien"; fabriquer_dump "$BACS/ancien/injs-vieux.dump"
+  touch -d "45 days ago" "$BACS/ancien/injs-vieux.dump"
+  sortie="$(classer "$BACS/ancien")"
+  [ "$(statut_sau "$sortie" SAU-DUMP-injs-vieux.dump)" = "WARN" ] \
+    && reussi "T11.4 dump ancien (45 j) → WARN" \
+    || echoue "T11.4 dump ancien mal classé ($(statut_sau "$sortie" SAU-DUMP-injs-vieux.dump))"
+  [ "$(verdict_de "$sortie")" = "REFUSE" ] \
+    && reussi "T11.4 un dump ancien seul ne suffit pas → REFUSE (aucune sauvegarde fraîche)" \
+    || echoue "T11.4 verdict non REFUSE ($(verdict_de "$sortie"))"
+
+  # 5. Archive non vérifiable
+  mkdir -p "$BACS/archive"; printf 'archive-generique' > "$BACS/archive/sauvegarde.tar.gz"
+  sortie="$(classer "$BACS/archive")"
+  [ "$(statut_sau "$sortie" SAU-DISPO)" = "FAIL" ] \
+    && reussi "T11.5 archive non exploitable → FAIL de disponibilité" \
+    || echoue "T11.5 archive mal classée ($(statut_sau "$sortie" SAU-DISPO))"
+  printf '%s\n' "$sortie" | grep -q 'SAU-INVENTAIRE|PASS' \
+    && reussi "T11.5 les archives sont inventoriées sans être prises pour des dumps" \
+    || echoue "T11.5 inventaire des archives absent"
+
+  # 6. Sauvegarde exploitable
+  mkdir -p "$BACS/exploitable"
+  fabriquer_dump "$BACS/exploitable/injs-20261107-090000.dump"
+  printf 'x' > "$BACS/exploitable/injs-20261107-090000.dump.sha256"
+  sortie="$(classer "$BACS/exploitable")"
+  [ "$(statut_sau "$sortie" SAU-DUMP-injs-20261107-090000.dump)" = "PASS" ] \
+    && reussi "T11.6 sauvegarde exploitable → PASS (présence + signature uniquement)" \
+    || echoue "T11.6 sauvegarde exploitable mal classée"
+  grep -qF "restaurabilité NON démontrées" "$DEPLOY_WF" \
+    && reussi "T11.6 le rapport signale la limite d'intégrité/restaurabilité" \
+    || echoue "T11.6 limite d'intégrité non signalée par le workflow"
+  printf '%s\n' "$sortie" | grep -q 'intégrité et restaurabilité NON démontrées' \
+    && reussi "T11.6 le classement de test porte la même réserve que le workflow" \
+    || echoue "T11.6 libellé de réserve absent du classement"
+
+  # 7a. Fichier vide (signature absente)
+  mkdir -p "$BACS/vide-dump"; : > "$BACS/vide-dump/injs-vide.dump"
+  sortie="$(classer "$BACS/vide-dump")"
+  [ "$(statut_sau "$sortie" SAU-DUMP-injs-vide.dump)" = "WARN" ] \
+    && reussi "T11.7 dump vide → WARN, jamais PASS" \
+    || echoue "T11.7 dump vide mal classé"
+  # 7b. Signature incorrecte
+  mkdir -p "$BACS/sig"; fabriquer_dump "$BACS/sig/faux.dump" "GARBA" "$TAILLE_MIN"
+  sortie="$(classer "$BACS/sig")"
+  [ "$(statut_sau "$sortie" SAU-DUMP-faux.dump)" = "WARN" ] \
+    && reussi "T11.7 signature incorrecte → WARN (archive non vérifiable)" \
+    || echoue "T11.7 signature incorrecte mal classée"
+  # 7c. Signature correcte mais taille sous le plancher
+  mkdir -p "$BACS/petit"; fabriquer_dump "$BACS/petit/petit.dump" "PGDMP" 100
+  sortie="$(classer "$BACS/petit")"
+  [ "$(statut_sau "$sortie" SAU-DUMP-petit.dump)" = "WARN" ] \
+    && reussi "T11.7 signature PGDMP mais taille sous plancher → WARN" \
+    || echoue "T11.7 taille sous plancher mal classée"
+fi
+
+# ────────────────────────────────────────────────────────────────────────────
+section "T12 — normalisation PASS / WARN / FAIL / NON_EXECUTE"
+# ────────────────────────────────────────────────────────────────────────────
+export CONTROLES_FICHIER="$TMP/t12-controles.txt"
+. deploy/production/normaliser-controles.sh
+: > "$CONTROLES_FICHIER"
+controle X-PASS PASS oui "mesure" "tout est conforme"
+[ "$(statut_sau "$(cat "$CONTROLES_FICHIER")" X-PASS)" = "PASS" ] \
+  && reussi "T12.1 classification PASS" || echoue "T12.1 PASS mal enregistré"
+controle X-WARN WARN non "mesure" "à surveiller"
+[ "$(statut_sau "$(cat "$CONTROLES_FICHIER")" X-WARN)" = "WARN" ] \
+  && reussi "T12.2 classification WARN" || echoue "T12.2 WARN mal enregistré"
+controle X-FAIL FAIL oui "mesure" "bloquant"
+[ "$(statut_sau "$(cat "$CONTROLES_FICHIER")" X-FAIL)" = "FAIL" ] \
+  && reussi "T12.3 classification FAIL" || echoue "T12.3 FAIL mal enregistré"
+
+# Un statut inconnu devient NON_EXECUTE (échec fermé)
+controle X-BIZARRE "OK" oui "mesure" "statut non supporté"
+[ "$(statut_sau "$(cat "$CONTROLES_FICHIER")" X-BIZARRE)" = "NON_EXECUTE" ] \
+  && reussi "T12.4 statut inconnu → NON_EXECUTE (jamais converti en PASS)" \
+  || echoue "T12.4 statut inconnu mal traité"
+
+# Bilan : 1 PASS, 1 WARN, 1 FAIL, 1 NON_EXECUTE
+analyse="$(controles_analyser "$CONTROLES_FICHIER")"
+for attendu in "pass=1" "warn=1" "fail=1" "non_execute=1" "total=4" "verdict=REFUSE" "code=1"; do
+  printf '%s\n' "$analyse" | grep -qx "$attendu" \
+    && reussi "T12.5 bilan contient « $attendu »" \
+    || echoue "T12.5 bilan sans « $attendu »"
+done
+
+# Un FAIL obligatoire suffit à refuser
+: > "$CONTROLES_FICHIER"
+controle A PASS oui "ok" "ok"
+controle B FAIL oui "ko" "prérequis manquant"
+[ "$(controles_analyser "$CONTROLES_FICHIER" | sed -n 's/^verdict=//p')" = "REFUSE" ] \
+  && reussi "T12.6 un FAIL obligatoire → verdict REFUSE" || echoue "T12.6 FAIL non bloquant"
+
+# Un NON_EXECUTE obligatoire refuse aussi, sans FAIL
+: > "$CONTROLES_FICHIER"
+controle A PASS oui "ok" "ok"
+controle_non_execute B oui "donnée indisponible"
+[ "$(controles_analyser "$CONTROLES_FICHIER" | sed -n 's/^verdict=//p')" = "REFUSE" ] \
+  && reussi "T12.7 un NON_EXECUTE obligatoire → verdict REFUSE" \
+  || echoue "T12.7 NON_EXECUTE traité comme un succès"
+
+# WARN seul → RESERVES (code 0)
+: > "$CONTROLES_FICHIER"
+controle A PASS oui "ok" "ok"
+controle B WARN non "lent" "non bloquant"
+[ "$(controles_analyser "$CONTROLES_FICHIER" | sed -n 's/^verdict=//p')" = "RESERVES" ] \
+  && reussi "T12.8 WARN seul → RESERVES" || echoue "T12.8 RESERVES non détecté"
+[ "$(controles_analyser "$CONTROLES_FICHIER" | sed -n 's/^code=//p')" = "0" ] \
+  && reussi "T12.8 RESERVES ne bloque pas (code 0)" || echoue "T12.8 RESERVES bloquant"
+
+# Tout PASS → VALIDE
+: > "$CONTROLES_FICHIER"
+controle A PASS oui "ok" "ok"; controle B PASS oui "ok" "ok"
+[ "$(controles_analyser "$CONTROLES_FICHIER" | sed -n 's/^verdict=//p')" = "VALIDE" ] \
+  && reussi "T12.9 tous PASS → VALIDE" || echoue "T12.9 VALIDE non détecté"
+
+# Fichier absent → REFUSE, aucun PASS implicite
+[ "$(controles_analyser "$TMP/absent.txt" | sed -n 's/^verdict=//p')" = "REFUSE" ] \
+  && reussi "T12.10 fichier de contrôles absent → REFUSE (aucun PASS implicite)" \
+  || echoue "T12.10 absence de fichier non bloquante"
+
+# Ligne mal formée → NON_EXECUTE
+: > "$CONTROLES_FICHIER"
+printf 'CONTROLE|CASSE|PASS\n' >> "$CONTROLES_FICHIER"
+[ "$(controles_analyser "$CONTROLES_FICHIER" | sed -n 's/^verdict=//p')" = "REFUSE" ] \
+  && reussi "T12.11 ligne mal formée → REFUSE (analyse à échec fermé)" \
+  || echoue "T12.11 ligne mal formée acceptée"
+
+# Tableau du rapport
+: > "$CONTROLES_FICHIER"
+controle R1 PASS oui "ok" "conforme"
+tableau="$(controles_tableau "$CONTROLES_FICHIER")"
+printf '%s\n' "$tableau" | grep -q '^| Contrôle | Statut | Obligatoire | Résultat | Observation |$' \
+  && reussi "T12.12 tableau au format demandé (5 colonnes)" \
+  || echoue "T12.12 en-tête de tableau inattendu"
+printf '%s\n' "$tableau" | grep -q '✅ PASS' \
+  && reussi "T12.12 statut rendu lisible dans le tableau" || echoue "T12.12 statut absent"
+
+# ────────────────────────────────────────────────────────────────────────────
+section "T13 — absence d'écriture dans le contrôle des sauvegardes"
+# ────────────────────────────────────────────────────────────────────────────
+if [ -f "$DISTANT_SAU" ]; then
+  # On analyse le script distant en neutralisant commentaires et chaînes :
+  # une mention « rm » dans un commentaire ne doit pas produire de faux positif,
+  # et une vraie commande d'écriture ne doit pas être masquée.
+  # Neutralisation CONSERVATRICE : seuls les commentaires sont retirés.
+  # (Supprimer aussi les chaînes entre guillemets effaçait le contenu des
+  #  $(...) et pouvait masquer une commande d'écriture réelle : échec ouvert.)
+  neutralise() {
+    sed -e 's/[[:space:]]#.*$//' -e 's/^#.*$//' "$1"
+  }
+  code_sau="$(neutralise "$DISTANT_SAU")"
+  for interdit in 'rm ' 'mv ' 'cp ' 'touch ' 'mkdir ' 'chmod ' 'chown ' 'tee ' 'dd ' 'pg_restore' 'psql' 'docker ' 'truncate'; do
+    if printf '%s\n' "$code_sau" | grep -qE "(^|[[:space:]|;&(])${interdit}"; then
+      echoue "T13.1 commande d'écriture/restauration détectée dans le contrôle des sauvegardes : « $interdit »"
+    else
+      reussi "T13.1 aucune occurrence de « $interdit » dans le script distant"
+    fi
+  done
+  # Aucune redirection vers un fichier (hors /dev/null et hors descripteurs).
+  if printf '%s\n' "$code_sau" | grep -qE '(^|[^0-9&])>[[:space:]]*[^&/]'; then
+    echoue "T13.2 redirection vers un fichier détectée dans le script distant"
+  else
+    reussi "T13.2 aucune redirection d'écriture vers un fichier"
+  fi
+  # Le script ne fait que des lectures : présence des primitives de lecture.
+  for primitive in 'stat -c' 'head -c 5' 'date +%s'; do
+    grep -qF "$primitive" "$DISTANT_SAU" \
+      && reussi "T13.3 primitive de lecture présente : $primitive" \
+      || echoue "T13.3 primitive de lecture absente : $primitive"
+  done
+  # pg_restore -l est explicitement proscrit par la mission.
+  printf '%s\n' "$DISTANT_SAU" | grep -qF 'pg_restore' \
+    && echoue "T13.4 pg_restore présent (proscrit : pas de restauration, même à blanc)" \
+    || reussi "T13.4 pg_restore absent du contrôle des sauvegardes"
+  # Preuve d'absence d'écriture à l'exécution : le bac de test est inchangé.
+  mkdir -p "$BACS/invariance"; fabriquer_dump "$BACS/invariance/ref.dump"
+  avant="$(cd "$BACS/invariance" && ls -ln --time-style=full-iso | sha256sum)"
+  bash "$DISTANT_SAU" "$BACS/invariance" 7 30 "$TAILLE_MIN" >/dev/null 2>&1 || true
+  apres="$(cd "$BACS/invariance" && ls -ln --time-style=full-iso | sha256sum)"
+  [ "$avant" = "$apres" ] \
+    && reussi "T13.5 exécution du contrôle : répertoire strictement inchangé (nom, taille, date, droits)" \
+    || echoue "T13.5 le contrôle a modifié le répertoire inspecté"
+  [ "$(ls -1 "$BACS/invariance" | wc -l)" -eq 1 ] \
+    && reussi "T13.5 aucun fichier créé par le contrôle" \
+    || echoue "T13.5 fichier créé par le contrôle"
+fi
+
+# ────────────────────────────────────────────────────────────────────────────
+section "T14 — barrière anti-déploiement en mode preflight"
+# ────────────────────────────────────────────────────────────────────────────
+# Les quatre conditions validées doivent rester effectives.
+grep -qF "if: env.MODE != 'preflight' && env.MODE != 'inventaire'" "$DEPLOY_WF" \
+  && reussi "T14.1 condition de protection conservée (rsync / deploy.sh)" \
+  || echoue "T14.1 condition de protection modifiée"
+[ "$(grep -cF "if: env.MODE != 'preflight' && env.MODE != 'inventaire'" "$DEPLOY_WF")" -ge 2 ] \
+  && reussi "T14.2 la condition protège bien au moins deux étapes" \
+  || echoue "T14.2 condition présente sur une seule étape"
+grep -qF "if: (env.MODE == 'deployer' || env.MODE == 'plan') && env.IMAGES_SUR_REGISTRE == 'oui'" "$DEPLOY_WF" \
+  && reussi "T14.3 docker pull toujours limité à deployer/plan" \
+  || echoue "T14.3 condition du docker pull modifiée"
+grep -qF "if: always() && env.MODE != 'inventaire' && env.MODE != 'preflight'" "$DEPLOY_WF" \
+  && reussi "T14.4 journaux VPS toujours exclus du preflight" \
+  || echoue "T14.4 exclusion du preflight modifiée"
+# L'étape de sauvegardes est bien limitée aux modes de contrôle.
+grep -qE "if: env.MODE == 'preflight' \|\| env.MODE == 'inventaire'" "$DEPLOY_WF" \
+  && reussi "T14.5 le contrôle des sauvegardes est limité aux modes de contrôle" \
+  || echoue "T14.5 condition du contrôle des sauvegardes absente"
+# Aucune étape sans condition n'est devenue mutante.
+sans_condition="$(awk '/^  deploiement:/,/^  rapport:/' "$DEPLOY_WF" | awk '/^      - name:/{n=$0; getline; if ($0 !~ /^        if:/) print n}')"
+printf '%s\n' "$sans_condition" | grep -qiE 'deploy\.sh|rsync|docker pull|migrate|restaur' \
+  && echoue "T14.6 une étape sans condition semble mutante" \
+  || reussi "T14.6 toutes les étapes sans condition restent des étapes de lecture"
+
 # ────────────────────────────────────────────────────────────────────────────
 printf '\n────────────────────────────────────────────────────────\n'
 printf 'BILAN : %d tests passés, %d échoués\n' "$nb_reussis" "$nb_echoues"

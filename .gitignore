@@ -110,3 +110,6 @@ dossier_trvx/Documentation_TableauDeBord_Referentiels_INJS.xlsx
 deploy/production/logs/
 deploy/production/.env.bak-*
 deploy/production/.env.avant-rollback-*
+
+# Preuves produites par le workflow de déploiement (runner uniquement)
+/evidence/

@@ -338,6 +338,62 @@ après fait échouer l'exécution) ; rapport archivé.
 | Déploiements simultanés | `concurrency: deploiement-production-injs`, `cancel-in-progress: false` |
 | Secrets jamais affichés | Aucune valeur sensible imprimée ; aucune expression GitHub interpolée dans un script (tout passe par `env:`) ; jeton Docker Hub transmis par stdin |
 
+### 6.1 Contrôles normalisés du préflight (PASS / WARN / FAIL)
+
+Depuis le mode `preflight`, chaque contrôle produit une ligne normalisée
+`CONTROLE|id|STATUT|OBLIGATOIRE|RESULTAT|OBSERVATION` et le rapport présente
+le tableau **Contrôle / Statut / Obligatoire / Résultat / Observation** suivi
+d'un bilan chiffré. La logique de verdict est centralisée dans
+`deploy/production/normaliser-controles.sh` (source unique, testée) :
+
+| Situation | Verdict | Workflow |
+|---|---|---|
+| Aucun `FAIL`, aucun `NON_EXECUTE`, aucun `WARN` | **PRÉFLIGHT VALIDÉ** | vert |
+| Aucun `FAIL`, aucun `NON_EXECUTE`, mais au moins un `WARN` | **PRÉFLIGHT VALIDÉ AVEC RÉSERVES** | vert + `::warning::` |
+| Au moins un contrôle obligatoire en `FAIL` | **PRÉFLIGHT REFUSÉ** | rouge + `::error::` |
+| Au moins un contrôle obligatoire en `NON_EXECUTE` | **PRÉFLIGHT REFUSÉ** | rouge + `::error::` |
+
+**Un contrôle non exécuté n'est jamais converti en `PASS`** : un statut
+inconnu, une ligne mal formée ou un fichier de contrôles absent produisent un
+`NON_EXECUTE` et donc un refus (analyse à échec fermé).
+
+### 6.2 Contrôle des sauvegardes — seuils explicites
+
+Répertoire contrôlé : `/opt/injs/backups` (même chemin que `BACKUP_DIR` de
+`deploy.sh`, constante `DOSSIER_BACKUPS` du workflow).
+
+| Paramètre | Valeur | Signification |
+|---|---|---|
+| `SEUIL_DUMP_RECENT_JOURS` | **7** | en deçà : sauvegarde considérée fraîche → `PASS` |
+| `SEUIL_DUMP_ANCIEN_JOURS` | **30** | au-delà : sauvegarde `WARN` (ancienne), à rafraîchir |
+| `TAILLE_MIN_DUMP_OCTETS` | **1 048 576** (1 Mio) | plancher de vraisemblance d'un dump |
+
+**Méthode d'identification** : un dump PostgreSQL au format custom commence
+par la signature binaire `PGDMP`, lue avec `head -c 5`. C'est une **lecture**
+— il n'y a **ni `pg_restore`, ni restauration, même à blanc**.
+
+| Constat | Statut |
+|---|---|
+| Répertoire absent | `FAIL` (obligatoire) |
+| Répertoire illisible | `FAIL` (obligatoire) |
+| Aucun dump | `FAIL` (obligatoire) |
+| Dump `PGDMP` récent et au-dessus du plancher | `PASS` — présence et signature seulement |
+| Dump ancien (> 7 j) | `WARN` |
+| Signature incorrecte ou taille sous le plancher | `WARN` (archive non vérifiable) |
+| Aucune sauvegarde fraîche mais des dumps valides anciens | `FAIL` de disponibilité |
+
+> **Limite assumée et affichée dans le rapport** : la signature `PGDMP` et la
+> taille ne démontrent **ni l'intégrité complète ni la restaurabilité** du
+> dump. La vérification forte (`pg_restore --list`, empreinte SHA-256
+> bout-en-bout) n'est faite que par `deploy.sh sauvegarde`, au moment de
+> produire une sauvegarde — jamais sur une sauvegarde existante, car cela
+> exigerait d'ouvrir une base ou un outil de restauration.
+
+Le contrôle est **strictement en lecture seule** : il n'utilise que `test`,
+`stat`, `head`, `date` et écrit uniquement sur la sortie standard du runner.
+Aucun fichier n'est créé, déplacé, renommé ou modifié ; aucune permission
+n'est changée ; PostgreSQL et les conteneurs ne sont pas sollicités.
+
 ---
 
 ## 7. Dépannage
