@@ -144,6 +144,8 @@ env:
   PROJET_COMPOSE: "injs-lmd-production"
   RESEAU_PROJET: "injs-lmd-production"
   DOSSIER_VPS: "/opt/injs/injs-lmd"
+  # Répertoire des sauvegardes de production (BACKUP_DIR de deploy.sh).
+  DOSSIER_BACKUPS: "/opt/injs/backups"
   DOMAINE_PUBLIC: "https://injs.badge-qr-code.pro"
   PG_CONTAINER: "injs-db"
   SEUIL_DISQUE_GO: "5"
@@ -486,6 +488,8 @@ jobs:
       domaine_apres: ${{ steps.domaine-apres.outputs.code }}
       domaine_servi_par: ${{ steps.domaine-apres.outputs.domaine_servi_par }}
       preservation: ${{ steps.preservation.outputs.verdict }}
+      verdict_precontroles: ${{ steps.precontroles.outputs.verdict_precontroles }}
+      verdict_sauvegardes: ${{ steps.sauvegardes.outputs.verdict }}
     steps:
       # Actions épinglées par SHA complet (chaîne d'approvisionnement).
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
@@ -667,28 +671,172 @@ jobs:
           echo "env_present=$env_present" >> "$GITHUB_OUTPUT"
           echo "PORT_VALIDATION=$port" >> "$GITHUB_ENV"
 
-          if [ "$MODE" != "preflight" ] && [ "$MODE" != "inventaire" ]; then
-            if [ "$env_present" != "oui" ]; then
-              echo "::error::.env serveur absent ($DOSSIER_VPS/deploy/production/.env) : le mode $MODE l'exige."
-              echo "::error::Le créer sur le VPS depuis .env.example (RUNBOOK.md §4), jamais depuis un poste local."
-              exit 1
+          # Normalisation : chaque pré-contrôle produit une ligne
+          # CONTROLE|id|STATUT|OBLIGATOIRE|RESULTAT|OBSERVATION. Les contrôles
+          # d'infrastructure sont OBLIGATOIRES dans tous les modes ; les
+          # contrôles de configuration (.env, secrets applicatifs) ne sont
+          # obligatoires que pour les modes qui écrivent sur le VPS.
+          export CONTROLES_FICHIER="evidence/controles.txt"
+          if [ ! -f "$CONTROLES_FICHIER" ]; then : > "$CONTROLES_FICHIER"; fi
+          . deploy/production/normaliser-controles.sh
+
+          if [ "$pg_pret" = "oui" ]; then
+            controle PG-PRET PASS oui "$pg_pret" "PostgreSQL ($PG_CONTAINER) répond à pg_isready"
+          else
+            controle PG-PRET FAIL oui "${pg_pret:-inconnu}" "PostgreSQL ($PG_CONTAINER) ne répond pas : aucune intervention tentée"
+          fi
+          version_pg="$(valeur PG_VERSION)"; version_pg="${version_pg:-non testée}"
+          if [ "$version_pg" = "non testée" ] || [ "$version_pg" = "illisible" ] || [ "$version_pg" = "?" ]; then
+            controle PG-VERSION NON_EXECUTE oui "$version_pg" "version du serveur non lisible (utilisateur ou base du .env non concordant)"
+          else
+            controle PG-VERSION PASS oui "$version_pg" "version du serveur PostgreSQL lue"
+          fi
+          if [ "${dispo:-0}" -ge "$SEUIL_DISQUE_GO" ]; then
+            controle DISQUE PASS oui "${dispo:-0} Go" "espace disponible au-dessus du seuil de ${SEUIL_DISQUE_GO} Go"
+          else
+            controle DISQUE FAIL oui "${dispo:-0} Go" "espace insuffisant (seuil ${SEUIL_DISQUE_GO} Go) : libérer SANS prune ni suppression de volumes"
+          fi
+          for c in $(printf '%s' "$SERVICES_PROTEGES"); do
+            ligne="$(valeur "SERVICE_$c")"
+            if [ -z "$ligne" ] || [ "$ligne" = "absent" ]; then
+              controle "PROT-$c" FAIL oui "absent" "conteneur historique protégé introuvable"
+            else
+              controle "PROT-$c" PASS oui "$ligne" "conteneur historique en place"
             fi
-            for s in POSTGRES_PASSWORD DJANGO_SECRET_KEY; do
-              if [ "$(valeur "SECRET_$s")" != "renseigne" ]; then
-                echo "::error::Secret applicatif $s absent ou encore à sa valeur d'exemple dans le .env du VPS : deploy.sh le refuserait. Arrêt avant toute intervention (valeur jamais affichée)."
-                exit 1
-              fi
-            done
+          done
+          if [ "$env_present" = "oui" ]; then
+            controle ENV-PRESENT PASS oui "oui" "$DOSSIER_VPS/deploy/production/.env présent"
+          elif [ "$MODE" = "preflight" ] || [ "$MODE" = "inventaire" ]; then
+            controle ENV-PRESENT WARN non "non" "aucun .env serveur : lecture seule possible, tout déploiement restera impossible"
+          else
+            controle ENV-PRESENT FAIL oui "non" ".env serveur absent : le mode $MODE l'exige (RUNBOOK.md §4)"
           fi
-          if [ "$pg_pret" != "oui" ]; then
-            echo "::error::PostgreSQL ($PG_CONTAINER) ne répond pas : aucune intervention n'est tentée."
+          for s in POSTGRES_PASSWORD DJANGO_SECRET_KEY; do
+            etat_secret="$(valeur "SECRET_$s")"
+            if [ "$etat_secret" = "renseigne" ]; then
+              controle "SECRET-$s" PASS oui "renseigné" "valeur non provisoire (valeur jamais affichée)"
+            elif [ "$MODE" = "preflight" ] || [ "$MODE" = "inventaire" ]; then
+              controle "SECRET-$s" WARN non "${etat_secret:-absent}" "secret applicatif absent ou provisoire : bloquant pour un déploiement, pas pour un contrôle"
+            else
+              controle "SECRET-$s" FAIL oui "${etat_secret:-absent}" "secret absent ou provisoire : deploy.sh le refuserait (valeur jamais affichée)"
+            fi
+          done
+
+          analyse="$(controles_analyser "$CONTROLES_FICHIER")"
+          verdict="$(printf '%s\n' "$analyse" | sed -n 's/^verdict=//p')"
+          echo "verdict_precontroles=$verdict" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Pré-contrôles VPS — contrôles normalisés"
+            echo ""
+            controles_tableau "$CONTROLES_FICHIER"
+            echo ""
+            controles_bilan "$CONTROLES_FICHIER"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$verdict" = "REFUSE" ]; then
+            echo "::error::Pré-contrôles en échec : un prérequis obligatoire n'est pas satisfait. Aucune intervention sur la production."
             exit 1
           fi
-          if [ "${dispo:-0}" -lt "$SEUIL_DISQUE_GO" ]; then
-            echo "::error::Espace disque insuffisant (${dispo:-0} Go disponibles, seuil ${SEUIL_DISQUE_GO} Go). Libérer de l'espace SANS prune ni suppression de volumes, puis relancer."
+          echo "Pré-contrôles : verdict $verdict (PostgreSQL prêt, ${dispo} Go disponibles, configuration serveur ${env_present}, port $port)."
+
+      # ------------------------------------------------------------------
+      # Contrôle des sauvegardes — STRICTEMENT LECTURE SEULE.
+      # Exécuté en preflight et en inventaire (modes de contrôle). Le script
+      # distant n'émet que des commandes de lecture (test, ls, find, stat,
+      # head, sha256sum, date) et n'écrit que sur la sortie standard du
+      # runner. Aucun fichier n'est créé, déplacé, renommé, modifié ou
+      # restauré sur le VPS ; aucune permission n'est changée ; PostgreSQL et
+      # les conteneurs ne sont pas sollicités.
+      # ------------------------------------------------------------------
+      - name: Contrôle des sauvegardes du VPS (lecture seule)
+        if: env.MODE == 'preflight' || env.MODE == 'inventaire'
+        id: sauvegardes
+        run: |
+          set -uo pipefail
+          mkdir -p evidence
+          export CONTROLES_FICHIER="evidence/controles.txt"
+          : > "$CONTROLES_FICHIER"
+          . deploy/production/normaliser-controles.sh
+
+          cat > "$RUNNER_TEMP/distant-sauvegardes.sh" <<'EOS'
+          set -uo pipefail
+          DOSSIER="${1:-/opt/injs/backups}"
+
+          # Toutes les opérations ci-dessous sont des LECTURES.
+          echo "SAU_DOSSIER=$DOSSIER"
+          if [ ! -e "$DOSSIER" ]; then echo "SAU_ETAT=absent"; exit 0; fi
+          if [ ! -d "$DOSSIER" ]; then echo "SAU_ETAT=pas_un_repertoire"; exit 0; fi
+          echo "SAU_ETAT=present"
+          if [ ! -r "$DOSSIER" ] || [ ! -x "$DOSSIER" ]; then echo "SAU_LISIBLE=non"; exit 0; fi
+          echo "SAU_LISIBLE=oui"
+
+          maintenant="$(date +%s)"
+
+          # Dumps PostgreSQL : format custom, signature binaire PGDMP.
+          # `head -c 5` lit ; il n'y a NI pg_restore NI restauration.
+          for f in "$DOSSIER"/*.dump; do
+            [ -f "$f" ] || continue
+            nom="$(basename "$f")"
+            taille="$(stat -c '%s' "$f" 2>/dev/null || echo 0)"
+            mtime="$(stat -c '%Y' "$f" 2>/dev/null || echo "$maintenant")"
+            age=$(( (maintenant - mtime) / 86400 ))
+            signature="$(head -c 5 "$f" 2>/dev/null || true)"
+            # Le fichier .sha256 compagnon est SIGNALÉ, jamais utilisé comme
+            # preuve : sa seule présence ne prouve pas la conformité du dump.
+            if [ -f "$f.sha256" ]; then compagnon=oui; else compagnon=non; fi
+            echo "SAU_DUMP=${nom}|${taille}|${age}|${signature:-vide}|${compagnon}"
+          done
+
+          # Archives complémentaires : inventoriées, jamais assimilées à une
+          # sauvegarde de base de données.
+          for f in "$DOSSIER"/*; do
+            [ -f "$f" ] || continue
+            case "$f" in *.dump|*.dump.sha256) continue ;; esac
+            taille="$(stat -c '%s' "$f" 2>/dev/null || echo 0)"
+            mtime="$(stat -c '%Y' "$f" 2>/dev/null || echo "$maintenant")"
+            age=$(( (maintenant - mtime) / 86400 ))
+            echo "SAU_AUTRE=$(basename "$f")|${taille}|${age}"
+          done
+
+          echo "SAU_FIN=ok"
+          EOS
+
+          # Les seuils ne sont PAS transmis : le script distant ne fait que
+          # mesurer (taille, date, signature), la politique de fraîcheur est
+          # appliquée par la bibliothèque (source unique).
+          vps-ssh 'bash -s --' "$DOSSIER_BACKUPS" \
+            < "$RUNNER_TEMP/distant-sauvegardes.sh" > evidence/sauvegardes-vps.txt 2>&1
+          code_ssh=$?
+          cat evidence/sauvegardes-vps.txt
+
+          # Toute la politique de fraîcheur et de disponibilité vit dans
+          # deploy/production/normaliser-controles.sh (source unique) : le
+          # workflow ne fait que lui transmettre l'inventaire. Aucune règle
+          # de seuil n'est réimplémentée ici.
+          sauvegardes_classifier evidence/sauvegardes-vps.txt "$CONTROLES_FICHIER" \
+            "$DOSSIER_BACKUPS" "$code_ssh"
+
+          # Bilan et verdict, calculés par la bibliothèque (source unique).
+          analyse="$(controles_analyser "$CONTROLES_FICHIER")"
+          verdict="$(printf '%s\n' "$analyse" | sed -n 's/^verdict=//p')"
+          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+          echo "code=$(printf '%s\n' "$analyse" | sed -n 's/^code=//p')" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Sauvegardes — contrôles normalisés"
+            echo ""
+            echo "> La présence de la signature PGDMP confirme uniquement"
+            echo "> l'identification apparente d'un dump PostgreSQL au format"
+            echo "> personnalisé. Elle ne garantit ni son intégrité complète ni sa"
+            echo "> restaurabilité."
+            echo ""
+            controles_tableau "$CONTROLES_FICHIER"
+            echo ""
+            controles_bilan "$CONTROLES_FICHIER"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$verdict" = "REFUSE" ]; then
+            echo "::error::Contrôles de sauvegarde en échec : une sauvegarde exploitable est un prérequis obligatoire. Aucune intervention."
             exit 1
           fi
-          echo "Pré-contrôles validés : PostgreSQL prêt, ${dispo} Go disponibles, configuration serveur ${env_present}, port de validation $port."
+          echo "Contrôles de sauvegarde : verdict $verdict."
 
       - name: État du domaine public AVANT intervention
         id: domaine-avant
@@ -1145,6 +1293,8 @@ jobs:
           DOMAINE_SERVI_PAR: ${{ steps.domaine-apres.outputs.domaine_servi_par }}
         run: |
           set -uo pipefail
+          # Bibliothèque de normalisation : source unique du calcul du verdict.
+          . deploy/production/normaliser-controles.sh
           mkdir -p evidence
           {
             echo "# Rapport de déploiement INJS-LMD"
@@ -1159,7 +1309,21 @@ jobs:
             echo "- Port de validation : ${PORT_VALIDATION:-?}"
             echo "- deploy.sh : code de retour ${CODE_EXECUTION:-<non exécuté>}"
             echo ""
-            echo "## Contrôles"
+            echo "## Contrôles normalisés (PASS / WARN / FAIL / NON_EXECUTE)"
+            echo ""
+            if [ -s evidence/controles.txt ]; then
+              controles_tableau evidence/controles.txt
+              echo ""
+              controles_bilan evidence/controles.txt
+            else
+              echo "| Contrôle | Statut | Obligatoire | Résultat | Observation |"
+              echo "|---|---|---|---|---|"
+              echo "| — | ⛔ NON_EXECUTE | oui | non mesuré | Aucun contrôle enregistré dans ce mode |"
+              echo ""
+              echo "**Verdict : NON EVALUÉ** — ce mode n'exécute pas les contrôles normalisés du préflight."
+            fi
+            echo ""
+            echo "## Contrôles bruts (instantanés de preuves)"
             echo ""
             echo "| Contrôle | Résultat |"
             echo "|---|---|"
@@ -1256,6 +1420,8 @@ jobs:
       DOMAINE_APRES: ${{ needs.deploiement.outputs.domaine_apres }}
       DOMAINE_SERVI_PAR: ${{ needs.deploiement.outputs.domaine_servi_par }}
       PRESERVATION: ${{ needs.deploiement.outputs.preservation }}
+      VERDICT_PRECONTROLES: ${{ needs.deploiement.outputs.verdict_precontroles }}
+      VERDICT_SAUVEGARDES: ${{ needs.deploiement.outputs.verdict_sauvegardes }}
       URL_EXECUTION: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
       - name: Récupérer le rapport et les preuves
@@ -1301,6 +1467,10 @@ jobs:
             echo "| Domaine API avant → après | \`${DOMAINE_AVANT:-?}\` → \`${DOMAINE_APRES:-?}\` |"
             echo "| Domaine servi par | \`${DOMAINE_SERVI_PAR:-<non déterminé>}\` |"
             echo "| Protection de la production | \`${PRESERVATION:-<non évaluée>}\` |"
+            if [ "$MODE" = "preflight" ] || [ "$MODE" = "inventaire" ]; then
+              echo "| Préflight — prérequis | \`${VERDICT_PRECONTROLES:-<non évalué>}\` |"
+              echo "| Préflight — sauvegardes | \`${VERDICT_SAUVEGARDES:-<non évalué>}\` |"
+            fi
             echo ""
             if [ -f evidence/rapport.md ]; then
               echo "<details><summary>Rapport détaillé (evidence/rapport.md)</summary>"
@@ -1331,6 +1501,19 @@ jobs:
           fi
           if [ "$MODE" = "preflight" ]; then
             echo "::notice::Mode preflight : vérification en lecture seule. Aucun fichier créé ni modifié sur le VPS, aucun conteneur touché."
+            if [ "${VERDICT_PRECONTROLES:-}" = "REFUSE" ]; then
+              echo "::error::Préflight REFUSÉ : un prérequis obligatoire des pré-contrôles n'est pas satisfait."
+            fi
+            if [ "${VERDICT_SAUVEGARDES:-}" = "REFUSE" ]; then
+              echo "::error::Préflight REFUSÉ : aucune sauvegarde de production exploitable."
+            fi
+            if [ "${VERDICT_PRECONTROLES:-}" != "REFUSE" ] && [ "${VERDICT_SAUVEGARDES:-}" != "REFUSE" ]; then
+              if [ "${VERDICT_SAUVEGARDES:-}" = "RESERVES" ] || [ "${VERDICT_PRECONTROLES:-}" = "RESERVES" ]; then
+                echo "::warning::Préflight validé AVEC RÉSERVES : anomalies non bloquantes à examiner avant décision de déploiement."
+              else
+                echo "::notice::Préflight VALIDÉ : tous les prérequis obligatoires sont satisfaits."
+              fi
+            fi
           fi
           if [ "$RESULTAT_DEPLOIEMENT" = "skipped" ]; then
             echo "::notice::Aucune intervention VPS : le job de résolution n'a pas produit de cible exploitable."
