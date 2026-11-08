@@ -635,10 +635,27 @@ jobs:
             fi
             echo "ÉPINGLAGE VÉRIFIÉ : l'empreinte capturée correspond à VPS_EMPREINTE_EPINGLEE."
           else
-            prem="$(ssh-keygen -lf "$BRUT" 2>/dev/null | head -1 | awk '{print $2}')"
-            echo "::notice::Aucune empreinte épinglée (VPS_EMPREINTE_EPINGLEE vide)."
-            echo "::notice::Pour figer durablement ce serveur, créer le secret VPS_EMPREINTE_EPINGLEE = ${prem}"
-            echo "::notice::Toute divergence ultérieure fera alors échouer la connexion (anti-interposition)."
+            # AUCUNE CONFIANCE AUTOMATIQUE. Une empreinte capturée par
+            # ssh-keyscan n'est PAS une preuve d'identité : elle doit avoir été
+            # comparée à la console de l'hébergeur AVANT d'être épinglée.
+            # Sans épinglage, le préflight s'arrête : il ne peut pas prétendre
+            # avoir établi l'identité du serveur.
+            echo "::error::EMPREINTE NON ÉPINGLÉE — le préflight ne peut pas vérifier l'identité du VPS."
+            echo "::error::Une empreinte capturée automatiquement n'est PAS une preuve d'identité."
+            echo ""
+            echo "=== EMPREINTES CAPTURÉES (à vérifier AVANT tout épinglage) ==="
+            ssh-keygen -lf "$BRUT" 2>/dev/null | sed 's/^/  /'
+            echo "=============================================================="
+            echo ""
+            echo "PROCÉDURE D'ÉPINGLAGE (dans cet ordre strict) :"
+            echo "  1. Sur une machine de confiance :"
+            echo "       ssh-keyscan -t ed25519 \${SSH_HOST} 2>/dev/null | ssh-keygen -lf -"
+            echo "  2. COMPARER l'empreinte SHA256 ED25519 avec la console de l'hébergeur."
+            echo "  3. Créer le secret VPS_EMPREINTE_EPINGLEE = SHA256:... (empreinte vérifiée)."
+            echo "  4. Relancer le préflight : la correspondance sera alors exigée."
+            echo ""
+            echo "::error::Arrêt AVANT toute authentification : aucune commande n'a été exécutée sur le VPS."
+            exit 1
           fi
 
           cp "$BRUT" "$KH"
