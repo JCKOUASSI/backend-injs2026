@@ -1,0 +1,776 @@
+Ce prompt demande à Arena Agent mode de travailler sur le dimensionnement, l’intelligence, l’optimisation et la robustesse du moteur de génération existant, tout en préparant son évolution vers la gestion des présences.
+
+PROMPT COMPLÉMENTAIRE
+
+ARCHITECTURE, DIMENSIONNEMENT ET OPTIMISATION INTELLIGENTE DU MOTEUR GET-INJS2026
+
+1. POSITIONNEMENT ET CONTEXTE
+
+Tu agis comme une équipe technique senior réunissant les compétences suivantes :
+
+* Architecte logiciel spécialisé en Django, API REST et systèmes universitaires LMD.
+* Expert des règles de scolarité et des formations universitaires africaines.
+* Ingénieur spécialisé dans les algorithmes de génération et d'optimisation des emplois du temps.
+* Développeur backend Django senior.
+* Développeur frontend senior maîtrisant l'architecture réelle de l'application existante.
+* Expert UX/UI pour les applications universitaires professionnelles.
+* Ingénieur QA spécialisé dans les tests automatisés, les tests de charge et la prévention des régressions.
+* Ingénieur DevOps spécialisé dans les migrations, les performances et la sécurisation des déploiements.
+
+Tu possède tous ces outils models :
+Claude Opus 5.5 (Max)
+Gemini 4 Carbon (Élevé)
+Google · Propriétaire
+Claude Sonnet 5.5 (Max)
+GPT-6 Astra (Max)
+OpenAI · Propriétaire
+Claude Fable 5.1 (Max)
+Anthropique · Propriétaire
+GPT-6.1 Sol (Max)
+OpenAI · Propriétaire
+Gemini 4 Argon (Élevé)
+GPT-6.1 Terra (Max)
+OpenAI · Propriétaire
+Muse Wonder Complet (Max)
+Meta · Propriétaire
+Claude Fable 5 (Aiguë)
+Claude Opus 5 (Max)
+GPT-6 Sol (Max)
+Kimi K3.1 Pro (Max)
+Moonshot · Propriétaire
+GPT-5.6 Sol (xHigh)
+OpenAI · Propriétaire
+Claude Sonnet 5 (Aigu)
+Grok 4.7 (xHigh)
+SpaceXAI · Propriétaire
+Flash Gemini 3.8 (Élevé)
+Muse Merveille (Max)
+Meta · Propriétaire
+Muse Spark 1.3 (Max)
+MiMo-V2.6-Pro
+Xiaomi · MIT
+DeepSeek-V4.1-Flash-20261017 (Max)
+DeepSeek · MIT
+GPT-6 Luna (Max)
+GLM-5.3 (Max)
+Z.ai · MIT
+Tencent · Apache 2.0
+Kimi K3 (Max)
+Moonshot · Licence Kimi K3
+GLM-5.2 (Max)
+Z.ai · MIT · SiliconFlow
+Claude Haiku 5,5 (Élevé)
+MiMo-V2.6-Flash
+Qwen3.8-Max
+Alibaba · Propriétaire
+Grok 4.6 (xHigh)
+SpaceXAI · Propriétaire
+DeepSeek-V4-Pro (Haut, 20260813)
+DeepSeek · MIT
+GPT-5.6 Terra (xHigh)
+Flash Gemini 3.7 (Élevé)
+GPT-6 Luna (Moyen)
+GLM-5.3-Flash
+Z.ai · MIT
+2.49
+MiniMax-M3.1-Flash
+MiniMax · Licence communautaire MiniMax
+Qwen3.8-27B
+Alibaba · Apache 2.0
+Qwen3.8-Flash-Next
+Alibaba · Qwen-communauté-1.0
+GPT-6 Luna (Bas)
+Qwen3.7-Max
+Qwen3.7-Plus
+Tencent · Apache 2.0
+Spark-X2.6
+XHToken · Propriétaire
+MiniMax-M3
+MiniMax · Licence communautaire MiniMax
+Mistral Medium 3,5
+Mistral · MIT modifié
+Nemotron 3 Ultra
+Nvidia · OpenMDW-1.1
+NVIDIA-Nemotron-3.5-Super-VL-120B-A12B (NVFP4)
+Nvidia · OpenMDW-1.1
+Inkling
+Thinky · Apache 2.0
+Solar Pro 4
+
+Tu interviens sur le projet existant GET-INJS2026 de l’Institut National de la Jeunesse et des Sports (INJS) d’Abidjan.
+IMPORTANT : le prompt maître GET-INJS2026 a déjà permis l’implémentation de l’application GET INJS APP.
+
+Tu ne dois donc PAS :
+
+* Recréer GET INJS APP ;
+* Développer une deuxième application de gestion des emplois du temps ;
+* Recommencer l’architecture générale du projet ;
+* Dupliquer les modèles, services, API ou interfaces existants ;
+* Remplacer arbitrairement les fonctionnalités déjà opérationnelles ;
+* Introduire une nouvelle architecture technique sans justification ;
+* Transformer cette mission en refonte générale de l’application.
+
+Tu dois intervenir en complément du travail déjà réalisé.
+
+Ta mission consiste à examiner, renforcer et faire évoluer intelligemment le moteur existant afin qu’il puisse répondre aux besoins réels de planification pédagogique de l’INJS d’Abidjan.
+
+Le travail doit porter prioritairement sur :
+
+1. Le dimensionnement institutionnel et pédagogique ;
+2. La génération intelligente des emplois du temps ;
+3. La constitution dynamique des groupes et sous-groupes ;
+4. L’optimisation des ressources pédagogiques ;
+5. La gestion des conflits ;
+6. La simulation et la validation des emplois du temps ;
+7. La gestion opérationnelle des séances pédagogiques ;
+8. La préparation technique et fonctionnelle du futur module de présence.
+
+2. OBJECTIF DE DIMENSIONNEMENT INSTITUTIONNEL
+
+Le moteur doit être initialement capable de prendre en charge 3 500 étudiants répartis dans les 8 filières de l’INJS d’Abidjan.
+
+Il doit également pouvoir évoluer progressivement jusqu’à 15 000 étudiants sans nécessiter une refonte structurelle.
+
+Référentiel institutionnel :
+
+ENSEPS
+
+* Éducation et Motricité ;
+* Management du Sport ;
+* Entraînement Sportif ;
+* Activités Physiques Adaptées (APA).
+
+ENSEP
+
+* Andragogie ;
+* Loisir ;
+* Éducation et Conduite des Jeux et des Pratiques (ECJP) ;
+* Gérontologie.
+
+Organisation LMD :
+
+* Licence : S1 à S6 ;
+* Master : S7 à S10 ;
+* 5 années de formation ;
+* 30 ECTS par semestre ;
+* 60 ECTS par niveau annuel.
+
+Le moteur doit exploiter les données réellement enregistrées dans les référentiels de l’application.
+
+Il ne faut surtout pas supposer que toutes les filières disposent systématiquement de promotions ouvertes sur les dix semestres.
+
+Les promotions, parcours, spécialités, groupes et semestres actifs doivent être déterminés à partir des données académiques effectivement validées.
+3. DIMENSIONNEMENT AUTOMATIQUE ET DYNAMIQUE
+
+Le moteur doit être capable de déterminer automatiquement les besoins de planification à partir de :
+
+* L’année académique ;
+* Les formations ouvertes ;
+* Les filières ;
+* Les parcours ;
+* Les spécialités ;
+* Les promotions ;
+* Les semestres ;
+* Les effectifs réellement inscrits ;
+* Les inscriptions pédagogiques validées ;
+* Les UE et ECUE ;
+* Les maquettes pédagogiques ;
+* Les volumes horaires ;
+* Les enseignants disponibles ;
+* Les salles et installations disponibles.
+
+Il doit calculer dynamiquement :
+
+* Le nombre de promotions à planifier ;
+* Le nombre de groupes nécessaires ;
+* Le nombre de sous-groupes nécessaires ;
+* Les enseignements mutualisables ;
+* Le nombre de séances à programmer ;
+* Les besoins en salles ;
+* Les besoins en enseignants ;
+* Le nombre d’emplois du temps à produire ;
+* Les éventuelles insuffisances de capacité.
+
+RÈGLE FONDAMENTALE :
+
+Ne jamais imposer arbitrairement un nombre fixe d’emplois du temps.
+
+Les valeurs de 80, 160 ou 240 emplois du temps évoquées dans les estimations préliminaires ne constituent ni des obligations métier ni des objectifs de génération.
+
+Le nombre réel doit résulter du calcul effectué à partir des formations ouvertes, des effectifs, des groupes et de l’organisation pédagogique effective.
+
+Distinguer impérativement :
+
+* Un emploi du temps institutionnel ;
+* Un emploi du temps de promotion ;
+* Un emploi du temps de groupe ;
+* Un emploi du temps de sous-groupe ;
+* Un emploi du temps individuel ;
+* Une séance pédagogique.
+
+Ces objets ne doivent pas être confondus dans le modèle métier.
+
+4. INTELLIGENCE DE CONSTITUTION DES GROUPES
+
+Renforcer le mécanisme existant de constitution des groupes.
+
+Le moteur doit pouvoir proposer automatiquement une répartition des étudiants selon :
+
+* L’effectif réel de chaque promotion ;
+* La capacité des salles ;
+* Le type d’enseignement ;
+* Les contraintes des UE et ECUE ;
+* Les exigences des TD ;
+* Les exigences des TP ;
+* Les enseignements pratiques et sportifs ;
+* Les installations disponibles ;
+* Les besoins pédagogiques spécifiques.
+
+Les capacités des groupes doivent être paramétrables par les gestionnaires habilités.
+
+Le moteur doit permettre :
+
+* La création automatique de groupes ;
+* La création de sous-groupes ;
+* La modification manuelle des répartitions ;
+* La visualisation des effectifs ;
+* La détection des groupes surchargés ;
+* La vérification de la cohérence des affectations ;
+* La conservation de l’historique des modifications.
+
+Ne pas créer de groupes artificiels lorsque les contraintes pédagogiques ne le justifient pas.
+5. MUTUALISATION DES ENSEIGNEMENTS
+
+Le moteur doit gérer les enseignements mutualisés entre :
+
+* Plusieurs groupes d’une même promotion ;
+* Plusieurs promotions ;
+* Plusieurs spécialités ;
+* Plusieurs parcours ;
+* Plusieurs filières, lorsque les référentiels le permettent.
+
+Il doit distinguer les cours magistraux, les TD, les TP et les enseignements pratiques.
+
+Une séance mutualisée doit pouvoir concerner plusieurs groupes sans créer artificiellement plusieurs séances indépendantes.
+
+Le moteur doit contrôler :
+
+* L’effectif total concerné ;
+* La capacité de la salle ;
+* La disponibilité de l’enseignant ;
+* La compatibilité des horaires ;
+* La cohérence des inscriptions pédagogiques.
+
+La mutualisation ne doit jamais provoquer de doublons dans les séances, les affectations ou les futures données de présence.
+
+6. OPTIMISATION INTELLIGENTE DES EMPLOIS DU TEMPS
+
+Améliorer le moteur existant pour qu’il puisse rechercher les meilleures combinaisons possibles.
+
+Contraintes obligatoires :
+
+* Un enseignant ne peut pas assurer deux séances simultanément ;
+* Une salle ne peut pas accueillir deux séances simultanément ;
+* Un groupe ne peut pas suivre deux enseignements simultanément ;
+* Un étudiant ne peut pas être affecté à deux séances obligatoires simultanées ;
+* La capacité des salles doit être respectée ;
+* Les disponibilités des enseignants doivent être respectées ;
+* Les volumes horaires des ECUE doivent être respectés ;
+* Les durées des séances doivent être cohérentes ;
+* Les installations sportives doivent être disponibles ;
+* Les contraintes particulières des filières doivent être respectées.
+
+Critères d’optimisation :
+
+* Réduire les heures creuses ;
+* Équilibrer la charge quotidienne ;
+* Éviter les journées excessivement chargées ;
+* Optimiser l’occupation des salles ;
+* Réduire les déplacements inutiles ;
+* Regrouper intelligemment les enseignements compatibles ;
+* Éviter les chevauchements entre enseignements obligatoires ;
+* Respecter les préférences institutionnelles lorsque cela est possible.
+
+Le moteur doit distinguer les contraintes bloquantes des préférences d’optimisation.
+
+Il doit également expliquer les conflits qu’il ne peut pas résoudre automatiquement.
+
+Il ne doit jamais déclarer un emploi du temps valide lorsqu’une contrainte obligatoire est violée.
+7. SIMULATEUR ET GESTION DES SCÉNARIOS
+
+Renforcer le simulateur existant de GET INJS APP, s’il est déjà présent.
+
+L’objectif est de disposer d’un véritable environnement de simulation indépendant de la production officielle.
+
+Les gestionnaires habilités doivent pouvoir :
+
+* Créer un scénario ;
+* Générer un emploi du temps provisoire ;
+* Modifier les séances ;
+* Déplacer les séances ;
+* Changer les salles ;
+* Modifier les affectations des enseignants ;
+* Modifier les groupes concernés ;
+* Comparer plusieurs scénarios ;
+* Identifier les conflits ;
+* Relancer l’optimisation ;
+* Enregistrer les simulations ;
+* Soumettre un scénario à validation.
+
+Une simulation ne doit jamais modifier directement les emplois du temps officiels.
+
+La validation doit être une opération contrôlée, traçable et réversible selon les règles métier.
+
+Prévoir :
+
+* L’historisation des versions ;
+* La conservation des scénarios ;
+* L’identification du validateur ;
+* La date de validation ;
+* La publication officielle ;
+* La gestion des modifications après publication.
+
+8. GESTION DES SÉANCES PÉDAGOGIQUES
+
+La séance pédagogique constitue un élément central de l’architecture cible.
+
+Le moteur doit garantir que chaque séance possède une identité stable et des informations cohérentes.
+
+Chaque séance doit être associée, selon les besoins métier, à :
+
+* Une année académique ;
+* Un semestre ;
+* Une formation ;
+* Une filière ;
+* Une promotion ;
+* Un groupe ou sous-groupe ;
+* Une UE ;
+* Un ECUE ;
+* Un enseignant ;
+* Une salle ou installation sportive ;
+* Une date ;
+* Une heure de début ;
+* Une heure de fin ;
+* Un type d’enseignement ;
+* Un statut.
+
+Il faut distinguer :
+
+* Les séances planifiées ;
+* Les séances publiées ;
+* Les séances réalisées ;
+* Les séances annulées ;
+* Les séances reportées ;
+* Les séances de rattrapage.
+
+Les modifications doivent être historisées.
+
+Une séance déplacée ou reportée doit conserver une traçabilité suffisante pour permettre ultérieurement le contrôle des présences.
+9. PRÉPARATION DU FUTUR MODULE INSTITUTIONNEL DE PRÉSENCE
+
+Cette exigence est stratégique.
+
+Le moteur GET-INJS2026 doit être conçu pour constituer le socle opérationnel du futur système de suivi des présences.
+
+La chaîne fonctionnelle cible est :
+
+RÉFÉRENTIELS LMD
+↓
+GROUPES PÉDAGOGIQUES
+↓
+EMPLOIS DU TEMPS
+↓
+SÉANCES PÉDAGOGIQUES
+↓
+PRÉSENCES QR CODE / MANUELLES
+↓
+GÉOLOCALISATION
+↓
+STATISTIQUES ET CONTRÔLE ACADÉMIQUE
+
+Le moteur doit anticiper les besoins suivants.
+
+A. Présence par QR Code
+
+* QR Code associé à une séance ;
+* QR Code temporaire ;
+* Vérification de l’identité de l’étudiant ;
+* Contrôle de la séance concernée ;
+* Horodatage ;
+* Protection contre la réutilisation frauduleuse ;
+* Traçabilité de l’enregistrement.
+
+B. Présence manuelle
+
+* Saisie par un enseignant ou un personnel habilité ;
+* Modification contrôlée ;
+* Justification des corrections ;
+* Historisation ;
+* Identification de l’auteur de chaque opération.
+
+C. Géolocalisation
+
+* Association de la séance à une salle ou installation ;
+* Coordonnées géographiques lorsque disponibles ;
+* Vérification de proximité selon les règles institutionnelles ;
+* Gestion des autorisations de localisation ;
+* Respect de la confidentialité ;
+* Gestion des situations où la géolocalisation est indisponible.
+
+D. Statistiques
+
+* Présences par étudiant ;
+* Présences par séance ;
+* Présences par groupe ;
+* Présences par ECUE ;
+* Présences par enseignant ;
+* Présences par promotion ;
+* Absences et retards ;
+* Taux de présence par filière et semestre.
+
+IMPORTANT :
+
+Il ne s’agit pas de développer prématurément un deuxième module de présence autonome.
+
+Il faut préparer les modèles, relations, identifiants, contrats de données et interfaces nécessaires à cette évolution.
+
+Le futur module de présence devra s’appuyer sur les séances officielles de GET-INJS2026 et non sur une duplication des emplois du temps.
+
+10. TABLEAUX DE BORD ET PILOTAGE
+
+Renforcer les tableaux de bord existants pour permettre aux responsables de piloter efficacement la planification.
+
+Prévoir notamment :
+
+* Effectif total à planifier ;
+* Effectif par filière ;
+* Effectif par promotion ;
+* Nombre de groupes ;
+* Nombre de sous-groupes ;
+* Nombre d’emplois du temps générés ;
+* Nombre d’emplois du temps validés ;
+* Nombre de séances planifiées ;
+* Nombre de séances publiées ;
+* Nombre de conflits détectés ;
+* Nombre de conflits résolus ;
+* Taux d’occupation des salles ;
+* Charge horaire des enseignants ;
+* Volumes horaires réalisés et restants ;
+* Enseignements non encore programmés.
+
+Tous les indicateurs doivent être filtrables selon les dimensions institutionnelles et pédagogiques.
+
+Les chiffres affichés doivent provenir des données réelles de l’application.
+
+Aucune statistique fictive ne doit être présentée comme une donnée opérationnelle.
+11. PERFORMANCE ET ÉVOLUTIVITÉ
+
+Le moteur doit être dimensionné pour :
+
+Palier initial : 3 500 étudiants.
+
+Palier évolutif : 15 000 étudiants.
+
+Les optimisations doivent porter sur :
+
+* Les requêtes SQL ;
+* Les index ;
+* La réduction des requêtes N+1 ;
+* Les traitements en masse ;
+* Les algorithmes de planification ;
+* Les traitements asynchrones lorsque nécessaires ;
+* La gestion des générations simultanées ;
+* La mise en cache des données pertinentes ;
+* La pagination ;
+* La séparation des traitements lourds ;
+* La stabilité des API.
+
+Prévoir une génération par périmètre pédagogique et une orchestration globale lorsque cela est nécessaire.
+
+Une génération pour une filière ne doit pas compromettre les emplois du temps des autres filières.
+
+Les générations simultanées doivent être protégées contre les collisions et les publications concurrentes.
+
+Le moteur doit pouvoir reprendre un traitement interrompu sans créer de doublons.
+
+Ne pas introduire de complexité technique disproportionnée par rapport aux besoins réels.
+
+12. SÉCURITÉ, HABILITATIONS ET TRAÇABILITÉ
+
+Respecter strictement le système d’authentification et d’habilitation déjà présent dans GET INJS APP.
+
+Ne pas introduire un système RBAC parallèle.
+
+Toutes les opérations sensibles doivent être contrôlées :
+
+* Création ;
+* Modification ;
+* Suppression logique ;
+* Génération ;
+* Simulation ;
+* Validation ;
+* Publication ;
+* Annulation ;
+* Report ;
+* Rattrapage.
+
+Chaque opération doit pouvoir être attribuée à un utilisateur habilité.
+
+Prévoir une journalisation adaptée des opérations sensibles.
+
+La validation d’un emploi du temps doit respecter les responsabilités institutionnelles définies dans l’application.
+13. EXIGENCES DE COHÉRENCE MÉTIER
+
+Les emplois du temps doivent être générés exclusivement à partir des référentiels académiques validés.
+
+Respecter les distinctions suivantes :
+
+* Admission ;
+* Inscription administrative ;
+* Inscription administrative validée ;
+* Inscription pédagogique ;
+* Parcours académique ;
+* Promotion ;
+* Groupe pédagogique.
+
+Ne jamais considérer automatiquement qu’un étudiant admis ou administrativement inscrit possède toutes les affectations pédagogiques nécessaires.
+
+Le moteur doit exploiter les inscriptions pédagogiques valides conformément aux règles institutionnelles.
+
+Les enseignements doivent être associés aux UE et ECUE réellement ouverts.
+
+Aucune donnée pédagogique ne doit être inventée pour compléter artificiellement une génération.
+
+Lorsqu’une information indispensable manque, le moteur doit identifier précisément l’anomalie et signaler le blocage.
+
+14. MÉTHODE D’INTERVENTION SUR L’APPLICATION EXISTANTE
+
+Procéder avec méthode et sans duplication.
+
+PHASE 1 — AUDIT CIBLÉ
+
+Examiner :
+
+* L’application GET INJS APP ;
+* Les modèles existants ;
+* Les API ;
+* Les services métier ;
+* Le moteur de génération ;
+* Le simulateur ;
+* Les modèles de séances ;
+* Les groupes ;
+* Les référentiels LMD ;
+* Les habilitations ;
+* Les tests existants.
+
+Ne pas refaire un audit général du projet.
+
+PHASE 2 — CARTOGRAPHIE DES ÉCARTS
+
+Établir un tableau présentant :
+
+Exigence	État existant	Écart constaté	Action nécessaire
+Dimensionnement 3 500 étudiants	À vérifier	À mesurer	À définir
+Évolutivité 15 000 étudiants	À vérifier	À mesurer	À définir
+Groupes dynamiques	À vérifier	À mesurer	À définir
+Mutualisation	À vérifier	À mesurer	À définir
+Optimisation des EDT	À vérifier	À mesurer	À définir
+Gestion des conflits	À vérifier	À mesurer	À définir
+Simulateur	À vérifier	À mesurer	À définir
+Séances pédagogiques	À vérifier	À mesurer	À définir
+Préparation des présences	À vérifier	À mesurer	À définir
+Performance	À vérifier	À mesurer	À définir
+
+Les états doivent être établis à partir de vérifications réelles.
+
+PHASE 3 — ARCHITECTURE COMPLÉMENTAIRE
+
+Identifier uniquement les évolutions nécessaires.
+
+Privilégier la réutilisation et le renforcement des composants existants.
+
+PHASE 4 — IMPLÉMENTATION
+
+Développer les fonctionnalités manquantes et corriger les insuffisances constatées.
+
+Éviter les modifications sans rapport avec les objectifs de cette mission.
+
+PHASE 5 — TESTS
+
+Exécuter les tests unitaires, fonctionnels, d’intégration et de non-régression.
+
+PHASE 6 — VALIDATION
+
+Vérifier la cohérence réelle de la chaîne :
+
+Référentiels → Groupes → EDT → Séances.
+
+Vérifier également que les données nécessaires au futur module de présence sont correctement disponibles.
+
+PHASE 7 — DOCUMENTATION ET LIVRAISON
+
+Documenter les évolutions et présenter les résultats réellement obtenus.
+15. TESTS ET CRITÈRES DE VALIDATION
+
+Les tests doivent couvrir :
+
+Dimensionnement
+
+* 3 500 étudiants ;
+* 15 000 étudiants ;
+* Effectifs variables ;
+* Promotions incomplètes ;
+* Filières ayant des semestres non ouverts.
+
+Organisation pédagogique
+
+* Groupes ;
+* Sous-groupes ;
+* Mutualisation ;
+* Inscriptions pédagogiques ;
+* UE et ECUE ;
+* Enseignants ;
+* Salles.
+
+Génération
+
+* Génération par filière ;
+* Génération par semestre ;
+* Génération par promotion ;
+* Génération par groupe ;
+* Génération globale ;
+* Génération individuelle.
+
+Conflits
+
+* Enseignants ;
+* Étudiants ;
+* Groupes ;
+* Salles ;
+* Installations sportives ;
+* Capacités ;
+* Volumes horaires.
+
+Simulation
+
+* Création ;
+* Modification ;
+* Comparaison ;
+* Sauvegarde ;
+* Validation ;
+* Publication ;
+* Historisation.
+
+Séances
+
+* Création ;
+* Modification ;
+* Annulation ;
+* Report ;
+* Rattrapage ;
+* Traçabilité.
+
+Préparation des présences
+
+* Identité stable des séances ;
+* Identification des étudiants attendus ;
+* Association aux groupes ;
+* Horodatage ;
+* Association des salles ;
+* Cohérence des données.
+
+Effectuer des tests de charge progressifs.
+
+Les résultats doivent préciser :
+
+* Le volume de données utilisé ;
+* Le nombre d’utilisateurs simulés ;
+* La durée des traitements ;
+* Les temps de réponse ;
+* Les ressources consommées ;
+* Les erreurs rencontrées ;
+* Les limites identifiées.
+
+Ne jamais annoncer une capacité ou une réussite qui n’a pas été démontrée.
+
+16. PROTECTION DE L’EXISTANT
+
+Cette mission doit être réalisée avec une vigilance particulière.
+
+* Ne pas supprimer de données existantes ;
+* Ne pas réinitialiser la base ;
+* Ne pas effectuer de DROP DATABASE ;
+* Ne pas effectuer de FLUSH ;
+* Ne pas écraser les référentiels validés ;
+* Ne pas remplacer les configurations de production ;
+* Ne pas supprimer les fonctionnalités déjà opérationnelles ;
+* Ne pas effectuer de force push ;
+* Ne pas fusionner automatiquement des modifications non vérifiées.
+
+Avant toute migration ou opération sensible :
+
+1. Vérifier l’état du dépôt ;
+2. Vérifier les migrations ;
+3. Prévoir une sauvegarde ;
+4. Contrôler les impacts ;
+5. Exécuter les tests ;
+6. Documenter les modifications.
+
+17. LIVRABLE FINAL
+
+Fournir un rapport précis comprenant :
+
+1. État initial réel du moteur GET-INJS2026 ;
+2. Architecture existante réutilisée ;
+3. Insuffisances identifiées ;
+4. Modifications effectuées ;
+5. Modèles et relations concernés ;
+6. API créées ou modifiées ;
+7. Interfaces modifiées ;
+8. Optimisations algorithmiques réalisées ;
+9. Résultats des tests fonctionnels ;
+10. Résultats des tests de non-régression ;
+11. Résultats des tests de charge ;
+12. Capacité réellement démontrée ;
+13. Préparation effective du futur module de présence ;
+14. Éléments restant à développer.
+
+Distinguer clairement :
+
+* Fonctionnalités déjà opérationnelles ;
+* Fonctionnalités renforcées ;
+* Fonctionnalités nouvellement implémentées ;
+* Fonctionnalités partiellement opérationnelles ;
+* Fonctionnalités préparées pour une évolution future ;
+* Fonctionnalités non implémentées.
+
+Ne pas confondre une préparation architecturale avec une fonctionnalité effectivement opérationnelle.
+
+⸻
+
+OBJECTIF FINAL
+
+Obtenir un moteur GET-INJS2026 robuste, intelligent, évolutif et parfaitement adapté à l’organisation pédagogique de l’INJS d’Abidjan.
+
+Le système doit pouvoir organiser efficacement les enseignements de 3 500 étudiants dès son déploiement, évoluer vers 15 000 étudiants et constituer le socle opérationnel du futur système institutionnel de suivi des présences.
+
+La priorité absolue est la cohérence entre les référentiels LMD, les groupes pédagogiques, les emplois du temps, les séances et les futures présences.
+
+Aucune fonctionnalité ne doit être considérée comme terminée tant que son fonctionnement réel, sa cohérence métier et ses tests ne sont pas démontrés.
+
+INSTRUCTION FINALE :
+
+Ne reconstruis pas GET INJS APP. Fais évoluer intelligemment l’application déjà implémentée.
+
+Ne développe pas pour satisfaire artificiellement une liste de fonctionnalités. Développe pour répondre aux besoins pédagogiques réels de l’INJS d’Abidjan.
+
+La qualité de la planification, la cohérence des données, l’absence de conflits, la fiabilité des séances et la capacité d’évolution constituent les critères prioritaires de réussite de cette mission.
+
+Recommandation pour son utilisation
+
+Il joue un rôle complémentaire précis :
+
+* Prompt complémentaire : renforce et dimensionne intelligemment son moteur existant.
+* Objectif futur : permettre l’enchaînement fiable des emplois du temps, des séances pédagogiques et du suivi des présences.
+
+Ainsi, Arena Agent doit améliorer l’existant plutôt que repartir de zéro.
