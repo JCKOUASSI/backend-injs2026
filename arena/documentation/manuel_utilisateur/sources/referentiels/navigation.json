@@ -1,0 +1,2376 @@
+{
+ "sections": [
+  {
+   "id": "tableau_de_bord",
+   "libelle": "Tableau de bord",
+   "icone": "bi-speedometer2",
+   "chemin": "/dashboard",
+   "enfants": []
+  },
+  {
+   "id": "scolarite",
+   "libelle": "Scolarité",
+   "icone": "bi-mortarboard",
+   "chemin": null,
+   "enfants": [
+    {
+     "id": "scolarite.tableau_bord",
+     "libelle": "Tableau de bord",
+     "chemin": "/scolarite",
+     "ecran": null,
+     "curp": [
+      "scolarite.dossier_etudiant.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "scolarite.candidatures",
+     "libelle": "Candidatures",
+     "chemin": "/scolarite/candidatures",
+     "ecran": null,
+     "curp": [
+      "candidatures.candidature.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "scolarite.controle_dossiers",
+     "libelle": "Contrôle des dossiers",
+     "chemin": "/scolarite/controle-dossiers",
+     "ecran": "controle_dossiers",
+     "curp": [
+      "candidatures.piece.consulter",
+      "candidatures.piece.valider",
+      "candidatures.piece.rejeter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "scolarite.concours",
+     "libelle": "Concours & Sélection",
+     "chemin": "/scolarite/campagnes",
+     "ecran": null,
+     "curp": [
+      "candidatures.concours.consulter",
+      "candidatures.campagne.consulter",
+      "candidatures.epreuve.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "scolarite.resultats_concours",
+     "libelle": "Résultats concours",
+     "chemin": "/scolarite/resultats-concours",
+     "ecran": "resultats_concours",
+     "curp": [
+      "candidatures.classement.calculer",
+      "candidatures.classement.publier",
+      "candidatures.note_concours.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "scolarite.admissions",
+     "libelle": "Admissions",
+     "chemin": "/scolarite/admissions",
+     "ecran": null,
+     "curp": [
+      "candidatures.eligibilite.valider",
+      "candidatures.candidature.valider"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "scolarite.inscriptions",
+     "libelle": "Inscriptions",
+     "chemin": "/scolarite/inscriptions",
+     "ecran": null,
+     "curp": [
+      "scolarite.inscription_administrative.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "scolarite.etudiants",
+     "libelle": "Étudiants",
+     "chemin": "/participants",
+     "ecran": null,
+     "curp": [
+      "scolarite.dossier_etudiant.consulter"
+     ],
+     "legacy": [
+      [
+       "participants",
+       "lister"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "scolarite.groupes",
+     "libelle": "Groupes pédagogiques",
+     "chemin": "/scolarite/groupes",
+     "ecran": null,
+     "curp": [
+      "scolarite.groupe.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "scolarite.documents",
+     "libelle": "Documents scolaires",
+     "chemin": "/scolarite/documents-scolaires",
+     "ecran": null,
+     "curp": [
+      "exports.export.generer",
+      "exports.export.imprimer",
+      "diplomation.releve_notes.consulter"
+     ],
+     "legacy": [
+      [
+       "exports",
+       "liste_classe"
+      ],
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "scolarite.maquettes",
+     "libelle": "Maquettes LMD",
+     "chemin": "/scolarite/maquettes",
+     "ecran": null,
+     "curp": [
+      "pedagogie.maquette.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "scolarite.equivalences",
+     "libelle": "Équivalences & dispenses",
+     "chemin": "/scolarite/equivalences",
+     "ecran": null,
+     "curp": [
+      "scolarite.equivalence.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "scolarite.reinscriptions",
+     "libelle": "Réinscriptions & transferts",
+     "chemin": "/scolarite/reinscriptions",
+     "ecran": null,
+     "curp": [
+      "scolarite.transfert.consulter",
+      "scolarite.reorientation.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "scolarite.journal",
+     "libelle": "Journal de scolarité",
+     "chemin": "/scolarite/journal",
+     "ecran": null,
+     "curp": [
+      "scolarite.journal_scolarite.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    }
+   ]
+  },
+  {
+   "id": "formations",
+   "libelle": "Formations",
+   "icone": "bi-book",
+   "chemin": null,
+   "enfants": [
+    {
+     "id": "formations.lmd",
+     "libelle": "Formations LMD",
+     "chemin": "/formations",
+     "ecran": null,
+     "curp": [
+      "pedagogie.maquette.consulter",
+      "referentiels.referentiel.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "formations.filieres",
+     "libelle": "Types de formation",
+     "chemin": "/formations/filieres",
+     "ecran": "filieres",
+     "curp": [
+      "referentiels.referentiel.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "formations.parcours",
+     "libelle": "Parcours",
+     "chemin": "/formations/parcours",
+     "ecran": "parcours",
+     "curp": [
+      "referentiels.referentiel.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "formations.niveaux",
+     "libelle": "Niveaux",
+     "chemin": "/formations/niveaux",
+     "ecran": "niveaux",
+     "curp": [
+      "referentiels.referentiel.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "formations.semestres",
+     "libelle": "Semestres",
+     "chemin": "/formations/semestres",
+     "ecran": "semestres",
+     "curp": [
+      "referentiels.referentiel.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "formations.ue_ecue",
+     "libelle": "UE / ECUE",
+     "chemin": "/formations/ue-ecue",
+     "ecran": "ue_ecue",
+     "curp": [
+      "pedagogie.ue.consulter",
+      "pedagogie.ecue.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "formations.cours_lmd",
+     "libelle": "Cours (LMD)",
+     "chemin": "/cours",
+     "ecran": null,
+     "curp": [
+      "pedagogie.volume_horaire.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "formations.enseignants",
+     "libelle": "Enseignants",
+     "chemin": "/formateurs",
+     "ecran": null,
+     "curp": [
+      "enseignants.enseignant.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "formations.affectations",
+     "libelle": "Affectations pédagogiques",
+     "chemin": "/scolarite/charges",
+     "ecran": null,
+     "curp": [
+      "pedagogie.affectation_pedagogique.consulter",
+      "enseignants.charge.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    }
+   ]
+  },
+  {
+   "id": "get_injs",
+   "libelle": "GET INJS APP",
+   "icone": "bi-calendar-week",
+   "chemin": null,
+   "enfants": [
+    {
+     "id": "get_injs.tableau_bord",
+     "libelle": "Tableau de bord",
+     "chemin": "/get-injs-app",
+     "ecran": null,
+     "curp": [
+      "edt.creneau.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "get_injs.tableau",
+     "libelle": "Emplois du temps",
+     "chemin": "/edt",
+     "ecran": null,
+     "curp": [
+      "edt.creneau.consulter",
+      "edt.emploi_du_temps.generer"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "get_injs.generation_annuelle",
+     "libelle": "Génération",
+     "chemin": "/edt/generation-annuelle",
+     "ecran": null,
+     "curp": [
+      "edt.emploi_du_temps.generer"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "get_injs.dimensionnement",
+     "libelle": "Dimensionnement",
+     "chemin": "/edt/dimensionnement",
+     "ecran": null,
+     "curp": [
+      "edt.creneau.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "get_injs.import",
+     "libelle": "Import étudiants",
+     "chemin": "/edt/import-etudiants",
+     "ecran": null,
+     "curp": [
+      "edt.emploi_du_temps.generer"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "get_injs.inscrits",
+     "libelle": "Étudiants inscrits",
+     "chemin": "/edt/etudiants-inscrits",
+     "ecran": null,
+     "curp": [
+      "edt.creneau.consulter",
+      "scolarite.inscription_administrative.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ],
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "get_injs.referentiels",
+     "libelle": "Référentiels",
+     "chemin": "/edt/referentiels",
+     "ecran": null,
+     "curp": [
+      "patrimoine.espace.consulter",
+      "edt.creneau.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "get_injs.conception",
+     "libelle": "Conception",
+     "chemin": "/edt/conception",
+     "ecran": null,
+     "curp": [
+      "edt.creneau.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "get_injs.salles_espaces",
+     "libelle": "Salles & espaces",
+     "chemin": "/edt/salles-espaces",
+     "ecran": "salles_espaces",
+     "curp": [
+      "patrimoine.espace.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "get_injs.disponibilites",
+     "libelle": "Disponibilités",
+     "chemin": "/edt/disponibilites",
+     "ecran": "disponibilites",
+     "curp": [
+      "enseignants.disponibilite.consulter",
+      "enseignants.indisponibilite.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "get_injs.conflits",
+     "libelle": "Conflits & contraintes",
+     "chemin": "/edt/conflits",
+     "ecran": "conflits_edt",
+     "curp": [
+      "edt.conflit.resoudre",
+      "edt.contrainte.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "get_injs.export",
+     "libelle": "Export / Impression",
+     "chemin": "/edt/export",
+     "ecran": "export_edt",
+     "curp": [
+      "exports.export.generer",
+      "exports.export.imprimer"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    }
+   ]
+  },
+  {
+   "id": "presences_qr",
+   "libelle": "Présences QR",
+   "icone": "bi-qr-code",
+   "chemin": null,
+   "enfants": [
+    {
+     "id": "presences_qr.tableau",
+     "libelle": "Tableau de bord",
+     "chemin": "/presences",
+     "ecran": null,
+     "curp": [
+      "presences.emargement.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "presences_qr.seances",
+     "libelle": "Séances",
+     "chemin": "/presences/seances",
+     "ecran": null,
+     "curp": [
+      "presences.emargement.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "presences_qr.badgeage",
+     "libelle": "Badgeage",
+     "chemin": "/presences/poste",
+     "ecran": null,
+     "curp": [
+      "presences.emargement.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "presences_qr.presences",
+     "libelle": "Présences",
+     "chemin": "/presences/registre",
+     "ecran": null,
+     "curp": [
+      "presences.emargement.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "presences_qr.audit",
+     "libelle": "Audit",
+     "chemin": "/presences/audit",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "presences",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "presences_qr.configuration",
+     "libelle": "Configuration",
+     "chemin": "/presences/configuration",
+     "ecran": null,
+     "curp": [
+      "presences.emargement.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "presences_qr.contrat",
+     "libelle": "Contrat API",
+     "chemin": "/presences/contrat",
+     "ecran": null,
+     "curp": [
+      "presences.emargement.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    }
+   ]
+  },
+  {
+   "id": "evaluations",
+   "libelle": "Évaluations",
+   "icone": "bi-clipboard-check",
+   "chemin": null,
+   "enfants": [
+    {
+     "id": "evaluations.tableau",
+     "libelle": "Tableau de bord des évaluations",
+     "chemin": "/evaluations/tableau-de-bord",
+     "ecran": null,
+     "curp": [
+      "evaluations.questionnaire.consulter"
+     ],
+     "legacy": [
+      [
+       "evaluations",
+       "consulter"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "evaluations.liste",
+     "libelle": "Évaluations",
+     "chemin": "/evaluations",
+     "ecran": null,
+     "curp": [
+      "evaluations.questionnaire.consulter"
+     ],
+     "legacy": [
+      [
+       "evaluations",
+       "consulter"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "evaluations.saisie_notes",
+     "libelle": "Saisie des notes",
+     "chemin": "/evaluations/saisie",
+     "ecran": null,
+     "curp": [
+      "evaluations.note.saisir"
+     ],
+     "legacy": [
+      [
+       "evaluations",
+       "consulter"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "evaluations.controle_notes",
+     "libelle": "Contrôle des notes",
+     "chemin": "/evaluations/controle",
+     "ecran": null,
+     "curp": [
+      "evaluations.note.valider",
+      "evaluations.correction_note.consulter"
+     ],
+     "legacy": [
+      [
+       "evaluations",
+       "consulter"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "evaluations.deliberations",
+     "libelle": "Délibérations",
+     "chemin": "/evaluations/deliberations",
+     "ecran": null,
+     "curp": [
+      "evaluations.decision_pedagogique.consulter"
+     ],
+     "legacy": [
+      [
+       "evaluations",
+       "consulter"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "evaluations.resultats",
+     "libelle": "Résultats",
+     "chemin": "/evaluations/resultats",
+     "ecran": null,
+     "curp": [
+      "evaluations.moyenne.calculer",
+      "evaluations.moyenne.publier"
+     ],
+     "legacy": [
+      [
+       "evaluations",
+       "consulter"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "evaluations.releves",
+     "libelle": "Relevés de notes",
+     "chemin": "/evaluations/releves",
+     "ecran": null,
+     "curp": [
+      "diplomation.releve_notes.consulter"
+     ],
+     "legacy": [
+      [
+       "notes",
+       "gerer"
+      ],
+      [
+       "exports",
+       "liste_classe"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    }
+   ]
+  },
+  {
+   "id": "jurys",
+   "libelle": "Jurys",
+   "icone": "bi-mortarboard-fill",
+   "chemin": null,
+   "enfants": [
+    {
+     "id": "jurys.sessions",
+     "libelle": "Jurys",
+     "chemin": "/scolarite/jurys",
+     "ecran": null,
+     "curp": [
+      "jurys.session_jury.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "jurys.composition",
+     "libelle": "Composition",
+     "chemin": "/jurys/composition",
+     "ecran": null,
+     "curp": [
+      "jurys.membre_jury.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "jurys.deliberations",
+     "libelle": "Délibérations",
+     "chemin": "/jurys/deliberations",
+     "ecran": null,
+     "curp": [
+      "jurys.deliberation.consulter",
+      "jurys.decision.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "jurys.pv",
+     "libelle": "PV de jury",
+     "chemin": "/jurys/pv",
+     "ecran": null,
+     "curp": [
+      "jurys.pv.generer",
+      "jurys.pv.signer",
+      "jurys.pv.publier"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "jurys.validation",
+     "libelle": "Validation",
+     "chemin": "/jurys/validation",
+     "ecran": null,
+     "curp": [
+      "jurys.resultat.publier",
+      "jurys.decision.valider"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    }
+   ]
+  },
+  {
+   "id": "diplomation",
+   "libelle": "Diplômation",
+   "icone": "bi-award",
+   "chemin": null,
+   "enfants": [
+    {
+     "id": "diplomation.eligibilite",
+     "libelle": "Éligibilité",
+     "chemin": "/diplomation/eligibilite",
+     "ecran": null,
+     "curp": [
+      "diplomation.diplome.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "diplomation.diplomes",
+     "libelle": "Diplômes",
+     "chemin": "/scolarite/graduation",
+     "ecran": null,
+     "curp": [
+      "diplomation.diplome.consulter",
+      "diplomation.diplome.valider"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "diplomation.attestations",
+     "libelle": "Attestations",
+     "chemin": "/diplomation/attestations",
+     "ecran": null,
+     "curp": [
+      "diplomation.attestation.consulter",
+      "diplomation.attestation.imprimer"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "diplomation.certificats",
+     "libelle": "Certificats",
+     "chemin": "/diplomation/certificats",
+     "ecran": null,
+     "curp": [
+      "diplomation.modele_document.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "diplomation.registres",
+     "libelle": "Registres & modèles",
+     "chemin": "/diplomation/registres",
+     "ecran": null,
+     "curp": [
+      "diplomation.registre.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "diplomation.archives",
+     "libelle": "Archives",
+     "chemin": "/archives",
+     "ecran": null,
+     "curp": [
+      "diplomation.registre.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [
+      "ARCHIVE",
+      "DIRECTION",
+      "ADMIN",
+      "CHEF_INJS_ADMIN",
+      "INJS_ADMIN"
+     ],
+     "console": false
+    }
+   ]
+  },
+  {
+   "id": "finances_etudiantes",
+   "libelle": "Finances étudiantes",
+   "icone": "bi-cash-coin",
+   "chemin": null,
+   "enfants": [
+    {
+     "id": "finances_etudiantes.tableau",
+     "libelle": "Vue d'ensemble",
+     "chemin": "/scolarite/finances",
+     "ecran": null,
+     "curp": [
+      "finances_etud.echeancier.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "finances_etudiantes.frais",
+     "libelle": "Frais de scolarité",
+     "chemin": "/finances-etudiantes/frais",
+     "ecran": null,
+     "curp": [
+      "finances_etud.tarification.consulter",
+      "finances_etud.echeancier.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ],
+      [
+       "finance",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "finances_etudiantes.factures",
+     "libelle": "Factures",
+     "chemin": "/finances-etudiantes/factures",
+     "ecran": null,
+     "curp": [
+      "finances_etud.facture.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ],
+      [
+       "finance",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "finances_etudiantes.paiements",
+     "libelle": "Paiements",
+     "chemin": "/finances-etudiantes/paiements",
+     "ecran": null,
+     "curp": [
+      "finances_etud.paiement.saisir",
+      "finances_etud.paiement.valider"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ],
+      [
+       "finance",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "finances_etudiantes.recus",
+     "libelle": "Reçus",
+     "chemin": "/finances-etudiantes/recus",
+     "ecran": null,
+     "curp": [
+      "finances_etud.quittance.editer",
+      "finances_etud.paiement.valider"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ],
+      [
+       "finance",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "finances_etudiantes.bourses",
+     "libelle": "Bourses & remboursements",
+     "chemin": "/finances-etudiantes/bourses",
+     "ecran": null,
+     "curp": [
+      "finances_etud.remboursement.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ],
+      [
+       "finance",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "finances_etudiantes.situation",
+     "libelle": "Situation financière",
+     "chemin": "/finances-etudiantes/situation",
+     "ecran": null,
+     "curp": [
+      "finances_etud.relance.consulter",
+      "finances_etud.rapprochement.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ],
+      [
+       "finance",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "finances_etudiantes.vacations",
+     "libelle": "Vacations & encadrants",
+     "chemin": "/finance-encadrants",
+     "ecran": null,
+     "curp": [
+      "finances_form.etat_vacation.editer",
+      "finances_form.heures_certifiees.consulter"
+     ],
+     "legacy": [
+      [
+       "finance",
+       "exporter"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "finances_etudiantes.parametrage",
+     "libelle": "Paramétrage finance",
+     "chemin": "/finance-parametrage",
+     "ecran": null,
+     "curp": [
+      "finances_form.parametrage.administrer"
+     ],
+     "legacy": [
+      [
+       "finance",
+       "parametrer"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    }
+   ]
+  },
+  {
+   "id": "stages",
+   "libelle": "Stages",
+   "icone": "bi-building",
+   "chemin": null,
+   "enfants": [
+    {
+     "id": "stages.conventions",
+     "libelle": "Conventions",
+     "chemin": "/stages/conventions",
+     "ecran": null,
+     "curp": [
+      "stages.convention.creer",
+      "stages.convention.signer",
+      "stages.convention.valider"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "stages.organismes",
+     "libelle": "Structures d'accueil",
+     "chemin": "/stages/organismes",
+     "ecran": null,
+     "curp": [
+      "stages.organisme.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "stages.affectations",
+     "libelle": "Affectations & tuteurs",
+     "chemin": "/stages/affectations",
+     "ecran": null,
+     "curp": [
+      "stages.tuteur.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "stages.suivi",
+     "libelle": "Suivi des stages",
+     "chemin": "/stages/suivi",
+     "ecran": null,
+     "curp": [
+      "stages.convention.valider",
+      "stages.convention.signer"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "stages.evaluations",
+     "libelle": "Évaluations",
+     "chemin": "/stages/evaluations",
+     "ecran": null,
+     "curp": [
+      "stages.evaluation_stage.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    }
+   ]
+  },
+  {
+   "id": "personnel",
+   "libelle": "Personnel",
+   "icone": "bi-person-video3",
+   "chemin": null,
+   "enfants": [
+    {
+     "id": "personnel.enseignants",
+     "libelle": "Enseignants",
+     "chemin": "/formateurs",
+     "ecran": null,
+     "curp": [
+      "enseignants.enseignant.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "personnel.agents",
+     "libelle": "Personnel administratif",
+     "chemin": "/personnel/agents",
+     "ecran": null,
+     "curp": [
+      "rh.agent.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "personnel.affectations",
+     "libelle": "Affectations",
+     "chemin": "/personnel/affectations",
+     "ecran": null,
+     "curp": [
+      "rh.affectation_rh.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "personnel.charges",
+     "libelle": "Charges / volumes horaires",
+     "chemin": "/scolarite/charges",
+     "ecran": null,
+     "curp": [
+      "enseignants.charge.consulter",
+      "pedagogie.volume_horaire.consulter"
+     ],
+     "legacy": [
+      [
+       "scolarite",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "personnel.disponibilites",
+     "libelle": "Disponibilités agents",
+     "chemin": "/personnel/disponibilites",
+     "ecran": null,
+     "curp": [
+      "rh.disponibilite_agent.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "personnel.documents",
+     "libelle": "Documents RH",
+     "chemin": "/personnel/documents",
+     "ecran": null,
+     "curp": [
+      "rh.document_rh.consulter",
+      "rh.document_rh.deposer"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    }
+   ]
+  },
+  {
+   "id": "administration",
+   "libelle": "Administration",
+   "icone": "bi-bank",
+   "chemin": null,
+   "enfants": [
+    {
+     "id": "administration.services",
+     "libelle": "Services",
+     "chemin": "/administration/services",
+     "ecran": "organisation_services",
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "administration.departements",
+     "libelle": "Départements",
+     "chemin": "/administration/departements",
+     "ecran": "organisation_departements",
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "administration.directions",
+     "libelle": "Directions",
+     "chemin": "/administration/directions",
+     "ecran": "organisation_directions",
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "administration.organisation",
+     "libelle": "Directions / Départements / Services",
+     "chemin": "/organisation",
+     "ecran": null,
+     "curp": [
+      "administrations.organigramme.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "administration.personnel",
+     "libelle": "Personnel",
+     "chemin": "/personnel/agents",
+     "ecran": null,
+     "curp": [
+      "rh.agent.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "administration.courrier",
+     "libelle": "Courrier / Documents",
+     "chemin": "/administration/courrier",
+     "ecran": null,
+     "curp": [
+      "administrations.courrier.consulter",
+      "administrations.document_officiel.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "administration.reunions",
+     "libelle": "Réunions & missions",
+     "chemin": "/administration/reunions",
+     "ecran": null,
+     "curp": [
+      "administrations.reunion.consulter",
+      "administrations.mission.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "administration.archives",
+     "libelle": "Archives",
+     "chemin": "/archives",
+     "ecran": null,
+     "curp": [
+      "administrations.version_document.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [
+      "ARCHIVE",
+      "DIRECTION",
+      "ADMIN",
+      "CHEF_INJS_ADMIN",
+      "INJS_ADMIN"
+     ],
+     "console": false
+    },
+    {
+     "id": "administration.archives_listes",
+     "libelle": "Listes de notes archivées",
+     "chemin": "/archives/listes-notes",
+     "ecran": null,
+     "curp": [
+      "administrations.version_document.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [
+      "ARCHIVE",
+      "DIRECTION",
+      "ADMIN",
+      "CHEF_INJS_ADMIN",
+      "INJS_ADMIN"
+     ],
+     "console": false
+    },
+    {
+     "id": "administration.archives_cahiers",
+     "libelle": "Cahiers d'appel archivés",
+     "chemin": "/archives/cahiers-appel",
+     "ecran": null,
+     "curp": [
+      "administrations.version_document.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [
+      "ARCHIVE",
+      "DIRECTION",
+      "ADMIN",
+      "CHEF_INJS_ADMIN",
+      "INJS_ADMIN"
+     ],
+     "console": false
+    }
+   ]
+  },
+  {
+   "id": "utilisateurs",
+   "libelle": "Utilisateurs & Accès",
+   "icone": "bi-shield-lock",
+   "chemin": null,
+   "enfants": [
+    {
+     "id": "utilisateurs.comptes",
+     "libelle": "Comptes utilisateurs",
+     "chemin": "/administration/comptes",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.roles",
+     "libelle": "Rôles",
+     "chemin": "/administration/comptes/roles",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.permissions",
+     "libelle": "Permissions",
+     "chemin": "/administration/comptes/matrice",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.catalogue_permissions",
+     "libelle": "Catalogue des permissions",
+     "chemin": "/administration/comptes/permissions",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.organisation",
+     "libelle": "Départements & Services",
+     "chemin": "/administration/comptes/organisation",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.profils",
+     "libelle": "Profils",
+     "chemin": "/users",
+     "ecran": null,
+     "curp": [
+      "administration.personne.consulter"
+     ],
+     "legacy": [
+      [
+       "utilisateurs",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "utilisateurs.derogations",
+     "libelle": "Dérogations",
+     "chemin": "/administration/comptes/derogations",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.delegations",
+     "libelle": "Délégations",
+     "chemin": "/administration/comptes/delegations",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.revue",
+     "libelle": "Revue des habilitations",
+     "chemin": "/administration/comptes/revue",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.provisionnement",
+     "libelle": "File de provisionnement",
+     "chemin": "/administration/comptes/provisionnement",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.operations_masse",
+     "libelle": "Opérations en masse",
+     "chemin": "/administration/comptes/operations-masse",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.notifications",
+     "libelle": "Notifications d'échéance",
+     "chemin": "/administration/comptes/notifications",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.journal",
+     "libelle": "Journal des accès",
+     "chemin": "/administration/comptes/journal",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.dashboard",
+     "libelle": "Dashboard habilitations",
+     "chemin": "/administration/comptes/dashboard",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.impact_permission",
+     "libelle": "Impact d'une permission",
+     "chemin": "/administration/comptes/impact-permission",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.impact_role",
+     "libelle": "Impact d'un rôle",
+     "chemin": "/administration/comptes/impact-role",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.impact_utilisateur",
+     "libelle": "Impact d'un utilisateur",
+     "chemin": "/administration/comptes/impact-utilisateur",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.acces_effectifs",
+     "libelle": "Accès effectifs",
+     "chemin": "/administration/comptes/acces-effectifs",
+     "ecran": null,
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "utilisateurs.politique",
+     "libelle": "Politique de sécurité",
+     "chemin": "/parametres",
+     "ecran": null,
+     "curp": [
+      "administration.politique.administrer",
+      "parametres.parametre.administrer"
+     ],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [
+      "ADMIN",
+      "CHEF_INJS_ADMIN",
+      "INJS_ADMIN"
+     ],
+     "console": false
+    }
+   ]
+  },
+  {
+   "id": "statistiques",
+   "libelle": "Statistiques",
+   "icone": "bi-bar-chart-line",
+   "chemin": null,
+   "enfants": [
+    {
+     "id": "statistiques.tableau",
+     "libelle": "Tableau de bord",
+     "chemin": "/statistiques",
+     "ecran": null,
+     "curp": [
+      "statistiques.tableau_bord.consulter"
+     ],
+     "legacy": [
+      [
+       "statistiques",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "statistiques.candidatures",
+     "libelle": "Candidatures",
+     "chemin": "/statistiques/candidatures",
+     "ecran": "stats_candidatures",
+     "curp": [
+      "statistiques.indicateur.consulter"
+     ],
+     "legacy": [
+      [
+       "statistiques",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "statistiques.admissions",
+     "libelle": "Admissions",
+     "chemin": "/statistiques/admissions",
+     "ecran": "stats_admissions",
+     "curp": [
+      "statistiques.indicateur.consulter"
+     ],
+     "legacy": [
+      [
+       "statistiques",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "statistiques.inscriptions",
+     "libelle": "Inscriptions",
+     "chemin": "/statistiques/inscriptions",
+     "ecran": "stats_inscriptions",
+     "curp": [
+      "statistiques.indicateur.consulter"
+     ],
+     "legacy": [
+      [
+       "statistiques",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "statistiques.effectifs",
+     "libelle": "Effectifs",
+     "chemin": "/statistiques/effectifs",
+     "ecran": "stats_effectifs",
+     "curp": [
+      "statistiques.indicateur.consulter"
+     ],
+     "legacy": [
+      [
+       "statistiques",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "statistiques.resultats",
+     "libelle": "Résultats",
+     "chemin": "/statistiques/resultats",
+     "ecran": "stats_resultats",
+     "curp": [
+      "statistiques.indicateur.consulter"
+     ],
+     "legacy": [
+      [
+       "statistiques",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "statistiques.finances",
+     "libelle": "Finances",
+     "chemin": "/statistiques/finances",
+     "ecran": "stats_finances",
+     "curp": [
+      "statistiques.bilan.editer",
+      "statistiques.indicateur.consulter"
+     ],
+     "legacy": [
+      [
+       "statistiques",
+       "voir"
+      ],
+      [
+       "finance",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "statistiques.rapports",
+     "libelle": "Rapports",
+     "chemin": "/statistiques/rapports",
+     "ecran": "stats_rapports",
+     "curp": [
+      "statistiques.rapport.generer",
+      "statistiques.rapport.publier"
+     ],
+     "legacy": [
+      [
+       "statistiques",
+       "voir"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "statistiques.alertes",
+     "libelle": "Alertes & seuils",
+     "chemin": "/statistiques/alertes",
+     "ecran": "stats_alertes",
+     "curp": [
+      "statistiques.alerte.configurer"
+     ],
+     "legacy": [
+      [
+       "statistiques",
+       "voir_globales"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    }
+   ]
+  },
+  {
+   "id": "referentiels",
+   "libelle": "Référentiels",
+   "icone": "bi-sliders",
+   "chemin": null,
+   "enfants": [
+    {
+     "id": "referentiels.tous",
+     "libelle": "Tableau de bord",
+     "chemin": "/referentiels",
+     "ecran": null,
+     "curp": [
+      "referentiels.referentiel.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [
+      "ADMIN",
+      "CHEF_INJS_ADMIN",
+      "INJS_ADMIN"
+     ],
+     "console": false
+    },
+    {
+     "id": "referentiels.fonctionnalites",
+     "libelle": "Fonctionnalités (drapeaux)",
+     "chemin": "/parametres/flags",
+     "ecran": null,
+     "curp": [
+      "parametres.parametre.administrer"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [
+      "ADMIN",
+      "CHEF_INJS_ADMIN",
+      "INJS_ADMIN"
+     ],
+     "console": false
+    },
+    {
+     "id": "referentiels.planche_style",
+     "libelle": "Planche de style",
+     "chemin": "/referentiels/planche-de-style",
+     "ecran": null,
+     "curp": [
+      "parametres.parametre.consulter"
+     ],
+     "legacy": [
+      [
+       "web",
+       "operationnel"
+      ]
+     ],
+     "roles": [
+      "ADMIN",
+      "CHEF_INJS_ADMIN",
+      "INJS_ADMIN"
+     ],
+     "console": false
+    }
+   ]
+  },
+  {
+   "id": "audit",
+   "libelle": "Audit & Traçabilité",
+   "icone": "bi-search",
+   "chemin": null,
+   "enfants": [
+    {
+     "id": "audit.journal",
+     "libelle": "Journal d'audit",
+     "chemin": "/audit/journal",
+     "ecran": "audit_journal",
+     "curp": [
+      "administration.journal.consulter"
+     ],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "audit.actions",
+     "libelle": "Actions utilisateurs",
+     "chemin": "/audit/actions",
+     "ecran": "audit_actions",
+     "curp": [
+      "administration.journal.consulter"
+     ],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "audit.modifications",
+     "libelle": "Modifications",
+     "chemin": "/audit/modifications",
+     "ecran": "audit_modifications",
+     "curp": [
+      "administration.journal.consulter"
+     ],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "audit.securite",
+     "libelle": "Événements de sécurité",
+     "chemin": "/audit/securite",
+     "ecran": "audit_securite",
+     "curp": [
+      "administration.journal.consulter"
+     ],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": false
+    },
+    {
+     "id": "audit.integrite",
+     "libelle": "Intégrité de la chaîne",
+     "chemin": "/audit/integrite",
+     "ecran": "audit_integrite",
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    },
+    {
+     "id": "audit.archives",
+     "libelle": "Archives d'audit",
+     "chemin": "/audit/archives",
+     "ecran": "audit_archives",
+     "curp": [],
+     "legacy": [
+      [
+       "habilitations_admin",
+       "gerer"
+      ]
+     ],
+     "roles": [],
+     "console": true
+    }
+   ]
+  }
+ ],
+ "pied": [
+  {
+   "libelle": "Notifications",
+   "chemin": "/administration/comptes/notifications"
+  },
+  {
+   "libelle": "Aide",
+   "chemin": "/aide"
+  }
+ ]
+}

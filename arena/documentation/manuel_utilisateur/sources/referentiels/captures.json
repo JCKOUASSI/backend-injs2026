@@ -1,0 +1,135 @@
+[
+  {
+    "fichier": "01-connexion.jpg",
+    "titre": "Page de connexion",
+    "module": "Authentification",
+    "legende": "Écran d'authentification de l'application INJS. Saisie de l'identifiant et du mot de passe, puis onglet « administration » pour les comptes internes.",
+    "source": "docs/getinjs/preuves/01-connexion.jpg"
+  },
+  {
+    "fichier": "02-referentiels.png",
+    "titre": "Référentiels de l'INJS",
+    "module": "Référentiels",
+    "legende": "Catalogue des référentiels institutionnels : mentions, écoles, filières, parcours, maquettes, UE/ECUE, salles et années académiques.",
+    "source": "docs/audits/53/captures/01-tableau-de-bord.png"
+  },
+  {
+    "fichier": "03-modules-officiels.png",
+    "titre": "Modules officiels",
+    "module": "Référentiels",
+    "legende": "Liste des modules officiels rattachés aux maquettes pédagogiques, avec leur état de complétude.",
+    "source": "docs/audits/53/captures/03-modules-officiels.png"
+  },
+  {
+    "fichier": "04-lecture-seule.png",
+    "titre": "Consultation en lecture seule",
+    "module": "Scolarité",
+    "legende": "Un profil de consultation voit les données mais aucun bouton de création, de modification ou de suppression ne lui est proposé.",
+    "source": "docs/audits/53/captures/recette/04-lecture-seule.png"
+  },
+  {
+    "fichier": "05-edt-grille.png",
+    "titre": "Emploi du temps — grille hebdomadaire",
+    "module": "Emplois du temps",
+    "legende": "Grille d'emploi du temps d'une semaine : créneaux, salles, groupes et enseignants affectés.",
+    "source": "docs/getinjs/preuves/03-edt-grille-semaine.jpg"
+  },
+  {
+    "fichier": "06-edt-tableau.png",
+    "titre": "Emploi du temps — vue tableau",
+    "module": "Emplois du temps",
+    "legende": "Vue tabulaire du même emploi du temps, utilisée pour l'impression et le contrôle des conflits.",
+    "source": "docs/getinjs/preuves/04-edt-vue-tableau.jpg"
+  },
+  {
+    "fichier": "07-edt-generation.png",
+    "titre": "Génération annuelle des emplois du temps",
+    "module": "Emplois du temps",
+    "legende": "Écran de génération : choix de l'année, des groupes et des contraintes avant calcul de la proposition.",
+    "source": "docs/getinjs/preuves/05-generation-annuelle.jpg"
+  },
+  {
+    "fichier": "08-edt-audit-donnees.png",
+    "titre": "Audit des données pédagogiques",
+    "module": "Emplois du temps",
+    "legende": "Contrôle de cohérence des données d'entrée avant génération : volumes horaires, effectifs et disponibilités.",
+    "source": "docs/getinjs/preuves/02-audit-donnees.jpg"
+  },
+  {
+    "fichier": "09-edt-contraintes.png",
+    "titre": "Politique de contraintes",
+    "module": "Emplois du temps",
+    "legende": "Paramétrage des contraintes appliquées à la génération : indisponibilités, capacité des salles, enchaînements.",
+    "source": "docs/getinjs/preuves/08-admin-politique-contraintes.jpg"
+  },
+  {
+    "fichier": "10-stats-ensemble.png",
+    "titre": "Statistiques — vue d'ensemble",
+    "module": "Statistiques",
+    "legende": "Tableau de bord statistique : effectifs, candidatures, inscriptions et indicateurs consolidés.",
+    "source": "docs/screenshots/manuel-statistiques/02-vue-ensemble.png"
+  },
+  {
+    "fichier": "11-stats-alertes.png",
+    "titre": "Alertes et seuils",
+    "module": "Statistiques",
+    "legende": "Configuration des seuils d'alerte et consultation des dépassements détectés.",
+    "source": "docs/screenshots/manuel-statistiques/09-alertes-seuils.png"
+  },
+  {
+    "fichier": "12-crud-liste.png",
+    "titre": "Liste de référentiel",
+    "module": "Référentiels",
+    "legende": "Liste filtrable d'un référentiel, avec recherche, tri et actions par ligne.",
+    "source": "docs/getinjs/preuves-crud/01-niveaux-liste.jpg"
+  },
+  {
+    "fichier": "13-crud-formulaire.png",
+    "titre": "Formulaire de création",
+    "module": "Référentiels",
+    "legende": "Formulaire de création d'une entrée de référentiel, avec validation des champs.",
+    "source": "docs/getinjs/preuves-crud/02-niveaux-formulaire.jpg"
+  },
+  {
+    "fichier": "14-crud-suppression-refusee.png",
+    "titre": "Suppression refusée",
+    "module": "Sécurité",
+    "legende": "Refus explicite d'une suppression non autorisée : l'application bloque l'opération et explique le motif.",
+    "source": "docs/getinjs/preuves-crud/07-suppression-refusee.jpg"
+  },
+  {
+    "fichier": "15-ue-ecue.png",
+    "titre": "Unités d'enseignement et éléments constitutifs",
+    "module": "Pédagogie",
+    "legende": "Liste des UE et de leurs ECUE, avec crédits, volumes horaires et statut.",
+    "source": "docs/getinjs/preuves-ue-ecue/01-liste-ue-ecue.jpg"
+  },
+  {
+    "fichier": "16-candidatures.png",
+    "titre": "Candidatures",
+    "module": "Scolarité",
+    "legende": "Liste des candidatures avec filtres par campagne, statut et formation.",
+    "source": "docs/getinjs/preuves-design/08-candidatures-liste-desktop.png"
+  },
+  {
+    "fichier": "17-candidature-formulaire.png",
+    "titre": "Dossier de candidature",
+    "module": "Scolarité",
+    "legende": "Formulaire de saisie d'un dossier de candidature et des pièces justificatives.",
+    "source": "docs/getinjs/preuves-design/09-candidatures-formulaire-desktop.png"
+  },
+  {
+    "fichier": "18-inscriptions.png",
+    "titre": "Inscriptions",
+    "module": "Scolarité",
+    "legende": "Écran d'inscription administrative : recherche de l'étudiant, formation et année académique.",
+    "source": "docs/getinjs/preuves-design/05-page-inscriptions-desktop.png"
+  },
+  {
+    "fichier": "19-mobile.png",
+    "titre": "Affichage mobile",
+    "module": "Navigation",
+    "legende": "Rendu de l'interface sur un écran mobile de 390 px : navigation repliée et contenus empilés.",
+    "source": "docs/getinjs/preuves-validation/05-mobile-390.jpg"
+  }
+]
