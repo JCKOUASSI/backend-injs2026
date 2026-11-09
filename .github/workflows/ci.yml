@@ -24,6 +24,15 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Permissions minimales explicites : lecture seule du dépôt.
+# `contents: read` couvre le checkout et les caches ; la publication
+# d'artefacts (`actions/upload-artifact`) n'est pas régie par GITHUB_TOKEN et
+# continue donc de fonctionner sans aucun droit d'écriture.
+# Déclarer ce bloc rend le comportement indépendant du réglage de dépôt
+# « Workflow permissions », qui peut être modifié par un administrateur.
+permissions:
+  contents: read
+
 jobs:
   backend:
     name: Backend (Django + PostgreSQL)
@@ -152,3 +161,25 @@ jobs:
 
       - name: Tests
         run: npx vitest run
+
+      # Le build est le seul contrôle qui détecte une erreur de bundling
+      # (import cassé, variable d'environnement Vite invalide, plugin
+      # incompatible) : `lint` et `vitest` ne chargent pas la chaîne de build.
+      # Le produit de ce build n'est pas déployé — les images de production
+      # sont construites par publish-injs-lmd.yml — mais il est conservé
+      # quelques jours pour diagnostic.
+      - name: Build de production
+        run: npm run build
+
+      # `continue-on-error` : cet artefact est purement diagnostique. Il ne doit
+      # jamais pouvoir bloquer une PR (or son nom est un contrôle requis) si la
+      # publication d'artefacts devient indisponible côté GitHub.
+      - name: Artefact du build (diagnostic)
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: frontend-build
+          path: frontend/dist
+          if-no-files-found: ignore
+          retention-days: 7

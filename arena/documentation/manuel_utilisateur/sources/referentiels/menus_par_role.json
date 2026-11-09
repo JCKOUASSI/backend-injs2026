@@ -1,0 +1,4014 @@
+{
+ "ADMIN": [
+  {
+   "section": "Tableau de bord",
+   "libelle": "Tableau de bord",
+   "chemin": "/dashboard"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Tableau de bord",
+   "chemin": "/scolarite"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Candidatures",
+   "chemin": "/scolarite/candidatures"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Contrôle des dossiers",
+   "chemin": "/scolarite/controle-dossiers"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Concours & Sélection",
+   "chemin": "/scolarite/campagnes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Résultats concours",
+   "chemin": "/scolarite/resultats-concours"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Admissions",
+   "chemin": "/scolarite/admissions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Inscriptions",
+   "chemin": "/scolarite/inscriptions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Étudiants",
+   "chemin": "/participants"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Groupes pédagogiques",
+   "chemin": "/scolarite/groupes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Documents scolaires",
+   "chemin": "/scolarite/documents-scolaires"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Maquettes LMD",
+   "chemin": "/scolarite/maquettes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Équivalences & dispenses",
+   "chemin": "/scolarite/equivalences"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Réinscriptions & transferts",
+   "chemin": "/scolarite/reinscriptions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Journal de scolarité",
+   "chemin": "/scolarite/journal"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Formations LMD",
+   "chemin": "/formations"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Types de formation",
+   "chemin": "/formations/filieres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Parcours",
+   "chemin": "/formations/parcours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Niveaux",
+   "chemin": "/formations/niveaux"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Semestres",
+   "chemin": "/formations/semestres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "UE / ECUE",
+   "chemin": "/formations/ue-ecue"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Cours (LMD)",
+   "chemin": "/cours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Affectations pédagogiques",
+   "chemin": "/scolarite/charges"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Tableau de bord",
+   "chemin": "/get-injs-app"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Emplois du temps",
+   "chemin": "/edt"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Génération",
+   "chemin": "/edt/generation-annuelle"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Dimensionnement",
+   "chemin": "/edt/dimensionnement"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Import étudiants",
+   "chemin": "/edt/import-etudiants"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Étudiants inscrits",
+   "chemin": "/edt/etudiants-inscrits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Référentiels",
+   "chemin": "/edt/referentiels"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conception",
+   "chemin": "/edt/conception"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Salles & espaces",
+   "chemin": "/edt/salles-espaces"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Disponibilités",
+   "chemin": "/edt/disponibilites"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conflits & contraintes",
+   "chemin": "/edt/conflits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Export / Impression",
+   "chemin": "/edt/export"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Tableau de bord",
+   "chemin": "/presences"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Séances",
+   "chemin": "/presences/seances"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Badgeage",
+   "chemin": "/presences/poste"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Présences",
+   "chemin": "/presences/registre"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Audit",
+   "chemin": "/presences/audit"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Configuration",
+   "chemin": "/presences/configuration"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Contrat API",
+   "chemin": "/presences/contrat"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Tableau de bord des évaluations",
+   "chemin": "/evaluations/tableau-de-bord"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Évaluations",
+   "chemin": "/evaluations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Saisie des notes",
+   "chemin": "/evaluations/saisie"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Contrôle des notes",
+   "chemin": "/evaluations/controle"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Délibérations",
+   "chemin": "/evaluations/deliberations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Résultats",
+   "chemin": "/evaluations/resultats"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Relevés de notes",
+   "chemin": "/evaluations/releves"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Jurys",
+   "chemin": "/scolarite/jurys"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Composition",
+   "chemin": "/jurys/composition"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Délibérations",
+   "chemin": "/jurys/deliberations"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "PV de jury",
+   "chemin": "/jurys/pv"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Validation",
+   "chemin": "/jurys/validation"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Éligibilité",
+   "chemin": "/diplomation/eligibilite"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Diplômes",
+   "chemin": "/scolarite/graduation"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Attestations",
+   "chemin": "/diplomation/attestations"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Certificats",
+   "chemin": "/diplomation/certificats"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Registres & modèles",
+   "chemin": "/diplomation/registres"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Archives",
+   "chemin": "/archives"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Vue d'ensemble",
+   "chemin": "/scolarite/finances"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Frais de scolarité",
+   "chemin": "/finances-etudiantes/frais"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Factures",
+   "chemin": "/finances-etudiantes/factures"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Paiements",
+   "chemin": "/finances-etudiantes/paiements"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Reçus",
+   "chemin": "/finances-etudiantes/recus"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Bourses & remboursements",
+   "chemin": "/finances-etudiantes/bourses"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Situation financière",
+   "chemin": "/finances-etudiantes/situation"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Conventions",
+   "chemin": "/stages/conventions"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Structures d'accueil",
+   "chemin": "/stages/organismes"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Affectations & tuteurs",
+   "chemin": "/stages/affectations"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Suivi des stages",
+   "chemin": "/stages/suivi"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Évaluations",
+   "chemin": "/stages/evaluations"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Personnel administratif",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Affectations",
+   "chemin": "/personnel/affectations"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Charges / volumes horaires",
+   "chemin": "/scolarite/charges"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Disponibilités agents",
+   "chemin": "/personnel/disponibilites"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Documents RH",
+   "chemin": "/personnel/documents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Directions / Départements / Services",
+   "chemin": "/organisation"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Personnel",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Courrier / Documents",
+   "chemin": "/administration/courrier"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Réunions & missions",
+   "chemin": "/administration/reunions"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Archives",
+   "chemin": "/archives"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Listes de notes archivées",
+   "chemin": "/archives/listes-notes"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Cahiers d'appel archivés",
+   "chemin": "/archives/cahiers-appel"
+  },
+  {
+   "section": "Utilisateurs & Accès",
+   "libelle": "Profils",
+   "chemin": "/users"
+  },
+  {
+   "section": "Utilisateurs & Accès",
+   "libelle": "Politique de sécurité",
+   "chemin": "/parametres"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Tableau de bord",
+   "chemin": "/statistiques"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Candidatures",
+   "chemin": "/statistiques/candidatures"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Admissions",
+   "chemin": "/statistiques/admissions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Inscriptions",
+   "chemin": "/statistiques/inscriptions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Effectifs",
+   "chemin": "/statistiques/effectifs"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Résultats",
+   "chemin": "/statistiques/resultats"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Finances",
+   "chemin": "/statistiques/finances"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Rapports",
+   "chemin": "/statistiques/rapports"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Alertes & seuils",
+   "chemin": "/statistiques/alertes"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Tableau de bord",
+   "chemin": "/referentiels"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Fonctionnalités (drapeaux)",
+   "chemin": "/parametres/flags"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Planche de style",
+   "chemin": "/referentiels/planche-de-style"
+  }
+ ],
+ "CHEF_INJS_ADMIN": [
+  {
+   "section": "Tableau de bord",
+   "libelle": "Tableau de bord",
+   "chemin": "/dashboard"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Tableau de bord",
+   "chemin": "/scolarite"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Candidatures",
+   "chemin": "/scolarite/candidatures"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Contrôle des dossiers",
+   "chemin": "/scolarite/controle-dossiers"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Concours & Sélection",
+   "chemin": "/scolarite/campagnes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Résultats concours",
+   "chemin": "/scolarite/resultats-concours"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Admissions",
+   "chemin": "/scolarite/admissions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Inscriptions",
+   "chemin": "/scolarite/inscriptions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Étudiants",
+   "chemin": "/participants"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Groupes pédagogiques",
+   "chemin": "/scolarite/groupes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Documents scolaires",
+   "chemin": "/scolarite/documents-scolaires"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Maquettes LMD",
+   "chemin": "/scolarite/maquettes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Équivalences & dispenses",
+   "chemin": "/scolarite/equivalences"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Réinscriptions & transferts",
+   "chemin": "/scolarite/reinscriptions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Journal de scolarité",
+   "chemin": "/scolarite/journal"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Formations LMD",
+   "chemin": "/formations"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Types de formation",
+   "chemin": "/formations/filieres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Parcours",
+   "chemin": "/formations/parcours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Niveaux",
+   "chemin": "/formations/niveaux"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Semestres",
+   "chemin": "/formations/semestres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "UE / ECUE",
+   "chemin": "/formations/ue-ecue"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Cours (LMD)",
+   "chemin": "/cours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Affectations pédagogiques",
+   "chemin": "/scolarite/charges"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Tableau de bord",
+   "chemin": "/get-injs-app"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Emplois du temps",
+   "chemin": "/edt"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Génération",
+   "chemin": "/edt/generation-annuelle"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Dimensionnement",
+   "chemin": "/edt/dimensionnement"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Import étudiants",
+   "chemin": "/edt/import-etudiants"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Étudiants inscrits",
+   "chemin": "/edt/etudiants-inscrits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Référentiels",
+   "chemin": "/edt/referentiels"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conception",
+   "chemin": "/edt/conception"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Salles & espaces",
+   "chemin": "/edt/salles-espaces"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Disponibilités",
+   "chemin": "/edt/disponibilites"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conflits & contraintes",
+   "chemin": "/edt/conflits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Export / Impression",
+   "chemin": "/edt/export"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Tableau de bord",
+   "chemin": "/presences"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Séances",
+   "chemin": "/presences/seances"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Badgeage",
+   "chemin": "/presences/poste"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Présences",
+   "chemin": "/presences/registre"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Audit",
+   "chemin": "/presences/audit"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Configuration",
+   "chemin": "/presences/configuration"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Contrat API",
+   "chemin": "/presences/contrat"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Tableau de bord des évaluations",
+   "chemin": "/evaluations/tableau-de-bord"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Évaluations",
+   "chemin": "/evaluations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Saisie des notes",
+   "chemin": "/evaluations/saisie"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Contrôle des notes",
+   "chemin": "/evaluations/controle"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Délibérations",
+   "chemin": "/evaluations/deliberations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Résultats",
+   "chemin": "/evaluations/resultats"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Relevés de notes",
+   "chemin": "/evaluations/releves"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Jurys",
+   "chemin": "/scolarite/jurys"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Composition",
+   "chemin": "/jurys/composition"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Délibérations",
+   "chemin": "/jurys/deliberations"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "PV de jury",
+   "chemin": "/jurys/pv"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Validation",
+   "chemin": "/jurys/validation"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Éligibilité",
+   "chemin": "/diplomation/eligibilite"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Diplômes",
+   "chemin": "/scolarite/graduation"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Attestations",
+   "chemin": "/diplomation/attestations"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Certificats",
+   "chemin": "/diplomation/certificats"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Registres & modèles",
+   "chemin": "/diplomation/registres"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Archives",
+   "chemin": "/archives"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Vue d'ensemble",
+   "chemin": "/scolarite/finances"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Frais de scolarité",
+   "chemin": "/finances-etudiantes/frais"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Factures",
+   "chemin": "/finances-etudiantes/factures"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Paiements",
+   "chemin": "/finances-etudiantes/paiements"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Reçus",
+   "chemin": "/finances-etudiantes/recus"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Bourses & remboursements",
+   "chemin": "/finances-etudiantes/bourses"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Situation financière",
+   "chemin": "/finances-etudiantes/situation"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Conventions",
+   "chemin": "/stages/conventions"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Structures d'accueil",
+   "chemin": "/stages/organismes"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Affectations & tuteurs",
+   "chemin": "/stages/affectations"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Suivi des stages",
+   "chemin": "/stages/suivi"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Évaluations",
+   "chemin": "/stages/evaluations"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Personnel administratif",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Affectations",
+   "chemin": "/personnel/affectations"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Charges / volumes horaires",
+   "chemin": "/scolarite/charges"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Disponibilités agents",
+   "chemin": "/personnel/disponibilites"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Documents RH",
+   "chemin": "/personnel/documents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Directions / Départements / Services",
+   "chemin": "/organisation"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Personnel",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Courrier / Documents",
+   "chemin": "/administration/courrier"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Réunions & missions",
+   "chemin": "/administration/reunions"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Archives",
+   "chemin": "/archives"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Listes de notes archivées",
+   "chemin": "/archives/listes-notes"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Cahiers d'appel archivés",
+   "chemin": "/archives/cahiers-appel"
+  },
+  {
+   "section": "Utilisateurs & Accès",
+   "libelle": "Profils",
+   "chemin": "/users"
+  },
+  {
+   "section": "Utilisateurs & Accès",
+   "libelle": "Politique de sécurité",
+   "chemin": "/parametres"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Tableau de bord",
+   "chemin": "/statistiques"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Candidatures",
+   "chemin": "/statistiques/candidatures"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Admissions",
+   "chemin": "/statistiques/admissions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Inscriptions",
+   "chemin": "/statistiques/inscriptions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Effectifs",
+   "chemin": "/statistiques/effectifs"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Résultats",
+   "chemin": "/statistiques/resultats"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Finances",
+   "chemin": "/statistiques/finances"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Rapports",
+   "chemin": "/statistiques/rapports"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Alertes & seuils",
+   "chemin": "/statistiques/alertes"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Tableau de bord",
+   "chemin": "/referentiels"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Fonctionnalités (drapeaux)",
+   "chemin": "/parametres/flags"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Planche de style",
+   "chemin": "/referentiels/planche-de-style"
+  }
+ ],
+ "INJS_ADMIN": [
+  {
+   "section": "Tableau de bord",
+   "libelle": "Tableau de bord",
+   "chemin": "/dashboard"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Tableau de bord",
+   "chemin": "/scolarite"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Candidatures",
+   "chemin": "/scolarite/candidatures"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Contrôle des dossiers",
+   "chemin": "/scolarite/controle-dossiers"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Concours & Sélection",
+   "chemin": "/scolarite/campagnes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Résultats concours",
+   "chemin": "/scolarite/resultats-concours"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Admissions",
+   "chemin": "/scolarite/admissions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Inscriptions",
+   "chemin": "/scolarite/inscriptions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Étudiants",
+   "chemin": "/participants"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Groupes pédagogiques",
+   "chemin": "/scolarite/groupes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Documents scolaires",
+   "chemin": "/scolarite/documents-scolaires"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Maquettes LMD",
+   "chemin": "/scolarite/maquettes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Équivalences & dispenses",
+   "chemin": "/scolarite/equivalences"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Réinscriptions & transferts",
+   "chemin": "/scolarite/reinscriptions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Journal de scolarité",
+   "chemin": "/scolarite/journal"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Formations LMD",
+   "chemin": "/formations"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Types de formation",
+   "chemin": "/formations/filieres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Parcours",
+   "chemin": "/formations/parcours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Niveaux",
+   "chemin": "/formations/niveaux"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Semestres",
+   "chemin": "/formations/semestres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "UE / ECUE",
+   "chemin": "/formations/ue-ecue"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Cours (LMD)",
+   "chemin": "/cours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Affectations pédagogiques",
+   "chemin": "/scolarite/charges"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Tableau de bord",
+   "chemin": "/get-injs-app"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Emplois du temps",
+   "chemin": "/edt"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Génération",
+   "chemin": "/edt/generation-annuelle"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Dimensionnement",
+   "chemin": "/edt/dimensionnement"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Import étudiants",
+   "chemin": "/edt/import-etudiants"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Étudiants inscrits",
+   "chemin": "/edt/etudiants-inscrits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Référentiels",
+   "chemin": "/edt/referentiels"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conception",
+   "chemin": "/edt/conception"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Salles & espaces",
+   "chemin": "/edt/salles-espaces"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Disponibilités",
+   "chemin": "/edt/disponibilites"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conflits & contraintes",
+   "chemin": "/edt/conflits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Export / Impression",
+   "chemin": "/edt/export"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Tableau de bord",
+   "chemin": "/presences"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Séances",
+   "chemin": "/presences/seances"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Badgeage",
+   "chemin": "/presences/poste"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Présences",
+   "chemin": "/presences/registre"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Audit",
+   "chemin": "/presences/audit"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Configuration",
+   "chemin": "/presences/configuration"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Contrat API",
+   "chemin": "/presences/contrat"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Tableau de bord des évaluations",
+   "chemin": "/evaluations/tableau-de-bord"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Évaluations",
+   "chemin": "/evaluations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Saisie des notes",
+   "chemin": "/evaluations/saisie"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Contrôle des notes",
+   "chemin": "/evaluations/controle"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Délibérations",
+   "chemin": "/evaluations/deliberations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Résultats",
+   "chemin": "/evaluations/resultats"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Relevés de notes",
+   "chemin": "/evaluations/releves"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Jurys",
+   "chemin": "/scolarite/jurys"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Composition",
+   "chemin": "/jurys/composition"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Délibérations",
+   "chemin": "/jurys/deliberations"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "PV de jury",
+   "chemin": "/jurys/pv"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Validation",
+   "chemin": "/jurys/validation"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Éligibilité",
+   "chemin": "/diplomation/eligibilite"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Diplômes",
+   "chemin": "/scolarite/graduation"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Attestations",
+   "chemin": "/diplomation/attestations"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Certificats",
+   "chemin": "/diplomation/certificats"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Registres & modèles",
+   "chemin": "/diplomation/registres"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Archives",
+   "chemin": "/archives"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Vue d'ensemble",
+   "chemin": "/scolarite/finances"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Frais de scolarité",
+   "chemin": "/finances-etudiantes/frais"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Factures",
+   "chemin": "/finances-etudiantes/factures"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Paiements",
+   "chemin": "/finances-etudiantes/paiements"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Reçus",
+   "chemin": "/finances-etudiantes/recus"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Bourses & remboursements",
+   "chemin": "/finances-etudiantes/bourses"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Situation financière",
+   "chemin": "/finances-etudiantes/situation"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Conventions",
+   "chemin": "/stages/conventions"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Structures d'accueil",
+   "chemin": "/stages/organismes"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Affectations & tuteurs",
+   "chemin": "/stages/affectations"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Suivi des stages",
+   "chemin": "/stages/suivi"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Évaluations",
+   "chemin": "/stages/evaluations"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Personnel administratif",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Affectations",
+   "chemin": "/personnel/affectations"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Charges / volumes horaires",
+   "chemin": "/scolarite/charges"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Disponibilités agents",
+   "chemin": "/personnel/disponibilites"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Documents RH",
+   "chemin": "/personnel/documents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Directions / Départements / Services",
+   "chemin": "/organisation"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Personnel",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Courrier / Documents",
+   "chemin": "/administration/courrier"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Réunions & missions",
+   "chemin": "/administration/reunions"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Archives",
+   "chemin": "/archives"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Listes de notes archivées",
+   "chemin": "/archives/listes-notes"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Cahiers d'appel archivés",
+   "chemin": "/archives/cahiers-appel"
+  },
+  {
+   "section": "Utilisateurs & Accès",
+   "libelle": "Profils",
+   "chemin": "/users"
+  },
+  {
+   "section": "Utilisateurs & Accès",
+   "libelle": "Politique de sécurité",
+   "chemin": "/parametres"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Tableau de bord",
+   "chemin": "/statistiques"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Candidatures",
+   "chemin": "/statistiques/candidatures"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Admissions",
+   "chemin": "/statistiques/admissions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Inscriptions",
+   "chemin": "/statistiques/inscriptions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Effectifs",
+   "chemin": "/statistiques/effectifs"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Résultats",
+   "chemin": "/statistiques/resultats"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Finances",
+   "chemin": "/statistiques/finances"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Rapports",
+   "chemin": "/statistiques/rapports"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Alertes & seuils",
+   "chemin": "/statistiques/alertes"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Tableau de bord",
+   "chemin": "/referentiels"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Fonctionnalités (drapeaux)",
+   "chemin": "/parametres/flags"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Planche de style",
+   "chemin": "/referentiels/planche-de-style"
+  }
+ ],
+ "DIRECTION": [
+  {
+   "section": "Tableau de bord",
+   "libelle": "Tableau de bord",
+   "chemin": "/dashboard"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Tableau de bord",
+   "chemin": "/scolarite"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Candidatures",
+   "chemin": "/scolarite/candidatures"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Contrôle des dossiers",
+   "chemin": "/scolarite/controle-dossiers"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Concours & Sélection",
+   "chemin": "/scolarite/campagnes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Résultats concours",
+   "chemin": "/scolarite/resultats-concours"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Admissions",
+   "chemin": "/scolarite/admissions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Inscriptions",
+   "chemin": "/scolarite/inscriptions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Étudiants",
+   "chemin": "/participants"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Groupes pédagogiques",
+   "chemin": "/scolarite/groupes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Documents scolaires",
+   "chemin": "/scolarite/documents-scolaires"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Maquettes LMD",
+   "chemin": "/scolarite/maquettes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Équivalences & dispenses",
+   "chemin": "/scolarite/equivalences"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Réinscriptions & transferts",
+   "chemin": "/scolarite/reinscriptions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Journal de scolarité",
+   "chemin": "/scolarite/journal"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Formations LMD",
+   "chemin": "/formations"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Types de formation",
+   "chemin": "/formations/filieres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Parcours",
+   "chemin": "/formations/parcours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Niveaux",
+   "chemin": "/formations/niveaux"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Semestres",
+   "chemin": "/formations/semestres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "UE / ECUE",
+   "chemin": "/formations/ue-ecue"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Cours (LMD)",
+   "chemin": "/cours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Affectations pédagogiques",
+   "chemin": "/scolarite/charges"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Tableau de bord",
+   "chemin": "/get-injs-app"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Emplois du temps",
+   "chemin": "/edt"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Génération",
+   "chemin": "/edt/generation-annuelle"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Dimensionnement",
+   "chemin": "/edt/dimensionnement"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Import étudiants",
+   "chemin": "/edt/import-etudiants"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Étudiants inscrits",
+   "chemin": "/edt/etudiants-inscrits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Référentiels",
+   "chemin": "/edt/referentiels"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conception",
+   "chemin": "/edt/conception"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Salles & espaces",
+   "chemin": "/edt/salles-espaces"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Disponibilités",
+   "chemin": "/edt/disponibilites"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conflits & contraintes",
+   "chemin": "/edt/conflits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Export / Impression",
+   "chemin": "/edt/export"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Tableau de bord",
+   "chemin": "/presences"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Séances",
+   "chemin": "/presences/seances"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Badgeage",
+   "chemin": "/presences/poste"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Présences",
+   "chemin": "/presences/registre"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Audit",
+   "chemin": "/presences/audit"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Configuration",
+   "chemin": "/presences/configuration"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Contrat API",
+   "chemin": "/presences/contrat"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Tableau de bord des évaluations",
+   "chemin": "/evaluations/tableau-de-bord"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Évaluations",
+   "chemin": "/evaluations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Saisie des notes",
+   "chemin": "/evaluations/saisie"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Contrôle des notes",
+   "chemin": "/evaluations/controle"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Délibérations",
+   "chemin": "/evaluations/deliberations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Résultats",
+   "chemin": "/evaluations/resultats"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Relevés de notes",
+   "chemin": "/evaluations/releves"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Jurys",
+   "chemin": "/scolarite/jurys"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Composition",
+   "chemin": "/jurys/composition"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Délibérations",
+   "chemin": "/jurys/deliberations"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "PV de jury",
+   "chemin": "/jurys/pv"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Validation",
+   "chemin": "/jurys/validation"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Éligibilité",
+   "chemin": "/diplomation/eligibilite"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Diplômes",
+   "chemin": "/scolarite/graduation"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Attestations",
+   "chemin": "/diplomation/attestations"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Certificats",
+   "chemin": "/diplomation/certificats"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Registres & modèles",
+   "chemin": "/diplomation/registres"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Archives",
+   "chemin": "/archives"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Vue d'ensemble",
+   "chemin": "/scolarite/finances"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Frais de scolarité",
+   "chemin": "/finances-etudiantes/frais"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Factures",
+   "chemin": "/finances-etudiantes/factures"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Paiements",
+   "chemin": "/finances-etudiantes/paiements"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Reçus",
+   "chemin": "/finances-etudiantes/recus"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Bourses & remboursements",
+   "chemin": "/finances-etudiantes/bourses"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Situation financière",
+   "chemin": "/finances-etudiantes/situation"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Vacations & encadrants",
+   "chemin": "/finance-encadrants"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Paramétrage finance",
+   "chemin": "/finance-parametrage"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Conventions",
+   "chemin": "/stages/conventions"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Structures d'accueil",
+   "chemin": "/stages/organismes"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Affectations & tuteurs",
+   "chemin": "/stages/affectations"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Suivi des stages",
+   "chemin": "/stages/suivi"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Évaluations",
+   "chemin": "/stages/evaluations"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Personnel administratif",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Affectations",
+   "chemin": "/personnel/affectations"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Charges / volumes horaires",
+   "chemin": "/scolarite/charges"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Disponibilités agents",
+   "chemin": "/personnel/disponibilites"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Documents RH",
+   "chemin": "/personnel/documents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Directions / Départements / Services",
+   "chemin": "/organisation"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Personnel",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Courrier / Documents",
+   "chemin": "/administration/courrier"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Réunions & missions",
+   "chemin": "/administration/reunions"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Archives",
+   "chemin": "/archives"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Listes de notes archivées",
+   "chemin": "/archives/listes-notes"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Cahiers d'appel archivés",
+   "chemin": "/archives/cahiers-appel"
+  },
+  {
+   "section": "Utilisateurs & Accès",
+   "libelle": "Profils",
+   "chemin": "/users"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Tableau de bord",
+   "chemin": "/statistiques"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Candidatures",
+   "chemin": "/statistiques/candidatures"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Admissions",
+   "chemin": "/statistiques/admissions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Inscriptions",
+   "chemin": "/statistiques/inscriptions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Effectifs",
+   "chemin": "/statistiques/effectifs"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Résultats",
+   "chemin": "/statistiques/resultats"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Finances",
+   "chemin": "/statistiques/finances"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Rapports",
+   "chemin": "/statistiques/rapports"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Alertes & seuils",
+   "chemin": "/statistiques/alertes"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Tableau de bord",
+   "chemin": "/referentiels"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Fonctionnalités (drapeaux)",
+   "chemin": "/parametres/flags"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Planche de style",
+   "chemin": "/referentiels/planche-de-style"
+  }
+ ],
+ "CHEF_SECRETARIAT": [
+  {
+   "section": "Tableau de bord",
+   "libelle": "Tableau de bord",
+   "chemin": "/dashboard"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Tableau de bord",
+   "chemin": "/scolarite"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Candidatures",
+   "chemin": "/scolarite/candidatures"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Contrôle des dossiers",
+   "chemin": "/scolarite/controle-dossiers"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Concours & Sélection",
+   "chemin": "/scolarite/campagnes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Résultats concours",
+   "chemin": "/scolarite/resultats-concours"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Admissions",
+   "chemin": "/scolarite/admissions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Inscriptions",
+   "chemin": "/scolarite/inscriptions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Étudiants",
+   "chemin": "/participants"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Groupes pédagogiques",
+   "chemin": "/scolarite/groupes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Documents scolaires",
+   "chemin": "/scolarite/documents-scolaires"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Maquettes LMD",
+   "chemin": "/scolarite/maquettes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Équivalences & dispenses",
+   "chemin": "/scolarite/equivalences"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Réinscriptions & transferts",
+   "chemin": "/scolarite/reinscriptions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Journal de scolarité",
+   "chemin": "/scolarite/journal"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Formations LMD",
+   "chemin": "/formations"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Types de formation",
+   "chemin": "/formations/filieres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Parcours",
+   "chemin": "/formations/parcours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Niveaux",
+   "chemin": "/formations/niveaux"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Semestres",
+   "chemin": "/formations/semestres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "UE / ECUE",
+   "chemin": "/formations/ue-ecue"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Cours (LMD)",
+   "chemin": "/cours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Affectations pédagogiques",
+   "chemin": "/scolarite/charges"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Tableau de bord",
+   "chemin": "/get-injs-app"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Emplois du temps",
+   "chemin": "/edt"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Génération",
+   "chemin": "/edt/generation-annuelle"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Dimensionnement",
+   "chemin": "/edt/dimensionnement"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Import étudiants",
+   "chemin": "/edt/import-etudiants"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Étudiants inscrits",
+   "chemin": "/edt/etudiants-inscrits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Référentiels",
+   "chemin": "/edt/referentiels"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conception",
+   "chemin": "/edt/conception"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Salles & espaces",
+   "chemin": "/edt/salles-espaces"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Disponibilités",
+   "chemin": "/edt/disponibilites"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conflits & contraintes",
+   "chemin": "/edt/conflits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Export / Impression",
+   "chemin": "/edt/export"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Tableau de bord",
+   "chemin": "/presences"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Séances",
+   "chemin": "/presences/seances"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Badgeage",
+   "chemin": "/presences/poste"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Présences",
+   "chemin": "/presences/registre"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Audit",
+   "chemin": "/presences/audit"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Configuration",
+   "chemin": "/presences/configuration"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Contrat API",
+   "chemin": "/presences/contrat"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Tableau de bord des évaluations",
+   "chemin": "/evaluations/tableau-de-bord"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Évaluations",
+   "chemin": "/evaluations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Saisie des notes",
+   "chemin": "/evaluations/saisie"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Contrôle des notes",
+   "chemin": "/evaluations/controle"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Délibérations",
+   "chemin": "/evaluations/deliberations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Résultats",
+   "chemin": "/evaluations/resultats"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Relevés de notes",
+   "chemin": "/evaluations/releves"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Jurys",
+   "chemin": "/scolarite/jurys"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Composition",
+   "chemin": "/jurys/composition"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Délibérations",
+   "chemin": "/jurys/deliberations"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "PV de jury",
+   "chemin": "/jurys/pv"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Validation",
+   "chemin": "/jurys/validation"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Éligibilité",
+   "chemin": "/diplomation/eligibilite"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Diplômes",
+   "chemin": "/scolarite/graduation"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Attestations",
+   "chemin": "/diplomation/attestations"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Certificats",
+   "chemin": "/diplomation/certificats"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Registres & modèles",
+   "chemin": "/diplomation/registres"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Archives",
+   "chemin": "/archives"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Vue d'ensemble",
+   "chemin": "/scolarite/finances"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Frais de scolarité",
+   "chemin": "/finances-etudiantes/frais"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Factures",
+   "chemin": "/finances-etudiantes/factures"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Paiements",
+   "chemin": "/finances-etudiantes/paiements"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Reçus",
+   "chemin": "/finances-etudiantes/recus"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Bourses & remboursements",
+   "chemin": "/finances-etudiantes/bourses"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Situation financière",
+   "chemin": "/finances-etudiantes/situation"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Conventions",
+   "chemin": "/stages/conventions"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Structures d'accueil",
+   "chemin": "/stages/organismes"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Affectations & tuteurs",
+   "chemin": "/stages/affectations"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Suivi des stages",
+   "chemin": "/stages/suivi"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Évaluations",
+   "chemin": "/stages/evaluations"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Personnel administratif",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Affectations",
+   "chemin": "/personnel/affectations"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Charges / volumes horaires",
+   "chemin": "/scolarite/charges"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Disponibilités agents",
+   "chemin": "/personnel/disponibilites"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Documents RH",
+   "chemin": "/personnel/documents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Directions / Départements / Services",
+   "chemin": "/organisation"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Personnel",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Courrier / Documents",
+   "chemin": "/administration/courrier"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Réunions & missions",
+   "chemin": "/administration/reunions"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Archives",
+   "chemin": "/archives"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Listes de notes archivées",
+   "chemin": "/archives/listes-notes"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Cahiers d'appel archivés",
+   "chemin": "/archives/cahiers-appel"
+  },
+  {
+   "section": "Utilisateurs & Accès",
+   "libelle": "Profils",
+   "chemin": "/users"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Tableau de bord",
+   "chemin": "/statistiques"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Candidatures",
+   "chemin": "/statistiques/candidatures"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Admissions",
+   "chemin": "/statistiques/admissions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Inscriptions",
+   "chemin": "/statistiques/inscriptions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Effectifs",
+   "chemin": "/statistiques/effectifs"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Résultats",
+   "chemin": "/statistiques/resultats"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Finances",
+   "chemin": "/statistiques/finances"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Rapports",
+   "chemin": "/statistiques/rapports"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Tableau de bord",
+   "chemin": "/referentiels"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Fonctionnalités (drapeaux)",
+   "chemin": "/parametres/flags"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Planche de style",
+   "chemin": "/referentiels/planche-de-style"
+  }
+ ],
+ "SECRETARIAT": [
+  {
+   "section": "Tableau de bord",
+   "libelle": "Tableau de bord",
+   "chemin": "/dashboard"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Tableau de bord",
+   "chemin": "/scolarite"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Candidatures",
+   "chemin": "/scolarite/candidatures"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Contrôle des dossiers",
+   "chemin": "/scolarite/controle-dossiers"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Concours & Sélection",
+   "chemin": "/scolarite/campagnes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Résultats concours",
+   "chemin": "/scolarite/resultats-concours"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Admissions",
+   "chemin": "/scolarite/admissions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Inscriptions",
+   "chemin": "/scolarite/inscriptions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Étudiants",
+   "chemin": "/participants"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Groupes pédagogiques",
+   "chemin": "/scolarite/groupes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Documents scolaires",
+   "chemin": "/scolarite/documents-scolaires"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Maquettes LMD",
+   "chemin": "/scolarite/maquettes"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Équivalences & dispenses",
+   "chemin": "/scolarite/equivalences"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Réinscriptions & transferts",
+   "chemin": "/scolarite/reinscriptions"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Journal de scolarité",
+   "chemin": "/scolarite/journal"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Formations LMD",
+   "chemin": "/formations"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Types de formation",
+   "chemin": "/formations/filieres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Parcours",
+   "chemin": "/formations/parcours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Niveaux",
+   "chemin": "/formations/niveaux"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Semestres",
+   "chemin": "/formations/semestres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "UE / ECUE",
+   "chemin": "/formations/ue-ecue"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Cours (LMD)",
+   "chemin": "/cours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Affectations pédagogiques",
+   "chemin": "/scolarite/charges"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Tableau de bord",
+   "chemin": "/get-injs-app"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Emplois du temps",
+   "chemin": "/edt"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Génération",
+   "chemin": "/edt/generation-annuelle"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Dimensionnement",
+   "chemin": "/edt/dimensionnement"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Import étudiants",
+   "chemin": "/edt/import-etudiants"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Étudiants inscrits",
+   "chemin": "/edt/etudiants-inscrits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Référentiels",
+   "chemin": "/edt/referentiels"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conception",
+   "chemin": "/edt/conception"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Salles & espaces",
+   "chemin": "/edt/salles-espaces"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Disponibilités",
+   "chemin": "/edt/disponibilites"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conflits & contraintes",
+   "chemin": "/edt/conflits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Export / Impression",
+   "chemin": "/edt/export"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Tableau de bord",
+   "chemin": "/presences"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Séances",
+   "chemin": "/presences/seances"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Badgeage",
+   "chemin": "/presences/poste"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Présences",
+   "chemin": "/presences/registre"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Audit",
+   "chemin": "/presences/audit"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Configuration",
+   "chemin": "/presences/configuration"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Contrat API",
+   "chemin": "/presences/contrat"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Tableau de bord des évaluations",
+   "chemin": "/evaluations/tableau-de-bord"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Évaluations",
+   "chemin": "/evaluations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Saisie des notes",
+   "chemin": "/evaluations/saisie"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Contrôle des notes",
+   "chemin": "/evaluations/controle"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Délibérations",
+   "chemin": "/evaluations/deliberations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Résultats",
+   "chemin": "/evaluations/resultats"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Relevés de notes",
+   "chemin": "/evaluations/releves"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Jurys",
+   "chemin": "/scolarite/jurys"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Composition",
+   "chemin": "/jurys/composition"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Délibérations",
+   "chemin": "/jurys/deliberations"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "PV de jury",
+   "chemin": "/jurys/pv"
+  },
+  {
+   "section": "Jurys",
+   "libelle": "Validation",
+   "chemin": "/jurys/validation"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Éligibilité",
+   "chemin": "/diplomation/eligibilite"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Diplômes",
+   "chemin": "/scolarite/graduation"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Attestations",
+   "chemin": "/diplomation/attestations"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Certificats",
+   "chemin": "/diplomation/certificats"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Registres & modèles",
+   "chemin": "/diplomation/registres"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Archives",
+   "chemin": "/archives"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Vue d'ensemble",
+   "chemin": "/scolarite/finances"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Frais de scolarité",
+   "chemin": "/finances-etudiantes/frais"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Factures",
+   "chemin": "/finances-etudiantes/factures"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Paiements",
+   "chemin": "/finances-etudiantes/paiements"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Reçus",
+   "chemin": "/finances-etudiantes/recus"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Bourses & remboursements",
+   "chemin": "/finances-etudiantes/bourses"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Situation financière",
+   "chemin": "/finances-etudiantes/situation"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Conventions",
+   "chemin": "/stages/conventions"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Structures d'accueil",
+   "chemin": "/stages/organismes"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Affectations & tuteurs",
+   "chemin": "/stages/affectations"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Suivi des stages",
+   "chemin": "/stages/suivi"
+  },
+  {
+   "section": "Stages",
+   "libelle": "Évaluations",
+   "chemin": "/stages/evaluations"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Personnel administratif",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Affectations",
+   "chemin": "/personnel/affectations"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Charges / volumes horaires",
+   "chemin": "/scolarite/charges"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Disponibilités agents",
+   "chemin": "/personnel/disponibilites"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Documents RH",
+   "chemin": "/personnel/documents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Directions / Départements / Services",
+   "chemin": "/organisation"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Personnel",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Courrier / Documents",
+   "chemin": "/administration/courrier"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Réunions & missions",
+   "chemin": "/administration/reunions"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Archives",
+   "chemin": "/archives"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Listes de notes archivées",
+   "chemin": "/archives/listes-notes"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Cahiers d'appel archivés",
+   "chemin": "/archives/cahiers-appel"
+  },
+  {
+   "section": "Utilisateurs & Accès",
+   "libelle": "Profils",
+   "chemin": "/users"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Tableau de bord",
+   "chemin": "/statistiques"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Candidatures",
+   "chemin": "/statistiques/candidatures"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Admissions",
+   "chemin": "/statistiques/admissions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Inscriptions",
+   "chemin": "/statistiques/inscriptions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Effectifs",
+   "chemin": "/statistiques/effectifs"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Résultats",
+   "chemin": "/statistiques/resultats"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Finances",
+   "chemin": "/statistiques/finances"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Rapports",
+   "chemin": "/statistiques/rapports"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Tableau de bord",
+   "chemin": "/referentiels"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Fonctionnalités (drapeaux)",
+   "chemin": "/parametres/flags"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Planche de style",
+   "chemin": "/referentiels/planche-de-style"
+  }
+ ],
+ "FINANCE": [
+  {
+   "section": "Évaluations",
+   "libelle": "Tableau de bord des évaluations",
+   "chemin": "/evaluations/tableau-de-bord"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Évaluations",
+   "chemin": "/evaluations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Saisie des notes",
+   "chemin": "/evaluations/saisie"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Contrôle des notes",
+   "chemin": "/evaluations/controle"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Délibérations",
+   "chemin": "/evaluations/deliberations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Résultats",
+   "chemin": "/evaluations/resultats"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Frais de scolarité",
+   "chemin": "/finances-etudiantes/frais"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Factures",
+   "chemin": "/finances-etudiantes/factures"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Paiements",
+   "chemin": "/finances-etudiantes/paiements"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Reçus",
+   "chemin": "/finances-etudiantes/recus"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Bourses & remboursements",
+   "chemin": "/finances-etudiantes/bourses"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Situation financière",
+   "chemin": "/finances-etudiantes/situation"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Vacations & encadrants",
+   "chemin": "/finance-encadrants"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Paramétrage finance",
+   "chemin": "/finance-parametrage"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Tableau de bord",
+   "chemin": "/statistiques"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Candidatures",
+   "chemin": "/statistiques/candidatures"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Admissions",
+   "chemin": "/statistiques/admissions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Inscriptions",
+   "chemin": "/statistiques/inscriptions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Effectifs",
+   "chemin": "/statistiques/effectifs"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Résultats",
+   "chemin": "/statistiques/resultats"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Finances",
+   "chemin": "/statistiques/finances"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Rapports",
+   "chemin": "/statistiques/rapports"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Alertes & seuils",
+   "chemin": "/statistiques/alertes"
+  }
+ ],
+ "ARCHIVE": [
+  {
+   "section": "Tableau de bord",
+   "libelle": "Tableau de bord",
+   "chemin": "/dashboard"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Étudiants",
+   "chemin": "/participants"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Documents scolaires",
+   "chemin": "/scolarite/documents-scolaires"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Formations LMD",
+   "chemin": "/formations"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Types de formation",
+   "chemin": "/formations/filieres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Parcours",
+   "chemin": "/formations/parcours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Niveaux",
+   "chemin": "/formations/niveaux"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Semestres",
+   "chemin": "/formations/semestres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "UE / ECUE",
+   "chemin": "/formations/ue-ecue"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Cours (LMD)",
+   "chemin": "/cours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Tableau de bord",
+   "chemin": "/get-injs-app"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Emplois du temps",
+   "chemin": "/edt"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Génération",
+   "chemin": "/edt/generation-annuelle"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Dimensionnement",
+   "chemin": "/edt/dimensionnement"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Import étudiants",
+   "chemin": "/edt/import-etudiants"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Étudiants inscrits",
+   "chemin": "/edt/etudiants-inscrits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Référentiels",
+   "chemin": "/edt/referentiels"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conception",
+   "chemin": "/edt/conception"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Salles & espaces",
+   "chemin": "/edt/salles-espaces"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Disponibilités",
+   "chemin": "/edt/disponibilites"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conflits & contraintes",
+   "chemin": "/edt/conflits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Export / Impression",
+   "chemin": "/edt/export"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Tableau de bord",
+   "chemin": "/presences"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Séances",
+   "chemin": "/presences/seances"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Badgeage",
+   "chemin": "/presences/poste"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Présences",
+   "chemin": "/presences/registre"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Audit",
+   "chemin": "/presences/audit"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Configuration",
+   "chemin": "/presences/configuration"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Contrat API",
+   "chemin": "/presences/contrat"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Tableau de bord des évaluations",
+   "chemin": "/evaluations/tableau-de-bord"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Évaluations",
+   "chemin": "/evaluations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Saisie des notes",
+   "chemin": "/evaluations/saisie"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Contrôle des notes",
+   "chemin": "/evaluations/controle"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Délibérations",
+   "chemin": "/evaluations/deliberations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Résultats",
+   "chemin": "/evaluations/resultats"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Relevés de notes",
+   "chemin": "/evaluations/releves"
+  },
+  {
+   "section": "Diplômation",
+   "libelle": "Archives",
+   "chemin": "/archives"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Frais de scolarité",
+   "chemin": "/finances-etudiantes/frais"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Factures",
+   "chemin": "/finances-etudiantes/factures"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Paiements",
+   "chemin": "/finances-etudiantes/paiements"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Reçus",
+   "chemin": "/finances-etudiantes/recus"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Bourses & remboursements",
+   "chemin": "/finances-etudiantes/bourses"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Situation financière",
+   "chemin": "/finances-etudiantes/situation"
+  },
+  {
+   "section": "Finances étudiantes",
+   "libelle": "Vacations & encadrants",
+   "chemin": "/finance-encadrants"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Personnel administratif",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Affectations",
+   "chemin": "/personnel/affectations"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Disponibilités agents",
+   "chemin": "/personnel/disponibilites"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Documents RH",
+   "chemin": "/personnel/documents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Directions / Départements / Services",
+   "chemin": "/organisation"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Personnel",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Courrier / Documents",
+   "chemin": "/administration/courrier"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Réunions & missions",
+   "chemin": "/administration/reunions"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Archives",
+   "chemin": "/archives"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Listes de notes archivées",
+   "chemin": "/archives/listes-notes"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Cahiers d'appel archivés",
+   "chemin": "/archives/cahiers-appel"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Tableau de bord",
+   "chemin": "/statistiques"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Candidatures",
+   "chemin": "/statistiques/candidatures"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Admissions",
+   "chemin": "/statistiques/admissions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Inscriptions",
+   "chemin": "/statistiques/inscriptions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Effectifs",
+   "chemin": "/statistiques/effectifs"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Résultats",
+   "chemin": "/statistiques/resultats"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Finances",
+   "chemin": "/statistiques/finances"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Rapports",
+   "chemin": "/statistiques/rapports"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Alertes & seuils",
+   "chemin": "/statistiques/alertes"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Tableau de bord",
+   "chemin": "/referentiels"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Fonctionnalités (drapeaux)",
+   "chemin": "/parametres/flags"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Planche de style",
+   "chemin": "/referentiels/planche-de-style"
+  }
+ ],
+ "ENCADRANT": [
+  {
+   "section": "Tableau de bord",
+   "libelle": "Tableau de bord",
+   "chemin": "/dashboard"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Étudiants",
+   "chemin": "/participants"
+  },
+  {
+   "section": "Scolarité",
+   "libelle": "Documents scolaires",
+   "chemin": "/scolarite/documents-scolaires"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Formations LMD",
+   "chemin": "/formations"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Types de formation",
+   "chemin": "/formations/filieres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Parcours",
+   "chemin": "/formations/parcours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Niveaux",
+   "chemin": "/formations/niveaux"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Semestres",
+   "chemin": "/formations/semestres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "UE / ECUE",
+   "chemin": "/formations/ue-ecue"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Cours (LMD)",
+   "chemin": "/cours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Tableau de bord",
+   "chemin": "/get-injs-app"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Emplois du temps",
+   "chemin": "/edt"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Génération",
+   "chemin": "/edt/generation-annuelle"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Dimensionnement",
+   "chemin": "/edt/dimensionnement"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Import étudiants",
+   "chemin": "/edt/import-etudiants"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Étudiants inscrits",
+   "chemin": "/edt/etudiants-inscrits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Référentiels",
+   "chemin": "/edt/referentiels"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conception",
+   "chemin": "/edt/conception"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Salles & espaces",
+   "chemin": "/edt/salles-espaces"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Disponibilités",
+   "chemin": "/edt/disponibilites"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conflits & contraintes",
+   "chemin": "/edt/conflits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Export / Impression",
+   "chemin": "/edt/export"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Tableau de bord",
+   "chemin": "/presences"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Séances",
+   "chemin": "/presences/seances"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Badgeage",
+   "chemin": "/presences/poste"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Présences",
+   "chemin": "/presences/registre"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Audit",
+   "chemin": "/presences/audit"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Configuration",
+   "chemin": "/presences/configuration"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Contrat API",
+   "chemin": "/presences/contrat"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Tableau de bord des évaluations",
+   "chemin": "/evaluations/tableau-de-bord"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Évaluations",
+   "chemin": "/evaluations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Saisie des notes",
+   "chemin": "/evaluations/saisie"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Contrôle des notes",
+   "chemin": "/evaluations/controle"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Délibérations",
+   "chemin": "/evaluations/deliberations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Résultats",
+   "chemin": "/evaluations/resultats"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Relevés de notes",
+   "chemin": "/evaluations/releves"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Personnel administratif",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Affectations",
+   "chemin": "/personnel/affectations"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Disponibilités agents",
+   "chemin": "/personnel/disponibilites"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Documents RH",
+   "chemin": "/personnel/documents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Directions / Départements / Services",
+   "chemin": "/organisation"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Personnel",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Courrier / Documents",
+   "chemin": "/administration/courrier"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Réunions & missions",
+   "chemin": "/administration/reunions"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Archives",
+   "chemin": "/archives"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Listes de notes archivées",
+   "chemin": "/archives/listes-notes"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Cahiers d'appel archivés",
+   "chemin": "/archives/cahiers-appel"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Tableau de bord",
+   "chemin": "/statistiques"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Candidatures",
+   "chemin": "/statistiques/candidatures"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Admissions",
+   "chemin": "/statistiques/admissions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Inscriptions",
+   "chemin": "/statistiques/inscriptions"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Effectifs",
+   "chemin": "/statistiques/effectifs"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Résultats",
+   "chemin": "/statistiques/resultats"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Finances",
+   "chemin": "/statistiques/finances"
+  },
+  {
+   "section": "Statistiques",
+   "libelle": "Rapports",
+   "chemin": "/statistiques/rapports"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Tableau de bord",
+   "chemin": "/referentiels"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Fonctionnalités (drapeaux)",
+   "chemin": "/parametres/flags"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Planche de style",
+   "chemin": "/referentiels/planche-de-style"
+  }
+ ],
+ "SUPERVISEUR": [
+  {
+   "section": "Tableau de bord",
+   "libelle": "Tableau de bord",
+   "chemin": "/dashboard"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Formations LMD",
+   "chemin": "/formations"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Types de formation",
+   "chemin": "/formations/filieres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Parcours",
+   "chemin": "/formations/parcours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Niveaux",
+   "chemin": "/formations/niveaux"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Semestres",
+   "chemin": "/formations/semestres"
+  },
+  {
+   "section": "Formations",
+   "libelle": "UE / ECUE",
+   "chemin": "/formations/ue-ecue"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Cours (LMD)",
+   "chemin": "/cours"
+  },
+  {
+   "section": "Formations",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Tableau de bord",
+   "chemin": "/get-injs-app"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Emplois du temps",
+   "chemin": "/edt"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Génération",
+   "chemin": "/edt/generation-annuelle"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Dimensionnement",
+   "chemin": "/edt/dimensionnement"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Import étudiants",
+   "chemin": "/edt/import-etudiants"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Étudiants inscrits",
+   "chemin": "/edt/etudiants-inscrits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Référentiels",
+   "chemin": "/edt/referentiels"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conception",
+   "chemin": "/edt/conception"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Salles & espaces",
+   "chemin": "/edt/salles-espaces"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Disponibilités",
+   "chemin": "/edt/disponibilites"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Conflits & contraintes",
+   "chemin": "/edt/conflits"
+  },
+  {
+   "section": "GET INJS APP",
+   "libelle": "Export / Impression",
+   "chemin": "/edt/export"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Tableau de bord",
+   "chemin": "/presences"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Séances",
+   "chemin": "/presences/seances"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Badgeage",
+   "chemin": "/presences/poste"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Présences",
+   "chemin": "/presences/registre"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Configuration",
+   "chemin": "/presences/configuration"
+  },
+  {
+   "section": "Présences QR",
+   "libelle": "Contrat API",
+   "chemin": "/presences/contrat"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Tableau de bord des évaluations",
+   "chemin": "/evaluations/tableau-de-bord"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Évaluations",
+   "chemin": "/evaluations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Saisie des notes",
+   "chemin": "/evaluations/saisie"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Contrôle des notes",
+   "chemin": "/evaluations/controle"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Délibérations",
+   "chemin": "/evaluations/deliberations"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Résultats",
+   "chemin": "/evaluations/resultats"
+  },
+  {
+   "section": "Évaluations",
+   "libelle": "Relevés de notes",
+   "chemin": "/evaluations/releves"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Enseignants",
+   "chemin": "/formateurs"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Personnel administratif",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Affectations",
+   "chemin": "/personnel/affectations"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Disponibilités agents",
+   "chemin": "/personnel/disponibilites"
+  },
+  {
+   "section": "Personnel",
+   "libelle": "Documents RH",
+   "chemin": "/personnel/documents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Directions / Départements / Services",
+   "chemin": "/organisation"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Personnel",
+   "chemin": "/personnel/agents"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Courrier / Documents",
+   "chemin": "/administration/courrier"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Réunions & missions",
+   "chemin": "/administration/reunions"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Archives",
+   "chemin": "/archives"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Listes de notes archivées",
+   "chemin": "/archives/listes-notes"
+  },
+  {
+   "section": "Administration",
+   "libelle": "Cahiers d'appel archivés",
+   "chemin": "/archives/cahiers-appel"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Tableau de bord",
+   "chemin": "/referentiels"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Fonctionnalités (drapeaux)",
+   "chemin": "/parametres/flags"
+  },
+  {
+   "section": "Référentiels",
+   "libelle": "Planche de style",
+   "chemin": "/referentiels/planche-de-style"
+  }
+ ],
+ "FORMATEUR": [],
+ "AUDITEUR": []
+}

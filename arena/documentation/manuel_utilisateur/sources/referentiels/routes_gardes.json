@@ -1,0 +1,872 @@
+[
+ {
+  "chemin": "/login",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "FORCED_PASSWORD_PATH",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/mon-espace",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/profile",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/formations",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/formations-operations",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/formations/operational",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/formations/:formationId/modules/:moduleId/notes",
+  "module": "notes",
+  "action": "gerer",
+  "roles": null
+ },
+ {
+  "chemin": "/formations/:formationId/decisions",
+  "module": "notes",
+  "action": "gerer",
+  "roles": null
+ },
+ {
+  "chemin": "/formations/:formationId/modules/:moduleId",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/auditeurs/:participantId/formations/:formationId/fiche",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/formateurs/:formateurId/modules/:moduleId/fiche",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/formations/:id",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/modules",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/participants",
+  "module": "participants",
+  "action": "lister",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/candidatures",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/admissions",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/inscriptions",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/etudiants/:id",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/groupes",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/documents-scolaires",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/reinscriptions",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/journal",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/finances-etudiantes/frais",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/finances-etudiantes/factures",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/finances-etudiantes/paiements",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/finances-etudiantes/recus",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/finances-etudiantes/bourses",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/finances-etudiantes/situation",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/evaluations/saisie",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/evaluations/controle",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/evaluations/releves",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/diplomation/eligibilite",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/diplomation/attestations",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/diplomation/certificats",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/diplomation/registres",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/jurys/composition",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/jurys/deliberations",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/jurys/pv",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/jurys/validation",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/personnel/agents",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/personnel/affectations",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/personnel/disponibilites",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/personnel/documents",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/personnel/fonctions",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/personnel/services",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/administration/courrier",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/administration/reunions",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/stages/conventions",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/stages/organismes",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/stages/affectations",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/stages/suivi",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/stages/evaluations",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/maquettes",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/maquettes/:id",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/campagnes",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/campagnes/:id",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/equivalences",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/charges",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/jurys",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/graduation",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/scolarite/finances",
+  "module": "scolarite",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/rattrapages",
+  "module": "presences",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/formateurs",
+  "module": null,
+  "action": null,
+  "roles": [
+   "...OPERATION_VIEW_ROLES",
+   "FINANCE"
+  ]
+ },
+ {
+  "chemin": "/dashboard",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/finance-dashboard",
+  "module": "finance",
+  "action": "exporter",
+  "roles": null
+ },
+ {
+  "chemin": "/finance-ajustements",
+  "module": "finance",
+  "action": "parametrer",
+  "roles": null
+ },
+ {
+  "chemin": "/finance-encadrants",
+  "module": "finance",
+  "action": "exporter",
+  "roles": null
+ },
+ {
+  "chemin": "/finance-parametrage",
+  "module": "finance",
+  "action": "parametrer",
+  "roles": null
+ },
+ {
+  "chemin": "/users",
+  "module": "utilisateurs",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/administration/comptes",
+  "module": "habilitations_admin",
+  "action": "gerer",
+  "roles": null
+ },
+ {
+  "chemin": "nouveau",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "provisionnement",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "operations-masse",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "notifications",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "revue",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "journal",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "roles",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "permissions",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "matrice",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "derogations",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "delegations",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "demandes",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "organisation",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "dashboard",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "impact-permission",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "impact-module",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "impact-role",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "impact-utilisateur",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "acces-effectifs",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": ":id",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": ":id/modifier",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/organisation",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/secretariats",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/secretariats/historique",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/import",
+  "module": "participants",
+  "action": "gerer",
+  "roles": null
+ },
+ {
+  "chemin": "/evaluations",
+  "module": "evaluations",
+  "action": "consulter",
+  "roles": null
+ },
+ {
+  "chemin": "/evaluations/questionnaires",
+  "module": "evaluations",
+  "action": "gerer_questionnaires",
+  "roles": null
+ },
+ {
+  "chemin": "/evaluations/repondre/:id",
+  "module": "evaluations",
+  "action": "gerer_questionnaires",
+  "roles": null
+ },
+ {
+  "chemin": "/evaluations/:id",
+  "module": "evaluations",
+  "action": "gerer_questionnaires",
+  "roles": null
+ },
+ {
+  "chemin": "/evaluations/:id/analyse",
+  "module": "evaluations",
+  "action": "gerer_questionnaires",
+  "roles": null
+ },
+ {
+  "chemin": "/referentiels",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/referentiels/edition",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/referentiels/annees",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/referentiels/etablissements",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/referentiels/formations",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/referentiels/filieres",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/referentiels/ue-ecue",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/referentiels/niveaux",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/referentiels/semestres",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/referentiels/types-cours",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/referentiels/gestion/:slug",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/parametres",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/parametres/flags",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/referentiels/planche-de-style",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/statistiques",
+  "module": "statistiques",
+  "action": "voir",
+  "roles": null
+ },
+ {
+  "chemin": "/archives",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/archives/listes-notes",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/archives/cahiers-appel",
+  "module": null,
+  "action": null,
+  "roles": null
+ },
+ {
+  "chemin": "/get-injs-app",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/edt",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/cours",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/presences/seances",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/presences",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/presences/poste",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/presences/registre",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/presences/audit",
+  "module": "presences",
+  "action": "voir",
+  "roles": [
+   "...PRESENCE_VIEW_ROLES",
+   "ADMIN"
+  ]
+ },
+ {
+  "chemin": "/presences/configuration",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/presences/contrat",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/edt/presences",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/edt/nouveau",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/edt/conception",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/edt/referentiels",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/edt/etudiants-inscrits",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/edt/import-etudiants",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/edt/generation-annuelle",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/edt/dimensionnement",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/edt/campagnes",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/edt/versions",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/edt/audit",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "/edt/:edtId/affectation/nouveau",
+  "module": "web",
+  "action": "operationnel",
+  "roles": null
+ },
+ {
+  "chemin": "*",
+  "module": null,
+  "action": null,
+  "roles": null
+ }
+]

@@ -1,0 +1,1771 @@
+{
+ "roles": [
+  {
+   "code": "ADMIN_SYSTEME",
+   "libelle": "Administrateur système",
+   "domaine": "ADMINISTRATION",
+   "niveau": "N4",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": true,
+   "canal": "",
+   "ordre": 10,
+   "description": "Gère l'ensemble des comptes, rôles et paramètres de la plateforme, sans intervenir sur les décisions métier (notes, jurys, finances).",
+   "niveaux": {
+    "administration": "N4",
+    "candidatures": "N4",
+    "scolarite": "N4",
+    "pedagogie": "N4",
+    "enseignants": "N4",
+    "evaluations": "N4",
+    "jurys": "N4",
+    "diplomation": "N4",
+    "finances_etud": "N4",
+    "stages": "N4",
+    "rh": "N4",
+    "patrimoine": "N4",
+    "edt": "N4",
+    "presences": "N4",
+    "statistiques": "N4",
+    "administrations": "N4",
+    "finances_form": "N4",
+    "exports": "N4",
+    "parametres": "N4",
+    "referentiels": "N4"
+   }
+  },
+  {
+   "code": "DIRECTION_GENERALE",
+   "libelle": "Direction générale",
+   "domaine": "ADMINISTRATION",
+   "niveau": "N4",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": true,
+   "canal": "",
+   "ordre": 20,
+   "description": "Pilote l'institut : consultation générale, décision sur la diplomation et les statistiques, aucun acte de saisie courante.",
+   "niveaux": {
+    "administration": "N1",
+    "candidatures": "N1",
+    "scolarite": "N1",
+    "pedagogie": "N1",
+    "enseignants": "N1",
+    "evaluations": "N1",
+    "jurys": "N1",
+    "diplomation": "N3",
+    "finances_etud": "N1",
+    "stages": "N1",
+    "rh": "N1",
+    "patrimoine": "N1",
+    "edt": "N1",
+    "presences": "N1",
+    "statistiques": "N4",
+    "administrations": "N1",
+    "finances_form": "N1"
+   }
+  },
+  {
+   "code": "DIRECTION_ETUDES",
+   "libelle": "Direction des études",
+   "domaine": "ADMINISTRATION",
+   "niveau": "N4",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": true,
+   "canal": "",
+   "ordre": 30,
+   "description": "Valide l'organisation des études : scolarité, pédagogie, évaluations, jurys et emplois du temps.",
+   "niveaux": {
+    "administration": "N1",
+    "candidatures": "N1",
+    "scolarite": "N3",
+    "pedagogie": "N3",
+    "enseignants": "N1",
+    "evaluations": "N3",
+    "jurys": "N3",
+    "diplomation": "N3",
+    "stages": "N1",
+    "edt": "N3",
+    "presences": "N1",
+    "statistiques": "N3",
+    "administrations": "N1"
+   }
+  },
+  {
+   "code": "SCOLARITE",
+   "libelle": "Scolarité",
+   "domaine": "ADMINISTRATION",
+   "niveau": "N3",
+   "perimetre": "SECRETARIAT",
+   "app": "scolarite",
+   "sensible": false,
+   "canal": "",
+   "ordre": 40,
+   "description": "Coordonne les inscriptions, les dossiers étudiants et le suivi de scolarité au sein d'un secrétariat.",
+   "niveaux": {
+    "administration": "N1",
+    "candidatures": "N2",
+    "scolarite": "N3",
+    "pedagogie": "N2",
+    "enseignants": "N1",
+    "evaluations": "N2",
+    "jurys": "N1",
+    "diplomation": "N2",
+    "finances_etud": "N1",
+    "stages": "N1",
+    "edt": "N2",
+    "presences": "N2",
+    "statistiques": "N1",
+    "administrations": "N1",
+    "referentiels": "N2"
+   }
+  },
+  {
+   "code": "RESPONSABLE_PEDAGOGIQUE",
+   "libelle": "Responsable pédagogique",
+   "domaine": "ADMINISTRATION",
+   "niveau": "N3",
+   "perimetre": "FORMATION",
+   "app": "scolarite",
+   "sensible": false,
+   "canal": "",
+   "ordre": 50,
+   "description": "Organise la pédagogie d'une formation : maquettes, équipes, évaluations et emploi du temps, sans valider les jurys.",
+   "niveaux": {
+    "candidatures": "N1",
+    "scolarite": "N1",
+    "pedagogie": "N3",
+    "enseignants": "N2",
+    "evaluations": "N2",
+    "jurys": "N2",
+    "diplomation": "N1",
+    "stages": "N2",
+    "edt": "N3",
+    "presences": "N2",
+    "statistiques": "N1",
+    "referentiels": "N2"
+   }
+  },
+  {
+   "code": "AGENT_CANDIDATURE",
+   "libelle": "Agent de candidature",
+   "domaine": "CANDIDATURES",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "admissions",
+   "sensible": false,
+   "canal": "",
+   "ordre": 60,
+   "description": "Saisit et instruit les dossiers de candidature et les pièces reçues.",
+   "niveaux": {
+    "candidatures": "N2",
+    "scolarite": "N1"
+   }
+  },
+  {
+   "code": "AGENT_CONTROLE_DOSSIERS",
+   "libelle": "Agent de contrôle des dossiers",
+   "domaine": "CANDIDATURES",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "admissions",
+   "sensible": false,
+   "canal": "",
+   "ordre": 70,
+   "description": "Contrôle la conformité et l'éligibilité des dossiers ; ce rôle est incompatible avec la saisie des candidatures (séparation des tâches).",
+   "niveaux": {
+    "candidatures": "N2",
+    "scolarite": "N1"
+   }
+  },
+  {
+   "code": "RESPONSABLE_CONCOURS",
+   "libelle": "Responsable concours et sélection",
+   "domaine": "CANDIDATURES",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "admissions",
+   "sensible": true,
+   "canal": "",
+   "ordre": 80,
+   "description": "Organise les concours, épreuves et surveillances, puis arrête et publie les classements.",
+   "niveaux": {
+    "candidatures": "N4",
+    "scolarite": "N2",
+    "pedagogie": "N1",
+    "enseignants": "N1",
+    "evaluations": "N2",
+    "edt": "N1",
+    "presences": "N1",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "AGENT_ADMISSIONS",
+   "libelle": "Agent admissions",
+   "domaine": "SCOLARITE",
+   "niveau": "N2",
+   "perimetre": "SECRETARIAT",
+   "app": "admissions",
+   "sensible": false,
+   "canal": "",
+   "ordre": 90,
+   "description": "Traite les admissions des candidats retenus et leur passage en inscription.",
+   "niveaux": {
+    "candidatures": "N2",
+    "scolarite": "N2",
+    "pedagogie": "N1",
+    "finances_etud": "N1"
+   }
+  },
+  {
+   "code": "AGENT_INSCRIPTIONS",
+   "libelle": "Agent inscriptions",
+   "domaine": "SCOLARITE",
+   "niveau": "N2",
+   "perimetre": "SECRETARIAT",
+   "app": "scolarite",
+   "sensible": false,
+   "canal": "",
+   "ordre": 100,
+   "description": "Réalise les inscriptions administratives et pédagogiques, et les affectations de groupes.",
+   "niveaux": {
+    "candidatures": "N1",
+    "scolarite": "N2",
+    "pedagogie": "N1",
+    "finances_etud": "N1"
+   }
+  },
+  {
+   "code": "GESTIONNAIRE_ETUDIANTS",
+   "libelle": "Gestionnaire étudiants",
+   "domaine": "SCOLARITE",
+   "niveau": "N2",
+   "perimetre": "SECRETARIAT",
+   "app": "scolarite",
+   "sensible": false,
+   "canal": "",
+   "ordre": 110,
+   "description": "Tient à jour les dossiers étudiants, inscriptions, transferts et suivis au fil de l'année.",
+   "niveaux": {
+    "candidatures": "N1",
+    "scolarite": "N2",
+    "pedagogie": "N1",
+    "evaluations": "N1",
+    "diplomation": "N1",
+    "finances_etud": "N1",
+    "stages": "N1",
+    "edt": "N1",
+    "presences": "N1",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "RESPONSABLE_FORMATION",
+   "libelle": "Responsable de formation",
+   "domaine": "PEDAGOGIE",
+   "niveau": "N3",
+   "perimetre": "FORMATION",
+   "app": "scolarite",
+   "sensible": false,
+   "canal": "",
+   "ordre": 120,
+   "description": "Pilote une offre de formation : maquettes, équipes enseignantes et calendrier, en lien avec les entreprises de stage.",
+   "niveaux": {
+    "candidatures": "N1",
+    "scolarite": "N1",
+    "pedagogie": "N3",
+    "enseignants": "N2",
+    "evaluations": "N2",
+    "jurys": "N2",
+    "diplomation": "N1",
+    "stages": "N2",
+    "edt": "N2",
+    "presences": "N1",
+    "statistiques": "N1",
+    "referentiels": "N2"
+   }
+  },
+  {
+   "code": "GESTIONNAIRE_GROUPES",
+   "libelle": "Gestionnaire des groupes",
+   "domaine": "PEDAGOGIE",
+   "niveau": "N2",
+   "perimetre": "FORMATION",
+   "app": "scolarite",
+   "sensible": false,
+   "canal": "",
+   "ordre": 130,
+   "description": "Construit et ajuste les groupes pédagogiques et leurs affectations.",
+   "niveaux": {
+    "scolarite": "N1",
+    "pedagogie": "N2",
+    "enseignants": "N1",
+    "edt": "N2",
+    "presences": "N1"
+   }
+  },
+  {
+   "code": "GESTIONNAIRE_COURS",
+   "libelle": "Gestionnaire des cours",
+   "domaine": "PEDAGOGIE",
+   "niveau": "N2",
+   "perimetre": "FORMATION",
+   "app": "scolarite",
+   "sensible": false,
+   "canal": "",
+   "ordre": 140,
+   "description": "Renseigne les cours, volumes horaires et leur planification.",
+   "niveaux": {
+    "scolarite": "N1",
+    "pedagogie": "N2",
+    "enseignants": "N1",
+    "evaluations": "N1",
+    "patrimoine": "N1",
+    "edt": "N2",
+    "presences": "N1"
+   }
+  },
+  {
+   "code": "GESTIONNAIRE_MAQUETTES",
+   "libelle": "Gestionnaire des maquettes",
+   "domaine": "PEDAGOGIE",
+   "niveau": "N3",
+   "perimetre": "FORMATION",
+   "app": "scolarite",
+   "sensible": false,
+   "canal": "",
+   "ordre": 150,
+   "description": "Élabore et fait valider les maquettes, UE, ECUE et crédits ECTS.",
+   "niveaux": {
+    "scolarite": "N1",
+    "pedagogie": "N3",
+    "enseignants": "N1",
+    "evaluations": "N1",
+    "edt": "N1",
+    "referentiels": "N2"
+   }
+  },
+  {
+   "code": "ENSEIGNANT",
+   "libelle": "Enseignant",
+   "domaine": "ENSEIGNANTS",
+   "niveau": "N2",
+   "perimetre": "MODULE_ECUE",
+   "app": "scolarite",
+   "sensible": false,
+   "canal": "MOBILE",
+   "ordre": 160,
+   "description": "Intervient sur ses ECUE, groupes et séances : saisie des notes et présences qui le concernent.",
+   "niveaux": {
+    "pedagogie": "N1",
+    "enseignants": "N1",
+    "evaluations": "N2",
+    "stages": "N1",
+    "edt": "N1",
+    "presences": "N2"
+   }
+  },
+  {
+   "code": "RESPONSABLE_UE_ECUE",
+   "libelle": "Responsable UE / ECUE",
+   "domaine": "ENSEIGNANTS",
+   "niveau": "N3",
+   "perimetre": "MODULE_ECUE",
+   "app": "scolarite",
+   "sensible": false,
+   "canal": "",
+   "ordre": 170,
+   "description": "Coordonne une UE ou une ECUE : équipe, notes, délibérations et affectations pédagogiques.",
+   "niveaux": {
+    "pedagogie": "N2",
+    "enseignants": "N2",
+    "evaluations": "N3",
+    "jurys": "N1",
+    "stages": "N1",
+    "edt": "N2",
+    "presences": "N2",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "GESTIONNAIRE_CHARGES",
+   "libelle": "Gestionnaire des charges enseignantes",
+   "domaine": "ENSEIGNANTS",
+   "niveau": "N2",
+   "perimetre": "FORMATION",
+   "app": "scolarite",
+   "sensible": false,
+   "canal": "",
+   "ordre": 180,
+   "description": "Prépare les charges et vacations des enseignants, en lien avec la rémunération des formateurs.",
+   "niveaux": {
+    "pedagogie": "N2",
+    "enseignants": "N2",
+    "diplomation": "N1",
+    "stages": "N1",
+    "patrimoine": "N1",
+    "edt": "N2",
+    "presences": "N1",
+    "statistiques": "N1",
+    "finances_form": "N1"
+   }
+  },
+  {
+   "code": "GESTIONNAIRE_NOTES",
+   "libelle": "Gestionnaire des notes",
+   "domaine": "EVALUATIONS",
+   "niveau": "N2",
+   "perimetre": "FORMATION",
+   "app": "suiviEvaluation",
+   "sensible": false,
+   "canal": "",
+   "ordre": 190,
+   "description": "Saisit et corrige les notes et moyennes ; ne participe pas aux jurys (incompatibilité de séparation des tâches).",
+   "niveaux": {
+    "scolarite": "N1",
+    "pedagogie": "N1",
+    "enseignants": "N1",
+    "evaluations": "N2",
+    "jurys": "N1",
+    "presences": "N1",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "MEMBRE_JURY",
+   "libelle": "Membre de jury",
+   "domaine": "EVALUATIONS",
+   "niveau": "N2",
+   "perimetre": "FORMATION",
+   "app": "jurys",
+   "sensible": false,
+   "canal": "",
+   "ordre": 200,
+   "description": "Participe aux délibérations d'un jury et signe les propositions collectives.",
+   "niveaux": {
+    "scolarite": "N1",
+    "pedagogie": "N1",
+    "evaluations": "N1",
+    "jurys": "N2",
+    "diplomation": "N1",
+    "presences": "N1",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "RESPONSABLE_JURY",
+   "libelle": "Responsable de jury",
+   "domaine": "EVALUATIONS",
+   "niveau": "N4",
+   "perimetre": "FORMATION",
+   "app": "jurys",
+   "sensible": true,
+   "canal": "",
+   "ordre": 210,
+   "description": "Préside le jury, arrête les délibérations et signe les procès-verbaux et résultats.",
+   "niveaux": {
+    "scolarite": "N1",
+    "pedagogie": "N1",
+    "evaluations": "N3",
+    "jurys": "N4",
+    "diplomation": "N2",
+    "presences": "N1",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "RESPONSABLE_GRADUATION",
+   "libelle": "Responsable graduation",
+   "domaine": "DIPLOMATION",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "graduation",
+   "sensible": true,
+   "canal": "",
+   "ordre": 220,
+   "description": "Organise les cérémonies et dossiers de graduation et atteste les parcours arrivant à terme.",
+   "niveaux": {
+    "scolarite": "N1",
+    "pedagogie": "N1",
+    "evaluations": "N1",
+    "jurys": "N1",
+    "diplomation": "N3",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "RESPONSABLE_DIPLOMATION",
+   "libelle": "Responsable diplômation",
+   "domaine": "DIPLOMATION",
+   "niveau": "N4",
+   "perimetre": "INJS_ENTIER",
+   "app": "graduation",
+   "sensible": true,
+   "canal": "",
+   "ordre": 230,
+   "description": "Valide, édite et, le cas échéant, révoque les diplômes et tient les registres réglementaires.",
+   "niveaux": {
+    "scolarite": "N1",
+    "pedagogie": "N1",
+    "evaluations": "N1",
+    "jurys": "N1",
+    "diplomation": "N4",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "GESTIONNAIRE_FINANCES_ETUD",
+   "libelle": "Gestionnaire finances étudiantes",
+   "domaine": "FINANCE",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "finances_etudiantes",
+   "sensible": true,
+   "canal": "",
+   "ordre": 240,
+   "description": "Saisit les frais, factures, paiements et quittances des étudiants ; ne valide pas les encaissements (rôle séparé).",
+   "niveaux": {
+    "candidatures": "N1",
+    "scolarite": "N1",
+    "diplomation": "N1",
+    "finances_etud": "N2",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "VALIDATEUR_FINANCIER",
+   "libelle": "Validateur financier",
+   "domaine": "FINANCE",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "finances_etudiantes",
+   "sensible": true,
+   "canal": "",
+   "ordre": 250,
+   "description": "Valide les paiements, remboursements et écritures financières ; ne saisit pas les encaissements (séparation des tâches).",
+   "niveaux": {
+    "scolarite": "N1",
+    "diplomation": "N1",
+    "finances_etud": "N3",
+    "patrimoine": "N1",
+    "statistiques": "N1",
+    "finances_form": "N3"
+   }
+  },
+  {
+   "code": "GESTIONNAIRE_VACATIONS",
+   "libelle": "Gestionnaire vacations formateurs",
+   "domaine": "FINANCE",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "formations",
+   "sensible": true,
+   "canal": "",
+   "ordre": 260,
+   "description": "Prépare les états de vacation et la rémunération des formateurs et vacataires.",
+   "niveaux": {
+    "pedagogie": "N1",
+    "enseignants": "N2",
+    "finances_etud": "N2",
+    "rh": "N1",
+    "edt": "N1",
+    "presences": "N1",
+    "statistiques": "N1",
+    "finances_form": "N2"
+   }
+  },
+  {
+   "code": "GESTIONNAIRE_STAGES",
+   "libelle": "Gestionnaire des stages",
+   "domaine": "STAGES",
+   "niveau": "N2",
+   "perimetre": "FORMATION",
+   "app": "stages",
+   "sensible": false,
+   "canal": "",
+   "ordre": 270,
+   "description": "Gère les organismes d'accueil, tuteurs, conventions et attestations de stage.",
+   "niveaux": {
+    "scolarite": "N1",
+    "pedagogie": "N1",
+    "enseignants": "N1",
+    "evaluations": "N1",
+    "finances_etud": "N1",
+    "stages": "N2",
+    "edt": "N1",
+    "presences": "N1",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "GESTIONNAIRE_RH",
+   "libelle": "Gestionnaire ressources humaines",
+   "domaine": "RH",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "ressources_humaines",
+   "sensible": true,
+   "canal": "",
+   "ordre": 280,
+   "description": "Tient les dossiers des agents, services, fonctions, affectations et documents RH.",
+   "niveaux": {
+    "enseignants": "N1",
+    "finances_etud": "N1",
+    "rh": "N3",
+    "patrimoine": "N1",
+    "edt": "N1",
+    "presences": "N1",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "GESTIONNAIRE_PATRIMOINE",
+   "libelle": "Gestionnaire du patrimoine",
+   "domaine": "PATRIMOINE",
+   "niveau": "N2",
+   "perimetre": "SITE",
+   "app": "patrimoine",
+   "sensible": false,
+   "canal": "",
+   "ordre": 290,
+   "description": "Gère les équipements, véhicules, inventaires, maintenance et mouvements de biens.",
+   "niveaux": {
+    "finances_etud": "N1",
+    "rh": "N1",
+    "patrimoine": "N2",
+    "edt": "N1",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "GESTIONNAIRE_ESPACES",
+   "libelle": "Gestionnaire des espaces",
+   "domaine": "PATRIMOINE",
+   "niveau": "N2",
+   "perimetre": "SITE",
+   "app": "patrimoine",
+   "sensible": false,
+   "canal": "",
+   "ordre": 300,
+   "description": "Gère les salles et leurs réservations, en lien avec les emplois du temps.",
+   "niveaux": {
+    "pedagogie": "N1",
+    "patrimoine": "N2",
+    "edt": "N2",
+    "presences": "N1",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "GESTIONNAIRE_COURRIERS",
+   "libelle": "Gestionnaire courriers et documents",
+   "domaine": "ADMINISTRATION_GENERALE",
+   "niveau": "N2",
+   "perimetre": "SERVICE",
+   "app": "administrations",
+   "sensible": false,
+   "canal": "",
+   "ordre": 310,
+   "description": "Enregistre et suit les courriers, documents officiels, réunions et missions.",
+   "niveaux": {
+    "administration": "N2",
+    "scolarite": "N1",
+    "diplomation": "N1",
+    "rh": "N1",
+    "patrimoine": "N1",
+    "administrations": "N2"
+   }
+  },
+  {
+   "code": "ARCHIVISTE",
+   "libelle": "Archiviste",
+   "domaine": "ADMINISTRATION_GENERALE",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": false,
+   "canal": "",
+   "ordre": 320,
+   "description": "Consulte et archive les dossiers de tous les services, sans droit de modification.",
+   "niveaux": {
+    "administration": "N1",
+    "candidatures": "N1",
+    "scolarite": "N1",
+    "pedagogie": "N1",
+    "enseignants": "N1",
+    "evaluations": "N1",
+    "jurys": "N1",
+    "diplomation": "N1",
+    "finances_etud": "N1",
+    "stages": "N1",
+    "rh": "N1",
+    "patrimoine": "N1",
+    "edt": "N1",
+    "presences": "N1",
+    "statistiques": "N1",
+    "administrations": "N1"
+   }
+  },
+  {
+   "code": "ETUDIANT",
+   "libelle": "Étudiant / auditeur",
+   "domaine": "DESTINATAIRES",
+   "niveau": "N1",
+   "perimetre": "PROPRE_COMPTE",
+   "app": "presences",
+   "sensible": false,
+   "canal": "MOBILE",
+   "ordre": 330,
+   "description": "Accède uniquement à son propre dossier, ses notes, émargements et justificatifs via l'application mobile.",
+   "niveaux": {
+    "scolarite": "N1",
+    "pedagogie": "N1",
+    "evaluations": "N1",
+    "jurys": "N0",
+    "diplomation": "N1",
+    "finances_etud": "N1",
+    "stages": "N1",
+    "edt": "N1",
+    "presences": "N1"
+   }
+  },
+  {
+   "code": "CANDIDAT",
+   "libelle": "Candidat",
+   "domaine": "DESTINATAIRES",
+   "niveau": "N0",
+   "perimetre": "PROPRE_COMPTE",
+   "app": "admissions",
+   "sensible": false,
+   "canal": "",
+   "ordre": 340,
+   "description": "Dépose et suit sa propre candidature et ses pièces, sans voir les autres dossiers.",
+   "niveaux": {
+    "candidatures": "N1",
+    "diplomation": "N0"
+   }
+  },
+  {
+   "code": "CONSULTATION",
+   "libelle": "Consultation restreinte",
+   "domaine": "DESTINATAIRES",
+   "niveau": "N1",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": false,
+   "canal": "",
+   "ordre": 350,
+   "description": "Compte de lecture très restreinte, sans aucune action de modification, pour un besoin ponctuel de consultation.",
+   "niveaux": {
+    "candidatures": "N0",
+    "scolarite": "N0",
+    "pedagogie": "N0",
+    "enseignants": "N0",
+    "evaluations": "N0",
+    "diplomation": "N0",
+    "stages": "N0",
+    "patrimoine": "N0",
+    "edt": "N0",
+    "presences": "N0",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "SECRETARIAT_GENERAL",
+   "libelle": "Secrétariat général",
+   "domaine": "ADMINISTRATION",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "administrations",
+   "sensible": false,
+   "canal": "",
+   "ordre": 360,
+   "description": "Assiste la direction générale : suivi des instances, du courrier officiel et des échéances institutionnelles.",
+   "niveaux": {
+    "administration": "N3",
+    "administrations": "N2",
+    "candidatures": "N1",
+    "scolarite": "N1",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "QUALITE_MANAGER",
+   "libelle": "Responsable qualité et audit",
+   "domaine": "ADMINISTRATION_GENERALE",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": false,
+   "canal": "",
+   "ordre": 370,
+   "description": "Anime le système qualité, les audits internes et le suivi des plans d'actions correctives.",
+   "niveaux": {
+    "administration": "N1",
+    "candidatures": "N1",
+    "scolarite": "N1",
+    "pedagogie": "N1",
+    "enseignants": "N1",
+    "evaluations": "N1",
+    "jurys": "N1",
+    "diplomation": "N1",
+    "finances_etud": "N1",
+    "stages": "N1",
+    "rh": "N1",
+    "patrimoine": "N1",
+    "edt": "N1",
+    "presences": "N1",
+    "statistiques": "N3"
+   }
+  },
+  {
+   "code": "AUDITEUR",
+   "libelle": "Auditeur (qualité / audit)",
+   "domaine": "ADMINISTRATION_GENERALE",
+   "niveau": "N1",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": false,
+   "canal": "",
+   "ordre": 380,
+   "description": "Consulte l'ensemble des modules en lecture pour l'audit interne ou externe, sans aucun droit de modification. Distinct du compte « auditeur » legacy (étudiant mobile).",
+   "niveaux": {
+    "administration": "N1",
+    "candidatures": "N1",
+    "scolarite": "N1",
+    "pedagogie": "N1",
+    "enseignants": "N1",
+    "evaluations": "N1",
+    "jurys": "N1",
+    "diplomation": "N1",
+    "finances_etud": "N1",
+    "stages": "N1",
+    "rh": "N1",
+    "patrimoine": "N1",
+    "edt": "N1",
+    "presences": "N1",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "AUDIT_READONLY",
+   "libelle": "Audit lecture seule",
+   "domaine": "ADMINISTRATION_GENERALE",
+   "niveau": "N1",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": false,
+   "canal": "",
+   "ordre": 390,
+   "description": "Consulte les journaux d'audit et les traçabilités sans accès aux données de gestion.",
+   "niveaux": {
+    "administration": "N1",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "PLANIFICATION_MANAGER",
+   "libelle": "Responsable planification",
+   "domaine": "ADMINISTRATION_GENERALE",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "edts",
+   "sensible": false,
+   "canal": "",
+   "ordre": 400,
+   "description": "Élabore le plan annuel d'activités, les calendriers académiques et le suivi de la planification.",
+   "niveaux": {
+    "administration": "N2",
+    "pedagogie": "N2",
+    "edt": "N3",
+    "statistiques": "N2"
+   }
+  },
+  {
+   "code": "STATISTICIEN",
+   "libelle": "Statisticien",
+   "domaine": "TECHNIQUE",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "statistiques",
+   "sensible": false,
+   "canal": "",
+   "ordre": 410,
+   "description": "Exploite les données de l'établissement pour les indicateurs, les rapports et les tableaux de bord officiels.",
+   "niveaux": {
+    "administration": "N1",
+    "scolarite": "N1",
+    "evaluations": "N1",
+    "finances_etud": "N1",
+    "statistiques": "N3"
+   }
+  },
+  {
+   "code": "CHEF_DEPARTEMENT",
+   "libelle": "Chef de département",
+   "domaine": "ADMINISTRATION",
+   "niveau": "N3",
+   "perimetre": "DIRECTION",
+   "app": "",
+   "sensible": false,
+   "canal": "",
+   "ordre": 420,
+   "description": "Pilote un département : ressources, planning des services rattachés et coordination des responsables de formation.",
+   "niveaux": {
+    "administration": "N2",
+    "scolarite": "N2",
+    "pedagogie": "N2",
+    "enseignants": "N2",
+    "evaluations": "N1",
+    "stages": "N1",
+    "statistiques": "N2"
+   }
+  },
+  {
+   "code": "RESPONSABLE_PARCOURS",
+   "libelle": "Responsable de parcours",
+   "domaine": "PEDAGOGIE",
+   "niveau": "N3",
+   "perimetre": "PARCOURS",
+   "app": "scolarite",
+   "sensible": false,
+   "canal": "",
+   "ordre": 430,
+   "description": "Coordonne un parcours : maquette, équipes et cohérence des acquis sur l'ensemble du parcours.",
+   "niveaux": {
+    "pedagogie": "N3",
+    "scolarite": "N2",
+    "enseignants": "N1",
+    "evaluations": "N1",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "RESPONSABLE_CANDIDATURES",
+   "libelle": "Responsable des candidatures",
+   "domaine": "CANDIDATURES",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "admissions",
+   "sensible": false,
+   "canal": "",
+   "ordre": 440,
+   "description": "Pilote la collecte et l'instruction des candidatures ; valide l'ouvreture et la clôture des campagnes.",
+   "niveaux": {
+    "candidatures": "N3",
+    "scolarite": "N1"
+   }
+  },
+  {
+   "code": "CORRECTEUR_CONCOURS",
+   "libelle": "Correcteur de concours",
+   "domaine": "CANDIDATURES",
+   "niveau": "N2",
+   "perimetre": "PROPRE_COMPTE",
+   "app": "admissions",
+   "sensible": false,
+   "canal": "",
+   "ordre": 450,
+   "description": "Corrige les épreuves qui lui sont attribuées, sans vue sur les corrections des autres correcteurs.",
+   "niveaux": {
+    "candidatures": "N2"
+   }
+  },
+  {
+   "code": "SURVEILLANT_CONCOURS",
+   "libelle": "Surveillant de concours",
+   "domaine": "CANDIDATURES",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "admissions",
+   "sensible": false,
+   "canal": "",
+   "ordre": 460,
+   "description": "Assure la surveillance des épreuves et le suivi des listes de présence des candidats.",
+   "niveaux": {
+    "candidatures": "N2"
+   }
+  },
+  {
+   "code": "RESPONSABLE_ADMISSIONS",
+   "libelle": "Responsable des admissions",
+   "domaine": "CANDIDATURES",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "admissions",
+   "sensible": false,
+   "canal": "",
+   "ordre": 470,
+   "description": "Arrête les listes d'admission, instruit les recours et publie les résultats des admissions.",
+   "niveaux": {
+    "candidatures": "N3",
+    "scolarite": "N2"
+   }
+  },
+  {
+   "code": "RESPONSABLE_INSCRIPTIONS",
+   "libelle": "Responsable des inscriptions",
+   "domaine": "SCOLARITE",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "scolarite",
+   "sensible": false,
+   "canal": "",
+   "ordre": 480,
+   "description": "Pilote les campagnes d'inscription, les affectations de groupes et la clôture administrative.",
+   "niveaux": {
+    "scolarite": "N3",
+    "candidatures": "N1",
+    "presences": "N1"
+   }
+  },
+  {
+   "code": "VACATAIRE",
+   "libelle": "Vacataire",
+   "domaine": "ENSEIGNANTS",
+   "niveau": "N2",
+   "perimetre": "MODULE_ECUE",
+   "app": "scolarite",
+   "sensible": false,
+   "canal": "",
+   "ordre": 490,
+   "description": "Assure les cours et évaluations qui lui sont attribués, dans le périmètre de ses affectations.",
+   "niveaux": {
+    "evaluations": "N2",
+    "presences": "N2",
+    "scolarite": "N1"
+   }
+  },
+  {
+   "code": "RESPONSABLE_EVALUATIONS",
+   "libelle": "Responsable des évaluations",
+   "domaine": "EVALUATIONS",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "suiviEvaluation",
+   "sensible": false,
+   "canal": "",
+   "ordre": 500,
+   "description": "Organise les calendriers d'évaluation, les barèmes et le contrôle qualité des notes.",
+   "niveaux": {
+    "evaluations": "N3",
+    "scolarite": "N1",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "SECRETAIRE_JURY",
+   "libelle": "Secrétaire de jury",
+   "domaine": "EVALUATIONS",
+   "niveau": "N2",
+   "perimetre": "FORMATION",
+   "app": "jurys",
+   "sensible": false,
+   "canal": "",
+   "ordre": 510,
+   "description": "Dresse le procès-verbal des délibérations et en suit le classement sous la direction du responsable de jury.",
+   "niveaux": {
+    "jurys": "N2",
+    "evaluations": "N1",
+    "scolarite": "N1"
+   }
+  },
+  {
+   "code": "SIGNATAIRE",
+   "libelle": "Signataire habilité",
+   "domaine": "DIPLOMATION",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "jurys",
+   "sensible": true,
+   "canal": "",
+   "ordre": 520,
+   "description": "Signe les procès-verbaux de jury et les actes officiels de diplômation qui lui sont soumis ; jamais la validation des notes.",
+   "niveaux": {
+    "jurys": "N3",
+    "diplomation": "N3",
+    "evaluations": "N1"
+   }
+  },
+  {
+   "code": "VALIDATEUR_DIPLOMES",
+   "libelle": "Validateur des diplômes",
+   "domaine": "DIPLOMATION",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "graduation",
+   "sensible": true,
+   "canal": "",
+   "ordre": 530,
+   "description": "Vérifie l'éligibilité et valide la délivrance des diplômes avant signature et publication.",
+   "niveaux": {
+    "diplomation": "N3",
+    "jurys": "N2",
+    "scolarite": "N1"
+   }
+  },
+  {
+   "code": "ENCADREUR_STAGE",
+   "libelle": "Encadrant de stage (INJS)",
+   "domaine": "STAGES",
+   "niveau": "N2",
+   "perimetre": "PROPRE_COMPTE",
+   "app": "stages",
+   "sensible": false,
+   "canal": "",
+   "ordre": 540,
+   "description": "Encadre les stages qui lui sont attribués, évalue les stagiaires et valide les notes finales.",
+   "niveaux": {
+    "stages": "N2",
+    "scolarite": "N1"
+   }
+  },
+  {
+   "code": "TUTEUR_ENTREPRISE",
+   "libelle": "Tuteur d'entreprise",
+   "domaine": "STAGES",
+   "niveau": "N1",
+   "perimetre": "PROPRE_COMPTE",
+   "app": "stages",
+   "sensible": false,
+   "canal": "",
+   "ordre": 550,
+   "description": "Suivi le stage qui lui est confié : convenance, suivi et évaluation du stagiaire, sans accès aux autres dossiers.",
+   "niveaux": {
+    "stages": "N1"
+   }
+  },
+  {
+   "code": "RECHERCHE_MANAGER",
+   "libelle": "Responsable recherche et innovation",
+   "domaine": "TECHNIQUE",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": false,
+   "canal": "",
+   "ordre": 560,
+   "description": "Pilote les projets de recherche, les partenariats et les innovations pédagogiques de l'institut.",
+   "niveaux": {
+    "statistiques": "N2",
+    "pedagogie": "N1"
+   }
+  },
+  {
+   "code": "CHERCHEUR",
+   "libelle": "Chercheur",
+   "domaine": "TECHNIQUE",
+   "niveau": "N2",
+   "perimetre": "PROPRE_COMPTE",
+   "app": "",
+   "sensible": false,
+   "canal": "",
+   "ordre": 570,
+   "description": "Conduit les projets de recherche qui lui sont confiés et documente les livrables associés.",
+   "niveaux": {
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "VIE_ETUDIANTE",
+   "libelle": "Responsable de la vie étudiante",
+   "domaine": "ADMINISTRATION_GENERALE",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": false,
+   "canal": "",
+   "ordre": 580,
+   "description": "Organise les activités étudiantes, la discipline et les événements de la communauté étudiante.",
+   "niveaux": {
+    "presences": "N2",
+    "scolarite": "N1"
+   }
+  },
+  {
+   "code": "BOURSE_MANAGER",
+   "libelle": "Responsable des bourses",
+   "domaine": "FINANCE",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "finances_etudiantes",
+   "sensible": true,
+   "canal": "",
+   "ordre": 590,
+   "description": "Gère les dossiers de bourses, les critères d'attribution et le paiement des allocations.",
+   "niveaux": {
+    "finances_etud": "N3",
+    "scolarite": "N1"
+   }
+  },
+  {
+   "code": "RESPONSABLE_FINANCES",
+   "libelle": "Responsable des finances",
+   "domaine": "FINANCE",
+   "niveau": "N4",
+   "perimetre": "INJS_ENTIER",
+   "app": "finances_etudiantes",
+   "sensible": true,
+   "canal": "",
+   "ordre": 600,
+   "description": "Pilote le pôle finances étudiantes : recettes, dépenses et équilibre budgétaire.",
+   "niveaux": {
+    "finances_etud": "N4",
+    "finances_form": "N3",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "COMPTABLE",
+   "libelle": "Comptable",
+   "domaine": "FINANCE",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "finances_etudiantes",
+   "sensible": false,
+   "canal": "",
+   "ordre": 610,
+   "description": "Saisit et suit les opérations comptables ; n'ouvre ni ne clôture seul les périodes sensibles.",
+   "niveaux": {
+    "finances_etud": "N2"
+   }
+  },
+  {
+   "code": "CAISSIER",
+   "libelle": "Caissier",
+   "domaine": "FINANCE",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "finances_etudiantes",
+   "sensible": false,
+   "canal": "",
+   "ordre": 620,
+   "description": "Encaisse et verse les paiements courants ; sa caisse est contrôlée par le responsable finances.",
+   "niveaux": {
+    "finances_etud": "N2"
+   }
+  },
+  {
+   "code": "RECOUVREMENT",
+   "libelle": "Agent de recouvrement",
+   "domaine": "FINANCE",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "finances_etudiantes",
+   "sensible": false,
+   "canal": "",
+   "ordre": 630,
+   "description": "Suit les impayés, émet les relances et met à jour les situations de dettes étudiantes.",
+   "niveaux": {
+    "finances_etud": "N2",
+    "scolarite": "N1"
+   }
+  },
+  {
+   "code": "CONTROLEUR_FINANCIER",
+   "libelle": "Contrôleur financier",
+   "domaine": "FINANCE",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "finances_etudiantes",
+   "sensible": true,
+   "canal": "",
+   "ordre": 640,
+   "description": "Contrôle a posteriori les opérations financières sensibles ; n'exécute jamais les paiements qu'il contrôle (séparation des tâches).",
+   "niveaux": {
+    "finances_etud": "N3",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "RESPONSABLE_RH",
+   "libelle": "Responsable des ressources humaines",
+   "domaine": "RH",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "ressources_humaines",
+   "sensible": false,
+   "canal": "",
+   "ordre": 650,
+   "description": "Pilote les recrutements, les carrières et l'organisation des services ; valide les contrats.",
+   "niveaux": {
+    "rh": "N3",
+    "administration": "N1"
+   }
+  },
+  {
+   "code": "AGENT_RH",
+   "libelle": "Agent RH",
+   "domaine": "RH",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "ressources_humaines",
+   "sensible": false,
+   "canal": "",
+   "ordre": 660,
+   "description": "Saisit les dossiers agents, contrats et évaluations ; ne valide pas les décisions de carrière.",
+   "niveaux": {
+    "rh": "N2"
+   }
+  },
+  {
+   "code": "PAIE_MANAGER",
+   "libelle": "Responsable de la paie",
+   "domaine": "RH",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "ressources_humaines",
+   "sensible": true,
+   "canal": "",
+   "ordre": 670,
+   "description": "Élabore et contrôle la paie ; ne perçoit jamais sa propre modification (séparation des tâches).",
+   "niveaux": {
+    "rh": "N3"
+   }
+  },
+  {
+   "code": "RESPONSABLE_ADMINISTRATION",
+   "libelle": "Responsable administration et moyens généraux",
+   "domaine": "ADMINISTRATION_GENERALE",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "administrations",
+   "sensible": false,
+   "canal": "",
+   "ordre": 680,
+   "description": "Pilote les moyens généraux : achats, logistique, patrimoine et services de l'administration.",
+   "niveaux": {
+    "administration": "N3",
+    "administrations": "N2",
+    "patrimoine": "N2",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "ACHATS_MANAGER",
+   "libelle": "Responsable des achats",
+   "domaine": "ADMINISTRATION_GENERALE",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "administrations",
+   "sensible": false,
+   "canal": "",
+   "ordre": 690,
+   "description": "Gère le cycle d'achat : besoins, appels d'offres, commandes et réceptions.",
+   "niveaux": {
+    "administrations": "N3",
+    "patrimoine": "N1"
+   }
+  },
+  {
+   "code": "LOGISTICIEN",
+   "libelle": "Logisticien",
+   "domaine": "ADMINISTRATION_GENERALE",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "patrimoine",
+   "sensible": false,
+   "canal": "",
+   "ordre": 700,
+   "description": "Assure la logistique interne : inventaire, stocks, mouvements et maintenance courante.",
+   "niveaux": {
+    "patrimoine": "N2",
+    "administrations": "N1"
+   }
+  },
+  {
+   "code": "RESPONSABLE_PATRIMOINE",
+   "libelle": "Responsable du patrimoine",
+   "domaine": "PATRIMOINE",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "patrimoine",
+   "sensible": false,
+   "canal": "",
+   "ordre": 710,
+   "description": "Administre le patrimoine : biens, véhicules, espaces et leur affectation.",
+   "niveaux": {
+    "patrimoine": "N3",
+    "administrations": "N1"
+   }
+  },
+  {
+   "code": "MAINTENANCE",
+   "libelle": "Agent de maintenance",
+   "domaine": "PATRIMOINE",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "patrimoine",
+   "sensible": false,
+   "canal": "",
+   "ordre": 720,
+   "description": "Assure la maintenance préventive et corrective des locaux et équipements.",
+   "niveaux": {
+    "patrimoine": "N2"
+   }
+  },
+  {
+   "code": "GED_MANAGER",
+   "libelle": "Responsable GED",
+   "domaine": "ADMINISTRATION_GENERALE",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "administrations",
+   "sensible": false,
+   "canal": "",
+   "ordre": 730,
+   "description": "Administre la gestion électronique des documents : plan de classement, droits et archivage.",
+   "niveaux": {
+    "administrations": "N3"
+   }
+  },
+  {
+   "code": "COMMUNICATION_MANAGER",
+   "libelle": "Responsable communication",
+   "domaine": "ADMINISTRATION_GENERALE",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": false,
+   "canal": "",
+   "ordre": 740,
+   "description": "Pilote la communication institutionnelle : site, réseaux et supports de l'institut.",
+   "niveaux": {
+    "administration": "N1"
+   }
+  },
+  {
+   "code": "SUPPORT_IT",
+   "libelle": "Support informatique",
+   "domaine": "TECHNIQUE",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": false,
+   "canal": "",
+   "ordre": 750,
+   "description": "Assiste les utilisateurs et gère les incidents ; aucun droit sur les données de gestion (niveau paramètres : placeholder J2).",
+   "niveaux": {
+    "parametres": "N2"
+   }
+  },
+  {
+   "code": "SYSADMIN",
+   "libelle": "Administrateur système",
+   "domaine": "TECHNIQUE",
+   "niveau": "N4",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": true,
+   "canal": "",
+   "ordre": 760,
+   "description": "Administre la plateforme (comptes techniques, déploiements) ; ses actes restent journalisés et révocables, sans droits métier.",
+   "niveaux": {
+    "parametres": "N4"
+   }
+  },
+  {
+   "code": "NETWORK_ADMIN",
+   "libelle": "Administrateur réseau",
+   "domaine": "TECHNIQUE",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": true,
+   "canal": "",
+   "ordre": 770,
+   "description": "Gère la connectivité, les pare-feu et les équipements réseau de l'établissement.",
+   "niveaux": {
+    "parametres": "N2"
+   }
+  },
+  {
+   "code": "DB_ADMIN",
+   "libelle": "Administrateur de base de données",
+   "domaine": "TECHNIQUE",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": true,
+   "canal": "",
+   "ordre": 780,
+   "description": "Exploite et sauvegarde les bases de données ; aucun droit d'écriture sur les données métier.",
+   "niveaux": {
+    "parametres": "N3"
+   }
+  },
+  {
+   "code": "SECURITY_ADMIN",
+   "libelle": "Administrateur sécurité",
+   "domaine": "TECHNIQUE",
+   "niveau": "N4",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": true,
+   "canal": "",
+   "ordre": 790,
+   "description": "Surveille et renforce la sécurité du SI ; consulte les journaux sans modifier les données.",
+   "niveaux": {
+    "parametres": "N3",
+    "statistiques": "N1"
+   }
+  },
+  {
+   "code": "DATA_ANALYST",
+   "libelle": "Analyste de données",
+   "domaine": "TECHNIQUE",
+   "niveau": "N2",
+   "perimetre": "INJS_ENTIER",
+   "app": "statistiques",
+   "sensible": false,
+   "canal": "",
+   "ordre": 800,
+   "description": "Produit des analyses et des extractions sur les données institutionnelles.",
+   "niveaux": {
+    "statistiques": "N3",
+    "parametres": "N1"
+   }
+  },
+  {
+   "code": "API_MANAGER",
+   "libelle": "Responsable des intégrations",
+   "domaine": "TECHNIQUE",
+   "niveau": "N3",
+   "perimetre": "INJS_ENTIER",
+   "app": "",
+   "sensible": true,
+   "canal": "",
+   "ordre": 810,
+   "description": "Gère les API d'intégration et les accès machines des partenaires.",
+   "niveaux": {
+    "parametres": "N3"
+   }
+  }
+ ],
+ "modules": [
+  {
+   "code": "administration",
+   "libelle": "Administration des habilitations",
+   "app": "habilitations",
+   "sensible": false
+  },
+  {
+   "code": "candidatures",
+   "libelle": "Candidatures et concours",
+   "app": "admissions",
+   "sensible": false
+  },
+  {
+   "code": "scolarite",
+   "libelle": "Scolarité",
+   "app": "scolarite",
+   "sensible": false
+  },
+  {
+   "code": "pedagogie",
+   "libelle": "Pédagogie, maquettes et UE/ECUE",
+   "app": "scolarite",
+   "sensible": false
+  },
+  {
+   "code": "enseignants",
+   "libelle": "Enseignants et charges",
+   "app": "scolarite",
+   "sensible": false
+  },
+  {
+   "code": "evaluations",
+   "libelle": "Évaluations et notes",
+   "app": "suiviEvaluation",
+   "sensible": false
+  },
+  {
+   "code": "jurys",
+   "libelle": "Jurys et délibérations",
+   "app": "jurys",
+   "sensible": false
+  },
+  {
+   "code": "diplomation",
+   "libelle": "Graduation et diplômation",
+   "app": "graduation",
+   "sensible": false
+  },
+  {
+   "code": "finances_etud",
+   "libelle": "Finances étudiantes",
+   "app": "finances_etudiantes",
+   "sensible": true
+  },
+  {
+   "code": "finances_form",
+   "libelle": "Rémunération et vacations des formateurs",
+   "app": "formations",
+   "sensible": false
+  },
+  {
+   "code": "stages",
+   "libelle": "Stages et conventions",
+   "app": "stages",
+   "sensible": true
+  },
+  {
+   "code": "rh",
+   "libelle": "Ressources humaines",
+   "app": "ressources_humaines",
+   "sensible": true
+  },
+  {
+   "code": "patrimoine",
+   "libelle": "Patrimoine, espaces et réservations",
+   "app": "patrimoine",
+   "sensible": true
+  },
+  {
+   "code": "edt",
+   "libelle": "Emplois du temps",
+   "app": "edts",
+   "sensible": false
+  },
+  {
+   "code": "presences",
+   "libelle": "Présences et émargements",
+   "app": "presences",
+   "sensible": false
+  },
+  {
+   "code": "administrations",
+   "libelle": "Courriers et documents administratifs",
+   "app": "administrations",
+   "sensible": true
+  },
+  {
+   "code": "statistiques",
+   "libelle": "Statistiques et rapports",
+   "app": "statistiques",
+   "sensible": false
+  },
+  {
+   "code": "exports",
+   "libelle": "Exports de données",
+   "app": "exports",
+   "sensible": false
+  },
+  {
+   "code": "parametres",
+   "libelle": "Paramètres généraux",
+   "app": "parametres",
+   "sensible": false
+  },
+  {
+   "code": "referentiels",
+   "libelle": "Référentiels",
+   "app": "referentiels",
+   "sensible": false
+  }
+ ],
+ "permissions_total": 1157,
+ "incompatibilites": [
+  [
+   "GESTIONNAIRE_NOTES",
+   "RESPONSABLE_JURY"
+  ],
+  [
+   "AGENT_INSCRIPTIONS",
+   "GESTIONNAIRE_FINANCES_ETUD"
+  ],
+  [
+   "GESTIONNAIRE_FINANCES_ETUD",
+   "VALIDATEUR_FINANCIER"
+  ],
+  [
+   "AGENT_CANDIDATURE",
+   "AGENT_CONTROLE_DOSSIERS"
+  ],
+  [
+   "RESPONSABLE_GRADUATION",
+   "GESTIONNAIRE_NOTES"
+  ]
+ ],
+ "correspondance_legacy": {
+  "ADMIN": [
+   "ADMIN_SYSTEME"
+  ],
+  "CHEF_INJS_ADMIN": [
+   "ADMIN_SYSTEME",
+   "DIRECTION_ETUDES"
+  ],
+  "INJS_ADMIN": [
+   "SCOLARITE",
+   "GESTIONNAIRE_COURS"
+  ],
+  "DIRECTION": [
+   "DIRECTION_GENERALE"
+  ],
+  "CHEF_SECRETARIAT": [
+   "SCOLARITE",
+   "AGENT_INSCRIPTIONS",
+   "AGENT_ADMISSIONS",
+   "GESTIONNAIRE_ETUDIANTS"
+  ],
+  "SECRETARIAT": [
+   "AGENT_INSCRIPTIONS",
+   "AGENT_ADMISSIONS",
+   "GESTIONNAIRE_ETUDIANTS"
+  ],
+  "FINANCE": [
+   "GESTIONNAIRE_FINANCES_ETUD",
+   "GESTIONNAIRE_VACATIONS"
+  ],
+  "ARCHIVE": [
+   "ARCHIVISTE"
+  ],
+  "ENCADRANT": [
+   "ENSEIGNANT",
+   "GESTIONNAIRE_GROUPES"
+  ],
+  "SUPERVISEUR": [
+   "RESPONSABLE_PEDAGOGIQUE"
+  ],
+  "FORMATEUR": [
+   "ENSEIGNANT"
+  ],
+  "AUDITEUR": [
+   "ETUDIANT"
+  ]
+ },
+ "permissions_critiques": [
+  "administration.attribution.valider",
+  "administration.compte.modifier",
+  "administration.role.creer",
+  "administration.role.modifier",
+  "diplomation.diplome.revoquer",
+  "diplomation.diplome.valider",
+  "edt.emploi_du_temps.publier",
+  "evaluations.note.verrouiller",
+  "exports.export_sensible.generer",
+  "finances_etud.paiement.valider",
+  "finances_etud.remboursement.valider",
+  "jurys.pv.signer",
+  "jurys.resultat.publier",
+  "parametres.parametre.administrer",
+  "presences.emargement.forcer"
+ ],
+ "verbes": [
+  "consulter",
+  "creer",
+  "modifier",
+  "soumettre",
+  "valider",
+  "rejeter",
+  "publier",
+  "annuler",
+  "exporter",
+  "imprimer",
+  "archiver",
+  "supprimer",
+  "administrer"
+ ]
+}

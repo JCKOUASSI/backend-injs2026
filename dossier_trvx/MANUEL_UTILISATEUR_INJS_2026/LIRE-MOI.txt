@@ -1,0 +1,86 @@
+MANUEL UTILISATEUR OFFICIEL — INJS 2026
+=======================================
+
+Institut National de la Jeunesse et des Sports d'Abidjan
+Version documentaire 1.0 — Édition 2026
+
+
+PAR OÙ COMMENCER
+----------------
+
+  MANUEL_UTILISATEUR_OFFICIEL_INJS_2026.pdf
+                               Le manuel complet, 103 pages, prêt à imprimer.
+                               Ouvrir avec Acrobat, Aperçu, Edge ou Firefox.
+
+  manuel-html/index.html       Le manuel interactif : recherche, filtres par
+                               profil et par module, mode clair/sombre,
+                               impression. Fonctionne hors ligne, sans rien
+                               extraire. Double-cliquer sur le fichier.
+
+  MANUEL_UTILISATEUR_OFFICIEL_INJS_2026_COMPLET.zip
+                               Tout le dossier en une archive : PDF, manuel web,
+                               sources, référentiels, rapport (66 fichiers).
+
+  RAPPORT_PRODUCTION.md        Méthode, sources, vérifications et limites.
+
+
+CONTENU DE CE DOSSIER
+---------------------
+
+  manuel-html/          22 fichiers — le manuel web prêt à consulter (page,
+                        styles, script, 19 captures).
+
+  (dans l'archive COMPLET)
+
+  html/                 22 fichiers — le manuel web (page, styles, script,
+                        19 captures) et l'archive HTML autonome.
+
+  pdf/                  1 fichier — le manuel A4.
+
+  telechargements/      4 fichiers — page d'accès, PDF, archive HTML, rapport.
+                        Les fichiers de ce dossier sont servis en pièce jointe
+                        lorsque le manuel est consulté en ligne.
+
+  sources/contenu/      11 fichiers — le texte du manuel et les générateurs :
+                        socle.py (données de référence), parties_1_3.py,
+                        parties_4_7.py, parties_8_12.py (rédaction),
+                        fiches.py (12 fiches profil), matrice.py (matrice des
+                        habilitations, calculée), generer_pdf.py,
+                        generer_html.py, gabarit.html, style.css, script.js.
+
+  sources/captures/     19 images — la copie de travail des captures.
+
+  sources/referentiels/ 7 fichiers JSON — les données extraites de l'application :
+                        rbac.json (81 rôles, 1 157 permissions, 20 modules),
+                        profils.json (12 profils), navigation.json (16 sections,
+                        127 entrées), menus_par_role.json, routes.json,
+                        routes_gardes.json, captures.json.
+
+
+RÉGÉNÉRER LE MANUEL
+-------------------
+
+Depuis sources/contenu/ (dans l'archive COMPLET) :
+
+    python generer_pdf.py     produit pdf/MANUEL_UTILISATEUR_OFFICIEL_INJS_2026.pdf
+    python generer_html.py    produit html/index.html
+
+Prérequis : Python 3.11, reportlab, Pillow, et les polices DejaVu.
+La génération PDF effectue plusieurs passes pour stabiliser la pagination du
+sommaire : c'est normal, le nombre de passes est affiché.
+
+
+À SAVOIR
+--------
+
+  - Aucune connexion internet n'est nécessaire : le manuel n'appelle aucune
+    ressource externe.
+  - Les captures proviennent toutes de l'application réelle. Aucune image n'a
+    été fabriquée.
+  - Deux profils (FORMATEUR et AUDITEUR) n'ont pas d'accès à l'interface web.
+    Ils figurent dans le manuel pour une raison de traçabilité, et le document
+    l'indique explicitement.
+  - Aucune donnée personnelle, aucun identifiant ni secret ne figure dans ces
+    fichiers.
+
+Document institutionnel — diffusion interne.
