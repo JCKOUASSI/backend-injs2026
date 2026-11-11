@@ -148,15 +148,21 @@ def main(argv: list[str] | None = None) -> int:
     """Point d'entrée de la ligne de commande (``python3 -m config.demarrage``)."""
     decision = analyser_environnement()
     flux = sys.stderr if decision.est_erronee else sys.stdout
+
+    def ecrire(message: str) -> None:
+        # Pas de print() : le garde-fou d'hygiène du dépôt (P00-05) l'interdit
+        # dans le runtime Django. On écrit directement sur le flux voulu, ce qui
+        # conserve la séparation stdout/stderr attendue par l'entrypoint.
+        flux.write(message + '\n')
+        flux.flush()
+
     prefixe = '[injs-be] ERREUR ' if decision.est_erronee else '[injs-be] '
-    print(prefixe + decision.motif, file=flux, flush=True)
+    ecrire(prefixe + decision.motif)
     if argv and '--verbose' in argv:
-        print(
+        ecrire(
             f'[injs-be] code={decision.code} '
             f'migrations={decision.appliquer_migrations} '
-            f'collectstatic={decision.appliquer_collectstatic}',
-            file=flux,
-            flush=True,
+            f'collectstatic={decision.appliquer_collectstatic}'
         )
     return decision.code
 
