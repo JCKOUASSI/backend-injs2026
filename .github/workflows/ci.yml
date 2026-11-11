@@ -35,8 +35,13 @@ name: CI
 # dépendent (verrous, contraintes, index).
 
 on:
+  # Mission 02 (B4) : la CI doit pouvoir être exécutée sur la branche de
+  # livraison elle-même, et pas seulement après fusion dans `main`. Sans le
+  # motif `arena/**`, aucun push de branche n'aurait jamais déclenché la
+  # moindre exécution : la branche de livraison n'était donc validée nulle
+  # part avant sa fusion. `main` reste couvert, les PR aussi.
   push:
-    branches: [main]
+    branches: [main, 'arena/**']
   pull_request:
   workflow_dispatch:
 
