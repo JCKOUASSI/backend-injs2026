@@ -150,4 +150,40 @@ signale aucune dépendance cassée et les 30 paquets restent épinglés.
 
 ## 5. RÉSULTATS DE L'EXÉCUTION CI
 
-*(section complétée après exécution — voir le rapport de mission)*
+Exécution de référence : **run `43077068460`** — branche
+`arena/4524a57c-backend-injs2026`, déclenchée par `push`.
+
+```
+✓ arena/4524a57c-backend-injs2026 CI #5 · 43077068460
+  conclusion : success
+
+JOBS
+✓ Frontend (React + Vite)        in 2m29s
+✓ Backend (Django + PostgreSQL)  in 12m5s     ← Python 3.12, PostgreSQL 16
+```
+
+| Job | Étapes | Résultat |
+|---|---|---|
+| **Frontend** | `npm ci` → `npm run lint` → `npx vitest run` → `npm run build` (Node 20) | ✅ 2 min 29 s |
+| **Backend** | `check` → `pip check` → `check --deploy` → `makemigrations --check` → `check_repo_hygiene` → `collectstatic` → **suite complète** (`manage.py test`) | ✅ 12 min 5 s |
+
+**Aucun test n'a été ignoré ni exclu** : le job backend exécute
+`python manage.py test` sans filtre, sur PostgreSQL 16 (moteur de production),
+avec Python **3.12** (version de l'image). La CI est donc **verte** au sens
+plein, et la validation 3.12 exigée au §9 est apportée par cette exécution.
+
+### 5.1 Historique des exécutions de la branche
+
+| Run | Déclenchement | Résultat |
+|---|---|---|
+| `43067954548` | push — **première exécution jamais obtenue sur la branche** | ❌ échec : étape « Hygiène du dépôt », 2 `print()` dans `config/demarrage.py` (garde-fou P00-05) |
+| `43068984612` | push après correctif `99491c3` | ⚠️ **annulé** à 50 min par le run suivant (voir §5.2) |
+| `43077068460` | push après les livrables | ✅ **succès** — frontend 2 min 29 s, backend 12 min 5 s |
+
+### 5.2 Enseignement opérationnel
+
+`ci.yml` porte `concurrency: { group: ci-${{ github.ref }}, cancel-in-progress: true }` :
+**tout push annule l'exécution en cours**. Le run `43068984612` a ainsi été
+annulé à 50 min par le push des livrables. À retenir pour la mission 03 : ne
+rien pousser pendant qu'une exécution de validation est en cours, sous peine de
+perdre ~50 minutes de vérification.

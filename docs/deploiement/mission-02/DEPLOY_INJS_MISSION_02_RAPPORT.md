@@ -138,7 +138,8 @@ push, sans retirer `pull_request` ni `workflow_dispatch`.
 | Run | Déclenchement | Résultat |
 |---|---|---|
 | `43067954548` | push | ❌ **échec** à l'étape « Hygiène du dépôt » : 2 `print()` dans `config/demarrage.py` (garde-fou P00-05) |
-| `43068984612` | push (après correction `99491c3`) | ✅ **Frontend vert** (2 min 25 s) · **Backend** : voir `DEPLOY_INJS_MISSION_02_CI_CD.md` §5 |
+| `43068984612` | push (après correction `99491c3`) | ⚠️ annulé à 50 min par le push suivant (`cancel-in-progress`) |
+| **`43077068460`** | push (après livrables) | ✅ **SUCCÈS** — `conclusion: success` · Frontend 2 min 29 s · **Backend 12 min 5 s** (Python **3.12**, PostgreSQL 16, suite complète sans exclusion) |
 
 Le premier échec est une **preuve de fonctionnement** : la CI a bloqué le code
 ajouté par la mission 02. Correctif apporté (`sys.stdout`/`sys.stderr` au lieu
@@ -279,7 +280,7 @@ Aucune version de Django ou de dépendance n'a été modifiée (`pip check` : OK
 | Avance / retard sur `main` | **15 commits d'avance · 93 de retard** |
 | Dépôt | propre (0 modification non commitée) |
 | PR #5 | **OPEN — `CONFLICTING` (DIRTY)** : 9 fichiers en conflit |
-| CI de la branche | exécutions réelles : `43067954548` (échec corrigé), `43068984612` (voir CI_CD §5) |
+| CI de la branche | ✅ **verte** — run `43077068460` : `conclusion: success` (frontend 2 min 29 s, backend 12 min 5 s) |
 
 ### ⚠️ Anomalie : conflit de la PR #5
 

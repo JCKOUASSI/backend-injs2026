@@ -21,7 +21,7 @@ Toutes les sorties ci-dessous sont des résultats bruts.
 | `check --deploy` | documenté | **0 erreur** — 1 117 avertissements justifiés | ✅ |
 | `SKIP_DB_SETUP` | transmission vérifiée | **23 tests** (analyse du compose + exécution en sous-processus) | ✅ |
 | Configuration Nginx | validée | **13 tests** + `check_repo_hygiene` | ✅ |
-| CI de la branche | verte | voir §6 | ⏳ / ✅ |
+| CI de la branche | verte | **✅ run `43077068460` — `success`** (frontend 2 min 29 s, backend 12 min 5 s) | ✅ |
 
 ---
 
