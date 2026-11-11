@@ -447,12 +447,24 @@ def _compute_tableau_cached(formation, categorie, jour, cache, secretariat_id=No
     if not modules:
         return None
 
-    taux_presence_jour = round(
-        (matin['total']['taux_presence'] + soir['total']['taux_presence']) / 2, 4
-    ) if (matin['total']['effectif'] or soir['total']['effectif']) else 0.0
-    taux_absence_jour = round(
-        (matin['total']['taux_absence'] + soir['total']['taux_absence']) / 2, 4
-    ) if (matin['total']['effectif'] or soir['total']['effectif']) else 0.0
+    effectif_jour = (
+        matin['total']['effectif'] + soir['total']['effectif']
+    )
+    presents_jour = (
+        matin['total']['presents'] + soir['total']['presents']
+    )
+    absents_jour = (
+        matin['total']['absents'] + soir['total']['absents']
+    )
+
+    taux_presence_jour = (
+        round(presents_jour / effectif_jour, 4)
+        if effectif_jour else 0.0
+    )
+    taux_absence_jour = (
+        round(absents_jour / effectif_jour, 4)
+        if effectif_jour else 0.0
+    )
 
     suffix = f"-{grade_val}" if grade_val else ''
     base = {

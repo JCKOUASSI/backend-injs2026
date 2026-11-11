@@ -98,6 +98,19 @@ compose() {
 
 charger_env() {
   [ -f "$ENV_FILE" ] || die "Fichier d'environnement introuvable : $ENV_FILE (copier .env.example et le renseigner hors Git)."
+  # Évite qu'une variable héritée du Terminal ne supplante
+  # les valeurs du fichier .env sélectionné pour cette opération.
+  unset COMPOSE_PROJECT_NAME COMPOSE_PROFILES COMPOSE_FILE
+  unset INJS_BACKEND_IMAGE INJS_BACKEND_TAG
+  unset INJS_FRONTEND_IMAGE INJS_FRONTEND_TAG
+  unset DJANGO_SECRET_KEY DJANGO_ALLOWED_HOSTS
+  unset CSRF_TRUSTED_ORIGINS CORS_ALLOWED_ORIGINS
+  unset POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD POSTGRES_HOST POSTGRES_PORT
+  unset SKIP_DB_SETUP GUNICORN_WORKERS GUNICORN_TIMEOUT
+  unset INJS_PUBLIC_PORT INJS_HOST_MEDIA_DIR INJS_HOST_STATIC_DIR
+  unset INJS_VOLUME_MEDIA INJS_VOLUME_STATIC
+  unset INJS_NETWORK_NAME INJS_NETWORK_EXTERNAL
+
   set -a
   # shellcheck disable=SC1090
   . "$ENV_FILE"
@@ -318,7 +331,13 @@ cmd_inventaire() {
   docker volume ls
   docker network ls
   df -h / /opt 2>/dev/null || df -h
-  free -h
+  if command -v free >/dev/null 2>&1; then
+    free -h
+  elif command -v vm_stat >/dev/null 2>&1; then
+    vm_stat
+  else
+    log "Informations mémoire indisponibles."
+  fi
   if docker inspect "$PG_CONTAINER" >/dev/null 2>&1; then
     docker exec "$PG_CONTAINER" psql -U "${POSTGRES_USER:-injs}" -d "${POSTGRES_DB:-injs}" -Atc 'SHOW server_version;' \
       | sed 's/^/PostgreSQL : /' || log "PostgreSQL : version illisible (vérifier POSTGRES_USER/POSTGRES_DB)."
@@ -558,71 +577,137 @@ cmd_deployer() {
 }
 
 cmd_rollback() {
-  charger_env
-  log "=== ROLLBACK APPLICATIF COMPLET ==="
+  local backup=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --backup)
+        [ $# -ge 2 ] || die "Chemin de sauvegarde manquant après --backup."
+        backup="$2"
+        shift 2
+        ;;
+      *)
+        die "Argument inconnu pour rollback : $1 (usage : rollback --backup <fichier .env.bak-*>)"
+        ;;
+    esac
+  done
 
-  # 1. Identifier la configuration précédente et vérifier son intégrité
-  # AVANT de toucher à quoi que ce soit.
-  local dernier_bak=""
-  dernier_bak="$(ls -t "$SCRIPT_DIR"/.env.bak-* 2>/dev/null | head -1 || true)"
-  [ -n "$dernier_bak" ] \
-    || die "Aucun fichier .env.bak-* : aucun déploiement commencé à annuler. Rollback impossible."
+  [ -n "$backup" ] || die "Rollback refusé : préciser explicitement --backup <fichier .env.bak-*>."
+  [ -f "$backup" ] && [ ! -L "$backup" ] \
+    || die "Sauvegarde absente, invalide ou symbolique : $backup."
+  case "$(basename "$backup")" in
+    .env.bak-*) ;;
+    *) die "Le fichier indiqué ne porte pas le préfixe attendu .env.bak-." ;;
+  esac
+
+  backup="$(cd "$(dirname "$backup")" && pwd)/$(basename "$backup")"
+  [ "$backup" != "$ENV_FILE" ] || die "La sauvegarde ne peut pas être le .env actif."
+
+  # Valider la configuration active et conserver son chemin.
+  charger_env
+  local env_actif="$ENV_FILE"
+  log "=== ROLLBACK APPLICATIF CONTRÔLÉ ==="
+  log "Sauvegarde explicitement choisie : $backup"
+
+  # Vérifier les paramètres de la configuration précédente.
   local tag_be tag_fe var_secret port_bak
-  tag_be="$(lire_var_env "$dernier_bak" INJS_BACKEND_TAG)"
-  tag_fe="$(lire_var_env "$dernier_bak" INJS_FRONTEND_TAG)"
+  tag_be="$(lire_var_env "$backup" INJS_BACKEND_TAG)"
+  tag_fe="$(lire_var_env "$backup" INJS_FRONTEND_TAG)"
   valider_tag "$tag_be"
   valider_tag "$tag_fe"
-  [ -n "$(lire_var_env "$dernier_bak" POSTGRES_DB)" ] && [ -n "$(lire_var_env "$dernier_bak" POSTGRES_USER)" ] \
-    || die "Configuration précédente incomplète (POSTGRES_DB/POSTGRES_USER absents ou vides dans $dernier_bak). Rollback refusé."
-  # Validation COMPLÈTE avant toute interruption : les secrets de la
-  # configuration restaurée passent le même validateur que le
-  # chargement normal (D6) — un rollback ne doit jamais arrêter la
-  # stack pour découvrir ensuite qu'elle ne peut pas redémarrer.
-  for var_secret in POSTGRES_PASSWORD DJANGO_SECRET_KEY; do
-    valider_secret_valeur "$var_secret" "$(lire_var_env "$dernier_bak" "$var_secret")"
+
+  for var_secret in POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD DJANGO_SECRET_KEY; do
+    local valeur
+    valeur="$(lire_var_env "$backup" "$var_secret")"
+    [ -n "$valeur" ] || die "Variable $var_secret absente de la sauvegarde."
+    case "$var_secret" in
+      POSTGRES_PASSWORD|DJANGO_SECRET_KEY)
+        valider_secret_valeur "$var_secret" "$valeur"
+        ;;
+    esac
   done
-  port_bak="$(lire_var_env "$dernier_bak" INJS_PUBLIC_PORT)"
+
+  port_bak="$(lire_var_env "$backup" INJS_PUBLIC_PORT)"
   if [ -n "$port_bak" ]; then
     printf '%s' "$port_bak" | grep -Eq '^[0-9]+$' \
-      || die "INJS_PUBLIC_PORT invalide dans $dernier_bak (« $port_bak » n'est pas un port numérique). Rollback refusé."
+      || die "INJS_PUBLIC_PORT invalide dans la sauvegarde."
+    [ "$port_bak" -ge 1 ] && [ "$port_bak" -le 65535 ] \
+      || die "INJS_PUBLIC_PORT hors limites dans la sauvegarde."
   fi
-  [ -f "$COMPOSE_FILE" ] || die "Fichier compose introuvable : $COMPOSE_FILE. Rollback refusé."
-  log "Configuration précédente entièrement validée (tags, variables, secrets, port, compose) : $dernier_bak (backend=$tag_be, frontend=$tag_fe)"
 
-  # 2. Sauvegarder l'état courant, puis restaurer et revérifier.
-  compose down
-  cp "$ENV_FILE" "$ENV_FILE.avant-rollback-$HORODATAGE"
-  cp "$dernier_bak" "$ENV_FILE"
-  grep -q "^INJS_BACKEND_TAG=$tag_be" "$ENV_FILE" && grep -q "^INJS_FRONTEND_TAG=$tag_fe" "$ENV_FILE" \
-    || die "Restauration des tags non confirmée dans $ENV_FILE. Rollback incomplet."
-  charger_env  # recharge et revalide l'environnement restauré (variables + secrets)
-  log "Tags et environnement restaurés (état courant sauvegardé : $ENV_FILE.avant-rollback-$HORODATAGE)."
+  [ -f "$COMPOSE_FILE" ] || die "Fichier Compose introuvable."
+  [ -f "$env_actif" ] || die "Configuration active introuvable."
 
-  # 3. S'assurer des images restaurées, puis relancer les services.
-  log "Anciennes images disponibles localement :"
-  docker images --format '  {{.Repository}}:{{.Tag}} ({{.ID}})' \
-    | grep -E 'injs-be|injs-fe' || log "  (aucune listée — récupération par pull)"
-  compose pull
-  compose up -d
+  # Préparer Compose avec les variables de la sauvegarde.
+  # Aucun service n'est arrêté ou recréé à ce stade.
+  ENV_FILE="$backup"
+  charger_env
+
+  compose config --quiet \
+    || die "Configuration Compose précédente invalide. Stack active inchangée."
+
+  log "Téléchargement préalable des images de la version précédente."
+  compose pull \
+    || die "Récupération des anciennes images impossible. Stack active inchangée."
+
+  # Sauvegarder la configuration active avant toute modification.
+  ENV_FILE="$env_actif"
+  local env_courant="$env_actif.avant-rollback-$HORODATAGE"
+  cp -p "$env_actif" "$env_courant"
+
+  # Préparer puis installer atomiquement la configuration précédente.
+  local temporaire="$env_actif.tmp-rollback-$HORODATAGE"
+  cp "$backup" "$temporaire"
+  chmod 600 "$temporaire"
+  mv -f "$temporaire" "$env_actif"
+
+  if ! charger_env; then
+    cp "$env_courant" "$env_actif"
+    die "Configuration restaurée invalide. Configuration active précédente remise en place."
+  fi
+
+  log "Configuration précédente installée. Configuration active sauvegardée : $env_courant"
+
+  # Mise à jour en place : aucun compose down.
+  if ! compose up -d; then
+    log "ÉCHEC du démarrage : restauration de la configuration active précédente."
+    cp "$env_courant" "$env_actif"
+    charger_env
+    compose up -d || log "ATTENTION : rétablissement automatique de la stack en échec."
+    die "Rollback non confirmé. Vérification humaine nécessaire."
+  fi
+
   compose ps
 
-  # 4. Vérifier la disponibilité réelle (backend puis frontend).
-  local tentative
+  # Contrôler backend ET frontend.
+  local tentative ok=0
   for tentative in $(seq 1 30); do
-    curl -sf "http://127.0.0.1:$PUBLIC_PORT/api/health/" >/dev/null 2>&1 && break
+    if curl -sf "http://127.0.0.1:$PUBLIC_PORT/api/health/" >/dev/null 2>&1 \
+       && curl -sf "http://127.0.0.1:$PUBLIC_PORT/" >/dev/null 2>&1; then
+      ok=1
+      break
+    fi
     sleep 5
   done
-  curl -sf "http://127.0.0.1:$PUBLIC_PORT/api/health/" >/dev/null 2>&1 \
-    || { compose logs --tail 100 || true; die "ROLLBACK EN ÉCHEC : backend restauré indisponible sur le port $PUBLIC_PORT. Ancienne application externe et PostgreSQL intacts ; décision humaine requise."; }
-  curl -sf "http://127.0.0.1:$PUBLIC_PORT/" >/dev/null 2>&1 \
-    || die "ROLLBACK EN ÉCHEC : frontend restauré indisponible sur le port $PUBLIC_PORT."
-  log "ROLLBACK RÉUSSI : version restaurée ($tag_be) disponible sur le port $PUBLIC_PORT."
-  log "Étapes manuelles restantes : repointer Nginx Proxy Manager vers la cible restaurée (RUNBOOK.md §8), puis vérifier les comptages."
-  log "RAPPEL DES LIMITES : rollback APPLICATIF et de CONFIGURATION uniquement."
-  log "Il ne restaure ni un schéma PostgreSQL déjà migré, ni des données"
-  log "transformées, ni les médias. La restauration PostgreSQL est une"
-  log "procédure DISTINCTE (sauvegarde de l'état courant, vérification du"
-  log "dump, approbation humaine explicite) — jamais automatique."
+
+  if [ "$ok" != "1" ]; then
+    log "Contrôles HTTP en échec : restauration de la configuration active précédente."
+    cp "$env_courant" "$env_actif"
+    charger_env
+    if compose up -d; then
+      log "Configuration précédente réinstallée et stack relancée."
+    else
+      log "ALERTE : relance de la stack précédente en échec."
+    fi
+    compose ps || true
+    compose logs --tail 100 || true
+    die "Rollback non confirmé : backend/frontend indisponibles ou non vérifiés."
+  fi
+
+  log "ROLLBACK APPLICATIF RÉUSSI : backend et frontend répondent."
+  log "Configuration précédente sauvegardée dans : $env_courant"
+  log "Aucune migration, restauration PostgreSQL ou opération sur les volumes effectuée."
+  log "Vérifier les comptages métier et la compatibilité du schéma PostgreSQL."
+  log "Bascule Nginx Proxy Manager : intervention manuelle si nécessaire."
 }
 
 main() {

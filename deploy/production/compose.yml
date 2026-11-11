@@ -24,7 +24,20 @@ services:
   backend:
     image: "${INJS_BACKEND_IMAGE:-jckouassi/injs-be}:${INJS_BACKEND_TAG}"
     entrypoint: ["/app/entrypoint.sh"]
-    command: "gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers auto --timeout 120"
+    command:
+      - sh
+      - -c
+      - >-
+        WORKERS="$${GUNICORN_WORKERS:-auto}";
+        if [ "$$WORKERS" = "auto" ]; then
+          WORKERS=$$(( $$(nproc) * 2 + 1 ));
+        fi;
+        exec gunicorn config.wsgi:application
+        --bind "0.0.0.0:$${PORT:-8000}"
+        --workers "$$WORKERS"
+        --timeout "$${GUNICORN_TIMEOUT:-120}"
+        --access-logfile -
+        --error-logfile -
     environment:
       DJANGO_SETTINGS_MODULE: "config.settings"
       DEBUG: "0"

@@ -118,3 +118,12 @@ venv*/
 **/*.rej
 **/*.swp
 entrypoint.sh.bak
+backend/.env.backup-*
+backend/management/commands/rbac_initialisation.py
+backend/populate_db.py
+dossier_trvx/
+test00001.txt
+test001.txt
+# Sauvegardes locales de fichiers et configurations
+**/*.bak_*
+backend/.env.backup_*

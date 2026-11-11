@@ -340,7 +340,13 @@ def _seance_ligne(affectation, date, maintenant, rows, effectif, attendus_ids,
         # Non pointés = membres du groupe sans **aucune** ligne de présence.
         traites = len([pid for pid in rows if not attendus_ids or pid in attendus_ids])
         non_pointes = max(0, attendu - traites)
-        taux = round(compteurs['presents'] / attendu, 4) if attendu > 0 else None
+        taux = (
+            round(
+                (compteurs['presents'] + compteurs['retards']) / attendu,
+                4
+            )
+            if attendu > 0 else None
+        )
     groupe = getattr(affectation, 'groupe', None)
     ligne = {
         'id': affectation.id,

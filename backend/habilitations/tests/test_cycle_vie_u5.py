@@ -495,7 +495,7 @@ class InactiviteExpirationTests(APITestCase):
         compte = fx.compte_curp('inact1', 'AGENT_INSCRIPTIONS',
                                 role_legacy='SECRETARIAT', cree_par=self.admin)
         # Dernière activité il y a 170 jours : fenêtre de préavis.
-        derniere = timezone.localdate() - timedelta(days=170)
+        derniere = timezone.now() - timedelta(days=170)
         CompteUtilisateur.objects.filter(pk=compte.pk).update(
             date_activation=derniere, derniere_connexion=derniere)
         bilan = detecter_inactivite()
@@ -509,7 +509,7 @@ class InactiviteExpirationTests(APITestCase):
         self.assertEqual(compte.statut, CompteUtilisateur.Statut.ACTIF)
 
         # Au-delà du seuil, une proposition de suspension est mise en file.
-        ancienne = timezone.localdate() - timedelta(days=181)
+        ancienne = timezone.now() - timedelta(days=181)
         CompteUtilisateur.objects.filter(pk=compte.pk).update(
             derniere_connexion=ancienne, date_activation=ancienne)
         bilan = detecter_inactivite()
@@ -528,7 +528,7 @@ class InactiviteExpirationTests(APITestCase):
         politique.save()
         compte = fx.compte_curp('cong1', 'AGENT_INSCRIPTIONS',
                                 role_legacy='SECRETARIAT', exempt_inactivite=True)
-        derniere = timezone.localdate() - timedelta(days=240)
+        derniere = timezone.now() - timedelta(days=240)
         CompteUtilisateur.objects.filter(pk=compte.pk).update(
             date_activation=derniere, derniere_connexion=derniere)
         bilan = detecter_inactivite()

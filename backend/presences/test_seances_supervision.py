@@ -57,8 +57,17 @@ class BaseSupervision(TestCase):
     def setUpTestData(cls):
         cls.aujourdhui = timezone.localdate()
         maintenant = timezone.localtime(timezone.now())
-        cls.debut_time = (maintenant - timedelta(minutes=5)).time()
-        cls.fin_time = (maintenant + timedelta(minutes=55)).time()
+        debut_dt = maintenant - timedelta(minutes=5)
+        fin_dt = maintenant + timedelta(minutes=55)
+
+        # Garder la séance dans la journée civile : les heures seules
+        # du CreneauTemplate ne peuvent pas représenter un débordement.
+        if debut_dt.date() != cls.aujourdhui or fin_dt.date() != cls.aujourdhui:
+            debut_dt = maintenant.replace(hour=0, minute=0, second=0, microsecond=0)
+            fin_dt = maintenant.replace(hour=23, minute=59, second=0, microsecond=0)
+
+        cls.debut_time = debut_dt.time()
+        cls.fin_time = fin_dt.time()
 
         cls.annee = AnneeAcademique.objects.create(
             libelle='2026-2027', date_debut=cls.aujourdhui - timedelta(weeks=3),
@@ -251,6 +260,33 @@ class CategoriesPresenceTests(BaseSupervision):
         self.assertEqual(ligne['presences']['presents'], 2)
         self.assertEqual(ligne['non_pointes'], 1)
         self.assertAlmostEqual(ligne['taux_presence'], round(2 / 3, 4), places=4)
+
+    def test_retards_inclus_dans_le_taux_de_presence(self):
+        # Un présent et un retard doivent tous deux compter.
+        _pointage(
+            self.participants[0],
+            self.affectation,
+            self.aujourdhui,
+            statut=Pointage.Statut.TERMINE,
+            statut_assiduite=Pointage.StatutAssiduite.PRESENT,
+            timestamp_sortie=timezone.now(),
+        )
+        _pointage(
+            self.participants[1],
+            self.affectation,
+            self.aujourdhui,
+            statut=Pointage.Statut.TERMINE,
+            statut_assiduite=Pointage.StatutAssiduite.RETARD,
+            timestamp_sortie=timezone.now(),
+        )
+
+        ligne = self.ligne()
+
+        self.assertEqual(ligne['presences']['presents'], 1)
+        self.assertEqual(ligne['presences']['retards'], 1)
+        self.assertEqual(ligne['non_pointes'], 1)
+        self.assertEqual(ligne['taux_presence'], round(2 / 3, 4))
+
 
     def test_sources_qr_et_manuelle_exposees(self):
         _pointage(self.participants[0], self.affectation, self.aujourdhui,

@@ -39,6 +39,13 @@ def _fenetre_temporelle():
     now = timezone.localtime().replace(second=0, microsecond=0)
     debut = now - timedelta(minutes=5)
     fin = now + timedelta(minutes=55)
+
+    # CreneauTemplate stocke des heures sans date : éviter un débordement
+    # sur le lendemain tout en conservant une séance en cours.
+    if debut.date() != now.date() or fin.date() != now.date():
+        debut = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        fin = now.replace(hour=23, minute=59, second=0, microsecond=0)
+
     return debut, fin
 
 

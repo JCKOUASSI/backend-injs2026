@@ -17,6 +17,7 @@ from django.test import SimpleTestCase
 _MARQUEUR = 'b4-marqueur-test-pas-une-cle'
 
 _VARIABLES = (
+    'POSTGRES_DB',
     'DEBUG', 'DJANGO_DEBUG',
     'SECRET_KEY', 'DJANGO_SECRET_KEY',
     'ALLOWED_HOSTS', 'DJANGO_ALLOWED_HOSTS',
@@ -32,7 +33,8 @@ def _purger():
 class ChargementConfigurationMixin:
     """Recharge config.settings sous un environnement maitrise puis le restaure."""
 
-    def charger(self, env, attendre_erreur=False, avec_cle=True):
+    def charger(self, env, attendre_erreur=False, avec_cle=True,
+                avec_base=True):
         """Retourne le module config.settings recharge, ou None si RuntimeError.
 
         Deux precautions rendent la recharge deterministic :
@@ -51,6 +53,9 @@ class ChargementConfigurationMixin:
           seul son rechargement par le .env est ecarte pendant le test.
         """
         env = dict(env)
+        if avec_base:
+            env.setdefault('POSTGRES_DB', 'injs_test_settings')
+
         with mock.patch.dict(os.environ, {}, clear=False):
             # Purge AVANT l'injection : les variables du test doivent
             # etre posees apres le nettoyage, jamais avant.
@@ -152,3 +157,23 @@ class ResolutionHotesTests(ChargementConfigurationMixin, SimpleTestCase):
     def test_csrf_alias_conserve(self):
         s = self.charger({'CSRF_TRUSTED_ORIGINS': 'https://c.example'})
         self.assertEqual(s.CSRF_TRUSTED_ORIGINS, ['https://c.example'])
+
+
+class ResolutionBasePostgreSQLTests(ChargementConfigurationMixin, SimpleTestCase):
+    """La configuration PostgreSQL ne doit jamais choisir une base implicite."""
+
+    def test_postgres_db_obligatoire(self):
+        self.assertIsNone(
+            self.charger(
+                {'DJANGO_DEBUG': '1'},
+                attendre_erreur=True,
+                avec_base=False,
+            )
+        )
+
+    def test_postgres_db_explicite(self):
+        s = self.charger({
+            'DJANGO_DEBUG': '1',
+            'POSTGRES_DB': 'injs_lmd_current',
+        })
+        self.assertEqual(s.DATABASES['default']['NAME'], 'injs_lmd_current')

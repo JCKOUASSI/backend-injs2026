@@ -242,7 +242,13 @@ if _env_flag('USE_SQLITE', default=False):
         }
     }
 else:
-    _postgres_db = os.environ.get('POSTGRES_DB', 'qr_badge')
+    _postgres_db = _env_first('POSTGRES_DB')
+    if _postgres_db is None:
+        raise RuntimeError(
+            "Configuration PostgreSQL invalide : POSTGRES_DB doit être "
+            "explicitement défini dans l'environnement ou le fichier .env. "
+            "Aucune base de données par défaut ne sera sélectionnée."
+        )
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',

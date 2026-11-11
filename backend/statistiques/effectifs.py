@@ -23,14 +23,39 @@ from presences.models import Pointage
 
 
 def q_pointage_present():
-    """Filtre ORM : pointage compté comme présence valide."""
+    """
+    Filtre ORM aligné sur statut_assiduite_effectif().
+
+    Un statut pédagogique explicite est prioritaire.
+    En son absence, le statut de processus est interprété
+    selon le mapping officiel de Pointage.
+    """
+    presence_temporelle_valide = (
+        Q(timestamp_entree__isnull=False, timestamp_sortie__isnull=True)
+        | Q(timestamp_sortie__isnull=False, duree_presence_minutes__gt=0)
+    )
+
+    assiduite_explicite = Q(
+        statut_assiduite__in=[
+            Pointage.StatutAssiduite.PRESENT,
+            Pointage.StatutAssiduite.RETARD,
+        ]
+    )
+
+    assiduite_derivee = (
+        Q(statut_assiduite__isnull=True)
+        & Q(statut__in=[
+            Pointage.Statut.EN_COURS,
+            Pointage.Statut.TERMINE,
+            Pointage.Statut.FORCE_DFRC,
+            Pointage.Statut.SORTIE_AUTO,
+        ])
+    )
+
     return (
         Q(participant__isnull=False)
-        & ~Q(statut=Pointage.Statut.ABSENT_NON_BADGE)
-        & (
-            Q(timestamp_entree__isnull=False, timestamp_sortie__isnull=True)
-            | Q(timestamp_sortie__isnull=False, duree_presence_minutes__gt=0)
-        )
+        & (assiduite_explicite | assiduite_derivee)
+        & presence_temporelle_valide
     )
 
 

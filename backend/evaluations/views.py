@@ -84,7 +84,14 @@ def _sessions_visibles(user):
     """Sessions visibles : périmètre ENCADRANT appliqué en base (jamais en UI)."""
     qs = SessionEvaluation.objects.select_related(
         'annee_academique', 'ref_formation', 'niveau', 'semestre', 'maquette',
-    ).annotate(nb_evaluations=Count('evaluations', distinct=True))
+    ).annotate(
+        nb_evaluations=Count('evaluations', distinct=True),
+    ).order_by(
+        '-annee_academique__libelle',
+        'semestre__numero',
+        'type_session',
+        'pk',
+    )
     affectations = perms.perimetre_affectations(user)
     if affectations.none():
         return qs.none()
