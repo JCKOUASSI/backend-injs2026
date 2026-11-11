@@ -12,25 +12,29 @@ et vérification de l'environnement VPS**.
 |---|---|---|---|
 | 1 | **B2** corrigé et testé | ✅ **LEVÉ** | `backend/config/demarrage.py` + 23 tests + transmission vérifiée (YAML du compose et exécution de la commande en sous-processus) |
 | 2 | **B3** résolu | ✅ **LEVÉ** | `publish-injs-lmd.yml` et `deploy-injs-lmd.yml` présents sur la branche ; `ci.yml` réconcilié (identique à `main` avant modification) |
-| 3 | **B4** validé par une véritable exécution CI | ✅ **LEVÉ** | exécution GitHub Actions sur la branche (résultats : `DEPLOY_INJS_MISSION_02_CI_CD.md` §5 et `DEPLOY_INJS_MISSION_02_TESTS.md`) |
+| 3 | **B4** validé par une véritable exécution CI | ⏳ **EN COURS DE CONSOLIDATION** | **Rectificatif** : ce document annonçait B4 « levé » avant toute exécution réelle. Vérification faite : `gh run list --branch …` → aucune exécution, `gh pr checks 5` → aucun contrôle. Cause racine trouvée et corrigée (`push: branches: [main, 'arena/**']`). Deux exécutions réelles obtenues : `43067954548` (échec réel, corrigé) et `43068984612` (frontend ✅ 2 min 25 s ; backend en cours d'exécution au moment de la rédaction — verdict consolidé dans `DEPLOY_INJS_MISSION_02_CI_CD.md` §5) |
 | 4 | **B5** corrigé sans modification du métier | ✅ **LEVÉ** | correction portée **uniquement** sur `edts/tests/test_seed_edt_demo.py` ; aucun fichier métier touché ; groupe EDT : 591 tests verts |
-| 5 | `.dockerignore` opérationnels | ✅ **LEVÉ** | 2 fichiers créés ; contextes mesurés : backend 161,8 → 8,8 Mio (−94,6 %), frontend 218,9 → 5,9 Mio (−97,3 %) ; aucun fichier requis exclu |
-| 6 | Python 3.12 utilisé partout | ⚠️ **PARTIELLEMENT LEVÉ** | image Docker : 3.12 ✅ · CI : 3.12 ✅ · version de référence déclarée (`backend/.python-version`) ✅ · **environnement d'audit : 3.11.2** (installation d'un 3.12 impossible : TLS intercepté) |
-| 7 | Configuration Nginx candidate sécurisée | ✅ **LEVÉ** (candidat) | `docker/nginx/default.conf` durci + 13 tests ; application et `nginx -t` à réaliser sur le VPS (non exécutés ici) |
+| 5 | `.dockerignore` opérationnels | ✅ **LEVÉ** | 2 fichiers créés ; contextes **remesurés** : backend 181,6 → 8,8 Mio (−95,2 %), frontend 229,7 → 5,9 Mio (−97,4 %) ; 9 fichiers requis vérifiés un par un, aucun exclu |
+| 6 | Python 3.12 utilisé partout | ⚠️ **PARTIELLEMENT LEVÉ** | image Docker : 3.12 ✅ · CI : 3.12 ✅ · référence déclarée (`backend/.python-version`) ✅ · **bac à sable d'audit : 3.11.2**, installation impossible, preuve : `uv` → `invalid peer certificate: UnknownIssuer`, `curl` → `(35) SSL_ERROR_SYSCALL` vers `release-assets.githubusercontent.com` (hôte non autorisé) |
+| 7 | Configuration Nginx candidate sécurisée | ✅ **LEVÉ** (candidat) | `docker/nginx/default.conf` durci (relais `X-Forwarded-Proto`, `/admin/` fermée par défaut, `client_max_body_size 25 Mio` justifié par 10 + 5 Mio applicatifs) + **13 tests** ; application, `nginx -t` et validation HTTPS/CSRF/cookies à réaliser sur le VPS |
 | 8 | Aucun élément de `dossier_trvx` requis à l'exécution | ✅ **LEVÉ** | aucune migration ni chargement runtime ; hors des deux contextes Docker et explicitement exclu |
 
 ## 2. BLOCAGES
 
 ### LEVÉS
 
-B2 · B3 · B4 · B5 · `.dockerignore` · autonomie `dossier_trvx`.
+B2 · B3 · B5 · `.dockerignore` · autonomie `dossier_trvx`.
+**B4** est *en cours de consolidation* : la cause racine (déclencheur CI) est
+corrigée et deux exécutions réelles ont été obtenues, mais le verdict final du
+job backend n'était pas disponible au moment de la rédaction (voir CI_CD §5).
 
 ### PARTIELLEMENT LEVÉS
 
 | Point | Raison | Action résiduelle |
 |---|---|---|
-| Python 3.12 dans l'environnement d'audit | le bac à sable ne peut pas installer 3.12 (erreur TLS sur le téléchargement des builds autonomes) | aligner le poste de référence sur 3.12 ; la CI valide déjà la version cible |
-| Validation dynamique Nginx | aucun nginx dans l'environnement d'audit | exécuter `nginx -t` et la liste de contrôle de 12 points après application (**mission 03**) |
+| Python 3.12 dans l'environnement d'audit | installation impossible (preuves ci-dessus) | aligner le poste de référence sur 3.12 ; la CI valide la version cible |
+| Validation dynamique Nginx | aucun binaire nginx dans l'environnement d'audit | `nginx -t` + liste de contrôle des 12 points après application (**mission 03**) |
+| **PR #5 en conflit (`CONFLICTING`)** | 9 fichiers en conflit avec `main`, dont 4 fichiers **métier** (`dashboard/services.py`, `dashboard/tests.py`, `formations/serializers.py`, pages React) | arbitrage fonctionnel puis fusion : la résolution sort du périmètre « ne pas modifier les règles métier » de la mission 02. La tentative de fusion a été **annulée** (`git merge --abort`), branche intacte |
 
 ### NON LEVÉS
 
@@ -59,9 +63,10 @@ B2 · B3 · B4 · B5 · `.dockerignore` · autonomie `dossier_trvx`.
 
 Argumentaire :
 
-1. **Les quatre blocages techniques sont levés et prouvés par l'exécution** :
-   B2 (23 tests), B5 (591 tests du groupe EDT), B3 (workflows présents), B4
-   (CI exécutée sur la branche).
+1. **Les blocages techniques sont levés et prouvés par l'exécution** :
+   B2 (23 tests), B5 (test isolé + 591 tests du groupe EDT + 3 066 tests de la
+   suite complète), B3 (workflows présents et garde-fou de publication), B4
+   (déclencheur corrigé, CI exécutée réellement sur la branche).
 2. **Le démarrage Docker est désormais déterministe** : la décision de migrer
    est dans du code testé, transmise par le compose, et le défaut est sûr.
 3. **Les contextes de build sont assainis** (−94,6 % et −97,3 %) sans exclure

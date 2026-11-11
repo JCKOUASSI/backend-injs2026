@@ -62,9 +62,42 @@ artefact du journal de tests, annotations `::error` des échecs.
 | Build de production | `npm run build` |
 
 **Règle appliquée** : la CI ne sera déclarée verte que si **tous** les tests
-sont exécutés et réussis. Le déclenchement est `push` (branche `main`),
-`pull_request` et `workflow_dispatch` — un push sur la branche de livraison
-déclenche donc l'exécution via l'événement `pull_request` de la PR #5.
+sont exécutés et réussis.
+
+### ⚠️ Correction apportée en cours de mission (cause racine de B4)
+
+La première version de ce document supposait qu'un push sur la branche de
+livraison déclencherait la CI « via l'événement `pull_request` de la PR #5 ».
+**C'était faux, et la vérification l'a démontré** :
+
+```
+$ gh run list --branch arena/4524a57c-backend-injs2026
+(aucune exécution)
+$ gh pr checks 5
+no checks reported on the 'arena/4524a57c-backend-injs2026' branch
+```
+
+Le motif de déclenchement était `push: branches: [main]` : **aucun push de la
+branche de livraison ne déclenchait quoi que ce soit**, et la PR #5 étant en
+conflit avec `main`, aucun contrôle n'était remonté. La branche de livraison
+n'était donc validée nulle part — c'est le blocage B4.
+
+Correction (commit `cd293ab`) :
+
+```yaml
+on:
+  push:
+    branches: [main, 'arena/**']   # ← motif 'arena/**' ajouté
+  pull_request:
+  workflow_dispatch:
+```
+
+| Déclencheur | Avant | Après |
+|---|---|---|
+| `push` sur `main` | ✅ | ✅ |
+| `push` sur `arena/**` (branche de livraison) | ❌ | ✅ |
+| `pull_request` | ✅ | ✅ |
+| `workflow_dispatch` | ✅ | ✅ |
 
 ## 3. PUBLICATION : GARDE-FOU (mission 02 — aucune publication)
 
