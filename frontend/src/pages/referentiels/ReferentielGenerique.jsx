@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import api from '../../services/api'
 import { useToast } from '../../context/ToastContext'
+import BarreExport from '../../components/referentiels/BarreExport'
+import AssistantImport from '../../components/referentiels/AssistantImport'
 import '../../styles/candidatures.css'
 import '../../styles/referentiels.css'
 
@@ -161,6 +163,8 @@ export default function ReferentielGenerique() {
   const [envoi, setEnvoi] = useState(false)
   const [confirmation, setConfirmation] = useState(null)
   const [lectureSeule, setLectureSeule] = useState(false)
+  const [importOuvert, setImportOuvert] = useState(false)
+  const [suppression, setSuppression] = useState(null)
 
   // Capacités réelles du modèle, annoncées par le registre backend : les
   // référentiels hors socle (scolarité LMD) n'ont ni provenance ni
@@ -272,6 +276,21 @@ export default function ReferentielGenerique() {
       })
   }, [lignes, recherche, filtreActif, entree, lectureSeule])
 
+  /**
+   * Critères réellement transmis à l'export : le document généré couvre
+   * exactement ce que l'écran affiche (recherche et filtre d'état).
+   */
+  const filtresExport = useMemo(() => {
+    const params = {}
+    if (recherche.trim()) params.search = recherche.trim()
+    if (!lectureSeule && filtreActif !== 'tous') {
+      if (filtreActif === 'archives') params.archives = 1
+      else if (filtreActif === 'actifs') params.actif = 'true'
+      else if (filtreActif === 'inactifs') params.actif = 'false'
+    }
+    return params
+  }, [recherche, filtreActif, lectureSeule])
+
   const ouvrirCreation = () => {
     const base = { fiabilite: 'A_RENSEIGNER', actif: true }
     ;(entree?.champs || []).forEach((champ) => {
@@ -378,15 +397,6 @@ export default function ReferentielGenerique() {
     }
   }
 
-  const basculerStatut = async (ligne) => {
-    try {
-      await api.patch(`/referentiels/${slug}/${ligne.id}/`, { actif: !ligne.actif })
-      await charger({ silencieux: true })
-    } catch {
-      toast.error?.('Changement de statut impossible.')
-    }
-  }
-
   const archiver = async () => {
     if (!confirmation) return
     setEnvoi(true)
@@ -408,6 +418,61 @@ export default function ReferentielGenerique() {
       await charger({ silencieux: true })
     } catch {
       toast.error?.('Réactivation impossible.')
+    }
+  }
+
+  /**
+   * Activer et désactiver sont deux opérations distinctes de l'archivage :
+   * une valeur désactivée reste présente, consultable et archivable.
+   */
+  const activer = async (ligne) => {
+    try {
+      await api.post(`/referentiels/${slug}/${ligne.id}/activer/`, {})
+      toast.success?.('Valeur activée.')
+      await charger({ silencieux: true })
+    } catch (e) {
+      toast.error?.(e.response?.data?.detail || 'Activation impossible.')
+    }
+  }
+
+  const desactiver = async (ligne) => {
+    try {
+      await api.post(`/referentiels/${slug}/${ligne.id}/desactiver/`, {})
+      toast.success?.('Valeur désactivée — elle reste consultable.')
+      await charger({ silencieux: true })
+    } catch (e) {
+      toast.error?.(e.response?.data?.detail || 'Désactivation impossible.')
+    }
+  }
+
+  /**
+   * Suppression sécurisée : le backend vérifie les dépendances avant toute
+   * modification. S'il existe des enregistrements rattachés, rien n'est
+   * supprimé et l'utilisateur est invité à archiver à la place.
+   */
+  const supprimer = async () => {
+    if (!suppression) return
+    setEnvoi(true)
+    try {
+      await api.post(`/referentiels/${slug}/${suppression.id}/supprimer/`, {
+        confirmation: 'confirmer',
+        motif: 'Suppression depuis le Hub Référentiels',
+      })
+      toast.success?.('Valeur supprimée (archivage réversible) — aucune donnée détruite.')
+      setSuppression(null)
+      setConfirmation(null)
+      await charger({ silencieux: true })
+    } catch (e) {
+      const data = e.response?.data
+      if (e.response?.status === 409) {
+        // Dépendances détectées : on propose l'archivage, jamais la casse.
+        setSuppression({ ...suppression, dependances: data?.dependances || [] })
+        toast.error?.(data?.detail || 'Suppression refusée : cette valeur est utilisée.')
+      } else {
+        toast.error?.(data?.detail || 'Suppression impossible.')
+      }
+    } finally {
+      setEnvoi(false)
     }
   }
 
@@ -530,14 +595,35 @@ export default function ReferentielGenerique() {
                 Lecture seule
               </span>
             ) : (
-              <button type="button" className="cand-btn-principal" onClick={ouvrirCreation}>
-                <i className="bi bi-plus-lg" aria-hidden="true"></i>
-                Ajouter
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="cand-btn-secondaire"
+                  onClick={() => setImportOuvert(true)}
+                  title="Importer un fichier Excel ou CSV"
+                >
+                  <i className="bi bi-upload" aria-hidden="true"></i>
+                  Importer
+                </button>
+                <button type="button" className="cand-btn-principal" onClick={ouvrirCreation}>
+                  <i className="bi bi-plus-lg" aria-hidden="true"></i>
+                  Ajouter
+                </button>
+              </>
             )}
           </div>
         </header>
         <div className="cand-panel-body">
+          {entree && (
+            <BarreExport
+              slug={slug}
+              total={lignesFiltrees.length}
+              filtres={filtresExport}
+              onMessage={(type, texte) =>
+                type === 'ok' ? toast.success?.(texte) : toast.error?.(texte)
+              }
+            />
+          )}
           {lectureSeule && (
             <p className="ref-note-texte ref-note-bandeau">
               <i className="bi bi-shield-lock" aria-hidden="true"></i>
@@ -644,14 +730,36 @@ export default function ReferentielGenerique() {
                         >
                           <i className="bi bi-pencil" aria-hidden="true"></i>
                         </button>
+                        {ligne.actif ? (
+                          <button
+                            type="button"
+                            className="ref-action ref-action--statut is-actif"
+                            onClick={() => desactiver(ligne)}
+                            title="Désactiver"
+                            aria-label={`Désactiver ${ligne.libelle}`}
+                          >
+                            <i className="bi bi-toggle-on" aria-hidden="true"></i>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="ref-action ref-action--statut"
+                            onClick={() => activer(ligne)}
+                            title="Activer"
+                            aria-label={`Activer ${ligne.libelle}`}
+                            disabled={Boolean(ligne.archive)}
+                          >
+                            <i className="bi bi-toggle-off" aria-hidden="true"></i>
+                          </button>
+                        )}
                         <button
                           type="button"
-                          className={`ref-action ref-action--statut${ligne.actif ? ' is-actif' : ''}`}
-                          onClick={() => basculerStatut(ligne)}
-                          title={ligne.actif ? 'Désactiver' : 'Activer'}
-                          aria-label={`${ligne.actif ? 'Désactiver' : 'Activer'} ${ligne.libelle}`}
+                          className="ref-action ref-action--supprimer"
+                          onClick={() => setSuppression(ligne)}
+                          title="Supprimer"
+                          aria-label={`Supprimer ${ligne.libelle}`}
                         >
-                          <i className={`bi ${ligne.actif ? 'bi-toggle-on' : 'bi-toggle-off'}`} aria-hidden="true"></i>
+                          <i className="bi bi-trash3" aria-hidden="true"></i>
                         </button>
                         {archivageSupporte && (ligne.archive ? (
                           <button
@@ -903,6 +1011,84 @@ export default function ReferentielGenerique() {
             </footer>
           </div>
         </div>
+      )}
+
+      {/* Suppression sécurisée : confirmation, dépendances, suppression logique */}
+      {suppression && (
+        <div className="ref-modale-voile" role="presentation">
+          <div className="ref-modale ref-modale--etroite" role="alertdialog" aria-modal="true">
+            <header className="ref-modale-head">
+              <h2 className="ref-modale-titre">Supprimer cette valeur ?</h2>
+            </header>
+            <div className="ref-modale-corps">
+              {suppression.dependances?.length ? (
+                <div className="ref-alerte ref-alerte--erreur" role="alert">
+                  <p>
+                    <strong>Suppression impossible :</strong> cette valeur est utilisée par{' '}
+                    {suppression.dependances.length} enregistrement(s) du système.
+                  </p>
+                  <ul>
+                    {suppression.dependances.slice(0, 10).map((dep, index) => (
+                      <li key={index}>
+                        {dep.modele} — {dep.identifiant}
+                      </li>
+                    ))}
+                  </ul>
+                  <p>Archivage conseillé : la valeur reste consultable et réversible.</p>
+                </div>
+              ) : (
+                <p>
+                  <strong>{suppression.libelle}</strong> sera supprimée. Conformément aux
+                  règles du Hub, la valeur est <strong>archivée de façon réversible</strong> :
+                  aucune donnée académique n'est détruite. Les enregistrements déjà
+                  rattachés conservent leur historique.
+                </p>
+              )}
+            </div>
+            <footer className="ref-modale-pied">
+              <div className="ref-modale-boutons">
+                <button
+                  type="button"
+                  className="cand-btn-fantome"
+                  onClick={() => setSuppression(null)}
+                >
+                  Annuler
+                </button>
+                {suppression.dependances?.length ? (
+                  <button
+                    type="button"
+                    className="ref-btn ref-btn--secondaire"
+                    onClick={() => {
+                      const cible = suppression
+                      setSuppression(null)
+                      setConfirmation(cible)
+                    }}
+                  >
+                    Archiver plutôt
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="ref-btn-danger"
+                    onClick={supprimer}
+                    disabled={envoi}
+                  >
+                    {envoi ? 'Suppression…' : 'Confirmer la suppression'}
+                  </button>
+                )}
+              </div>
+            </footer>
+          </div>
+        </div>
+      )}
+
+      {importOuvert && (
+        <AssistantImport
+          slug={slug}
+          referentiel={entree?.libelle || slug}
+          onFermer={() => setImportOuvert(false)}
+          onTermine={() => charger({ silencieux: true })}
+        />
       )}
     </div>
   )

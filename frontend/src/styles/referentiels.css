@@ -585,6 +585,269 @@
 .ref-btn-danger:hover { background: #991B1B; }
 .ref-btn-danger:disabled { opacity: 0.6; cursor: progress; }
 
+/* ── 9. EXPORT / IMPORT (mission « Référentiels ») ── */
+
+.ref-action--supprimer:hover {
+  color: #B91C1C;
+  border-color: #F6C9C9;
+  background: #FEF2F2;
+}
+
+.ref-export {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 0.9rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  background: #F8FAFC;
+}
+
+.ref-export-libelle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--injs-navy);
+  margin-right: 0.25rem;
+}
+
+.ref-export-libelle em {
+  font-style: normal;
+  font-weight: 400;
+  color: #64748B;
+}
+
+.ref-btn--export {
+  font-size: 0.78rem;
+  padding: 0.3rem 0.6rem;
+}
+
+.ref-btn--secondaire {
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+  color: var(--injs-navy);
+  border-radius: 8px;
+  padding: 0.42rem 0.85rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ref-btn--secondaire:hover:not(:disabled) { background: #F1F5F9; }
+
+.ref-btn--secondaire:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ref-btn--lien {
+  border: none;
+  background: none;
+  color: #64748B;
+  font-size: 0.84rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Assistant d'import */
+.ref-modale--large { max-width: 860px; }
+
+.ref-import-etapes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0.9rem 1.15rem 0;
+}
+
+.ref-import-etape {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: #94A3B8;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: #F1F5F9;
+}
+
+.ref-import-etape--active {
+  color: #FFFFFF;
+  background: var(--injs-blue-royal);
+  font-weight: 600;
+}
+
+.ref-import-etape--faite {
+  color: #0E7A4F;
+  background: #E7F7EF;
+}
+
+.ref-import-etape-numero {
+  display: inline-grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.ref-import-etape--active .ref-import-etape-numero { background: rgba(255, 255, 255, 0.28); }
+
+.ref-import-bloc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.ref-import-aide,
+.ref-import-resume {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.ref-import-resume { font-size: 0.9rem; }
+
+.ref-import-fichier {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #0F172A;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ref-champ { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.ref-champ-libelle {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.ref-champ-saisie {
+  width: 100%;
+  padding: 0.42rem 0.6rem;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  background: #FFFFFF;
+}
+
+.ref-champ--case,
+.ref-champ--radio {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.ref-table-defilement {
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+}
+
+.ref-table--compacte { font-size: 0.8rem; width: 100%; border-collapse: collapse; }
+
+.ref-table--compacte th,
+.ref-table--compacte td {
+  padding: 0.35rem 0.55rem;
+  border-bottom: 1px solid #EEF2F7;
+  text-align: left;
+}
+
+.ref-table--compacte th {
+  background: #F8FAFC;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #64748B;
+}
+
+.ref-import-apercu summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--injs-blue-royal);
+  font-weight: 600;
+}
+
+.ref-import-compteurs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.ref-import-compteur {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--injs-navy);
+}
+
+.ref-alerte {
+  padding: 0.7rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.ref-alerte--erreur {
+  background: #FEF2F2;
+  border: 1px solid #F6C9C9;
+  color: #991B1B;
+}
+
+.ref-alerte--attention {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  color: #92400E;
+}
+
+.ref-alerte ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+
+.ref-modale-corps { padding: 1rem 1.15rem; max-height: 60vh; overflow: auto; }
+
+.ref-modale-fond {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 60;
+  padding: 1rem;
+}
+
+.ref-modale--etroite { max-width: 460px; }
+
+.ref-btn-fermer {
+  border: none;
+  background: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: #64748B;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .ref-import-etapes { padding: 0.75rem 0.75rem 0; }
+  .ref-export { gap: 0.3rem; }
+}
+
 /* ── 8. RESPONSIVE ── */
 @media (max-width: 760px) {
   .ref-hero-pastilles { width: 100%; }

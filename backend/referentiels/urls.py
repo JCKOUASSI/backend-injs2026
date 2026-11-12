@@ -45,11 +45,28 @@ for _slug, _entree in REGISTRE.items():
         }, slug=_slug),
         name=f'ref-{_slug}-detail',
     ))
-    for _action in ('archiver', 'reactiver'):
+    for _action in ('archiver', 'reactiver', 'activer', 'desactiver', 'supprimer'):
         urlpatterns.append(re_path(
             rf'^{_slug}/(?P<pk>[0-9]+)/{_action}/$',
             views.RefGeneriqueViewSet.as_view({'post': _action}, slug=_slug),
             name=f'ref-{_slug}-{_action}',
         ))
+    # Mission « Référentiels » : exports (4 formats) et imports (5 étapes)
+    # servis par le moteur commun, une seule route par référentiel.
+    urlpatterns.append(re_path(
+        rf'^{_slug}/exporter/$',
+        views.RefGeneriqueViewSet.as_view({'get': 'exporter'}, slug=_slug),
+        name=f'ref-{_slug}-exporter',
+    ))
+    urlpatterns.append(re_path(
+        rf'^{_slug}/importer/$',
+        views.RefGeneriqueViewSet.as_view({'post': 'importer'}, slug=_slug),
+        name=f'ref-{_slug}-importer',
+    ))
+    urlpatterns.append(re_path(
+        rf'^{_slug}/importer/analyse/$',
+        views.RefGeneriqueViewSet.as_view({'post': 'importer_analyse'}, slug=_slug),
+        name=f'ref-{_slug}-importer-analyse',
+    ))
 
 urlpatterns.append(path('', include(router.urls)))

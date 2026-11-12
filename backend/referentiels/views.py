@@ -8,7 +8,9 @@ Pattern retenu : ViewSet + DefaultRouter (comme l'app parametres).
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
+from django.db import models
 from rest_framework import status, viewsets
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -27,7 +29,11 @@ from .models import (
     RefTypeFrais,
     RefTypeNotification,
 )
-from .permissions import ReferentielPermission
+from .permissions import (
+    GererReferentielPermission,
+    ReferentielPermission,
+)
+from .moteur.mixins import ExportReferentielMixin, ImportReferentielMixin
 from .utils import libelle_en_doublon
 from .serializers import (
     ReferentielJournalSerializer,
@@ -44,6 +50,10 @@ from .serializers import (
 )
 
 
+class _AnnulationAnalyse(Exception):
+    """Annulation interne de l'exploration de dépendances (jamais une erreur)."""
+
+
 class RefPagination(PageNumberPagination):
     """Pagination du module : tables courtes, taille réglable par le client."""
 
@@ -52,12 +62,41 @@ class RefPagination(PageNumberPagination):
     max_page_size = 1000
 
 
-class ReferentielSocleViewSet(viewsets.ModelViewSet):
-    """ViewSet de base : CRUD sans suppression, archivage réversible, journal."""
+class ReferentielSocleViewSet(ExportReferentielMixin,
+                              ImportReferentielMixin,
+                              viewsets.ModelViewSet):
+    """ViewSet de base : CRUD, statuts, archivage, exports et imports.
+
+    Mission « Référentiels » : les comportements communs (export Word/Excel/
+    CSV/PDF, import Excel/CSV en 5 étapes, activation/désactivation,
+    archivage/désarchivage, suppression sécurisée) sont fournis par les mixins
+    du moteur, donc identiques pour les 27 référentiels du registre — chaque
+    référentiel ne code que ses règles métier propres.
+    """
 
     permission_classes = [ReferentielPermission]
     pagination_class = RefPagination
     http_method_names = ['get', 'post', 'patch', 'head', 'options']  # règle 2 : pas de DELETE
+
+    # Recherche multicritère, filtres et tri (exigence « liste » du Hub) :
+    # ``?search=`` cherche dans les champs texte, ``?ordering=`` trie, et les
+    # filtres métier (``?actif=``, ``?archives=``) sont appliqués par
+    # ``get_queryset``. Les champs sont déduits du modèle : aucune liste en dur.
+    filter_backends = [SearchFilter, OrderingFilter]
+    ordering_fields = '__all__'
+
+    @property
+    def search_fields(self):
+        """Champs texte du modèle : la recherche suit le référentiel servi."""
+        modele = getattr(getattr(self, 'queryset', None), 'model', None)
+        if modele is None:
+            return ('libelle',)
+        champs = [
+            f.name for f in modele._meta.concrete_fields
+            if isinstance(f, (models.CharField, models.TextField))
+            and not f.choices
+        ]
+        return tuple(champs) or ('libelle',)
 
     def get_queryset(self):
         qs = self.queryset
@@ -220,6 +259,110 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Valeur non archivée.'}, status=status.HTTP_400_BAD_REQUEST)
         obj.reactiver(request.user, motif=request.data.get('motif', ''))
         return Response({'detail': 'Valeur réactivée.', 'archive': False, 'actif': True})
+
+    # ── Règle 1 : activer ≠ archiver ≠ supprimer (trois actions distinctes) ──
+    @action(detail=True, methods=['post'])
+    def activer(self, request, pk=None):
+        """Active la valeur sans toucher à son archivage ni la supprimer."""
+        obj = self._get_any_object(pk)
+        if obj.archive:
+            return Response(
+                {'detail': 'Valeur archivée : désarchivez-la avant de l’activer.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if getattr(obj, 'actif', False):
+            return Response({'detail': 'Valeur déjà active.'}, status=status.HTTP_400_BAD_REQUEST)
+        obj.activer(request.user, motif=request.data.get('motif', ''))
+        return Response({'detail': 'Valeur activée.', 'actif': True, 'archive': False})
+
+    @action(detail=True, methods=['post'])
+    def desactiver(self, request, pk=None):
+        """Désactive la valeur : elle reste présente, consultable et archivable."""
+        obj = self._get_any_object(pk)
+        if not hasattr(obj, 'actif'):
+            return Response(
+                {'detail': 'Ce référentiel ne gère pas l’activation.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not obj.actif:
+            return Response({'detail': 'Valeur déjà inactive.'}, status=status.HTTP_400_BAD_REQUEST)
+        obj.desactiver(request.user, motif=request.data.get('motif', ''))
+        return Response({'detail': 'Valeur désactivée.', 'actif': False, 'archive': obj.archive})
+
+    @action(detail=True, methods=['post'])
+    def supprimer(self, request, pk=None):
+        """Suppression sécurisée : vérifie les dépendances, puis **archive**.
+
+        Conformément à la règle 2, rien n'est détruit physiquement : la valeur
+        est archivée de façon réversible, sauf blocage par une dépendance
+        académique (auquel cas rien n'est modifié).
+        """
+        obj = self._get_any_object(pk)
+        confirmation = str(request.data.get('confirmation', '')).strip().lower()
+        if confirmation not in {'confirmer', 'supprimer', 'oui'}:
+            return Response({
+                'detail': 'Confirmation requise : renvoyez « confirmer ».',
+                'confirmation_attendue': 'confirmer',
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        dependances = self._dependances(obj)
+        if dependances:
+            return Response({
+                'detail': (
+                    'Suppression refusée : cette valeur est utilisée par '
+                    f'{len(dependances)} enregistrement(s) du système. '
+                    'Archivez-la plutôt, ou réaffectez ces enregistrements.'
+                ),
+                'dependances': dependances[:20],
+                'solution': 'archiver',
+            }, status=status.HTTP_409_CONFLICT)
+
+        with transaction.atomic():
+            self._journaliser(obj, ReferentielJournal.Action.ARCHIVAGE, {
+                'origine': 'suppression_securisee',
+                'motif': request.data.get('motif', ''),
+            })
+            obj.archiver(request.user, motif=request.data.get('motif', ''))
+        return Response({
+            'detail': 'Valeur supprimée (archivage réversible) : aucune donnée détruite.',
+            'archive': True,
+        })
+
+    def _dependances(self, obj):
+        """Objets référençant cette valeur — **sans jamais rien supprimer**.
+
+        Le contrôle s'appuie sur un ``delete()`` exploratoire exécuté dans une
+        transaction immédiatement annulée : si des enregistrements protègent la
+        valeur (``on_delete=PROTECT``), ``ProtectedError`` les liste.
+        """
+        from django.db.models.deletion import ProtectedError
+
+        dependances = []
+
+        # ``delete()`` met ``pk`` à None en mémoire ; l'exploration étant
+        # annulée, la valeur existe toujours en base : on restaure son pk.
+        identifiant = obj.pk
+        try:
+            with transaction.atomic():
+                try:
+                    obj.delete()
+                except ProtectedError as exc:
+                    dependances = [
+                        {'modele': str(type(lie)._meta.verbose_name), 'identifiant': str(lie)}
+                        for lie in exc.protected_objects
+                    ]
+                except Exception:
+                    # Toute autre erreur : la suppression n'est pas autorisée.
+                    dependances = [{'modele': 'inconnu', 'identifiant': str(obj)}]
+                # Annulation garantie de l'exploration, y compris delete() réussi.
+                raise _AnnulationAnalyse
+        except _AnnulationAnalyse:
+            pass
+        except Exception:
+            obj.pk = identifiant
+            return [{'modele': 'inconnu', 'identifiant': str(obj)}]
+        obj.pk = identifiant
+        return dependances
 
 
 # ── ViewSets concrets (8 référentiels) ───────────────────────────────────────
