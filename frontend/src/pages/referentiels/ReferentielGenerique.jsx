@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import api from '../../services/api'
 import { useToast } from '../../context/ToastContext'
-import BarreExport from '../../components/referentiels/BarreExport'
+import BarreImportExport from '../../components/referentiels/BarreImportExport'
 import AssistantImport from '../../components/referentiels/AssistantImport'
 import '../../styles/candidatures.css'
 import '../../styles/referentiels.css'
@@ -596,15 +596,6 @@ export default function ReferentielGenerique() {
               </span>
             ) : (
               <>
-                <button
-                  type="button"
-                  className="cand-btn-secondaire"
-                  onClick={() => setImportOuvert(true)}
-                  title="Importer un fichier Excel ou CSV"
-                >
-                  <i className="bi bi-upload" aria-hidden="true"></i>
-                  Importer
-                </button>
                 <button type="button" className="cand-btn-principal" onClick={ouvrirCreation}>
                   <i className="bi bi-plus-lg" aria-hidden="true"></i>
                   Ajouter
@@ -615,10 +606,12 @@ export default function ReferentielGenerique() {
         </header>
         <div className="cand-panel-body">
           {entree && (
-            <BarreExport
+            <BarreImportExport
               slug={slug}
               total={lignesFiltrees.length}
               filtres={filtresExport}
+              lectureSeule={lectureSeule}
+              onImporter={() => setImportOuvert(true)}
               onMessage={(type, texte) =>
                 type === 'ok' ? toast.success?.(texte) : toast.error?.(texte)
               }

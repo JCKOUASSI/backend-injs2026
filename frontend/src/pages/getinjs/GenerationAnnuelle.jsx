@@ -108,9 +108,7 @@ export default function GenerationAnnuelle() {
       : '/edts/lmd/import/inscrits/'
 
     try {
-      const { data } = await api.post(chemin, donnees, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      const { data } = await api.post(chemin, donnees)
       setRapport(data)
       if (mode === 'import') {
         showToast(`${data.creees || 0} inscription(s) créée(s), ${data.mises_a_jour || 0} mise(s) à jour.`, 'success')

@@ -144,10 +144,23 @@ const buildUrl = (path, params) => {
 const request = async (method, path, body, config = {}) => {
   const url = buildUrl(path, config.params)
   const isFormData = body instanceof FormData
+  // Garde-fou : un `Content-Type: multipart/form-data` imposé par l'appelant
+  // est **retiré** quand le corps est un FormData. Sans la boundary que le
+  // navigateur ajoute lui-même, le serveur répond
+  // « Multipart form parse error - Invalid boundary in multipart: None » —
+  // l'import échoue alors systématiquement. C'est l'exact symétrique du bug
+  // d'export (`responseType` ignoré) : une habitude d'axios appliquée à
+  // `fetch`. Le garde-fou protège aussi les futurs appelants.
+  const entetesAppelant = { ...(config.headers || {}) }
+  if (isFormData) {
+    for (const cle of Object.keys(entetesAppelant)) {
+      if (cle.toLowerCase() === 'content-type') delete entetesAppelant[cle]
+    }
+  }
   const headers = {
     ...(!isFormData && body !== undefined ? { 'Content-Type': 'application/json' } : {}),
     ...getAuthHeaders(),
-    ...(config.headers || {}),
+    ...entetesAppelant,
   }
   const init = {
     method,

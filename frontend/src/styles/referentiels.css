@@ -621,6 +621,130 @@
   color: #64748B;
 }
 
+/* ── Boutons d'action premium ────────────────────────────────────────────
+   Socle commun aux actions « Importer » et « Exporter ». Avant ce bloc,
+   `.ref-btn` et `.ref-btn--primaire` étaient utilisés par l'assistant
+   d'import sans être définis nulle part : les boutons principaux
+   (« Analyser le fichier », « Importer ») s'affichaient donc avec le style
+   brut du navigateur. */
+.ref-btn {
+  --teinte: var(--injs-blue-royal);
+  --teinte-foncee: var(--injs-indigo-dark);
+  --teinte-douce: var(--injs-blue-pale);
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.95rem 0.45rem 0.6rem;
+  border: 1px solid var(--injs-border);
+  border-radius: 9999px;
+  background: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(7, 27, 58, 0.06);
+  color: var(--teinte-foncee);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+}
+
+.ref-btn-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 50%;
+  background: var(--teinte-douce);
+  color: var(--teinte);
+  font-size: 0.9rem;
+  line-height: 1;
+  flex: none;
+}
+
+.ref-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(7, 27, 58, 0.18);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--teinte) 24%, transparent);
+}
+
+.ref-btn:active:not(:disabled) { transform: translateY(0); }
+
+.ref-btn:focus-visible {
+  outline: 2px solid var(--teinte);
+  outline-offset: 2px;
+}
+
+.ref-btn:disabled {
+  cursor: progress;
+  opacity: 0.62;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Action principale : fond plein, réservée à l'étape décisive. */
+.ref-btn--primaire {
+  border-color: var(--teinte);
+  background: var(--teinte);
+  color: #FFFFFF;
+}
+
+.ref-btn--primaire .ref-btn-icone {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+}
+
+.ref-btn--primaire:hover:not(:disabled) {
+  background: var(--teinte-foncee);
+  border-color: var(--teinte-foncee);
+}
+
+/* Action d'import : violet institutionnel, distinct des teintes d'export. */
+.ref-btn--import {
+  --teinte: #6D3BCF;
+  --teinte-foncee: #4C2497;
+  --teinte-douce: #EFE8FB;
+}
+
+.ref-btn--primaire.ref-btn--import {
+  border-color: var(--teinte);
+  background: var(--teinte);
+  color: #FFFFFF;
+}
+
+.ref-btn--primaire.ref-btn--import:hover:not(:disabled) {
+  background: var(--teinte-foncee);
+  border-color: var(--teinte-foncee);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ref-btn { transition: none; }
+  .ref-btn:hover:not(:disabled) { transform: none; }
+}
+
+/* Conteneur de la barre d'actions : import et export sur la même ligne,
+   séparés par un filet discret pour marquer les deux sens d'échange. */
+.ref-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.ref-actions .ref-export {
+  margin-bottom: 0;
+  flex: 1 1 auto;
+}
+
+.ref-actions-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  color: #64748B;
+}
+
 /* Barre d'export premium : un bouton par format, avec sa propre teinte
    institutionnelle. Le contraste texte/fond respecte WCAG AA (≥ 4.5:1) dans
    les deux états, et l'état « en cours » est annoncé aux lecteurs d'écran

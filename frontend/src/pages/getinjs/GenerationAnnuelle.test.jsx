@@ -151,9 +151,12 @@ describe('GET-INJS — génération annuelle et import des inscrits', () => {
       expect(apiMock.post).toHaveBeenCalledWith(
         '/edts/lmd/import/inscrits/analyser/',
         expect.any(FormData),
-        { headers: { 'Content-Type': 'multipart/form-data' } },
       ),
     )
+    // Aucun en-tête multipart imposé : sans la boundary ajoutée par le
+    // navigateur, Django répondrait « Invalid boundary in multipart: None ».
+    const [, , config] = apiMock.post.mock.calls.at(-1)
+    expect(config?.headers?.['Content-Type']).toBeUndefined()
 
     const envoi = apiMock.post.mock.calls[0][1]
     expect(envoi.get('annee_academique_id')).toBe('2')
@@ -184,7 +187,6 @@ describe('GET-INJS — génération annuelle et import des inscrits', () => {
       expect(apiMock.post).toHaveBeenCalledWith(
         '/edts/lmd/import/inscrits/',
         expect.any(FormData),
-        expect.anything(),
       ),
     )
     // L'effectif affiché vient du backend après import, pas du fichier.

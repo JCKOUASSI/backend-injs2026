@@ -296,4 +296,49 @@ describe('services/api.js', () => {
       }
     })
   })
+
+  describe('envoi de FormData (import)', () => {
+    // Régression : les services d'import posaient
+    // `Content-Type: multipart/form-data` à la main. Avec `fetch`, le
+    // navigateur n'ajoute alors plus la boundary, et Django répond
+    // « Multipart form parse error - Invalid boundary in multipart: None ».
+    const corps = () => {
+      const fd = new FormData()
+      fd.append('fichier', new File(['a;b\n'], 't.csv', { type: 'text/csv' }))
+      return fd
+    }
+
+    it('retire un Content-Type multipart imposé par l’appelant', async () => {
+      const mock = installFetch(async () => fetchResponse({ ok: true }))
+      await api.post('/referentiels/x/importer/', corps(), {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      const [, init] = mock.mock.calls[0]
+      expect(init.headers['Content-Type']).toBeUndefined()
+    })
+
+    it('conserve les autres en-têtes de l’appelant', async () => {
+      const mock = installFetch(async () => fetchResponse({ ok: true }))
+      await api.post('/referentiels/x/importer/', corps(), {
+        headers: { 'X-Suivi': 'abc' },
+      })
+      const [, init] = mock.mock.calls[0]
+      expect(init.headers['X-Suivi']).toBe('abc')
+    })
+
+    it('transmet l’en-tête Authorization même avec un FormData', async () => {
+      window.localStorage.setItem('access_token', 'jeton-abc')
+      const mock = installFetch(async () => fetchResponse({ ok: true }))
+      await api.post('/referentiels/x/importer/', corps())
+      const [, init] = mock.mock.calls[0]
+      expect(init.headers.Authorization).toBe('Bearer jeton-abc')
+    })
+
+    it('laisse le Content-Type JSON quand le corps n’est pas un FormData', async () => {
+      const mock = installFetch(async () => fetchResponse({ ok: true }))
+      await api.post('/x/', { a: 1 }, { headers: { 'Content-Type': 'application/json' } })
+      const [, init] = mock.mock.calls[0]
+      expect(init.headers['Content-Type']).toBe('application/json')
+    })
+  })
 })

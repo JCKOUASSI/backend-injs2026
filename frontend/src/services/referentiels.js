@@ -112,9 +112,7 @@ export async function analyserImport(slug, fichier, options = {}) {
   if (options.correspondance) {
     corps.append('correspondance', JSON.stringify(options.correspondance))
   }
-  const { data } = await api.post(`/referentiels/${slug}/importer/analyse/`, corps, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
+  const { data } = await api.post(`/referentiels/${slug}/importer/analyse/`, corps)
   return data
 }
 
@@ -127,9 +125,7 @@ export async function importerReferentiel(slug, fichier, options = {}) {
   if (options.correspondance) {
     corps.append('correspondance', JSON.stringify(options.correspondance))
   }
-  const { data } = await api.post(`/referentiels/${slug}/importer/`, corps, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
+  const { data } = await api.post(`/referentiels/${slug}/importer/`, corps)
   return data
 }
 

@@ -504,10 +504,13 @@ export default function AssistantImport({ slug, referentiel, onTermine, onFermer
           {etape === 1 && (
             <button
               type="button"
-              className="ref-btn ref-btn--primaire"
+              className="ref-btn ref-btn--primaire ref-btn--import"
               disabled={!fichier || occupe}
               onClick={() => lancerAnalyse(2)}
             >
+              <span className="ref-btn-icone" aria-hidden="true">
+                <i className="bi bi-file-earmark-arrow-up" />
+              </span>
               {occupe ? 'Analyse…' : 'Analyser le fichier'}
             </button>
           )}
@@ -522,10 +525,13 @@ export default function AssistantImport({ slug, referentiel, onTermine, onFermer
               </button>
               <button
                 type="button"
-                className="ref-btn ref-btn--primaire"
+                className="ref-btn ref-btn--primaire ref-btn--import"
                 disabled={occupe}
                 onClick={reanalyser}
               >
+                <span className="ref-btn-icone" aria-hidden="true">
+                  <i className="bi bi-check2" />
+                </span>
                 {occupe ? 'Validation…' : 'Valider la correspondance'}
               </button>
             </>
@@ -542,10 +548,13 @@ export default function AssistantImport({ slug, referentiel, onTermine, onFermer
               </button>
               <button
                 type="button"
-                className="ref-btn ref-btn--primaire"
+                className="ref-btn ref-btn--primaire ref-btn--import"
                 disabled={occupe || (validation?.lignes_valides ?? 0) === 0}
                 onClick={() => setEtape(4)}
               >
+                <span className="ref-btn-icone" aria-hidden="true">
+                  <i className="bi bi-arrow-right" />
+                </span>
                 Continuer
               </button>
             </>
@@ -562,10 +571,13 @@ export default function AssistantImport({ slug, referentiel, onTermine, onFermer
               </button>
               <button
                 type="button"
-                className="ref-btn ref-btn--primaire"
+                className="ref-btn ref-btn--primaire ref-btn--import"
                 disabled={occupe}
                 onClick={lancerImport}
               >
+                <span className="ref-btn-icone" aria-hidden="true">
+                  <i className="bi bi-upload" />
+                </span>
                 {occupe ? 'Importation en cours…' : 'Importer'}
               </button>
             </>
@@ -579,7 +591,10 @@ export default function AssistantImport({ slug, referentiel, onTermine, onFermer
               >
                 Importer un autre fichier
               </button>
-              <button type="button" className="ref-btn ref-btn--primaire" onClick={onFermer}>
+              <button type="button" className="ref-btn ref-btn--primaire ref-btn--import" onClick={onFermer}>
+                <span className="ref-btn-icone" aria-hidden="true">
+                  <i className="bi bi-check-lg" />
+                </span>
                 Terminer
               </button>
             </>
