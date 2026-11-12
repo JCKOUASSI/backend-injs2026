@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import api from '../services/api'
 import { useToast } from '../context/ToastContext'
+import { telechargerBlob } from '../utils/telechargement'
 
 export default function FicheAuditeur() {
   const { participantId, formationId } = useParams()
@@ -29,15 +30,8 @@ export default function FicheAuditeur() {
       : `/evaluations/auditeurs/${participantId}/formations/${formationId}/fiche/export/xlsx/`
     try {
       const { blob, fileName } = await api.getBlob(path)
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = fileName || `fiche_auditeur_${participantId}_${formationId}.${type === 'pdf' ? 'pdf' : 'xlsx'}`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
-    } catch (err) {
+      telechargerBlob(blob, fileName || `fiche_auditeur_${participantId}_${formationId}.${type === 'pdf' ? 'pdf' : 'xlsx'}`)
+} catch (err) {
       showToast(err?.response?.data?.detail || 'Erreur export', 'error')
     }
   }

@@ -6,8 +6,8 @@ import {
   controlerFichier,
   genererCsvAnomalies,
   importerReferentiel,
-  telechargerBlob,
 } from '../../services/referentiels'
+import { telechargerBlob } from '../../utils/telechargement'
 import '../../styles/referentiels.css'
 
 /**

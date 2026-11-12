@@ -621,9 +621,132 @@
   color: #64748B;
 }
 
-.ref-btn--export {
-  font-size: 0.78rem;
-  padding: 0.3rem 0.6rem;
+/* Barre d'export premium : un bouton par format, avec sa propre teinte
+   institutionnelle. Le contraste texte/fond respecte WCAG AA (≥ 4.5:1) dans
+   les deux états, et l'état « en cours » est annoncé aux lecteurs d'écran
+   par aria-busy plutôt que par la couleur seule. */
+.ref-export-formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.ref-export-btn {
+  --teinte: var(--injs-blue-royal);
+  --teinte-foncee: var(--injs-indigo-dark);
+  --teinte-douce: var(--injs-blue-pale);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.9rem 0.4rem 0.55rem;
+  /* Replis d'abord : une valeur simple, retenue si color-mix() est absent. */
+  border: 1px solid var(--injs-border);
+  border-radius: 9999px;
+  background: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(7, 27, 58, 0.06);
+  /* Version moderne : même rendu, teinté par format. */
+  border-color: color-mix(in srgb, var(--teinte) 22%, #FFFFFF);
+  background: linear-gradient(
+    180deg,
+    #FFFFFF 0%,
+    color-mix(in srgb, var(--teinte) 7%, #FFFFFF) 100%
+  );
+  color: var(--teinte-foncee);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+}
+
+.ref-export-btn-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 50%;
+  background: var(--teinte-douce);
+  color: var(--teinte);
+  font-size: 0.9rem;
+  line-height: 1;
+  flex: none;
+}
+
+.ref-export-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(7, 27, 58, 0.18);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--teinte) 24%, transparent);
+  background: linear-gradient(
+    180deg,
+    #FFFFFF 0%,
+    color-mix(in srgb, var(--teinte) 13%, #FFFFFF) 100%
+  );
+}
+
+.ref-export-btn:active:not(:disabled) { transform: translateY(0); }
+
+.ref-export-btn:focus-visible {
+  outline: 2px solid var(--teinte);
+  outline-offset: 2px;
+}
+
+.ref-export-btn:disabled {
+  cursor: progress;
+  opacity: 0.62;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Teintes par format — reconnaissance immédiate du type de document. */
+.ref-export-btn--xlsx {
+  --teinte: #1D6F42;
+  --teinte-foncee: #14532D;
+  --teinte-douce: #E3F5EA;
+}
+
+.ref-export-btn--docx {
+  --teinte: #1F5FBF;
+  --teinte-foncee: #16406E;
+  --teinte-douce: #E4EDFB;
+}
+
+.ref-export-btn--csv {
+  --teinte: #0E7490;
+  --teinte-foncee: #0A5364;
+  --teinte-douce: #DDF3F7;
+}
+
+.ref-export-btn--pdf {
+  --teinte: #C02929;
+  --teinte-foncee: #8E1D1D;
+  --teinte-douce: #FBE6E6;
+}
+
+/* Indicateur de génération : visible sans dépendre de la couleur. */
+.ref-export-spinner {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  border: 2px solid var(--injs-border);
+  border: 2px solid color-mix(in srgb, var(--teinte) 30%, transparent);
+  border-top-color: var(--teinte);
+  animation: ref-export-rotation 0.7s linear infinite;
+}
+
+@keyframes ref-export-rotation { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ref-export-btn { transition: none; }
+  .ref-export-btn:hover:not(:disabled) { transform: none; }
+  .ref-export-spinner { animation-duration: 2.4s; }
+}
+
+@media (max-width: 760px) {
+  .ref-export-btn { padding: 0.4rem 0.7rem 0.4rem 0.45rem; }
+  .ref-export-btn-texte { font-size: 0.76rem; }
 }
 
 .ref-btn--secondaire {

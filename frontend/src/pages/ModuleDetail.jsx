@@ -19,6 +19,7 @@ import FormateurAssignPickerItem from '../components/formateurs/FormateurAssignP
 import { useReferentiels } from '../hooks/useReferentiels'
 import { useVisibilityPolling } from '../hooks/useVisibilityPolling'
 import { useDebounce } from '../hooks/useDebounce'
+import { telechargerBlob } from '../utils/telechargement'
 
 const MODULE_PRESENCES_POLL_MS = 60 * 1000
 
@@ -363,20 +364,11 @@ export default function ModuleDetail() {
     setEditModuleOpen(true)
   }
 
-  const _downloadBlob = (blob, type, filename) => {
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
   const handleExportSession = async (sessionId, sessionLabel, type) => {
     try {
       const { blob } = await api.getBlob(`/exports/session/${sessionId}/${type}/`)
       const safeName = (sessionLabel || `session_${sessionId}`).replace(/[^a-z0-9]/gi, '_').toLowerCase()
-      _downloadBlob(blob, type, `rapport_${safeName}.${type === 'pdf' ? 'pdf' : 'xlsx'}`)
+      telechargerBlob(blob, `rapport_${safeName}.${type === 'pdf' ? 'pdf' : 'xlsx'}`)
     } catch (err) {
       showToast(err.response?.data?.detail || `Erreur export ${type.toUpperCase()} séance.`, 'error')
     }
@@ -385,7 +377,7 @@ export default function ModuleDetail() {
   const handleExportAllSeances = async (type) => {
     try {
       const { blob } = await api.getBlob(`/exports/module/${moduleId}/${type}/`)
-      _downloadBlob(blob, type, `rapport_module_${moduleId}.${type === 'pdf' ? 'pdf' : 'xlsx'}`)
+      telechargerBlob(blob, `rapport_module_${moduleId}.${type === 'pdf' ? 'pdf' : 'xlsx'}`)
     } catch (err) {
       showToast(err.response?.data?.detail || `Erreur export ${type.toUpperCase()} (toutes séances).`, 'error')
     }

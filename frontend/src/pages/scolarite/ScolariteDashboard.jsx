@@ -4,6 +4,7 @@ import api from '../../services/api'
 import { getAnneeCourante, messageErreur } from '../../services/scolarite'
 import '../../styles/scolariteDashboard.css'
 import { anneeAcademiqueCourante } from '../../utils/anneeAcademique'
+import { telechargerBlob } from '../../utils/telechargement'
 
 export default function ScolariteDashboard() {
   const navigate = useNavigate()
@@ -165,15 +166,8 @@ export default function ScolariteDashboard() {
         </body></html>
       `
       const blob = new Blob(['\ufeff' + docHtml], { type: 'application/msword' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `INJS_Scolarite_${titre.replace(/\s+/g, '_')}.doc`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
-    }
+      telechargerBlob(blob, `INJS_Scolarite_${titre.replace(/\s+/g, '_')}.doc`)
+}
   }
 
   if (loading) {

@@ -13,18 +13,14 @@ import { analyserCsv, lignesCsvVersImport } from '@/utils/habilitations'
 import { useToast } from '@/context/ToastContext'
 import MotifModal from './MotifModal'
 import './habilitations.css'
+import { telechargerBlob } from '../../utils/telechargement'
 
 const ENTETE = 'identifiant;nom;prenoms;email;mot_de_passe;roles;canal'
 const EXEMPLE = 'curp_demo1;Traore;Salif;demo1@injs.ci;Essai#2026;ENSEIGNANT;MOBILE'
 
 function telechargerModele() {
   const blob = new Blob([`${ENTETE}\n${EXEMPLE}\n`], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'modele_import_comptes.csv'
-  a.click()
-  URL.revokeObjectURL(url)
+  telechargerBlob(blob, 'modele_import_comptes.csv')
 }
 
 function RapportExecution({ execution, onAnnule }) {

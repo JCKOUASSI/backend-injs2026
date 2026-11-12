@@ -1,3 +1,4 @@
+import { telechargerBlob } from './telechargement'
 /**
  * Fonctions pures de la console CURP (U4) : libellés, résumé du différentiel
  * de droits, analyse CSV des imports en masse. Aucun effet de bord, aucune
@@ -160,10 +161,5 @@ export function telechargerCsv(nomFichier, entetes, lignes) {
   const blob = new Blob([`${entetes.map(celluleCsv).join(';')}\n${corps}`], {
     type: 'text/csv;charset=utf-8;',
   })
-  const url = URL.createObjectURL(blob)
-  const lien = document.createElement('a')
-  lien.href = url
-  lien.download = nomFichier
-  lien.click()
-  URL.revokeObjectURL(url)
+  telechargerBlob(blob, nomFichier)
 }

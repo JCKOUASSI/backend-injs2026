@@ -13,6 +13,7 @@ import {
   messageErreurApi, lireMutationAffectation, COULEURS_NATURES,
 } from '../utils/edts'
 import '../styles/edts.css'
+import { telechargerBlob } from '../utils/telechargement'
 
 const NATURES = Object.keys(LIBELLES_NATURES)
 
@@ -311,15 +312,8 @@ export default function Edts() {
     const libelle = { csv: 'CSV', xlsx: 'Excel', pdf: 'PDF' }[format]
     try {
       const { blob, fileName } = await api.getBlob(chemin)
-      const url = URL.createObjectURL(blob)
-      const lien = document.createElement('a')
-      lien.href = url
-      lien.download = fileName || `edt-${selectedId}.${format}`
-      document.body.appendChild(lien)
-      lien.click()
-      lien.remove()
-      URL.revokeObjectURL(url)
-      showToast(`Export ${libelle} téléchargé`)
+      telechargerBlob(blob, fileName || `edt-${selectedId}.${format}`)
+showToast(`Export ${libelle} téléchargé`)
     } catch (err) {
       showToast(messageErreurApi(err, `Export ${libelle} impossible`), 'error')
     }

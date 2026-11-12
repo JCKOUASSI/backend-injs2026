@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import api from '../../services/api'
 import { useToast } from '../../context/ToastContext'
 import { formatApiErrors } from '../../utils/apiErrors'
+import { telechargerBlob } from '../../utils/telechargement'
 
 /**
  * GET-INJS — écran unique « Import des inscrits » + « Génération annuelle ».
@@ -162,15 +163,8 @@ export default function GenerationAnnuelle() {
     setTelechargement(true)
     try {
       const { blob, fileName } = await api.getBlob('/edts/lmd/conception/')
-      const url = URL.createObjectURL(blob)
-      const lien = document.createElement('a')
-      lien.href = url
-      lien.download = fileName || 'Conception-GET-INJS.txt'
-      document.body.appendChild(lien)
-      lien.click()
-      lien.remove()
-      URL.revokeObjectURL(url)
-    } catch {
+      telechargerBlob(blob, fileName || 'Conception-GET-INJS.txt')
+} catch {
       showToast('Document de conception indisponible.', 'error')
     } finally {
       setTelechargement(false)

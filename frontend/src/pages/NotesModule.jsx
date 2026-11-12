@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import api from '../services/api'
 import { useToast } from '../context/ToastContext'
+import { telechargerBlob } from '../utils/telechargement'
 
 const MENTION_LABELS = {
   TRES_BIEN:   'Très bien',
@@ -63,17 +64,6 @@ function emptyDraftRow(colonnes) {
   const notes = {}
   colonnes.forEach(c => { notes[c.id] = '' })
   return { notes, observations: '' }
-}
-
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
 }
 
 export default function NotesModule() {
@@ -283,7 +273,7 @@ export default function NotesModule() {
     setPrinting(key)
     try {
       const { blob, fileName } = await api.getBlob(path)
-      downloadBlob(blob, fileName || fallback)
+      telechargerBlob(blob, fileName || fallback)
     } catch (err) {
       showToast(err?.response?.data?.detail || 'Erreur lors de la génération de la fiche', 'error')
     } finally {

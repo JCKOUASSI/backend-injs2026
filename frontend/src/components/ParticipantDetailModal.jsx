@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { formatDate } from '../utils/dates'
 import api from '../services/api'
 import { useToast } from '../context/ToastContext'
+import { telechargerBlob } from '../utils/telechargement'
 
 const PARTICIPANT_DETAIL_TABS = [
   { id: 'statistiques', label: 'Statistiques', icon: 'bi-graph-up' },
@@ -268,15 +269,8 @@ export default function ParticipantDetailModal({
       const { blob, fileName } = await api.getBlob(
         `/participant/${participant.id}/notes-fiche/export/${fmt}/`,
       )
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = fileName || `releve_notes_${participant.id}.${fmt === 'pdf' ? 'pdf' : 'xlsx'}`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
-    } catch (err) {
+      telechargerBlob(blob, fileName || `releve_notes_${participant.id}.${fmt === 'pdf' ? 'pdf' : 'xlsx'}`)
+} catch (err) {
       showToast(err?.response?.data?.detail || 'Erreur export', 'error')
     } finally {
       setExportingNotes(null)

@@ -3,19 +3,9 @@ import api from '../../services/api'
 import { useToast } from '../../context/ToastContext'
 import { formatDate } from '../../utils/dates'
 import ArchiveModuleBrowser from '../../components/archives/ArchiveModuleBrowser'
+import { telechargerBlob } from '../../utils/telechargement'
 
 const ACCENT = '#001a33'
-
-function _downloadBlob(blob, fileName) {
-  const url = window.URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = fileName
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  window.URL.revokeObjectURL(url)
-}
 
 /** Vue cahier d'appel : grille d'émargement (auditeurs × séances) + exports. */
 function CahierAppelDocument({ module, onBack }) {
@@ -68,7 +58,7 @@ function CahierAppelDocument({ module, onBack }) {
     try {
       const { blob, fileName } = await api.getBlob(`/exports/module/${moduleId}/${type === 'pdf' ? 'pdf' : 'excel'}/`)
       const safe = (module.module || 'cahier_appel').replace(/[^a-z0-9]/gi, '_').toLowerCase()
-      _downloadBlob(blob, fileName || `cahier_appel_${safe}.${type === 'pdf' ? 'pdf' : 'xlsx'}`)
+      telechargerBlob(blob, fileName || `cahier_appel_${safe}.${type === 'pdf' ? 'pdf' : 'xlsx'}`)
     } catch (err) {
       showToast(err?.response?.data?.detail || `Erreur export ${type.toUpperCase()}.`, 'error')
     } finally {

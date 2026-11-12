@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import api from '../../services/api'
 import { useToast } from '../../context/ToastContext'
 import { messageErreur } from '../../services/scolarite'
+import { telechargerBlob } from '../../utils/telechargement'
 
 /**
  * Écran de **génération de documents** (documents scolaires, exports EDT,
@@ -54,15 +55,8 @@ function CarteDocument({ document: doc }) {
         ? doc.chemin(valeurs, format)
         : doc.chemin
       const { blob, fileName } = await api.getBlob(chemin)
-      const url = URL.createObjectURL(blob)
-      const lien = window.document.createElement('a')
-      lien.href = url
-      lien.download = fileName || `${doc.id || 'document'}.${format.suffixe || 'pdf'}`
-      window.document.body.appendChild(lien)
-      lien.click()
-      lien.remove()
-      URL.revokeObjectURL(url)
-      showToast(`${doc.libelle} (${format.libelle}) téléchargé.`)
+      telechargerBlob(blob, fileName || `${doc.id || 'document'}.${format.suffixe || 'pdf'}`)
+showToast(`${doc.libelle} (${format.libelle}) téléchargé.`)
     } catch (err) {
       showToast(messageErreur(err, 'Génération refusée par le serveur.'), 'error')
     } finally {

@@ -177,14 +177,30 @@ const request = async (method, path, body, config = {}) => {
   return handleResponse(res)
 }
 
-const getBlob = async (path) => {
-  const url = `${API_BASE_URL}${path}`
-  const headers = getAuthHeaders()
-  let res = await fetch(url, { method: 'GET', headers })
+/**
+ * Téléchargement binaire (exports, pièces jointes).
+ *
+ * `params` est accepté depuis la correction du bug d'export : le service
+ * `referentiels` appelait `api.get(..., { responseType: 'blob' })` alors que
+ * ce client est bâti sur `fetch`, où `responseType` n'existe pas — la
+ * réponse binaire passait dans `res.text()` puis `JSON.parse()` et échouait
+ * systématiquement. Le bon chemin est `getBlob`, qui lit la réponse en
+ * `blob()` sans jamais tenter de la décoder.
+ */
+const getBlob = async (path, params, config = {}) => {
+  const url = buildUrl(path, params)
+  const headers = { ...getAuthHeaders(), ...(config.headers || {}) }
+  const init = {
+    method: 'GET',
+    headers,
+    ...(config.signal ? { signal: config.signal } : {}),
+  }
+  let res = await fetch(url, init)
   if (res.status === 401) {
     try {
       const newToken = await refreshAccessToken()
-      res = await fetch(url, { method: 'GET', headers: { ...headers, Authorization: `Bearer ${newToken}` } })
+      init.headers.Authorization = `Bearer ${newToken}`
+      res = await fetch(url, init)
     } catch {
       _onSessionExpired()
       throw new Error('Session expired')
@@ -218,7 +234,7 @@ const api = {
   patch:   (path, body, config = {})   => request('PATCH',  path, body,       config),
   put:     (path, body, config = {})   => request('PUT',    path, body,       config),
   delete:  (path, config = {})         => request('DELETE', path, undefined,  config),
-  getBlob: (path)                      => getBlob(path),
+  getBlob: (path, params, config = {}) => getBlob(path, params, config),
 }
 
 export { API_BASE_URL, ADMIN_URL }

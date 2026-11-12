@@ -132,7 +132,8 @@ describe('pages/scolarite/MonEspace — téléchargement du relevé de notes', (
     )
     expect(URL.createObjectURL).toHaveBeenCalledTimes(1)
     expect(clickedDownload).toBe('releve-notes-MAT-042.pdf')
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:notes')
+    // Révocation différée : voir src/utils/telechargement.js.
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
   })
 
   it("retombe sur l'identifiant du dossier dans le nom du fichier en l'absence de matricule", async () => {

@@ -944,7 +944,8 @@ describe('pages/Referentiels.jsx — import/export Excel (LOT 35)', () => {
     expect(apiMock.getBlob.mock.calls[0][0]).toBe('/formations/ref/excel/modules/')
     expect(URL.createObjectURL).toHaveBeenCalled()
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1)
-    expect(URL.revokeObjectURL).toHaveBeenCalled()
+    // Révocation différée : voir src/utils/telechargement.js.
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
     // Le lien de téléchargement créé porte le nom par défaut.
     expect(ancre().getAttribute('download')).toBe('referentiel_modules.xlsx')
     expect(ancre().href).toBe('blob:test')

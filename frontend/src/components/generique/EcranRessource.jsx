@@ -10,6 +10,7 @@ import { ADMIN_LEVEL_ROLES } from '../../utils/roles'
 import { parsePaginatedResponse } from '../../utils/paginatedResponse'
 import { messageErreur } from '../../services/scolarite'
 import { useDebounce } from '../../hooks/useDebounce'
+import { telechargerBlob } from '../../utils/telechargement'
 
 /**
  * Écran générique piloté par un **descripteur** (`src/menu/ecrans.js`).
@@ -308,15 +309,8 @@ async function executerActionGenerique(action, ligne) {
   const chemin = typeof action.chemin === 'function' ? action.chemin(ligne) : action.chemin
   if (action.telechargement) {
     const { blob, fileName } = await api.getBlob(chemin)
-    const url = URL.createObjectURL(blob)
-    const lien = document.createElement('a')
-    lien.href = url
-    lien.download = fileName || `${action.id || 'document'}`
-    document.body.appendChild(lien)
-    lien.click()
-    lien.remove()
-    URL.revokeObjectURL(url)
-    return { telecharge: true }
+    telechargerBlob(blob, fileName || `${action.id || 'document'}`)
+return { telecharge: true }
   }
   const corps = typeof action.corps === 'function' ? action.corps(ligne) : action.corps
   const methode = (action.methode || 'POST').toLowerCase()

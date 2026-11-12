@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import api from '../../services/api'
 import { useToast } from '../../context/ToastContext'
 import ArchiveModuleBrowser from '../../components/archives/ArchiveModuleBrowser'
+import { telechargerBlob } from '../../utils/telechargement'
 
 const ACCENT = '#104A8E'
 
@@ -25,17 +26,6 @@ function MentionBadge({ mention }) {
       {MENTION_LABELS[mention] || '—'}
     </span>
   )
-}
-
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
 }
 
 /** Vue lecture seule d'une liste de notes (modèle « LISTE DE NOTE » des archives). */
@@ -84,7 +74,7 @@ function ListeNoteDocument({ module, onBack }) {
     setPrinting(key)
     try {
       const { blob, fileName } = await api.getBlob(path)
-      downloadBlob(blob, fileName || fallback)
+      telechargerBlob(blob, fileName || fallback)
     } catch (err) {
       showToast(err?.response?.data?.detail || 'Erreur lors de la génération de la fiche', 'error')
     } finally {

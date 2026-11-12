@@ -13,6 +13,7 @@ import {
 import '../../styles/candidatures.css'
 import '../../styles/admissions.css'
 import '../../styles/documents.css'
+import { telechargerBlob } from '../../utils/telechargement'
 
 /** Réponses API tantôt liste, tantôt objet paginé : toujours une liste. */
 const enListe = (res) => {
@@ -47,15 +48,8 @@ export default function DocumentsScolaires() {
     setEnCours(cle)
     try {
       const { blob, fileName } = await api.getBlob(chemin)
-      const url = URL.createObjectURL(blob)
-      const lien = window.document.createElement('a')
-      lien.href = url
-      lien.download = fileName || 'document.pdf'
-      window.document.body.appendChild(lien)
-      lien.click()
-      lien.remove()
-      URL.revokeObjectURL(url)
-      showToast(`${libelle} téléchargé.`)
+      telechargerBlob(blob, fileName || 'document.pdf')
+showToast(`${libelle} téléchargé.`)
     } catch (err) {
       showToast(messageErreur(err, 'Génération refusée par le serveur.'), 'error')
     } finally {

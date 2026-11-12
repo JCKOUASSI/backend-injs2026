@@ -340,7 +340,8 @@ describe('pages/FinanceEncadrants.jsx — exports (LOT 27)', () => {
     })
     expect(await screen.findByText('Liste encadrants exportée (XLSX)')).toBeInTheDocument()
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1)
-    expect(URL.revokeObjectURL).toHaveBeenCalled()
+    // Révocation différée : voir src/utils/telechargement.js.
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
   })
 
   it('exporte la liste en PDF', async () => {

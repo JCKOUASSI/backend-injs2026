@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import { telechargerBlob } from '../utils/telechargement'
 
 /** Colonnes feuille « Séances » — grade/groupe/vague requis pour matcher le module. */
 const SEANCES_IMPORT_COLUMNS = [
@@ -58,10 +59,7 @@ function downloadTemplate(filename, columns, examples = []) {
     lines.push(row.map(csvCell).join(';'))
   }
   const blob = new Blob(['\uFEFF' + lines.join('\n') + '\n'], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url; a.download = filename; a.click()
-  URL.revokeObjectURL(url)
+  telechargerBlob(blob, filename)
 }
 
 function ImportCard({ type, title, icon, color, columns, examples, onImport, loading }) {

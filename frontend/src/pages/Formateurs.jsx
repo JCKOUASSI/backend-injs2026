@@ -33,6 +33,7 @@ import { canMutateFormations, FINANCE_MODULE_ROLES } from '../utils/roles'
 import { safeLocalStorage } from '../utils/safeStorage'
 import '../styles/premiumCommun.css'
 import '../styles/formateurs.css'
+import { telechargerBlob } from '../utils/telechargement'
 
 const emptyForm = { numerobadge: '', nom: '', prenom: '', email: '', telephone: '', specialite: '', organisation: '', grade_ref: '', fonction: '', statut_enseignant: '', observations: '', secretariats: [] }
 
@@ -275,17 +276,6 @@ export default function Formateurs() {
     return d.toLocaleDateString('fr-FR')
   }
 
-  const downloadBlob = (blob, filename) => {
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    URL.revokeObjectURL(url)
-  }
-
   const exportFinanceSummary = async (f, format, afficherMontants = exportAfficherMontants) => {
     const ext = format === 'pdf' ? 'pdf' : 'xlsx'
     const qs = buildFinanceExportQuery(appliedFinancePeriod, afficherMontants).toString()
@@ -296,7 +286,7 @@ export default function Formateurs() {
     try {
       const { blob, fileName } = await api.getBlob(path)
       const safeName = `${f.nom || 'formateur'}_${f.prenom || ''}`.trim().replace(/\s+/g, '_')
-      downloadBlob(blob, fileName || `fiche_resume_${safeName || f.id}.${ext}`)
+      telechargerBlob(blob, fileName || `fiche_resume_${safeName || f.id}.${ext}`)
       showToast(`Fiche résumé exportée (${ext.toUpperCase()})`)
     } catch (err) {
       showToast(err.response?.data?.detail || 'Erreur export état financier', 'error')
@@ -314,7 +304,7 @@ export default function Formateurs() {
     try {
       const { blob, fileName } = await api.getBlob(base)
       const safeName = `${f.nom || 'formateur'}_${f.prenom || ''}`.trim().replace(/\s+/g, '_')
-      downloadBlob(blob, fileName || `fiche_formateur_${safeName || f.id}.${ext}`)
+      telechargerBlob(blob, fileName || `fiche_formateur_${safeName || f.id}.${ext}`)
       showToast(`Fiche enseignant exportée (${ext.toUpperCase()})`)
     } catch (err) {
       showToast(err.response?.data?.detail || 'Erreur lors de l\'export de la fiche', 'error')
@@ -335,7 +325,7 @@ export default function Formateurs() {
     setExportingSynthese(true)
     try {
       const { blob, fileName } = await api.getBlob(path)
-      downloadBlob(blob, fileName || `fiche_paie_globale.${ext}`)
+      telechargerBlob(blob, fileName || `fiche_paie_globale.${ext}`)
       showToast(`Fiche de paie globale (${ext.toUpperCase()})`)
     } catch (err) {
       showToast(err.response?.data?.detail || 'Erreur export consolidé', 'error')

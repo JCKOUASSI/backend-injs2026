@@ -858,7 +858,8 @@ describe('components/ParticipantDetailModal.jsx — exports relevé de notes (LO
     )
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1)
     expect(URL.createObjectURL).toHaveBeenCalled()
-    expect(URL.revokeObjectURL).toHaveBeenCalled()
+    // La révocation est différée : révoquer trop tôt annule le téléchargement.
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
   })
 
   it('exporte le relevé Excel', async () => {

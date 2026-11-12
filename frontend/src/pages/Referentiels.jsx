@@ -14,6 +14,7 @@ import {
 import { usePersistedListQuery } from '../hooks/usePersistedListQuery'
 import { useClientPagination, TABLE_PAGE_SIZE } from '../hooks/useClientPagination'
 import Pagination from '../components/Pagination'
+import { telechargerBlob } from '../utils/telechargement'
 
 function volumesApiToGrid(items) {
   const grid = {}
@@ -325,13 +326,8 @@ export default function Referentiels() {
     setTransferring(true)
     try {
       const { blob, fileName } = await api.getBlob(`/formations/ref/excel/${tab}/`)
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = fileName || `referentiel_${tab}.xlsx`
-      link.click()
-      URL.revokeObjectURL(url)
-    } catch {
+      telechargerBlob(blob, fileName || `referentiel_${tab}.xlsx`)
+} catch {
       showToast('Impossible de générer le fichier Excel.', 'error')
     } finally { setTransferring(false) }
   }

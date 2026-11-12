@@ -7,6 +7,7 @@
  * backend décide des colonnes, des règles de validation et des permissions.
  */
 import api from './api'
+import { telechargerBlob } from '../utils/telechargement'
 
 /** Formats d'export pris en charge, avec libellé et extension. */
 export const FORMATS_EXPORT = [
@@ -49,25 +50,17 @@ const TAILLE_MAX = 10 * 1024 * 1024 // 10 Mio — aligné sur TAILLE_MAX_PIECE
  * @returns {Promise<string>} nom du fichier téléchargé
  */
 export async function exporterReferentiel(slug, formatCible, filtres = {}) {
-  const { data, headers } = await api.get(`/referentiels/${slug}/exporter/`, {
-    params: { export: formatCible, ...filtres },
-    responseType: 'blob',
+  // `api.get` est bâti sur `fetch` : l'option `responseType: 'blob'` y est
+  // ignorée, et la réponse binaire passait alors par `res.text()` +
+  // `JSON.parse()`, ce qui faisait échouer **tous** les exports. Le chemin
+  // correct est `getBlob`, qui lit la réponse en `blob()` et extrait le nom
+  // de fichier de l'en-tête Content-Disposition.
+  const resultat = await api.getBlob(`/referentiels/${slug}/exporter/`, {
+    export: formatCible,
+    ...filtres,
   })
-  const nom = nomDeFichierDepuis(headers, slug, formatCible)
-  telechargerBlob(data, nom)
-  return nom
-}
-
-/** Déclenche le téléchargement d'un blob reçu sous le nom fourni. */
-export function telechargerBlob(blob, nom) {
-  const url = window.URL.createObjectURL(new Blob([blob]))
-  const lien = document.createElement('a')
-  lien.href = url
-  lien.download = nom
-  document.body.appendChild(lien)
-  lien.click()
-  lien.remove()
-  window.URL.revokeObjectURL(url)
+  const nom = resultat.fileName || nomDeFichierDepuis(null, slug, formatCible)
+  telechargerBlob(resultat.blob, nom, { contentType: resultat.contentType })
   return nom
 }
 

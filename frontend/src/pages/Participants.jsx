@@ -22,6 +22,7 @@ import '../styles/admissions.css'
 import '../styles/etudiants.css'
 import '../styles/modale-premium.css'
 import '../styles/campagnes.css'
+import { telechargerBlob } from '../utils/telechargement'
 
 const emptyForm = {
   matricule: '',
@@ -301,15 +302,8 @@ export default function Participants() {
       const qs = buildListeClasseQuery()
       const path = `/exports/participants/liste-classe/${fmt}/${qs ? `?${qs}` : ''}`
       const { blob, fileName } = await api.getBlob(path)
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = fileName || `liste_classe.${fmt === 'pdf' ? 'pdf' : 'xlsx'}`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
-      showToast(groupeFilter
+      telechargerBlob(blob, fileName || `liste_classe.${fmt === 'pdf' ? 'pdf' : 'xlsx'}`)
+showToast(groupeFilter
         ? `Liste de classe exportée (${fmt.toUpperCase()}) — ${groupeFilter}`
         : `Listes de classe exportées (${fmt.toUpperCase()}) — tous les groupes`)
     } catch (err) {

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import api from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { useReferentiels } from '../hooks/useReferentiels'
+import { telechargerBlob } from '../utils/telechargement'
 
 const STATUT_LABELS  = { BROUILLON: 'Brouillon', PUBLIE: 'Publié', FERME: 'Fermé' }
 const STATUT_COLORS  = {
@@ -218,15 +219,6 @@ export default function EvaluationDetail() {
     }
   }
 
-  const downloadBlob = (blob, filename) => {
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
   const handleExportGroupe = async (fmt, groupe, { tous = false } = {}) => {
     const g = groupe || filterGroupeRes
     if (!tous && !g) {
@@ -240,7 +232,7 @@ export default function EvaluationDetail() {
       const q = params.toString() ? `?${params}` : ''
       const { blob, fileName } = await api.getBlob(`/evaluations/questionnaires/${id}/export/${fmt}/${q}`)
       const ext = fmt === 'pdf' ? 'pdf' : 'xlsx'
-      downloadBlob(blob, fileName || `evaluation_${id}_${(g || 'tous_groupes').replace(/\s+/g, '_')}.${ext}`)
+      telechargerBlob(blob, fileName || `evaluation_${id}_${(g || 'tous_groupes').replace(/\s+/g, '_')}.${ext}`)
       showToast('Export téléchargé', 'success')
     } catch (err) {
       showToast(err?.response?.data?.detail || 'Erreur lors de l\'export', 'error')

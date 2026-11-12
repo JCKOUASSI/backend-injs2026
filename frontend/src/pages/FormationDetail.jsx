@@ -21,6 +21,7 @@ import {
   canViewPresences,
 } from '../utils/roles'
 import { formatApiErrors } from '../utils/apiErrors'
+import { telechargerBlob } from '../utils/telechargement'
 
 export default function FormationDetail() {
   const { id } = useParams()
@@ -412,21 +413,10 @@ export default function FormationDetail() {
     })
   }
 
-  const _downloadBlob = (blob, type, filename) => {
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    window.URL.revokeObjectURL(url)
-    document.body.removeChild(a)
-  }
-
   const handleExport = async (type) => {
     try {
       const { blob } = await api.getBlob(`/exports/formation/${id}/${type}/`)
-      _downloadBlob(blob, type, `rapport_formation_${id}.${type === 'pdf' ? 'pdf' : 'xlsx'}`)
+      telechargerBlob(blob, `rapport_formation_${id}.${type === 'pdf' ? 'pdf' : 'xlsx'}`)
     } catch (err) {
       console.error('[handleExport] erreur:', err, err.response)
       showToast(err.response?.data?.detail || `Erreur export ${type.toUpperCase()}.`, 'error')
@@ -437,7 +427,7 @@ export default function FormationDetail() {
     try {
       const { blob } = await api.getBlob(`/exports/session/${sessionId}/${type}/`)
       const safeName = (sessionLabel || `session_${sessionId}`).replace(/[^a-z0-9]/gi, '_').toLowerCase()
-      _downloadBlob(blob, type, `rapport_${safeName}.${type === 'pdf' ? 'pdf' : 'xlsx'}`)
+      telechargerBlob(blob, `rapport_${safeName}.${type === 'pdf' ? 'pdf' : 'xlsx'}`)
     } catch (err) {
       console.error('[handleExportSession] erreur:', err, err.response)
       showToast(err.response?.data?.detail || `Erreur export ${type.toUpperCase()} séance.`, 'error')

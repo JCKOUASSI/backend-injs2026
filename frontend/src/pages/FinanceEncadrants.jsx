@@ -12,6 +12,7 @@ import {
   saveFinancePeriod,
 } from '../utils/financePeriod'
 import { usePersistedListQuery } from '../hooks/usePersistedListQuery'
+import { telechargerBlob } from '../utils/telechargement'
 
 export default function FinanceEncadrants() {
   const { showToast } = useToast()
@@ -54,17 +55,6 @@ export default function FinanceEncadrants() {
     setAppliedPeriod({ ...period })
   }
 
-  const downloadBlob = (blob, filename) => {
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    URL.revokeObjectURL(url)
-  }
-
   const exportEncadrants = async (format) => {
     const ext = format === 'pdf' ? 'pdf' : 'xlsx'
     const qs = buildFinanceQuery(appliedPeriod).toString()
@@ -75,7 +65,7 @@ export default function FinanceEncadrants() {
     setExporting(true)
     try {
       const { blob, fileName } = await api.getBlob(path)
-      downloadBlob(blob, fileName || `liste_encadrants.${ext}`)
+      telechargerBlob(blob, fileName || `liste_encadrants.${ext}`)
       showToast(`Liste encadrants exportée (${ext.toUpperCase()})`)
     } catch (err) {
       showToast(err.response?.data?.detail || 'Erreur export encadrants', 'error')

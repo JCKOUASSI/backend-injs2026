@@ -6,6 +6,7 @@ import {
   DonutChart, HistogramChart, HorizontalBarChart, TrendChart,
   NoteHistogram, NoteDonut, ChartEmpty, CHART_COLORS,
 } from '../components/evaluation/EvaluationCharts'
+import { telechargerBlob } from '../utils/telechargement'
 
 const STATUT_COLORS = {
   BROUILLON: { background: '#fff8e0', color: '#D97706' },
@@ -79,15 +80,6 @@ export default function AnalyseQualitative() {
     setSearchParams(params, { replace: true })
   }
 
-  const downloadBlob = (blob, filename) => {
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
   const handleExport = async (fmt, { tous = false } = {}) => {
     if (!tous && !filterGroupe) {
       showToast('Sélectionnez un groupe à exporter', 'error')
@@ -101,7 +93,7 @@ export default function AnalyseQualitative() {
       const { blob, fileName } = await api.getBlob(`/evaluations/questionnaires/${id}/export/${fmt}/${q}`)
       const ext = fmt === 'pdf' ? 'pdf' : 'xlsx'
       const safeGroupe = (filterGroupe || 'tous_groupes').replace(/\s+/g, '_')
-      downloadBlob(blob, fileName || `evaluation_${id}_${safeGroupe}.${ext}`)
+      telechargerBlob(blob, fileName || `evaluation_${id}_${safeGroupe}.${ext}`)
       showToast('Export téléchargé', 'success')
     } catch (err) {
       showToast(err?.response?.data?.detail || 'Erreur lors de l\'export', 'error')

@@ -21,6 +21,7 @@ import { useStatsMeta } from '../hooks/useStatsMeta'
 import { PointJournalierTableauINJS, pjPct } from '../components/PointJournalierINJS'
 import { AuditeursNotoiresPanel, AuditeursNotoiresKpiStrip, filterAuditeursNotoires } from '../components/AuditeursNotoiresPanel'
 import RapportsWorkflowPanel from '../components/RapportsWorkflowPanel'
+import { telechargerBlob } from '../utils/telechargement'
 
 // ── Palettes & constantes ────────────────────────────────────────────────────
 const C = ['#283A87','#1267D6','#35BDF5','#0D9488','#16A36A','#D97706','#805AD5','#DC3545','#104A8E','#64748B']
@@ -1424,14 +1425,8 @@ export default function Statistiques() {
       }
       const { blob, fileName } = await api.getBlob(`/statistiques/point-journalier-export/?${params}`)
       const ext = format === 'pdf' ? 'pdf' : format === 'docx' ? 'docx' : 'xlsx'
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      const moisPart = pjMois ? `_M${pjMois}` : '_annuel'
-      a.download = fileName || `POINT_JOURNALIER_${pjAnnee}${moisPart}.${ext}`
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch (e) {
+      telechargerBlob(blob, fileName || `POINT_JOURNALIER_${pjAnnee}${moisPart}.${ext}`)
+} catch (e) {
       const detail = e.response?.data?.detail
       alert(detail || e.message || 'Erreur lors du téléchargement.')
     } finally {
@@ -1639,13 +1634,8 @@ export default function Statistiques() {
       if (rbJustificatifsText.trim()) params.set('justificatifs', rbJustificatifsText.trim())
       const { blob, fileName } = await api.getBlob(`/statistiques/bilans-export/?${params}`)
       const ext = format === 'pdf' ? 'pdf' : format === 'docx' ? 'docx' : 'xlsx'
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = fileName || `BILANS_${rbAnnee}.${ext}`
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch (e) {
+      telechargerBlob(blob, fileName || `BILANS_${rbAnnee}.${ext}`)
+} catch (e) {
       const detail = e.response?.data?.detail
       alert(detail || e.message || 'Erreur lors du téléchargement.')
     } finally {
@@ -1682,13 +1672,8 @@ export default function Statistiques() {
       }
       const { blob, fileName } = await api.getBlob(`/statistiques/bilan-fac-export/?${params}`)
       const ext = format === 'pdf' ? 'pdf' : format === 'docx' ? 'docx' : 'xlsx'
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = fileName || `BILAN_FAC_${facAnnee}.${ext}`
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch (e) {
+      telechargerBlob(blob, fileName || `BILAN_FAC_${facAnnee}.${ext}`)
+} catch (e) {
       const detail = e.response?.data?.detail
       alert(detail || e.message || 'Erreur lors du téléchargement.')
     } finally {

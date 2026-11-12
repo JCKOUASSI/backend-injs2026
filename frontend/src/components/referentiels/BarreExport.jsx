@@ -37,20 +37,35 @@ export default function BarreExport({ slug, filtres = {}, total = 0, onMessage }
         <i className="bi bi-download" aria-hidden="true" /> Exporter
         {total > 0 && <em> ({total} enregistrement{total > 1 ? 's' : ''})</em>}
       </span>
-      {FORMATS_EXPORT.map((format) => (
-        <button
-          key={format.cle}
-          type="button"
-          className="ref-btn ref-btn--export"
-          onClick={() => lancer(format.cle)}
-          disabled={Boolean(enCours)}
-          title={`Télécharger au format ${format.libelle}`}
-          aria-label={`Exporter au format ${format.libelle}`}
-        >
-          <i className={`bi ${format.icone}`} aria-hidden="true" />{' '}
-          {enCours === format.cle ? '…' : format.libelle}
-        </button>
-      ))}
+
+      <div className="ref-export-formats">
+        {FORMATS_EXPORT.map((format) => {
+          const actif = enCours === format.cle
+          return (
+            <button
+              key={format.cle}
+              type="button"
+              className={`ref-export-btn ref-export-btn--${format.cle}`}
+              onClick={() => lancer(format.cle)}
+              disabled={Boolean(enCours)}
+              aria-busy={actif || undefined}
+              title={`Télécharger au format ${format.libelle}`}
+              aria-label={`Exporter au format ${format.libelle}`}
+            >
+              <span className="ref-export-btn-icone" aria-hidden="true">
+                {actif ? (
+                  <span className="ref-export-spinner" />
+                ) : (
+                  <i className={`bi ${format.icone}`} />
+                )}
+              </span>
+              <span className="ref-export-btn-texte">
+                {actif ? 'Génération…' : format.libelle}
+              </span>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

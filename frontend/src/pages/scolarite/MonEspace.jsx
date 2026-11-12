@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import api from '../../services/api'
 import { useToast } from '../../context/ToastContext'
+import { telechargerBlob } from '../../utils/telechargement'
 
 /** Lot L1/L3 — espace étudiant minimal : fiche, notes, attestations (L4). */
 export default function MonEspace() {
@@ -25,13 +26,8 @@ export default function MonEspace() {
       const { blob } = await api.getBlob(
         `/presences/participant/${participantId}/notes-fiche/export/pdf/`,
       )
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `releve-notes-${fiche.profil.numero || participantId}.pdf`
-      a.click()
-      window.URL.revokeObjectURL(url)
-    } catch {
+      telechargerBlob(blob, `releve-notes-${fiche.profil.numero || participantId}.pdf`)
+} catch {
       toast.showToast('Téléchargement du relevé de notes impossible.', 'error')
     }
   }

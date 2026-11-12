@@ -154,25 +154,82 @@ describe('Barre d’export', () => {
   it('appelle la route d’export avec le paramètre « export »', async () => {
     // « format » est réservé par DRF (négociation de contenu) : le nom du
     // document passe par « export », sinon la réponse serait un 404.
-    apiMock.get.mockResolvedValue({
-      data: new Blob(['contenu']),
-      headers: { 'content-disposition': 'attachment; filename="f.xlsx"' },
+    apiMock.getBlob.mockResolvedValue({
+      blob: new Blob(['contenu'], { type: 'application/vnd.ms-excel' }),
+      fileName: 'f.xlsx',
+      contentType: 'application/vnd.ms-excel',
     })
     renderWithProviders(<BarreExport slug="filieres" filtres={{ search: 'alpha' }} />)
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /Excel/i }))
       await flushPromises(6)
     })
-    const [url, config] = apiMock.get.mock.calls.at(-1)
+    const [url, params] = apiMock.getBlob.mock.calls.at(-1)
     expect(url).toBe('/referentiels/filieres/exporter/')
-    expect(config.params.export).toBe('xlsx')
-    expect(config.params.search).toBe('alpha')
-    expect(config.responseType).toBe('blob')
+    expect(params.export).toBe('xlsx')
+    expect(params.search).toBe('alpha')
+  })
+
+  it('télécharge par la voie binaire, jamais par api.get', async () => {
+    // Régression du bug d'export : le service appelait
+    // `api.get(..., { responseType: 'blob' })`. Le client est bâti sur
+    // `fetch`, où `responseType` n'existe pas : la réponse binaire était
+    // lue en texte puis passée à `JSON.parse()`, et **tous** les exports
+    // échouaient. On reproduit ici le comportement réel de `api.get` sur
+    // du binaire, et l'export doit malgré tout aboutir.
+    apiMock.get.mockImplementation(async () => {
+      const texte = new TextDecoder().decode(
+        new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x80]), // en-tête ZIP (xlsx)
+      )
+      JSON.parse(texte) // lève exactement comme le vrai client
+      return { data: null, status: 200 }
+    })
+    apiMock.getBlob.mockResolvedValue({
+      blob: new Blob(['PK\x03\x04'], { type: 'application/vnd.ms-excel' }),
+      fileName: 'filieres.xlsx',
+      contentType: 'application/vnd.ms-excel',
+    })
+    renderWithProviders(<BarreExport slug="filieres" onMessage={() => {}} />)
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Excel/i }))
+      await flushPromises(6)
+    })
+    expect(apiMock.getBlob).toHaveBeenCalled()
+    expect(apiMock.get).not.toHaveBeenCalled()
+  })
+
+  it('ne crée pas de lien de téléchargement si le serveur renvoie du JSON', async () => {
+    // Une erreur d'export renvoie du JSON : mieux vaut ne rien télécharger
+    // qu'un fichier corrompu silencieux.
+    const creeUrl = vi.fn(() => 'blob:x')
+    const originalCreate = window.URL.createObjectURL
+    window.URL.createObjectURL = creeUrl
+    try {
+      apiMock.getBlob.mockResolvedValue({
+        blob: new Blob(['{"detail":"Permission refusée."}'], {
+          type: 'application/json',
+        }),
+        fileName: 'erreur.json',
+        contentType: 'application/json',
+      })
+      const messages = []
+      renderWithProviders(
+        <BarreExport slug="filieres" onMessage={(t, m) => messages.push([t, m])} />,
+      )
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /PDF/i }))
+        await flushPromises(6)
+      })
+      expect(creeUrl).not.toHaveBeenCalled()
+      expect(messages.at(-1)?.[0]).toBe('erreur')
+    } finally {
+      window.URL.createObjectURL = originalCreate
+    }
   })
 
   it('signale l’erreur quand le serveur refuse', async () => {
     const messages = []
-    apiMock.get.mockRejectedValue({
+    apiMock.getBlob.mockRejectedValue({
       response: { status: 403, data: { detail: 'Permission refusée.' } },
     })
     renderWithProviders(
