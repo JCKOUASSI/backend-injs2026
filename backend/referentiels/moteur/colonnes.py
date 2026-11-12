@@ -18,15 +18,20 @@ CHAMPS_EXCLUS = frozenset({
     'id', 'pk', 'created_at', 'updated_at', 'slug',
 })
 
-# Résolution des clés étrangères : par quel champ naturel les retrouver ?
-# (sinon l'import exigerait un identifiant numérique illisible dans un tableur)
-CLE_NATURELLE_FK = {
-    'annee_academique': ('libelle', 'annee', 'code'),
-    'formation': ('libelle', 'code'),
-    'filiere': ('libelle', 'code'),
-    'site': ('libelle', 'code', 'nom'),
-    'batiment': ('libelle', 'code', 'nom'),
-}
+# Noms de champs acceptés comme « clé métier » d'un modèle lié, par ordre de
+# préférence. Seuls les champs réellement présents sur le modèle sont retenus :
+# un tableur écrit « ENSEPS », pas « 3 ».
+CLES_METIER_CANDIDATES = (
+    'code', 'libelle', 'nom', 'intitule', 'sigle', 'abrege',
+    'numero', 'annee', 'denomination', 'nom_complet', 'matricule',
+)
+
+# Champs techniques jamais utilisés pour retrouver une référence
+# (distinct de CHAMPS_EXCLUS, qui borne les colonnes exportables).
+CHAMPS_EXCLUS_RELATION = frozenset({
+    'id', 'pk', 'cree_le', 'modifie_le', 'created_at', 'updated_at',
+    'description', 'source_document', 'fiabilite',
+})
 
 # En-têtes francophones pour les colonnes communes du socle.
 LIBELLES = {
@@ -66,15 +71,18 @@ def _est_exportable(field):
 
 
 def _est_importable(field):
-    """Un champ importable est un champ que l'utilisateur peut renseigner."""
+    """Un champ importable est un champ que l'utilisateur peut renseigner.
+
+    Les clés étrangères sont importables : elles sont résolues par le moteur
+    de relations (identifiant ou clé métier), jamais imposées au format
+    numérique de la base.
+    """
     if not _est_exportable(field):
         return False
     # Les compteurs et horodatages de cycle de vie sont gérés par l'application.
     if field.name in {'archive', 'cree_le', 'modifie_le', 'date_activation',
                       'date_desactivation', 'source_document', 'fiabilite'}:
         return False
-    if isinstance(field, models.ForeignKey):
-        return field.name in CLE_NATURELLE_FK
     return True
 
 
@@ -94,22 +102,47 @@ def champs_exportables(modele):
 
 
 def champs_importables(modele):
-    """Liste ordonnée des champs importables : ``[{'cle', 'libelle', 'type'}]``."""
+    """Liste ordonnée des champs importables.
+
+    Chaque entrée porte ``cle``, ``libelle``, ``type``, ``obligatoire`` et,
+    pour une clé étrangère, ``relation=True`` avec le modèle lié et ses clés
+    métier — de quoi résoudre la référence sans jamais imposer un
+    identifiant numérique à l'utilisateur.
+    """
     colonnes = []
     for field in modele._meta.get_fields():
         if not isinstance(field, models.Field) or getattr(field, 'many_to_many', False):
             continue
         if not _est_importable(field):
             continue
-        colonnes.append({
+        entree = {
             'cle': field.name,
             'libelle': libelle_champ(field.name),
             'type': type(field).__name__,
             'obligatoire': not (field.blank or field.null),
-        })
+        }
+        if isinstance(field, models.ForeignKey):
+            lie = field.related_model
+            entree.update({
+                'relation': True,
+                'modele_lie': f'{lie._meta.app_label}.{lie._meta.model_name}',
+                'libelle_lie': str(lie._meta.verbose_name),
+                'cles_metier': cles_metier_de(lie),
+            })
+        colonnes.append(entree)
     ordre = {'code': 0, 'libelle': 1}
     colonnes.sort(key=lambda c: (ordre.get(c['cle'], 9), c['libelle']))
     return colonnes
+
+
+def cles_metier_de(modele_lie):
+    """Champs métier permettant de retrouver une valeur du modèle lié."""
+    noms = {f.name for f in modele_lie._meta.concrete_fields}
+    return [n for n in CLES_METIER_CANDIDATES if n in noms] or [
+        f.name for f in modele_lie._meta.concrete_fields
+        if isinstance(f, (models.CharField, models.TextField))
+        and f.name not in CHAMPS_EXCLUS_RELATION and not f.choices
+    ]
 
 
 def champ_libelle(modele):

@@ -234,6 +234,10 @@ désormais contrôlées avant le raccourci des méthodes sûres.
 
 ## 10. Tests réellement exécutés
 
+> **Relevé historique** : cette section décrit l'état mesuré au commit `b661d13`
+> (PHASES 1 à 4). Les chiffres **finaux**, relevés après les PHASES 5 à 7, sont
+> au §16.
+
 ### 10.1 Backend — suite complète (9 groupes)
 
 ```
@@ -285,116 +289,339 @@ archivée, confirmation obligatoire, sécurité par opération.
 
 ---
 
-## 11. Tableau de conformité
+## 11. Tableau de conformité des 27 référentiels
 
-Légende : **C** conforme · **PC** partiellement conforme · **NC** non conforme ·
-**NA** non applicable (justifié).
+**Méthode** : le tableau ci-dessous n'est pas une déclaration d'intention. Il est produit par
+`backend/referentiels/tests/test_rapport_conformite.py`, qui rejoue chaque référentiel par le
+HTTP réel (routes, verbes, permissions, formats) et imprime le résultat mesuré. Chaque case
+correspond à un appel exécuté, pas à une lecture de code.
 
-| Référentiel | CRUD | Act. | Arch. | Word | Excel | CSV | PDF | Import Excel | Import CSV | Sécurité | Tests |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| `ecoles` | C | C | C | C | C | C | C | C | C | C | C |
-| `mentions` | C | C | C | C | C | C | C | C | C | C | C |
-| `types-cursus` | C | C | C | C | C | C | C | C | C | C | C |
-| `filieres` | C | C | C | C | C | C | C | C | C | C | C |
-| `types-enseignement` | C | C | C | C | C | C | C | C | C | C | C |
-| `statuts-vague` | C | C | C | C | C | C | C | C | C | C | C |
-| `types-evaluation` | C | C | C | C | C | C | C | C | C | C | C |
-| `types-decision` | C | C | C | C | C | C | C | C | C | C | C |
-| `types-espace-sportif` | C | C | C | C | C | C | C | C | C | C | C |
-| `grades-enseignant` | C | C | C | C | C | C | C | C | C | C | C |
-| `types-document` | C | C | C | C | C | C | C | C | C | C | C |
-| `types-frais` | C | C | C | C | C | C | C | C | C | C | C |
-| `modes-paiement` | C | C | C | C | C | C | C | C | C | C | C |
-| `types-notification` | C | C | C | C | C | C | C | C | C | C | C |
-| `niveaux` | C | C | C | C | C | C | C | C | C | C | C |
-| `semestres` | C | C | C | C | C | C | C | C | C | C | C |
-| `parcours` | C | C | C | C | C | C | C | C | C | C | C |
-| `types-formation` | C | C | C | C | C | C | C | C | C | C | C |
-| `annees` | C | C | **NA** | C | C | C | C | C | C | C | C |
-| `sites` | C | C | C | C | C | C | C | C | C | C | C |
-| `batiments` | C | C | C | C | C | C | C | C | C | C | C |
-| `salles` | C | C | C | C | C | C | C | C | C | C | C |
-| `vagues` | C | C | C | C | C | C | C | C | C | C | C |
-| `formations` | **NA** | **NA** | **NA** | C | C | C | C | **NA** | **NA** | C | C |
-| `ue-ecue` | **NA** | **NA** | **NA** | C | C | C | C | **NA** | **NA** | C | C |
-| `modules-officiels` | **NA** | **NA** | **NA** | C | C | C | C | **NA** | **NA** | C | C |
-| `volumes-modules` | **NA** | **NA** | **NA** | C | C | C | C | **NA** | **NA** | C | C |
+**Légende** — `✓` opérationnel et vérifié · `n/a` non applicable (le modèle ne porte pas le
+champ, ou le référentiel est en lecture seule) · `refusé` refusé **et** prouvé par un test.
 
-### Justification des « non applicable »
+### 11.1 Synthèse
 
-- **`annees` — Archivage NA** : le modèle `AnneeAcademique` ne porte pas de colonne
-  d'archivage ; le registre le déclare `archivage_supporte = false`. L'activation et la
-  clôture (`courante`, `cloturee`) y tiennent lieu de cycle de vie. Créer un champ
-  d'archivage serait une modification structurelle sans justification métier.
-- **Référentiels en lecture seule (`formations`, `ue-ecue`, `modules-officiels`,
-  `volumes-modules`)** : déclarés `editable=False` au registre. Ce sont des données
-  importées de documents officiels ou gérées par des écrans historiques existants.
-  CRUD, activation, archivage et import y sont **volontairement** indisponibles : une
-  correction passe par la source puis par un nouvel import, afin de préserver la
-  traçabilité. L'export reste disponible (consultation et extraction).
+| Référentiel | Modèle | CRUD | Consult. | Recherche | Tri | Pagination | Export | Import | Activation | Archivage | Suppr. sécurisée | Non-habilité |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `ecoles` | Référentiel – École | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | ✓ | ✓ | refusé |
+| `mentions` | Référentiel – Mention | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | ✓ | ✓ | refusé |
+| `types-cursus` | Référentiel – Type de cursus | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | ✓ | ✓ | refusé |
+| `filieres` | Référentiel – Filière | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | ✓ | ✓ | refusé |
+| `types-enseignement` | Référentiel – Type d'enseignement | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | ✓ | ✓ | refusé |
+| `statuts-vague` | Référentiel – Statut de vague | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | ✓ | ✓ | refusé |
+| `types-evaluation` | Référentiel – Type d'évaluation | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | ✓ | ✓ | refusé |
+| `types-decision` | Référentiel – Type de décision | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | ✓ | ✓ | refusé |
+| `types-espace-sportif` | Référentiel – Type d'espace sportif | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | ✓ | ✓ | refusé |
+| `grades-enseignant` | Référentiel – Grade enseignant | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | ✓ | ✓ | refusé |
+| `types-document` | Référentiel – Type de document | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | ✓ | ✓ | refusé |
+| `types-frais` | Référentiel – Type de frais | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | ✓ | ✓ | refusé |
+| `modes-paiement` | Référentiel – Mode de paiement | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | ✓ | ✓ | refusé |
+| `types-notification` | Référentiel – Type de notification | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | ✓ | ✓ | refusé |
+| `niveaux` | LMD – Niveau | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | n/a | ✓ | refusé |
+| `semestres` | LMD – Semestre | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | n/a | ✓ | refusé |
+| `parcours` | LMD – Parcours | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | n/a | ✓ | refusé |
+| `types-formation` | LMD – Type de formation | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | n/a | ✓ | refusé |
+| `annees` | LMD – Année académique | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | n/a | ✓ | refusé |
+| `sites` | Référentiel – Site | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | n/a | ✓ | refusé |
+| `batiments` | Référentiel – Bâtiment | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | n/a | ✓ | refusé |
+| `salles` | Référentiel – Salle | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | n/a | ✓ | refusé |
+| `vagues` | Référentiel – Vague | ✓ | ✓ | ✓ | ✓ | ✓ | 4/4 | ✓ | ✓ | n/a | ✓ | refusé |
+| `formations` | Référentiel – Formation (cycle) | refusé | ✓ | ✓ | ✓ | ✓ | 4/4 | refusé | n/a | n/a | n/a | refusé |
+| `ue-ecue` | LMD – Unité d'enseignement | refusé | ✓ | ✓ | ✓ | ✓ | 4/4 | refusé | n/a | n/a | n/a | refusé |
+| `modules-officiels` | Référentiel – Module officiel | refusé | ✓ | ✓ | ✓ | ✓ | 4/4 | refusé | n/a | n/a | n/a | refusé |
+| `volumes-modules` | Référentiel – Volume horaire | refusé | ✓ | ✓ | ✓ | ✓ | 4/4 | refusé | n/a | n/a | n/a | refusé |
 
-### Réserve de méthode sur la colonne « Tests »
+**Totaux** : 27 consultables · 27 exportables dans les 4 formats · 23 éditables (CRUD + import)
+· 4 en lecture seule · 0 référentiel sans export · 0 référentiel dont la lecture est bloquée.
 
-La conformité « Tests = C » signifie que le **moteur commun** est couvert par 26 tests
-backend et 27 tests frontend réellement exécutés, et que la **suite complète**
-(3 092 tests backend, 2 194 frontend) passe sans échec. Elle ne signifie pas que chaque
-référentiel possède sa propre suite dédiée : c'est précisément l'objet du moteur commun
-(un seul code testé, appliqué aux 27). Une campagne de tests par référentiel, avec les
-jeux de données réels de chacun, reste à conduire en PHASE 6.
+### 11.2 Justification des « non applicable »
+
+| Colonne | Référentiels concernés | Raison exacte |
+|---|---|---|
+| Archivage `n/a` | 9 modèles hors socle (`niveaux`, `semestres`, `parcours`, `types-formation`, `annees`, `sites`, `batiments`, `salles`, `vagues`) | Ces modèles n'ont **pas de champ `archive`**. L'action existe mais répond `400` avec un message explicite, au lieu de lever une erreur inattendue. Aucune réécriture de modèle n'a été faite : ajouter un champ relève d'une migration de schéma, interdite sans arbitrage. |
+| Archivage / activation `n/a` | les 4 lecture seule | Aucun cycle de vie n'est exposé : le référentiel n'est pas géré par le Hub. |
+| Import `refusé` | les 4 lecture seule | Aucune route d'import n'est créée (`404`). C'est la restriction métier attendue, et non un blocage de lecture. |
+| CRUD `refusé` | les 4 lecture seule | `POST` renvoie `405 Method Not Allowed` (ou `404` si la route n'existe pas). Les deux statuts sont acceptés par les tests ; dans tous les cas **aucune ligne n'est écrite** — c'est ce que vérifie l'assertion ajoutée. |
+
+### 11.3 Point de vigilance levé pendant la recette
+
+La recette a révélé que **3 des 4 référentiels en lecture seule n'avaient aucune route de
+consultation** sous leur slug de registre (`formations`, `ue-ecue`, `volumes-modules`). L'écran
+du Hub qui référence `volumes-modules` (`route_ui` = `/referentiels/gestion/volumes-modules`)
+appelait donc une API inexistante : la page ne pouvait pas afficher une seule ligne. Le
+caractère lecture seule bloquait la **lecture**, ce que la consigne interdit expressément.
+
+Correctif (`backend/referentiels/urls.py`) : une route de consultation en lecture seule
+(`GET` liste et détail uniquement) est désormais ouverte pour chaque référentiel non éditable,
+servie par `ReferentielLectureSeuleViewSet` — un `ReadOnlyModelViewSet`, qui n'expose par
+construction aucun verbe d'écriture. La route d'export reste ouverte à tous.
 
 ---
 
-## 12. Anomalies résiduelles
+## 12. PHASE 5 — Résolution des clés étrangères à l'import
 
-| # | Anomalie | Gravité | Traitement |
+### 12.1 Ce qui a été construit
+
+`backend/referentiels/moteur/relations.py` (nouveau) introduit un résolveur générique, piloté
+par l'introspection des modèles et non par une liste codée en dur :
+
+| Fonction | Rôle |
+|---|---|
+| `cles_etrangeres(modele)` | toutes les FK du modèle, y compris vers d'autres applications (`scolarite`, `formations`) |
+| `cles_metier(modele)` | les champs par lesquels une valeur est reconnaissable : identifiant, `code`, `libelle`, `nom_complet`, `intitule_module`… |
+| `groupes_uniques(modele)` | les index d'unicité composites du modèle lié |
+| `ResolveurRelations` | indexe une fois chaque modèle lié, puis résout champ par champ |
+
+### 12.2 Comportement garanti
+
+1. **Résolution par identifiant *et* par champ métier** — « ENSEPS », « enseps », « 1 » et
+   « École ENSEPS » retrouvent la même école. La normalisation est insensible à la casse, aux
+   accents et aux espaces superflus.
+2. **Référence inexistante** → anomalie nommée (`nature: 'relation'`), ligne et colonne
+   renseignées, **aucune association**. Le message indique quoi créer au préalable.
+3. **Référence ambiguë** → **jamais** de correspondance inventée. Le résolveur renvoie
+   `AMBIGU`, la ligne est rejetée, et l'anomalie liste les candidats.
+4. **Ambiguïté levée par le rattachement** — un libellé unique *par parent* (deux « Bâtiment A »
+   sur deux sites différents) est résolu dès que la ligne porte le site. L'unicité composite est
+   lue dans les index du modèle, et le rattachement est déclaré par le registre
+   (`unicite_par`).
+5. **Respect des contraintes d'unicité** — la résolution s'appuie sur les index réels du modèle
+   lié, pas sur une convention supposée.
+6. **Intégrité transactionnelle** — la résolution se fait à l'étape de validation, sans aucune
+   écriture ; l'import n'a lieu que dans une transaction unique.
+
+### 12.3 Ce que voit l'utilisateur
+
+L'endpoint d'analyse renvoie désormais la description des colonnes de rattachement, et l'assistant
+d'import les affiche explicitement (modèle rattaché, clés métier reconnues, caractère
+obligatoire, nombre de références non résolues). L'utilisateur n'a plus à deviner qu'il peut
+écrire « ENSEPS » au lieu d'un identifiant.
+
+---
+
+## 13. Anomalies découvertes et corrigées pendant les PHASES 5 à 7
+
+Ces anomalies sont des **bugs de production réels**, trouvés en écrivant les tests — pas des
+ajustements de style.
+
+| # | Anomalie | Gravité | Symptôme observable | Correctif |
+|---|---|---|---|---|
+| B1 | `mixins._journaliser_import` avalait les `Exception` ; `journaliser` levait `TypeError: Object of type RefEcole is not JSON serializable` | **Critique** | L'import répondait `crees: 2` **sans aucune ligne en base** : la transaction était annulée en silence et l'utilisateur croyait l'import réussi | Helper `payload_jsonisable()` (modèle → `str`, date → `isoformat`, `Decimal` → `float`) ; suppression du `except Exception` : une erreur de journal ne doit jamais être avalée |
+| B2 | Les lignes rejetées dès la validation n'apparaissaient pas dans le rapport final | Haute | Un lot partiellement invalide affichait `nb_anomalies: 0` | `anomalies` pré-remplies depuis `validation['erreurs']` avec `phase='validation'`, et nouvelle clé `lignes_rejetees` |
+| B3 | Le cache du résolveur de relations était insensible au contexte | Haute | Une résolution ambiguë (`None`) était remise en cache et réutilisée pour une résolution contextualisée qui, elle, avait une réponse unique | Clé de cache `(champ, valeur_normalisée, signature_du_contexte)` |
+| B4 | 3 référentiels en lecture seule sans route de consultation (voir §11.3) | Haute | Écran du Hub vide : le lecture seule bloquait la lecture | Routes `GET` liste/détail en lecture seule |
+| B5 | `relations_attendues()` n'était exposée par aucun endpoint : l'interface ne pouvait pas afficher les colonnes de rattachement | Moyenne | Fonctionnalité annoncée mais non branchée | `relations` intégré au rapport de validation, avec le compteur `non_resolues` par colonne |
+| B6 | Correspondance anomaly ↔ colonne faite sur le libellé affiché (`Ecole`) au lieu de la clé de champ (`ecole`) | Moyenne | Le compteur de références non résolues restait à 0 | Ajout de `'champ'` aux anomalies de relation ; comptage par clé |
+
+---
+
+## 14. Fichiers créés ou modifiés (PHASES 5 à 7)
+
+### 14.1 Créés
+
+| Fichier | Rôle |
+|---|---|
+| `backend/referentiels/moteur/relations.py` | Moteur de résolution des clés étrangères (détection, indexation, levée d'ambiguïté) |
+| `backend/referentiels/tests/test_relations_import.py` | 26 tests dédiés aux relations : identification, résolution, ambiguïté, import avec relations |
+| `backend/referentiels/tests/test_recette_27_referentiels.py` | Recette fonctionnelle des 27 référentiels (16 tests) |
+| `backend/referentiels/tests/test_rapport_conformite.py` | Génère le tableau de conformité **mesuré** du §11 |
+
+### 14.2 Modifiés
+
+| Fichier | Nature de la modification |
+|---|---|
+| `backend/referentiels/urls.py` | Routes de consultation et d'export en lecture seule pour les référentiels non éditables |
+| `backend/referentiels/views.py` | `_bascule_activation`, `_a_le_champ`, refus `409` de la suppression sans archivage, gestion des dates |
+| `backend/referentiels/moteur/importations.py` | `champ_identite()`, doublons sur `code` **et** `libelle`, rapport complet (`anomalies` + `lignes_rejetees` + `relations`) |
+| `backend/referentiels/moteur/mixins.py` | `payload_jsonisable()`, journalisation non silencieuse, description des relations |
+| `backend/referentiels/moteur/colonnes.py` | Colonnes importables et identité du référentiel |
+| `backend/referentiels/tests/test_moteur_referentiels.py` | Test anti-régression « le rapport ne ment jamais » |
+| `backend/referentiels/tests/test_refonte.py`, `test_gestion_lmd.py` | Tests mis à jour : le refus d'écriture passe de `404` à `405`, avec vérification qu'aucune ligne n'est écrite |
+| `frontend/src/components/referentiels/AssistantImport.jsx` | Affichage des colonnes de rattachement et du détail des anomalies par phase |
+| `frontend/src/components/referentiels/ReferentielsMoteur.test.jsx` | 4 nouveaux tests (relations affichées, non-résolues, absence de relations, phases d'anomalies) |
+| `frontend/src/styles/referentiels.css` | Styles `.ref-badge` et `.ref-import-nonresolu` |
+
+**Aucune migration** n'a été créée : aucun champ, index ni modèle n'a été ajouté
+(`makemigrations --check` → *No changes detected*).
+
+---
+
+## 15. Endpoints et permissions
+
+### 15.1 Endpoints
+
+Aucune route nouvelle n'a été inventée en dehors des conventions déjà en vigueur. Les ajouts
+sont des **routes manquantes** sur des slugs existants :
+
+| Route | Verbes | Référentiels | Raison |
 |---|---|---|---|
-| A1 | Les 4 référentiels en lecture seule n'exposent pas l'export depuis leur route dédiée (ils sont servis par des ViewSets `ReadOnlyModelViewSet` historiques) | Moyenne | À intégrer en PHASE 5 |
-| A2 | L'import ne résout pas encore les clés étrangères par libellé pour tous les modèles (seules les FK listées dans `CLE_NATURELLE_FK` sont proposées) | Moyenne | À étendre référentiel par référentiel |
-| A3 | Les référentiels avec FK obligatoire (ex. `RefFiliere.ecole`) signalent une anomalie par ligne si la colonne est absente du fichier — comportement correct, mais le message mériterait d'être plus explicite | Faible | Amélioration du libellé à prévoir |
-| A4 | Aucun test navigateur (navigateur réel) n'a encore été rejoué sur l'assistant d'import | Moyenne | PHASE 5 |
-| A5 | La limite d'export (20 000 lignes) n'est pas encore paramétrable | Faible | À passer en réglage |
+| `/api/referentiels/<slug>/` | `GET` | les 4 non éditables non servis par le routeur | consultation en lecture seule (§11.3) |
+| `/api/referentiels/<slug>/<pk>/` | `GET` | idem | détail en lecture seule |
+| `/api/referentiels/<slug>/exporter/` | `GET` | les 4 non éditables | déjà existant, désormais systématique |
 
----
+L'information sur les relations transite par l'endpoint d'analyse existant
+(`POST /api/referentiels/<slug>/importer/analyse/`), dans `validation.relations`.
 
-## 13. Risques
+### 15.2 Permissions
 
-| Risque | Probabilité | Impact | Parade |
+Les permissions sont contrôlées **côté serveur**, opération par opération, par
+`ReferentielPermission` :
+
+| Opération | Habilité | Non habilité | Anonyme |
 |---|---|---|---|
-| Import massif créant des doublons métier | Moyenne | Moyen | Détection des doublons en étape 2 + contrainte d'unicité insensible à la casse sur le libellé (déjà en base) |
-| Export volumineux saturant la mémoire | Faible | Moyen | Limite à 20 000 lignes, refus explicite plutôt que troncature silencieuse |
-| Fichier importé malveillant | Faible | Élevé | Contrôle d'extension et de taille, lecture `read_only` d'openpyxl, aucune macro exécutée, aucune évaluation de formule |
-| Régression sur les écrans existants | Faible | Élevé | Suite complète 3 092 + 2 194 tests, 0 échec |
-| Confusion activer / archiver / supprimer par les utilisateurs | Moyenne | Faible | Trois boutons distincts, libellés et modales de confirmation différents |
+| Consultation, recherche, tri, pagination | `200` | refusé | refusé |
+| Export (4 formats) | `200` | refusé | refusé |
+| Import (analyse et exécution) | `200` | refusé | refusé |
+| Création, modification | `200`/`201` | refusé | refusé |
+| Activation, désactivation, archivage, restauration | `200` | refusé | refusé |
+| Suppression | `200` ou `409` si dépendances | refusé | refusé |
+
+Mesuré sur les 27 référentiels : **27/27** refusent l'écriture au simple lecteur et **27/27**
+refusent toute lecture à l'anonyme.
+
+### 15.3 Suppression sécurisée : les trois opérations restent distinctes
+
+| Opération | Effet | Réversible | Détruit la ligne |
+|---|---|---|---|
+| Désactivation | `actif = False`, la valeur reste utilisable en lecture et proposée dans l'historique | oui | non |
+| Archivage | `archive = True`, la valeur disparaît des listes courantes | oui | non |
+| Suppression | archivage + confirmation obligatoire ; `409` avec le détail si des dépendances existent | non (par conception) | **jamais** |
+
+Aucun chemin de code n'appelle `objet.delete()`. La recette vérifie, après chaque suppression
+acceptée, que la ligne existe toujours en base.
 
 ---
 
-## 14. Sauvegarde et déploiement
+## 16. Résultats des tests réellement exécutés
 
-Aucun déploiement n'a été effectué et aucune évolution structurelle n'a été appliquée.
-La procédure à suivre le moment venu (après autorisation explicite) :
+Les chiffres ci-dessous sont les sorties réelles des commandes, relevées après le dernier
+correctif.
 
-1. **Sauvegarde préalable** : `pg_dump` complet de la base, horodaté et conservé hors
-   du serveur. Aucune migration n'étant nécessaire, le risque structurel est nul, mais
-   la sauvegarde reste obligatoire avant toute mise en production.
-2. **Point de retour** : tag `mission-02-point-restauration` (commit `08e2f4e`) ;
-   point courant `b661d13`.
-3. **Vérification** : `makemigrations --check` (aucune migration),
-   `check_repo_hygiene`, suite backend 9 groupes, `npm run lint`, `npm run build`.
-4. **Déploiement** : à autoriser explicitement. Interdiction de toute opération
-   destructive (DROP, TRUNCATE, FLUSH, réinitialisation des migrations).
+### 16.1 Backend — suite complète (9 groupes)
+
+| Groupe | Résultat | Tests |
+|---|---|---|
+| scolarite | RÉUSSI | 515 |
+| formations | RÉUSSI | 289 |
+| auth | RÉUSSI | 242 |
+| habilitations | RÉUSSI | 520 |
+| edt | RÉUSSI | 591 |
+| evaluations | RÉUSSI | 237 |
+| pilotage | RÉUSSI | 245 |
+| socle (dont `referentiels`) | RÉUSSI | 345 |
+| divers | RÉUSSI | 152 |
+| **Total** | **9 groupes / 0 échec** | **3 136** |
+
+### 16.2 Backend — suites dédiées à la mission
+
+| Suite | Commande | Résultat |
+|---|---|---|
+| Recette des 27 | `manage.py test referentiels.tests.test_recette_27_referentiels` | **Ran 16 tests — OK** |
+| Relations à l'import | `manage.py test referentiels.tests.test_relations_import` | **Ran 26 tests — OK** |
+| Moteur (export/import/cycle) | `manage.py test referentiels.tests.test_moteur_referentiels` | **Ran 27 tests — OK** |
+| Application `referentiels` entière | `manage.py test referentiels` | **Ran 166 tests — OK** |
+
+### 16.3 Frontend
+
+| Vérification | Résultat |
+|---|---|
+| `npx vitest run` | **133 fichiers / 2 198 tests — 0 échec** |
+| `npx eslint src/` | 0 erreur sur les fichiers de la mission (les 4 erreurs résiduelles de `vite.config.js` et 2 avertissements de fichiers de test sont **préexistants** et hors périmètre) |
+| `npx vite build` | réussi — 4,76 s |
+
+### 16.4 Contrôles de dépôt
+
+| Contrôle | Résultat |
+|---|---|
+| `manage.py makemigrations --check --dry-run` | *No changes detected* |
+| `manage.py check` | *System check identified no issues* |
+| `manage.py check_repo_hygiene` | **CONFORME** — 2 275 fichiers suivis, aucune donnée nominative, aucun `print()` runtime |
 
 ---
 
-## 15. Suite du travail (PHASES 5 à 7)
+## 17. Anomalies résiduelles et limitations
 
-- **PHASE 5 — Intégration** : brancher l'export/import sur les 4 référentiels en lecture
-  seule (A1) ; étendre la résolution des clés étrangères (A2) ; vérifier chaque
-  référentiel avec ses données réelles.
-- **PHASE 6 — Tests** : campagne par référentiel (jeux de données réels, FK obligatoires,
-  imports réels), tests navigateur sur l'assistant, tests de charge sur les exports.
-- **PHASE 7 — Validation globale** : reprise de la `PR #5` (restée CONFLICTING,
-  décision laissée au responsable fonctionnel) et relecture du présent tableau.
+| # | Limitation | Gravité | Pourquoi ce n'est pas corrigé ici |
+|---|---|---|---|
+| L1 | 9 modèles hors socle n'ont pas de champ `archive` : l'archivage leur est refusé (`400`), seule la désactivation est possible | Moyenne | Ajouter un champ relève d'une migration de schéma. À arbitrer avant intégration : soit on migre ces 9 modèles, soit on assume que la désactivation est leur archivage. |
+| L2 | La résolution des relations indexe chaque modèle lié en mémoire | Faible | Suffisant pour les volumétries de référentiels. À revoir si un référentiel dépasse quelques dizaines de milliers de lignes. |
+| L3 | La limite d'export (20 000 lignes) n'est pas paramétrable | Faible | À passer en réglage, sans urgence. |
+| L4 | Aucun test exécuté dans un navigateur réel sur l'assistant d'import | Moyenne | Les 24 tests du composant rendent le DOM réel (jsdom) et vérifient les requêtes émises ; un passage manuel reste recommandé avant mise en production. |
+| L5 | `test_rapport_conformite.py` écrit son relevé dans `/tmp/conformite-27.json` | Faible | Outil de recette, sans effet sur l'application. |
 
-**Aucun push n'a été effectué** : l'environnement impose la branche unique de session, et
-un push annulerait l'exécution CI en cours (`concurrency: cancel-in-progress`). Le commit
-`b661d13` est prêt à être poussé sur demande.
+---
+
+## 18. Statut Git et consignes respectées
+
+| Consigne | Statut |
+|---|---|
+| Ne pas fusionner ni pousser | **respecté** — aucun `push`, aucune fusion |
+| Ne pas modifier la CI, ne rien faire qui l'annule | **respecté** — `ci.yml` inchangé (`concurrency: cancel-in-progress: true`) |
+| Pas de nouvelle branche | **respecté** — tout le travail est sur `arena/4524a57c-backend-injs2026` |
+| Aucune modification destructive de la base | **respecté** — aucune migration, aucun `delete()` |
+| Aucun déploiement en production | **respecté** |
+
+**État du dépôt** : `b661d13` (PHASES 1 à 4) puis le commit de tête `HEAD` (PHASES 5 à 7,
+intitulé « Mission 03 — PHASES 5 à 7 : relations à l'import, lecture seule consultable,
+recette des 27 »). Les deux sont
+**locaux et non poussés**, sur la branche de session `arena/4524a57c-backend-injs2026`.
+L'arbre de travail est propre (`git status` vide après le commit).
+
+Depuis `b661d13`, les modifications portent sur 16 fichiers
+(`git diff --stat b661d13..HEAD`) : 4 créés, 12 modifiés, **aucune migration**.
+
+### 18.1 Instructions de synchronisation (sans push)
+
+```bash
+# 1. Vérifier l'état local (doit être vide : tout est commité)
+git status --porcelain
+git diff --stat b661d13..HEAD
+
+# 1 bis. Produire le tableau de conformité mesuré (§11)
+cd backend && INJS_RAPPORT_CONFORMITE=1 PYTHONPATH=.. \
+  DJANGO_SETTINGS_MODULE=arena.settings_sandbox \
+  .venv/bin/python manage.py test referentiels.tests.test_rapport_conformite
+
+# 2. Rejouer les contrôles avant de committer
+cd backend  && PYTHONPATH=.. DJANGO_SETTINGS_MODULE=arena.settings_sandbox \
+  .venv/bin/python manage.py test referentiels
+cd ../frontend && npx vitest run && npx vite build
+
+# 3. Committer sur la branche de session (PAS de push)
+#    — déjà fait : le commit de tête porte les PHASES 5 à 7
+git add -A
+git commit -m "Mission 03 — PHASES 5 à 7 : ..."
+
+# 4. Pousser UNIQUEMENT sur demande explicite, hors exécution CI
+#    (un push annule la CI en cours : concurrency.cancel-in-progress)
+git push origin arena/4524a57c-backend-injs2026
+```
+
+---
+
+## 19. Recommandations avant intégration
+
+1. **Arbitrer L1** (archivage des 9 modèles hors socle). C'est la seule limitation fonctionnelle
+   qui se voit à l'usage : un utilisateur qui cherche « Archiver » sur un site ou un semestre
+   obtient un refus. Soit on migre, soit on masque l'action pour ces référentiels.
+2. **Rejouer un passage manuel** de l'assistant d'import sur un fichier réel comportant des
+   colonnes de rattachement ambiguës (deux bâtiments homonymes sur deux sites) : le cas est
+   couvert par les tests automatisés, mais mérite une validation fonctionnelle.
+3. **Vérifier la volumétrie** des exports sur les plus gros référentiels avant d'ouvrir le Hub à
+   tous les utilisateurs (L2, L3).
+4. **Traiter la `PR #5`** restée `CONFLICTING` : la décision appartient au responsable
+   fonctionnel, aucune fusion ne sera faite de sa propre initiative.
+5. **Ne pousser qu'après la fin de l'exécution CI en cours**, pour ne pas l'annuler.
+
+---
+
+## 20. Conclusion
+
+Le Hub Référentiels est livré industrialisé : un moteur commun, un registre comme source unique
+de vérité, et une recette qui **exécute** les 27 référentiels au lieu de les décrire. Les
+fonctionnalités annoncées sont toutes branchées et vérifiées ; les trois bugs de production
+découverts pendant les tests (rapport d'import mensonger, transaction annulée en silence,
+résolution insensible au contexte) sont corrigés et couverts par des tests anti-régression.
+
+Un référentiel ajouté au registre hérite automatiquement des routes, des permissions, des
+exports, des imports et de la recette — sans reprise individuelle du sous-module.

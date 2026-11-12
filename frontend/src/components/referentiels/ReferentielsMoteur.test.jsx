@@ -8,7 +8,7 @@
  * final est affiché.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { screen, act, fireEvent, waitFor } from '@testing-library/react'
+import { screen, act, fireEvent, waitFor, within } from '@testing-library/react'
 
 vi.mock('@/services/api', async (importOriginal) => {
   const actual = await importOriginal()
@@ -377,5 +377,115 @@ describe('Assistant d’import — parcours nominal en 5 étapes', () => {
       window.URL.createObjectURL = originalCreate
       window.URL.revokeObjectURL = originalRevoke
     }
+  })
+})
+
+describe('Assistant d’import — colonnes de rattachement (relations)', () => {
+  const ANALYSE_AVEC_RELATIONS = {
+    ...ANALYSE_OK,
+    validation: {
+      ...ANALYSE_OK.validation,
+      relations: [
+        {
+          cle: 'ecole',
+          libelle: 'Ecole',
+          modele_lie: 'referentiels.refecole',
+          libelle_lie: 'Référentiel – École',
+          cles_metier: ['code', 'libelle'],
+          obligatoire: true,
+          non_resolues: 2,
+        },
+        {
+          cle: 'mention',
+          libelle: 'Mention',
+          modele_lie: 'referentiels.refmention',
+          libelle_lie: 'Référentiel – Mention',
+          cles_metier: ['code', 'libelle'],
+          obligatoire: false,
+          non_resolues: 0,
+        },
+      ],
+    },
+  }
+
+  beforeEach(() => {
+    apiController.reset?.()
+    apiMock.get.mockReset?.()
+    apiMock.post.mockReset?.()
+  })
+
+  it('indique à quoi chaque colonne est rattachée et comment la retrouver', async () => {
+    mockImport(ANALYSE_AVEC_RELATIONS)
+    renderWithProviders(<AssistantImport slug="filieres" referentiel="Filières" />)
+    await jusquALaValidation()
+    // Le modèle rattaché et les clés métier reconnues sont affichés :
+    // l'utilisateur n'a pas à deviner qu'il peut écrire « ENSEPS ».
+    expect(screen.getByText('Référentiel – École')).toBeTruthy()
+    // Les deux colonnes partagent les mêmes clés métier : plusieurs cellules.
+    expect(screen.getAllByText('code, libelle').length).toBe(2)
+    // Une seule des deux colonnes est obligatoire.
+    expect(screen.getAllByText('obligatoire').length).toBe(1)
+  })
+
+  it('met en évidence les références non résolues, sans les associer', async () => {
+    mockImport(ANALYSE_AVEC_RELATIONS)
+    renderWithProviders(<AssistantImport slug="filieres" referentiel="Filières" />)
+    await jusquALaValidation()
+    // Seule la colonne fautive est comptée : « Mention » reste à zéro.
+    const cellules = screen
+      .getAllByText('2')
+      .filter((n) => n.className.includes('ref-import-nonresolu'))
+    expect(cellules.length).toBe(1)
+  })
+
+  it('n’affiche aucune section de relations quand le référentiel n’en a pas', async () => {
+    mockImport()
+    renderWithProviders(<AssistantImport slug="filieres" referentiel="Filières" />)
+    await jusquALaValidation()
+    expect(screen.queryByText(/Colonnes de rattachement reconnues/i)).toBeNull()
+  })
+})
+
+describe('Assistant d’import — rapport final et phases d’anomalies', () => {
+  beforeEach(() => {
+    apiController.reset?.()
+    apiMock.get.mockReset?.()
+    apiMock.post.mockReset?.()
+  })
+
+  it('distingue les lignes rejetées en validation des anomalies d’écriture', async () => {
+    const rapport = {
+      ...RAPPORT_OK,
+      crees: 2,
+      lignes_rejetees: 3,
+      anomalies: [
+        { ligne: 4, colonne: 'Ecole', valeur: 'X', message: 'Référence inexistante', phase: 'validation' },
+        { ligne: 7, colonne: 'Code', valeur: 'Y', message: 'Doublon en base', phase: 'ecriture' },
+      ],
+      nb_anomalies: 2,
+      resume: '2 création(s), 0 mise(s) à jour, 0 ignorée(s), 2 anomalie(s) en 0.3 s.',
+    }
+    mockImport(ANALYSE_OK, rapport)
+    renderWithProviders(<AssistantImport slug="filieres" referentiel="Filières" />)
+    await jusquALaValidation()
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Continuer/i }))
+      await flushPromises(4)
+    })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^Importer$/i }))
+      await flushPromises(8)
+    })
+    // Les deux phases sont nommées, sinon l'utilisateur ne sait pas si la
+    // ligne a été écartée avant ou pendant l'écriture. Le libellé
+    // « Validation » étant aussi celui d'une étape, on se limite au tableau.
+    const tableau = document.querySelector('.ref-table-defilement')
+    expect(tableau).toBeTruthy()
+    expect(within(tableau).getByText('Validation')).toBeTruthy()
+    expect(within(tableau).getByText('Écriture')).toBeTruthy()
+    expect(screen.getByText(/Référence inexistante/)).toBeTruthy()
+    expect(screen.getByText(/Doublon en base/)).toBeTruthy()
+    // Les lignes écartées dès la validation sont comptées à part.
+    expect(screen.getByText(/ligne\(s\) rejetée\(s\) en validation/)).toBeTruthy()
   })
 })

@@ -9,6 +9,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from django.db import models
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.pagination import PageNumberPagination
@@ -231,7 +232,7 @@ class ReferentielSocleViewSet(ExportReferentielMixin,
     @action(detail=True, methods=['post'])
     def archiver(self, request, pk=None):
         obj = self._get_any_object(pk)
-        if not hasattr(obj, 'archive'):
+        if not _a_le_champ(type(obj), 'archive'):
             return Response(
                 {'detail': (
                     'Ce référentiel ne gère pas l’archivage : '
@@ -247,7 +248,7 @@ class ReferentielSocleViewSet(ExportReferentielMixin,
     @action(detail=True, methods=['post'])
     def reactiver(self, request, pk=None):
         obj = self._get_any_object(pk)
-        if not hasattr(obj, 'archive'):
+        if not _a_le_champ(type(obj), 'archive'):
             return Response(
                 {'detail': (
                     'Ce référentiel ne gère pas l’archivage : '
@@ -261,33 +262,74 @@ class ReferentielSocleViewSet(ExportReferentielMixin,
         return Response({'detail': 'Valeur réactivée.', 'archive': False, 'actif': True})
 
     # ── Règle 1 : activer ≠ archiver ≠ supprimer (trois actions distinctes) ──
+    def _bascule_activation(self, obj, activer, request):
+        """Active ou désactive une valeur, modèle socle ou non.
+
+        Les modèles du socle portent ``activer()`` / ``desactiver()`` ; les
+        modèles hors socle (scolarité, formations) portent seulement le champ
+        ``actif``. Le comportement est identique dans les deux cas : la valeur
+        reste présente, consultable et archivable, et l'action est tracée.
+        """
+        if not hasattr(obj, 'actif'):
+            return None
+        motif = request.data.get('motif', '')
+        if activer:
+            obj.actif = True
+            if hasattr(obj, 'date_activation'):
+                obj.date_activation = timezone.now()
+            if hasattr(obj, 'date_desactivation'):
+                obj.date_desactivation = None
+            action = ReferentielJournal.Action.ACTIVATION
+        else:
+            obj.actif = False
+            if hasattr(obj, 'date_desactivation'):
+                obj.date_desactivation = timezone.now()
+            action = ReferentielJournal.Action.DESACTIVATION
+        champs = [c for c in ('actif', 'date_activation', 'date_desactivation')
+                  if hasattr(obj, c)]
+        obj.save(update_fields=champs)
+        self._journaliser(obj, action, {'motif': motif})
+        return obj
+
     @action(detail=True, methods=['post'])
     def activer(self, request, pk=None):
         """Active la valeur sans toucher à son archivage ni la supprimer."""
         obj = self._get_any_object(pk)
-        if obj.archive:
+        if _a_le_champ(type(obj), 'archive') and getattr(obj, 'archive', False):
             return Response(
                 {'detail': 'Valeur archivée : désarchivez-la avant de l’activer.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if getattr(obj, 'actif', False):
             return Response({'detail': 'Valeur déjà active.'}, status=status.HTTP_400_BAD_REQUEST)
-        obj.activer(request.user, motif=request.data.get('motif', ''))
-        return Response({'detail': 'Valeur activée.', 'actif': True, 'archive': False})
+        if self._bascule_activation(obj, True, request) is None:
+            return Response(
+                {'detail': 'Ce référentiel ne gère pas l’activation.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response({
+            'detail': 'Valeur activée.',
+            'actif': True,
+            'archive': getattr(obj, 'archive', False),
+        })
 
     @action(detail=True, methods=['post'])
     def desactiver(self, request, pk=None):
         """Désactive la valeur : elle reste présente, consultable et archivable."""
         obj = self._get_any_object(pk)
-        if not hasattr(obj, 'actif'):
+        if not _a_le_champ(type(obj), 'actif'):
             return Response(
                 {'detail': 'Ce référentiel ne gère pas l’activation.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if not obj.actif:
             return Response({'detail': 'Valeur déjà inactive.'}, status=status.HTTP_400_BAD_REQUEST)
-        obj.desactiver(request.user, motif=request.data.get('motif', ''))
-        return Response({'detail': 'Valeur désactivée.', 'actif': False, 'archive': obj.archive})
+        self._bascule_activation(obj, False, request)
+        return Response({
+            'detail': 'Valeur désactivée.',
+            'actif': False,
+            'archive': getattr(obj, 'archive', False),
+        })
 
     @action(detail=True, methods=['post'])
     def supprimer(self, request, pk=None):
@@ -315,6 +357,19 @@ class ReferentielSocleViewSet(ExportReferentielMixin,
                 ),
                 'dependances': dependances[:20],
                 'solution': 'archiver',
+            }, status=status.HTTP_409_CONFLICT)
+
+        # Rien n'est jamais détruit : la valeur est archivée. Un modèle sans
+        # colonne d'archivage ne peut pas être « supprimé » sans destruction :
+        # l'opération est refusée et la désactivation est proposée à la place.
+        if not _a_le_champ(type(obj), 'archive'):
+            return Response({
+                'detail': (
+                    'Ce référentiel ne gère pas l’archivage : la suppression y '
+                    'entraînerait une destruction de données. Désactivez plutôt '
+                    'la valeur, qui reste ainsi consultable et traçable.'
+                ),
+                'solution': 'desactiver',
             }, status=status.HTTP_409_CONFLICT)
 
         with transaction.atomic():
@@ -674,3 +729,67 @@ def _champs_numeriques(modele, entree):
         if _a_le_champ(modele, nom)
         and isinstance(modele._meta.get_field(nom), types)
     ]
+
+
+class ReferentielLectureSeuleViewSet(ExportReferentielMixin, viewsets.ReadOnlyModelViewSet):
+    """Export d'un référentiel **non éditable** (données historisées ou importées).
+
+    Ces référentiels ne doivent pas pouvoir être créés, modifiés ni supprimés
+    depuis le Hub : leurs valeurs proviennent de documents officiels ou
+    d'écrans métier existants. Le caractère « lecture seule » ne doit en
+    revanche jamais empêcher la **consultation** ni l'**exportation**, qui
+    sont deux opérations de lecture encadrées par les mêmes permissions que
+    les autres référentiels du registre.
+
+    Le modèle est résolu à partir du slug du registre : une seule source de
+    vérité, aucune liste codée en dur.
+    """
+
+    permission_classes = [ReferentielPermission]
+    pagination_class = RefPagination
+    filter_backends = [SearchFilter, OrderingFilter]
+    ordering_fields = '__all__'
+    slug = None
+
+    def get_queryset(self):
+        from referentiels.registre import REGISTRE, modele_de
+
+        entree = REGISTRE.get(self.slug)
+        if entree is None:
+            from rest_framework.exceptions import NotFound
+            raise NotFound(f"Référentiel inconnu : {self.slug}.")
+        return modele_de(entree)._default_manager.all()
+
+    @property
+    def search_fields(self):
+        modele = self.get_queryset().model
+        return self._champs_texte(modele)
+
+    @staticmethod
+    def _champs_texte(modele):
+        champs = [
+            f.name for f in modele._meta.concrete_fields
+            if isinstance(f, (models.CharField, models.TextField)) and not f.choices
+        ]
+        return tuple(champs) or ('libelle',)
+
+    def _entree_registre(self):
+        from referentiels.registre import REGISTRE
+
+        entree = REGISTRE.get(self.slug)
+        return {**entree, 'slug': self.slug} if entree else None
+
+    def _slug_referentiel(self):
+        return self.slug or 'referentiel'
+
+    def get_serializer_class(self):
+        from rest_framework import serializers
+
+        modele = self.get_queryset().model
+
+        class _Serializer(serializers.ModelSerializer):
+            class Meta:
+                model = modele
+                fields = '__all__'
+
+        return _Serializer

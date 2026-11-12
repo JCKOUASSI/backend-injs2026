@@ -216,6 +216,43 @@ class TestImportReferentiel(BaseReferentiels):
         self.assertEqual(rapport['mis_a_jour'], 1)
         self.assertEqual(RefTypeEvaluation.objects.get(code='EXAM').libelle, 'Examen')
 
+    def test_le_rapport_ne_ment_jamais(self):
+        """Régression : le rapport annonçait des créations non persistées.
+
+        L'écriture du journal recevait des instances de modèles non
+        sérialisables ; l'erreur était avalée, la transaction annulée, et le
+        rapport annonçait tout de même « N création(s) ». Ce test vérifie que
+        chaque création annoncée correspond réellement à une ligne en base.
+        """
+        from referentiels.models import RefEcole
+
+        ecole = RefEcole.objects.create(code='ENSEPS', libelle='ENSEPS')
+        reponse = self.client.post(
+            '/api/referentiels/filieres/importer/',
+            {
+                'fichier': FichierCSV(
+                    'Code;Libellé;École\nF1;Filière une;ENSEPS\nF2;Filière deux;ENSEPS\n'
+                ),
+                'mode': 'ajouter',
+            },
+            format='multipart',
+        )
+        self.assertEqual(reponse.status_code, 200, reponse.content[:400])
+        annonces = reponse.data['crees']
+        self.assertEqual(annonces, 2)
+        # Vérification réelle en base, pas seulement du compteur renvoyé.
+        self.assertEqual(
+            RefFiliere.objects.filter(
+                code__in=('F1', 'F2'),
+            ).count(),
+            annonces,
+            f'Le rapport annonce {annonces} création(s) mais la base en compte '
+            f"{RefFiliere.objects.filter(code__in=('F1', 'F2')).count()}.",
+        )
+        self.assertEqual(
+            RefFiliere.objects.filter(code='F1').first().ecole_id, ecole.pk,
+        )
+
     def test_api_analyse(self):
         """L'étape d'analyse est exposée et n'écrit rien."""
         reponse = self.client.post(

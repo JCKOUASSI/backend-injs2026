@@ -33,6 +33,21 @@ class ErreurImport(ValueError):
     """Fichier refusé : le message est affiché tel quel à l'utilisateur."""
 
 
+def champ_identite(modele):
+    """Champ servant d'identité métier : ``code`` s'il existe, sinon le libellé.
+
+    Tous les référentiels n'ont pas de colonne « code » (Semestre porte
+    « S1 », Niveau « L1 ») : la supposer provoquerait une erreur de champ
+    inexistant au moment de la lecture des valeurs existantes.
+    """
+    noms = {f.name for f in modele._meta.concrete_fields}
+    if 'code' in noms:
+        return 'code'
+    from .colonnes import champ_libelle
+
+    return champ_libelle(modele) or 'libelle'
+
+
 def normaliser_entete(valeur):
     """Clé comparable d'un en-tête : casse, accents et espaces neutralisés."""
     texte = ('' if valeur is None else str(valeur)).strip().lower()
@@ -211,7 +226,12 @@ def previsualiser(*, fichier, extension, champs_importables,
         for c in obligatoires if mapping.get(c['cle']) is None
     ]
 
-    index_nom = [mapping.get('code'), mapping.get('libelle')]
+    # Doublons détectés sur les clés d'identité du référentiel : le code
+    # lorsqu'il existe, sinon le libellé (Semestre porte « S1 »).
+    identites = [c['cle'] for c in champs_importables if c['cle'] in ('code', 'libelle')]
+    if not identites:
+        identites = [champs_importables[0]['cle']] if champs_importables else []
+    index_nom = [mapping.get(cle) for cle in identites]
 
     return {
         'total_lignes': len(lignes_brutes),
@@ -253,8 +273,15 @@ def _convertir(valeur, champ):
 
 
 def valider(*, previsualisation, modele, champ_libelle, correspondance=None,
-            queryset=None):
-    """Étape 3 — rapport d'erreurs **ligne par ligne**, sans aucune écriture."""
+            queryset=None, rattachement=None):
+    """Étape 3 — rapport d'erreurs **ligne par ligne**, sans aucune écriture.
+
+    Les clés étrangères sont **résolues** à ce stade : une référence
+    inexistante ou ambiguë est signalée avec sa ligne et sa colonne, et
+    aucune association hasardeuse n'est retenue.
+    """
+    from .relations import ResolveurRelations
+
     champs_importables = [
         c for c in previsualisation['_colonnes_importables']
     ] if '_colonnes_importables' in previsualisation else []
@@ -262,9 +289,13 @@ def valider(*, previsualisation, modele, champ_libelle, correspondance=None,
     par_cle = {c['cle']: c for c in champs_importables}
     lignes_brutes = previsualisation['_lignes_brutes']
 
+    resolveur = ResolveurRelations(modele, queryset_lie=None, rattachement=rattachement)
+    champs_lies = set(resolveur.champs_lies())
+
     existants = set()
     if queryset is not None:
-        existants = {normaliser_entete(v) for v in queryset.values_list('code', flat=True)}
+        identite = champ_identite(queryset.model)
+        existants = {normaliser_entete(v) for v in queryset.values_list(identite, flat=True)}
         if champ_libelle:
             existants |= {
                 normaliser_entete(v) for v in queryset.values_list(champ_libelle, flat=True)
@@ -280,6 +311,7 @@ def valider(*, previsualisation, modele, champ_libelle, correspondance=None,
             continue
 
         valeurs = {}
+        objets_lies = {}
         anomalies = []
         for cle, index in mapping.items():
             if index is None or index >= len(rangee):
@@ -288,6 +320,28 @@ def valider(*, previsualisation, modele, champ_libelle, correspondance=None,
             if champ is None:
                 continue
             brut = rangee[index]
+
+            # ── Clé étrangère : résolution par identifiant ou clé métier ──
+            if cle in champs_lies:
+                resolution = resolveur.resoudre(cle, brut, contexte=valeurs)
+                if resolution.erreur:
+                    anomalies.append({
+                        'ligne': numero, 'colonne': champ['libelle'],
+                        'champ': cle, 'valeur': str(brut),
+                        'message': resolution.erreur, 'nature': 'relation',
+                    })
+                    continue
+                if resolution.objet is not None:
+                    objets_lies[cle] = resolution.objet
+                    valeurs[cle] = resolution.objet.pk
+                    continue
+                if champ['obligatoire']:
+                    anomalies.append({
+                        'ligne': numero, 'colonne': champ['libelle'],
+                        'valeur': '', 'message': 'Valeur obligatoire manquante.',
+                    })
+                continue
+
             try:
                 valeurs[cle] = _convertir(brut, champ)
             except ValueError as exc:
@@ -301,16 +355,35 @@ def valider(*, previsualisation, modele, champ_libelle, correspondance=None,
         if anomalies:
             erreurs.extend(anomalies)
         else:
-            cle_conflit = normaliser_entete(valeurs.get('code') or valeurs.get(champ_libelle) or '')
+            cle_conflit = normaliser_entete(
+                valeurs.get('code') if 'code' in valeurs else valeurs.get(champ_libelle) or ''
+            )
             valeurs['_existe'] = cle_conflit in existants if cle_conflit else False
-            valides.append({'ligne': numero, 'valeurs': valeurs})
+            valides.append({'ligne': numero, 'valeurs': valeurs, 'lies': objets_lies})
+
+    # Les colonnes de rattachement attendues, pour que l'interface puisse
+    # indiquer à l'utilisateur quelles références sont reconnues et par quoi.
+    relations = resolveur.relations_attendues()
+    compteur_relations = {r['cle']: 0 for r in relations}
+    for erreur in erreurs:
+        if erreur.get('nature') != 'relation':
+            continue
+        # La correspondance se fait sur la clé du champ : les libellés
+        # affichés (« Ecole ») ne coïncident pas toujours avec le nom du champ.
+        if erreur.get('champ') in compteur_relations:
+            compteur_relations[erreur['champ']] += 1
+    for relation in relations:
+        relation['non_resolues'] = compteur_relations[relation['cle']]
 
     return {
         'total_lignes': len(lignes_brutes),
         'lignes_valides': len(valides),
         'lignes_en_erreur': len({e['ligne'] for e in erreurs}),
+        'relations': relations,
         'erreurs': erreurs[:500],
-        'apercu_valides': valides[:10],
+        'apercu_valides': [
+            {'ligne': v['ligne'], 'valeurs': v['valeurs']} for v in valides[:10]
+        ],
         '_valides': valides,
         '_mapping': mapping,
     }
@@ -341,17 +414,32 @@ def importer(*, validation, modele, champ_libelle, mode, utilisateur=None,
 
     index = {}
     if queryset is not None:
+        identite = champ_identite(modele)
         for objet in queryset:
-            index[normaliser_entete(getattr(objet, 'code', '') or '')] = objet
+            index[normaliser_entete(getattr(objet, identite, '') or '')] = objet
             if champ_libelle:
                 index[normaliser_entete(getattr(objet, champ_libelle, '') or '')] = objet
 
     compteurs = {'crees': 0, 'mis_a_jour': 0, 'ignores': 0}
-    anomalies = []
+    # Les lignes rejetées dès la validation font partie du rapport final :
+    # l'utilisateur doit retrouver dans le rapport d'import toutes les lignes
+    # de son fichier qui n'ont pas été reprises, avec leur motif.
+    anomalies = [
+        dict(anomalie, phase='validation')
+        for anomalie in (validation.get('erreurs') or [])
+    ]
+    lignes_rejetees = len({a.get('ligne') for a in anomalies if a.get('ligne')})
 
     def _traiter(entree):
         valeurs = {k: v for k, v in entree['valeurs'].items() if not k.startswith('_')}
-        cle = normaliser_entete(valeurs.get('code') or valeurs.get(champ_libelle) or '')
+        # Les objets liés ont été résolus à l'étape 3 : on rattache les
+        # instances réelles, jamais une valeur brute non vérifiée.
+        lies = entree.get('lies') or {}
+        for cle, objet in lies.items():
+            valeurs[cle] = objet
+        cle = normaliser_entete(
+            valeurs.get('code') if 'code' in valeurs else valeurs.get(champ_libelle) or ''
+        )
         existant = index.get(cle) if cle else None
 
         if existant is not None:
@@ -359,7 +447,8 @@ def importer(*, validation, modele, champ_libelle, mode, utilisateur=None,
                 compteurs['ignores'] += 1
                 anomalies.append({
                     'ligne': entree['ligne'], 'colonne': '',
-                    'valeur': valeurs.get(champ_libelle) or valeurs.get('code', ''),
+                    'valeur': valeurs.get(champ_libelle)
+                    or (valeurs.get('code', '') if 'code' in valeurs else ''),
                     'message': 'Déjà présent — ignoré (mode « ajouter »).',
                 })
                 return
@@ -383,7 +472,8 @@ def importer(*, validation, modele, champ_libelle, mode, utilisateur=None,
             compteurs['ignores'] += 1
             anomalies.append({
                 'ligne': entree['ligne'], 'colonne': '',
-                'valeur': valeurs.get(champ_libelle) or valeurs.get('code', ''),
+                'valeur': valeurs.get(champ_libelle)
+                or (valeurs.get('code', '') if 'code' in valeurs else ''),
                 'message': 'Absent du référentiel — ignoré (mode « mettre à jour »).',
             })
             return
@@ -415,7 +505,8 @@ def importer(*, validation, modele, champ_libelle, mode, utilisateur=None,
                            if not k.startswith('_')}
                 anomalies.append({
                     'ligne': entree['ligne'], 'colonne': '',
-                    'valeur': valeurs.get(champ_libelle) or valeurs.get('code', ''),
+                    'valeur': valeurs.get(champ_libelle)
+                    or (valeurs.get('code', '') if 'code' in valeurs else ''),
                     'message': message[:300],
                 })
 
@@ -425,8 +516,9 @@ def importer(*, validation, modele, champ_libelle, mode, utilisateur=None,
         'mode': mode,
         'duree_secondes': round(duree, 3),
         'total_traite': len(valides),
+        'lignes_rejetees': lignes_rejetees,
         **compteurs,
-        'anomalies': anomalies,
+        'anomalies': anomalies[:500],
         'nb_anomalies': len(anomalies),
         'resume': (
             f"{compteurs['crees']} création(s), {compteurs['mis_a_jour']} mise(s) à jour, "

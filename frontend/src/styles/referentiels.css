@@ -867,3 +867,27 @@
   .ref-page .cand-hero-title { font-size: 1.28rem; }
   .ref-categorie-puce { font-size: 0.7rem; padding: 0.3rem 0.65rem; }
 }
+
+/* Assistant d'import — colonnes de rattachement (relations) */
+
+.ref-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+}
+
+.ref-badge--info {
+  background: #EFF6FF;
+  color: #1D4ED8;
+}
+
+.ref-import-nonresolu {
+  font-weight: 700;
+  color: #B91C1C;
+}

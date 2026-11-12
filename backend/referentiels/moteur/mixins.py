@@ -20,6 +20,35 @@ from . import exportations as moteur_exports
 from . import importations as moteur_imports
 
 
+def payload_jsonisable(detail):
+    """Rend un dictionnaire sérialisable en JSON (journal, rapports).
+
+    Les valeurs importées peuvent contenir des instances de modèles (clés
+    étrangères résolues), des dates ou des décimaux : elles sont converties
+    en valeurs simples afin que l'écriture du journal ne puisse pas échouer
+    — et surtout ne puisse pas invalider la transaction en silence.
+    """
+    from datetime import date, datetime
+    from decimal import Decimal
+
+    from django.db import models as modeles_django
+
+    def convertir(valeur):
+        if valeur is None or isinstance(valeur, (bool, int, float, str)):
+            return valeur
+        if isinstance(valeur, modeles_django.Model):
+            return str(valeur)
+        if isinstance(valeur, (datetime, date)):
+            return valeur.isoformat()
+        if isinstance(valeur, Decimal):
+            return float(valeur)
+        return str(valeur)
+
+    if not isinstance(detail, dict):
+        return {'valeur': convertir(detail)}
+    return {cle: convertir(valeur) for cle, valeur in detail.items()}
+
+
 class ExportReferentielMixin:
     """Ajoute l'action ``exporter/`` aux ViewSets dérivés."""
 
@@ -151,11 +180,15 @@ class ImportReferentielMixin:
                 champ_libelle=moteur_colonnes.champ_libelle(modele),
                 correspondance=correspondance,
                 queryset=self.get_queryset(),
+                rattachement=self._rattachement(modele),
             )
         except ValueError as exc:
             return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
-        validation.pop('_valides', None)  # non sérialisable en l'état
+        # Non sérialisable en l'état. Les relations, elles, sont déjà décrites
+        # et chiffrées par la validation (y compris les références non
+        # résolues par colonne) : ne pas les recalculer ici.
+        validation.pop('_valides', None)
         return Response({
             'etape': 'validation',
             'slug': self._slug_referentiel(),
@@ -215,6 +248,7 @@ class ImportReferentielMixin:
                 previsualisation=previsualisation, modele=modele,
                 champ_libelle=moteur_colonnes.champ_libelle(modele),
                 correspondance=correspondance, queryset=self.get_queryset(),
+                rattachement=self._rattachement(modele),
             )
         except ValueError as exc:
             return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
@@ -239,8 +273,38 @@ class ImportReferentielMixin:
 
         return Response(rapport, status=status.HTTP_200_OK)
 
+    def _rattachement(self, modele):
+        """Champ de rattachement du registre servant à lever une ambiguïté.
+
+        Le registre déclare ``unicite_par`` lorsqu'un libellé n'est unique
+        que *par* un parent (un nom de bâtiment est unique par site). Ce champ
+        est transmis au résolveur, qui s'en sert pour départager deux valeurs
+        homonymes — uniquement quand le fichier le fournit.
+        """
+        entree = self._entree_registre() or {}
+        unicite_par = entree.get("unicite_par") or ""
+        if not unicite_par:
+            return {}
+        if unicite_par not in {f.name for f in modele._meta.concrete_fields}:
+            return {}
+        from .relations import cles_etrangeres
+
+        return {
+            field.name: unicite_par
+            for field in cles_etrangeres(modele)
+            if field.name != unicite_par
+        }
+
     def _journaliser_import(self, objet, action, detail):
-        """Branche le moteur sur le journal du référentiel (si disponible)."""
+        """Branche le moteur sur le journal du référentiel.
+
+        Le détail est **rendu sérialisable** avant l'écriture : le champ
+        ``detail`` du journal est un JSON, et les valeurs importées peuvent
+        porter des instances de modèles (clés étrangères résolues) ou des
+        dates. Une erreur de sérialisation n'est **jamais** avalée : elle
+        doit remonter, sinon la transaction serait annulée en silence et le
+        rapport annoncerait des écritures qui n'existent pas.
+        """
         journaliser = getattr(self, '_journaliser', None)
         if journaliser is None:
             return
@@ -251,10 +315,9 @@ class ImportReferentielMixin:
         action_journal = (ReferentielJournal.Action.CREATION
                           if action == 'import_creation'
                           else ReferentielJournal.Action.MODIFICATION)
-        try:
-            journaliser(objet, action_journal, {'import': detail})
-        except Exception:
-            return
+        journaliser(objet, action_journal, {
+            'import': payload_jsonisable(detail),
+        })
 
     @staticmethod
     def _booleen(valeur):

@@ -126,10 +126,22 @@ class TableauDeBordTests(TestCase):
         self.assertEqual(routes['type_cursus']['route'], '/referentiels/types-cursus/')
 
     def test_les_referentiels_non_editables_ne_sont_pas_ecrasables(self):
-        """Un référentiel déclaré en lecture seule ne répond pas au CRUD générique."""
+        """Un référentiel déclaré en lecture seule refuse toute création.
+
+        La route de consultation existe (le lecture seule ne bloque jamais la
+        lecture) : l'écriture est donc refusée par le verbe HTTP, pas par
+        l'absence de route. Les deux statuts traduisent la même garantie.
+        """
         self.client.force_authenticate(make_user('carto2', role='ADMIN'))
         res = self.client.post('/api/referentiels/volumes-modules/', {'libelle': 'X'})
-        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn(
+            res.status_code,
+            (status.HTTP_404_NOT_FOUND, status.HTTP_405_METHOD_NOT_ALLOWED),
+        )
+        # Rien n'a été écrit, quel que soit le statut renvoyé.
+        self.assertFalse(
+            RefVolumeHoraireFormation.objects.filter(intitule_module='X').exists()
+        )
 
 
 class CrudGeneriqueTests(TestCase):

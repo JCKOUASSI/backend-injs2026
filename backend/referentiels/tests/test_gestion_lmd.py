@@ -15,6 +15,7 @@ from rest_framework.test import APIClient
 from formations.models import RefFormation
 from referentiels.models import ReferentielJournal
 from referentiels.registre import REGISTRE
+from scolarite import models as scolarite
 from scolarite.models import Niveau, Parcours, Semestre, TypeFormation
 
 from .test_refonte import make_user
@@ -204,7 +205,15 @@ class TableauDeBordLMDTests(TestCase):
         self.assertFalse(entree['editable'])
         self.assertEqual(entree['route_ui'], '/scolarite/maquettes')
         self.assertEqual(entree['libelle_bouton'], 'Gérer')
-        # Le CRUD générique ne doit pas écraser le cycle de vie des UE.
+        # Le CRUD générique ne doit pas écraser le cycle de vie des UE. La
+        # route de consultation existe (lecture seule ≠ lecture interdite) ;
+        # l'écriture est donc refusée par le verbe HTTP plutôt que par
+        # l'absence de route — dans les deux cas, aucune création n'a lieu.
         self.assertFalse(REGISTRE['ue-ecue']['editable'])
+        avant = scolarite.UE.objects.count()
         res = self.client.post('/api/referentiels/ue-ecue/', {'libelle': 'X'})
-        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn(
+            res.status_code,
+            (status.HTTP_404_NOT_FOUND, status.HTTP_405_METHOD_NOT_ALLOWED),
+        )
+        self.assertEqual(scolarite.UE.objects.count(), avant)

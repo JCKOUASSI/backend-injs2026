@@ -69,4 +69,46 @@ for _slug, _entree in REGISTRE.items():
         name=f'ref-{_slug}-importer-analyse',
     ))
 
+# Référentiels non éditables : le caractère « lecture seule » interdit la
+# création, la modification et la suppression — jamais la consultation ni
+# l'export. Une route d'export **et** une route de consultation en lecture
+# seule leur sont ouvertes, servies par une vue qui n'expose aucun verbe
+# d'écriture et résout le modèle depuis le registre.
+#
+# Sans la route de consultation, un écran du Hub qui pointe sur un référentiel
+# historisé (``route_ui``) appellerait une API inexistante : la page
+# s'afficherait vide ou en erreur, ce qui reviendrait à empêcher la lecture —
+# précisément ce que le caractère lecture seule n'a pas le droit de faire.
+_routes_reservees = {prefix for prefix, _viewset, _basename in router.registry}
+
+for _slug, _entree in REGISTRE.items():
+    if _entree['editable']:
+        continue
+    # La route d'export est ouverte à **tous** les référentiels non éditables,
+    # y compris ceux qui disposent par ailleurs de leur propre API métier
+    # (``route_api``) : le routeur ne génère pas de route d'export, et le
+    # caractère lecture seule n'a jamais le droit de bloquer une lecture.
+    urlpatterns.append(re_path(
+        rf'^{_slug}/exporter/$',
+        views.ReferentielLectureSeuleViewSet.as_view({'get': 'exporter'}, slug=_slug),
+        name=f'ref-{_slug}-exporter',
+    ))
+    # Consultation : ajoutée quand aucune route ne la sert déjà **sous ce
+    # chemin**. Un référentiel servi par le routeur (``modules-officiels``)
+    # l'aurait en double ; un référentiel dont la route métier est ailleurs
+    # (``route_api``) garde la sienne, mais l'écran du Hub qui référence le
+    # slug du registre doit pouvoir lire sans dépendre d'un autre chemin.
+    if _slug in _routes_reservees:
+        continue
+    urlpatterns.append(re_path(
+        rf'^{_slug}/$',
+        views.ReferentielLectureSeuleViewSet.as_view({'get': 'list'}, slug=_slug),
+        name=f'ref-{_slug}-list',
+    ))
+    urlpatterns.append(re_path(
+        rf'^{_slug}/(?P<pk>[0-9]+)/$',
+        views.ReferentielLectureSeuleViewSet.as_view({'get': 'retrieve'}, slug=_slug),
+        name=f'ref-{_slug}-detail',
+    ))
+
 urlpatterns.append(path('', include(router.urls)))

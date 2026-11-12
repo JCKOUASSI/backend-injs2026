@@ -143,6 +143,53 @@ export default function AssistantImport({ slug, referentiel, onTermine, onFermer
     [previsualisation],
   )
 
+  const relations = analyse?.validation?.relations || []
+  const blocRelations =
+    relations.length > 0 ? (
+      <details className="ref-import-apercu">
+        <summary>
+          Colonnes de rattachement reconnues ({relations.length})
+        </summary>
+        <p className="ref-import-aide">
+          Ces colonnes peuvent contenir l’identifiant <em>ou</em> le libellé de
+          la valeur rattachée (ex. « ENSEPS »). Une référence introuvable ou
+          ambiguë est signalée sans être associée.
+        </p>
+        <table className="ref-table ref-table--compacte">
+          <thead>
+            <tr>
+              <th scope="col">Colonne</th>
+              <th scope="col">Rattachée à</th>
+              <th scope="col">Reconnaissable par</th>
+              <th scope="col">Non résolues</th>
+            </tr>
+          </thead>
+          <tbody>
+            {relations.map((relation) => (
+              <tr key={relation.cle}>
+                <td>
+                  {relation.libelle}
+                  {relation.obligatoire && (
+                    <span className="ref-badge ref-badge--info">obligatoire</span>
+                  )}
+                </td>
+                <td>{relation.libelle_lie}</td>
+                <td>{relation.cles_metier.join(', ') || 'identifiant'}</td>
+                <td>
+                  {relation.non_resolues > 0 ? (
+                    <strong className="ref-import-nonresolu">{relation.non_resolues}</strong>
+                  ) : (
+                    '0'
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
+    ) : null
+
+
   return (
     <div className="ref-modale-fond" role="presentation" onMouseDown={onFermer}>
       <div
@@ -286,6 +333,8 @@ export default function AssistantImport({ slug, referentiel, onTermine, onFermer
                 </tbody>
               </table>
 
+              {blocRelations}
+
               {previsualisation.apercu?.length > 0 && (
                 <details className="ref-import-apercu">
                   <summary>Aperçu des premières lignes</summary>
@@ -310,6 +359,8 @@ export default function AssistantImport({ slug, referentiel, onTermine, onFermer
           {/* ── Étape 3 : validation ── */}
           {etape === 3 && validation && (
             <div className="ref-import-bloc">
+              {blocRelations}
+
               <p className="ref-import-resume">
                 <strong>{validation.lignes_valides}</strong> ligne(s) valide(s) —{' '}
                 <strong>{validation.lignes_en_erreur}</strong> ligne(s) en erreur sur{' '}
@@ -401,19 +452,49 @@ export default function AssistantImport({ slug, referentiel, onTermine, onFermer
                 <li>
                   <span className="ref-import-compteur">{rapport.nb_anomalies}</span> anomalie(s)
                 </li>
+                {rapport.lignes_rejetees > 0 && (
+                  <li>
+                    <span className="ref-import-compteur">{rapport.lignes_rejetees}</span>{' '}
+                    ligne(s) rejetée(s) en validation
+                  </li>
+                )}
                 <li>
                   durée : <strong>{rapport.duree_secondes} s</strong>
                 </li>
               </ul>
               {rapport.nb_anomalies > 0 && (
-                <button
-                  type="button"
-                  className="ref-btn ref-btn--secondaire"
-                  onClick={telechargerAnomalies}
-                >
-                  <i className="bi bi-download" aria-hidden="true" /> Télécharger les anomalies
-                  (CSV)
-                </button>
+                <>
+                  <div className="ref-table-defilement">
+                    <table className="ref-table ref-table--compacte">
+                      <thead>
+                        <tr>
+                          <th scope="col">Ligne</th>
+                          <th scope="col">Phase</th>
+                          <th scope="col">Colonne</th>
+                          <th scope="col">Message</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(rapport.anomalies || []).slice(0, 50).map((anomalie, index) => (
+                          <tr key={`${anomalie.ligne}-${index}`}>
+                            <td>{anomalie.ligne}</td>
+                            <td>{anomalie.phase === 'validation' ? 'Validation' : 'Écriture'}</td>
+                            <td>{anomalie.colonne || '—'}</td>
+                            <td>{anomalie.message}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <button
+                    type="button"
+                    className="ref-btn ref-btn--secondaire"
+                    onClick={telechargerAnomalies}
+                  >
+                    <i className="bi bi-download" aria-hidden="true" /> Télécharger les anomalies
+                    (CSV)
+                  </button>
+                </>
               )}
             </div>
           )}
