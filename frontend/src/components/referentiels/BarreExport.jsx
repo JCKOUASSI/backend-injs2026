@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { FORMATS_EXPORT, exporterReferentiel } from '../../services/referentiels'
+import ApercuDocument from './ApercuDocument'
 
 /**
  * Barre d'export d'un référentiel : Word, Excel, CSV et PDF.
@@ -37,7 +38,12 @@ export default function BarreExport({ slug, filtres = {}, total = 0, onMessage }
           ? ' — utilisez le lien affiché pour le récupérer'
           : ''
       if (diagnostic?.dansUneIframe && !diagnostic?.ongletOuvert) {
-        setFichierPret({ nom, url: diagnostic.url })
+        setFichierPret({
+          nom,
+          url: diagnostic.url,
+          blob: diagnostic.blob,
+          contentType: diagnostic.contentType,
+        })
       }
       onMessage?.(
         'ok',
@@ -146,6 +152,15 @@ export default function BarreExport({ slug, filtres = {}, total = 0, onMessage }
               <i className="bi bi-box-arrow-up-right" aria-hidden="true" /> Ouvrir l’application dans un onglet
             </a>
           </div>
+
+          {/* Ni téléchargement ni fenêtre surgissée ne sont possibles ici :
+              on montre le document dans la page, ce qui ne dépend d'aucune de
+              ces deux autorisations. */}
+          <ApercuDocument
+            nom={fichierPret.nom}
+            blob={fichierPret.blob}
+            contentType={fichierPret.contentType}
+          />
         </div>
       )}
     </div>

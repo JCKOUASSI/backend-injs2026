@@ -1231,3 +1231,71 @@
 .ref-export-repli-fermer:hover {
   background: #DBEAFE;
 }
+
+/* Aperçu du document dans la page : ultime recours quand ni le téléchargement
+   ni l'ouverture d'un onglet ne sont autorisés par l'environnement. */
+.ref-apercu {
+  margin-top: 0.55rem;
+}
+
+.ref-apercu-entete {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #1E3A8A;
+  margin-bottom: 0.3rem;
+}
+
+.ref-apercu-copier {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: auto;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid #93C5FD;
+  border-radius: 6px;
+  background: #fff;
+  color: #104A8E;
+  font-weight: 600;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.ref-apercu-copier:hover {
+  background: #DBEAFE;
+}
+
+.ref-apercu-copie {
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: #166534;
+}
+
+.ref-apercu-texte {
+  max-height: 190px;
+  overflow: auto;
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #DBEAFE;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+.ref-apercu-pdf {
+  width: 100%;
+  height: 320px;
+  border: 1px solid #DBEAFE;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.ref-apercu-indisponible {
+  margin: 0.55rem 0 0;
+  color: #334155;
+}

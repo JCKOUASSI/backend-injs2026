@@ -121,7 +121,17 @@ export async function exporterReferentiel(slug, formatCible, filtres = {}, optio
   const ongletOuvert = dansIframe ? ouvrirDansUnOnglet(url) : false
 
   if (typeof options.onDiagnostic === 'function') {
-    options.onDiagnostic({ nom, url, ongletOuvert, dansUneIframe: dansIframe })
+    options.onDiagnostic({
+      nom,
+      url,
+      // Le contenu est transmis pour que l'écran puisse, à défaut de le
+      // remettre, au moins l'**afficher** (aperçu intégré : téléchargements et
+      // fenêtres surgissées interdits).
+      blob: resultat.blob,
+      contentType: resultat.contentType,
+      ongletOuvert,
+      dansUneIframe: dansIframe,
+    })
   }
   return nom
 }
