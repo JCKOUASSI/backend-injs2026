@@ -6,8 +6,14 @@
  * mode sont les seuls autres paramètres. Aucune logique métier ici : le
  * backend décide des colonnes, des règles de validation et des permissions.
  */
-import api from './api'
-import { telechargerBlob } from '../utils/telechargement'
+import api, { API_BASE_URL } from './api'
+import { safeLocalStorage } from '../utils/safeStorage'
+import {
+  estUnDocument,
+  telechargerParUrl,
+  dansUneIframe,
+  ouvrirDansUnOnglet,
+} from '../utils/telechargement'
 
 /** Formats d'export pris en charge, avec libellé et extension. */
 export const FORMATS_EXPORT = [
@@ -49,21 +55,74 @@ const TAILLE_MAX = 10 * 1024 * 1024 // 10 Mio — aligné sur TAILLE_MAX_PIECE
  * @param {object} [filtres] critères de recherche courants (?search=, ?actif=, ?ordering=)
  * @returns {Promise<string>} nom du fichier téléchargé
  */
+/**
+ * Adresse de téléchargement direct d'un export.
+ *
+ * Le serveur accepte le jeton d'accès **en paramètre d'URL**
+ * (`FlexibleJWTAuthentication`, prévu nommément pour les exports et les
+ * lecteurs médias) : une simple requête GET suffit donc à obtenir le
+ * document, sans en-tête `Authorization` — ce qu'un `<a href>` ne peut pas
+ * poser. Le serveur répond avec `Content-Disposition: attachment`, et le
+ * navigateur enregistre alors le fichier par le chemin le plus standard qui
+ * soit, celui d'un lien ordinaire : plus de blob, plus d'URL d'objet à
+ * créer puis à révoquer, plus de dépendance aux caprices du clic programmé
+ * sur un `Blob` (Safari, Firefox, aperçus intégrés).
+ *
+ * C'est aussi ce qui rend le lien de repli réellement utilisable : il pointe
+ * vers une ressource durable, que l'utilisateur peut cliquer lui-même.
+ */
+export function urlExportDirecte(slug, formatCible, filtres = {}) {
+  const params = new URLSearchParams()
+  params.set('export', formatCible)
+  Object.entries(filtres).forEach(([cle, valeur]) => {
+    if (valeur === undefined || valeur === null || valeur === '') return
+    params.set(cle, String(valeur))
+  })
+  const jeton = safeLocalStorage.getItem('access_token')
+  if (jeton) params.set('access_token', jeton)
+  return `${API_BASE_URL}/referentiels/${slug}/exporter/?${params.toString()}`
+}
+
 export async function exporterReferentiel(slug, formatCible, filtres = {}, options = {}) {
-  // `api.get` est bâti sur `fetch` : l'option `responseType: 'blob'` y est
-  // ignorée, et la réponse binaire passait alors par `res.text()` +
-  // `JSON.parse()`, ce qui faisait échouer **tous** les exports. Le chemin
-  // correct est `getBlob`, qui lit la réponse en `blob()` et extrait le nom
-  // de fichier de l'en-tête Content-Disposition.
+  // 1) Validation : `api.get` est bâti sur `fetch`, où l'option
+  // `responseType: 'blob'` est ignorée — la réponse binaire passait alors par
+  // `res.text()` + `JSON.parse()`, ce qui faisait échouer **tous** les
+  // exports. Le chemin correct est `getBlob`, qui lit la réponse en `blob()`
+  // et extrait le nom de fichier de l'en-tête Content-Disposition.
+  //
+  // Cette requête sert ici à **valider** : elle prouve que le document
+  // existe, fournit son nom et remonte les erreurs (403, format refusé)
+  // avant toute tentative de téléchargement.
   const resultat = await api.getBlob(`/referentiels/${slug}/exporter/`, {
     export: formatCible,
     ...filtres,
   })
+  // Garde-fou : une erreur d'export renvoie du JSON. Mieux vaut ne rien
+  // télécharger qu'un document corrompu silencieux — et surtout ne pas
+  // déclencher une requête de téléchargement vouée à enregistrer une erreur.
+  if (!estUnDocument(resultat.blob, resultat.contentType)) {
+    const erreur = new Error(
+      "Réponse inattendue du serveur : aucun document à télécharger.",
+    )
+    erreur.corrompu = true
+    throw erreur
+  }
   const nom = resultat.fileName || nomDeFichierDepuis(null, slug, formatCible)
-  telechargerBlob(resultat.blob, nom, {
-    contentType: resultat.contentType,
-    onDiagnostic: options.onDiagnostic,
-  })
+
+  // 2) Remise : par une URL HTTP réelle et non par le blob. Le document est
+  // régénéré côté serveur (quelques millisecondes pour un référentiel) :
+  // c'est le prix d'une remise qui ne dépend plus du `Blob`.
+  const url = urlExportDirecte(slug, formatCible, filtres)
+  telechargerParUrl(url, nom)
+
+  // Dans un aperçu intégré, le téléchargement peut être bloqué : on tente
+  // alors aussi l'ouverture d'un onglet de premier niveau.
+  const dansIframe = dansUneIframe()
+  const ongletOuvert = dansIframe ? ouvrirDansUnOnglet(url) : false
+
+  if (typeof options.onDiagnostic === 'function') {
+    options.onDiagnostic({ nom, url, ongletOuvert, dansUneIframe: dansIframe })
+  }
   return nom
 }
 

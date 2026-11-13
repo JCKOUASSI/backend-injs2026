@@ -98,6 +98,52 @@ export function telechargerBlob(blob, nomFichier, options = {}) {
   return nom
 }
 
+/**
+ * Déclenche le téléchargement d'un fichier servi par une **URL HTTP réelle**.
+ *
+ * Mécanisme de remplacement de `telechargerBlob`, utilisé quand le serveur
+ * peut produire le document sur une simple requête GET authentifiée :
+ * l'URL porte alors `Content-Disposition: attachment`, et le navigateur
+ * enregistre le fichier lui-même.
+ *
+ * Trois raisons de préférer cette voie au blob :
+ *
+ * 1. le navigateur reçoit le type MIME et le nom de fichier **du serveur**, au
+ *    lieu d'un `Blob` reconstruit côté client ;
+ * 2. aucune URL d'objet à créer ni à révoquer : pas de course entre la
+ *    révocation et le démarrage du téléchargement ;
+ * 3. c'est le chemin qu'emprunte un lien ordinaire, celui que tous les
+ *    navigateurs savent traiter — y compris ceux où le clic programmé sur un
+ *    blob reste capricieux (Safari, Firefox, aperçus intégrés).
+ *
+ * @param {string} url adresse du document (serveur ou blob)
+ * @param {string} [nomFichier] nom proposé si le serveur n'en fournit pas
+ * @returns {string} le nom de fichier utilisé
+ */
+export function telechargerParUrl(url, nomFichier = 'export') {
+  if (typeof window === 'undefined' || typeof document === 'undefined' || !url) {
+    return nomFichier
+  }
+  const nom = nomFichier || 'export'
+  const lien = document.createElement('a')
+  lien.href = url
+  // L'en-tête `Content-Disposition` du serveur prime ; l'attribut ne sert que
+  // de repli si le serveur n'en envoie pas.
+  lien.download = nom
+  lien.rel = 'noopener'
+  lien.style.position = 'fixed'
+  lien.style.top = '-1000px'
+  lien.style.left = '-1000px'
+  lien.style.opacity = '0'
+  document.body.appendChild(lien)
+  try {
+    lien.click()
+  } finally {
+    lien.remove()
+  }
+  return nom
+}
+
 /** Vrai si la page est affichée à l'intérieur d'une iframe. */
 export function dansUneIframe() {
   if (typeof window === 'undefined') return false
@@ -117,7 +163,7 @@ export function dansUneIframe() {
  * pas soumis au `sandbox` de l'élément parent. Renvoie `false` si le
  * navigateur a bloqué l'ouverture (pop-up bloquée).
  */
-function ouvrirDansUnOnglet(url) {
+export function ouvrirDansUnOnglet(url) {
   if (!dansUneIframe() || typeof window === 'undefined') return false
   try {
     return Boolean(window.open(url, '_blank', 'noopener'))

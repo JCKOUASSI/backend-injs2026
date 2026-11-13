@@ -115,15 +115,14 @@ export default function BarreExport({ slug, filtres = {}, total = 0, onMessage }
           </p>
 
           <div className="ref-export-repli-actions">
-            {/* Le clic sur ce lien est un geste de l'utilisateur : c'est ce qui
-                permet à l'onglet (et au téléchargement) d'aboutir là où
-                l'ouverture automatique a été bloquée. */}
+            {/* Lien vers une vraie ressource serveur (Content-Disposition:
+                attachment) : le clic de l'utilisateur déclenche un
+                téléchargement ordinaire, sans dépendre d'un blob ni d'une
+                fenêtre surgissée. */}
             <a
               className="ref-export-repli-lien"
               href={fichierPret.url}
               download={fichierPret.nom}
-              target="_blank"
-              rel="noreferrer"
               onClick={() => setFichierPret(null)}
             >
               <i className="bi bi-download" aria-hidden="true" /> Récupérer le fichier

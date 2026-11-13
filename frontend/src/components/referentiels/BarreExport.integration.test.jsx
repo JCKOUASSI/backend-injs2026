@@ -27,10 +27,12 @@ const XLSX = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x06, 0x00])
 describe('Barre d’export — chaîne réelle (fetch → blob → téléchargement)', () => {
   let urlsCreees
   let nomsTelecharges
+  let urlsTelechargees
 
   beforeEach(() => {
     urlsCreees = []
     nomsTelecharges = []
+    urlsTelechargees = []
     window.URL.createObjectURL = vi.fn((blob) => {
       urlsCreees.push(blob)
       return 'blob:reel'
@@ -38,6 +40,7 @@ describe('Barre d’export — chaîne réelle (fetch → blob → téléchargem
     window.URL.revokeObjectURL = vi.fn()
     HTMLAnchorElement.prototype.click = vi.fn(function () {
       nomsTelecharges.push(this.download)
+      urlsTelechargees.push(this.getAttribute('href'))
     })
   })
 
@@ -54,9 +57,10 @@ describe('Barre d’export — chaîne réelle (fetch → blob → téléchargem
 
     await waitFor(() => expect(nomsTelecharges).toHaveLength(1))
     expect(nomsTelecharges[0]).toBe('f.pdf')
-    // Le blob reçu contient exactement les octets du serveur.
-    const lu = new Uint8Array(await urlsCreees[0].arrayBuffer())
-    expect([...lu]).toEqual([...PDF])
+    // Le fichier est servi par une vraie URL : le navigateur reçoit le
+    // document du serveur, avec son Content-Disposition.
+    expect(urlsTelechargees[0]).toContain('/api/referentiels/filieres/exporter/')
+    expect(urlsTelechargees[0]).toContain('export=pdf')
   })
 
   it('télécharge réellement un XLSX sans le corrompre', async () => {
@@ -71,9 +75,10 @@ describe('Barre d’export — chaîne réelle (fetch → blob → téléchargem
 
     await waitFor(() => expect(nomsTelecharges).toHaveLength(1))
     expect(nomsTelecharges[0]).toBe('f.xlsx')
-    const lu = new Uint8Array(await urlsCreees[0].arrayBuffer())
-    expect(lu[0]).toBe(0x50)
-    expect(lu[1]).toBe(0x4b)
+    // Aucun blob n'est fabriqué côté client : le document n'est plus
+    // reconstruit en mémoire, il est téléchargé tel que le serveur l'envoie.
+    expect(urlsCreees).toHaveLength(0)
+    expect(urlsTelechargees[0]).toContain('export=xlsx')
   })
 
   it('appelle la bonne URL avec le format ET les filtres', async () => {
@@ -217,7 +222,10 @@ describe('Barre d’export — repli quand l’ouverture automatique est bloqué
 
     const lien = await screen.findByRole('link', { name: /Récupérer le fichier/i })
     expect(lien.getAttribute('download')).toBe('f.pdf')
-    expect(lien.getAttribute('href')).toBe('blob:reel')
+    // Ressource durable : l'utilisateur peut cliquer, le serveur renvoie le
+    // document avec Content-Disposition: attachment.
+    expect(lien.getAttribute('href')).toContain('/api/referentiels/filieres/exporter/')
+    expect(lien.getAttribute('href')).toContain('export=pdf')
   })
 
   it('masque le lien une fois le fichier récupéré', async () => {
@@ -229,6 +237,18 @@ describe('Barre d’export — repli quand l’ouverture automatique est bloqué
     const lien = await screen.findByRole('link', { name: /Récupérer le fichier/i })
     fireEvent.click(lien)
     expect(screen.queryByRole('link', { name: /Récupérer le fichier/i })).toBeNull()
+  })
+
+  it('porte le jeton d’accès dans l’URL pour que le serveur authentifie la requête', async () => {
+    localStorage.setItem('access_token', 'jeton-de-test')
+    vi.stubGlobal('fetch', vi.fn(async () => reponseFichier(PDF, 'application/pdf', 'f.pdf')))
+
+    render(<BarreExport slug="filieres" />)
+    fireEvent.click(screen.getByRole('button', { name: /PDF/i }))
+
+    const lien = await screen.findByRole('link', { name: /Récupérer le fichier/i })
+    expect(lien.getAttribute('href')).toContain('access_token=jeton-de-test')
+    localStorage.removeItem('access_token')
   })
 
   it('ne montre aucun repli quand l’onglet a pu être ouvert', async () => {
