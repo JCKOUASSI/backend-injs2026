@@ -178,3 +178,67 @@ describe('Barre d’export — retour visible pour l’utilisateur', () => {
     await waitFor(() => expect(screen.getByText(/permission/i)).toBeTruthy())
   })
 })
+
+/**
+ * Dans un aperçu intégré, l'ouverture automatique d'un onglet est refusée
+ * (elle survient après `await`, hors geste utilisateur). Le document doit
+ * rester accessible par un **lien cliqué par l'utilisateur**, seule action
+ * qui dispose encore de l'activation nécessaire au navigateur.
+ */
+describe('Barre d’export — repli quand l’ouverture automatique est bloquée', () => {
+  let openInitial
+  let descripteurTop
+
+  beforeEach(() => {
+    window.URL.createObjectURL = vi.fn(() => 'blob:reel')
+    window.URL.revokeObjectURL = vi.fn()
+    HTMLAnchorElement.prototype.click = vi.fn()
+    // La page est dans une iframe et le navigateur bloque les fenêtres.
+    descripteurTop = Object.getOwnPropertyDescriptor(window, 'top')
+    Object.defineProperty(window, 'top', { value: {}, configurable: true })
+    openInitial = window.open
+    window.open = vi.fn(() => null)
+  })
+
+  afterEach(() => {
+    window.open = openInitial
+    // Restaure le descripteur d'origine : le supprimer casserait les tests
+    // suivants, pour lesquels `window.top` doit redevenir la page elle-même.
+    if (descripteurTop) Object.defineProperty(window, 'top', descripteurTop)
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('affiche un lien cliquable portant le nom et le contenu du fichier', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => reponseFichier(PDF, 'application/pdf', 'f.pdf')))
+
+    render(<BarreExport slug="filieres" />)
+    fireEvent.click(screen.getByRole('button', { name: /PDF/i }))
+
+    const lien = await screen.findByRole('link', { name: /Récupérer le fichier/i })
+    expect(lien.getAttribute('download')).toBe('f.pdf')
+    expect(lien.getAttribute('href')).toBe('blob:reel')
+  })
+
+  it('masque le lien une fois le fichier récupéré', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => reponseFichier(PDF, 'application/pdf', 'f.pdf')))
+
+    render(<BarreExport slug="filieres" />)
+    fireEvent.click(screen.getByRole('button', { name: /PDF/i }))
+
+    const lien = await screen.findByRole('link', { name: /Récupérer le fichier/i })
+    fireEvent.click(lien)
+    expect(screen.queryByRole('link', { name: /Récupérer le fichier/i })).toBeNull()
+  })
+
+  it('ne montre aucun repli quand l’onglet a pu être ouvert', async () => {
+    window.open = vi.fn(() => ({}))
+    vi.stubGlobal('fetch', vi.fn(async () => reponseFichier(PDF, 'application/pdf', 'f.pdf')))
+
+    render(<BarreExport slug="filieres" />)
+    fireEvent.click(screen.getByRole('button', { name: /PDF/i }))
+
+    await waitFor(() => expect(window.open).toHaveBeenCalled())
+    expect(screen.queryByRole('link', { name: /Récupérer le fichier/i })).toBeNull()
+  })
+})

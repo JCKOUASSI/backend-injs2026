@@ -1138,3 +1138,65 @@
   font-weight: 700;
   color: #B91C1C;
 }
+
+/* Repli de téléchargement : affiché quand l'aperçu intégré (iframe) empêche
+   la remise automatique du document. Le lien reste cliquable par
+   l'utilisateur, ce qui lui rend l'activation que l'ouverture automatique
+   n'avait pas. */
+.ref-export-repli {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+  background: #EFF6FF;
+  font-size: 0.82rem;
+}
+
+.ref-export-repli-nom {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: #1E3A8A;
+  overflow-wrap: anywhere;
+}
+
+.ref-export-repli-lien {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  background: #104A8E;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+
+.ref-export-repli-lien:hover,
+.ref-export-repli-lien:focus-visible {
+  background: #0B3A72;
+  color: #fff;
+}
+
+.ref-export-repli-fermer {
+  border: 0;
+  background: transparent;
+  color: #1E3A8A;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.15rem 0.3rem;
+  border-radius: 4px;
+}
+
+.ref-export-repli-fermer:hover {
+  background: #DBEAFE;
+}
