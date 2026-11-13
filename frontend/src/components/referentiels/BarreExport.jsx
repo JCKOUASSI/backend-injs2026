@@ -16,8 +16,22 @@ export default function BarreExport({ slug, filtres = {}, total = 0, onMessage }
     if (enCours) return
     setEnCours(formatCible)
     try {
-      const nom = await exporterReferentiel(slug, formatCible, filtres)
-      onMessage?.('ok', `Export ${formatCible.toUpperCase()} généré : ${nom}`)
+      let diagnostic = null
+      const nom = await exporterReferentiel(slug, formatCible, filtres, {
+        onDiagnostic: (d) => { diagnostic = d },
+      })
+      // Dans un aperçu intégré (iframe), le téléchargement peut être bloqué
+      // par le navigateur : le document est alors aussi ouvert dans un
+      // onglet. Le dire évite le « je clique et rien ne se passe ».
+      const ouvertAilleurs = diagnostic?.ongletOuvert
+        ? ' — ouvert dans un nouvel onglet'
+        : diagnostic?.dansUneIframe
+          ? ' — si aucun fichier n’apparaît, autorisez les téléchargements pour ce site'
+          : ''
+      onMessage?.(
+        'ok',
+        `Export ${formatCible.toUpperCase()} généré : ${nom}${ouvertAilleurs}`,
+      )
     } catch (e) {
       onMessage?.(
         'erreur',

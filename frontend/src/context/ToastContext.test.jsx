@@ -72,3 +72,46 @@ describe('context/ToastContext', () => {
     expect(refs.at(-1)).toBe(valeurInitiale)
   })
 })
+
+// Régression « je clique et rien ne se passe » : le contexte n'exposait que
+// `showToast`, alors qu'un écran appelait `toast.success?.('…')`. L'optional
+// chaining avalait l'appel : ni succès ni erreur ne s'affichaient, alors même
+// que l'action avait bien eu lieu (cas réel : les boutons d'export).
+describe('context/ToastContext — raccourcis par niveau', () => {
+  function Raccourcis() {
+    const toast = useToast()
+    return (
+      <div>
+        <button onClick={() => toast.success?.('OK')}>r-succes</button>
+        <button onClick={() => toast.error?.('KO')}>r-erreur</button>
+        <button onClick={() => toast.info?.('INFO')}>r-info</button>
+        <span data-testid="api">{Object.keys(toast).sort().join(',')}</span>
+      </div>
+    )
+  }
+
+  const rendre = () => render(<ToastProvider><Raccourcis /></ToastProvider>)
+
+  it('expose showToast et les raccourcis success / error / info', () => {
+    rendre()
+    expect(screen.getByTestId('api')).toHaveTextContent('error,info,showToast,success')
+  })
+
+  it('affiche réellement le message du raccourci success', () => {
+    rendre()
+    fireEvent.click(screen.getByText('r-succes'))
+    expect(screen.getByText('OK')).toBeInTheDocument()
+  })
+
+  it('affiche réellement le message du raccourci error', () => {
+    rendre()
+    fireEvent.click(screen.getByText('r-erreur'))
+    expect(screen.getByText('KO')).toBeInTheDocument()
+  })
+
+  it('affiche réellement le message du raccourci info', () => {
+    rendre()
+    fireEvent.click(screen.getByText('r-info'))
+    expect(screen.getByText('INFO')).toBeInTheDocument()
+  })
+})

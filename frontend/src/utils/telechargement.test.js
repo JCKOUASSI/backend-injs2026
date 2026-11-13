@@ -137,3 +137,58 @@ describe('Utilitaire de téléchargement — déclenchement', () => {
     expect(nom).toBe('defaut.xlsx')
   })
 })
+
+describe('Utilitaire de téléchargement — repli en iframe', () => {
+  let nav
+
+  beforeEach(() => { nav = installerNavigateur() })
+  afterEach(() => {
+    nav.restaurer()
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('décale l’ancre hors écran au lieu de la masquer', () => {
+    // Firefox et Safari n'honorent pas toujours le clic sur un élément en
+    // `display: none` : l'ancre doit rester rendue.
+    const styles = []
+    const originalCreate = document.createElement.bind(document)
+    vi.spyOn(document, 'createElement').mockImplementation((tag) => {
+      const el = originalCreate(tag)
+      if (tag === 'a') {
+        Object.defineProperty(el, 'style', {
+          value: new Proxy({}, { set: (t, k, v) => { styles.push([k, v]); t[k] = v; return true } }),
+        })
+      }
+      return el
+    })
+    telechargerBlob(new Blob(['x'], { type: 'application/pdf' }), 'a.pdf')
+    const appliques = Object.fromEntries(styles)
+    expect(appliques.display).toBeUndefined()
+    expect(appliques.position).toBe('fixed')
+  })
+
+  it('ouvre un onglet de repli quand la page est dans une iframe', () => {
+    vi.stubGlobal('self', {})
+    vi.stubGlobal('top', { different: true })
+    const open = vi.fn(() => ({}))
+    vi.stubGlobal('open', open)
+    telechargerBlob(new Blob(['x'], { type: 'application/pdf' }), 'a.pdf')
+    expect(open).toHaveBeenCalledWith(expect.stringContaining('blob:'), '_blank', 'noopener')
+  })
+
+  it('n’ouvre pas d’onglet inutilement hors iframe', () => {
+    const open = vi.fn(() => ({}))
+    vi.stubGlobal('open', open)
+    telechargerBlob(new Blob(['x'], { type: 'application/pdf' }), 'a.pdf')
+    expect(open).not.toHaveBeenCalled()
+  })
+
+  it('signale le contexte et l’ouverture via onDiagnostic', () => {
+    let recu = null
+    telechargerBlob(new Blob(['x'], { type: 'application/pdf' }), 'a.pdf', {
+      onDiagnostic: (d) => { recu = d },
+    })
+    expect(recu).toMatchObject({ nom: 'a.pdf', ongletOuvert: false, dansUneIframe: false })
+  })
+})

@@ -62,24 +62,68 @@ export function telechargerBlob(blob, nomFichier, options = {}) {
   lien.href = url
   lien.download = nom
   lien.rel = 'noopener'
-  // L'élément doit être dans le document pour que le clic soit honoré
-  // (en particulier sur Firefox).
-  lien.style.display = 'none'
+  // Sorti du flux mais **rendu** : Firefox et Safari n'honorent pas
+  // toujours le clic sur un élément en `display: none`. On le décale hors
+  // écran plutôt que de le masquer.
+  lien.style.position = 'fixed'
+  lien.style.top = '-1000px'
+  lien.style.left = '-1000px'
+  lien.style.opacity = '0'
   document.body.appendChild(lien)
   try {
     lien.click()
   } finally {
     lien.remove()
   }
+
+  // Repli pour les aperçus intégrés : dans une iframe, le navigateur peut
+  // bloquer silencieusement un téléchargement (sandbox sans
+  // `allow-downloads`). On ouvre alors aussi le document dans un onglet de
+  // premier niveau, qui n'est pas soumis à la même restriction. L'URL du
+  // blob reste valable le temps du délai de révocation ci-dessous.
+  const ongletOuvert = ouvrirDansUnOnglet(url)
+
   // Révocation différée : révoquer immédiatement peut annuler un
-  // téléchargement qui n'a pas encore démarré.
+  // téléchargement qui n'a pas encore démarré, et viderait l'onglet ouvert.
   const revoquer = () => window.URL.revokeObjectURL(url)
   if (options.signal) {
     if (options.signal.aborted) revoquer()
     else options.signal.addEventListener('abort', revoquer, { once: true })
   }
   window.setTimeout(revoquer, DELAI_REVOCATION_MS)
+
+  if (typeof options.onDiagnostic === 'function') {
+    options.onDiagnostic({ nom, url, ongletOuvert, dansUneIframe: dansUneIframe() })
+  }
   return nom
+}
+
+/** Vrai si la page est affichée à l'intérieur d'une iframe. */
+export function dansUneIframe() {
+  if (typeof window === 'undefined') return false
+  try {
+    return window.self !== window.top
+  } catch {
+    // Accès refusé à `window.top` : cross-origin, donc bien dans une iframe.
+    return true
+  }
+}
+
+/**
+ * Ouvre le document dans un onglet de premier niveau.
+ *
+ * Réservé au cas de l'iframe : un onglet ouvert est un contexte de
+ * navigation complet, où le téléchargement (ou l'affichage du PDF) n'est
+ * pas soumis au `sandbox` de l'élément parent. Renvoie `false` si le
+ * navigateur a bloqué l'ouverture (pop-up bloquée).
+ */
+function ouvrirDansUnOnglet(url) {
+  if (!dansUneIframe() || typeof window === 'undefined') return false
+  try {
+    return Boolean(window.open(url, '_blank', 'noopener'))
+  } catch {
+    return false
+  }
 }
 
 /**

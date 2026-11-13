@@ -30,7 +30,17 @@ export function ToastProvider({ children }) {
   // créé à chaque rendu du provider (donc à chaque toast), ce qui change la
   // dépendance `toast` des écrans et fait rejouer leurs effets de chargement —
   // jusqu'à une boucle de requêtes sur un échec initial (§10.10).
-  const value = useMemo(() => ({ showToast }), [showToast])
+  // Raccourcis par niveau. Ils ne remplacent pas `showToast` : ils évitent
+  // qu'un écran qui appelle `toast.success('…')` reste silencieux. Sans eux,
+  // l'optional chaining (`toast.success?.(…)`) avalait le message sans rien
+  // signaler — un clic sur « Exporter » ne montrait alors aucun retour, ni
+  // succès ni erreur, alors même que l'action avait eu lieu.
+  const value = useMemo(() => ({
+    showToast,
+    success: (message) => showToast(message, 'success'),
+    error: (message) => showToast(message, 'error'),
+    info: (message) => showToast(message, 'info'),
+  }), [showToast])
 
   const iconMap = { success: 'check-circle-fill', error: 'exclamation-triangle-fill', info: 'info-circle-fill' }
   const bgMap = { success: '#104A8E', error: '#DC3545', info: '#104A8E' }

@@ -49,7 +49,7 @@ const TAILLE_MAX = 10 * 1024 * 1024 // 10 Mio — aligné sur TAILLE_MAX_PIECE
  * @param {object} [filtres] critères de recherche courants (?search=, ?actif=, ?ordering=)
  * @returns {Promise<string>} nom du fichier téléchargé
  */
-export async function exporterReferentiel(slug, formatCible, filtres = {}) {
+export async function exporterReferentiel(slug, formatCible, filtres = {}, options = {}) {
   // `api.get` est bâti sur `fetch` : l'option `responseType: 'blob'` y est
   // ignorée, et la réponse binaire passait alors par `res.text()` +
   // `JSON.parse()`, ce qui faisait échouer **tous** les exports. Le chemin
@@ -60,7 +60,10 @@ export async function exporterReferentiel(slug, formatCible, filtres = {}) {
     ...filtres,
   })
   const nom = resultat.fileName || nomDeFichierDepuis(null, slug, formatCible)
-  telechargerBlob(resultat.blob, nom, { contentType: resultat.contentType })
+  telechargerBlob(resultat.blob, nom, {
+    contentType: resultat.contentType,
+    onDiagnostic: options.onDiagnostic,
+  })
   return nom
 }
 
