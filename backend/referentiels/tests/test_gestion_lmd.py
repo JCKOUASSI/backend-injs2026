@@ -193,7 +193,7 @@ class TableauDeBordLMDTests(TestCase):
         parcours = self._entree('parcours')
         self.assertEqual(
             parcours['selecteurs_routes']['ref_formation']['route'],
-            '/formations/ref/formations/',
+            '/referentiels/formations/',
         )
         self.assertEqual(
             parcours['selecteurs_routes']['type_formation']['route'],

@@ -123,6 +123,10 @@ def entree(**kwargs):
     # Libellé du bouton d'accès sur la carte du tableau de bord (défaut
     # front : « Gérer » si éditable, « Consulter » sinon).
     kwargs.setdefault('libelle_bouton', '')
+    # Filtres d'URL déclarés : ``{'filiere': 'filiere_code'}`` signifie
+    # que ``?filiere=EM`` filtre la colonne ``filiere_code``. Le nom du
+    # paramètre n'est donc jamais deviné à partir du champ.
+    kwargs.setdefault('filtres', {})
     return kwargs
 
 
@@ -322,8 +326,18 @@ REGISTRE = {
         description='Cycles diplômants du référentiel — Licence et Master.',
         categorie=Categorie.OFFRE_FORMATION,
         modele='formations.RefFormation',
-        editable=False, route_api='/formations/ref/formations/',
-        route_ui='/formations', icone='bi-mortarboard-fill',
+        # Géré comme les autres : l'API historique `/formations/ref/formations/`
+        # reste en place pour les écrans qui la consomment (menu, emplois du
+        # temps), mais le Hub sert désormais le CRUD par sa route de registre.
+        editable=True,
+        # Le modèle nomme son intitulé « intitule » : la correspondance est
+        # déclarée ici pour que l'écran générique n'ait rien à deviner.
+        champ_libelle='intitule',
+        selecteurs=['filiere'],
+        champs=['type_diplome', 'domaine', 'mention', 'duree_annees',
+                'nb_semestres', 'nb_credites', 'perimetre', 'filiere_code',
+                'prix_heure_realisee', 'source', 'description'],
+        icone='bi-mortarboard-fill',
         source='Formations et Modules INJS — §1',
     ),
     'niveaux': entree(
@@ -476,7 +490,17 @@ REGISTRE = {
             'de formation, par filière et par semestre.'
         ),
         categorie=Categorie.OFFRE_FORMATION, modele=RefModuleOfficiel,
-        editable=False, route_api='/referentiels/modules-officiels/',
+        editable=True,
+        # Un même intitulé de module peut exister dans plusieurs formations :
+        # l'unicité est bornée à la formation, comme la contrainte de base.
+        unicite_par='formation',
+        selecteurs=['formation'],
+        # Filtres attendus par les sélecteurs dépendants : le paramètre
+        # « filiere » porte le code court, pas la clé étrangère.
+        filtres={'filiere': 'filiere_code', 'semestre': 'semestre',
+                 'formation': 'formation_id'},
+        champs=['filiere_code', 'semestre', 'ordre', 'etat_ventilation',
+                'fiabilite', 'source_document'],
         route_ui='/referentiels/gestion/modules-officiels', icone='bi-journal-text',
         source='Formations et Modules INJS',
     ),
@@ -487,7 +511,13 @@ REGISTRE = {
             'Valeurs de modélisation, jamais réglementaires.'
         ),
         categorie=Categorie.OFFRE_FORMATION, modele=RefVolumeHoraireFormation,
-        editable=False, route_api='/referentiels/volumes-horaires/',
+        editable=True,
+        champ_libelle='intitule_module',
+        unicite_par='formation',
+        selecteurs=['formation'],
+        filtres={'formation': 'formation_id'},
+        champs=['heures_cm', 'heures_td', 'heures_tp', 'heures_stage',
+                'heures_total', 'fiabilite', 'source_document'],
         route_ui='/referentiels/gestion/volumes-modules', icone='bi-clock-history',
         source='Modéliser les volumes horaires — avertissement de la source',
     ),

@@ -4,6 +4,8 @@ from django.db.models.functions import Lower
 from django.conf import settings
 from django.utils import timezone
 
+from referentiels.models import CycleVieReferentiel
+
 
 class Secretariat(models.Model):
     """Secrétariat qui gère ses participants."""
@@ -214,7 +216,7 @@ class RefVague(models.Model):
         return self.libelle
 
 
-class RefFormation(models.Model):
+class RefFormation(CycleVieReferentiel):
     """Cycle de formation du référentiel (modèle fonctionnel 04.4) : le descripteur
     administratif et pédagogique d'un cursus — la *formation opérationnelle*
     (``Formation``, session ouverte) s'y adosse par ``ref_formation`` (lien D3)."""

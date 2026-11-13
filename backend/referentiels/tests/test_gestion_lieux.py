@@ -183,7 +183,7 @@ class TableauDeBordLieuxTests(TestCase):
         vagues = self._entree('vagues')
         self.assertEqual(
             vagues['selecteurs_routes']['formation']['route'],
-            '/formations/ref/formations/')
+            '/referentiels/formations/')
         self.assertEqual(
             vagues['selecteurs_routes']['statut']['route'],
             '/referentiels/statuts-vague/')

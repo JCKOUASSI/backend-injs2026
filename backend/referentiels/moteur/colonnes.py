@@ -146,7 +146,25 @@ def cles_metier_de(modele_lie):
 
 
 def champ_libelle(modele):
-    """Nom du champ portant le libellé métier (``libelle``, ``nom`` ou ``intitule``)."""
+    """Nom du champ portant le libellé métier (``libelle``, ``intitule``…).
+
+    Le **registre** est la source de vérité : chaque référentiel y déclare le
+    champ qui porte son intitulé, lequel ne s'appelle pas toujours ``libelle``
+    (``intitule`` pour une formation, ``intitule_module`` pour un volume
+    horaire). Sans cette consultation, un modèle dont le libellé porte un nom
+    inattendu était ramené à ``libelle`` par défaut, et l'import échouait sur
+    un champ inexistant.
+    """
+    # Import local : le registre référence les modèles, l'importer au niveau
+    # du module refermerait un cycle.
+    from ..registre import REGISTRE, modele_de
+
+    for entree in REGISTRE.values():
+        try:
+            if modele_de(entree) is modele:
+                return entree.get('champ_libelle', 'libelle')
+        except Exception:
+            continue
     noms = {f.name for f in modele._meta.concrete_fields}
     for candidat in ('libelle', 'nom', 'intitule'):
         if candidat in noms:

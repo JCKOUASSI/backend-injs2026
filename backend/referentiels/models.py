@@ -144,6 +144,90 @@ class RefSocle(models.Model):
         )
 
 
+class CycleVieReferentiel(models.Model):
+    """Cycle de vie d’un référentiel qui ne peut hériter de ``RefSocle``.
+
+    Les référentiels issus d’un document (modules officiels, volumes horaires,
+    formations) déclarent déjà une partie des champs du socle — ``libelle``,
+    ``fiabilite``, ``cree_le``… Les faire hériter de ``RefSocle`` provoquerait
+    une collision de champs. Cette classe n’apporte donc que ce qui leur
+    manque pour être gérés exactement comme les autres : activation,
+    archivage réversible et journalisation.
+
+    Elle ne redéclare volontairement **pas** ``actif`` : ``RefFormation``
+    possède déjà ce champ. Le contrat est que le modèle qui l’utilise expose
+    ``actif`` ; les méthodes s’y appuient.
+    """
+
+    # Règle 3 — dates d’activation / désactivation.
+    date_activation = models.DateTimeField(null=True, blank=True)
+    date_desactivation = models.DateTimeField(null=True, blank=True)
+    # Règle 2 — archivage (soft delete), jamais de suppression physique.
+    archive = models.BooleanField(default=False, db_index=True)
+
+    class Meta:
+        abstract = True
+
+    def _champs_maj(self, *noms):
+        """Ne conserve que les champs réellement portés par le modèle.
+
+        Tous ces modèles n’ont pas ``modifie_le`` : l’inclure aveuglément
+        ferait échouer ``save(update_fields=…)``.
+        """
+        presents = {f.name for f in self._meta.concrete_fields}
+        return [n for n in noms if n in presents]
+
+    def activer(self, user=None, motif=''):
+        self.actif = True
+        self.date_activation = timezone.now()
+        self.date_desactivation = None
+        self.save(update_fields=self._champs_maj(
+            'actif', 'date_activation', 'date_desactivation', 'modifie_le'))
+        self.journaliser(ReferentielJournal.Action.ACTIVATION, user, {'motif': motif})
+        return self
+
+    def desactiver(self, user=None, motif=''):
+        self.actif = False
+        self.date_desactivation = timezone.now()
+        self.save(update_fields=self._champs_maj(
+            'actif', 'date_desactivation', 'modifie_le'))
+        self.journaliser(ReferentielJournal.Action.DESACTIVATION, user, {'motif': motif})
+        return self
+
+    def archiver(self, user=None, motif=''):
+        """Règle 2 : on archive au lieu de supprimer — l’opération est réversible."""
+        self.archive = True
+        if self.actif:
+            self.actif = False
+            self.date_desactivation = timezone.now()
+        self.save(update_fields=self._champs_maj(
+            'archive', 'actif', 'date_desactivation', 'modifie_le'))
+        self.journaliser(ReferentielJournal.Action.ARCHIVAGE, user, {'motif': motif})
+        return self
+
+    def reactiver(self, user=None, motif=''):
+        # Réactivation et remise en service vont de pair (règle 3) : sortir une
+        # valeur de l’archive sans la rendre utilisable la laisserait absente
+        # de tous les sélecteurs.
+        self.archive = False
+        self.actif = True
+        self.date_activation = timezone.now()
+        self.date_desactivation = None
+        self.save(update_fields=self._champs_maj(
+            'archive', 'actif', 'date_activation', 'date_desactivation', 'modifie_le'))
+        self.journaliser(ReferentielJournal.Action.REACTIVATION, user, {'motif': motif})
+        return self
+
+    def journaliser(self, action, user=None, detail=None):
+        ReferentielJournal.objects.create(
+            content_type=ContentType.objects.get_for_model(self),
+            object_id=self.pk,
+            action=action,
+            utilisateur=user if (user and user.is_authenticated) else None,
+            detail=detail or {},
+        )
+
+
 class ReferentielJournal(models.Model):
     """Règle 6 — historique immuable (append-only) des modifications."""
 
@@ -355,7 +439,7 @@ class RefTypeEnseignement(RefSocle):
         verbose_name_plural = "Référentiels – Types d'enseignement"
 
 
-class RefVolumeHoraireFormation(models.Model):
+class RefVolumeHoraireFormation(CycleVieReferentiel):
     """Volume horaire d'un module tel qu'il figure dans un document de cadrage.
 
     Distinct de ``formations.RefModuleVolumeHoraire`` (module × catégorie
@@ -370,6 +454,8 @@ class RefVolumeHoraireFormation(models.Model):
         'formations.RefFormation', on_delete=models.CASCADE,
         related_name='volumes_horaires_referentiel',
     )
+    # Règle 3 — activation / désactivation (contrat CycleVieReferentiel).
+    actif = models.BooleanField(default=True, db_index=True)
     intitule_module = models.CharField(max_length=200)
     heures_cm = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     heures_td = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
@@ -399,7 +485,7 @@ class RefVolumeHoraireFormation(models.Model):
         return f'{self.intitule_module} — {self.formation_id}'
 
 
-class RefModuleOfficiel(models.Model):
+class RefModuleOfficiel(CycleVieReferentiel):
     """Module (UE ou matière) tel qu'il figure dans une maquette officielle INJS.
 
     Pourquoi ce référentiel ? Les documents publient les listes de modules par
@@ -413,6 +499,9 @@ class RefModuleOfficiel(models.Model):
     class EtatVentilation(models.TextChoices):
         A_VENTILER = 'A_VENTILER', 'À ventiler en maquette'
         VENTILE = 'VENTILE', 'Ventilé en maquette'
+
+    # Règle 3 — activation / désactivation (contrat CycleVieReferentiel).
+    actif = models.BooleanField(default=True, db_index=True)
 
     formation = models.ForeignKey(
         'formations.RefFormation', on_delete=models.CASCADE,

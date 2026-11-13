@@ -85,9 +85,15 @@ class RegistreTests(TestCase):
                     continue
                 self.assertIn(route, ecrans | {None}, slug)
 
-    def test_modules_officiels_declare_en_lecture_seule(self):
+    def test_modules_officiels_est_gerable_comme_les_autres(self):
+        """Les modules officiels sont gérés par le Hub, comme « Filières ».
+
+        Ils étaient déclarés en lecture seule (lignes issues d'un document) ;
+        le Hub doit désormais permettre de les créer, modifier, archiver,
+        exporter et importer au même titre que les autres référentiels.
+        """
         entree = REGISTRE['modules-officiels']
-        self.assertFalse(entree['editable'])
+        self.assertTrue(entree['editable'])
         self.assertEqual(modele_de(entree), RefModuleOfficiel)
 
 
@@ -133,11 +139,17 @@ class TableauDeBordTests(TestCase):
         l'absence de route. Les deux statuts traduisent la même garantie.
         """
         self.client.force_authenticate(make_user('carto2', role='ADMIN'))
-        res = self.client.post('/api/referentiels/volumes-modules/', {'libelle': 'X'})
-        self.assertIn(
-            res.status_code,
-            (status.HTTP_404_NOT_FOUND, status.HTTP_405_METHOD_NOT_ALLOWED),
-        )
+        # La garantie porte sur **tous** les référentiels en lecture seule, et
+        # non sur un slug précis : elle reste vraie quand le registre évolue.
+        lectures_seules = [s for s, e in REGISTRE.items() if not e['editable']]
+        self.assertTrue(lectures_seules, 'aucun référentiel en lecture seule à éprouver')
+        for slug in lectures_seules:
+            with self.subTest(slug=slug):
+                res = self.client.post(f'/api/referentiels/{slug}/', {'libelle': 'X'})
+                self.assertIn(
+                    res.status_code,
+                    (status.HTTP_404_NOT_FOUND, status.HTTP_405_METHOD_NOT_ALLOWED),
+                )
         # Rien n'a été écrit, quel que soit le statut renvoyé.
         self.assertFalse(
             RefVolumeHoraireFormation.objects.filter(intitule_module='X').exists()
@@ -302,9 +314,26 @@ class ModulesOfficielsTests(TestCase):
         autre = self.client.get('/api/referentiels/modules-officiels/?filiere=APA')
         self.assertEqual(autre.data['count'], 0)
 
-    def test_ecriture_refusee(self):
-        res = self.client.post('/api/referentiels/modules-officiels/', {'libelle': 'X'})
-        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+    def test_ecriture_acceptee(self):
+        """Création acceptée : le référentiel est géré par le Hub.
+
+        Le rattachement à une formation est obligatoire (clé étrangère), donc
+        une création sans formation reste refusée — par la validation, pas par
+        le verbe HTTP.
+        """
+        from formations.models import RefFormation
+
+        cycle = RefFormation.objects.create(
+            code='CYCLE-TEST', intitule='Cycle de test', type_diplome='LICENCE',
+        )
+        res = self.client.post(
+            '/api/referentiels/modules-officiels/',
+            {'libelle': 'Module créé via le Hub', 'formation': cycle.id},
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(
+            RefModuleOfficiel.objects.filter(libelle='Module créé via le Hub').exists()
+        )
 
     def test_volumes_horaires_lecture(self):
         res = self.client.get('/api/referentiels/volumes-horaires/')

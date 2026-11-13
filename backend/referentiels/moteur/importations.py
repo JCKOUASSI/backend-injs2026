@@ -45,7 +45,11 @@ def champ_identite(modele):
         return 'code'
     from .colonnes import champ_libelle
 
-    return champ_libelle(modele) or 'libelle'
+    # Aucun repli codé en dur sur ``libelle`` : un modèle peut nommer son
+    # intitulé autrement (``intitule_module``), et le supposer provoquait
+    # une erreur de champ inexistant à la lecture des valeurs existantes.
+    # Renvoyer ``None`` laisse l'appelant ignorer cette comparaison.
+    return champ_libelle(modele)
 
 
 def normaliser_entete(valeur):
@@ -295,7 +299,8 @@ def valider(*, previsualisation, modele, champ_libelle, correspondance=None,
     existants = set()
     if queryset is not None:
         identite = champ_identite(queryset.model)
-        existants = {normaliser_entete(v) for v in queryset.values_list(identite, flat=True)}
+        if identite:
+            existants = {normaliser_entete(v) for v in queryset.values_list(identite, flat=True)}
         if champ_libelle:
             existants |= {
                 normaliser_entete(v) for v in queryset.values_list(champ_libelle, flat=True)

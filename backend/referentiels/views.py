@@ -533,7 +533,15 @@ class RefGeneriqueViewSet(ReferentielSocleViewSet):
     def get_queryset(self):
         # La lecture des valeurs archivées reste possible (?archives=1) : la
         # base ne perd jamais une valeur utilisée par un dossier.
-        return super().get_queryset().select_related(*self._entree()['selecteurs'])
+        qs = super().get_queryset().select_related(*self._entree()['selecteurs'])
+        # Filtres déclarés par le registre : le paramètre d'URL peut porter un
+        # nom métier différent de la colonne (``?filiere=`` -> ``filiere_code``).
+        params = self.request.query_params
+        for parametre, champ in (self._entree().get('filtres') or {}).items():
+            valeur = params.get(parametre)
+            if valeur:
+                qs = qs.filter(**{champ: valeur})
+        return qs
 
 
 class TableauDeBordReferentielsView(APIView):
