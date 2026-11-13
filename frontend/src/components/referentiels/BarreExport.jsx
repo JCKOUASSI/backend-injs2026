@@ -109,20 +109,28 @@ export default function BarreExport({ slug, filtres = {}, total = 0, onMessage }
           </div>
 
           <p className="ref-export-repli-aide">
-            Le téléchargement est bloqué dans cet aperçu intégré. Récupérez le
-            fichier, ou ouvrez l’application dans un onglet — les téléchargements
-            y fonctionnent normalement.
+            Le téléchargement est bloqué dans cet aperçu intégré : le fichier
+            s’ouvrira dans un <strong>nouvel onglet</strong>, où le
+            téléchargement est autorisé. Vous pouvez aussi ouvrir l’application
+            entière dans un onglet — les exports y tombent alors directement
+            dans votre dossier.
           </p>
 
           <div className="ref-export-repli-actions">
-            {/* Lien vers une vraie ressource serveur (Content-Disposition:
-                attachment) : le clic de l'utilisateur déclenche un
-                téléchargement ordinaire, sans dépendre d'un blob ni d'une
-                fenêtre surgissée. */}
+            {/* OBLIGATOIRE : sans `target="_blank"`, le téléchargement aurait
+                lieu dans l'iframe elle-même, où le `sandbox` l'interdit — le
+                clic ne produirait rien, même sur une URL serveur parfaite.
+                Un nouvel onglet est un contexte de navigation de premier
+                niveau : la restriction du bac à sable ne s'y applique plus,
+                et le `Content-Disposition: attachment` du serveur y est
+                honoré. Le clic de l'utilisateur fournit l'activation que
+                l'ouverture automatique n'avait pas. */}
             <a
               className="ref-export-repli-lien"
               href={fichierPret.url}
               download={fichierPret.nom}
+              target="_blank"
+              rel="noreferrer"
               onClick={() => setFichierPret(null)}
             >
               <i className="bi bi-download" aria-hidden="true" /> Récupérer le fichier

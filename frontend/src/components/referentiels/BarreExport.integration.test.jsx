@@ -226,6 +226,9 @@ describe('Barre d’export — repli quand l’ouverture automatique est bloqué
     // document avec Content-Disposition: attachment.
     expect(lien.getAttribute('href')).toContain('/api/referentiels/filieres/exporter/')
     expect(lien.getAttribute('href')).toContain('export=pdf')
+    // CRITIQUE : sans nouvel onglet, le téléchargement se déclencherait dans
+    // l'iframe, où le `sandbox` l'interdit — le clic ne produirait rien.
+    expect(lien.getAttribute('target')).toBe('_blank')
   })
 
   it('masque le lien une fois le fichier récupéré', async () => {
