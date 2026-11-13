@@ -241,4 +241,16 @@ describe('Barre d’export — repli quand l’ouverture automatique est bloqué
     await waitFor(() => expect(window.open).toHaveBeenCalled())
     expect(screen.queryByRole('link', { name: /Récupérer le fichier/i })).toBeNull()
   })
+
+  it('propose aussi d’ouvrir l’application dans un onglet, hors de l’iframe', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => reponseFichier(PDF, 'application/pdf', 'f.pdf')))
+
+    render(<BarreExport slug="filieres" />)
+    fireEvent.click(screen.getByRole('button', { name: /PDF/i }))
+
+    const onglet = await screen.findByRole('link', { name: /Ouvrir l’application dans un onglet/i })
+    // Lien vers l'application elle-même : hors iframe, plus aucune restriction.
+    expect(onglet.getAttribute('href')).toBe(window.location.href)
+    expect(onglet.getAttribute('target')).toBe('_blank')
+  })
 })

@@ -1143,17 +1143,23 @@
    la remise automatique du document. Le lien reste cliquable par
    l'utilisateur, ce qui lui rend l'activation que l'ouverture automatique
    n'avait pas. */
+/* Repli de téléchargement : affiché quand l'aperçu intégré (iframe) empêche
+   la remise automatique du document. Les liens restent cliquables par
+   l'utilisateur, ce qui leur rend l'activation que l'ouverture automatique
+   n'avait pas. */
 .ref-export-repli {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
   margin-top: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.6rem 0.75rem;
   border: 1px solid #BFDBFE;
   border-radius: 8px;
   background: #EFF6FF;
   font-size: 0.82rem;
+}
+
+.ref-export-repli-entete {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .ref-export-repli-nom {
@@ -1165,11 +1171,23 @@
   overflow-wrap: anywhere;
 }
 
+.ref-export-repli-aide {
+  margin: 0.35rem 0 0;
+  color: #334155;
+  line-height: 1.35;
+}
+
+.ref-export-repli-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+}
+
 .ref-export-repli-lien {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  margin-left: auto;
   padding: 0.3rem 0.7rem;
   border-radius: 6px;
   background: #104A8E;
@@ -1186,7 +1204,20 @@
   color: #fff;
 }
 
+.ref-export-repli-lien--secondaire {
+  background: #fff;
+  color: #104A8E;
+  border: 1px solid #93C5FD;
+}
+
+.ref-export-repli-lien--secondaire:hover,
+.ref-export-repli-lien--secondaire:focus-visible {
+  background: #DBEAFE;
+  color: #0B3A72;
+}
+
 .ref-export-repli-fermer {
+  margin-left: auto;
   border: 0;
   background: transparent;
   color: #1E3A8A;

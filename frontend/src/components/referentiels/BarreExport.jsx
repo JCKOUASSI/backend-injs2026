@@ -94,30 +94,51 @@ export default function BarreExport({ slug, filtres = {}, total = 0, onMessage }
 
       {fichierPret && (
         <div className="ref-export-repli" role="status">
-          <span className="ref-export-repli-nom">
-            <i className="bi bi-file-earmark-check" aria-hidden="true" /> {fichierPret.nom}
-          </span>
-          {/* Le clic sur ce lien est un geste de l'utilisateur : c'est ce qui
-              permet à l'onglet (et au téléchargement) d'aboutir là où
-              l'ouverture automatique a été bloquée. */}
-          <a
-            className="ref-export-repli-lien"
-            href={fichierPret.url}
-            download={fichierPret.nom}
-            target="_blank"
-            rel="noreferrer"
-            onClick={() => setFichierPret(null)}
-          >
-            <i className="bi bi-box-arrow-up-right" aria-hidden="true" /> Récupérer le fichier
-          </a>
-          <button
-            type="button"
-            className="ref-export-repli-fermer"
-            onClick={() => setFichierPret(null)}
-            aria-label="Masquer le lien de récupération"
-          >
-            <i className="bi bi-x" aria-hidden="true" />
-          </button>
+          <div className="ref-export-repli-entete">
+            <span className="ref-export-repli-nom">
+              <i className="bi bi-file-earmark-check" aria-hidden="true" /> {fichierPret.nom}
+            </span>
+            <button
+              type="button"
+              className="ref-export-repli-fermer"
+              onClick={() => setFichierPret(null)}
+              aria-label="Masquer le bloc de récupération"
+            >
+              <i className="bi bi-x" aria-hidden="true" />
+            </button>
+          </div>
+
+          <p className="ref-export-repli-aide">
+            Le téléchargement est bloqué dans cet aperçu intégré. Récupérez le
+            fichier, ou ouvrez l’application dans un onglet — les téléchargements
+            y fonctionnent normalement.
+          </p>
+
+          <div className="ref-export-repli-actions">
+            {/* Le clic sur ce lien est un geste de l'utilisateur : c'est ce qui
+                permet à l'onglet (et au téléchargement) d'aboutir là où
+                l'ouverture automatique a été bloquée. */}
+            <a
+              className="ref-export-repli-lien"
+              href={fichierPret.url}
+              download={fichierPret.nom}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setFichierPret(null)}
+            >
+              <i className="bi bi-download" aria-hidden="true" /> Récupérer le fichier
+            </a>
+            {/* Sortir de l'iframe : hors aperçu intégré, plus aucune
+                restriction de téléchargement ne s'applique. */}
+            <a
+              className="ref-export-repli-lien ref-export-repli-lien--secondaire"
+              href={typeof window === 'undefined' ? '#' : window.location.href}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <i className="bi bi-box-arrow-up-right" aria-hidden="true" /> Ouvrir l’application dans un onglet
+            </a>
+          </div>
         </div>
       )}
     </div>
