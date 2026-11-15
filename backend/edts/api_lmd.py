@@ -21,6 +21,7 @@ from rest_framework.response import Response
 
 from edts.moteur import contraintes as C
 from edts.moteur import generation as G
+from edts.moteur.indicateurs import indicateurs
 from edts.moteur import publication as P
 from edts.moteur import validation as V
 from edts.moteur.besoins import calculate_teaching_needs, duree_canevas_heures
@@ -1771,3 +1772,133 @@ def seance_groupe_retirer_api(request, pk, groupe_id):
         'est_mutualisee': a.est_mutualisee,
         'effectif_cumule': a.effectif_cumule(),
     })
+
+
+# ═══ Indicateurs de pilotage (PHASE 5 / chantier 2 — §10) ═══════════════════
+# Même règle que le reste de la couche : ajout, aucune route existante
+# supprimée, renommée ou modifiée.
+
+
+def _perimetre_indicateurs(request):
+    """Construit le queryset de séances correspondant aux filtres demandés.
+
+    Filtres acceptés : ``annee`` (libellé d'année académique),
+    ``emploi_du_temps``, ``groupe``, ``formation``, ``actif``.
+    """
+    from edts.models import AffectationCreneau
+    from scolarite.models import AnneeAcademique
+
+    qp = request.query_params
+    qs = AffectationCreneau.objects.all()
+
+    annee = qp.get('annee')
+    if annee:
+        ids = list(AnneeAcademique.objects.filter(libelle=annee)
+                   .values_list('pk', flat=True))
+        if not ids:
+            return None, None
+        qs = qs.filter(emploi_du_temps__annee_academique_id__in=ids)
+
+    for param, champ in (('emploi_du_temps', 'emploi_du_temps_id'),
+                         ('groupe', 'groupe_id'),
+                         ('formation', 'formation_id')):
+        valeur = _int(qp.get(param))
+        if valeur:
+            qs = qs.filter(**{champ: valeur})
+
+    if qp.get('actif') in ('0', 'false', 'non'):
+        # Par défaut on ne compte que l'actif : une séance annulée n'occupe
+        # ni salle ni enseignant.
+        pass
+    else:
+        qs = qs.filter(actif=True)
+
+    return qs, None
+
+
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def indicateurs_api(request):
+    """Indicateurs agrégés sur un périmètre libre (année par défaut).
+
+    ``?famille=`` restreint la réponse à une seule famille
+    (``couverture``, ``occupation_salles``, ``charge_enseignants``,
+    ``repartition``, ``assiduite``, ``mutualisation``) — un écran qui n'affiche
+    qu'un bloc ne paie pas le calcul des autres.
+    """
+    from scolarite.models import AnneeAcademique
+
+    qs, _ = _perimetre_indicateurs(request)
+    if qs is None:
+        return Response({'detail': 'Année académique introuvable.'},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    annee = None
+    libelle = request.query_params.get('annee')
+    if libelle:
+        annee = AnneeAcademique.objects.filter(libelle=libelle).first()
+
+    complet = indicateurs(qs, annee_academique_id=annee.pk if annee else None)
+
+    famille = request.query_params.get('famille')
+    if famille and famille in complet:
+        return Response({famille: complet[famille]})
+    if famille:
+        return Response(
+            {'detail': f'Famille inconnue : {famille}.',
+             'disponibles': sorted(complet)},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    complet['perimetre'] = {
+        'annee': libelle,
+        'filtres': dict(request.query_params),
+        'nb_seances': qs.count(),
+    }
+    return Response(complet)
+
+
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def edt_indicateurs_api(request, pk):
+    """Indicateurs d'un seul emploi du temps.
+
+    Le périmètre des besoins suit la population de l'EDT (groupe ou
+    formation) : un taux de couverture calculé sur l'année entière alors que
+    l'EDT ne couvre qu'un groupe serait un chiffre faux.
+    """
+    from edts.models import EmploiDuTemps
+
+    edt = EmploiDuTemps.objects.filter(pk=pk).first()
+    if edt is None:
+        return Response({'detail': 'EDT introuvable'},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    from edts.models import AffectationCreneau
+
+    qs = AffectationCreneau.objects.filter(emploi_du_temps=edt, actif=True)
+    complet = indicateurs(qs, edt=edt,
+                          annee_academique_id=edt.annee_academique_id)
+
+    famille = request.query_params.get('famille')
+    if famille and famille in complet:
+        return Response({famille: complet[famille]})
+    if famille:
+        # Même contrat que l'endpoint global : une famille inconnue est
+        # signalée, pas ignorée silencieusement.
+        return Response(
+            {'detail': f'Famille inconnue : {famille}.',
+             'disponibles': sorted(complet)},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    complet['perimetre'] = {
+        'emploi_du_temps_id': edt.pk,
+        'titre': edt.titre,
+        'statut': edt.statut,
+        'population_type': edt.population_type,
+        'population': edt.population_denominateur,
+        'annee': edt.annee_academique.libelle if edt.annee_academique_id else None,
+        'nb_seances': qs.count(),
+    }
+    return Response(complet)

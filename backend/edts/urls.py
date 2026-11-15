@@ -34,6 +34,10 @@ urlpatterns_lmd = [
     path('lmd/availability/rooms/', lmd.disponibilites_salles_api,
          name='edt-lmd-availability-rooms'),
     path('lmd/slots/', lmd.slots_api, name='edt-lmd-slots'),
+    # Indicateurs de pilotage (§10). Littéral AVANT `lmd/<int:pk>/…`,
+    # sinon « indicateurs » serait capté comme un identifiant d'EDT.
+    path('lmd/indicateurs/', lmd.indicateurs_api,
+         name='edt-lmd-indicateurs'),
     # Identité de séance et mutualisation. Routes littérales :
     # déclarées AVANT `lmd/<int:pk>/…`, sinon « seances » serait
     # capté comme un identifiant d'emploi du temps.
@@ -73,6 +77,8 @@ urlpatterns_lmd = [
     # `edt_audit_api` porte un nom d'opération distinct (`edt_lmd_edt_audit`)
     # : `/api/docs/` reste non ambigu malgré la proximité des deux chemins.
     path('lmd/<int:pk>/audit/', lmd.edt_audit_api, name='edt-lmd-edt-audit'),
+    path('lmd/<int:pk>/indicateurs/', lmd.edt_indicateurs_api,
+         name='edt-lmd-edt-indicateurs'),
     path('lmd/<int:pk>/result/', lmd.result_api, name='edt-lmd-result'),
     path('lmd/<int:pk>/grille/', lmd.grille_api, name='edt-lmd-grille'),
     path('lmd/<int:pk>/export.pdf/', lmd.export_pdf_api,
