@@ -9,8 +9,6 @@ from rest_framework import serializers
 
 from .models import (
     ReferentielJournal,
-    RefModuleOfficiel,
-    RefVolumeHoraireFormation,
     RefGradeEnseignant,
     RefModePaiement,
     RefTypeDecision,
@@ -245,30 +243,3 @@ def serializer_pour_ref(slug):
     _CACHE_SERIALISEURS[slug] = serie
     return serie
 
-
-class RefModuleOfficielSerializer(serializers.ModelSerializer):
-    """Modules officiels des maquettes (lecture seule : issus de l'import)."""
-
-    formation_intitule = serializers.CharField(source='formation.intitule', read_only=True)
-
-    class Meta:
-        model = RefModuleOfficiel
-        fields = [
-            'id', 'formation', 'formation_intitule', 'filiere_code',
-            'semestre', 'libelle', 'ordre', 'etat_ventilation',
-            'source_document', 'fiabilite',
-        ]
-
-
-class RefVolumeHoraireFormationSerializer(serializers.ModelSerializer):
-    """Volumes horaires de modélisation (lecture seule)."""
-
-    formation_intitule = serializers.CharField(source='formation.intitule', read_only=True)
-
-    class Meta:
-        model = RefVolumeHoraireFormation
-        fields = [
-            'id', 'formation', 'formation_intitule', 'intitule_module',
-            'heures_cm', 'heures_td', 'heures_tp', 'heures_stage', 'heures_total',
-            'source_document', 'fiabilite',
-        ]

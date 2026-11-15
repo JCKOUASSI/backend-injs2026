@@ -7,8 +7,11 @@ Pattern retenu : ViewSet + DefaultRouter (comme l'app parametres).
 """
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError, transaction
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import serializers, status, viewsets
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -16,8 +19,6 @@ from rest_framework.response import Response
 
 from .models import (
     ReferentielJournal,
-    RefModuleOfficiel,
-    RefVolumeHoraireFormation,
     RefGradeEnseignant,
     RefModePaiement,
     RefTypeDecision,
@@ -31,8 +32,6 @@ from .permissions import ReferentielPermission
 from .utils import libelle_en_doublon
 from .serializers import (
     ReferentielJournalSerializer,
-    RefModuleOfficielSerializer,
-    RefVolumeHoraireFormationSerializer,
     RefGradeEnseignantSerializer,
     RefModePaiementSerializer,
     RefTypeDecisionSerializer,
@@ -200,6 +199,58 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
         """Récupère une valeur même archivée (pour archiver/reactiver)."""
         return get_object_or_404(self.queryset, pk=pk)
 
+    def _champs_concrets(self, obj):
+        return {f.name for f in obj._meta.concrete_fields}
+
+    def _archiver_valeur(self, obj, utilisateur, motif):
+        """Archivage d'une valeur, avec ou sans méthodes du socle.
+
+        Les modèles du socle (RefSocle) portent ``archiver()`` : on délègue.
+        Les modèles hors socle qui exposent les colonnes de cycle de vie
+        (ajoutées par la refonte aux formations, modules officiels et volumes
+        horaires) reçoivent ici le traitement strictement équivalent.
+        """
+        if hasattr(obj, 'archiver'):
+            obj.archiver(utilisateur, motif=motif)
+            return
+        champs = self._champs_concrets(obj)
+        obj.archive = True
+        if 'actif' in champs:
+            obj.actif = False
+        updates = ['archive']
+        if 'actif' in champs:
+            updates.append('actif')
+        if 'date_desactivation' in champs:
+            obj.date_desactivation = timezone.now()
+            updates.append('date_desactivation')
+        if 'modifie_le' in champs:
+            updates.append('modifie_le')
+        obj.save(update_fields=updates)
+        self._journaliser(obj, ReferentielJournal.Action.ARCHIVAGE, {'motif': motif})
+
+    def _reactiver_valeur(self, obj, utilisateur, motif):
+        """Réactivation symétrique à ``_archiver_valeur`` (règle 3)."""
+        if hasattr(obj, 'reactiver'):
+            obj.reactiver(utilisateur, motif=motif)
+            return
+        champs = self._champs_concrets(obj)
+        obj.archive = False
+        if 'actif' in champs:
+            obj.actif = True
+        updates = ['archive']
+        if 'actif' in champs:
+            updates.append('actif')
+        if 'date_activation' in champs:
+            obj.date_activation = timezone.now()
+            updates.append('date_activation')
+        if 'date_desactivation' in champs:
+            obj.date_desactivation = None
+            updates.append('date_desactivation')
+        if 'modifie_le' in champs:
+            updates.append('modifie_le')
+        obj.save(update_fields=updates)
+        self._journaliser(obj, ReferentielJournal.Action.REACTIVATION, {'motif': motif})
+
     # ── Règle 2 : archivage réversible, jamais de suppression physique ──
     @action(detail=True, methods=['post'])
     def archiver(self, request, pk=None):
@@ -214,7 +265,7 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
             )
         if obj.archive:
             return Response({'detail': 'Valeur déjà archivée.'}, status=status.HTTP_400_BAD_REQUEST)
-        obj.archiver(request.user, motif=request.data.get('motif', ''))
+        self._archiver_valeur(obj, request.user, request.data.get('motif', ''))
         return Response({'detail': 'Valeur archivée.', 'archive': True})
 
     @action(detail=True, methods=['post'])
@@ -230,7 +281,7 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
             )
         if not obj.archive:
             return Response({'detail': 'Valeur non archivée.'}, status=status.HTTP_400_BAD_REQUEST)
-        obj.reactiver(request.user, motif=request.data.get('motif', ''))
+        self._reactiver_valeur(obj, request.user, request.data.get('motif', ''))
         return Response({'detail': 'Valeur réactivée.', 'archive': False, 'actif': True})
 
 
@@ -315,6 +366,7 @@ from .registre import (  # noqa: E402
     modele_de,
 )
 from .serializers import serializer_pour_ref  # noqa: E402
+from . import echanges  # noqa: E402
 
 
 class RefGeneriqueViewSet(ReferentielSocleViewSet):
@@ -350,7 +402,14 @@ class RefGeneriqueViewSet(ReferentielSocleViewSet):
     def get_queryset(self):
         # La lecture des valeurs archivées reste possible (?archives=1) : la
         # base ne perd jamais une valeur utilisée par un dossier.
-        return super().get_queryset().select_related(*self._entree()['selecteurs'])
+        qs = super().get_queryset().select_related(*self._entree()['selecteurs'])
+        # Filtres déclarés au registre (ex. ?filiere=EM&semestre=S1 pour les
+        # modules officiels) — correspondance exacte, comme l'API historique.
+        for param, champ in (self._entree().get('filtres_liste') or {}).items():
+            valeur = self.request.query_params.get(param)
+            if valeur not in (None, ''):
+                qs = qs.filter(**{champ: valeur})
+        return qs
 
 
 class TableauDeBordReferentielsView(APIView):
@@ -434,41 +493,6 @@ class TableauDeBordReferentielsView(APIView):
         })
 
 
-class RefModuleOfficielViewSet(viewsets.ReadOnlyModelViewSet):
-    """Modules officiels des maquettes — lecture seule.
-
-    Ces lignes proviennent de l'import du document « Formations et Modules
-    INJS » : les modifier à la main romprait la traçabilité, elles ne sont
-    donc jamais éditables par l'API. Les filtres `filiere`, `semestre` et
-    `formation` alimentent les sélecteurs dépendants du front.
-    """
-
-    queryset = RefModuleOfficiel.objects.select_related('formation')
-    serializer_class = RefModuleOfficielSerializer
-    permission_classes = [ReferentielPermission]
-    pagination_class = RefPagination
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        params = self.request.query_params
-        if params.get('filiere'):
-            qs = qs.filter(filiere_code=params['filiere'])
-        if params.get('semestre'):
-            qs = qs.filter(semestre=params['semestre'])
-        if params.get('formation'):
-            qs = qs.filter(formation_id=params['formation'])
-        return qs.order_by('filiere_code', 'semestre', 'ordre')
-
-
-class RefVolumeHoraireFormationViewSet(viewsets.ReadOnlyModelViewSet):
-    """Volumes horaires de modélisation — lecture seule."""
-
-    queryset = RefVolumeHoraireFormation.objects.select_related('formation')
-    serializer_class = RefVolumeHoraireFormationSerializer
-    permission_classes = [ReferentielPermission]
-    pagination_class = RefPagination
-
-
 def _routes_selecteurs(entree):
     """Associe chaque sélecteur à la route API du référentiel qu'il cible.
 
@@ -547,3 +571,89 @@ def _champs_numeriques(modele, entree):
         if _a_le_champ(modele, nom)
         and isinstance(modele._meta.get_field(nom), types)
     ]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Export / import des référentiels (lot Référentiels)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@extend_schema(responses={200: OpenApiTypes.BINARY})
+@api_view(['GET'])
+@permission_classes([ReferentielPermission])
+def exporter_referentiel(request, slug):
+    """Exporte le référentiel au format demandé (?fmt=xlsx|csv|docx|pdf).
+
+    Le paramètre s'appelle ``fmt`` — et non ``format`` — car DRF réserve ce
+    dernier pour sa négociation de contenu (``?format=csv`` ferait 404).
+
+    Reprend les mêmes filtres que la liste (?archives=1, ?actif=…, filtres
+    déclarés par l'entrée du registre) : ce que l'écran affiche est ce qui
+    est exporté.
+    """
+    if slug not in REGISTRE:
+        return Response({'detail': 'Référentiel inconnu.'}, status=status.HTTP_404_NOT_FOUND)
+    format_ = (request.query_params.get('fmt') or 'xlsx').lower()
+    if format_ not in echanges.FORMATS_EXPORT:
+        return Response(
+            {'detail': f'Format « {format_} » inconnu (attendu : docx, xlsx, csv ou pdf).'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    try:
+        contenu, nom_fichier, content_type = echanges.construire_export(
+            slug, request.query_params, format_,
+        )
+    except Exception:
+        import logging
+
+        logging.getLogger(__name__).exception('Export %s indisponible', slug)
+        return Response(
+            {'detail': 'Export indisponible pour ce référentiel.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    response = HttpResponse(contenu, content_type=content_type)
+    response['Content-Disposition'] = f'attachment; filename="{nom_fichier}"'
+    response['Content-Length'] = str(len(contenu))
+    return response
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
+@api_view(['POST'])
+@permission_classes([ReferentielPermission])
+def importer_referentiel(request, slug):
+    """Importe (crée ou met à jour) les lignes d'un fichier .xlsx ou .csv.
+
+    Écriture réservée aux référentiels éditables et aux rôles de gestion
+    (ReferentielPermission). L'import est atomique : la moindre ligne
+    invalide rejette tout le fichier, avec le détail ligne par ligne.
+    """
+    if slug not in REGISTRE:
+        return Response({'detail': 'Référentiel inconnu.'}, status=status.HTTP_404_NOT_FOUND)
+    if not REGISTRE[slug].get('editable'):
+        # Même règle que le socle CRUD : un référentiel historisé se corrige
+        # via la source documentaire, jamais par une écriture de l'écran.
+        return Response(
+            {'detail': 'Ce référentiel est en lecture seule : corrigez la source puis relancez l’import documentaire.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    fichier = request.FILES.get('fichier') or request.FILES.get('file')
+    if fichier is None:
+        return Response(
+            {'detail': 'Aucun fichier reçu : envoyez le classeur en champ multipart « fichier ».'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    try:
+        resultat = echanges.importer_referentiel(slug, fichier, request.user)
+    except echanges.ImportReferentielError as exc:
+        corps = {'detail': exc.detail}
+        if exc.erreurs:
+            corps['erreurs'] = exc.erreurs
+        return Response(corps, status=status.HTTP_400_BAD_REQUEST)
+    except Exception:
+        import logging
+
+        logging.getLogger(__name__).exception('Import %s impossible', slug)
+        return Response(
+            {'detail': 'Import impossible : fichier ou données invalides.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return Response(resultat)

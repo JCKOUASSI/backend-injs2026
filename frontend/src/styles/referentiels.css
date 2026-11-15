@@ -823,3 +823,70 @@
 @media (max-width: 720px) {
   .ref-detail-grille { grid-template-columns: 1fr; }
 }
+
+/* ── Export / import depuis la barre d'actions du référentiel ─────────── */
+.ref-export { position: relative; display: inline-flex; }
+.ref-btn-outil { min-height: 38px; padding: 0 0.85rem; font-size: 0.8rem; }
+.ref-export-chevron { font-size: 0.65rem; margin-left: 0.1rem; }
+
+.ref-export-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 180px;
+  padding: 0.35rem;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  box-shadow: 0 18px 44px -18px rgba(15, 23, 42, 0.4);
+  display: flex;
+  flex-direction: column;
+}
+
+.ref-export-option {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.83rem;
+  color: #1E293B;
+  cursor: pointer;
+  text-align: left;
+}
+.ref-export-option:hover,
+.ref-export-option:focus-visible { background: #EEF4FF; color: #163D6A; outline: none; }
+.ref-export-option .bi { font-size: 1rem; color: #163D6A; }
+
+.ref-import-input { display: none; }
+
+.ref-modale--erreurs { max-width: 560px; }
+.ref-import-rapport { display: flex; flex-direction: column; gap: 0.7rem; }
+.ref-import-detail {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin: 0;
+  color: #B45309;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+.ref-import-liste {
+  margin: 0;
+  padding: 0.6rem 0.85rem;
+  max-height: 260px;
+  overflow-y: auto;
+  background: #FEF6EC;
+  border: 1px solid #F6DFC4;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  color: #7C2D12;
+}
+.ref-import-liste li + li { margin-top: 0.3rem; }
+.ref-import-aide { margin: 0; font-size: 0.78rem; color: #64748B; }
+.ref-import-fermer { align-self: flex-end; }

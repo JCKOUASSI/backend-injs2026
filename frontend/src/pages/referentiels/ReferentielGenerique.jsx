@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import api from '../../services/api'
 import { useToast } from '../../context/ToastContext'
@@ -64,7 +64,7 @@ const LIBELLES_CHAMPS = {
 
 /** Ordre de lecture imposé aux tables importées, du plus signifiant au détail. */
 const ORDRE_LECTURE_SEULE = [
-  'filiere_code', 'semestre', 'libelle', 'formation_intitule', 'ordre',
+  'filiere_code', 'semestre', 'libelle', 'formation_intitule', 'formation_libelle', 'ordre',
   'etat_ventilation', 'intitule_module', 'heures_cm', 'heures_td', 'heures_tp',
   'heures_stage', 'heures_total', 'source_document', 'fiabilite',
 ]
@@ -75,6 +75,17 @@ const VALEURS_TECHNIQUES = {
   VENTILE: 'Ventilé',
   HORS_MAQUETTE: 'Hors maquette',
 }
+
+/** Formats d'export servis par `/referentiels/{slug}/export/?fmt=…`. */
+const FORMATS_EXPORT = [
+  { id: 'xlsx', libelle: 'Excel (.xlsx)', icone: 'bi-file-earmark-spreadsheet' },
+  { id: 'csv', libelle: 'CSV (.csv)', icone: 'bi-filetype-csv' },
+  { id: 'docx', libelle: 'Word (.docx)', icone: 'bi-file-earmark-word' },
+  { id: 'pdf', libelle: 'PDF (.pdf)', icone: 'bi-file-earmark-pdf' },
+]
+
+/** Extensions acceptées par l'import (`/referentiels/{slug}/import/`). */
+const ACCEPT_IMPORT = '.xlsx,.csv'
 
 /** Met en forme une valeur brute d'API sans jamais en inventer une. */
 function formaterValeur(valeur) {
@@ -110,6 +121,7 @@ const CHAMPS_BOOLEENS = ['actif', 'est_stage', 'est_ouvert', 'courante', 'clotur
 
 const LIBELLE_TECHNIQUE = {
   formation_intitule: 'Cycle de rattachement',
+  formation_libelle: 'Cycle de rattachement',
   filiere_code: 'Filière',
   semestre: 'Semestre',
   ordre: 'Ordre',
@@ -162,6 +174,12 @@ export default function ReferentielGenerique() {
   const [detail, setDetail] = useState(null)
   const [suppression, setSuppression] = useState(null)
   const [lectureSeule, setLectureSeule] = useState(false)
+  const [menuExport, setMenuExport] = useState(false)
+  const [exportEnCours, setExportEnCours] = useState(null)
+  const [importEnCours, setImportEnCours] = useState(false)
+  const [rapportImport, setRapportImport] = useState(null)
+  const inputImportRef = useRef(null)
+  const exportRef = useRef(null)
   // Affichage : la liste historique reste le défaut ; la vue « cartes » et
   // la pagination évitent les écrans de centaines de lignes (166 salles).
   const [vue, setVue] = useState(() => {
@@ -259,6 +277,21 @@ export default function ReferentielGenerique() {
   useEffect(() => {
     charger()
   }, [charger])
+
+  // Le menu d'export se ferme au clic extérieur ou via Échap.
+  useEffect(() => {
+    if (!menuExport) return undefined
+    const fermer = (evenement) => {
+      if (exportRef.current && !exportRef.current.contains(evenement.target)) setMenuExport(false)
+    }
+    const echap = (evenement) => { if (evenement.key === 'Escape') setMenuExport(false) }
+    document.addEventListener('mousedown', fermer)
+    document.addEventListener('keydown', echap)
+    return () => {
+      document.removeEventListener('mousedown', fermer)
+      document.removeEventListener('keydown', echap)
+    }
+  }, [menuExport])
 
   const lignesFiltrees = useMemo(() => {
     const q = recherche.trim().toLowerCase()
@@ -466,6 +499,75 @@ export default function ReferentielGenerique() {
     }
   }
 
+  // Paramètres d'export alignés sur la vue courante : l'export reprend le
+  // filtre d'état et les filtres de sélecteurs actifs à l'écran.
+  const paramsExport = (fmt) => {
+    const params = new URLSearchParams({ fmt })
+    if (filtreActif === 'actifs') params.set('actif', 'true')
+    else if (filtreActif === 'inactifs') params.set('actif', 'false')
+    else if (filtreActif === 'archives' || filtreActif === 'tous') params.set('archives', '1')
+    Object.entries(filtresSelecteurs).forEach(([fk, valeur]) => {
+      if (valeur) params.set(fk, valeur)
+    })
+    return params.toString()
+  }
+
+  const exporter = async (fmt) => {
+    setExportEnCours(fmt)
+    setMenuExport(false)
+    try {
+      const { blob, fileName } = await api.getBlob(`/referentiels/${slug}/export/?${paramsExport(fmt)}`)
+      const url = URL.createObjectURL(blob)
+      const lien = window.document.createElement('a')
+      lien.href = url
+      lien.download = fileName || `${slug}.${fmt}`
+      window.document.body.appendChild(lien)
+      lien.click()
+      lien.remove()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      toast.error?.(e.response?.data?.detail || 'Export impossible pour ce référentiel.')
+    } finally {
+      setExportEnCours(null)
+    }
+  }
+
+  const ouvrirImport = () => {
+    if (inputImportRef.current) inputImportRef.current.value = ''
+    inputImportRef.current?.click()
+  }
+
+  // Import Excel/CSV : l'API est atomique — soit tout est créé/mis à jour,
+  // soit rien ne l'est, avec le détail ligne par ligne en cas de refus.
+  const fichierImporte = async (evenement) => {
+    const fichier = evenement.target.files?.[0]
+    if (!fichier) return
+    setImportEnCours(true)
+    setRapportImport(null)
+    const corps = new FormData()
+    corps.append('fichier', fichier)
+    try {
+      const res = await api.post(`/referentiels/${slug}/import/`, corps)
+      const { created = 0, updated = 0, colonnes_ignorees: ignorees = [] } = res.data || {}
+      toast.success?.(
+        `Import terminé : ${created} créé(s), ${updated} mis à jour.`
+        + (ignorees.length ? ` Colonnes ignorées : ${ignorees.join(', ')}.` : ''),
+      )
+      await charger({ silencieux: true })
+    } catch (e) {
+      const data = e.response?.data
+      if (e.response?.status === 400 && data && (data.erreurs?.length || data.detail)) {
+        setRapportImport({ detail: data.detail || 'Import refusé.', erreurs: data.erreurs || [] })
+      } else if (e.response?.status === 403) {
+        toast.error?.(data?.detail || 'Ce référentiel est en lecture seule.')
+      } else {
+        toast.error?.(data?.detail || 'Import impossible : vérifiez le fichier (.xlsx ou .csv).')
+      }
+    } finally {
+      setImportEnCours(false)
+    }
+  }
+
   const colonnes = useMemo(() => {
     if (!entree) return []
     if (lectureSeule) {
@@ -641,6 +743,62 @@ export default function ReferentielGenerique() {
             <span className="cand-count-pill">
               {lignesFiltrees.length} / {lignes.length}
             </span>
+            <div className="ref-export" ref={exportRef}>
+              <button
+                type="button"
+                className="cand-btn-fantome ref-btn-outil"
+                onClick={() => setMenuExport((v) => !v)}
+                disabled={exportEnCours !== null}
+                aria-haspopup="menu"
+                aria-expanded={menuExport}
+              >
+                {exportEnCours !== null
+                  ? <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                  : <i className="bi bi-download" aria-hidden="true"></i>}
+                Exporter
+                <i className="bi bi-chevron-down ref-export-chevron" aria-hidden="true"></i>
+              </button>
+              {menuExport && (
+                <div className="ref-export-menu" role="menu" aria-label="Formats d’export">
+                  {FORMATS_EXPORT.map((format) => (
+                    <button
+                      key={format.id}
+                      type="button"
+                      role="menuitem"
+                      className="ref-export-option"
+                      onClick={() => exporter(format.id)}
+                    >
+                      <i className={`bi ${format.icone}`} aria-hidden="true"></i>
+                      {format.libelle}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {!lectureSeule && (
+              <>
+                <button
+                  type="button"
+                  className="cand-btn-fantome ref-btn-outil"
+                  onClick={ouvrirImport}
+                  disabled={importEnCours}
+                >
+                  {importEnCours
+                    ? <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                    : <i className="bi bi-upload" aria-hidden="true"></i>}
+                  Importer
+                </button>
+                <input
+                  ref={inputImportRef}
+                  type="file"
+                  accept={ACCEPT_IMPORT}
+                  className="ref-import-input"
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  onChange={fichierImporte}
+                />
+              </>
+            )}
             {lectureSeule ? (
               <span className="ref-pastille ref-pastille--neutre">
                 <i className="bi bi-lock" aria-hidden="true"></i>
@@ -869,6 +1027,56 @@ export default function ReferentielGenerique() {
           </nav>
         )}
       </section>
+
+      {rapportImport && (
+        <div className="ref-modale-voile" role="presentation" onClick={() => setRapportImport(null)}>
+          <div
+            className="ref-modale ref-modale--erreurs"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="ref-import-titre"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="ref-modale-head">
+              <h2 className="ref-modale-titre" id="ref-import-titre">
+                Import refusé
+                <span>{entree.libelle}</span>
+              </h2>
+              <button
+                type="button"
+                className="ref-modale-fermer"
+                onClick={() => setRapportImport(null)}
+                aria-label="Fermer"
+              >
+                <i className="bi bi-x-lg" aria-hidden="true"></i>
+              </button>
+            </header>
+            <div className="ref-form ref-import-rapport">
+              <p className="ref-import-detail">
+                <i className="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                <span>{rapportImport.detail}</span>
+              </p>
+              {rapportImport.erreurs.length > 0 && (
+                <ul className="ref-import-liste">
+                  {rapportImport.erreurs.map((erreur, index) => (
+                    <li key={index}>{erreur}</li>
+                  ))}
+                </ul>
+              )}
+              <p className="ref-import-aide">
+                Aucune ligne n’a été enregistrée : corrigez le fichier puis relancez l’import.
+              </p>
+              <button
+                type="button"
+                className="cand-btn-principal ref-import-fermer"
+                onClick={() => setRapportImport(null)}
+              >
+                Compris
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {modal && (
         <div className="ref-modale-voile" role="presentation" onClick={fermerModal}>

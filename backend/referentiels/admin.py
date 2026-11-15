@@ -97,10 +97,12 @@ class ReferentielJournalAdmin(admin.ModelAdmin):
 
 @admin.register(RefModuleOfficiel)
 class RefModuleOfficielAdmin(admin.ModelAdmin):
-    """Modules officiels : issus de l'import documentaire, non éditables ici."""
+    """Modules officiels : consultables ici ; l'écriture passe par le Hub
+    « Référentiels » (écran de gestion, journalisé), jamais par ce tableau
+    de bord d'administration."""
 
-    list_display = ('libelle', 'filiere_code', 'semestre', 'formation', 'etat_ventilation')
-    list_filter = ('filiere_code', 'semestre', 'etat_ventilation', 'fiabilite')
+    list_display = ('libelle', 'filiere_code', 'semestre', 'formation', 'etat_ventilation', 'actif', 'archive')
+    list_filter = ('filiere_code', 'semestre', 'etat_ventilation', 'fiabilite', 'actif', 'archive')
     search_fields = ('libelle', 'filiere_code')
     list_select_related = ('formation',)
     ordering = ('filiere_code', 'semestre', 'ordre')
@@ -114,10 +116,11 @@ class RefModuleOfficielAdmin(admin.ModelAdmin):
 
 @admin.register(RefVolumeHoraireFormation)
 class RefVolumeHoraireFormationAdmin(admin.ModelAdmin):
-    """Volumes horaires de modélisation : lecture seule (réimportables)."""
+    """Volumes horaires de modélisation : consultables ici ; l'écriture passe
+    par le Hub « Référentiels » (écran de gestion, journalisé)."""
 
-    list_display = ('intitule_module', 'formation', 'heures_cm', 'heures_td', 'heures_tp', 'heures_total')
-    list_filter = ('formation', 'fiabilite')
+    list_display = ('intitule_module', 'formation', 'heures_cm', 'heures_td', 'heures_tp', 'heures_total', 'actif', 'archive')
+    list_filter = ('formation', 'fiabilite', 'actif', 'archive')
     search_fields = ('intitule_module',)
     list_select_related = ('formation',)
 

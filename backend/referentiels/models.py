@@ -381,6 +381,13 @@ class RefVolumeHoraireFormation(models.Model):
     fiabilite = models.CharField(
         max_length=20, choices=Fiabilite.choices, default=Fiabilite.MODELISE,
     )
+    # Cycle de vie aligné sur le socle : activation et archivage réversibles
+    # (règles 2 et 3) — une ligne référencée par une maquette n'est jamais
+    # supprimée physiquement.
+    actif = models.BooleanField(default=True, db_index=True)
+    archive = models.BooleanField(default=False, db_index=True)
+    date_activation = models.DateTimeField(null=True, blank=True)
+    date_desactivation = models.DateTimeField(null=True, blank=True)
     cree_le = models.DateTimeField(auto_now_add=True)
     modifie_le = models.DateTimeField(auto_now=True)
 
@@ -439,6 +446,12 @@ class RefModuleOfficiel(models.Model):
     fiabilite = models.CharField(
         max_length=20, choices=Fiabilite.choices, default=Fiabilite.OFFICIEL,
     )
+    # Cycle de vie aligné sur le socle : activation et archivage réversibles
+    # (règles 2 et 3).
+    actif = models.BooleanField(default=True, db_index=True)
+    archive = models.BooleanField(default=False, db_index=True)
+    date_activation = models.DateTimeField(null=True, blank=True)
+    date_desactivation = models.DateTimeField(null=True, blank=True)
     cree_le = models.DateTimeField(auto_now_add=True)
     modifie_le = models.DateTimeField(auto_now=True)
 

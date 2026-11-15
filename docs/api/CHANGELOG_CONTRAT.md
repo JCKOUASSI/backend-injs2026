@@ -10134,3 +10134,130 @@ Les **ajouts** de routes/clés sont des extensions non cassantes ; les **retrait
   - PUT /api/v1/formations/{id}/ — clé de réponse 200 supprimée : PUT /api/v1/formations/{id}/ → réponse 200.formateurs.[]
   - PUT /api/v1/statistiques/alertes/seuils/ — code de réponse supprimé : 403
 
+## 2026-11-15 10:21 UTC
+
+- **Justification :** Référentiels (Formations cycles, Modules officiels, Volumes horaires) : gestion complète via le socle generique — routes d'export GET /api/referentiels/{slug}/export/?fmt=docx|xlsx|csv|pdf et d'import POST /api/referentiels/{slug}/import/ (xlsx/csv, atomique, journalise) ajoutees pour toutes les entrees du registre editables ; les trois referentiels deviennent editable=True avec archivage logique et champ archive.
+- Routes dans le contrat : 1446
+- **Ruptures (retraits/renommages) : 12**
+  - GET /api/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/ → réponse 200.results.[].formation_intitule
+  - GET /api/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/{id}/ → réponse 200.formation_intitule
+  - GET /api/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/ → réponse 200.results.[].formation_intitule
+  - GET /api/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/ → réponse 200.results.[].intitule_module
+  - GET /api/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/{id}/ → réponse 200.formation_intitule
+  - GET /api/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/{id}/ → réponse 200.intitule_module
+  - GET /api/v1/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/ → réponse 200.results.[].formation_intitule
+  - GET /api/v1/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/{id}/ → réponse 200.formation_intitule
+  - GET /api/v1/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/ → réponse 200.results.[].formation_intitule
+  - GET /api/v1/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/ → réponse 200.results.[].intitule_module
+  - GET /api/v1/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/{id}/ → réponse 200.formation_intitule
+  - GET /api/v1/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/{id}/ → réponse 200.intitule_module
+- Ajouts (extensions non cassantes) : 108
+  - Route supprimée ou renommée : GET /api/referentiels/formations/
+  - Route supprimée ou renommée : GET /api/referentiels/formations/{id}/
+  - GET /api/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/ → réponse 200.results.[].code
+  - GET /api/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/ → réponse 200.results.[].actif
+  - GET /api/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/ → réponse 200.results.[].date_activation
+  - GET /api/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/ → réponse 200.results.[].date_desactivation
+  - GET /api/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/ → réponse 200.results.[].archive
+  - GET /api/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/ → réponse 200.results.[].cree_le
+  - GET /api/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/ → réponse 200.results.[].modifie_le
+  - GET /api/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/ → réponse 200.results.[].formation_libelle
+  - GET /api/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/{id}/ → réponse 200.code
+  - GET /api/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/{id}/ → réponse 200.actif
+  - GET /api/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/{id}/ → réponse 200.date_activation
+  - GET /api/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/{id}/ → réponse 200.date_desactivation
+  - GET /api/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/{id}/ → réponse 200.archive
+  - GET /api/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/{id}/ → réponse 200.cree_le
+  - GET /api/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/{id}/ → réponse 200.modifie_le
+  - GET /api/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/modules-officiels/{id}/ → réponse 200.formation_libelle
+  - GET /api/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/ → réponse 200.results.[].code
+  - GET /api/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/ → réponse 200.results.[].libelle
+  - GET /api/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/ → réponse 200.results.[].actif
+  - GET /api/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/ → réponse 200.results.[].date_activation
+  - GET /api/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/ → réponse 200.results.[].date_desactivation
+  - GET /api/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/ → réponse 200.results.[].archive
+  - GET /api/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/ → réponse 200.results.[].cree_le
+  - GET /api/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/ → réponse 200.results.[].modifie_le
+  - GET /api/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/ → réponse 200.results.[].formation_libelle
+  - GET /api/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/{id}/ → réponse 200.code
+  - GET /api/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/{id}/ → réponse 200.libelle
+  - GET /api/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/{id}/ → réponse 200.actif
+  - GET /api/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/{id}/ → réponse 200.date_activation
+  - GET /api/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/{id}/ → réponse 200.date_desactivation
+  - GET /api/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/{id}/ → réponse 200.archive
+  - GET /api/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/{id}/ → réponse 200.cree_le
+  - GET /api/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/{id}/ → réponse 200.modifie_le
+  - GET /api/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/referentiels/volumes-horaires/{id}/ → réponse 200.formation_libelle
+  - Route supprimée ou renommée : GET /api/referentiels/volumes-modules/
+  - Route supprimée ou renommée : GET /api/referentiels/volumes-modules/{id}/
+  - Route supprimée ou renommée : GET /api/referentiels/{slug}/export/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/formations/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/formations/{id}/
+  - GET /api/v1/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/ → réponse 200.results.[].code
+  - GET /api/v1/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/ → réponse 200.results.[].actif
+  - GET /api/v1/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/ → réponse 200.results.[].date_activation
+  - GET /api/v1/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/ → réponse 200.results.[].date_desactivation
+  - GET /api/v1/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/ → réponse 200.results.[].archive
+  - GET /api/v1/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/ → réponse 200.results.[].cree_le
+  - GET /api/v1/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/ → réponse 200.results.[].modifie_le
+  - GET /api/v1/referentiels/modules-officiels/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/ → réponse 200.results.[].formation_libelle
+  - GET /api/v1/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/{id}/ → réponse 200.code
+  - GET /api/v1/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/{id}/ → réponse 200.actif
+  - GET /api/v1/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/{id}/ → réponse 200.date_activation
+  - GET /api/v1/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/{id}/ → réponse 200.date_desactivation
+  - GET /api/v1/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/{id}/ → réponse 200.archive
+  - GET /api/v1/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/{id}/ → réponse 200.cree_le
+  - GET /api/v1/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/{id}/ → réponse 200.modifie_le
+  - GET /api/v1/referentiels/modules-officiels/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/modules-officiels/{id}/ → réponse 200.formation_libelle
+  - GET /api/v1/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/ → réponse 200.results.[].code
+  - GET /api/v1/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/ → réponse 200.results.[].libelle
+  - GET /api/v1/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/ → réponse 200.results.[].actif
+  - GET /api/v1/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/ → réponse 200.results.[].date_activation
+  - GET /api/v1/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/ → réponse 200.results.[].date_desactivation
+  - GET /api/v1/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/ → réponse 200.results.[].archive
+  - GET /api/v1/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/ → réponse 200.results.[].cree_le
+  - GET /api/v1/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/ → réponse 200.results.[].modifie_le
+  - GET /api/v1/referentiels/volumes-horaires/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/ → réponse 200.results.[].formation_libelle
+  - GET /api/v1/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/{id}/ → réponse 200.code
+  - GET /api/v1/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/{id}/ → réponse 200.libelle
+  - GET /api/v1/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/{id}/ → réponse 200.actif
+  - GET /api/v1/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/{id}/ → réponse 200.date_activation
+  - GET /api/v1/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/{id}/ → réponse 200.date_desactivation
+  - GET /api/v1/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/{id}/ → réponse 200.archive
+  - GET /api/v1/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/{id}/ → réponse 200.cree_le
+  - GET /api/v1/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/{id}/ → réponse 200.modifie_le
+  - GET /api/v1/referentiels/volumes-horaires/{id}/ — clé de réponse 200 supprimée : GET /api/v1/referentiels/volumes-horaires/{id}/ → réponse 200.formation_libelle
+  - Route supprimée ou renommée : GET /api/v1/referentiels/volumes-modules/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/volumes-modules/{id}/
+  - Route supprimée ou renommée : GET /api/v1/referentiels/{slug}/export/
+  - Route supprimée ou renommée : PATCH /api/referentiels/formations/{id}/
+  - Route supprimée ou renommée : PATCH /api/referentiels/modules-officiels/{id}/
+  - Route supprimée ou renommée : PATCH /api/referentiels/volumes-horaires/{id}/
+  - Route supprimée ou renommée : PATCH /api/referentiels/volumes-modules/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/referentiels/formations/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/referentiels/modules-officiels/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/referentiels/volumes-horaires/{id}/
+  - Route supprimée ou renommée : PATCH /api/v1/referentiels/volumes-modules/{id}/
+  - Route supprimée ou renommée : POST /api/referentiels/formations/
+  - Route supprimée ou renommée : POST /api/referentiels/formations/{id}/archiver/
+  - Route supprimée ou renommée : POST /api/referentiels/formations/{id}/reactiver/
+  - Route supprimée ou renommée : POST /api/referentiels/modules-officiels/
+  - Route supprimée ou renommée : POST /api/referentiels/modules-officiels/{id}/archiver/
+  - Route supprimée ou renommée : POST /api/referentiels/modules-officiels/{id}/reactiver/
+  - Route supprimée ou renommée : POST /api/referentiels/volumes-horaires/
+  - Route supprimée ou renommée : POST /api/referentiels/volumes-modules/
+  - Route supprimée ou renommée : POST /api/referentiels/volumes-modules/{id}/archiver/
+  - Route supprimée ou renommée : POST /api/referentiels/volumes-modules/{id}/reactiver/
+  - Route supprimée ou renommée : POST /api/referentiels/{slug}/import/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/formations/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/formations/{id}/archiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/formations/{id}/reactiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/modules-officiels/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/modules-officiels/{id}/archiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/modules-officiels/{id}/reactiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/volumes-horaires/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/volumes-modules/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/volumes-modules/{id}/archiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/volumes-modules/{id}/reactiver/
+  - Route supprimée ou renommée : POST /api/v1/referentiels/{slug}/import/
+

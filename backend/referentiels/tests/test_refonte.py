@@ -85,10 +85,16 @@ class RegistreTests(TestCase):
                     continue
                 self.assertIn(route, ecrans | {None}, slug)
 
-    def test_modules_officiels_declare_en_lecture_seule(self):
+    def test_modules_officiels_declare_en_gestion_complete(self):
         entree = REGISTRE['modules-officiels']
-        self.assertFalse(entree['editable'])
+        self.assertTrue(entree['editable'])
         self.assertEqual(modele_de(entree), RefModuleOfficiel)
+        self.assertEqual(entree['route_ui'], '/referentiels/gestion/modules-officiels')
+        for slug in ('formations', 'modules-officiels', 'volumes-modules'):
+            self.assertTrue(REGISTRE[slug]['editable'], slug)
+            self.assertEqual(
+                REGISTRE[slug]['route_ui'], f'/referentiels/gestion/{slug}',
+            )
 
 
 class TableauDeBordTests(TestCase):
@@ -128,7 +134,7 @@ class TableauDeBordTests(TestCase):
     def test_les_referentiels_non_editables_ne_sont_pas_ecrasables(self):
         """Un référentiel déclaré en lecture seule ne répond pas au CRUD générique."""
         self.client.force_authenticate(make_user('carto2', role='ADMIN'))
-        res = self.client.post('/api/referentiels/volumes-modules/', {'libelle': 'X'})
+        res = self.client.post('/api/referentiels/ue-ecue/', {'libelle': 'X'})
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
 
 
@@ -271,7 +277,7 @@ class ModulesOfficielsTests(TestCase):
         self.client = APIClient()
         self.client.force_authenticate(make_user('mod_officiel', role='ADMIN'))
 
-    def test_lecture_seule_et_filtres(self):
+    def test_filtres_filiere_semestre_et_formation(self):
         from formations.models import RefFormation
 
         cycle = RefFormation.objects.create(
@@ -289,14 +295,60 @@ class ModulesOfficielsTests(TestCase):
         self.assertEqual(res.data['results'][0]['libelle'], 'Biomécanique')
         autre = self.client.get('/api/referentiels/modules-officiels/?filiere=APA')
         self.assertEqual(autre.data['count'], 0)
+        par_formation = self.client.get(f'/api/referentiels/modules-officiels/?formation={cycle.pk}')
+        self.assertEqual(par_formation.data['count'], 1)
 
-    def test_ecriture_refusee(self):
-        res = self.client.post('/api/referentiels/modules-officiels/', {'libelle': 'X'})
-        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+    def test_creation_modification_archivage_via_le_socle_generique(self):
+        from formations.models import RefFormation
+
+        cycle = RefFormation.objects.create(
+            intitule='ÉDUCATION ET MOTRICITÉ — LICENCE',
+            type_diplome='LICENCE', filiere_code='F01',
+        )
+        res = self.client.post('/api/referentiels/modules-officiels/', {
+            'libelle': 'Biomécanique',
+            'formation': cycle.pk,
+            'filiere_code': 'EM',
+            'semestre': 'S1',
+            'ordre': 1,
+            'etat_ventilation': 'A_VENTILER',
+            'fiabilite': 'OFFICIEL',
+        })
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.data)
+        module_id = res.data['id']
+        # Sans formation, le rattachement est impossible : la création échoue.
+        res_sans = self.client.post('/api/referentiels/modules-officiels/', {'libelle': 'X'})
+        self.assertEqual(res_sans.status_code, status.HTTP_400_BAD_REQUEST)
+        # Modification
+        res_patch = self.client.patch(
+            f'/api/referentiels/modules-officiels/{module_id}/', {'ordre': 3},
+        )
+        self.assertEqual(res_patch.status_code, status.HTTP_200_OK, res_patch.data)
+        self.assertEqual(res_patch.data['ordre'], 3)
+        # Archivage réversible (règle 2) puis réactivation
+        res_arch = self.client.post(f'/api/referentiels/modules-officiels/{module_id}/archiver/')
+        self.assertEqual(res_arch.status_code, status.HTTP_200_OK)
+        module = RefModuleOfficiel.objects.get(pk=module_id)
+        self.assertTrue(module.archive)
+        self.assertFalse(module.actif)
+        res_react = self.client.post(f'/api/referentiels/modules-officiels/{module_id}/reactiver/')
+        self.assertEqual(res_react.status_code, status.HTTP_200_OK)
+        module.refresh_from_db()
+        self.assertFalse(module.archive)
+        self.assertTrue(module.actif)
+        # Journal append-only : création + modification + archivage + réactivation
+        actions = ReferentielJournal.objects.filter(object_id=module_id).values_list('action', flat=True)
+        self.assertIn('CREATION', actions)
+        self.assertIn('MODIFICATION', actions)
+        self.assertIn('ARCHIVAGE', actions)
+        self.assertIn('REACTIVATION', actions)
 
     def test_volumes_horaires_lecture(self):
-        res = self.client.get('/api/referentiels/volumes-horaires/')
+        res = self.client.get('/api/referentiels/volumes-modules/')
         self.assertEqual(res.status_code, status.HTTP_200_OK)
+        # Alias historique conservé pour compatibilité
+        alias = self.client.get('/api/referentiels/volumes-horaires/')
+        self.assertEqual(alias.status_code, status.HTTP_200_OK)
 
 
 class ImportIdempotentTests(TestCase):
@@ -408,3 +460,193 @@ class CoherenceTests(TestCase):
         )
         sortie = self._executer()
         self.assertIn('sans source', sortie)
+
+
+class EchangesReferentielsTests(TestCase):
+    """Export (docx/xlsx/csv/pdf) et import (xlsx/csv) des référentiels."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.admin = make_user('admin_echanges', role='ADMIN')
+        self.client.force_authenticate(self.admin)
+        self.cycle = RefFormation.objects.create(
+            intitule='ÉDUCATION ET MOTRICITÉ — LICENCE',
+            code='EM-LIC', type_diplome='LICENCE', filiere_code='F01',
+        )
+        self.module = RefModuleOfficiel.objects.create(
+            formation=self.cycle, filiere_code='EM', semestre='S1',
+            libelle='Biomécanique', ordre=1,
+            fiabilite='OFFICIEL', source_document='Formations et Modules INJS',
+        )
+        from referentiels.models import RefVolumeHoraireFormation as _VH
+        self.volume = _VH.objects.create(
+            formation=self.cycle, intitule_module='Biomécanique',
+            heures_cm=30, heures_td=15, heures_total=45,
+            fiabilite='MODELISE', source_document='Modéliser les volumes horaires',
+        )
+
+    # ── Export ────────────────────────────────────────────────────────────
+    def test_export_quatre_formats(self):
+        signatures = {
+            'xlsx': ('PK\x03\x04', 'spreadsheetml'),
+            'csv': ('\ufeff', 'text/csv'),
+            'docx': ('PK\x03\x04', 'wordprocessingml'),
+            'pdf': ('%PDF', 'application/pdf'),
+        }
+        for slug in ('formations', 'modules-officiels', 'volumes-modules'):
+            for fmt, (signature, ctype) in signatures.items():
+                with self.subTest(slug=slug, format=fmt):
+                    res = self.client.get(f'/api/referentiels/{slug}/export/?fmt={fmt}')
+                    self.assertEqual(res.status_code, status.HTTP_200_OK, res.content)
+                    self.assertIn('attachment', res['Content-Disposition'])
+                    self.assertIn(ctype, res['Content-Type'])
+                    debut = res.content[:len(signature)]
+                    if signature.startswith('P') or signature.startswith('%'):
+                        self.assertTrue(res.content.startswith(signature.encode()), fmt)
+                    else:
+                        self.assertTrue(res.content.decode('utf-8-sig').startswith(signature.replace('﻿', '')), fmt)
+
+    def test_export_csv_contenu_et_filtres(self):
+        res = self.client.get('/api/referentiels/modules-officiels/export/?fmt=csv')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        texte = res.content.decode('utf-8-sig')
+        lignes = [l for l in texte.strip().splitlines() if l.strip()]
+        self.assertEqual(lignes[0].split(';')[0], 'Libellé')
+        self.assertIn('Biomécanique', texte)
+        self.assertIn('Formation (cycle)', texte)
+        # Archivé par défaut : masqué ; archives=1 : présent
+        self.module.archive = True
+        self.module.actif = False
+        self.module.save(update_fields=['archive', 'actif'])
+        cache = self.client.get('/api/referentiels/modules-officiels/export/?fmt=csv')
+        self.assertNotIn('Biomécanique', cache.content.decode('utf-8-sig'))
+        avec = self.client.get('/api/referentiels/modules-officiels/export/?fmt=csv&archives=1')
+        self.assertIn('Biomécanique', avec.content.decode('utf-8-sig'))
+
+    def test_export_format_inconnu(self):
+        res = self.client.get('/api/referentiels/modules-officiels/export/?fmt=ods')
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_export_inconnu(self):
+        res = self.client.get('/api/referentiels/inconnu-ici/export/?fmt=csv')
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
+    # ── Import ────────────────────────────────────────────────────────────
+    def _csv_bytes(self, texte):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        return SimpleUploadedFile('import.csv', texte.encode('utf-8-sig'))
+
+    def test_import_csv_aller_retour(self):
+        export = self.client.get('/api/referentiels/volumes-modules/export/?fmt=csv')
+        fichier = self._csv_bytes(export.content.decode('utf-8-sig'))
+        res = self.client.post('/api/referentiels/volumes-modules/import/', {'fichier': fichier})
+        self.assertEqual(res.status_code, status.HTTP_200_OK, res.content)
+        self.assertEqual(res.data['created'], 0)
+        self.assertEqual(res.data['updated'], 1)
+        self.assertEqual(RefVolumeHoraireFormation.objects.count(), 1)
+
+    def test_import_csv_creation_et_mise_a_jour(self):
+        contenu = (
+            'Libellé;Heures CM;Heures TD;Heures TP;Heures stage;Total;Formation (cycle)\r\n'
+            'Physiologie;20;10;;;30;ÉDUCATION ET MOTRICITÉ — LICENCE\r\n'
+        )
+        res = self.client.post(
+            '/api/referentiels/volumes-modules/import/', {'fichier': self._csv_bytes(contenu)},
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK, res.content)
+        self.assertEqual(res.data['created'], 1)
+        from referentiels.models import RefVolumeHoraireFormation as _VH
+        self.assertEqual(_VH.objects.get(intitule_module='Physiologie').heures_total, 30)
+        # Rejouer le même import met à jour, ne duplique pas.
+        res2 = self.client.post(
+            '/api/referentiels/volumes-modules/import/', {'fichier': self._csv_bytes(contenu)},
+        )
+        self.assertEqual(res2.status_code, status.HTTP_200_OK, res2.content)
+        self.assertEqual(res2.data['updated'], 1)
+        self.assertEqual(_VH.objects.filter(intitule_module='Physiologie').count(), 1)
+
+    def test_import_xlsx_creation_module_officiel(self):
+        from io import BytesIO
+
+        from openpyxl import Workbook
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        classer = Workbook()
+        feuille = classer.active
+        feuille.append(['Libellé', 'Filière', 'Semestre', 'Ordre', 'État de ventilation', 'Formation (cycle)'])
+        feuille.append(['Physiologie', 'EM', 'S2', 2, 'À ventiler en maquette', 'ÉDUCATION ET MOTRICITÉ — LICENCE'])
+        tampon = BytesIO()
+        classer.save(tampon)
+        fichier = SimpleUploadedFile('modules.xlsx', tampon.getvalue())
+        res = self.client.post('/api/referentiels/modules-officiels/import/', {'fichier': fichier})
+        self.assertEqual(res.status_code, status.HTTP_200_OK, res.content)
+        self.assertEqual(res.data['created'], 1)
+        module = RefModuleOfficiel.objects.get(libelle='Physiologie', semestre='S2')
+        self.assertEqual(module.etat_ventilation, 'A_VENTILER')
+        self.assertEqual(module.ordre, 2)
+        self.assertEqual(module.formation, self.cycle)
+
+    def test_import_ligne_invalide_rejette_tout(self):
+        contenu = (
+            'Libellé;Heures CM;Formation (cycle)\r\n'
+            'Physiologie;20;ÉDUCATION ET MOTRICITÉ — LICENCE\r\n'
+            'Erreur;abc;ÉDUCATION ET MOTRICITÉ — LICENCE\r\n'
+        )
+        from referentiels.models import RefVolumeHoraireFormation as _VH
+        avant = _VH.objects.count()
+        res = self.client.post(
+            '/api/referentiels/volumes-modules/import/', {'fichier': self._csv_bytes(contenu)},
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('erreurs', res.data)
+        self.assertEqual(_VH.objects.count(), avant)
+
+    def test_import_formation_introuvable(self):
+        contenu = (
+            'Libellé;Heures CM;Formation (cycle)\r\n'
+            'Physiologie;20;CYCLE QUI N’EXISTE PAS\r\n'
+        )
+        res = self.client.post(
+            '/api/referentiels/volumes-modules/import/', {'fichier': self._csv_bytes(contenu)},
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(any('introuvable' in e for e in res.data.get('erreurs', [])))
+
+    def test_import_format_refuse_et_referencement_non_editable(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        res = self.client.post(
+            '/api/referentiels/volumes-modules/import/',
+            {'fichier': SimpleUploadedFile('import.pdf', b'%PDF')},
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        # Un référentiel historisé se corrige via la source documentaire,
+        # jamais par import : 403 (comme le socle CRUD, en lecture seule).
+        csv_ue = SimpleUploadedFile('ue.csv', 'Libellé\r\nX\r\n'.encode('utf-8'))
+        res_ue = self.client.post('/api/referentiels/ue-ecue/import/', {'fichier': csv_ue})
+        self.assertEqual(res_ue.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_import_reserve_aux_roles_de_gestion(self):
+        self.client.force_authenticate(make_user('aud_imp', role='AUDITEUR'))
+        res = self.client.post(
+            '/api/referentiels/volumes-modules/import/',
+            {'fichier': self._csv_bytes('Libellé\r\nX\r\n')},
+        )
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_import_journalise(self):
+        contenu = (
+            'Libellé;Heures CM;Formation (cycle)\r\n'
+            'Physiologie;25;ÉDUCATION ET MOTRICITÉ — LICENCE\r\n'
+        )
+        res = self.client.post(
+            '/api/referentiels/volumes-modules/import/', {'fichier': self._csv_bytes(contenu)},
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK, res.content)
+        from referentiels.models import RefVolumeHoraireFormation as _VH
+        objet = _VH.objects.get(intitule_module='Physiologie')
+        journal = ReferentielJournal.objects.filter(
+            object_id=objet.pk, action=ReferentielJournal.Action.CREATION,
+        )
+        self.assertEqual(journal.count(), 1)
+        self.assertEqual(journal.first().detail.get('import'), 'import.csv')

@@ -243,6 +243,11 @@ class RefFormation(models.Model):
 
     intitule = models.CharField(max_length=255, unique=True)
     actif = models.BooleanField(default=True)
+    # Refonte Référentiels — cycle de vie aligné sur le socle :
+    # archivage réversible au lieu de suppression physique (règle 2).
+    archive = models.BooleanField(default=False, db_index=True)
+    date_activation = models.DateTimeField(null=True, blank=True)
+    date_desactivation = models.DateTimeField(null=True, blank=True)
     # --- Lot L6 (référentiel officiel INJS) : qualification + traçabilité ---
     perimetre = models.CharField(
         max_length=20, choices=Perimetre.choices, default=Perimetre.NON_DETERMINE,
