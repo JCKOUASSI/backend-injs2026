@@ -1119,6 +1119,26 @@ def _contexte_pedagogique(a):
     }
 
 
+def _identite_seance(a):
+    """Identité de séance et mutualisation — clés **ajoutées**, jamais renommées.
+
+    La clé ``statut`` porte déjà l'état d'activation (ACTIVE/ANNULEE) attendu
+    par les écrans existants : le cycle de vie de la séance arrive donc sous
+    une clé distincte, ``statut_seance``.
+    """
+    lies = list(a.groupes_lies.all())
+    tous = ([a.groupe] if a.groupe_id else []) + lies
+    return {
+        'date': a.date.isoformat() if a.date else None,
+        'jeton_qr': a.jeton_qr,
+        'statut_seance': a.statut,
+        'est_mutualisee': len(tous) > 1,
+        'groupes': [g.nom for g in tous if g is not None],
+        'groupes_lies': [{'id': g.pk, 'nom': g.nom} for g in lies],
+        'effectif_cumule': a.effectif_cumule(),
+    }
+
+
 def _seances_filtrees(request, edt):
     """Séances actives d'un EDT, filtrées par la requête — source unique.
 
@@ -1144,7 +1164,11 @@ def _seances_filtrees(request, edt):
               'affectation_pedagogique__ue',
               'affectation_pedagogique__ecue',
               'affectation_pedagogique__enseignant',
-          ))
+          )
+          # Mutualisation : sans ce préchargement, lire `groupes_lies`
+          # par séance réintroduirait un N+1 que ce module s'interdit
+          # (mesuré ailleurs : 14 requêtes pour 2 séances, 134 pour 22).
+          .prefetch_related('groupes_lies'))
     for champ in ('groupe_id', 'salle_id', 'formation_id'):
         valeur = _int(qp.get(champ))
         if valeur:
@@ -1199,6 +1223,7 @@ def result_api(request, pk):
             'affectation_pedagogique_id': a.affectation_pedagogique_id,
         }
         ligne.update(_contexte_pedagogique(a))
+        ligne.update(_identite_seance(a))
         seances.append(ligne)
     return Response({
         'emploi_du_temps_id': edt.pk,
@@ -1545,4 +1570,204 @@ def edt_audit_api(request, pk):
         'violations': [v.as_dict() for v in rapport.violations],
         'warnings': rapport.warnings,
         'couverture': rapport.couverture,
+    })
+
+
+# ═══ Identité de séance et mutualisation ═════════════════════════════════════
+# Même règle que le reste de la couche : ajout, aucune route existante
+# supprimée, renommée ou modifiée.
+
+
+def _journaliser_seance(user, seance, detail=None):
+    """Trace une opération sur une séance dans le journal existant.
+
+    Aucun journal parallèle n'est créé : on réutilise ``presences.AuditLog``
+    et le motif ``SEANCE_UPDATE`` déjà employé par l'application.
+    """
+    from presences.models import AuditLog
+
+    AuditLog.objects.create(
+        action='SEANCE_UPDATE',
+        acteur=user if user and user.is_authenticated else None,
+        acteur_label=getattr(user, 'username', '') or '',
+        cible_type='AffectationCreneau',
+        cible_numero=str(seance.pk),
+        cible_nom=str(seance.intitule or '')[:255],
+        extra=detail or {},
+    )
+
+
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def seance_qr_api(request, pk):
+    """Contrat de données d'une séance pour le futur module de présence.
+
+    Le jeton est **durable** : il identifie la séance de façon stable sans
+    exposer d'identifiant de base — condition du chaînage
+    « EDT → séance → pointage ».
+    """
+    from edts.models import AffectationCreneau
+
+    a = (AffectationCreneau.objects
+         .select_related('emploi_du_temps', 'emploi_du_temps__annee_academique',
+                         'creneau_template', 'salle', 'groupe', 'formation',
+                         'formateur', 'affectation_pedagogique',
+                         'annee_academique', 'semestre', 'ue', 'ecue')
+         .prefetch_related('groupes_lies')
+         .filter(pk=pk).first())
+    if a is None:
+        return Response({'detail': 'Séance introuvable.'},
+                        status=status.HTTP_404_NOT_FOUND)
+    ct = a.creneau_template
+    return Response({
+        'seance_id': a.pk,
+        'jeton_qr': a.jeton_qr,
+        'date': a.date.isoformat() if a.date else None,
+        'heure_debut': ct.heure_debut.isoformat(timespec='minutes') if ct else None,
+        'heure_fin': ct.heure_fin.isoformat(timespec='minutes') if ct else None,
+        'annee_academique': (a.annee_academique.libelle
+                             if a.annee_academique_id else None),
+        'semestre': a.semestre.libelle if a.semestre_id else None,
+        'ue': a.ue.intitule if a.ue_id else None,
+        'ecue': a.ecue.intitule if a.ecue_id else None,
+        'intitule': a.intitule,
+        'nature': a.nature,
+        'salle': a.salle.nom if a.salle_id else a.salle_nom,
+        'salle_capacite': a.salle.capacite if a.salle_id else None,
+        'enseignant': a.enseignant_nom or (
+            a.formateur.nom if a.formateur_id else ''),
+        'groupes': [g.nom for g in a.groupes_concernes],
+        'effectif_cumule': a.effectif_cumule(),
+        'statut_seance': a.statut,
+        'actif': a.actif,
+    })
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsEdtPlanification])
+def seance_groupes_api(request, pk):
+    """Mutualisation : groupes partageant une **même** séance.
+
+    ``POST`` ajoute des groupes à la séance existante. Il n'y a toujours
+    qu'**un seul** objet séance : jamais une duplication par groupe, ce qui
+    est précisément l'exigence à satisfaire.
+    """
+    from edts.models import AffectationCreneau
+    from scolarite.models import Groupe
+
+    a = (AffectationCreneau.objects
+         .select_related('salle', 'groupe')
+         .prefetch_related('groupes_lies')
+         .filter(pk=pk).first())
+    if a is None:
+        return Response({'detail': 'Séance introuvable.'},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        return Response({
+            'seance_id': a.pk,
+            'groupe_porteur': ({'id': a.groupe.pk, 'nom': a.groupe.nom}
+                               if a.groupe_id else None),
+            'groupes_lies': [{'id': g.pk, 'nom': g.nom}
+                             for g in a.groupes_lies.all()],
+            'groupes_concernes': [{'id': g.pk, 'nom': g.nom}
+                                  for g in a.groupes_concernes],
+            'est_mutualisee': a.est_mutualisee,
+            'effectif_cumule': a.effectif_cumule(),
+            'salle_capacite': a.salle.capacite if a.salle_id else None,
+        })
+
+    brut = request.data.get('groupe_ids')
+    if brut is None:
+        return Response(
+            {'detail': '`groupe_ids` est attendu (liste d’identifiants).'},
+            status=status.HTTP_400_BAD_REQUEST)
+    if isinstance(brut, (str, int)):
+        brut = [brut]
+    try:
+        ids = {int(i) for i in brut}
+    except (TypeError, ValueError):
+        return Response(
+            {'detail': '`groupe_ids` doit contenir des identifiants entiers.'},
+            status=status.HTTP_400_BAD_REQUEST)
+
+    ajoutes, refus = [], []
+    for gid in sorted(ids):
+        if a.groupe_id and gid == a.groupe_id:
+            refus.append({'groupe_id': gid,
+                          'motif': 'Ce groupe est déjà le porteur de la séance.'})
+            continue
+        if a.groupes_lies.filter(pk=gid).exists():
+            refus.append({'groupe_id': gid, 'motif': 'Groupe déjà mutualisé.'})
+            continue
+        grp = Groupe.objects.filter(pk=gid).first()
+        if grp is None:
+            refus.append({'groupe_id': gid, 'motif': 'Groupe inexistant.'})
+            continue
+        a.groupes_lies.add(grp)
+        ajoutes.append({'id': grp.pk, 'nom': grp.nom})
+
+    if ajoutes:
+        _journaliser_seance(
+            request.user, a,
+            {'operation': 'mutualisation_ajout',
+             'groupes': [g['nom'] for g in ajoutes]})
+
+    # Capacité confrontée à l'effectif CUMULÉ : signalée, jamais bloquée
+    # silencieusement — l'arbitrage reste au gestionnaire habilité.
+    cumul = a.effectif_cumule()
+    alerte = None
+    if a.salle_id and cumul and not C.capacite_suffisante(a.salle, cumul):
+        alerte = (
+            f"La salle « {a.salle.nom} » ({a.salle.capacite} places) ne peut pas "
+            f"accueillir l’effectif cumulé de {cumul} étudiants : changez de "
+            f"salle ou réduisez le nombre de groupes mutualisés."
+        )
+
+    return Response({
+        'seance_id': a.pk,
+        'ajoutes': ajoutes,
+        'refuses': refus,
+        'groupes_concernes': [{'id': g.pk, 'nom': g.nom}
+                              for g in a.groupes_concernes],
+        'effectif_cumule': cumul,
+        'salle_capacite': a.salle.capacite if a.salle_id else None,
+        'alerte_capacite': alerte,
+    })
+
+
+@api_view(['DELETE'])
+@permission_classes([IsEdtPlanification])
+def seance_groupe_retirer_api(request, pk, groupe_id):
+    """Retire un groupe d'une séance mutualisée (le porteur ne se retire pas)."""
+    from edts.models import AffectationCreneau
+
+    a = (AffectationCreneau.objects
+         .select_related('salle', 'groupe')
+         .prefetch_related('groupes_lies')
+         .filter(pk=pk).first())
+    if a is None:
+        return Response({'detail': 'Séance introuvable.'},
+                        status=status.HTTP_404_NOT_FOUND)
+    if a.groupe_id and groupe_id == a.groupe_id:
+        return Response(
+            {'detail': 'Le groupe porteur ne peut pas être retiré : '
+                       'réaffectez la séance à un autre groupe.'},
+            status=status.HTTP_400_BAD_REQUEST)
+
+    grp = a.groupes_lies.filter(pk=groupe_id).first()
+    if grp is None:
+        return Response({'detail': 'Ce groupe ne participe pas à la séance.'},
+                        status=status.HTTP_404_NOT_FOUND)
+    a.groupes_lies.remove(grp)
+    _journaliser_seance(
+        request.user, a,
+        {'operation': 'mutualisation_retrait', 'groupe': grp.nom})
+    return Response({
+        'seance_id': a.pk,
+        'retire': {'id': grp.pk, 'nom': grp.nom},
+        'groupes_concernes': [{'id': g.pk, 'nom': g.nom}
+                              for g in a.groupes_concernes],
+        'est_mutualisee': a.est_mutualisee,
+        'effectif_cumule': a.effectif_cumule(),
     })

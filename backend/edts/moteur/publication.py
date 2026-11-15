@@ -78,10 +78,27 @@ def persister_plan(emploi_du_temps, placements, remplacer=False):
             emploi_du_temps=emploi_du_temps,
         ).update(actif=False)
 
+    # Contexte pédagogique chargé en **une seule requête** : le renseigner
+    # placement par placement coûterait une lecture par séance (N+1), ce que
+    # le moteur s'interdit à cette échelle.
+    from scolarite.models import AffectationPedagogique
+
+    ids_ap = {
+        place.besoin.affectation_pedagogique_id
+        for place in placements
+        if place.besoin.affectation_pedagogique_id
+    }
+    contexte = {
+        ap.pk: ap
+        for ap in AffectationPedagogique.objects.filter(pk__in=ids_ap).only(
+            'pk', 'annee_academique_id', 'semestre_id', 'ue_id', 'ecue_id')
+    } if ids_ap else {}
+
     creer = []
     for place in placements:
         besoin = place.besoin
-        creer.append(AffectationCreneau(
+        ap = contexte.get(besoin.affectation_pedagogique_id)
+        seance = AffectationCreneau(
             emploi_du_temps=emploi_du_temps,
             creneau_template=place.creneau,
             semaine_debut=place.semaine_debut,
@@ -98,8 +115,21 @@ def persister_plan(emploi_du_temps, placements, remplacer=False):
             formateur_id=besoin.enseignant_id,
             nature=place.besoin.nature,
             intitule=besoin.intitule,
+            # -- Identité de séance : dénormalisation du contexte pédagogique,
+            # pour que la séance reste rattachable à son UE/ECUE/semestre
+            # même après une évolution de la maquette.
+            annee_academique_id=(
+                (ap.annee_academique_id if ap else None)
+                or emploi_du_temps.annee_academique_id
+            ),
+            semestre_id=ap.semestre_id if ap else None,
+            ue_id=ap.ue_id if ap else None,
+            ecue_id=ap.ecue_id if ap else None,
             actif=True,
-        ))
+        )
+        # Date civile : un seul calcul, celui du modèle — pas de recopie.
+        seance.date = seance.date_calculee()
+        creer.append(seance)
     AffectationCreneau.objects.bulk_create(creer)
     return len(creer)
 

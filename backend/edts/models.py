@@ -22,7 +22,8 @@ service `edts.services.besoins` expose si besoin une notion **calculée** de
 promotion dérivée du Groupe, sans nouvelle table ni nouvelle clé étrangère.
 """
 
-from datetime import datetime, time
+import secrets
+from datetime import date, datetime, time, timedelta
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -49,6 +50,30 @@ NATURE_CHOICES = [
     ('REMPLACEMENT', 'Remplacement'),
     ('AUTRE', 'Autre'),
 ]
+
+STATUT_SEANCE_CHOICES = [
+    ('PLANIFIEE', 'Planifiée'),
+    ('CONFIRMEE', 'Confirmée'),
+    ('REPORTEE', 'Reportée'),
+    ('ANNULEE', 'Annulée'),
+    ('REALISEE', 'Réalisée'),
+]
+
+# Jour du créneau -> rang dans la semaine (lundi = 0), pour dériver la date
+# civile d'une séance depuis la rentrée et le numéro de semaine.
+JOUR_INDEX = {code: rang for rang, (code, _l) in enumerate(JOUR_CHOICES)}
+
+
+def nouveau_jeton_seance():
+    """Jeton opaque, unique et durable identifiant une séance.
+
+    C'est un **défaut de champ** et non un calcul de ``save()`` : les séances
+    issues d'une génération sont écrites en ``bulk_create``, qui n'appelle ni
+    ``save()`` ni les signaux. Un défaut appelable est en revanche appliqué à
+    l'instanciation, donc y compris en création par lots.
+    """
+    return secrets.token_urlsafe(32)
+
 
 POPULATION_TYPE_CHOICES = [
     ('FORMATION', 'Formation'),
@@ -398,6 +423,60 @@ class AffectationCreneau(models.Model):
             "déduction automatique n'est effectuée."
         ),
     )
+    # ── Identité de séance (chantier « séance mutualisée ») ────────────────
+    # La source de vérité pédagogique reste `affectation_pedagogique` : les
+    # quatre champs ci-dessous en sont la **dénormalisation**, alimentée
+    # automatiquement et jamais écrasante. Ils donnent à la séance une
+    # identité stable et interrogeable même si le rattachement pédagogique
+    # évolue — même motif que `enseignant_nom` et `salle_nom` plus haut.
+    annee_academique = models.ForeignKey(
+        AnneeAcademique, on_delete=models.PROTECT, null=True, blank=True,
+        related_name='seances_edt',
+    )
+    semestre = models.ForeignKey(
+        'scolarite.Semestre', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='seances_edt',
+    )
+    ue = models.ForeignKey(
+        'scolarite.UE', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='seances_edt',
+    )
+    ecue = models.ForeignKey(
+        'scolarite.ECUE', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='seances_edt',
+    )
+    date = models.DateField(
+        null=True, blank=True, db_index=True,
+        help_text=(
+            'Date civile de la séance, déduite de la rentrée de l’emploi du '
+            'temps, du numéro de semaine et du jour du créneau. Persistée : '
+            'la séance garde sa date même si le calendrier bouge ensuite.'
+        ),
+    )
+    statut = models.CharField(
+        max_length=12, choices=STATUT_SEANCE_CHOICES, default='PLANIFIEE',
+        db_index=True,
+        help_text='Cycle de vie de la séance (planifiée → réalisée ou annulée).',
+    )
+    jeton_qr = models.CharField(
+        max_length=64, unique=True, db_index=True, editable=False,
+        default=nouveau_jeton_seance,
+        help_text=(
+            'Jeton opaque identifiant la séance pour le futur module de '
+            'présence (QR). Généré une seule fois, jamais régénéré.'
+        ),
+    )
+    # Mutualisation : groupes **supplémentaires** partageant cette séance.
+    # `groupe` reste le groupe porteur ; on n'ajoute ici que les autres, afin
+    # qu'il n'existe jamais deux façons de désigner le groupe principal. Une
+    # séance mutualisée demeure un objet unique.
+    groupes_lies = models.ManyToManyField(
+        Groupe, blank=True, related_name='seances_mutualisees',
+        help_text=(
+            'Groupes supplémentaires partageant cette séance (cours mutualisé, '
+            'TD commun à plusieurs promotions).'
+        ),
+    )
     actif = models.BooleanField(default=True, db_index=True)
     cree_par = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -424,6 +503,105 @@ class AffectationCreneau(models.Model):
                 name='edts__edt_creneau_semaine_idx',
             ),
         ]
+
+    # ── Identité de séance ─────────────────────────────────────────────────
+    def date_calculee(self):
+        """Date civile déduite : rentrée + numéro de semaine + jour du créneau.
+
+        Le calcul part du **lundi de la semaine de rentrée** : la rentrée
+        n'est pas nécessairement un lundi (1er octobre 2026 est un jeudi), et
+        la semaine académique 1 est la semaine de la rentrée.
+        """
+        edt = self.emploi_du_temps
+        if not edt or not edt.rentree or not self.creneau_template_id:
+            return None
+        if not self.semaine_debut:
+            return None
+        # `rentree` est un DateField : Django convertit à l'enregistrement,
+        # mais l'instance en mémoire peut encore porter une chaîne
+        # (cas des objets construits puis sauvegardés dans la foulée).
+        rentree = edt.rentree
+        if isinstance(rentree, str):
+            try:
+                rentree = date.fromisoformat(rentree)
+            except ValueError:
+                return None
+        lundi = rentree - timedelta(days=rentree.weekday())
+        return lundi + timedelta(
+            weeks=self.semaine_debut - 1,
+            days=JOUR_INDEX.get(self.creneau_template.jour, 0),
+        )
+
+    @property
+    def groupes_concernes(self):
+        """Tous les groupes de la séance : le porteur, puis les mutualisés.
+
+        Accesseur unique : c'est lui qu'il faut employer pour raisonner sur
+        le public d'une séance, afin de ne jamais oublier les groupes liés.
+        """
+        vus, ordonnes = set(), []
+        for grp in [self.groupe, *self.groupes_lies.all()]:
+            if grp is not None and grp.pk not in vus:
+                vus.add(grp.pk)
+                ordonnes.append(grp)
+        return ordonnes
+
+    @property
+    def est_mutualisee(self):
+        """Vrai dès qu'au moins deux groupes partagent la séance."""
+        return len(self.groupes_concernes) > 1
+
+    def effectif_cumule(self, effectifs=None):
+        """Effectif total à héberger : somme des groupes de la séance.
+
+        Même précédence que le moteur (``annee.py``) : l'effectif **réel**
+        issu des inscriptions importées lorsqu'il existe, sinon la capacité
+        maximale déclarée du groupe. ``None`` si rien n'est renseigné — le
+        moteur n'invente alors aucune capacité de salle.
+
+        ``effectifs`` est le dictionnaire ``{groupe_id: effectif}`` déjà
+        chargé par l'appelant ; l'omettre déclenche une lecture par groupe
+        porteur, ce qui suffit pour un contrôle ponctuel.
+        """
+        total = 0
+        renseigne = False
+        for grp in self.groupes_concernes:
+            valeur = (effectifs or {}).get(grp.pk) or grp.capacite_max or None
+            if valeur:
+                total += valeur
+                renseigne = True
+        return total if renseigne else None
+
+    # ── Alimentation du contexte pédagogique ───────────────────────────────
+    def completer_contexte(self, *, ecraser=False):
+        """Dénormalise année/semestre/UE/ECUE depuis le rattachement.
+
+        Alimentation **non écrasante** par défaut : une valeur saisie à la
+        main est préservée, ce qui garantit la compatibilité avec les séances
+        existantes et avec celles créées avant l'import des maquettes.
+        """
+        ap = self.affectation_pedagogique
+        if self.annee_academique_id is None or ecraser:
+            if ap and ap.annee_academique_id:
+                self.annee_academique_id = ap.annee_academique_id
+            elif self.emploi_du_temps_id:
+                self.annee_academique_id = self.emploi_du_temps.annee_academique_id
+        if ap:
+            if self.semestre_id is None or ecraser:
+                self.semestre_id = ap.semestre_id
+            if self.ue_id is None or ecraser:
+                self.ue_id = ap.ue_id
+            if self.ecue_id is None or ecraser:
+                self.ecue_id = ap.ecue_id
+
+    def save(self, *args, **kwargs):
+        """Complète l'identité avant écriture (jamais en `bulk_create`)."""
+        if not self.jeton_qr:
+            self.jeton_qr = nouveau_jeton_seance()
+        if self.date is None:
+            self.date = self.date_calculee()
+        self.completer_contexte()
+        return super().save(*args, **kwargs)
 
     def clean(self):
         super().clean()

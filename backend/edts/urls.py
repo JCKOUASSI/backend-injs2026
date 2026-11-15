@@ -34,6 +34,16 @@ urlpatterns_lmd = [
     path('lmd/availability/rooms/', lmd.disponibilites_salles_api,
          name='edt-lmd-availability-rooms'),
     path('lmd/slots/', lmd.slots_api, name='edt-lmd-slots'),
+    # Identité de séance et mutualisation. Routes littérales :
+    # déclarées AVANT `lmd/<int:pk>/…`, sinon « seances » serait
+    # capté comme un identifiant d'emploi du temps.
+    path('lmd/seances/<int:pk>/qr/', lmd.seance_qr_api,
+         name='edt-lmd-seance-qr'),
+    path('lmd/seances/<int:pk>/groupes/', lmd.seance_groupes_api,
+         name='edt-lmd-seance-groupes'),
+    path('lmd/seances/<int:pk>/groupes/<int:groupe_id>/',
+         lmd.seance_groupe_retirer_api,
+         name='edt-lmd-seance-groupe-retirer'),
 
     # ── GET-INJS : import des inscrits + génération annuelle (AJOUT) ────────
     # Routes nouvelles, préfixées `lmd/` : aucune route existante n'est
