@@ -81,6 +81,8 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
         if _a_le_champ(modele, 'archive') \
                 and self.request.query_params.get('archives') not in ('1', 'true'):
             qs = qs.filter(archive=False)
+        if _a_le_champ(modele, 'archive') and self.request.query_params.get('archive') == '1':
+            qs = qs.filter(archive=True)
         actif = self.request.query_params.get('actif')
         if actif is not None and _a_le_champ(modele, 'actif'):
             qs = qs.filter(actif=actif.lower() in ('true', '1', 'yes'))
@@ -139,11 +141,13 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
             # le contrôle suit alors le même périmètre que la contrainte.
             unicite_par = self._entree().get('unicite_par')
             if unicite_par and serializer is not None:
-                portee = serializer.validated_data.get(unicite_par)
-                if portee is None and serializer.instance is not None:
-                    portee = getattr(serializer.instance, unicite_par, None)
-                if portee is not None:
-                    filtres = {unicite_par: portee}
+                filtres = {}
+                for nom in ([unicite_par] if isinstance(unicite_par, str) else unicite_par):
+                    portee = serializer.validated_data.get(nom)
+                    if portee is None and serializer.instance is not None:
+                        portee = getattr(serializer.instance, nom, None)
+                    if portee is not None:
+                        filtres[nom] = portee
         if libelle and _a_le_champ(modele, champ) and libelle_en_doublon(
                 modele, libelle, pk_exclu, champ=champ, filtres=filtres):
             raise ValidationError(
@@ -214,7 +218,15 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
             )
         if obj.archive:
             return Response({'detail': 'Valeur déjà archivée.'}, status=status.HTTP_400_BAD_REQUEST)
-        obj.archiver(request.user, motif=request.data.get('motif', ''))
+        if hasattr(obj, 'archiver'):
+            obj.archiver(request.user, motif=request.data.get('motif', ''))
+        else:
+            obj.archive = True
+            if hasattr(obj, 'actif'):
+                obj.actif = False
+            obj.save()
+            self._journaliser(obj, ReferentielJournal.Action.ARCHIVAGE,
+                              {'motif': request.data.get('motif', '')})
         return Response({'detail': 'Valeur archivée.', 'archive': True})
 
     @action(detail=True, methods=['post'])
@@ -230,7 +242,15 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
             )
         if not obj.archive:
             return Response({'detail': 'Valeur non archivée.'}, status=status.HTTP_400_BAD_REQUEST)
-        obj.reactiver(request.user, motif=request.data.get('motif', ''))
+        if hasattr(obj, 'reactiver'):
+            obj.reactiver(request.user, motif=request.data.get('motif', ''))
+        else:
+            obj.archive = False
+            if hasattr(obj, 'actif'):
+                obj.actif = True
+            obj.save()
+            self._journaliser(obj, ReferentielJournal.Action.REACTIVATION,
+                              {'motif': request.data.get('motif', '')})
         return Response({'detail': 'Valeur réactivée.', 'archive': False, 'actif': True})
 
 
@@ -347,6 +367,14 @@ class RefGeneriqueViewSet(ReferentielSocleViewSet):
     def get_serializer_class(self):
         return serializer_pour_ref(self.kwargs.get('slug') or self.slug)
 
+    def exporter(self, request):
+        from .echanges import exporter
+        return exporter(self, request)
+
+    def importer(self, request):
+        from .echanges import importer
+        return importer(self, request)
+
     def get_queryset(self):
         # La lecture des valeurs archivées reste possible (?archives=1) : la
         # base ne perd jamais une valeur utilisée par un dossier.
@@ -435,12 +463,9 @@ class TableauDeBordReferentielsView(APIView):
 
 
 class RefModuleOfficielViewSet(viewsets.ReadOnlyModelViewSet):
-    """Modules officiels des maquettes — lecture seule.
+    """Lecture historique des modules (gestion journalisée sous gestion-donnees).
 
-    Ces lignes proviennent de l'import du document « Formations et Modules
-    INJS » : les modifier à la main romprait la traçabilité, elles ne sont
-    donc jamais éditables par l'API. Les filtres `filiere`, `semestre` et
-    `formation` alimentent les sélecteurs dépendants du front.
+    Les filtres filière, semestre et formation servent les sélecteurs existants.
     """
 
     queryset = RefModuleOfficiel.objects.select_related('formation')
@@ -449,7 +474,7 @@ class RefModuleOfficielViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = RefPagination
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset().filter(archive=False)
         params = self.request.query_params
         if params.get('filiere'):
             qs = qs.filter(filiere_code=params['filiere'])
@@ -461,9 +486,9 @@ class RefModuleOfficielViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RefVolumeHoraireFormationViewSet(viewsets.ReadOnlyModelViewSet):
-    """Volumes horaires de modélisation — lecture seule."""
+    """Lecture historique des volumes de modélisation (CRUD dans gestion-donnees)."""
 
-    queryset = RefVolumeHoraireFormation.objects.select_related('formation')
+    queryset = RefVolumeHoraireFormation.objects.select_related('formation').filter(archive=False)
     serializer_class = RefVolumeHoraireFormationSerializer
     permission_classes = [ReferentielPermission]
     pagination_class = RefPagination

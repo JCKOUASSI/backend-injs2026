@@ -8,9 +8,8 @@ dur côté React.
 
 Règles de conception :
 * un référentiel = un modèle Django = une source de vérité (aucun doublon) ;
-* les référentiels historiques (formations, modules, salles…) restent gérés par
-  leurs écrans existants : ils sont déclarés ici en ``editable=False`` avec un
-  renvoi vers leur écran, jamais recréés ;
+* les modèles historiques sont réutilisés sans duplication ; trois plaquettes
+  de l'offre ont un CRUD de gestion distinct de leurs API historiques ;
 * la provenance (source documentaire + fiabilité) est exposée partout où le
   modèle la porte.
 """
@@ -316,14 +315,19 @@ REGISTRE = {
             'Statistiques).'
         ),
     ),
-    # ── Référentiels historiques : lecture seule ici, écran existant ───────
+    # ── Cycles historiques : même modèle, gestion dans le Hub ──────────────
     'formations': entree(
         slug='formations', libelle='Formations (cycles)',
         description='Cycles diplômants du référentiel — Licence et Master.',
         categorie=Categorie.OFFRE_FORMATION,
         modele='formations.RefFormation',
-        editable=False, route_api='/formations/ref/formations/',
-        route_ui='/formations', icone='bi-mortarboard-fill',
+        route_api='/formations/ref/formations/',
+        route_gestion='/referentiels/gestion-donnees/formations/',
+        champ_libelle='intitule',
+        champs=['type_diplome', 'domaine', 'mention', 'duree_annees',
+                'nb_semestres', 'nb_credites', 'perimetre', 'filiere_code', 'source'],
+        selecteurs=['filiere'],
+        icone='bi-mortarboard-fill',
         source='Formations et Modules INJS — §1',
     ),
     'niveaux': entree(
@@ -476,8 +480,13 @@ REGISTRE = {
             'de formation, par filière et par semestre.'
         ),
         categorie=Categorie.OFFRE_FORMATION, modele=RefModuleOfficiel,
-        editable=False, route_api='/referentiels/modules-officiels/',
-        route_ui='/referentiels/gestion/modules-officiels', icone='bi-journal-text',
+        route_api='/referentiels/modules-officiels/',
+        route_gestion='/referentiels/gestion-donnees/modules-officiels/',
+        champ_code='libelle',
+        champs=['filiere_code', 'semestre', 'ordre', 'etat_ventilation'],
+        selecteurs=['formation'],
+        unicite_par=['formation', 'semestre'],
+        icone='bi-journal-text',
         source='Formations et Modules INJS',
     ),
     'volumes-modules': entree(
@@ -487,8 +496,13 @@ REGISTRE = {
             'Valeurs de modélisation, jamais réglementaires.'
         ),
         categorie=Categorie.OFFRE_FORMATION, modele=RefVolumeHoraireFormation,
-        editable=False, route_api='/referentiels/volumes-horaires/',
-        route_ui='/referentiels/gestion/volumes-modules', icone='bi-clock-history',
+        route_api='/referentiels/volumes-horaires/',
+        route_gestion='/referentiels/gestion-donnees/volumes-modules/',
+        champ_libelle='intitule_module', champ_code='intitule_module',
+        champs=['heures_cm', 'heures_td', 'heures_tp', 'heures_stage', 'heures_total'],
+        selecteurs=['formation'],
+        unicite_par='formation',
+        icone='bi-clock-history',
         source='Modéliser les volumes horaires — avertissement de la source',
     ),
 }

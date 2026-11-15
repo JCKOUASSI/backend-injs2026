@@ -85,9 +85,11 @@ class RegistreTests(TestCase):
                     continue
                 self.assertIn(route, ecrans | {None}, slug)
 
-    def test_modules_officiels_declare_en_lecture_seule(self):
+    def test_modules_officiels_gerables_sans_changer_la_lecture_historique(self):
         entree = REGISTRE['modules-officiels']
-        self.assertFalse(entree['editable'])
+        self.assertTrue(entree['editable'])
+        self.assertEqual(entree['route_api'], '/referentiels/modules-officiels/')
+        self.assertEqual(entree['route_gestion'], '/referentiels/gestion-donnees/modules-officiels/')
         self.assertEqual(modele_de(entree), RefModuleOfficiel)
 
 

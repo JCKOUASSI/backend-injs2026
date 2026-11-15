@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import api from '../../services/api'
+import { downloadFile } from '../../utils/downloadFile'
 import { useToast } from '../../context/ToastContext'
 import '../../styles/candidatures.css'
 import '../../styles/referentiels.css'
@@ -21,6 +22,7 @@ const LIBELLES_CHAMPS = {
   description: 'Description',
   actif: 'Actif',
   source_document: 'Source documentaire',
+  source: 'Source du cycle',
   fiabilite: 'Fiabilité',
   nom_complet: 'Dénomination complète',
   ordre: "Ordre d'affichage",
@@ -60,6 +62,17 @@ const LIBELLES_CHAMPS = {
   courante: 'Année courante',
   cloturee: 'Clôturée',
   date_cloture: 'Date de clôture',
+  type_diplome: 'Type de diplôme',
+  domaine: 'Domaine',
+  duree_annees: 'Durée (années)',
+  nb_semestres: 'Nombre de semestres',
+  nb_credites: 'Crédits ECTS',
+  perimetre: 'Périmètre',
+  filiere_code: 'Code filière',
+  filiere: 'Filière',
+  semestre: 'Semestre',
+  heures_cm: 'Heures CM', heures_td: 'Heures TD', heures_tp: 'Heures TP',
+  heures_stage: 'Heures stage', heures_total: 'Total heures',
 }
 
 /** Ordre de lecture imposé aux tables importées, du plus signifiant au détail. */
@@ -159,6 +172,7 @@ export default function ReferentielGenerique() {
   const [form, setForm] = useState({})
   const [erreursForm, setErreursForm] = useState({})
   const [envoi, setEnvoi] = useState(false)
+  const [echange, setEchange] = useState(false)
   const [detail, setDetail] = useState(null)
   const [suppression, setSuppression] = useState(null)
   const [lectureSeule, setLectureSeule] = useState(false)
@@ -179,6 +193,7 @@ export default function ReferentielGenerique() {
   const champsChoix = entree?.champs_choix || {}
   const champsNumeriques = entree?.champs_numeriques || []
   const champsDates = entree?.champs_dates || []
+  const cheminGestion = entree?.route_gestion || `/referentiels/${slug}/`
   // Certains modèles tracent leur provenance sans porter de description
   // (sites, bâtiments, salles, vagues) : ne pas afficher un champ mort.
   const aUneDescription = entree ? entree.a_une_description !== false : true
@@ -235,7 +250,7 @@ export default function ReferentielGenerique() {
       //     sélecteurs (dont le chemin est fourni par le registre).
       const routes = courante.selecteurs_routes || {}
       const [liste, ...paires] = await Promise.all([
-        api.get(`/referentiels/${slug}/`, { params: { archives: 1, page_size: 1000 } }),
+        api.get(cheminGestion, { params: { archives: 1, page_size: 1000 } }),
         ...(courante.selecteurs || []).map(async (fk) => {
           const route = routes[fk]?.route
           if (!route) return [fk, []]
@@ -254,7 +269,7 @@ export default function ReferentielGenerique() {
       setChargement(false)
       setRafraichissement(false)
     }
-  }, [slug, chargerCatalogue])
+  }, [slug, chargerCatalogue, cheminGestion])
 
   useEffect(() => {
     charger()
@@ -374,7 +389,7 @@ export default function ReferentielGenerique() {
       delete corps.fiabilite
       delete corps.source_document
     }
-    if (!provenanceSuivie || !aUneDescription) delete corps.description
+    if (!aUneDescription) delete corps.description
     champsDates.forEach((champ) => {
       if (corps[champ] === '') corps[champ] = null
     })
@@ -394,11 +409,11 @@ export default function ReferentielGenerique() {
     if (corps.ordre !== undefined && corps.ordre !== '') corps.ordre = Number(corps.ordre)
     try {
       if (modal.mode === 'creation') {
-        await api.post(`/referentiels/${slug}/`, corps)
+        await api.post(cheminGestion, corps)
         toast.success?.('Référentiel enregistré.')
       } else {
         delete corps.code
-        await api.patch(`/referentiels/${slug}/${modal.ligne.id}/`, corps)
+        await api.patch(`${cheminGestion}${modal.ligne.id}/`, corps)
         toast.success?.('Référentiel mis à jour.')
       }
       setModal(null)
@@ -424,7 +439,7 @@ export default function ReferentielGenerique() {
 
   const basculerStatut = async (ligne) => {
     try {
-      await api.patch(`/referentiels/${slug}/${ligne.id}/`, { actif: !ligne.actif })
+      await api.patch(`${cheminGestion}${ligne.id}/`, { actif: !ligne.actif })
       await charger({ silencieux: true })
     } catch {
       toast.error?.('Changement de statut impossible.')
@@ -440,11 +455,11 @@ export default function ReferentielGenerique() {
     setEnvoi(true)
     try {
       if (archivageSupporte) {
-        await api.post(`/referentiels/${slug}/${suppression.id}/archiver/`, {})
+        await api.post(`${cheminGestion}${suppression.id}/archiver/`, {})
         toast.success?.(
-          `« ${suppression.libelle} » supprimé — consultable via le filtre « Archivés ».`)
+          `« ${suppression.libelle} » ${suppression.action === 'archiver' ? 'archivé' : 'supprimé (archivé)'} — consultable via le filtre « Archivés ».`)
       } else {
-        await api.patch(`/referentiels/${slug}/${suppression.id}/`, { actif: false })
+        await api.patch(`${cheminGestion}${suppression.id}/`, { actif: false })
         toast.success?.(
           `« ${suppression.libelle} » supprimé — récupérable via le filtre « Inactifs ».`)
       }
@@ -459,10 +474,45 @@ export default function ReferentielGenerique() {
 
   const reactiver = async (ligne) => {
     try {
-      await api.post(`/referentiels/${slug}/${ligne.id}/reactiver/`, {})
+      await api.post(`${cheminGestion}${ligne.id}/reactiver/`, {})
       await charger({ silencieux: true })
     } catch {
       toast.error?.('Réactivation impossible.')
+    }
+  }
+
+  const exporter = async (format) => {
+    setEchange(true)
+    try {
+      const params = new URLSearchParams({ export: format })
+      if (filtreActif === 'archives') { params.set('archives', '1'); params.set('archive', '1') }
+      if (filtreActif === 'inactifs') params.set('actif', '0')
+      if (filtreActif === 'tous') params.set('archives', '1')
+      const { blob, fileName } = await api.getBlob(`${cheminGestion}export/?${params}`)
+      downloadFile(blob, fileName || `${slug}.${format}`)
+      toast.success?.(`Export ${format.toUpperCase()} téléchargé.`)
+    } catch (e) {
+      toast.error?.(e.response?.data?.detail || e.message || 'Export impossible.')
+    } finally {
+      setEchange(false)
+    }
+  }
+
+  const importer = async (event) => {
+    const fichier = event.target.files?.[0]
+    if (!fichier) return
+    event.target.value = ''
+    setEchange(true)
+    try {
+      const corps = new FormData()
+      corps.append('fichier', fichier)
+      const res = await api.post(`${cheminGestion}import/`, corps)
+      toast.success?.(`Import terminé : ${res.data.crees} créé(s), ${res.data.modifies} modifié(s).`)
+      await charger({ silencieux: true })
+    } catch (e) {
+      toast.error?.(e.response?.data?.detail || 'Import impossible : vérifiez les colonnes du fichier.')
+    } finally {
+      setEchange(false)
     }
   }
 
@@ -503,7 +553,7 @@ export default function ReferentielGenerique() {
 
   const optionsPour = (fk) => {
     const dependDe = DEPENDANCES[fk]
-    const liste = options[fk] || []
+    const liste = (options[fk] || []).filter((o) => !o.archive || String(o.id) === String(form[fk]))
     if (dependDe && form[dependDe]) {
       return liste.filter((o) => String(o[dependDe]) === String(form[dependDe]))
     }
@@ -544,6 +594,13 @@ export default function ReferentielGenerique() {
               aria-label={`${ligne.actif ? 'Désactiver' : 'Activer'} ${ligne.libelle}`}
             >
               <i className={`bi ${ligne.actif ? 'bi-toggle-on' : 'bi-toggle-off'}`} aria-hidden="true"></i>
+            </button>
+          )}
+          {archivageSupporte && entree.route_gestion && !ligne.archive && (
+            <button type="button" className="ref-action" title="Archiver"
+              aria-label={`Archiver ${ligne.libelle}`}
+              onClick={() => setSuppression({ ...ligne, action: 'archiver' })}>
+              <i className="bi bi-archive" aria-hidden="true"></i>
             </button>
           )}
           {archivageSupporte && ligne.archive ? (
@@ -641,6 +698,25 @@ export default function ReferentielGenerique() {
             <span className="cand-count-pill">
               {lignesFiltrees.length} / {lignes.length}
             </span>
+            {entree.route_gestion && (
+              <div className="ref-echanges" aria-label="Importer et exporter ce référentiel">
+                <label className="cand-btn-fantome ref-import" aria-disabled={echange}>
+                  <i className="bi bi-upload" aria-hidden="true"></i> Importer CSV / Excel
+                  <input type="file" accept=".csv,.xlsx" aria-label="Importer un fichier CSV ou Excel"
+                    disabled={echange} onChange={importer} />
+                </label>
+                {[
+                  ['docx', 'Word'], ['xlsx', 'Excel'], ['csv', 'CSV'], ['pdf', 'PDF'],
+                ].map(([format, libelle]) => (
+                  <button key={format} type="button" className={`ref-export ref-export--${format}`}
+                    disabled={echange} onClick={() => exporter(format)}
+                    aria-label={`Exporter ${entree.libelle} en ${libelle}`}>
+                    <i className={`bi bi-file-earmark-${format === 'xlsx' ? 'excel' : format === 'docx' ? 'word' : format}`} aria-hidden="true"></i>
+                    {libelle}
+                  </button>
+                ))}
+              </div>
+            )}
             {lectureSeule ? (
               <span className="ref-pastille ref-pastille--neutre">
                 <i className="bi bi-lock" aria-hidden="true"></i>
@@ -664,6 +740,14 @@ export default function ReferentielGenerique() {
                 modifiables ici : une correction passe par la source puis par un
                 nouvel import, afin de préserver la traçabilité.
               </span>
+            </p>
+          )}
+          {entree.route_gestion && (
+            <p className="ref-note-texte">
+              Pour importer, utilisez l’export CSV ou Excel comme modèle : une ligne sans identifiant
+              crée une valeur, une ligne avec « id » la met à jour. Les rattachements « formation »
+              ou « filiere » utilisent l’identifiant du référentiel correspondant. L’import est annulé
+              en entier si une ligne comporte une erreur. « Supprimer » archive sans effacer l’historique.
             </p>
           )}
           <div className="ref-filtres">
@@ -1016,6 +1100,8 @@ export default function ReferentielGenerique() {
                     placeholder="Document officiel attestant la valeur"
                   />
                 </div>
+                </>
+                )}
                 {aUneDescription && (
                 <div className="cand-champ ref-champ-large">
                   <label className="cand-etiquette" htmlFor="ref-description">Description</label>
@@ -1027,8 +1113,6 @@ export default function ReferentielGenerique() {
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                   />
                 </div>
-                )}
-                </>
                 )}
               </div>
 
@@ -1067,7 +1151,7 @@ export default function ReferentielGenerique() {
         <div className="ref-modale-voile" role="presentation">
           <div className="ref-modale ref-modale--etroite" role="alertdialog" aria-modal="true">
             <header className="ref-modale-head">
-              <h2 className="ref-modale-titre">Supprimer cette valeur ?</h2>
+              <h2 className="ref-modale-titre">{suppression.action === 'archiver' ? 'Archiver cette valeur ?' : 'Supprimer cette valeur ?'}</h2>
             </header>
             <div className="ref-modale-corps">
               <p>
@@ -1093,7 +1177,7 @@ export default function ReferentielGenerique() {
                   Annuler
                 </button>
                 <button type="button" className="ref-btn-danger" onClick={confirmerSuppression} disabled={envoi}>
-                  {envoi ? 'Suppression…' : 'Supprimer'}
+                  {envoi ? 'Traitement…' : suppression.action === 'archiver' ? 'Archiver' : 'Supprimer'}
                 </button>
               </div>
             </footer>

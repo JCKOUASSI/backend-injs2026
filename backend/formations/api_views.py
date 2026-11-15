@@ -3419,7 +3419,7 @@ def _ref_formation_nettoye(data, obj=None):
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_formation_list(request):
     if request.method == 'GET':
-        data = [_ref_formation_payload(o) for o in RefFormation.objects.all()]
+        data = [_ref_formation_payload(o) for o in RefFormation.objects.filter(archive=False)]
         return Response(data)
     payload, err = _ref_formation_nettoye(request.data)
     if err:

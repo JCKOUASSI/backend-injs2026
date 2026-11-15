@@ -52,4 +52,23 @@ for _slug, _entree in REGISTRE.items():
             name=f'ref-{_slug}-{_action}',
         ))
 
+# CRUD et échanges du Hub, sans modifier les endpoints de lecture historiques
+# (modules-officiels / volumes-horaires / formations/ref/formations).
+for _slug in ('formations', 'modules-officiels', 'volumes-modules'):
+    _prefix = f'gestion-donnees/{_slug}/'
+    urlpatterns.extend([
+        path(_prefix, views.RefGeneriqueViewSet.as_view(
+            {'get': 'list', 'post': 'create'}, slug=_slug), name=f'gestion-{_slug}-liste'),
+        path(_prefix + 'export/', views.RefGeneriqueViewSet.as_view(
+            {'get': 'exporter'}, slug=_slug), name=f'gestion-{_slug}-export'),
+        path(_prefix + 'import/', views.RefGeneriqueViewSet.as_view(
+            {'post': 'importer'}, slug=_slug), name=f'gestion-{_slug}-import'),
+        re_path(rf'^{_prefix}(?P<pk>[0-9]+)/$', views.RefGeneriqueViewSet.as_view(
+            {'get': 'retrieve', 'patch': 'partial_update'}, slug=_slug), name=f'gestion-{_slug}-detail'),
+        *[re_path(rf'^{_prefix}(?P<pk>[0-9]+)/{action}/$',
+                  views.RefGeneriqueViewSet.as_view({'post': action}, slug=_slug),
+                  name=f'gestion-{_slug}-{action}')
+          for action in ('archiver', 'reactiver')],
+    ])
+
 urlpatterns.append(path('', include(router.urls)))
