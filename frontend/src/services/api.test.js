@@ -271,7 +271,7 @@ describe('services/api.js', () => {
       installFetch(async (url, init) => {
         if (url === REFRESH_URL) return fetchResponse({ access: 'new' })
         if (url.includes('/exports/'))
-          return init.headers.Authorization === 'Bearer new'
+          return init.headers.Authorization === 'Bearer new' && init.headers['X-JWT-Access'] === 'new'
             ? fetchResponse(new Blob(['x'], { type: 'text/csv' }), { status: 200, headers: { 'Content-Type': 'text/csv' } })
             : fetchResponse({}, { status: 401 })
         return fetchResponse({})

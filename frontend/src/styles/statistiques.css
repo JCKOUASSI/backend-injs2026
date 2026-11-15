@@ -86,3 +86,26 @@
   .stats-kpi, .stats-card { animation:none; transition:none; }
   .stats-tab, .stats-sidenav > button { transition:none; }
 }
+
+/* Actions d'export : contraste, affordance et focus clavier cohérents. */
+.export-format-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .25rem;
+  min-width: 88px;
+  padding: .42rem .8rem;
+  border: 1px solid transparent;
+  border-radius: .7rem;
+  font-size: .8rem;
+  font-weight: 700;
+  box-shadow: 0 3px 10px rgba(15, 35, 70, .09);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.export-format-btn--pdf { color: #9d2034; background: #fff0f1; border-color: #f5ccd2; }
+.export-format-btn--xlsx { color: #11633d; background: #eaf8f0; border-color: #bce4ce; }
+.export-format-btn--docx { color: #174a91; background: #eaf2ff; border-color: #c6d9fa; }
+.export-format-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(15, 35, 70, .16); }
+.export-format-btn:focus-visible { outline: 3px solid #1d4fbf; outline-offset: 2px; }
+.export-format-btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { .export-format-btn { transition: none; } }

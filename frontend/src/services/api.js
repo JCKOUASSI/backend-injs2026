@@ -167,6 +167,7 @@ const request = async (method, path, body, config = {}) => {
     try {
       const newToken = await refreshAccessToken()
       init.headers.Authorization = `Bearer ${newToken}`
+      init.headers['X-JWT-Access'] = newToken
       res = await fetch(url, init)
     } catch {
       _onSessionExpired()
@@ -184,7 +185,7 @@ const getBlob = async (path) => {
   if (res.status === 401) {
     try {
       const newToken = await refreshAccessToken()
-      res = await fetch(url, { method: 'GET', headers: { ...headers, Authorization: `Bearer ${newToken}` } })
+      res = await fetch(url, { method: 'GET', headers: { ...headers, Authorization: `Bearer ${newToken}`, 'X-JWT-Access': newToken } })
     } catch {
       _onSessionExpired()
       throw new Error('Session expired')
