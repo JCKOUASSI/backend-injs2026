@@ -30,7 +30,7 @@ from django.core.management.base import BaseCommand
 from formations.models import Formateur, RefFormation
 from referentiels.models import RefGradeEnseignant
 from scolarite.models import (
-    AffectationPedagogique, AnneeAcademique, ECUE, Maquette,
+    AffectationPedagogique, AnneeAcademique, ECUE, Groupe, Maquette,
 )
 
 MARQUE = '[Exemple]'
@@ -212,11 +212,29 @@ class Command(BaseCommand):
             Maquette.objects.filter(statut=Maquette.Statut.ACTIVE, annee_academique=annee)
             .select_related('ref_formation', 'niveau').order_by('ref_formation_id', 'niveau__ordre')
         )
-        if not dry_run:
-            AffectationPedagogique.objects.filter(
+        # Affectations d'exemple déjà présentes, indexées par ECUE : la
+        # régénération est NON destructive. L'ancien « tout supprimer puis
+        # recréer » est devenu impossible dès que des évaluations référencent
+        # ces affectations (FK PROTECT) — on met donc à jour en place
+        # (rattachement au groupe) et on ne crée que les manquantes.
+        existantes = {
+            ap.ecue_id: ap
+            for ap in AffectationPedagogique.objects.filter(
                 annee_academique=annee,
                 observations__startswith=MARQUE,
-            ).delete()
+            )
+        }
+
+        # Groupes pédagogiques actifs par (formation, niveau) : chaque
+        # affectation est rattachée à un groupe réel de son périmètre
+        # (rotation déterministe). Sans ce rattachement, le tableau de bord
+        # signalait à tort « 130 groupes sans affectation pédagogique »
+        # alors que 779 affectations existaient, simplement non reliées.
+        groupes_par_cle = {}
+        for g in (Groupe.objects.filter(annee_academique=annee, actif=True)
+                  .order_by('nom', 'id')):
+            groupes_par_cle.setdefault(
+                (g.ref_formation_id, g.niveau_id), []).append(g)
 
         a_creer = []
         ecue_total = 0
@@ -229,12 +247,15 @@ class Command(BaseCommand):
                 .select_related('ue__semestre', 'ue')
                 .order_by('ue__semestre_id', 'ue__ordre', 'ordre')
             )
+            groupes = groupes_par_cle.get(
+                (maquette.ref_formation_id, maquette.niveau_id)) or []
             for index, ecue in enumerate(ecues):
                 ecue_total += 1
                 a_creer.append(AffectationPedagogique(
                     annee_academique=annee,
                     ref_formation=maquette.ref_formation,
                     niveau=maquette.niveau,
+                    groupe=groupes[index % len(groupes)] if groupes else None,
                     semestre=ecue.ue.semestre,
                     ue=ecue.ue,
                     ecue=ecue,
@@ -245,9 +266,41 @@ class Command(BaseCommand):
                     observations=OBSERVATION_AFFECTATION,
                 ))
 
-        if not dry_run:
-            AffectationPedagogique.objects.bulk_create(a_creer, batch_size=500)
-        return len(a_creer), ecue_total
+        if dry_run:
+            return len(a_creer), ecue_total
+
+        nouvellement_creees = []
+        a_mettre_a_jour = []
+        ecues_vues = set()
+        for souhaitee in a_creer:
+            ecues_vues.add(souhaitee.ecue_id)
+            actuelle = existantes.get(souhaitee.ecue_id)
+            if actuelle is None:
+                nouvellement_creees.append(souhaitee)
+            elif (actuelle.groupe_id != souhaitee.groupe_id
+                  or actuelle.enseignant_id != souhaitee.enseignant_id):
+                actuelle.groupe = souhaitee.groupe
+                actuelle.enseignant = souhaitee.enseignant
+                a_mettre_a_jour.append(actuelle)
+        AffectationPedagogique.objects.bulk_create(
+            nouvellement_creees, batch_size=500)
+        if a_mettre_a_jour:
+            AffectationPedagogique.objects.bulk_update(
+                a_mettre_a_jour, ['groupe', 'enseignant'], batch_size=500)
+
+        # Obsolètes (ECUE hors maquettes actives) : suppression limitée à
+        # celles qu'aucune évaluation ne référence (PROTECT).
+        obsoletes = [ap for eid, ap in existantes.items()
+                     if eid not in ecues_vues]
+        if obsoletes:
+            from evaluations.models import Evaluation as _Eval
+            referencees = set(_Eval.objects.filter(
+                affectation_pedagogique__in=obsoletes,
+            ).values_list('affectation_pedagogique_id', flat=True))
+            AffectationPedagogique.objects.filter(
+                pk__in=[ap.pk for ap in obsoletes if ap.pk not in referencees],
+            ).delete()
+        return len(nouvellement_creees) + len(a_mettre_a_jour), ecue_total
 
     # ── Point d'entrée ─────────────────────────────────────────────────────
     def handle(self, *args, **options):

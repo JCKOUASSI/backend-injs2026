@@ -161,6 +161,7 @@ export default function StagesHub({ ongletInitial = 'conventions' }) {
       icone="bi-briefcase"
       introduction="Conventions de stage des étudiants, organismes partenaires, tuteurs et évaluations — du dépôt de la convention à la validation par le jury."
       statsEndpoint="/stages/stats/"
+      classePage="hub-sombre"
       tuiles={tuiles}
       pastilles={pastilles}
       onglets={ONGLETS}

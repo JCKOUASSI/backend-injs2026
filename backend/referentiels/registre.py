@@ -115,6 +115,13 @@ def entree(**kwargs):
     # (ex. le nom d'un bâtiment ou d'une salle est unique PAR SITE, pas
     # globalement). Vide = unicité globale du libellé.
     kwargs.setdefault('unicite_par', '')
+    # Filtres exacts exposés en query string par la liste générique
+    # (ex. ?filiere=EM&semestre=S1) : {paramètre: champ du modèle}.
+    kwargs.setdefault('filtres_liste', {})
+    # Clé d'upsert utilisée par l'import Excel/CSV (ex. ['formation',
+    # 'semestre', 'libelle']). Vide = code si le référentiel en a un,
+    # sinon libellé.
+    kwargs.setdefault('cle_import', [])
     # Drapeau booléen qui ne peut être vrai que sur une seule ligne (ex.
     # l'année académique courante) : le passer à vrai sur l'écran générique
     # bascule les autres lignes à faux, comme le workflow métier, au lieu
@@ -322,9 +329,23 @@ REGISTRE = {
         description='Cycles diplômants du référentiel — Licence et Master.',
         categorie=Categorie.OFFRE_FORMATION,
         modele='formations.RefFormation',
-        editable=False, route_api='/formations/ref/formations/',
-        route_ui='/formations', icone='bi-mortarboard-fill',
+        champ_libelle='intitule',
+        champ_code='code',
+        champs=[
+            'type_diplome', 'domaine', 'mention',
+            'duree_annees', 'nb_semestres', 'nb_credites',
+        ],
+        selecteurs=['filiere'],
+        cle_import=['intitule'],
+        icone='bi-mortarboard-fill',
         source='Formations et Modules INJS — §1',
+        avertissement=(
+            'La qualification officielle F01–F08 (périmètre, code filière, '
+            'source) est décidée par la commande qualifier_referentiel_injs_l6 '
+            'd’après la source métier : elle n’est pas saisissable ici. '
+            'Archiver un cycle le masque des nouvelles opérations sans toucher '
+            'aux maquettes, groupes et séances qui s’y appuient.'
+        ),
     ),
     'niveaux': entree(
         slug='niveaux', libelle='Niveaux',
@@ -476,9 +497,27 @@ REGISTRE = {
             'de formation, par filière et par semestre.'
         ),
         categorie=Categorie.OFFRE_FORMATION, modele=RefModuleOfficiel,
-        editable=False, route_api='/referentiels/modules-officiels/',
-        route_ui='/referentiels/gestion/modules-officiels', icone='bi-journal-text',
+        champ_libelle='libelle',
+        champ_code='libelle',  # pas de colonne code : le libellé en tient lieu
+        champs=['filiere_code', 'semestre', 'ordre', 'etat_ventilation'],
+        selecteurs=['formation'],
+        unicite_par='formation',
+        cle_import=['formation', 'semestre', 'libelle'],
+        filtres_liste={
+            'filiere': 'filiere_code',
+            'semestre': 'semestre',
+            'formation': 'formation_id',
+        },
+        icone='bi-journal-text',
         source='Formations et Modules INJS',
+        avertissement=(
+            'Nomenclature importée du document « Formations et Modules INJS ». '
+            'Le semestre n’est renseigné que lorsque la source le documente : '
+            'un semestre vide n’est pas une lacune de saisie mais l’état réel '
+            'de la source. Une correction passe de préférence par la source '
+            'puis par un import ; la saisie directe reste possible pour les '
+            'écarts constatés, avec fiabilité mise à jour en conséquence.'
+        ),
     ),
     'volumes-modules': entree(
         slug='volumes-modules', libelle='Volumes horaires (modélisation)',
@@ -487,9 +526,21 @@ REGISTRE = {
             'Valeurs de modélisation, jamais réglementaires.'
         ),
         categorie=Categorie.OFFRE_FORMATION, modele=RefVolumeHoraireFormation,
-        editable=False, route_api='/referentiels/volumes-horaires/',
-        route_ui='/referentiels/gestion/volumes-modules', icone='bi-clock-history',
+        champ_libelle='intitule_module',
+        champ_code='intitule_module',  # pas de colonne code
+        champs=['heures_cm', 'heures_td', 'heures_tp', 'heures_stage', 'heures_total'],
+        selecteurs=['formation'],
+        unicite_par='formation',
+        cle_import=['formation', 'intitule_module'],
+        filtres_liste={'formation': 'formation_id'},
+        icone='bi-clock-history',
         source='Modéliser les volumes horaires — avertissement de la source',
+        avertissement=(
+            'Valeurs de cadrage établies comme propositions par la source : '
+            'elles restent en fiabilité Modélisé tant que la Direction des '
+            'études ne les valide pas. Elles ne valent jamais règle '
+            'réglementaire.'
+        ),
     ),
 }
 

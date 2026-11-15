@@ -1,0 +1,290 @@
+/* ==========================================================================
+   MODULES PREMIUM 2026 — Couche de consolidation finale des pages de modules
+   --------------------------------------------------------------------------
+   Dernière feuille chargée par main.jsx (après designSystem.css). Elle ne
+   contient AUCUNE logique métier : elle unifie le niveau de finition visuelle
+   des ~40 pages de modules de l'application, qui coexistent en trois familles :
+
+     A. Famille claire `.cand-*`  (ModuleHub, référentiels, participants…)
+     B. Famille sombre « Signature INJS » (hubs Jurys/Diplômation/Administration/
+        Personnel/Évaluations/Finances + archives + GET-INJS App + Présences)
+     C. En-têtes « Exploitation » des sous-pages (imp-*, edt-exploit-*)
+
+   Objectifs : même rythme (rayons 16–20 px, ombre portée identitaire,
+   halo décoratif, pastille d'œilleton), mêmes interactions (survol, focus-visible,
+   cascade des KPI),
+   même exigence d'accessibilité (contour de focus, prefers-reduced-motion).
+
+   Règles :
+   - Aucun sélecteur métier, aucune couleur inventée : uniquement les tokens
+     --injs-* de designSystem.css.
+   - Aucun impact sur les tests : uniquement des propriétés de rendu.
+   - Les surcharges scopées (.hub-jurys, .hub-diplomation…) gardent leur
+     identité propre ; elles restent plus spécifiques que les règles génériques.
+   ========================================================================== */
+
+/* ── 0. Jetons partagés ─────────────────────────────────────────────────── */
+:root {
+  --module-rayon: 18px;
+  --module-rayon-petit: 15px;
+  --module-ombre: 0 10px 30px -5px rgba(7, 27, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+  --module-ombre-forte: 0 16px 34px -18px rgba(7, 27, 58, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  --module-halo: radial-gradient(620px 240px at 92% -35%, rgba(53, 189, 245, 0.22), transparent 60%);
+  --module-transition: 0.2s ease;
+  /* RÉPARATION — `--injs-gold` était référencée sans fallback par
+     administration.css, personnel.css et archives.css mais définie nulle
+     part : la déclaration `background` entière devenait invalide au moment
+     du calcul et les héros sombres perdaient leur dégradé (texte blanc sur
+     fond clair). Jeton ajouté ici, seul endroit chargé après ces feuilles. */
+  --injs-gold: #F2B33D;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   A. FAMILLE CLAIRE `.cand-*` — finition premium
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Bandeau : halos d'aurore en filigrane (comme les pages px-*), contenu au
+   premier plan ; sans `overflow:hidden`, le halo déborderait du cadre. */
+.cand-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    var(--module-halo),
+    linear-gradient(180deg, #FFFFFF 0%, #FDFEFF 100%);
+  border-radius: var(--module-rayon);
+  box-shadow: var(--module-ombre);
+}
+
+.cand-hero::after {
+  content: '';
+  position: absolute;
+  right: -70px;
+  top: -110px;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(18, 103, 214, 0.12), rgba(18, 103, 214, 0));
+  pointer-events: none;
+}
+
+.cand-hero > * { position: relative; z-index: 1; }
+
+/* Pastille d'icône : dégradé identitaire navy → bleu logo, liseré lumineux. */
+.cand-hero-icone {
+  background: linear-gradient(135deg, var(--injs-navy) 0%, var(--injs-blue) 100%);
+  box-shadow: 0 12px 24px -10px rgba(7, 27, 58, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* Panneaux : même ombre que le bandeau, rayon aligné sur les KPI. */
+.cand-panel { border-radius: var(--module-rayon); box-shadow: var(--module-ombre); }
+
+/* Tuiles KPI : transition unifiée et léger liseré froid au repos. */
+.cand-kpi {
+  border-radius: var(--module-rayon-petit);
+  border-color: #E6ECF4;
+  transition: transform var(--module-transition), box-shadow var(--module-transition), border-color var(--module-transition);
+}
+.cand-kpi:hover { border-color: #D5E3F2; }
+
+/* ── Tons d'icônes KPI MANQUANTS (défaut réel : pastilles indigo/cyan/violet/
+      teal s'affichaient sans fond — les hubs Administration et Stages les
+      utilisent). ── */
+.cand-kpi-icon.is-indigo { background: #EEF0FF; color: #4338CA; }
+.cand-kpi-icon.is-cyan   { background: #ECFAFD; color: #0E7490; }
+.cand-kpi-icon.is-violet { background: #F5F0FF; color: #7C3AED; }
+.cand-kpi-icon.is-teal   { background: var(--injs-teal-soft); color: var(--injs-teal); }
+
+/* Tableau : en-tête légèrement plus contrasté, lignes respirantes. */
+.cand-table thead th { letter-spacing: 0.04em; }
+
+/* État vide : même sobriété que les panneaux, icône en filigrane teinté. */
+.cand-vide-icone { transition: transform var(--module-transition); }
+
+/* Onglets : ombre interne au conteneur actif, liseré de focus unifié. */
+.hub-onglet.is-active {
+  box-shadow: 0 10px 22px -12px rgba(15, 45, 90, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   B. FAMILLE SOMBRE « SIGNATURE INJS » — géométrie unifiée
+   (Présences QR `.pqr-*`, Finances `.finance-*`, Archives (déjà 18px),
+   GET-INJS App (déjà 20px) : même rayon, même ombre, mêmes KPI.)
+   ════════════════════════════════════════════════════════════════════════ */
+
+.pqr-hero {
+  border-radius: var(--module-rayon);
+  padding: 1.35rem 1.6rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--module-ombre-forte);
+}
+.pqr-hero-badge { letter-spacing: 0.12em; }
+.pqr-kpi {
+  border-radius: var(--module-rayon-petit);
+  box-shadow: 0 6px 18px -10px rgba(7, 27, 58, 0.18);
+  transition: transform var(--module-transition), box-shadow var(--module-transition);
+}
+.pqr-kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -12px rgba(7, 27, 58, 0.3);
+}
+.pqr-module { border-radius: var(--module-rayon-petit); }
+.pqr-module:hover { transform: translateY(-2px); }
+.pqr-module { transition: border-color 0.15s ease, box-shadow 0.15s ease, transform var(--module-transition); }
+
+.finance-hero {
+  border-radius: var(--module-rayon);
+  padding: 1.35rem 1.6rem;
+  box-shadow: var(--module-ombre-forte);
+}
+.finance-hero-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.1));
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  display: grid;
+  place-items: center;
+  font-size: 1.35rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.finance-kpi-card { border-radius: var(--module-rayon-petit); }
+.finance-kpi-card:hover { transform: translateY(-2px); }
+
+/* ── Variante « hub sombre » partagée — pour les modules vitrine sans feuille
+      dédiée (ex. Stages). Même grammaire que Administration/Personnel :
+      navy désaturé dégradé + halo cyan + filet doré en bas. ── */
+.hub-sombre .cand-hero {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  border: none;
+  border-radius: var(--module-rayon);
+  padding: 1.35rem 1.6rem;
+  background:
+    radial-gradient(560px 200px at 92% -40%, rgba(53, 189, 245, 0.26), transparent 60%),
+    linear-gradient(118deg, #0A1B36 0%, #16295C 52%, #283A87 82%, #17457E 100%);
+  box-shadow: var(--module-ombre-forte);
+}
+.hub-sombre .cand-hero::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
+  width: auto;
+  height: 3px;
+  border-radius: 0;
+  background: linear-gradient(90deg, var(--injs-gold, #F59E0B) 0 18%, transparent 18%),
+              linear-gradient(90deg, #F59E0B, #38BDF8, #283A87);
+  opacity: 0.85;
+  pointer-events: none;
+}
+.hub-sombre .cand-hero-identite, .hub-sombre .cand-hero-actions { position: relative; z-index: 1; }
+.hub-sombre .cand-hero-title { color: #fff; }
+.hub-sombre .cand-hero-sub { color: #C7D8F8; max-width: 78ch; }
+.hub-sombre .cand-hero-badge {
+  background: rgba(245, 158, 11, 0.18);
+  color: #FDE68A;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+}
+.hub-sombre .cand-hero-icone {
+  background: rgba(255, 255, 255, 0.14);
+  color: #7DD3FC;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(4px);
+  box-shadow: none;
+}
+.hub-sombre .hub-pastille { border-radius: 999px; font-weight: 700; }
+.hub-sombre .hub-pastille--primary {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.hub-sombre .hub-pastille--neutre {
+  background: rgba(255, 255, 255, 0.08);
+  color: #DBEAFE;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+@keyframes hubSombreFadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hub-sombre .cand-kpi {
+  border-radius: var(--module-rayon-petit);
+  border: 1px solid #E6EDF5;
+  background: #fff;
+  box-shadow: 0 6px 18px -10px rgba(7, 27, 58, 0.18);
+  animation: hubSombreFadeUp 0.5s ease-out both;
+  transition: transform var(--module-transition), box-shadow var(--module-transition);
+}
+.hub-sombre .cand-kpi:nth-child(2) { animation-delay: 0.06s; }
+.hub-sombre .cand-kpi:nth-child(3) { animation-delay: 0.12s; }
+.hub-sombre .cand-kpi:nth-child(4) { animation-delay: 0.18s; }
+.hub-sombre .cand-kpi:nth-child(5) { animation-delay: 0.24s; }
+.hub-sombre .cand-kpi:hover { transform: translateY(-3px); box-shadow: 0 14px 26px -12px rgba(7, 27, 58, 0.3); }
+.hub-sombre .cand-kpi-value { color: var(--injs-navy); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   C. EN-TÊTES « EXPLOITATION » DES SOUS-PAGES (importer/exporter, EDT)
+   — même grammaire que les autres modules : carte blanche, halo, filet.
+   ════════════════════════════════════════════════════════════════════════ */
+
+.getinjs.imp-page .imp-entete,
+.edt-page .edt-exploit-entete {
+  position: relative;
+  overflow: hidden;
+  background:
+    var(--module-halo),
+    #FFFFFF;
+  border: 1px solid #E9ECF2;
+  border-radius: var(--module-rayon);
+  box-shadow: var(--module-ombre);
+  padding: 1.35rem 1.6rem;
+  margin-bottom: 1.4rem;
+  align-items: center;
+}
+.getinjs.imp-page .imp-entete > *,
+.edt-page .edt-exploit-entete > * { position: relative; z-index: 1; }
+
+/* Titres « Exploitation » : sortie du Georgia serif hérité — la référence
+   institutionnelle est la sans Inter (designSystem.css). */
+.getinjs.imp-page .imp-titre,
+.edt-page .edt-exploit-titre {
+  font-family: var(--injs-font);
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+/* EDT : l'en-tête disparaît déjà à l'impression (.edt-no-print) ; on garde
+   simplement un fond neutre si jamais il est imprimé. */
+@media print {
+  .edt-page .edt-exploit-entete { box-shadow: none; border-color: #DDD; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   D. ACCESSIBILITÉ & MOUVEMENT — garde-fous transverses
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Contour de focus visible uniforme sur les pages de modules qui n'en
+   déclaraient pas (liens texte, boutons icônes, onglets, pastilles).
+   `.page-content` est le conteneur commun de toutes les routes du Layout. */
+.page-content :is(a, button, [role="tab"], select, input, textarea):focus-visible {
+  outline: 2px solid var(--injs-blue-royal);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect de la préférence utilisateur : aucune animation décorative si
+   l'utilisateur a demandé un affichage réduit (WCAG 2.3.3 / 2.2.2). */
+@media (prefers-reduced-motion: reduce) {
+  .page-content *,
+  .page-content *::before,
+  .page-content *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

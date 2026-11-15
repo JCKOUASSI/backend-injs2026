@@ -8354,6 +8354,66 @@
         }
       }
     },
+    "GET /api/referentiels/formations/": {
+      "parameters": [
+        "page",
+        "page_size"
+      ],
+      "request_keys": null,
+      "responses": {
+        "200": {
+          "count": null,
+          "next": null,
+          "previous": null,
+          "results": {
+            "[]": {
+              "actif": null,
+              "archive": null,
+              "code": null,
+              "date_activation": null,
+              "date_desactivation": null,
+              "description": null,
+              "domaine": null,
+              "duree_annees": null,
+              "filiere": null,
+              "filiere_libelle": null,
+              "id": null,
+              "libelle": null,
+              "mention": null,
+              "nb_credites": null,
+              "nb_semestres": null,
+              "type_diplome": null
+            }
+          }
+        }
+      }
+    },
+    "GET /api/referentiels/formations/{id}/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": null,
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "description": null,
+          "domaine": null,
+          "duree_annees": null,
+          "filiere": null,
+          "filiere_libelle": null,
+          "id": null,
+          "libelle": null,
+          "mention": null,
+          "nb_credites": null,
+          "nb_semestres": null,
+          "type_diplome": null
+        }
+      }
+    },
     "GET /api/referentiels/grades-enseignant/": {
       "parameters": [
         "page",
@@ -8574,13 +8634,20 @@
           "previous": null,
           "results": {
             "[]": {
+              "actif": null,
+              "archive": null,
+              "code": null,
+              "cree_le": null,
+              "date_activation": null,
+              "date_desactivation": null,
               "etat_ventilation": null,
               "fiabilite": null,
               "filiere_code": null,
               "formation": null,
-              "formation_intitule": null,
+              "formation_libelle": null,
               "id": null,
               "libelle": null,
+              "modifie_le": null,
               "ordre": null,
               "semestre": null,
               "source_document": null
@@ -8596,13 +8663,20 @@
       "request_keys": null,
       "responses": {
         "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
           "etat_ventilation": null,
           "fiabilite": null,
           "filiere_code": null,
           "formation": null,
-          "formation_intitule": null,
+          "formation_libelle": null,
           "id": null,
           "libelle": null,
+          "modifie_le": null,
           "ordre": null,
           "semestre": null,
           "source_document": null
@@ -9455,16 +9529,23 @@
           "previous": null,
           "results": {
             "[]": {
+              "actif": null,
+              "archive": null,
+              "code": null,
+              "cree_le": null,
+              "date_activation": null,
+              "date_desactivation": null,
               "fiabilite": null,
               "formation": null,
-              "formation_intitule": null,
+              "formation_libelle": null,
               "heures_cm": null,
               "heures_stage": null,
               "heures_td": null,
               "heures_total": null,
               "heures_tp": null,
               "id": null,
-              "intitule_module": null,
+              "libelle": null,
+              "modifie_le": null,
               "source_document": null
             }
           }
@@ -9478,18 +9559,98 @@
       "request_keys": null,
       "responses": {
         "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
           "fiabilite": null,
           "formation": null,
-          "formation_intitule": null,
+          "formation_libelle": null,
           "heures_cm": null,
           "heures_stage": null,
           "heures_td": null,
           "heures_total": null,
           "heures_tp": null,
           "id": null,
-          "intitule_module": null,
+          "libelle": null,
+          "modifie_le": null,
           "source_document": null
         }
+      }
+    },
+    "GET /api/referentiels/volumes-modules/": {
+      "parameters": [
+        "page",
+        "page_size"
+      ],
+      "request_keys": null,
+      "responses": {
+        "200": {
+          "count": null,
+          "next": null,
+          "previous": null,
+          "results": {
+            "[]": {
+              "actif": null,
+              "archive": null,
+              "code": null,
+              "cree_le": null,
+              "date_activation": null,
+              "date_desactivation": null,
+              "fiabilite": null,
+              "formation": null,
+              "formation_libelle": null,
+              "heures_cm": null,
+              "heures_stage": null,
+              "heures_td": null,
+              "heures_total": null,
+              "heures_tp": null,
+              "id": null,
+              "libelle": null,
+              "modifie_le": null,
+              "source_document": null
+            }
+          }
+        }
+      }
+    },
+    "GET /api/referentiels/volumes-modules/{id}/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": null,
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "fiabilite": null,
+          "formation": null,
+          "formation_libelle": null,
+          "heures_cm": null,
+          "heures_stage": null,
+          "heures_td": null,
+          "heures_total": null,
+          "heures_tp": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "source_document": null
+        }
+      }
+    },
+    "GET /api/referentiels/{slug}/export/": {
+      "parameters": [
+        "slug"
+      ],
+      "request_keys": null,
+      "responses": {
+        "200": null
       }
     },
     "GET /api/rh/affectations/": {
@@ -14467,6 +14628,66 @@
         }
       }
     },
+    "GET /api/v1/referentiels/formations/": {
+      "parameters": [
+        "page",
+        "page_size"
+      ],
+      "request_keys": null,
+      "responses": {
+        "200": {
+          "count": null,
+          "next": null,
+          "previous": null,
+          "results": {
+            "[]": {
+              "actif": null,
+              "archive": null,
+              "code": null,
+              "date_activation": null,
+              "date_desactivation": null,
+              "description": null,
+              "domaine": null,
+              "duree_annees": null,
+              "filiere": null,
+              "filiere_libelle": null,
+              "id": null,
+              "libelle": null,
+              "mention": null,
+              "nb_credites": null,
+              "nb_semestres": null,
+              "type_diplome": null
+            }
+          }
+        }
+      }
+    },
+    "GET /api/v1/referentiels/formations/{id}/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": null,
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "description": null,
+          "domaine": null,
+          "duree_annees": null,
+          "filiere": null,
+          "filiere_libelle": null,
+          "id": null,
+          "libelle": null,
+          "mention": null,
+          "nb_credites": null,
+          "nb_semestres": null,
+          "type_diplome": null
+        }
+      }
+    },
     "GET /api/v1/referentiels/grades-enseignant/": {
       "parameters": [
         "page",
@@ -14687,13 +14908,20 @@
           "previous": null,
           "results": {
             "[]": {
+              "actif": null,
+              "archive": null,
+              "code": null,
+              "cree_le": null,
+              "date_activation": null,
+              "date_desactivation": null,
               "etat_ventilation": null,
               "fiabilite": null,
               "filiere_code": null,
               "formation": null,
-              "formation_intitule": null,
+              "formation_libelle": null,
               "id": null,
               "libelle": null,
+              "modifie_le": null,
               "ordre": null,
               "semestre": null,
               "source_document": null
@@ -14709,13 +14937,20 @@
       "request_keys": null,
       "responses": {
         "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
           "etat_ventilation": null,
           "fiabilite": null,
           "filiere_code": null,
           "formation": null,
-          "formation_intitule": null,
+          "formation_libelle": null,
           "id": null,
           "libelle": null,
+          "modifie_le": null,
           "ordre": null,
           "semestre": null,
           "source_document": null
@@ -15568,16 +15803,23 @@
           "previous": null,
           "results": {
             "[]": {
+              "actif": null,
+              "archive": null,
+              "code": null,
+              "cree_le": null,
+              "date_activation": null,
+              "date_desactivation": null,
               "fiabilite": null,
               "formation": null,
-              "formation_intitule": null,
+              "formation_libelle": null,
               "heures_cm": null,
               "heures_stage": null,
               "heures_td": null,
               "heures_total": null,
               "heures_tp": null,
               "id": null,
-              "intitule_module": null,
+              "libelle": null,
+              "modifie_le": null,
               "source_document": null
             }
           }
@@ -15591,18 +15833,98 @@
       "request_keys": null,
       "responses": {
         "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
           "fiabilite": null,
           "formation": null,
-          "formation_intitule": null,
+          "formation_libelle": null,
           "heures_cm": null,
           "heures_stage": null,
           "heures_td": null,
           "heures_total": null,
           "heures_tp": null,
           "id": null,
-          "intitule_module": null,
+          "libelle": null,
+          "modifie_le": null,
           "source_document": null
         }
+      }
+    },
+    "GET /api/v1/referentiels/volumes-modules/": {
+      "parameters": [
+        "page",
+        "page_size"
+      ],
+      "request_keys": null,
+      "responses": {
+        "200": {
+          "count": null,
+          "next": null,
+          "previous": null,
+          "results": {
+            "[]": {
+              "actif": null,
+              "archive": null,
+              "code": null,
+              "cree_le": null,
+              "date_activation": null,
+              "date_desactivation": null,
+              "fiabilite": null,
+              "formation": null,
+              "formation_libelle": null,
+              "heures_cm": null,
+              "heures_stage": null,
+              "heures_td": null,
+              "heures_total": null,
+              "heures_tp": null,
+              "id": null,
+              "libelle": null,
+              "modifie_le": null,
+              "source_document": null
+            }
+          }
+        }
+      }
+    },
+    "GET /api/v1/referentiels/volumes-modules/{id}/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": null,
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "fiabilite": null,
+          "formation": null,
+          "formation_libelle": null,
+          "heures_cm": null,
+          "heures_stage": null,
+          "heures_td": null,
+          "heures_total": null,
+          "heures_tp": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "source_document": null
+        }
+      }
+    },
+    "GET /api/v1/referentiels/{slug}/export/": {
+      "parameters": [
+        "slug"
+      ],
+      "request_keys": null,
+      "responses": {
+        "200": null
       }
     },
     "GET /api/v1/statistiques/": {
@@ -17489,6 +17811,49 @@
         }
       }
     },
+    "PATCH /api/referentiels/formations/{id}/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "description": null,
+        "domaine": null,
+        "duree_annees": null,
+        "filiere": null,
+        "filiere_libelle": null,
+        "id": null,
+        "libelle": null,
+        "mention": null,
+        "nb_credites": null,
+        "nb_semestres": null,
+        "type_diplome": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "description": null,
+          "domaine": null,
+          "duree_annees": null,
+          "filiere": null,
+          "filiere_libelle": null,
+          "id": null,
+          "libelle": null,
+          "mention": null,
+          "nb_credites": null,
+          "nb_semestres": null,
+          "type_diplome": null
+        }
+      }
+    },
     "PATCH /api/referentiels/grades-enseignant/{id}/": {
       "parameters": [
         "id"
@@ -17602,6 +17967,51 @@
           "id": null,
           "libelle": null,
           "modifie_le": null,
+          "source_document": null
+        }
+      }
+    },
+    "PATCH /api/referentiels/modules-officiels/{id}/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "etat_ventilation": null,
+        "fiabilite": null,
+        "filiere_code": null,
+        "formation": null,
+        "formation_libelle": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "ordre": null,
+        "semestre": null,
+        "source_document": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "etat_ventilation": null,
+          "fiabilite": null,
+          "filiere_code": null,
+          "formation": null,
+          "formation_libelle": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "ordre": null,
+          "semestre": null,
           "source_document": null
         }
       }
@@ -18157,6 +18567,100 @@
           "source_document": null,
           "statut": null,
           "statut_libelle": null
+        }
+      }
+    },
+    "PATCH /api/referentiels/volumes-horaires/{id}/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "fiabilite": null,
+        "formation": null,
+        "formation_libelle": null,
+        "heures_cm": null,
+        "heures_stage": null,
+        "heures_td": null,
+        "heures_total": null,
+        "heures_tp": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "source_document": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "fiabilite": null,
+          "formation": null,
+          "formation_libelle": null,
+          "heures_cm": null,
+          "heures_stage": null,
+          "heures_td": null,
+          "heures_total": null,
+          "heures_tp": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "source_document": null
+        }
+      }
+    },
+    "PATCH /api/referentiels/volumes-modules/{id}/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "fiabilite": null,
+        "formation": null,
+        "formation_libelle": null,
+        "heures_cm": null,
+        "heures_stage": null,
+        "heures_td": null,
+        "heures_total": null,
+        "heures_tp": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "source_document": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "fiabilite": null,
+          "formation": null,
+          "formation_libelle": null,
+          "heures_cm": null,
+          "heures_stage": null,
+          "heures_td": null,
+          "heures_total": null,
+          "heures_tp": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "source_document": null
         }
       }
     },
@@ -19568,6 +20072,49 @@
         }
       }
     },
+    "PATCH /api/v1/referentiels/formations/{id}/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "description": null,
+        "domaine": null,
+        "duree_annees": null,
+        "filiere": null,
+        "filiere_libelle": null,
+        "id": null,
+        "libelle": null,
+        "mention": null,
+        "nb_credites": null,
+        "nb_semestres": null,
+        "type_diplome": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "description": null,
+          "domaine": null,
+          "duree_annees": null,
+          "filiere": null,
+          "filiere_libelle": null,
+          "id": null,
+          "libelle": null,
+          "mention": null,
+          "nb_credites": null,
+          "nb_semestres": null,
+          "type_diplome": null
+        }
+      }
+    },
     "PATCH /api/v1/referentiels/grades-enseignant/{id}/": {
       "parameters": [
         "id"
@@ -19681,6 +20228,51 @@
           "id": null,
           "libelle": null,
           "modifie_le": null,
+          "source_document": null
+        }
+      }
+    },
+    "PATCH /api/v1/referentiels/modules-officiels/{id}/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "etat_ventilation": null,
+        "fiabilite": null,
+        "filiere_code": null,
+        "formation": null,
+        "formation_libelle": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "ordre": null,
+        "semestre": null,
+        "source_document": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "etat_ventilation": null,
+          "fiabilite": null,
+          "filiere_code": null,
+          "formation": null,
+          "formation_libelle": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "ordre": null,
+          "semestre": null,
           "source_document": null
         }
       }
@@ -20236,6 +20828,100 @@
           "source_document": null,
           "statut": null,
           "statut_libelle": null
+        }
+      }
+    },
+    "PATCH /api/v1/referentiels/volumes-horaires/{id}/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "fiabilite": null,
+        "formation": null,
+        "formation_libelle": null,
+        "heures_cm": null,
+        "heures_stage": null,
+        "heures_td": null,
+        "heures_total": null,
+        "heures_tp": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "source_document": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "fiabilite": null,
+          "formation": null,
+          "formation_libelle": null,
+          "heures_cm": null,
+          "heures_stage": null,
+          "heures_td": null,
+          "heures_total": null,
+          "heures_tp": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "source_document": null
+        }
+      }
+    },
+    "PATCH /api/v1/referentiels/volumes-modules/{id}/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "fiabilite": null,
+        "formation": null,
+        "formation_libelle": null,
+        "heures_cm": null,
+        "heures_stage": null,
+        "heures_td": null,
+        "heures_total": null,
+        "heures_tp": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "source_document": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "fiabilite": null,
+          "formation": null,
+          "formation_libelle": null,
+          "heures_cm": null,
+          "heures_stage": null,
+          "heures_td": null,
+          "heures_total": null,
+          "heures_tp": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "source_document": null
         }
       }
     },
@@ -26489,6 +27175,133 @@
         }
       }
     },
+    "POST /api/referentiels/formations/": {
+      "parameters": [],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "description": null,
+        "domaine": null,
+        "duree_annees": null,
+        "filiere": null,
+        "filiere_libelle": null,
+        "id": null,
+        "libelle": null,
+        "mention": null,
+        "nb_credites": null,
+        "nb_semestres": null,
+        "type_diplome": null
+      },
+      "responses": {
+        "201": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "description": null,
+          "domaine": null,
+          "duree_annees": null,
+          "filiere": null,
+          "filiere_libelle": null,
+          "id": null,
+          "libelle": null,
+          "mention": null,
+          "nb_credites": null,
+          "nb_semestres": null,
+          "type_diplome": null
+        }
+      }
+    },
+    "POST /api/referentiels/formations/{id}/archiver/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "description": null,
+        "domaine": null,
+        "duree_annees": null,
+        "filiere": null,
+        "filiere_libelle": null,
+        "id": null,
+        "libelle": null,
+        "mention": null,
+        "nb_credites": null,
+        "nb_semestres": null,
+        "type_diplome": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "description": null,
+          "domaine": null,
+          "duree_annees": null,
+          "filiere": null,
+          "filiere_libelle": null,
+          "id": null,
+          "libelle": null,
+          "mention": null,
+          "nb_credites": null,
+          "nb_semestres": null,
+          "type_diplome": null
+        }
+      }
+    },
+    "POST /api/referentiels/formations/{id}/reactiver/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "description": null,
+        "domaine": null,
+        "duree_annees": null,
+        "filiere": null,
+        "filiere_libelle": null,
+        "id": null,
+        "libelle": null,
+        "mention": null,
+        "nb_credites": null,
+        "nb_semestres": null,
+        "type_diplome": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "description": null,
+          "domaine": null,
+          "duree_annees": null,
+          "filiere": null,
+          "filiere_libelle": null,
+          "id": null,
+          "libelle": null,
+          "mention": null,
+          "nb_credites": null,
+          "nb_semestres": null,
+          "type_diplome": null
+        }
+      }
+    },
     "POST /api/referentiels/grades-enseignant/": {
       "parameters": [],
       "request_keys": {
@@ -26830,6 +27643,139 @@
           "id": null,
           "libelle": null,
           "modifie_le": null,
+          "source_document": null
+        }
+      }
+    },
+    "POST /api/referentiels/modules-officiels/": {
+      "parameters": [],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "etat_ventilation": null,
+        "fiabilite": null,
+        "filiere_code": null,
+        "formation": null,
+        "formation_libelle": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "ordre": null,
+        "semestre": null,
+        "source_document": null
+      },
+      "responses": {
+        "201": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "etat_ventilation": null,
+          "fiabilite": null,
+          "filiere_code": null,
+          "formation": null,
+          "formation_libelle": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "ordre": null,
+          "semestre": null,
+          "source_document": null
+        }
+      }
+    },
+    "POST /api/referentiels/modules-officiels/{id}/archiver/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "etat_ventilation": null,
+        "fiabilite": null,
+        "filiere_code": null,
+        "formation": null,
+        "formation_libelle": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "ordre": null,
+        "semestre": null,
+        "source_document": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "etat_ventilation": null,
+          "fiabilite": null,
+          "filiere_code": null,
+          "formation": null,
+          "formation_libelle": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "ordre": null,
+          "semestre": null,
+          "source_document": null
+        }
+      }
+    },
+    "POST /api/referentiels/modules-officiels/{id}/reactiver/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "etat_ventilation": null,
+        "fiabilite": null,
+        "filiere_code": null,
+        "formation": null,
+        "formation_libelle": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "ordre": null,
+        "semestre": null,
+        "source_document": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "etat_ventilation": null,
+          "fiabilite": null,
+          "filiere_code": null,
+          "formation": null,
+          "formation_libelle": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "ordre": null,
+          "semestre": null,
           "source_document": null
         }
       }
@@ -28462,6 +29408,199 @@
           "statut": null,
           "statut_libelle": null
         }
+      }
+    },
+    "POST /api/referentiels/volumes-horaires/": {
+      "parameters": [],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "fiabilite": null,
+        "formation": null,
+        "formation_libelle": null,
+        "heures_cm": null,
+        "heures_stage": null,
+        "heures_td": null,
+        "heures_total": null,
+        "heures_tp": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "source_document": null
+      },
+      "responses": {
+        "201": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "fiabilite": null,
+          "formation": null,
+          "formation_libelle": null,
+          "heures_cm": null,
+          "heures_stage": null,
+          "heures_td": null,
+          "heures_total": null,
+          "heures_tp": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "source_document": null
+        }
+      }
+    },
+    "POST /api/referentiels/volumes-modules/": {
+      "parameters": [],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "fiabilite": null,
+        "formation": null,
+        "formation_libelle": null,
+        "heures_cm": null,
+        "heures_stage": null,
+        "heures_td": null,
+        "heures_total": null,
+        "heures_tp": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "source_document": null
+      },
+      "responses": {
+        "201": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "fiabilite": null,
+          "formation": null,
+          "formation_libelle": null,
+          "heures_cm": null,
+          "heures_stage": null,
+          "heures_td": null,
+          "heures_total": null,
+          "heures_tp": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "source_document": null
+        }
+      }
+    },
+    "POST /api/referentiels/volumes-modules/{id}/archiver/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "fiabilite": null,
+        "formation": null,
+        "formation_libelle": null,
+        "heures_cm": null,
+        "heures_stage": null,
+        "heures_td": null,
+        "heures_total": null,
+        "heures_tp": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "source_document": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "fiabilite": null,
+          "formation": null,
+          "formation_libelle": null,
+          "heures_cm": null,
+          "heures_stage": null,
+          "heures_td": null,
+          "heures_total": null,
+          "heures_tp": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "source_document": null
+        }
+      }
+    },
+    "POST /api/referentiels/volumes-modules/{id}/reactiver/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "fiabilite": null,
+        "formation": null,
+        "formation_libelle": null,
+        "heures_cm": null,
+        "heures_stage": null,
+        "heures_td": null,
+        "heures_total": null,
+        "heures_tp": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "source_document": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "fiabilite": null,
+          "formation": null,
+          "formation_libelle": null,
+          "heures_cm": null,
+          "heures_stage": null,
+          "heures_td": null,
+          "heures_total": null,
+          "heures_tp": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "source_document": null
+        }
+      }
+    },
+    "POST /api/referentiels/{slug}/import/": {
+      "parameters": [
+        "slug"
+      ],
+      "request_keys": null,
+      "responses": {
+        "200": null
       }
     },
     "POST /api/rh/agents/": {
@@ -32906,6 +34045,133 @@
         }
       }
     },
+    "POST /api/v1/referentiels/formations/": {
+      "parameters": [],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "description": null,
+        "domaine": null,
+        "duree_annees": null,
+        "filiere": null,
+        "filiere_libelle": null,
+        "id": null,
+        "libelle": null,
+        "mention": null,
+        "nb_credites": null,
+        "nb_semestres": null,
+        "type_diplome": null
+      },
+      "responses": {
+        "201": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "description": null,
+          "domaine": null,
+          "duree_annees": null,
+          "filiere": null,
+          "filiere_libelle": null,
+          "id": null,
+          "libelle": null,
+          "mention": null,
+          "nb_credites": null,
+          "nb_semestres": null,
+          "type_diplome": null
+        }
+      }
+    },
+    "POST /api/v1/referentiels/formations/{id}/archiver/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "description": null,
+        "domaine": null,
+        "duree_annees": null,
+        "filiere": null,
+        "filiere_libelle": null,
+        "id": null,
+        "libelle": null,
+        "mention": null,
+        "nb_credites": null,
+        "nb_semestres": null,
+        "type_diplome": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "description": null,
+          "domaine": null,
+          "duree_annees": null,
+          "filiere": null,
+          "filiere_libelle": null,
+          "id": null,
+          "libelle": null,
+          "mention": null,
+          "nb_credites": null,
+          "nb_semestres": null,
+          "type_diplome": null
+        }
+      }
+    },
+    "POST /api/v1/referentiels/formations/{id}/reactiver/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "description": null,
+        "domaine": null,
+        "duree_annees": null,
+        "filiere": null,
+        "filiere_libelle": null,
+        "id": null,
+        "libelle": null,
+        "mention": null,
+        "nb_credites": null,
+        "nb_semestres": null,
+        "type_diplome": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "description": null,
+          "domaine": null,
+          "duree_annees": null,
+          "filiere": null,
+          "filiere_libelle": null,
+          "id": null,
+          "libelle": null,
+          "mention": null,
+          "nb_credites": null,
+          "nb_semestres": null,
+          "type_diplome": null
+        }
+      }
+    },
     "POST /api/v1/referentiels/grades-enseignant/": {
       "parameters": [],
       "request_keys": {
@@ -33247,6 +34513,139 @@
           "id": null,
           "libelle": null,
           "modifie_le": null,
+          "source_document": null
+        }
+      }
+    },
+    "POST /api/v1/referentiels/modules-officiels/": {
+      "parameters": [],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "etat_ventilation": null,
+        "fiabilite": null,
+        "filiere_code": null,
+        "formation": null,
+        "formation_libelle": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "ordre": null,
+        "semestre": null,
+        "source_document": null
+      },
+      "responses": {
+        "201": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "etat_ventilation": null,
+          "fiabilite": null,
+          "filiere_code": null,
+          "formation": null,
+          "formation_libelle": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "ordre": null,
+          "semestre": null,
+          "source_document": null
+        }
+      }
+    },
+    "POST /api/v1/referentiels/modules-officiels/{id}/archiver/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "etat_ventilation": null,
+        "fiabilite": null,
+        "filiere_code": null,
+        "formation": null,
+        "formation_libelle": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "ordre": null,
+        "semestre": null,
+        "source_document": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "etat_ventilation": null,
+          "fiabilite": null,
+          "filiere_code": null,
+          "formation": null,
+          "formation_libelle": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "ordre": null,
+          "semestre": null,
+          "source_document": null
+        }
+      }
+    },
+    "POST /api/v1/referentiels/modules-officiels/{id}/reactiver/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "etat_ventilation": null,
+        "fiabilite": null,
+        "filiere_code": null,
+        "formation": null,
+        "formation_libelle": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "ordre": null,
+        "semestre": null,
+        "source_document": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "etat_ventilation": null,
+          "fiabilite": null,
+          "filiere_code": null,
+          "formation": null,
+          "formation_libelle": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "ordre": null,
+          "semestre": null,
           "source_document": null
         }
       }
@@ -34879,6 +36278,199 @@
           "statut": null,
           "statut_libelle": null
         }
+      }
+    },
+    "POST /api/v1/referentiels/volumes-horaires/": {
+      "parameters": [],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "fiabilite": null,
+        "formation": null,
+        "formation_libelle": null,
+        "heures_cm": null,
+        "heures_stage": null,
+        "heures_td": null,
+        "heures_total": null,
+        "heures_tp": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "source_document": null
+      },
+      "responses": {
+        "201": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "fiabilite": null,
+          "formation": null,
+          "formation_libelle": null,
+          "heures_cm": null,
+          "heures_stage": null,
+          "heures_td": null,
+          "heures_total": null,
+          "heures_tp": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "source_document": null
+        }
+      }
+    },
+    "POST /api/v1/referentiels/volumes-modules/": {
+      "parameters": [],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "fiabilite": null,
+        "formation": null,
+        "formation_libelle": null,
+        "heures_cm": null,
+        "heures_stage": null,
+        "heures_td": null,
+        "heures_total": null,
+        "heures_tp": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "source_document": null
+      },
+      "responses": {
+        "201": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "fiabilite": null,
+          "formation": null,
+          "formation_libelle": null,
+          "heures_cm": null,
+          "heures_stage": null,
+          "heures_td": null,
+          "heures_total": null,
+          "heures_tp": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "source_document": null
+        }
+      }
+    },
+    "POST /api/v1/referentiels/volumes-modules/{id}/archiver/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "fiabilite": null,
+        "formation": null,
+        "formation_libelle": null,
+        "heures_cm": null,
+        "heures_stage": null,
+        "heures_td": null,
+        "heures_total": null,
+        "heures_tp": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "source_document": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "fiabilite": null,
+          "formation": null,
+          "formation_libelle": null,
+          "heures_cm": null,
+          "heures_stage": null,
+          "heures_td": null,
+          "heures_total": null,
+          "heures_tp": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "source_document": null
+        }
+      }
+    },
+    "POST /api/v1/referentiels/volumes-modules/{id}/reactiver/": {
+      "parameters": [
+        "id"
+      ],
+      "request_keys": {
+        "actif": null,
+        "archive": null,
+        "code": null,
+        "cree_le": null,
+        "date_activation": null,
+        "date_desactivation": null,
+        "fiabilite": null,
+        "formation": null,
+        "formation_libelle": null,
+        "heures_cm": null,
+        "heures_stage": null,
+        "heures_td": null,
+        "heures_total": null,
+        "heures_tp": null,
+        "id": null,
+        "libelle": null,
+        "modifie_le": null,
+        "source_document": null
+      },
+      "responses": {
+        "200": {
+          "actif": null,
+          "archive": null,
+          "code": null,
+          "cree_le": null,
+          "date_activation": null,
+          "date_desactivation": null,
+          "fiabilite": null,
+          "formation": null,
+          "formation_libelle": null,
+          "heures_cm": null,
+          "heures_stage": null,
+          "heures_td": null,
+          "heures_total": null,
+          "heures_tp": null,
+          "id": null,
+          "libelle": null,
+          "modifie_le": null,
+          "source_document": null
+        }
+      }
+    },
+    "POST /api/v1/referentiels/{slug}/import/": {
+      "parameters": [
+        "slug"
+      ],
+      "request_keys": null,
+      "responses": {
+        "200": null
       }
     },
     "POST /api/v1/statistiques/alertes/seuils/": {

@@ -41,6 +41,11 @@ import './styles/personnel.css'
 import './styles/administration.css'
 // Design premium sobre Espace Archives.
 import './styles/archives.css'
+// Modules Premium 2026 — couche de consolidation FINALE : finition
+// commune des pages de modules (bandeau halo, KPI, famille sombre,
+// focus-visible, prefers-reduced-motion) + réparation du jeton --injs-gold.
+// Importée en dernier, après designSystem.css.
+import './styles/premiumModules.css'
 
 /**
  * Erreurs hors rendu React : promesses rejetées, erreurs d'événement, échec
