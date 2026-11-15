@@ -1,0 +1,6 @@
+﻿Code;Nom;Bâtiment;Site;Type espace;Actif;Type lieu;Capacité;Indisponible au;Indisponible du;Équipements
+SPORT-005;Aire de fitness;Espaces extérieurs;INJS Marcory;PARCOURS_SPORTIF;Oui;SPORT;;;;
+SPORT-002;Aires de saut;Installations sportives extérieures;INJS Marcory;AIRE_SAUTS_LANCERS;Oui;SPORT;;;;
+AMP-002;Amphi 300 places;Bâtiment LMD;INJS Marcory;;Oui;AMPHI;300;;;
+AMP-001;Amphi 500 places;Bâtiment LMD;INJS Marcory;;Oui;AMPHI;500;;;
+AMP-001;Amphithéâtre ENSEP;Bloc ENSEP;INJS Marcory;;Oui;AMPHI;;;;

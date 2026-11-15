@@ -1,0 +1,5 @@
+﻿Code;Libellé;Année académique;Actif;Description
+ADMIS;Admis;;Oui;Le jury prononce l'admission : le semestre (ou le niveau) est validé, les crédits ECTS acquis sont capitalisés et l'étudiant poursuit son parcours au semestre suivant.
+ADMIS_RESERVES;Admis avec réserves;;Oui;Admission prononcée par le jury avec une ou plusieurs réserves inscrites au procès-verbal de délibération, à régulariser selon les modalités fixées par le jury.
+AJOURNE;Ajourné;;Oui;Le jury prononce l'ajournement : le semestre n'est pas validé. Conformément au système LMD, les crédits des UE acquises restent capitalisés et seules les UE/ECUE non validées sont reprises.
+EXCLUSION;Exclusion;;Oui;"Décision officielle INJS produite lorsque la moyenne d'une UE passe sous le seuil éliminatoire paramétré dans les règles de validation LMD ; elle n'est jamais convertie en simple ajournement."

@@ -1,0 +1,5 @@
+﻿Code;Libellé;Année académique;Actif;Est stage;Abrégé;Description
+CM;Cours magistral;;Oui;Non;CM;Enseignement théorique dispensé en grand groupe (amphithéâtre ou salle de cours) : il transmet les fondements des UE et ECUE des maquettes LMD.
+STAGE;Stage / pratique professionnelle;;Oui;Oui;STAGE;Immersion professionnelle en structure d'accueil (établissement scolaire, club, fédération, collectivité, entreprise) encadrée par une convention et évaluée selon la maquette (rapport, soutenance).
+TD;Travaux dirigés;;Oui;Non;TD;Séance encadrée en groupe restreint consacrée aux exercices, études de cas et applications du cours magistral.
+TP;Travaux pratiques;;Oui;Non;TP;Pratique encadrée en laboratoire, en atelier ou sur les installations sportives de l'INJS : à l'INJS, elle couvre l'essentiel des pratiques physiques et sportives des maquettes.

@@ -1,0 +1,6 @@
+﻿Code;Libellé;Année académique;Actif;Description
+AUTRE;Autre évaluation;;Oui;Modalité d'évaluation particulière définie librement par l'équipe pédagogique pour une ECUE (à préciser dans le paramétrage de l'évaluation).
+COMPTE_RENDU_TP;Compte rendu de TP;;Oui;Rapport écrit restituant une séance de travaux pratiques : protocole, observations, résultats et interprétation.
+CTRL1;Contrôle;;Oui;
+CC;Contrôle continu;;Oui;"Évaluation progressive tout au long du semestre (interrogations, devoirs, participation) ; composant « CC » du moteur de calcul des notes, pondéré avec l'examen selon le paramétrage de l'ECUE."
+DEVOIR_MAISON;Devoir maison;;Oui;Travail écrit réalisé hors classe et remis à échéance (dissertation, synthèse, résolution de problèmes).

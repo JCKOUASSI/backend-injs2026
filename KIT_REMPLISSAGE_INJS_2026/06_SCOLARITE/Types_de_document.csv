@@ -1,0 +1,6 @@
+﻿Code;Libellé;Année académique;Actif;Description
+DOC_ETA_02;Arrêté d'ouverture de formation ou d'habilitation;;Oui;Famille : Actes de l'établissement. Nature : Officiel. Émetteur : Ministère de tutelle. Signataire : Ministre. Validité : Durée de l'habilitation. Traçabilité : Référence de l'arrêté, période couverte.
+DOC_SCO_02;Attestation d'inscription;;Oui;Famille : Scolarité. Nature : Officiel. Émetteur : Scolarité. Signataire : Chef de service scolarité. Validité : Année académique en cours. Traçabilité : Numéro d'attestation, matricule, niveau.
+DOC_PIE_07;Attestation d'équivalence ou de reconnaissance de diplôme;;Oui;Famille : Pièces du dossier. Nature : Officiel. Émetteur : Autorité nationale compétente. Signataire : Autorité signataire. Validité : Permanente. Traçabilité : Numéro de décision, diplôme reconnu.
+DOC_SCO_06;Attestation de fin de cycle (en attente de diplôme);;Oui;Famille : Scolarité. Nature : Officiel. Émetteur : Scolarité. Signataire : Directeur général. Validité : Jusqu'à la remise du diplôme. Traçabilité : Référence de la décision de jury.
+DOC_SCO_04;Attestation de fréquentation;;Oui;Famille : Scolarité. Nature : Officiel. Émetteur : Scolarité. Signataire : Chef de service scolarité. Validité : Année académique. Traçabilité : Contrôle du taux de présence.

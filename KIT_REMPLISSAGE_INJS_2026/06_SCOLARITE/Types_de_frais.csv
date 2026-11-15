@@ -1,0 +1,6 @@
+﻿Code;Libellé;Année académique;Actif;Description
+CAUTION;Caution / garantie matériel;;Oui;Famille : Patrimoine. Objet : Prêt de matériel sportif ou informatique de valeur. Débiteur : Étudiant. Exigibilité : À la remise du matériel. Remboursement : Oui, à la restitution. Effet d'un impayé : Matériel non remis.
+TIMBRE;Droit de timbre;;Oui;Famille : Documents. Objet : Droit fiscal apposé sur certains documents officiels. Débiteur : Étudiant. Exigibilité : À la délivrance. Remboursement : Non. Effet d'un impayé : Document non régularisé.
+FRAIS_BANCAIRES;Frais bancaires refacturés;;Oui;Famille : Divers. Objet : Commission bancaire d'un virement ou d'un rejet de chèque. Débiteur : Payeur. Exigibilité : À l'opération. Remboursement : Non. Effet d'un impayé : Refacturation sur le solde suivant.
+ASSURANCE;Frais d'assurance étudiant;;Oui;Famille : Vie estudiantine. Objet : Couverture des accidents en pratique sportive et en stage. Débiteur : Étudiant. Exigibilité : À l'inscription. Remboursement : Non. Effet d'un impayé : Refus d'accès aux créneaux à risque élevé.
+EXAMEN;Frais d'examen;;Oui;Famille : Évaluation. Objet : Passation des épreuves de fin de semestre. Débiteur : Étudiant. Exigibilité : Avant les épreuves. Remboursement : Non. Effet d'un impayé : Pas de convocation aux épreuves.

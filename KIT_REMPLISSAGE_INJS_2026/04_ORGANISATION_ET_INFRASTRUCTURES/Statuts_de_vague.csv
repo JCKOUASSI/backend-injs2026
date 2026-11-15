@@ -1,0 +1,6 @@
+﻿Code;Libellé;Année académique;Actif;Est ouvert;Description
+CLOTUREE;Clôturée;;Oui;Non;Vague archivée administrativement (étape 12 du cycle de vie) : historique intégralement conservé (dossiers, notes, PV, diplômes), aucune nouvelle candidature ni inscription — jamais de suppression physique.
+EN_COURS;En cours;;Oui;Non;Formation démarrée : rentrée effectuée et déroulement de la formation (étape 10 du cycle de vie) — enseignements, évaluations et jurys de semestre.
+OUVERTE;Ouverte;;Oui;Oui;Vague ouverte aux candidatures (étape 3 du cycle de vie) puis, une fois les admissions prononcées, aux inscriptions (étape 9, vague « chargée »). Seul statut qui autorise les candidatures (est_ouvert).
+PREVISIONNELLE;Prévisionnelle;;Oui;Non;Vague planifiée, non encore annoncée : elle couvre les étapes 1 (prévision et cadrage) et 2 (publication de l'avis) du cycle de vie en 12 étapes. Aucune candidature n'est encore recevable.
+TERMINEE;Terminée;;Oui;Non;Formation achevée, résultats prononcés : jury terminal passé (étape 11 du cycle de vie), diplômes en cours de délivrance.
