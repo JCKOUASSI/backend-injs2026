@@ -110,7 +110,7 @@ backend/nohup.out
 # Livrable tableur généré (conservé localement, hygiène du dépôt)
 dossier_trvx/Documentation_TableauDeBord_Referentiels_INJS.xlsx
 
-# Kit de remplissage produit par `manage.py generer_kit_remplissage` :
-# livrable régénérable, conservé localement (hygiène du dépôt).
+# Kit de remplissage produit par `manage.py generer_kit_remplissage`.
+# Le dossier déplié reste hors dépôt (les .xlsx/.csv y sont déjà ignorés) ;
+# l'archive, elle, est versionnée : c'est le livrable à télécharger.
 KIT_REMPLISSAGE_INJS_2026/
-KIT_REMPLISSAGE_INJS_2026.zip
