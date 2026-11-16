@@ -72,6 +72,24 @@ class MobileSeanceEdtMixin(SeanceEdtFixtureMixin):
 class ScanMobileSeanceEdtTests(MobileSeanceEdtMixin, TestCase):
     """Badgeage automatique par l'API mobile sur une séance planifiée."""
 
+    def test_scan_seance_avec_ecue_explicite_renseigne_le_pointage(self):
+        from scolarite.models import ECUE, Maquette, Semestre, UE
+
+        semestre = Semestre.objects.create(niveau=self.niveau, numero=1, libelle='S1 QR')
+        maquette = Maquette.objects.create(
+            annee_academique=self.annee, ref_formation=self.ref_formation,
+            niveau=self.niveau,
+        )
+        ue = UE.objects.create(maquette=maquette, semestre=semestre,
+                               code='UE-QR', intitule='UE QR', credits=5)
+        ecue = ECUE.objects.create(ue=ue, code='ECUE-QR', intitule='ECUE QR', credits=2)
+        self.affectation.ecue = ecue
+        self.affectation.save(update_fields=['ecue'])
+        reponse = self._scan(self.auditeurs[0], **self._dans_la_zone())
+        self.assertEqual(reponse.status_code, 201, reponse.data)
+        self.assertEqual(Pointage.objects.get(pk=reponse.data['pointage_id']).ecue_lmd_id,
+                         ecue.pk)
+
     def test_salle_explicitement_liee_prime_sur_nom_homonyme(self):
         from presences import geofence
         autre = RefSite.objects.create(nom='AUTRE SITE TEST',

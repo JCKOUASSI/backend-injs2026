@@ -122,26 +122,21 @@ class GenerationAnneeTests(BaseAnneeTest):
         depart = monotonic()
         bilan = A.generer_annee(self.annee.pk, semaines=[1, 2, 3, 4], persister=True)
         duree_s = monotonic() - depart
-        lignes = list(AffectationCreneau.objects.filter(actif=True)
-                      .select_related('creneau_template', 'emploi_du_temps'))
-        heures_reelles = sum(
-            (a.semaine_fin - a.semaine_debut + 1)
-            * (a.creneau_template.heure_fin.hour * 60
-               + a.creneau_template.heure_fin.minute
-               - a.creneau_template.heure_debut.hour * 60
-               - a.creneau_template.heure_debut.minute) / 60
-            for a in lignes
-        )
-        self.assertEqual(bilan['status_global'], A.ANNEE_COMPLETE)
-        self.assertEqual(bilan['groupes'][0]['seances_attendues'], 3)
-        self.assertEqual(bilan['groupes'][0]['seances_placees'], 3)
-        self.assertEqual(sum(a.semaine_fin - a.semaine_debut + 1 for a in lignes), 8)
-        self.assertEqual(heures_reelles, 16)
-        self.assertEqual(self.ecue.volume_cm + self.ecue.volume_td, 6)
-        self.assertTrue(all(a.emploi_du_temps.statut == 'BROUILLON' for a in lignes))
+        ligne = bilan['groupes'][0]
+        self.assertEqual(ligne['seances_attendues'], 3)
+        self.assertEqual(ligne['seances_placees'], 3)  # compteur historique des besoins
+        self.assertEqual(ligne['occurrences_recurrentes'], 8)
+        self.assertEqual(ligne['heures_recurrentes'], 16)
+        self.assertEqual(ligne['heures_prevues'], 6)
+        self.assertEqual(ligne['motif_echec'], 'REPARTITION_ANNUELLE_NON_CONFORME')
+        self.assertEqual(ligne['statut'], 'NON_PERSISTE')
+        self.assertEqual(bilan['status_global'], A.ANNEE_PARTIELLE)
+        self.assertEqual(ligne['persistance']['effectuee'], False)
+        self.assertFalse(AffectationCreneau.objects.filter(actif=True).exists())
+        self.assertFalse(EmploiDuTemps.objects.exists())
         print(f'ANNUEL_DIAGNOSTIC: 20 étudiants, 4 semaines, S1, '
-              f'6h prévues, {heures_reelles:g}h récurrentes persistées, '
-              f'{len(lignes)} blocs, durée {duree_s:.3f}s')
+              f'6h prévues, {ligne["heures_recurrentes"]:g}h récurrentes proposées, '
+              f'0h persistée, durée {duree_s:.3f}s')
 
     def test_cohorte_importee_planifiee(self):
         self.importer([
@@ -252,6 +247,34 @@ class GenerationAnneeTests(BaseAnneeTest):
         edt = EmploiDuTemps.objects.get(pk=bilan['groupes'][0]['edt_id'])
         self.assertEqual(edt.statut, 'BROUILLON')
         self.assertIsNone(edt.publie_le)
+
+    def test_refus_annuel_preserve_un_brouillon_existant(self):
+        self.importer([f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'
+                       for i in range(5)])
+        premier = A.generer_annee(self.annee.pk, semaines=[1], persister=True)
+        self.assertTrue(premier['groupes'][0]['persistance']['effectuee'])
+        avant = list(AffectationCreneau.objects.filter(actif=True)
+                     .values_list('pk', 'semaine_debut', 'semaine_fin'))
+        essai = A.generer_annee(self.annee.pk, semaines=[1, 2, 3, 4], persister=True)
+        self.assertNotEqual(essai['status_global'], A.ANNEE_COMPLETE)
+        self.assertEqual(avant, list(AffectationCreneau.objects.filter(actif=True)
+                                     .values_list('pk', 'semaine_debut', 'semaine_fin')))
+
+    def test_seance_issue_de_maquette_conserve_ecue_jusqu_aux_presences(self):
+        from presences.seances_edt_services import ecue_de_seance
+        from presences.seances_supervision import _contexte_pedagogique
+
+        self.importer([f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'
+                       for i in range(5)])
+        bilan = A.generer_annee(self.annee.pk, semaines=[1], persister=True)
+        self.assertTrue(bilan['groupes'][0]['persistance']['effectuee'])
+        seances = AffectationCreneau.objects.filter(actif=True)
+        self.assertTrue(seances.exists())
+        for seance in seances:
+            self.assertIsNone(seance.affectation_pedagogique_id)
+            self.assertEqual(seance.ecue_id, self.ecue.pk)
+            self.assertEqual(ecue_de_seance(seance).pk, self.ecue.pk)
+            self.assertEqual(_contexte_pedagogique(seance)['ecue_id'], self.ecue.pk)
 
     def test_persistance_idempotente(self):
         self.importer([f'INJS-001;Nom;{self.formation.intitule};L1;S1;L1-G1;V1'])

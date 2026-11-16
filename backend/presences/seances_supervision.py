@@ -103,7 +103,10 @@ def _contexte_pedagogique(affectation):
     « rattachement manuel et explicite » de l'EDT.
     """
     affectation_pedagogique = getattr(affectation, 'affectation_pedagogique', None)
-    ecue = getattr(affectation_pedagogique, 'ecue', None) if affectation_pedagogique else None
+    # Une séance issue de maquette n'a pas d'affectation pédagogique, mais
+    # porte désormais l'ECUE explicite propagée depuis son besoin horaire.
+    ecue = (affectation.ecue if affectation.ecue_id else
+            getattr(affectation_pedagogique, 'ecue', None))
     ue = getattr(ecue, 'ue', None) if ecue else None
     formation = getattr(affectation, 'formation', None)
     return {

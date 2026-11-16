@@ -241,15 +241,18 @@ def pointages_du_jour(affectation, date):
 
 
 def ecue_de_seance(affectation):
-    """ECUE de la séance via **son** affectation pédagogique (chaîne LMD).
+    """ECUE explicite de la séance, ou celle de son affectation historique.
 
-    Retourne ``None`` si la séance n'est pas rattachée à une affectation
-    pédagogique : aucune déduction depuis un module ou un groupe n'est tentée
-    (convention « rattachement manuel et explicite » de l'EDT).
+    Pour les cohortes importées, la génération copie `TeachingNeed.ecue_id`
+    vers la FK de séance ; aucun rapprochement par intitulé/groupe n'est tenté.
+    Les séances historiques sans les deux FK restent sans ECUE (pas de backfill
+    conjectural ni de changement destructif de données).
     """
-    if not affectation.affectation_pedagogique_id:
-        return None
-    return getattr(affectation.affectation_pedagogique, 'ecue', None)
+    if affectation.ecue_id:
+        return affectation.ecue
+    if affectation.affectation_pedagogique_id:
+        return getattr(affectation.affectation_pedagogique, 'ecue', None)
+    return None
 
 
 # ---------------------------------------------------------------------------

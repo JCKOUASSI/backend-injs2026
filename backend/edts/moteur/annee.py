@@ -299,6 +299,31 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
             creneaux=creneaux_annee,
         )
 
+        # Contrôle conservateur des récurrences multi-semaines. Le solveur
+        # historique compte `nb_seances` sur un bloc [min,max] ; la base et le
+        # QR exécutent pourtant UNE séance à chaque semaine de l'intervalle.
+        # Ne jamais enregistrer ni qualifier COMPLETE un tel plan lorsque le
+        # nombre d'occurrences/les heures diffèrent des besoins. Les périmètres
+        # à une seule semaine conservent pour l'instant leur contrat historique.
+        repartition_invalide = False
+        occurrences_reelles = heures_reelles = 0
+        if len(semaines) > 1 and resultat.placements:
+            for place in resultat.placements:
+                duree_minutes = (
+                    (place.heure_fin.hour * 60 + place.heure_fin.minute)
+                    - (place.heure_debut.hour * 60 + place.heure_debut.minute)
+                ) % (24 * 60)
+                semaines_recurrentes = place.semaine_fin - place.semaine_debut + 1
+                occurrences_reelles += semaines_recurrentes
+                heures_reelles += semaines_recurrentes * duree_minutes / 60
+            repartition_invalide = (
+                occurrences_reelles != attendues_avant_quota
+                or abs(heures_reelles - sum(b.volume_horaire for b in besoins)) > 0.01
+                or len({b.semestre_id for b in besoins if b.semestre_id}) > 1
+                or any(s not in semaines for p in resultat.placements
+                       for s in range(p.semaine_debut, p.semaine_fin + 1))
+            )
+
         # Coordination : ces placements pèsent sur les groupes suivants.
         for place in resultat.placements:
             occupations.append({
@@ -343,6 +368,15 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
             'edt_cree': False,
         }
 
+        if len(semaines) > 1 and resultat.placements:
+            ligne['occurrences_recurrentes'] = occurrences_reelles
+            ligne['heures_recurrentes'] = round(heures_reelles, 2)
+            ligne['heures_prevues'] = round(sum(b.volume_horaire for b in besoins), 2)
+            ligne['repartition_verifiee'] = not repartition_invalide
+            if repartition_invalide:
+                ligne['statut'] = G.GENERATION_PARTIELLE
+                ligne['motif_echec'] = 'REPARTITION_ANNUELLE_NON_CONFORME'
+
         if attendues_avant_quota > ligne['seances_attendues']:
             # Le quota a écrêté des séances : elles redeviennent des
             # attendues non placées explicites (jamais masquées).
@@ -359,6 +393,15 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
         # ── 4. Persistance éventuelle (transaction par EDT) ───────────────────
         if persister and resultat.placements:
             from edts.moteur import validation as V
+
+            if repartition_invalide:
+                ligne['persistance'] = {
+                    'effectuee': False,
+                    'motif_refus': 'REPARTITION_ANNUELLE_NON_CONFORME',
+                }
+                ligne['statut'] = 'NON_PERSISTE'
+                lignes.append(ligne)
+                continue
 
             # Prévalider AVANT de créer la cible : C10 refuse un volume
             # incomplet et ne doit pas laisser un BROUILLON vide en base.
@@ -393,7 +436,9 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
     a_planifier = [l for l in lignes if (l['seances_attendues'] or 0) > 0]
     complet = [
         l for l in planifies
-        if l['seances_non_placees'] == 0 and l['conflits'] == 0
+        if (l['seances_non_placees'] == 0 and l['conflits'] == 0
+            and l['statut'] == G.GENERATION_OK
+            and (not persister or l.get('persistance', {}).get('effectuee')))
     ]
     if not planifies:
         status_global = ANNEE_IMPOSSIBLE

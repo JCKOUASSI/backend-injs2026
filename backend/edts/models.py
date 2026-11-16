@@ -386,6 +386,11 @@ class AffectationCreneau(models.Model):
     )
     intitule = models.CharField(max_length=255, blank=True, default='')
     commentaire = models.TextField(blank=True, default='')
+    ecue = models.ForeignKey(
+        'scolarite.ECUE', on_delete=models.PROTECT,
+        null=True, blank=True, related_name='seances_edt',
+        help_text='ECUE explicite de la séance, y compris sans affectation pédagogique.',
+    )
     affectation_pedagogique = models.ForeignKey(
         'scolarite.AffectationPedagogique',
         on_delete=models.PROTECT,
@@ -437,6 +442,9 @@ class AffectationCreneau(models.Model):
             erreurs['semaine_fin'] = 'La semaine de fin doit être ≥ à la semaine de début.'
         if self.nature and self.nature not in dict(NATURE_CHOICES):
             erreurs['nature'] = 'Nature inconnue.'
+        if (self.ecue_id and self.affectation_pedagogique_id
+                and self.affectation_pedagogique.ecue_id != self.ecue_id):
+            erreurs['ecue'] = 'L’ECUE doit correspondre à l’affectation pédagogique.'
         if erreurs:
             raise ValidationError(erreurs)
 
