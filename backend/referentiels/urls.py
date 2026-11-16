@@ -39,6 +39,11 @@ for _slug, _entree in REGISTRE.items():
         name=f'ref-{_slug}-list',
     ))
     urlpatterns.append(re_path(
+        rf'^{_slug}/lot/$',
+        views.RefGeneriqueViewSet.as_view({'post': 'lot'}, slug=_slug),
+        name=f'ref-{_slug}-lot',
+    ))
+    urlpatterns.append(re_path(
         rf'^{_slug}/(?P<pk>[0-9]+)/$',
         views.RefGeneriqueViewSet.as_view({
             'get': 'retrieve', 'patch': 'partial_update', 'put': 'update',
@@ -64,6 +69,8 @@ for _slug in ('formations', 'modules-officiels', 'volumes-modules'):
             {'get': 'exporter'}, slug=_slug), name=f'gestion-{_slug}-export'),
         path(_prefix + 'import/', views.RefGeneriqueViewSet.as_view(
             {'post': 'importer'}, slug=_slug), name=f'gestion-{_slug}-import'),
+        path(_prefix + 'lot/', views.RefGeneriqueViewSet.as_view(
+            {'post': 'lot'}, slug=_slug), name=f'gestion-{_slug}-lot'),
         re_path(rf'^{_prefix}(?P<pk>[0-9]+)/$', views.RefGeneriqueViewSet.as_view(
             {'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy'}, slug=_slug), name=f'gestion-{_slug}-detail'),
         *[re_path(rf'^{_prefix}(?P<pk>[0-9]+)/{action}/$',

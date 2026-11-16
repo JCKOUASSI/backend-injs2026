@@ -175,6 +175,8 @@ export default function ReferentielGenerique() {
   const [echange, setEchange] = useState(false)
   const [detail, setDetail] = useState(null)
   const [suppression, setSuppression] = useState(null)
+  const [selection, setSelection] = useState([])
+  const [actionLot, setActionLot] = useState(null)
   const [lectureSeule, setLectureSeule] = useState(false)
   // Affichage : la liste historique reste le défaut ; la vue « cartes » et
   // la pagination évitent les écrans de centaines de lignes (166 salles).
@@ -259,6 +261,7 @@ export default function ReferentielGenerique() {
         }),
       ])
       setLignes(listeRecue(liste.data))
+      setSelection([])
       setOptions(Object.fromEntries(paires))
     } catch (e) {
       setErreur(
@@ -323,7 +326,42 @@ export default function ReferentielGenerique() {
   const pageSure = Math.min(page, nbPages)
   const lignesPage = lignesFiltrees.slice((pageSure - 1) * PAR_PAGE, pageSure * PAR_PAGE)
 
+  // Une sélection ne traverse jamais un changement de filtre, de page ou de
+  // référentiel : le périmètre d'un lot reste visible et vérifiable.
   useEffect(() => { setPage(1) }, [recherche, filtreActif, filtresSelecteurs, vue, slug])
+  useEffect(() => { setSelection([]); setActionLot(null) },
+    [recherche, filtreActif, filtresSelecteurs, vue, pageSure, slug])
+
+  const basculerSelection = (id) => setSelection((ids) => ids.includes(id)
+    ? ids.filter((n) => n !== id) : [...ids, id])
+  const basculerPage = () => setSelection((ids) => (
+    lignesPage.every((ligne) => ids.includes(ligne.id))
+      ? [] : lignesPage.map((ligne) => ligne.id)
+  ))
+  const selectionArchivee = selection.some((id) =>
+    lignesPage.find((ligne) => ligne.id === id)?.archive)
+
+  const confirmerActionLot = async () => {
+    if (!actionLot || selection.length === 0) return
+    setEnvoi(true)
+    try {
+      const res = await api.post(`${cheminGestion}lot/`, {
+        ids: selection, action: actionLot,
+      })
+      const bilans = res.data?.resultats || []
+      const compte = (resultat) => bilans.filter((ligne) => ligne.resultat === resultat).length
+      toast.success?.(`${bilans.length} valeur(s) traitée(s) : ${compte('supprime')} supprimée(s), `
+        + `${compte('archive')} archivée(s), ${compte('active')} activée(s), `
+        + `${compte('desactive')} désactivée(s).`)
+      setSelection([])
+      setActionLot(null)
+      await charger({ silencieux: true })
+    } catch (err) {
+      toast.error?.(err.response?.data?.detail || 'Action groupée annulée : aucune modification appliquée.')
+    } finally {
+      setEnvoi(false)
+    }
+  }
   useEffect(() => {
     try { localStorage.setItem(`ref-vue-${slug}`, vue) } catch { /* stockage indisponible */ }
   }, [vue, slug])
@@ -748,7 +786,8 @@ export default function ReferentielGenerique() {
               Pour importer, utilisez l’export CSV ou Excel comme modèle : une ligne sans identifiant
               crée une valeur, une ligne avec « id » la met à jour. Les rattachements « formation »
               ou « filiere » utilisent l’identifiant du référentiel correspondant. L’import est annulé
-              en entier si une ligne comporte une erreur. « Supprimer » archive sans effacer l’historique.
+              en entier si une ligne comporte une erreur. « Supprimer » efface une valeur isolée ;
+              une valeur liée à d’autres données est archivée ou désactivée sans effacer ses liens.
             </p>
           )}
           <div className="ref-filtres">
@@ -828,6 +867,27 @@ export default function ReferentielGenerique() {
           </div>
         </div>
 
+        {!lectureSeule && lignesPage.length > 0 && (
+          <div className="ref-actions-lot" role="group" aria-label="Actions sur les valeurs cochées">
+            <span role="status">{selection.length} sélectionnée(s) sur cette page</span>
+            <button type="button" className="cand-btn-fantome" onClick={basculerPage}>
+              {selection.length === lignesPage.length ? 'Tout décocher' : 'Cocher la page'}
+            </button>
+            {[
+              ['activer', 'Activer'], ['desactiver', 'Désactiver'],
+              ['archiver', 'Archiver'], ['supprimer', 'Supprimer'],
+            ].map(([action, libelle]) => (
+              <button key={action} type="button" className="cand-btn-fantome"
+                disabled={!selection.length || envoi
+                  || (action === 'archiver' && (!archivageSupporte || selectionArchivee))
+                  || (action === 'activer' && selectionArchivee)}
+                onClick={() => setActionLot(action)}>
+                {libelle} la sélection
+              </button>
+            ))}
+          </div>
+        )}
+
         {lignesFiltrees.length === 0 ? (
           <div className="cand-vide">
             <span className="cand-vide-icone" aria-hidden="true">
@@ -847,6 +907,13 @@ export default function ReferentielGenerique() {
             {lignesPage.map((ligne) => (
               <article className={`ref-carte${ligne.archive ? ' is-archive' : ''}`} key={ligne.id} role="listitem">
                 <header className="ref-carte-entete">
+                  {!lectureSeule && (
+                    <label className="ref-selection-ligne">
+                      <input type="checkbox" checked={selection.includes(ligne.id)}
+                        onChange={() => basculerSelection(ligne.id)}
+                        aria-label={`Sélectionner ${ligne.libelle}`} />
+                    </label>
+                  )}
                   {aUnCode && ligne.code
                     ? <span className="ref-carte-code">{ligne.code}</span>
                     : <span></span>}
@@ -890,6 +957,13 @@ export default function ReferentielGenerique() {
             <table className={`cand-table ref-table${lectureSeule ? ' ref-table--lecture' : ''}`}>
               <thead>
                 <tr>
+                  {!lectureSeule && (
+                    <th scope="col" className="ref-col-selection">
+                      <input type="checkbox" aria-label="Sélectionner toutes les valeurs de cette page"
+                        checked={lignesPage.length > 0 && selection.length === lignesPage.length}
+                        onChange={basculerPage} />
+                    </th>
+                  )}
                   {colonnes.map((c) => (
                     <th key={c.cle} scope="col" data-colonne={c.cle}>{c.libelle}</th>
                   ))}
@@ -899,6 +973,13 @@ export default function ReferentielGenerique() {
               <tbody>
                 {lignesPage.map((ligne) => (
                   <tr key={ligne.id} className={ligne.archive ? 'is-archive' : ''}>
+                    {!lectureSeule && (
+                      <td className="ref-col-selection">
+                        <input type="checkbox" aria-label={`Sélectionner ${ligne.libelle}`}
+                          checked={selection.includes(ligne.id)}
+                          onChange={() => basculerSelection(ligne.id)} />
+                      </td>
+                    )}
                     {colonnes.map((c) => (
                       <td
                         key={c.cle}
@@ -1144,6 +1225,35 @@ export default function ReferentielGenerique() {
                 </div>
               </footer>
             </form>
+          </div>
+        </div>
+      )}
+
+      {actionLot && (
+        <div className="ref-modale-voile" role="presentation">
+          <div className="ref-modale ref-modale--etroite" role="alertdialog" aria-modal="true"
+            aria-labelledby="ref-lot-titre">
+            <header className="ref-modale-head">
+              <h2 className="ref-modale-titre" id="ref-lot-titre">Confirmer l’action groupée ?</h2>
+            </header>
+            <div className="ref-modale-corps">
+              <p>{actionLot} {selection.length} valeur(s) cochée(s) sur cette page de « {entree.libelle} » ?</p>
+              {actionLot === 'supprimer' && <p>
+                Les valeurs isolées seront supprimées définitivement ; celles déjà utilisées
+                seront archivées ou désactivées sans effacer leurs liens.
+              </p>}
+              <p>Si une valeur ne peut pas être traitée, le lot entier est annulé.</p>
+            </div>
+            <footer className="ref-modale-pied">
+              <div className="ref-modale-boutons">
+                <button type="button" className="cand-btn-fantome" disabled={envoi}
+                  onClick={() => setActionLot(null)}>Annuler</button>
+                <button type="button" className="ref-btn-danger" disabled={envoi}
+                  onClick={confirmerActionLot}>
+                  {envoi ? 'Traitement…' : `Confirmer ${actionLot}`}
+                </button>
+              </div>
+            </footer>
           </div>
         </div>
       )}

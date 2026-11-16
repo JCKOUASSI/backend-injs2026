@@ -205,72 +205,75 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
         """Récupère une valeur même archivée (pour archiver/reactiver)."""
         return get_object_or_404(self.queryset, pk=pk)
 
-    def destroy(self, request, *args, **kwargs):
-        """Supprime une valeur isolée ; conserve toute valeur liée à un dossier.
+    def _supprimer_obj(self, obj, request):
+        """Suppression gardée, utilisable par DELETE et par le traitement en lot.
 
-        Vérifie aussi les relations CASCADE et SET_NULL : une suppression ne
-        doit ni effacer des enfants, ni détacher silencieusement un dossier.
-        Le journal GFK (sans contrainte FK) est préservé avec une trace finale.
+        L'appelant tient un verrou et une transaction. Les relations CASCADE
+        et SET_NULL comptent aussi comme utilisation. Le journal GFK est
+        préservé avec une dernière trace de la suppression physique.
         """
+        utilise = False
+        for relation in obj._meta.related_objects:
+            # Les relations inverses sont interrogées sur le gestionnaire
+            # de base : un enfant archivé est lui aussi une utilisation.
+            if relation.many_to_many:
+                through = relation.through
+                champ = next((f for f in through._meta.fields
+                              if getattr(f, 'related_model', None) == type(obj)), None)
+                utilise = champ is None or through._base_manager.filter(**{champ.name: obj.pk}).exists()
+            else:
+                utilise = relation.related_model._base_manager.filter(
+                    **{relation.field.name: obj.pk},
+                ).exists()
+            if utilise:
+                break
+
+        if not utilise:
+            # Une autre référence protégée peut encore être ajoutée
+            # entre le contrôle et le DELETE. Le savepoint permet alors
+            # de revenir à l'archivage sans laisser une transaction cassée.
+            try:
+                with transaction.atomic():
+                    self._journaliser(obj, ReferentielJournal.Action.MODIFICATION, {
+                        'suppression_definitive': True,
+                        'code': getattr(obj, 'code', None),
+                        'libelle': getattr(obj, 'libelle', str(obj)),
+                    })
+                    obj.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            except (ProtectedError, RestrictedError, IntegrityError):
+                utilise = True
+
+        if not hasattr(obj, 'archive'):
+            if not hasattr(obj, 'actif'):
+                return Response(
+                    {'detail': 'Valeur utilisée : ni archivage ni désactivation disponibles.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            if obj.actif:
+                obj.actif = False
+                obj.save(update_fields=['actif'])
+                self._journaliser(obj, ReferentielJournal.Action.DESACTIVATION,
+                                  {'motif': 'Suppression demandée : valeur déjà utilisée'})
+            return Response({'detail': 'Valeur utilisée : désactivée sans effacer ses liens.',
+                             'desactive': True})
+        if not obj.archive:
+            if hasattr(obj, 'archiver'):
+                obj.archiver(request.user, motif='Suppression demandée : valeur déjà utilisée')
+            else:
+                obj.archive = True
+                if hasattr(obj, 'actif'):
+                    obj.actif = False
+                obj.save()
+                self._journaliser(obj, ReferentielJournal.Action.ARCHIVAGE,
+                                  {'motif': 'Suppression demandée : valeur déjà utilisée'})
+        return Response({'detail': 'Valeur utilisée : archivée sans effacer ses liens.',
+                         'archive': True})
+
+    def destroy(self, request, *args, **kwargs):
         with transaction.atomic():
             obj = get_object_or_404(self.queryset.select_for_update(), pk=kwargs['pk'])
-            utilise = False
-            for relation in obj._meta.related_objects:
-                # Les relations inverses sont interrogées sur le gestionnaire
-                # de base : un enfant archivé est lui aussi une utilisation.
-                if relation.many_to_many:
-                    through = relation.through
-                    champ = next((f for f in through._meta.fields
-                                  if getattr(f, 'related_model', None) == type(obj)), None)
-                    utilise = champ is None or through._base_manager.filter(**{champ.name: obj.pk}).exists()
-                else:
-                    utilise = relation.related_model._base_manager.filter(
-                        **{relation.field.name: obj.pk},
-                    ).exists()
-                if utilise:
-                    break
-
-            if not utilise:
-                # Une autre référence protégée peut encore être ajoutée
-                # entre le contrôle et le DELETE. Le savepoint permet alors
-                # de revenir à l'archivage sans laisser une transaction cassée.
-                try:
-                    with transaction.atomic():
-                        self._journaliser(obj, ReferentielJournal.Action.MODIFICATION, {
-                            'suppression_definitive': True,
-                            'code': getattr(obj, 'code', None),
-                            'libelle': getattr(obj, 'libelle', str(obj)),
-                        })
-                        obj.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                except (ProtectedError, RestrictedError, IntegrityError):
-                    utilise = True
-
-            if not hasattr(obj, 'archive'):
-                if not hasattr(obj, 'actif'):
-                    return Response(
-                        {'detail': 'Valeur utilisée : ni archivage ni désactivation disponibles.'},
-                        status=status.HTTP_409_CONFLICT,
-                    )
-                if obj.actif:
-                    obj.actif = False
-                    obj.save(update_fields=['actif'])
-                    self._journaliser(obj, ReferentielJournal.Action.DESACTIVATION,
-                                      {'motif': 'Suppression demandée : valeur déjà utilisée'})
-                return Response({'detail': 'Valeur utilisée : désactivée sans effacer ses liens.',
-                                 'desactive': True})
-            if not obj.archive:
-                if hasattr(obj, 'archiver'):
-                    obj.archiver(request.user, motif='Suppression demandée : valeur déjà utilisée')
-                else:
-                    obj.archive = True
-                    if hasattr(obj, 'actif'):
-                        obj.actif = False
-                    obj.save()
-                    self._journaliser(obj, ReferentielJournal.Action.ARCHIVAGE,
-                                      {'motif': 'Suppression demandée : valeur déjà utilisée'})
-            return Response({'detail': 'Valeur utilisée : archivée sans effacer ses liens.',
-                             'archive': True})
+            return self._supprimer_obj(obj, request)
 
     # Archivage explicite, toujours réversible.
     @action(detail=True, methods=['post'])
@@ -405,6 +408,20 @@ from .registre import (  # noqa: E402
 from .serializers import serializer_pour_ref  # noqa: E402
 
 
+class LotReferentielsSerializer(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), min_length=1, max_length=100,
+    )
+    action = serializers.ChoiceField(choices=(
+        'activer', 'desactiver', 'archiver', 'supprimer',
+    ))
+
+    def validate_ids(self, ids):
+        if len(ids) != len(set(ids)):
+            raise serializers.ValidationError('Chaque valeur doit être sélectionnée une seule fois.')
+        return ids
+
+
 class RefGeneriqueViewSet(ReferentielSocleViewSet):
     """CRUD d'un référentiel du registre, sélectionné par son slug d'URL.
 
@@ -434,6 +451,69 @@ class RefGeneriqueViewSet(ReferentielSocleViewSet):
 
     def get_serializer_class(self):
         return serializer_pour_ref(self.kwargs.get('slug') or self.slug)
+
+    def lot(self, request):
+        """Traite jusqu'à 100 lignes dans une seule transaction vérifiée.
+
+        Les identifiants sont toujours ceux du registre ciblé, indépendants
+        des filtres/archives du GET. Une ligne manquante ou non compatible
+        annule le lot entier, y compris les traces de journal.
+        """
+        payload = LotReferentielsSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        ids = payload.validated_data['ids']
+        action_lot = payload.validated_data['action']
+        with transaction.atomic():
+            objets = {
+                obj.pk: obj for obj in self.queryset.select_for_update()
+                .filter(pk__in=ids).order_by('pk')
+            }
+            if len(objets) != len(ids):
+                raise ValidationError({'detail': 'Sélection périmée : une ou plusieurs valeurs sont introuvables.'})
+            for obj in objets.values():
+                if action_lot == 'archiver' and (not hasattr(obj, 'archive') or obj.archive):
+                    raise ValidationError({'detail': 'Archivage impossible pour une ou plusieurs valeurs.'})
+                if action_lot == 'activer' and (not hasattr(obj, 'actif') or getattr(obj, 'archive', False)):
+                    raise ValidationError({'detail': 'Réactivez les valeurs archivées avant de les activer.'})
+                if action_lot == 'desactiver' and not hasattr(obj, 'actif'):
+                    raise ValidationError({'detail': 'Désactivation non prise en charge.'})
+
+            resultats = []
+            for pk in ids:
+                obj = objets[pk]
+                if action_lot == 'supprimer':
+                    res = self._supprimer_obj(obj, request)
+                    if res.status_code >= 400:
+                        raise ValidationError({'detail': res.data['detail']})
+                    resultat = ('supprime' if res.status_code == 204 else
+                                'archive' if res.data.get('archive') else 'desactive')
+                elif action_lot == 'archiver':
+                    if hasattr(obj, 'archiver'):
+                        obj.archiver(request.user, motif='Archivage en lot')
+                    else:
+                        obj.archive = True
+                        if hasattr(obj, 'actif'):
+                            obj.actif = False
+                        obj.save()
+                        self._journaliser(obj, ReferentielJournal.Action.ARCHIVAGE,
+                                          {'motif': 'Archivage en lot'})
+                    resultat = 'archive'
+                else:
+                    actif = action_lot == 'activer'
+                    if obj.actif != actif:
+                        methode = getattr(obj, action_lot, None)
+                        if callable(methode):
+                            methode(request.user, motif='Action en lot')
+                        else:
+                            obj.actif = actif
+                            obj.save(update_fields=['actif'])
+                            self._journaliser(obj, (
+                                ReferentielJournal.Action.ACTIVATION if actif else
+                                ReferentielJournal.Action.DESACTIVATION
+                            ), {'motif': 'Action en lot'})
+                    resultat = 'active' if actif else 'desactive'
+                resultats.append({'id': pk, 'resultat': resultat})
+        return Response({'resultats': resultats})
 
     def exporter(self, request):
         from .echanges import exporter

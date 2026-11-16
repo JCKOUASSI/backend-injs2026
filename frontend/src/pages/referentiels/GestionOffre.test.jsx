@@ -67,17 +67,52 @@ describe('plaquettes Offre de formation', () => {
     expect(screen.getByRole('button', { name: /Ajouter/ })).toBeTruthy()
     expect(screen.getByRole('button', { name: /Visualiser/ })).toBeTruthy()
     expect(screen.getByRole('button', { name: /Modifier/ })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /Supprimer/ })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /Archiver/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Supprimer Licence Sports' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Archiver Licence Sports' })).toBeTruthy()
     for (const format of ['Word', 'Excel', 'CSV', 'PDF']) {
       expect(screen.getByRole('button', { name: `Exporter ${libelle} en ${format}` })).toBeTruthy()
     }
     expect(screen.getByLabelText('Importer un fichier CSV ou Excel')).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: /Supprimer/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Supprimer Licence Sports' }))
     await settle()
     fireEvent.click(screen.getByRole('button', { name: /^Supprimer$/ }))
     await settle()
     expect(apiMock.delete).toHaveBeenCalledWith(`/referentiels/gestion-donnees/${slug}/7/`)
+  })
+
+  it('coche la page, confirme un lot et ne l’envoie qu’après confirmation', async () => {
+    setup('formations')
+    await settle()
+    const bouton = screen.getByRole('button', { name: 'Supprimer la sélection' })
+    expect(bouton.disabled).toBe(true)
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Sélectionner Licence Sports' }))
+    await settle()
+    expect(bouton.disabled).toBe(false)
+    fireEvent.click(bouton)
+    await settle()
+    expect(apiMock.post).not.toHaveBeenCalledWith('/referentiels/gestion-donnees/formations/lot/',
+      { ids: [7], action: 'supprimer' })
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
+    await settle()
+    fireEvent.click(bouton)
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer supprimer' }))
+    await settle()
+    expect(apiMock.post).toHaveBeenCalledWith('/referentiels/gestion-donnees/formations/lot/',
+      { ids: [7], action: 'supprimer' })
+    expect(screen.getByRole('checkbox', { name: 'Sélectionner Licence Sports' }).checked).toBe(false)
+  })
+
+  it('propose aussi les cases à cocher en cartes et oublie la sélection après filtre', async () => {
+    setup('formations')
+    await settle()
+    fireEvent.click(screen.getByRole('button', { name: 'Cartes' }))
+    await settle()
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Sélectionner Licence Sports' }))
+    await settle()
+    expect(screen.getByRole('button', { name: 'Archiver la sélection' }).disabled).toBe(false)
+    fireEvent.change(screen.getByLabelText('Rechercher'), { target: { value: 'lic' } })
+    await settle()
+    expect(screen.getByRole('button', { name: 'Archiver la sélection' }).disabled).toBe(true)
   })
 
   it('transmet un CSV au serveur en multipart et appelle le téléchargement binaire', async () => {

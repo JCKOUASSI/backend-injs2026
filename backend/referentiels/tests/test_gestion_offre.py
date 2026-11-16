@@ -81,6 +81,57 @@ class GestionOffreTests(TestCase):
         self.assertEqual(self.client.delete(PREFIX + f'formations/{libre.pk}/').status_code, 403)
         self.assertTrue(RefFormation.objects.filter(pk=libre.pk).exists())
 
+    def test_lot_statuts_et_suppression_mixte_sans_cascade(self):
+        base = PREFIX + 'formations/'
+        libres = [RefFormation.objects.create(intitule=f'Libre {n}', code=f'L{n}')
+                  for n in (1, 2)]
+        lie = RefFormation.objects.create(intitule='Lié', code='L3')
+        module = RefModuleOfficiel.objects.create(formation=lie, libelle='Conservé')
+        ids = [libres[0].pk, libres[1].pk]
+        res = self.client.post(base + 'lot/', {'ids': ids, 'action': 'desactiver'}, format='json')
+        self.assertEqual(res.status_code, 200, res.data)
+        self.assertEqual(set(RefFormation.objects.filter(pk__in=ids, actif=False)
+                             .values_list('pk', flat=True)), set(ids))
+        res = self.client.post(base + 'lot/', {'ids': ids, 'action': 'activer'}, format='json')
+        self.assertEqual(res.status_code, 200, res.data)
+        self.assertEqual(RefFormation.objects.filter(pk__in=ids, actif=True).count(), 2)
+        res = self.client.post(base + 'lot/', {
+            'ids': [*ids, lie.pk], 'action': 'supprimer',
+        }, format='json')
+        self.assertEqual(res.status_code, 200, res.data)
+        self.assertEqual([r['resultat'] for r in res.data['resultats']],
+                         ['supprime', 'supprime', 'archive'])
+        self.assertFalse(RefFormation.objects.filter(pk__in=ids).exists())
+        lie.refresh_from_db()
+        self.assertTrue(lie.archive)
+        self.assertTrue(RefModuleOfficiel.objects.filter(pk=module.pk, formation=lie).exists())
+
+    def test_lot_atome_refus_et_droits(self):
+        base = PREFIX + 'formations/'
+        libres = [RefFormation.objects.create(intitule=f'Contrôle {n}', code=f'C{n}')
+                  for n in (1, 2)]
+        ids = [obj.pk for obj in libres]
+        for valeurs in ([ids[0], 999999], [ids[0], ids[0]]):
+            res = self.client.post(base + 'lot/', {
+                'ids': valeurs, 'action': 'supprimer',
+            }, format='json')
+            self.assertEqual(res.status_code, 400, res.data)
+            self.assertTrue(RefFormation.objects.filter(pk__in=ids).count() == 2)
+        self.client.force_authenticate(self.lecteur)
+        res = self.client.post(base + 'lot/', {
+            'ids': ids, 'action': 'archiver',
+        }, format='json')
+        self.assertEqual(res.status_code, 403, res.data)
+        self.assertEqual(RefFormation.objects.filter(pk__in=ids, archive=False).count(), 2)
+
+    def test_lot_archivage_atome_si_modele_non_compatible(self):
+        base = '/api/referentiels/niveaux/lot/'
+        from scolarite.models import Niveau
+        n = Niveau.objects.create(code='TEMP', libelle='Niveau temporaire')
+        res = self.client.post(base, {'ids': [n.pk], 'action': 'archiver'}, format='json')
+        self.assertEqual(res.status_code, 400)
+        self.assertTrue(Niveau.objects.filter(pk=n.pk, actif=True).exists())
+
     def test_exports_quatre_formats_et_import_roundtrip_csv_xlsx(self):
         formation = RefFormation.objects.create(intitule='Licence Sports', code='LS')
         for slug, obj, label in (
