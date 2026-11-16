@@ -251,8 +251,14 @@ export default function ReferentielGenerique() {
       // 2b. Référentiel modifiable : la route générique et les options des
       //     sélecteurs (dont le chemin est fourni par le registre).
       const routes = courante.selecteurs_routes || {}
+      // L'entrée vient d'être reçue, mais setEntree n'a pas encore mis à jour
+      // l'état React. Ne pas utiliser `cheminGestion` issu de l'ancien rendu :
+      // pour les cycles/modules/volumes, sa valeur initiale est une route 404.
+      // Cette 404 pouvait arriver après le rechargement et laisser une erreur
+      // affichée alors que les vraies API répondent toutes 200.
+      const routeGestion = courante.route_gestion || `/referentiels/${slug}/`
       const [liste, ...paires] = await Promise.all([
-        api.get(cheminGestion, { params: { archives: 1, page_size: 1000 } }),
+        api.get(routeGestion, { params: { archives: 1, page_size: 1000 } }),
         ...(courante.selecteurs || []).map(async (fk) => {
           const route = routes[fk]?.route
           if (!route) return [fk, []]
@@ -272,7 +278,7 @@ export default function ReferentielGenerique() {
       setChargement(false)
       setRafraichissement(false)
     }
-  }, [slug, chargerCatalogue, cheminGestion])
+  }, [slug, chargerCatalogue])
 
   useEffect(() => {
     charger()

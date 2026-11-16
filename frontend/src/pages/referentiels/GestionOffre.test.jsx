@@ -30,7 +30,7 @@ const entries = [
     ? { formation: { route: '/formations/ref/formations/', editable: true } } : {},
 }))
 const settle = async () => { await act(async () => { await flushPromises(8) }) }
-const setup = (slug) => {
+const setup = (slug, { routeProvisoireInexistante = false } = {}) => {
   const me = makeUser('ADMIN', { username: 'admin' })
   apiController.setMe(me)
   apiController.setRoute('/referentiels/tableau-de-bord/', {
@@ -39,6 +39,11 @@ const setup = (slug) => {
     synthese: { nb_referentiels: 3, nb_valeurs: 3, nb_a_renseigner: 0, taux_tracabilite: 1 },
   })
   apiController.setRoute('/formations/ref/formations/', [{ id: 4, intitule: 'Licence Sports' }])
+  if (routeProvisoireInexistante) {
+    apiController.setRoute('/referentiels/formations/', () => {
+      throw { response: { status: 404, data: { detail: 'Route inexistante' } } } // eslint-disable-line no-throw-literal
+    })
+  }
   if (slug) apiController.setRoute(`/referentiels/gestion-donnees/${slug}/`, [
     { id: 7, code: 'LS', libelle: 'Licence Sports', actif: true, archive: false, fiabilite: 'OFFICIEL' },
   ])
@@ -50,6 +55,16 @@ const setup = (slug) => {
 }
 
 describe('plaquettes Offre de formation', () => {
+  it('charge les cycles directement par la route du catalogue, jamais par la route initiale 404', async () => {
+    setup('formations', { routeProvisoireInexistante: true })
+    await settle()
+    expect(screen.getByText('Licence Sports')).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(apiMock.get).toHaveBeenCalledWith('/referentiels/gestion-donnees/formations/',
+      { params: { archives: 1, page_size: 1000 } })
+    expect(apiMock.get.mock.calls.some(([path]) => path === '/referentiels/formations/')).toBe(false)
+  })
+
   it('ouvre les trois écrans de gestion depuis le tableau de bord', async () => {
     setup()
     await settle()
