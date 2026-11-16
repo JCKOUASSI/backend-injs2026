@@ -404,7 +404,7 @@ def candidats(besoin, contexte, occupations):
 
 # ── Solveur (étapes N & O) ────────────────────────────────────────────────────
 
-def _backtrack(restes, index, occupations, budget, contexte):
+def _backtrack(restes, index, occupations, budget, contexte, meilleur=None, parcours=None):
     """Placement récursif avec retour arrière (backtracking chronologique).
 
     À chaque étape on prend le besoin le plus contraint restant et l'on essaie
@@ -414,6 +414,10 @@ def _backtrack(restes, index, occupations, budget, contexte):
     Le budget borne l'exploration. Le solveur ne lève jamais : il renvoie au
     mieux un plan partiel documenté, au pire ``None`` (échec complet).
     """
+    # Garder la meilleure branche explorée même si aucune branche complète
+    # n'existe. Les occupations initiales ne font jamais partie de ce plan.
+    if parcours is not None and len(parcours) > len(meilleur):
+        meilleur[:] = parcours
     if index >= len(restes):
         return []
     besoin = restes[index]
@@ -423,15 +427,20 @@ def _backtrack(restes, index, occupations, budget, contexte):
             return None
         budget[0] -= 1
         occupations.append(candidat)
+        if parcours is not None:
+            parcours.append(candidat)
         index_occupations = contexte.get('index_occupations')
         if index_occupations is not None:
             from edts.moteur import contraintes as C
 
             C.ajouter_occupation(index_occupations, candidat)
-        suite = _backtrack(restes, index + 1, occupations, budget, contexte)
+        suite = _backtrack(restes, index + 1, occupations, budget, contexte,
+                           meilleur, parcours)
         if suite is not None:
             return [candidat] + suite
         occupations.pop()
+        if parcours is not None:
+            parcours.pop()
         if index_occupations is not None:
             from edts.moteur import contraintes as C
 
@@ -513,10 +522,12 @@ def _motif_global(non_places, placements):
 def _construire_resultat(resultat_besoins, besoins, placements, occupations,
                          contexte, budget, budget_liste):
     """Assemble le résultat final : placements, non-placés, métriques (étape Q)."""
-    places_ids = {p.besoin.affectation_pedagogique_id for p in placements}
+    # L'identifiant d'affectation vaut None pour TOUS les besoins issus de
+    # maquettes : il ne permet pas de distinguer deux ECUE d'un même groupe.
+    places_ids = {id(p.besoin) for p in placements}
     non_places = []
     for besoin in besoins:
-        if besoin.affectation_pedagogique_id in places_ids:
+        if id(besoin) in places_ids:
             continue
         _, ecartees, n_creneaux, n_salles = candidats(besoin, contexte, occupations)
         contraintes = _contraintes_dominantes(ecartees)
@@ -713,7 +724,36 @@ def generate_schedule(
     # liste à chaque candidat (facteur déterminant au-delà de 3 500 étudiants).
     contexte['index_occupations'] = C.indexer_occupations(occupations)
     budget_liste = [budget]
-    placements = _backtrack(besoins, 0, occupations, budget_liste, contexte) or []
+    meilleur = []
+    placements = _backtrack(besoins, 0, occupations, budget_liste, contexte,
+                            meilleur, [])
+    if placements is None:
+        # Après retour arrière, occupations/index ne contiennent que l'état
+        # initial. Réinjecter la meilleure branche pour diagnostiquer les
+        # besoins restants et transmettre un plan partiel cohérent au validateur.
+        placements = list(meilleur)
+        for place in placements:
+            occupations.append(place)
+            C.ajouter_occupation(contexte['index_occupations'], place)
+        # Une impossibilité en début de liste n'empêche pas les besoins
+        # suivants d'être faisables. Après la recherche complète infructueuse,
+        # compléter le meilleur plan par un passage glouton, toujours dans le
+        # budget restant et avec les mêmes contraintes C1/C2/C3.
+        places_ids = {id(p.besoin) for p in placements}
+        for besoin in besoins:
+            if budget_liste[0] <= 0:
+                break
+            if id(besoin) in places_ids:
+                continue
+            retenus, _, _, _ = candidats(besoin, contexte, occupations)
+            if not retenus:
+                continue
+            place = retenus[0]
+            budget_liste[0] -= 1
+            placements.append(place)
+            places_ids.add(id(besoin))
+            occupations.append(place)
+            C.ajouter_occupation(contexte['index_occupations'], place)
 
     return _construire_resultat(
         resultat_besoins, besoins, placements, occupations, contexte,

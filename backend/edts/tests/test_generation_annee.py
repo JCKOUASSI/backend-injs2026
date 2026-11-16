@@ -126,6 +126,62 @@ class GenerationAnneeTests(BaseAnneeTest):
         self.assertEqual(ligne['seances_non_placees'], 0)
         self.assertEqual(bilan['totaux']['etudiants_couverts'], 35)
 
+    def test_canevas_sature_ne_perd_pas_tous_les_placements(self):
+        """Une impasse sur un besoin ne doit pas effacer les séances faisables."""
+        from edts.models import CreneauTemplate
+
+        self.importer([f'INJS-001;Nom;{self.formation.intitule};L1;S1;L1-G1;V1'])
+        # CM et TD demandent deux blocs distincts ; un seul créneau est libre.
+        premier = CreneauTemplate.objects.order_by('pk').first()
+        CreneauTemplate.objects.exclude(pk=premier.pk).delete()
+        bilan = A.generer_annee(self.annee.pk, semaines=[1])
+        ligne = bilan['groupes'][0]
+        self.assertEqual(ligne['seances_attendues'], 3)
+        self.assertGreater(ligne['seances_placees'], 0)
+        self.assertGreater(ligne['seances_non_placees'], 0)
+        self.assertEqual(ligne['statut'], G.GENERATION_PARTIELLE)
+        self.assertEqual(EmploiDuTemps.objects.count(), 0)
+
+        besoins = BM.besoins_depuis_maquette(annee_academique_id=self.annee.pk).besoins
+        resultat = G.generate_schedule(
+            annee_academique_id=self.annee.pk, besoins=besoins,
+            semaines=[1], creneaux=[premier], salles=[self.salle],
+        )
+        self.assertEqual(len(resultat.placements), 1)
+        # Les deux besoins ont la même affectation_pedagogique_id=None :
+        # le non-placé doit rester visible et détaillé.
+        self.assertEqual(len(resultat.non_places), 1)
+        self.assertEqual(resultat.metrics['seances_non_placees'],
+                         resultat.non_places[0].besoin.nb_seances)
+
+        # C10 interdit l'écriture d'un plan incomplet : ne pas créer un EDT
+        # BROUILLON vide dont le bilan prétendrait qu'il est persisté.
+        ecriture = A.generer_annee(self.annee.pk, semaines=[1], persister=True)
+        self.assertEqual(ecriture['groupes'][0]['statut'], 'NON_PERSISTE')
+        self.assertEqual(EmploiDuTemps.objects.count(), 0)
+        self.assertEqual(AffectationCreneau.objects.filter(actif=True).count(), 0)
+
+    def test_besoin_initial_impossible_ne_cache_pas_un_besoin_suivant_faisable(self):
+        """Une ECUE sans salle compatible ne condamne pas les autres ECUE."""
+        from dataclasses import replace
+        from edts.models import CreneauTemplate
+
+        self.importer([f'INJS-001;Nom;{self.formation.intitule};L1;S1;L1-G1;V1'])
+        self.salle.type_lieu = 'COURS'
+        self.salle.save(update_fields=['type_lieu'])
+        besoins = BM.besoins_depuis_maquette(annee_academique_id=self.annee.pk).besoins
+        tp_impossible = replace(besoins[0], nature='TP', type_enseignement='TP')
+        resultat = G.generate_schedule(
+            annee_academique_id=self.annee.pk,
+            besoins=[tp_impossible, besoins[1]], semaines=[1],
+            creneaux=[CreneauTemplate.objects.order_by('pk').first()],
+            salles=[self.salle],
+        )
+        self.assertEqual(len(resultat.placements), 1)
+        self.assertIs(resultat.placements[0].besoin, besoins[1])
+        self.assertEqual(len(resultat.non_places), 1)
+        self.assertEqual(resultat.status, G.GENERATION_PARTIELLE)
+
     def test_affectations_internes_conservees(self):
         """Non-régression : la chaîne LMD interne reste prioritaire."""
         groupe = self.f.creer_groupe(nom='L1-G1', capacite=30)

@@ -358,11 +358,24 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
 
         # ── 4. Persistance éventuelle (transaction par EDT) ───────────────────
         if persister and resultat.placements:
-            cible = _edt_du_groupe(annee_academique_id, groupe, semaines, creer=True)
-            persistance = O._persister_si_possible(cible, resultat, remplacer=remplacer)
+            from edts.moteur import validation as V
+
+            # Prévalider AVANT de créer la cible : C10 refuse un volume
+            # incomplet et ne doit pas laisser un BROUILLON vide en base.
+            rapport = V.validate_schedule(resultat.placements, resultat.non_places)
+            if not rapport.valide:
+                persistance = {
+                    'effectuee': False,
+                    'motif_refus': 'VALIDATION_BLOQUANTE',
+                    'violations': [v.as_dict() for v in rapport.violations],
+                    'warnings': rapport.warnings,
+                }
+            else:
+                cible = _edt_du_groupe(annee_academique_id, groupe, semaines, creer=True)
+                persistance = O._persister_si_possible(cible, resultat, remplacer=remplacer)
+                ligne['edt_id'] = cible['edt'].pk if cible['edt'] else None
+                ligne['edt_cree'] = cible['cree']
             ligne['persistance'] = persistance
-            ligne['edt_id'] = cible['edt'].pk if cible['edt'] else None
-            ligne['edt_cree'] = cible['cree']
             if not persistance.get('effectuee'):
                 ligne['statut'] = 'NON_PERSISTE'
                 ligne['motif_echec'] = persistance.get('motif_refus')
