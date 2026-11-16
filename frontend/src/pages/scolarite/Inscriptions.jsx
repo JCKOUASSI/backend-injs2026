@@ -8,7 +8,7 @@ import '../../styles/admissions.css'
 import '../../styles/inscriptions.css'
 import '../../styles/modale-premium.css'
 import {
-  createInscription, deleteInscription, getAnneeCourante, getInscription,
+  actionInscriptionsLot, createInscription, deleteInscription, getAnneeCourante, getInscription,
   getRefCategories, getRefFormations, getRefGrades, getRefScolarite,
   getRefVagues, getStatsInscriptions, listEtudiants, listInscriptions,
   messageErreur, reactiverInscription, transitionInscription, updateInscription, validerInscriptionsLot,
@@ -58,6 +58,7 @@ export default function Inscriptions() {
   const [enCours, setEnCours] = useState(null)
   const [selection, setSelection] = useState([])
   const [confirmerLot, setConfirmerLot] = useState(false)
+  const [confirmerActionLot, setConfirmerActionLot] = useState(null)
   const [creation, setCreation] = useState(false)
   const [modification, setModification] = useState(null)
   const [dossier, setDossier] = useState(null)
@@ -84,6 +85,7 @@ export default function Inscriptions() {
       setInscriptions(lignes)
       setSelection([])
       setConfirmerLot(false)
+      setConfirmerActionLot(null)
       setTotalInscriptions(Array.isArray(res.data) ? res.data.length : (res.data?.count ?? lignes.length))
     } catch (err) {
       showToast(messageErreur(err, 'Chargement des inscriptions impossible'), 'error')
@@ -92,7 +94,7 @@ export default function Inscriptions() {
 
   useEffect(() => { charger() }, [charger])
   // La sélection ne peut pas traverser un changement de périmètre.
-  useEffect(() => { setSelection([]); setConfirmerLot(false) }, [filtres])
+  useEffect(() => { setSelection([]); setConfirmerLot(false); setConfirmerActionLot(null) }, [filtres])
 
   // Référentiels des filtres + année courante par défaut (une seule fois).
   useEffect(() => {
@@ -144,10 +146,31 @@ export default function Inscriptions() {
   // Le serveur revérifie chaque état et applique toutes les transitions dans
   // une transaction : aucune validation partielle en cas d'erreur.
   const validables = inscriptions.filter((i) => !i.archive && CHEMIN_VALIDATION[i.statut])
+  const coches = inscriptions.filter((i) => selection.includes(i.id))
+  const selectionValidable = coches.length > 0 && coches.every((i) => !i.archive && CHEMIN_VALIDATION[i.statut])
   const cocher = (id) => setSelection((ids) => ids.includes(id)
     ? ids.filter((n) => n !== id) : [...ids, id])
   const cocherPage = () => setSelection((ids) => ids.length === validables.length
+    && validables.every((i) => ids.includes(i.id))
     ? [] : validables.map((i) => i.id))
+  const cocherTous = () => setSelection((ids) => ids.length === inscriptions.length
+    ? [] : inscriptions.map((i) => i.id))
+
+  const confirmerRetraitLot = async () => {
+    if (!coches.length || !confirmerActionLot) return
+    setEnCours('lot')
+    try {
+      const res = await actionInscriptionsLot(confirmerActionLot, selection)
+      const comptes = res.data.resultats.reduce((acc, ligne) => {
+        acc[ligne.resultat] = (acc[ligne.resultat] || 0) + 1
+        return acc
+      }, {})
+      showToast(`Lot terminé : ${comptes.supprime || 0} supprimée(s), ${comptes.archive || 0} archivée(s), ${comptes.reactive || 0} réactivée(s).`)
+      await charger()
+    } catch (err) {
+      showToast(messageErreur(err, 'Action groupée annulée : aucun dossier modifié.'), 'error')
+    } finally { setEnCours(null) }
+  }
 
   const confirmerValidationLot = async () => {
     if (!selection.length) return
@@ -390,18 +413,31 @@ export default function Inscriptions() {
           </div>
         </div>
 
-        {!loading && validables.length > 0 && (
-          <div className="insc-lot" role="group" aria-label="Validation des inscriptions cochées">
-            <span role="status">{selection.length} inscription(s) cochée(s) sur les {validables.length} validables affichées</span>
+        {!loading && inscriptions.length > 0 && (
+          <div className="insc-lot" role="group" aria-label="Actions sur les inscriptions cochées">
+            <span role="status">{selection.length} inscription(s) cochée(s) sur {inscriptions.length} affichée(s) (maximum 200 ; pas tout le filtre)</span>
+            {validables.length > 0 && <button type="button" className="insc-btn-reinitialiser"
+              disabled={enCours !== null} onClick={cocherPage}>
+              Cocher les validables affichées
+            </button>}
             <button type="button" className="insc-btn-reinitialiser" disabled={enCours !== null}
-              onClick={cocherPage}>
-              {selection.length === validables.length ? 'Tout décocher' : 'Cocher les validables affichées'}
+              onClick={cocherTous}>
+              {selection.length === inscriptions.length ? 'Tout décocher' : 'Cocher toutes les affichées'}
             </button>
-            <button type="button" className="cand-btn-principal"
-              disabled={!selection.length || enCours !== null}
+            {validables.length > 0 && <button type="button" className="cand-btn-principal"
+              disabled={!selectionValidable || enCours !== null}
               onClick={() => setConfirmerLot(true)}>
               Valider la sélection ({selection.length})
-            </button>
+            </button>}
+            {filtres.archive === '1' ? (
+              <button type="button" className="cand-btn-principal" disabled={!coches.length || enCours !== null}
+                onClick={() => setConfirmerActionLot('reactiver')}>Réactiver la sélection ({selection.length})</button>
+            ) : <>
+              <button type="button" className="insc-btn-reinitialiser" disabled={!coches.length || enCours !== null}
+                onClick={() => setConfirmerActionLot('archiver')}>Archiver la sélection ({selection.length})</button>
+              <button type="button" className="mp-bouton mp-bouton--danger" disabled={!coches.length || enCours !== null}
+                onClick={() => setConfirmerActionLot('retirer')}>Supprimer ou archiver la sélection ({selection.length})</button>
+            </>}
           </div>
         )}
 
@@ -413,10 +449,10 @@ export default function Inscriptions() {
               <thead>
                 <tr>
                   <th scope="col" className="insc-col-selection">
-                    <input type="checkbox" aria-label="Sélectionner les inscriptions validables affichées"
-                      checked={validables.length > 0 && selection.length === validables.length}
-                      disabled={!validables.length || enCours !== null}
-                      onChange={cocherPage} />
+                    <input type="checkbox" aria-label="Sélectionner toutes les inscriptions affichées"
+                      checked={inscriptions.length > 0 && selection.length === inscriptions.length}
+                      disabled={!inscriptions.length || enCours !== null}
+                      onChange={cocherTous} />
                   </th>
                   <th scope="col">Étudiant</th>
                   <th scope="col">Formation</th>
@@ -430,11 +466,9 @@ export default function Inscriptions() {
                 {inscriptions.map((i) => (
                   <tr key={i.id}>
                     <td className="insc-col-selection">
-                      {!i.archive && CHEMIN_VALIDATION[i.statut] && (
-                        <input type="checkbox" aria-label={`Sélectionner l’inscription ${i.matricule}`}
-                          checked={selection.includes(i.id)} disabled={enCours !== null}
-                          onChange={() => cocher(i.id)} />
-                      )}
+                      <input type="checkbox" aria-label={`Sélectionner l’inscription ${i.matricule}`}
+                        checked={selection.includes(i.id)} disabled={enCours !== null}
+                        onChange={() => cocher(i.id)} />
                     </td>
                     <td>
                       <div className="adm-candidat">
@@ -551,6 +585,30 @@ export default function Inscriptions() {
           </div>
         )}
       </div>
+
+      {confirmerActionLot && (
+        <FenetreModale idTitre="insc-action-lot-titre"
+          titre={confirmerActionLot === 'reactiver' ? 'Réactiver les inscriptions cochées ?'
+            : confirmerActionLot === 'archiver' ? 'Archiver les inscriptions cochées ?'
+              : 'Supprimer ou archiver les inscriptions cochées ?'}
+          icone="bi bi-archive" onClose={() => { if (enCours === null) setConfirmerActionLot(null) }}
+          pied={<>
+            <button type="button" className="mp-bouton mp-bouton--fantome"
+              disabled={enCours !== null} onClick={() => setConfirmerActionLot(null)}>Annuler</button>
+            <button type="button" className="mp-bouton mp-bouton--danger"
+              disabled={enCours !== null} onClick={confirmerRetraitLot}>
+              Confirmer pour {selection.length} inscription(s)
+            </button>
+          </>}>
+          <p>Seules les {selection.length} lignes cochées parmi les {inscriptions.length} affichées seront traitées.</p>
+          <p>{confirmerActionLot === 'retirer'
+            ? 'Seuls les brouillons isolés seront effacés définitivement. Tous les dossiers utilisés seront archivés, sans perte d’historique.'
+            : confirmerActionLot === 'archiver'
+              ? 'Archivage récupérable sans modification du statut métier ni des liens.'
+              : 'Les dossiers archivés seront réactivés sans changer leur statut métier.'}</p>
+          <p>Opération atomique : en cas d’erreur, aucun dossier ne sera modifié.</p>
+        </FenetreModale>
+      )}
 
       {confirmerLot && (
         <FenetreModale idTitre="insc-lot-titre" titre="Confirmer la validation groupée ?"

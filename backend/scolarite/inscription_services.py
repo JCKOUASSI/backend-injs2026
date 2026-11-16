@@ -169,6 +169,20 @@ def supprimer_ou_archiver(inscription_id, acteur=None):
 
 
 @transaction.atomic
+def archiver_inscription(inscription_id, acteur=None):
+    """Archive explicitement même un brouillon isolé, sans toucher au statut."""
+    inscription = InscriptionAdministrative.objects.select_for_update().get(pk=inscription_id)
+    if inscription.archive:
+        raise InscriptionImpossible('Cette inscription est déjà archivée.')
+    inscription.archive = True
+    inscription.archive_le = timezone.now()
+    inscription.save(update_fields=['archive', 'archive_le', 'updated_at'])
+    journaliser(JournalScolarite.Action.INSCRIPTION_ARCHIVEE, objet=inscription,
+               acteur=acteur, commentaire='Archivage explicite')
+    return inscription
+
+
+@transaction.atomic
 def reactiver_inscription(inscription_id, acteur=None):
     inscription = InscriptionAdministrative.objects.select_for_update().get(pk=inscription_id)
     if not inscription.archive:

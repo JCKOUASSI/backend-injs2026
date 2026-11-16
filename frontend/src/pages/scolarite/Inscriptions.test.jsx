@@ -125,7 +125,7 @@ describe('pages/scolarite/Inscriptions — retrait sécurisé', () => {
     setupRoutes()
     mount()
     await screen.findByText('MAT-002')
-    expect(within(rowOf('MAT-002')).queryByRole('checkbox')).not.toBeInTheDocument()
+    expect(within(rowOf('MAT-002')).getByRole('checkbox')).toBeInTheDocument()
     expect(within(rowOf('MAT-002')).queryByRole('button', { name: 'Valider' })).not.toBeInTheDocument()
     fireEvent.change(screen.getByRole('combobox', { name: 'Afficher les archives' }),
       { target: { value: '1' } })
@@ -137,12 +137,59 @@ describe('pages/scolarite/Inscriptions — retrait sécurisé', () => {
   })
 })
 
+describe('pages/scolarite/Inscriptions — actions groupées de retrait', () => {
+  it('confirme le retrait des lignes affichées, sans envoyer de requêtes individuelles', async () => {
+    apiController.setRoute('/scolarite/inscriptions/action-lot/', { resultats: [
+      { id: 1, resultat: 'supprime' }, { id: 2, resultat: 'archive' },
+    ] })
+    mount()
+    await screen.findByText('MAT-001')
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Sélectionner toutes les inscriptions affichées' }))
+    expect(screen.getByRole('button', { name: 'Valider la sélection (2)' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Supprimer ou archiver la sélection (2)' }))
+    expect(apiMock.post).not.toHaveBeenCalledWith('/scolarite/inscriptions/action-lot/',
+      { action: 'retirer', ids: [1, 2] })
+    expect(screen.getByText(/Seuls les brouillons isolés seront effacés/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer pour 2 inscription(s)' }))
+    await settle()
+    expect(apiMock.post).toHaveBeenCalledWith('/scolarite/inscriptions/action-lot/',
+      { action: 'retirer', ids: [1, 2] })
+    expect(apiMock.delete).not.toHaveBeenCalled()
+    expect(await screen.findByText(/1 supprimée\(s\), 1 archivée\(s\)/)).toBeInTheDocument()
+  })
+
+  it('sélectionne et réactive les archives en lot', async () => {
+    apiController.reset()
+    apiController.setRoute('/scolarite/inscriptions/', () => [{
+      id: 8, matricule: 'ARCH-008', etudiant: 'Archive Test', etudiant_id: 8,
+      statut: 'VALIDEE', statut_libelle: 'Validée', archive: true,
+    }])
+    setupRoutes()
+    apiController.setRoute('/scolarite/inscriptions/action-lot/', {
+      resultats: [{ id: 8, resultat: 'reactive' }],
+    })
+    mount()
+    await screen.findByText('ARCH-008')
+    fireEvent.change(screen.getByRole('combobox', { name: 'Afficher les archives' }),
+      { target: { value: '1' } })
+    await settle()
+    fireEvent.click(within(rowOf('ARCH-008')).getByRole('checkbox'))
+    fireEvent.click(screen.getByRole('button', { name: 'Réactiver la sélection (1)' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer pour 1 inscription(s)' }))
+    await settle()
+    expect(apiMock.post).toHaveBeenCalledWith('/scolarite/inscriptions/action-lot/',
+      { action: 'reactiver', ids: [8] })
+  })
+})
+
 describe('pages/scolarite/Inscriptions — validation groupée', () => {
   it('coche seulement les inscriptions validables et attend la confirmation', async () => {
     apiController.setRoute('/scolarite/inscriptions/valider-lot/', { validees: 1, ids: [1] })
     mount()
     await screen.findByText('MAT-001')
-    expect(within(rowOf('MAT-002')).queryByRole('checkbox')).not.toBeInTheDocument()
+    // Toutes les lignes sont sélectionnables pour le retrait, mais seules
+    // les validables peuvent être soumises au workflow de validation.
+    expect(within(rowOf('MAT-002')).getByRole('checkbox')).toBeInTheDocument()
     const caseInscription = within(rowOf('MAT-001')).getByRole('checkbox', {
       name: 'Sélectionner l’inscription MAT-001',
     })
@@ -161,7 +208,7 @@ describe('pages/scolarite/Inscriptions — validation groupée', () => {
   it('efface la sélection au changement de filtre', async () => {
     mount()
     await screen.findByText('MAT-001')
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Sélectionner les inscriptions validables affichées' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cocher les validables affichées' }))
     expect(screen.getByRole('button', { name: 'Valider la sélection (1)' }).disabled).toBe(false)
     fireEvent.change(screen.getByPlaceholderText(/Rechercher un étudiant/i),
       { target: { value: 'Awa' } })

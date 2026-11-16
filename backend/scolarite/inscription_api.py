@@ -712,6 +712,68 @@ def inscriptions_valider_lot(request):
     return Response({'validees': len(objets), 'ids': ids})
 
 
+class ActionInscriptionsLotSerializer(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), min_length=1, max_length=200,
+    )
+    action = serializers.ChoiceField(choices=('retirer', 'archiver', 'reactiver'))
+
+    def validate_ids(self, ids):
+        if len(ids) != len(set(ids)):
+            raise serializers.ValidationError('Une inscription ne peut être cochée deux fois.')
+        return ids
+
+
+@extend_schema(request=ActionInscriptionsLotSerializer, responses={200: OpenApiTypes.OBJECT,
+                                                        400: OpenApiTypes.OBJECT, 409: ErreurInscriptionSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def inscriptions_action_lot(request):
+    """Retire, archive ou réactive les lignes cochées, en transaction unique.
+
+    Retirer suit strictement la même règle que DELETE individuel : une ligne
+    utilisée est archivée, jamais supprimée par cascade. Tous les identifiants
+    sont contrôlés avant la première mutation ; tout échec annule aussi les
+    journaux et suppressions déjà exécutés dans ce lot.
+    """
+    saisie = ActionInscriptionsLotSerializer(data=request.data)
+    saisie.is_valid(raise_exception=True)
+    ids = saisie.validated_data['ids']
+    action = saisie.validated_data['action']
+    try:
+        with transaction.atomic():
+            objets = list(InscriptionAdministrative.objects.select_for_update()
+                          .filter(pk__in=ids).order_by('pk'))
+            if len(objets) != len(ids):
+                raise inscription_services.InscriptionImpossible(
+                    'Sélection périmée : une ou plusieurs inscriptions sont introuvables.'
+                )
+            for objet in objets:
+                if action == 'reactiver' and not objet.archive:
+                    raise inscription_services.InscriptionImpossible(
+                        f'Inscription {objet.pk} : non archivée.'
+                    )
+                if action != 'reactiver' and objet.archive:
+                    raise inscription_services.InscriptionImpossible(
+                        f'Inscription {objet.pk} : déjà archivée.'
+                    )
+            resultats = []
+            for objet in objets:
+                if action == 'retirer':
+                    resultat = inscription_services.supprimer_ou_archiver(objet.pk, acteur=request.user)
+                elif action == 'archiver':
+                    inscription_services.archiver_inscription(objet.pk, acteur=request.user)
+                    resultat = 'archive'
+                else:
+                    inscription_services.reactiver_inscription(objet.pk, acteur=request.user)
+                    resultat = 'reactive'
+                resultats.append({'id': objet.pk, 'resultat': resultat})
+    except (inscription_services.InscriptionImpossible, IntegrityError) as erreur:
+        message = erreur.messages[0] if hasattr(erreur, 'messages') else str(erreur)
+        return Response({'error': message}, status=409)
+    return Response({'resultats': resultats})
+
+
 @extend_schema(request=OpenApiTypes.OBJECT, responses={200: InscriptionAdminDetailSerializer, 201: InscriptionAdminDetailSerializer, 400: OpenApiTypes.OBJECT, 409: ErreurInscriptionSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
