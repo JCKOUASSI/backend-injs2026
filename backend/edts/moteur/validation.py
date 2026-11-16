@@ -61,19 +61,23 @@ def verifier_conflits(placements, violations, warnings):
     """C1 / C2 / C3 — aucun chevauchement sur ressource partagée."""
     from collections import defaultdict
 
-    par_creneau = defaultdict(list)
+    par_jour = defaultdict(list)
     for place in placements:
-        par_creneau[(place.jour, place.semaine_debut)].append(place)
+        par_jour[place.jour].append(place)
 
-    for (jour, semaine), groupe_places in sorted(
-        par_creneau.items(), key=lambda kv: (kv[0][0], kv[0][1]),
-    ):
+    for jour, groupe_places in sorted(par_jour.items()):
         for i in range(len(groupe_places)):
             for j in range(i + 1, len(groupe_places)):
                 a, b = groupe_places[i], groupe_places[j]
-                if not C._chevauche(a.heure_debut, a.heure_fin,
-                                     b.heure_debut, b.heure_fin):
+                # Deux récurrences de même jour ne se gênent que si leurs
+                # périodes ET leurs horaires se chevauchent. Regrouper par
+                # semaine de début seule masquait [1, 4] face à [2, 3].
+                if (a.semaine_fin < b.semaine_debut
+                        or b.semaine_fin < a.semaine_debut
+                        or not C._chevauche(a.heure_debut, a.heure_fin,
+                                           b.heure_debut, b.heure_fin)):
                     continue
+                semaine = max(a.semaine_debut, b.semaine_debut)
                 if a.enseignant_id and a.enseignant_id == b.enseignant_id:
                     violations.append(C.Violation(
                         C.C1_CONFLIT_ENSEIGNANT,
@@ -250,7 +254,7 @@ class _SeancePersistee:
     """
 
     __slots__ = ('pk', 'jour', 'heure_debut', 'heure_fin', 'semaine_debut',
-                 'enseignant_id', 'groupe_id', 'salle_id')
+                 'semaine_fin', 'enseignant_id', 'groupe_id', 'salle_id')
 
     def __init__(self, affectation):
         creneau = affectation.creneau_template
@@ -260,6 +264,7 @@ class _SeancePersistee:
         self.heure_debut = creneau.heure_debut
         self.heure_fin = creneau.heure_fin
         self.semaine_debut = affectation.semaine_debut
+        self.semaine_fin = affectation.semaine_fin
         self.enseignant_id = pedagogique.enseignant_id if pedagogique else None
         self.groupe_id = affectation.groupe_id
         self.salle_id = affectation.salle_id

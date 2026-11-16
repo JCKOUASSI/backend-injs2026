@@ -78,12 +78,12 @@
 |---|---|---|---|---|---|---|
 | SEC-01 | Authentification | Identifiants démo publiés sur le login public | P0 | Accès possibles aux comptes si identifiants valides | Affichage retiré localement ; rotation et audit des accès à faire séparément | Partiel, production non modifiée |
 | EDT-01 | GET INJS | Année non répartie en occurrences hebdomadaires ; 90/39 146 calculées par campagne | P0 métier | EDT annuel non démontrable | Refonte temporelle testée, sans génération globale prématurée | Ouvert |
-| QR-01 | Présences | Ancien QR redirigé vers jeton neuf | P1 | Révocation legacy inefficace | LMD : ancien refusé et nouveau accepté (test) ; traiter legacy séparément | LMD corrigé localement, legacy ouvert |
+| QR-01 | Présences | Ancien QR redirigé vers jeton neuf | P1 | Révocation inefficace | LMD et voies legacy corrigés/testés dans le code ; vérifier copies offline et production séparément | Corrigé localement, production inconnue |
 | QR-02 | Présences | Pas d'unicité DB sur pointage d'entrée LMD | P1 | Risque de double scan concurrent | Verrou sur personne ajouté ; tester simultané sous PostgreSQL et auditer avant contrainte | Atténué localement, concurrence non prouvée |
 | QR-03 | Présences | Géofence permissive sans site localisé | P1 | Présence physique non prouvée | FK site et politique institutionnelle | Ouvert |
 | QR-04 | Présences | Jeton en clair dans anciens logs | P1 | Secret réutilisable | Nouvelles écritures corrigées, historique à traiter sous procédure | Partiel |
 | QR-05 | Présences/EDT | Cohorte importée : pointage sans ECUE via affectation pédagogique absente | P1 | Analyses par ECUE incomplètes | FK explicite et test bout en bout | Ouvert |
-| QR-08 | Présences | GET du jeton QR sans garde objet explicite | P1 à confirmer | Divulgation possible si permission globale plus large | Test de rôles puis aligner GET/POST | Non démontré |
+| QR-08 | Présences | GET du jeton QR sans garde objet explicite | P1 | Divulgation possible si permission globale plus large | GET aligné sur la garde objet POST, test de refus ajouté | Corrigé localement |
 | REF-01 | Référentiels | Contrat 405 contredit DELETE 204 sur trois ressources | P1 | Suppression isolée non attendue | Garde par modèle sur DELETE et lot ; 77 tests ciblés OK | Corrigé localement |
 | API-01 | Référentiels | Collision noms serializers OpenAPI, 12 clés de schéma supprimées | P1 | Contrat clients incorrect | Noms uniques pour serializers de gestion | Corrigé localement, 20 tests OK |
 | PERF-01 | Frontend/EDT | Chunk principal >500 kB ; charge annuelle non mesurée | P2 | Latence et risque saturation | Profilage ciblé | Ouvert |
@@ -109,6 +109,12 @@
 | `docs/audits/AUDIT_*.md` | Présent audit et suites. | Pas d'effet exécutable. |
 
 Aucune migration créée, aucun compte/donnée/sauvegarde de production modifié. Suites frontend (2 246 tests) et backend (3 137 tests, 9 sautés) réussies **après** les corrections locales, sous leurs configurations de test. Ce résultat ne valide ni la production ni la concurrence PostgreSQL ni l’EDT annuel. La production peut encore afficher les identifiants jusqu'à un déploiement autorisé, et il faudra surtout les révoquer.
+
+### Seconde passe sur la branche courante (sans production)
+
+- **EDT :** le validateur C1/C2/C3 compare les semaines de début **et** de fin des récurrences, y compris les lignes persistées ; trois tests vérifient les périodes `[1,4]`/`[2,3]`, les périodes disjointes et l'adaptateur des séances persistées (3/3 OK). Le solveur annuel, la comptabilité des occurrences et la couverture horaire persistée restent **non résolus** ; aucune campagne annuelle représentative n'a été relancée.
+- **QR :** refus des anciens jetons legacy dans les scans public/sécurisé, le heartbeat, l'endpoint offline-data et la consultation d'état ; GET du secret EDT protégé par la garde objet du POST. Tests de régression ancien refusé/nouveau accepté. Les caches clients déjà hors ligne restent hors du contrôle de la révocation serveur. Les courses de deux premières entrées sur PostgreSQL et l'unicité des pointages restent non prouvées ; géofence, ECUE et anciens journaux toujours à traiter.
+- **Résultats après corrections :** une première suite ciblée (693 tests) a relevé 2 erreurs sur l'adaptateur de séance persistée ; corrigées, la seconde suite ciblée passe **693/693**. Django `check` OK ; aucune migration détectée. Suite backend complète **3 143 tests OK, 9 ignorés** (avant l'ajout du troisième test d'adaptateur, relancé séparément : 3/3 OK) ; frontend inchangé **2 246 tests OK**, lint 0 erreur/0 avertissement et build OK (avertissement de bundle ~1,66 Mo). Ces tests ne valident ni la production ni un EDT annuel complet.
 
 ## E. Plan d'action priorisé
 

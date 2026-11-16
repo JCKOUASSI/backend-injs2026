@@ -140,6 +140,16 @@ class QrSeanceTests(SeanceEdtFixtureMixin, TestCase):
         self.assertEqual(reponse.status_code, 200)
         self.assertEqual(reponse.data['token'], token)
 
+    def test_lecture_du_secret_refusee_a_un_encadrant_non_affecte(self):
+        self.client.force_authenticate(self.enseignant)
+        token = self.client.post(
+            f'/api/presences/seances-edt/{self.affectation.pk}/qr/').data['token']
+        autre = User.objects.create_user(username='autre-qr', password='x', role='ENCADRANT')
+        self.client.force_authenticate(autre)
+        reponse = self.client.get(f'/api/presences/seances-edt/{self.affectation.pk}/qr/')
+        self.assertEqual(reponse.status_code, 403)
+        self.assertNotIn(token, str(reponse.data))
+
     def test_un_seul_jeton_actif_par_seance(self):
         self.client.force_authenticate(self.enseignant)
         p1 = self.client.post(f'/api/presences/seances-edt/{self.affectation.pk}/qr/').data['token']
