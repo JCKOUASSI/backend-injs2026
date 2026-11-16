@@ -109,6 +109,40 @@ class BesoinsDepuisMaquetteTests(BaseAnneeTest):
 
 
 class GenerationAnneeTests(BaseAnneeTest):
+    def test_diagnostic_couverture_reelle_sur_quatre_semaines(self):
+        """Caractérise l'écart entre métrique logique et récurrences persistées.
+
+        Une ligne AffectationCreneau couvre chaque semaine de son intervalle ;
+        il faut compter ses occurrences, pas `nb_seances` du besoin une fois.
+        Ce test documente l'anomalie, il ne certifie PAS l'année complète.
+        """
+        from time import monotonic
+        self.importer([f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'
+                       for i in range(20)])
+        depart = monotonic()
+        bilan = A.generer_annee(self.annee.pk, semaines=[1, 2, 3, 4], persister=True)
+        duree_s = monotonic() - depart
+        lignes = list(AffectationCreneau.objects.filter(actif=True)
+                      .select_related('creneau_template', 'emploi_du_temps'))
+        heures_reelles = sum(
+            (a.semaine_fin - a.semaine_debut + 1)
+            * (a.creneau_template.heure_fin.hour * 60
+               + a.creneau_template.heure_fin.minute
+               - a.creneau_template.heure_debut.hour * 60
+               - a.creneau_template.heure_debut.minute) / 60
+            for a in lignes
+        )
+        self.assertEqual(bilan['status_global'], A.ANNEE_COMPLETE)
+        self.assertEqual(bilan['groupes'][0]['seances_attendues'], 3)
+        self.assertEqual(bilan['groupes'][0]['seances_placees'], 3)
+        self.assertEqual(sum(a.semaine_fin - a.semaine_debut + 1 for a in lignes), 8)
+        self.assertEqual(heures_reelles, 16)
+        self.assertEqual(self.ecue.volume_cm + self.ecue.volume_td, 6)
+        self.assertTrue(all(a.emploi_du_temps.statut == 'BROUILLON' for a in lignes))
+        print(f'ANNUEL_DIAGNOSTIC: 20 étudiants, 4 semaines, S1, '
+              f'6h prévues, {heures_reelles:g}h récurrentes persistées, '
+              f'{len(lignes)} blocs, durée {duree_s:.3f}s')
+
     def test_cohorte_importee_planifiee(self):
         self.importer([
             f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'

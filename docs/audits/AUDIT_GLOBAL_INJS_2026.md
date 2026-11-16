@@ -29,7 +29,7 @@
 
 ## B. Cartographie et matrice de santé
 
-**Légende :** B/F/API/T/P : backend, frontend, routes API, tests présents, permissions repérées (`✓` code présent, `—` non constaté dans cette passe, `?` non établi). **Statut** : VERT = fonctionnalité réellement vérifiée ; ORANGE = preuves partielles ; ROUGE = anomalie importante ; GRIS = non vérifié. La présence d'un test dans une app ne signifie pas validation de tous ses sous-parcours. Aucune ligne VERT n'est attribuée au seul inventaire du code.
+**Légende :** B/F/API/T/P : backend, frontend, routes API, tests présents, permissions repérées (`✓` code présent, `—` non constaté dans cette passe, `?` non établi). **Statut** : VERT = fonctionnalité réellement vérifiée ; ORANGE = preuves partielles ; ROUGE = anomalie importante ; NON VÉRIFIÉ = non vérifié. La présence d'un test dans une app ne signifie pas validation de tous ses sous-parcours. Aucune ligne VERT n'est attribuée au seul inventaire du code.
 
 | Module Django / périmètre | B | F | API | T | P | Fonctionnel / statut | Anomalie ou limite principale |
 |---|---:|---:|---:|---:|---:|---|---|
@@ -44,7 +44,7 @@
 | `scolarite` / étudiants, groupes, inscriptions, maquettes, UE/ECUE | ✓ | ✓ | ✓ | ✓ | ✓ | **ORANGE** | Inscription pédagogique distincte et explicite par défaut ; intégration annuelle à vérifier. |
 | `admissions` / candidatures, concours | ✓ | ✓ | ✓ | ✓ | ✓ | **ORANGE** | Chaîne admission→scolarité partiellement testée en isolation, non rejouée en production. |
 | `edts` / GET INJS, génération, publication | ✓ | ✓ | ✓ | ✓ | ✓ | **ROUGE** | 90/39 146 séances par campagne globale antérieure ; manque la répartition temporelle annuelle. |
-| `presences` / QR, émargement, absences | ✓ | ✓ | ✓ | ✓ | ✓ | **ORANGE** | 214 tests OK ; ancien QR LMD refusé, legacy et concurrence PostgreSQL non résolus. |
+| `presences` / QR, émargement, absences | ✓ | ✓ | ✓ | ✓ | ✓ | **ORANGE** | Voies QR révoquées refusées localement ; concurrence PostgreSQL non démontrée. |
 | `suiviEvaluation` / évaluations historiques | ✓ | ✓ | ✓ | ✓ | ? | **ORANGE** | Coexistence avec `evaluations` à expliciter ; contrats distincts. |
 | `evaluations` / évaluations académiques | ✓ | ✓ | ✓ | ? | ? | **ORANGE** | Tests de flux notes→jury non complets dans cet audit. |
 | `jurys` / délibérations | ✓ | ✓ | ✓ | ? | ? | **ORANGE** | Validation métier et droits par statut à compléter. |
@@ -57,7 +57,7 @@
 | `patrimoine` / sites et salles | ✓ | ✓ | ✓ | ? | ? | **ORANGE** | Cohérence des sites géolocalisés avec les salles QR à contrôler. |
 | `parametres` / configuration | ✓ | ✓ | ✓ | ? | ✓ | **ORANGE** | Paramètres d'environnement effectifs sur VPS inconnus. |
 | `stages` | ✓ | ✓ | ✓ | ? | ? | **ORANGE** | Flux stage→jury/notes non vérifié sur données réelles. |
-| `qr_badge_mobile` / Flutter | — | ✓ | client | ? | client | **GRIS** | Aucune compilation ni test sur appareil exécutés ici. |
+| `qr_badge_mobile` / Flutter | — | ✓ | client | ? | client | **NON VÉRIFIÉ** | Aucune compilation ni test sur appareil exécutés ici. |
 | Archives, notifications, imports/exports transversaux | ✓ | ✓ | ✓ | ? | ? | **ORANGE** | Tests automatiques globaux ≠ revue complète d'archivage, de données personnelles et d'intégrité. |
 
 **Architecture :** Django/DRF, app `backend/config/urls.py` + sous-routeurs, JWT/session, middleware CSRF/CORS configurables, rôles legacy et CURP, PostgreSQL par défaut (SQLite seulement opt-in sandbox), cache Redis ou fichier, uploads protégés par vues authentifiées selon `settings.py`, frontend React/Vite sous `frontend/src/menu/` et `pages/`, Flutter à part. Journaux métier `ReferentielJournal`, `AuditLog`, campagnes. Des commandes planifiées existent (auto-clôture, heartbeat), mais l'ordonnanceur et leur exécution VPS ne sont pas attestés. La génération de campagne repose sur des threads locaux et suivi d'exécution par PID/hôte : reprise multi-worker non équivalente à une file de tâches durable.
@@ -65,7 +65,7 @@
 ## C. Sécurité et intégration — constats prioritaires
 
 1. **SEC-01 — P0 :** `/login` public de production affiche les identifiants de comptes démo administratifs. Le code local `frontend/src/pages/Login.jsx` contenait également le bloc. **Correction locale testée : retirer le bloc**, sans changer les comptes. L'exposition passée persiste : faire tourner les mots de passe et vérifier MFA/permissions/logs dans une procédure de production autorisée séparée. **Aucune tentative de connexion** n'a été faite pendant l'audit.
-2. **QR-01 à QR-08 — P1/P2 :** anciens QR legacy encore redirigés (LMD corrigé localement), absence de contrainte DB anti-concurrence, jeton complet dans les **anciens** journaux d'audit (nouvelles écritures corrigées localement), géofence facultative, rattachement ECUE manquant pour cohorte maquette. Détails et niveau de preuve dans [AUDIT_PRESENCES_QR_2026.md](AUDIT_PRESENCES_QR_2026.md). Un QR n'est pas preuve de présence physique.
+2. **QR-01 à QR-08 — P1/P2 :** anciens QR refusés dans le code local (déploiement non vérifié), absence de contrainte DB anti-concurrence, jeton complet dans les **anciens** journaux d'audit (nouvelles écritures corrigées localement), géofence facultative, rattachement ECUE manquant pour cohorte maquette. Détails et niveau de preuve dans [AUDIT_PRESENCES_QR_2026.md](AUDIT_PRESENCES_QR_2026.md). Un QR n'est pas preuve de présence physique.
 3. **EDT-01 — P0 métier :** génération annuelle incomplète avec couverture très faible ; description et causes dans [AUDIT_GET_INJS_2026.md](AUDIT_GET_INJS_2026.md). Ne pas confondre « terminé avec anomalies », placements calculés, séances persistées et emplois publiés.
 4. **REF-01 — P1 corrigée localement :** DELETE de trois référentiels dont les tests et le processus interdisent la suppression répondait 204 pour une valeur isolée. Un garde par modèle bloque désormais type d’évaluation, année et salle (ainsi que la suppression en lot via le hub), sans retirer le DELETE conditionnel des autres référentiels. **77 tests ciblés OK** ; aucune donnée existante touchée.
 5. **INT-01 — P1 :** chaîne admission → inscription administrative validée → inscription pédagogique **explicite** (`INJS_AUTO_INSCRIPTION_PEDAGOGIQUE=False`) → groupe → besoins/EDT publié → séance/QR → `Pointage` → statistiques/notes. Une étape non exécutée peut casser la chaîne ; cohorte importée sans affectation peut perdre son ECUE dans le pointage QR (`ecue_de_seance`). Tests d'intégration réels bout en bout recommandés.
@@ -125,3 +125,33 @@ Aucune migration créée, aucun compte/donnée/sauvegarde de production modifié
 | **Moyen terme** | Qualification de bout en bout admission→diplôme, scénarios utilisateurs réels par rôle, tests appareils Flutter, observabilité du scheduler et tâches planifiées, mesure de charge à 5 000 étudiants, collecte de preuves d'exports et d'archivage, analyse de conservation PII et refonte du calendrier EDT validée métier. |
 
 **Limites de méthode :** audit statique + tests isolés + trois GET publics ; aucune certification de tous les CRUD/endpoints, aucune authentification sur le VPS, aucun test d'attaque, de charge réelle ou de panne réseau. Une matrice exhaustive du code **ne** certifie **pas** 100 % des parcours utilisateurs.
+
+## F. Clôture de la troisième passe — preuves nouvelles et limites (15 novembre 2026)
+
+**Environnement :** uniquement `/home/user/backend-injs2026`, pas le disque macOS `/Users/jckouassi/...` ; aucun accès en écriture à la production. Branche conservée. Aucun serveur PostgreSQL de test ni binaires `postgres`/`initdb`/`pg_ctl` trouvés dans ce sandbox ; le réglage `USE_SQLITE` est actif ici. Deux tests `TransactionTestCase` PostgreSQL ont été préparés, mais sont **ignorés sur SQLite** : **0 preuve de concurrence PostgreSQL**. Ne pas utiliser un serveur de production pour les exécuter.
+
+**Nouvelle preuve EDT (test isolé reproductible) :** `manage.py test edts.tests.test_generation_annee.GenerationAnneeTests.test_diagnostic_couverture_reelle_sur_quatre_semaines` : 20 inscrits synthétiques, 1 formation, 1 groupe, 1 ECUE, S1, 4 semaines ; **6 h théoriques**, 3 séances attendues/3 déclarées placées, 2 lignes récurrentes persistées sur 4 semaines chacune → **8 occurrences / 16 h réellement programmées** (écart **+10 h**, volume programmé / prévu = **266,7 %**, et non une couverture conforme malgré « COMPLETE »). Mesure moteur : ~0,02 s sur cette petite fixture (hors installation DB), non extrapolable à l'année complète. Aucune preuve multi-école/multi-semestre ; ce contre-exemple suffit à **réfuter** une garantie de couverture annuelle. L'incohérence n'est pas corrigée : toute modification temporelle exige une conception et des tests métier supplémentaires.
+
+**Nouvelles corrections sûres :** résolution du site géofence via la FK de salle explicite avant son libellé ambigu (test de refus d'un scan au mauvais site) ; secrets `extra.token`, `token_qr`, `qr_token` masqués dans l'API des journaux (modes paginé et historique) sans modifier les anciens enregistrements. Les salles sans FK et homonymes restent ambiguës ; la politique d'absence de site géolocalisé reste permissive. Aucun rapprochement ECUE conjectural ni traitement destructif des journaux.
+
+**Tests fraîchement exécutés :** Django `check` OK ; `makemigrations --check --dry-run` : aucune migration requise ; suite backend **3 149 tests recensés, 3 138 exécutés OK, 11 ignorés** (dont les 2 PostgreSQL) ; frontend **143 fichiers / 2 246 tests OK**, lint 0 erreur/0 avertissement, build OK avec avertissement chunk 1,66 Mo. Test diagnostic annuel isolé 1/1 OK ; tests ciblés correctifs 5/5 OK. TypeScript non configuré (`frontend/tsconfig.json` absent). Tests PostgreSQL **non exécutés** ; aucune validation du mode réseau interrompu sur appareil.
+
+### Verdict requis (preuves locales, non certification de production)
+
+| Domaine | Verdict | Preuves | Risques résiduels |
+|---|---|---|---|
+| Backend | ORANGE | `check`, migrations ; 3 138 tests exécutés OK sur 3 149 recensés | 11 ignorés, concurrence et parcours réels non couverts |
+| Frontend | ORANGE | 2 246 tests, lint et build OK | Chunk lourd, rôles et appareils réels non testés |
+| Référentiels | ORANGE | Contrat OpenAPI et DELETE protégés testés | Catalogue réel et autres suppressions non revérifiés |
+| Admissions | ORANGE | Tests locaux de la suite globale | Chaîne complète jusqu'à scolarité non prouvée |
+| Scolarité | ORANGE | Modèles et tests isolés présents | Synchronisation des cohortes/enseignants à vérifier |
+| Maquettes | ORANGE | Besoins ECUE synthétiques et tests existants | Volumes semestriels et cohérence annuelle non prouvés |
+| GET INJS | ROUGE | Contre-exemple 6 h prévues / 16 h programmées | Le solveur ne distribue pas les occurrences réelles |
+| EDT annuel | ROUGE | 8 occurrences persistées contre 3 attendues, « COMPLETE » erroné ; campagnes antérieures 90/39 146 | Publication interdite avant reprise temporelle et validation |
+| Présences QR | ROUGE | Révocation séquentielle testée, PG : 2 tests ignorés | Doubles scans PostgreSQL/non-unicité non démontrés ; second scan peut être une sortie |
+| Géofence | ORANGE | FK salle prioritaire et test mauvais site refusé | Site absent/ambigu, GPS falsifiable, données de localisation |
+| Rattachement ECUE | ROUGE | `ecue_de_seance` dépend de `affectation_pedagogique` absente pour les cohortes importées | Pointages sans ECUE ; FK explicite à concevoir/tester |
+| Sécurité | ROUGE | Affichage démo retiré localement, historique QR masqué à l'API | Identifiants déjà exposés ; rotation/MFA hors mission ; secrets toujours en base |
+| Intégration globale | ROUGE | Suites locales OK mais test annuel contradictoire | Aucune preuve bout en bout ni production validée |
+
+**Décisions :** GET INJS annuel **non validé** ; Présences QR **non validées pour usage institutionnel** sans preuve PostgreSQL et intégrité des pointages ; INJS-LMD 2026 **non prêt pour déploiement institutionnel**. Démonstration **encadrée des parcours ciblés** possible sur une instance de test sans présenter d'EDT annuel complet ni la présence comme infalsifiable. Fiables en isolation : contrat API référentiels, révocation serveur QR séquentielle, tests de formulaires et écrans. Avant déploiement : calendrier d'occurrences/volumes avec preuve persistée, tests PostgreSQL réels et politique anti-double-tap/contrainte, rotation des accès exposés, rattachement ECUE et règle géofence validée métier ; les optimisations de bundle et fonctionnalités de confort peuvent attendre. Aucun déploiement autorisé ni exécuté.

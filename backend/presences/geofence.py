@@ -68,6 +68,11 @@ def site_de_seance_edt(affectation):
     """
     from formations.models import RefSalle, RefSite
 
+    # La FK explicite prime sur le nom libre (potentiellement homonyme sur
+    # plusieurs sites). Aucun rapprochement heuristique si la FK est remplie.
+    if getattr(affectation, 'salle_id', None):
+        return affectation.salle.site
+
     nom_salle = (getattr(affectation, 'salle_nom', '') or '').strip()
     if nom_salle:
         salle = RefSalle.objects.filter(nom__iexact=nom_salle).select_related('site').first()

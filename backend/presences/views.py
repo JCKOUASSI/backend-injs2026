@@ -3390,7 +3390,10 @@ def audit_log_list(request):
             'pointage_id': log.pointage_id,
             'ip_address': log.ip_address,
             'device_id': log.device_id,
-            'extra': log.extra,
+            # Anciens journaux QR : conserver l'enregistrement en base, mais
+            # ne jamais republier un secret de badgeage via l'API d'audit.
+            'extra': {k: v for k, v in (log.extra or {}).items()
+                      if k.lower() not in {'token', 'token_qr', 'qr_token'}},
         })
 
     if paginer:

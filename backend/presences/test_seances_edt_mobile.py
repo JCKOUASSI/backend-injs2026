@@ -72,6 +72,21 @@ class MobileSeanceEdtMixin(SeanceEdtFixtureMixin):
 class ScanMobileSeanceEdtTests(MobileSeanceEdtMixin, TestCase):
     """Badgeage automatique par l'API mobile sur une séance planifiée."""
 
+    def test_salle_explicitement_liee_prime_sur_nom_homonyme(self):
+        from presences import geofence
+        autre = RefSite.objects.create(nom='AUTRE SITE TEST',
+                                      geofence_latitude=5.5,
+                                      geofence_longitude=-4.1,
+                                      geofence_rayon_m=100)
+        salle_ailleurs = RefSalle.objects.create(site=autre, nom='Amphi 1')
+        self.affectation.salle = salle_ailleurs
+        self.affectation.save(update_fields=['salle'])
+        self.assertEqual(geofence.site_de_seance_edt(self.affectation), autre)
+        # La position sur le premier site ne doit plus valider ce badgeage.
+        resultat = self._scan(self.auditeurs[0], **self._dans_la_zone())
+        self.assertEqual(resultat.status_code, 400)
+        self.assertEqual(resultat.data['code'], 'OUT_OF_GEOFENCE')
+
     def test_auditeur_entree_puis_sortie(self):
         entree = self._scan(self.auditeurs[0], **self._dans_la_zone())
         self.assertEqual(entree.status_code, 201, entree.data)

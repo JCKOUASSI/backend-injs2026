@@ -1053,6 +1053,21 @@ class AuditLogChargementExpliciteTests(TestCase):
                 cible_type='USER', cible_numero=f'U{i}',
             )
 
+    def test_anciens_secrets_qr_masques_sans_effacer_le_journal(self):
+        from .models import AuditLog
+        ligne = AuditLog.objects.create(
+            action=AuditLog.Action.FORMATION_QR_GENERATE,
+            extra={'token': 'secret-historique', 'canal': 'EDT_LMD'},
+        )
+        for params in ({'limite': 10}, {'page_size': 10}):
+            res = self.client.get('/api/audit-logs/', params)
+            self.assertEqual(res.status_code, status.HTTP_200_OK)
+            entree = next(x for x in res.data['results'] if x['id'] == ligne.pk)
+            self.assertEqual(entree['extra'], {'canal': 'EDT_LMD'})
+            self.assertNotIn('secret-historique', str(res.data))
+        ligne.refresh_from_db()
+        self.assertEqual(ligne.extra['token'], 'secret-historique')
+
     def test_limite_historique_inchangee(self):
         res = self.client.get('/api/audit-logs/', {'limite': 2})
         self.assertEqual(res.status_code, status.HTTP_200_OK)
