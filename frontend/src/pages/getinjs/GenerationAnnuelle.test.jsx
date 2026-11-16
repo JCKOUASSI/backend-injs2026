@@ -331,6 +331,19 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     )
   })
 
+  it('ignore les cases cochées dans le mode automatique, après confirmation', async () => {
+    const user = userEvent.setup()
+    const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    rendre()
+    await choisirPerimetre(user)
+    await user.click(screen.getByRole('button', { name: /Lancer la génération automatique/i }))
+    await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith('/edts/campagnes/',
+      expect.objectContaining({ perimetre: {
+        formations: [], niveaux: [], groupes: [], semestres: [],
+      } })))
+    confirmation.mockRestore()
+  })
+
   it('ne lance pas la génération automatique si la confirmation est refusée', async () => {
     const user = userEvent.setup()
     const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(false)
