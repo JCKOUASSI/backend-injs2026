@@ -21,6 +21,7 @@ const entries = [
 ].map(item => ({
   ...item, editable: true, description: '', icone: 'bi-dot', source: '',
   route_gestion: `/referentiels/gestion-donnees/${item.slug}/`,
+  libelle_bouton: 'Gérer',
   provenance_suivie: true, archivage_supporte: true,
   a_une_description: item.slug === 'formations',
   total: 1, actifs: 1, archives: 0, a_renseigner: 0,
@@ -53,7 +54,10 @@ describe('plaquettes Offre de formation', () => {
     setup()
     await settle()
     for (const item of entries) {
-      expect(document.querySelector(`a[href="/referentiels/gestion/${item.slug}"]`)).toBeTruthy()
+      const lien = document.querySelector(`a[href="/referentiels/gestion/${item.slug}"]`)
+      expect(lien).toBeTruthy()
+      expect(lien.textContent).toContain('Gérer')
+      expect(lien.textContent).not.toContain('Consulter')
     }
   })
 

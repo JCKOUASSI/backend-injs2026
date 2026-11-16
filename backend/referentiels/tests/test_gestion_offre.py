@@ -26,6 +26,8 @@ class GestionOffreTests(TestCase):
         for slug in ('formations', 'modules-officiels', 'volumes-modules'):
             entry = next(e for cat in catalogue['categories'] for e in cat['entrees'] if e['slug'] == slug)
             self.assertTrue(entry['editable'])
+            self.assertEqual(entry['libelle_bouton'], 'Gérer')
+            self.assertEqual(entry['route_ui'], f'/referentiels/gestion/{slug}')
             self.assertTrue(entry['archivage_supporte'])
             self.assertEqual(entry['route_gestion'], f'/referentiels/gestion-donnees/{slug}/')
 

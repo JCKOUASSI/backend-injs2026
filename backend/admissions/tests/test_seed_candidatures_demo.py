@@ -62,6 +62,23 @@ class SeedCandidaturesDemoTests(TestCase):
     def _seed(self, **options):
         call_command('seed_candidatures_demo', stdout=StringIO(), **options)
 
+    def test_effectif_5000_paritaire_et_idempotent(self):
+        self._seed(effectif=5000)
+        bulk = Participant.objects.filter(email__regex=r'\.\d+@exemple\.ci$')
+        self.assertEqual(bulk.count(), 5000)
+        self.assertEqual(bulk.filter(sexe='FEMININ').count(), 2500)
+        self.assertEqual(bulk.filter(sexe='MASCULIN').count(), 2500)
+        self.assertEqual(InscriptionAdministrative.objects.filter(
+            etudiant__participant__in=bulk,
+            statut=InscriptionAdministrative.Statut.VALIDEE,
+        ).count(), 5000)
+        self.assertEqual(bulk.values('email').distinct().count(), 5000)
+        self._seed(effectif=5000)
+        self.assertEqual(bulk.count(), 5000)
+        from django.core.management.base import CommandError
+        with self.assertRaisesMessage(CommandError, 'Ne pas mélanger deux effectifs'):
+            self._seed(effectif=3500)
+
     def test_panorama_complet_du_module(self):
         self._seed()
 

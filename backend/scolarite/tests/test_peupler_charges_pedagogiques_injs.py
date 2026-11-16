@@ -92,6 +92,7 @@ class PeuplerChargesPedagogiquesTests(TestCase):
             self.assertTrue(enseignant.organisation)
             self.assertTrue(enseignant.statut_enseignant)
             self.assertTrue(enseignant.user_id)
+            self.assertFalse(enseignant.user.has_usable_password())
             self.assertEqual(enseignant.numero_compte_bancaire, '')
         for enseignant in enseignants:
             total = sum(

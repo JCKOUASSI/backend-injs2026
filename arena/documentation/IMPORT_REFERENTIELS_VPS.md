@@ -27,4 +27,4 @@ Le nouvel argument `--preserver-calendrier` évite **toute création et toute mo
    docker exec injs-be-next python manage.py verifier_coherence_referentiels
    ```
 
-**Ne pas lancer** `arena/remplir-base-locale.py`, `seed_data.py`, `finaliser_maquettes_injs` ni les `seed_*_demo` sur cette base de production. Pour voir des dossiers, étudiants et notes fictifs, créer une base de démonstration isolée avec des comptes distincts, après vérification du routage, plutôt que polluer la base active.
+Mise à jour : l'utilisateur a précisé que le domaine public est son **environnement de test** et autorise des données fictives. L'import des référentiels ci-dessus a été exécuté avec `--preserver-calendrier` ; ne pas relancer `seed_data.py` (réinitialise des mots de passe d'administrateurs). Pour un remplissage global, employer uniquement la commande contrôlée `seed_plateforme_demo` du nouveau code, après un **nouveau dump vérifié**, sans exposer de comptes fictifs à mot de passe connu. Les pièces jointes générées dans un conteneur éphémère doivent être transférées vers le média du service public avant de le supprimer.

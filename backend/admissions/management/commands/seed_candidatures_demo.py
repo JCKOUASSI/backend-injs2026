@@ -387,7 +387,8 @@ SCENARIOS_SUSPENDUE = [
 
 
 # ── Effectifs étudiants d'exemple (module « Étudiants ») ─────────────────────
-# Registre complet de 3 500 étudiants — parité femmes/hommes exacte — répartis
+# Registre paramétrable (3 500 par défaut, 5 000 pour la démo complète) —
+# parité femmes/hommes exacte — répartis
 # sur les 8 filières × Licence/Master et les niveaux L1→M2, avec grades de la
 # fonction publique pour les étudiants fonctionnaires, groupes pédagogiques,
 # vagues, types de concours et secrétariats (exemple). Génération
@@ -484,12 +485,31 @@ class Command(BaseCommand):
             help='Supprime toutes les données d’exemple (candidats '
                  '@exemple.ci, leurs dossiers et les campagnes de démonstration).',
         )
+        parser.add_argument(
+            '--effectif', type=int, default=EFFECTIF_CIBLE,
+            help='Nombre pair d’étudiants fictifs inscrits (défaut : 3500 ; ex. 5000).',
+        )
 
     # ── point d'entrée ──────────────────────────────────────────────────────
     def handle(self, *args, **options):
         if options['purger']:
             self._purger()
             return
+
+        self.effectif_cible = options['effectif']
+        if self.effectif_cible < 2 or self.effectif_cible > 100000 or self.effectif_cible % 2:
+            raise CommandError('--effectif doit être pair et compris entre 2 et 100000.')
+        # Le jeu est déterministe pour un effectif donné, mais changer la
+        # répartition des cohortes décale les identités et leurs courriels.
+        # Refuser une augmentation silencieuse après un précédent seed :
+        # sinon on obtiendrait plus que la cible et une parité faussée.
+        deja = Participant.objects.filter(email__regex=r'\.\d+@exemple\.ci$').count()
+        if deja and deja != self.effectif_cible:
+            raise CommandError(
+                f'{deja} étudiants fictifs déjà présents : cible {self.effectif_cible}. '
+                'Ne pas mélanger deux effectifs ; utiliser une base vierge ou '
+                'une procédure de purge vérifiée avant de changer de cible.'
+            )
 
         if not TypePiece.objects.exists():
             call_command('init_referentiels_admission', stdout=self.stdout)
@@ -1348,7 +1368,7 @@ class Command(BaseCommand):
         ))
 
 
-    # ── Effectifs étudiants (3 500, parité exacte) ────────────────────────────
+    # ── Effectifs étudiants (cible paramétrable, parité exacte) ───────────────
     def _effectifs_etudiants(self, annee, bilan):
         """Registre complet d'étudiants d'exemple, créé en masse.
 
@@ -1402,7 +1422,7 @@ class Command(BaseCommand):
         cohortes = []
         for code_niveau, poids in POIDS_NIVEAUX.items():
             diplome = 'LICENCE' if code_niveau.startswith('L') else 'MASTER'
-            total_niveau = round(EFFECTIF_CIBLE * poids)
+            total_niveau = round(self.effectif_cible * poids)
             part, reste = divmod(total_niveau, len(codes_filieres))
             for rang_f, code_filiere in enumerate(codes_filieres):
                 effectif = part + (1 if rang_f < reste else 0)
@@ -1410,7 +1430,7 @@ class Command(BaseCommand):
                 if formation is None or code_niveau not in niveaux:
                     continue
                 cohortes.append([formation, code_niveau, diplome, effectif])
-        ecart = EFFECTIF_CIBLE - sum(c[3] for c in cohortes)
+        ecart = self.effectif_cible - sum(c[3] for c in cohortes)
         if cohortes and ecart:
             max(cohortes, key=lambda c: c[3])[3] += ecart
 

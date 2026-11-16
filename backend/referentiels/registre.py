@@ -328,6 +328,7 @@ REGISTRE = {
                 'nb_semestres', 'nb_credites', 'perimetre', 'filiere_code', 'source'],
         selecteurs=['filiere'],
         icone='bi-mortarboard-fill',
+        libelle_bouton='Gérer',
         source='Formations et Modules INJS — §1',
     ),
     'niveaux': entree(
@@ -487,6 +488,7 @@ REGISTRE = {
         selecteurs=['formation'],
         unicite_par=['formation', 'semestre'],
         icone='bi-journal-text',
+        libelle_bouton='Gérer',
         source='Formations et Modules INJS',
     ),
     'volumes-modules': entree(
@@ -503,6 +505,7 @@ REGISTRE = {
         selecteurs=['formation'],
         unicite_par='formation',
         icone='bi-clock-history',
+        libelle_bouton='Gérer',
         source='Modéliser les volumes horaires — avertissement de la source',
     ),
 }

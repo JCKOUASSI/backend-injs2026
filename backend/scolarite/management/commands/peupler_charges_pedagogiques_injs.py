@@ -217,14 +217,18 @@ class Command(BaseCommand):
         prenom, nom = self._prochain_identite(seq)
         username = f'{PREFIXE_USERNAME}{seq:03d}'
         badge = f'{PREFIXE_BADGE}{seq:03d}'
-        user, _ = User.objects.get_or_create(
+        user, cree = User.objects.get_or_create(
             username=username,
             defaults={'role': User.Role.FORMATEUR,
                       'first_name': prenom, 'last_name': nom,
                       'email': f'{username}@demo.injs.ci'},
         )
-        if not user.check_password(MOT_DE_PASSE_DEMO):
-            user.set_password(MOT_DE_PASSE_DEMO)
+        # Le site de test est exposé sur Internet : aucun compte enseignant
+        # fictif ne doit accepter un mot de passe partagé et connu. Garder un
+        # éventuel mot de passe personnalisé, mais neutraliser l'ancien mot
+        # de passe statique des seeds précédents.
+        if cree or user.check_password(MOT_DE_PASSE_DEMO):
+            user.set_unusable_password()
             user.save(update_fields=['password'])
         # profile_sync crée déjà un Formateur lié au compte FORMATEUR.
         formateur = Formateur.objects.filter(user=user).first()
@@ -326,6 +330,9 @@ class Command(BaseCommand):
         seq_max = 0
         for formateur in Formateur.objects.filter(
                 numerobadge__startswith=PREFIXE_BADGE).select_related('user'):
+            if formateur.user_id and formateur.user.check_password(MOT_DE_PASSE_DEMO):
+                formateur.user.set_unusable_password()
+                formateur.user.save(update_fields=['password'])
             try:
                 seq = int(formateur.numerobadge.replace(PREFIXE_BADGE, ''))
             except ValueError:
