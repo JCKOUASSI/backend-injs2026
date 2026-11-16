@@ -110,33 +110,47 @@ class BesoinsDepuisMaquetteTests(BaseAnneeTest):
 
 class GenerationAnneeTests(BaseAnneeTest):
     def test_diagnostic_couverture_reelle_sur_quatre_semaines(self):
-        """Caractérise l'écart entre métrique logique et récurrences persistées.
+        """Un besoin de 3 séances sur 4 semaines produit exactement 3 occurrences.
 
-        Une ligne AffectationCreneau couvre chaque semaine de son intervalle ;
-        il faut compter ses occurrences, pas `nb_seances` du besoin une fois.
-        Ce test documente l'anomalie, il ne certifie PAS l'année complète.
+        Chaque séance doit être limitée à sa semaine (pas de fausse récurrence
+        2 blocs × 4 semaines). Ceci reste un petit échantillon S1, non une
+        certification d'une année multi-semestre.
         """
         from time import monotonic
         self.importer([f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'
                        for i in range(20)])
         depart = monotonic()
-        bilan = A.generer_annee(self.annee.pk, semaines=[1, 2, 3, 4], persister=True)
+        bilan = A.generer_annee(self.annee.pk, semaines=[1, 2, 3, 4],
+                                semestre_numeros=[1], persister=True)
         duree_s = monotonic() - depart
         ligne = bilan['groupes'][0]
         self.assertEqual(ligne['seances_attendues'], 3)
-        self.assertEqual(ligne['seances_placees'], 3)  # compteur historique des besoins
-        self.assertEqual(ligne['occurrences_recurrentes'], 8)
-        self.assertEqual(ligne['heures_recurrentes'], 16)
+        self.assertEqual(ligne['seances_placees'], 3)
+        self.assertEqual(ligne['occurrences_recurrentes'], 3)
+        self.assertEqual(ligne['heures_recurrentes'], 6)
         self.assertEqual(ligne['heures_prevues'], 6)
-        self.assertEqual(ligne['motif_echec'], 'REPARTITION_ANNUELLE_NON_CONFORME')
-        self.assertEqual(ligne['statut'], 'NON_PERSISTE')
-        self.assertEqual(bilan['status_global'], A.ANNEE_PARTIELLE)
-        self.assertEqual(ligne['persistance']['effectuee'], False)
-        self.assertFalse(AffectationCreneau.objects.filter(actif=True).exists())
-        self.assertFalse(EmploiDuTemps.objects.exists())
+        self.assertEqual(ligne['statut'], G.GENERATION_OK)
+        self.assertEqual(bilan['status_global'], A.ANNEE_COMPLETE)
+        self.assertTrue(ligne['persistance']['effectuee'])
+        seances = list(AffectationCreneau.objects.filter(actif=True)
+                       .select_related('creneau_template'))
+        self.assertEqual(len(seances), 3)
+        self.assertEqual(sum(a.semaine_fin - a.semaine_debut + 1 for a in seances), 3)
+        self.assertTrue(all(a.semaine_debut == a.semaine_fin for a in seances))
+        self.assertEqual(sorted({a.semaine_debut for a in seances}), [1, 3])
+        self.assertTrue(all(a.ecue_id == self.ecue.pk for a in seances))
         print(f'ANNUEL_DIAGNOSTIC: 20 étudiants, 4 semaines, S1, '
-              f'6h prévues, {ligne["heures_recurrentes"]:g}h récurrentes proposées, '
-              f'0h persistée, durée {duree_s:.3f}s')
+              f'6h prévues, {ligne["heures_recurrentes"]:g}h persistées, '
+              f'{len(seances)} occurrences, durée {duree_s:.3f}s')
+
+    def test_automatique_sans_calendrier_semestre_refuse_l_annee_complete(self):
+        self.importer([f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'
+                       for i in range(5)])
+        bilan = A.generer_annee(self.annee.pk, semaines=[1, 2, 3, 4], persister=True)
+        self.assertNotEqual(bilan['status_global'], A.ANNEE_COMPLETE)
+        self.assertEqual(bilan['groupes'][0]['motif_echec'],
+                         'REPARTITION_ANNUELLE_NON_CONFORME')
+        self.assertEqual(AffectationCreneau.objects.filter(actif=True).count(), 0)
 
     def test_cohorte_importee_planifiee(self):
         self.importer([
@@ -240,6 +254,47 @@ class GenerationAnneeTests(BaseAnneeTest):
         self.assertEqual(bilan['totaux']['seances_non_placees'], 0)
         self.assertEqual(bilan['status_global'], A.ANNEE_COMPLETE)
 
+    def test_plusieurs_semestres_sans_calendrier_ne_sont_pas_persistes(self):
+        from scolarite.models import Semestre
+
+        groupe = self.f.creer_groupe(nom='L1-G1')
+        self.f.creer_affectation(volume=2, groupe=groupe)
+        semestre_2 = Semestre.objects.create(niveau=self.f.niveau, numero=2,
+                                             libelle='S2 test')
+        self.f.creer_affectation(volume=2, groupe=groupe, semestre=semestre_2)
+        bilan = A.generer_annee(self.annee.pk, semaines=[1, 2, 3, 4],
+                                semestre_numeros=[1, 2], persister=True)
+        self.assertNotEqual(bilan['status_global'], A.ANNEE_COMPLETE)
+        self.assertEqual(bilan['groupes'][0]['motif_echec'],
+                         'REPARTITION_ANNUELLE_NON_CONFORME')
+        self.assertFalse(AffectationCreneau.objects.filter(actif=True).exists())
+
+    def test_deux_groupes_coordonnes_sur_quatre_semaines(self):
+        """Même salle : zéro recouvrement dans une semaine, réemploi entre semaines."""
+        self.importer([
+            f'A-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'
+            for i in range(12)
+        ] + [
+            f'B-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G2;V1'
+            for i in range(12)
+        ])
+        bilan = A.generer_annee(self.annee.pk, semaines=[1, 2, 3, 4],
+                                semestre_numeros=[1], persister=True)
+        self.assertEqual(bilan['status_global'], A.ANNEE_COMPLETE, bilan['groupes'])
+        self.assertEqual(bilan['totaux']['seances_attendues'], 6)
+        self.assertEqual(bilan['totaux']['seances_placees'], 6)
+        self.assertEqual(bilan['totaux']['edts_persistes'], 2)
+        for ligne in bilan['groupes']:
+            self.assertEqual(ligne['heures_prevues'], 6)
+            self.assertEqual(ligne['heures_recurrentes'], 6)
+            self.assertTrue(ligne['persistance']['effectuee'])
+        seances = list(AffectationCreneau.objects.filter(actif=True)
+                       .select_related('creneau_template'))
+        self.assertEqual(len(seances), 6)
+        ressources = [(a.semaine_debut, a.creneau_template.jour,
+                       a.creneau_template.heure_debut, a.salle_id) for a in seances]
+        self.assertEqual(len(ressources), len(set(ressources)))
+
     def test_pas_de_publication(self):
         self.importer([f'INJS-001;Nom;{self.formation.intitule};L1;S1;L1-G1;V1'])
         bilan = A.generer_annee(self.annee.pk, semaines=[1], persister=True)
@@ -255,8 +310,13 @@ class GenerationAnneeTests(BaseAnneeTest):
         self.assertTrue(premier['groupes'][0]['persistance']['effectuee'])
         avant = list(AffectationCreneau.objects.filter(actif=True)
                      .values_list('pk', 'semaine_debut', 'semaine_fin'))
+        # Fixture volontairement incohérente (volume non divisible par les
+        # créneaux de 2 h) : un refus ne doit pas écraser l'ancien brouillon.
+        ECUE.objects.filter(pk=self.ecue.pk).update(volume_cm=5)
         essai = A.generer_annee(self.annee.pk, semaines=[1, 2, 3, 4], persister=True)
         self.assertNotEqual(essai['status_global'], A.ANNEE_COMPLETE)
+        self.assertEqual(essai['groupes'][0]['motif_echec'],
+                         'REPARTITION_ANNUELLE_NON_CONFORME')
         self.assertEqual(avant, list(AffectationCreneau.objects.filter(actif=True)
                                      .values_list('pk', 'semaine_debut', 'semaine_fin')))
 
