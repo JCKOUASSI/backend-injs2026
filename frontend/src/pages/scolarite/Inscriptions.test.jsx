@@ -99,6 +99,39 @@ describe('pages/scolarite/Inscriptions — liste et filtres', () => {
   })
 })
 
+describe('pages/scolarite/Inscriptions — validation groupée', () => {
+  it('coche seulement les inscriptions validables et attend la confirmation', async () => {
+    apiController.setRoute('/scolarite/inscriptions/valider-lot/', { validees: 1, ids: [1] })
+    mount()
+    await screen.findByText('MAT-001')
+    expect(within(rowOf('MAT-002')).queryByRole('checkbox')).not.toBeInTheDocument()
+    const caseInscription = within(rowOf('MAT-001')).getByRole('checkbox', {
+      name: 'Sélectionner l’inscription MAT-001',
+    })
+    fireEvent.click(caseInscription)
+    const bouton = screen.getByRole('button', { name: 'Valider la sélection (1)' })
+    fireEvent.click(bouton)
+    expect(apiMock.post).not.toHaveBeenCalledWith('/scolarite/inscriptions/valider-lot/', { ids: [1] })
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
+    fireEvent.click(bouton)
+    fireEvent.click(screen.getByRole('button', { name: 'Valider 1 inscription(s)' }))
+    await settle()
+    expect(apiMock.post).toHaveBeenCalledWith('/scolarite/inscriptions/valider-lot/', { ids: [1] })
+    expect(within(rowOf('MAT-001')).getByRole('checkbox').checked).toBe(false)
+  })
+
+  it('efface la sélection au changement de filtre', async () => {
+    mount()
+    await screen.findByText('MAT-001')
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Sélectionner les inscriptions validables affichées' }))
+    expect(screen.getByRole('button', { name: 'Valider la sélection (1)' }).disabled).toBe(false)
+    fireEvent.change(screen.getByPlaceholderText(/Rechercher un étudiant/i),
+      { target: { value: 'Awa' } })
+    await settle()
+    expect(screen.getByRole('button', { name: 'Valider la sélection (0)' }).disabled).toBe(true)
+  })
+})
+
 describe('pages/scolarite/Inscriptions — validation en cascade', () => {
   it('valide un brouillon en enchaînant EN_ATTENTE → A_VALIDER → VALIDEE puis recharge', async () => {
     mount()

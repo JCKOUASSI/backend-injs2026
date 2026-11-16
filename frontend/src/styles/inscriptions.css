@@ -66,6 +66,22 @@
 
 .insc-btn-reinitialiser:hover { background: #f2f6fc; }
 
+/* Validation groupée : une sélection bornée aux inscriptions affichées. */
+.insc-lot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .65rem;
+  margin: .75rem 1rem;
+  padding: .75rem;
+  border: 1px solid #d7e4f5;
+  border-radius: .75rem;
+  background: #f5f9ff;
+}
+.insc-lot [role="status"] { font-weight: 700; }
+.insc-col-selection { width: 2.8rem; text-align: center; }
+.insc-col-selection input { width: 1.05rem; height: 1.05rem; cursor: pointer; }
+
 /* Tableau : nom porté par l'avatar, jamais de débordement sur la formation. */
 .insc-table td { vertical-align: middle; }
 

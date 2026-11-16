@@ -19,6 +19,8 @@ urlpatterns = [
 
     path('inscriptions/',                         inscription_api.inscription_list,  name='scolarite-inscription-list'),
     path('inscriptions/stats/',                   inscription_api.inscription_stats, name='scolarite-inscription-stats'),
+    path('inscriptions/valider-lot/',             inscription_api.inscriptions_valider_lot,
+                                                                                     name='scolarite-inscription-valider-lot'),
     path('inscriptions/depuis-admission/',        inscription_api.inscrire_depuis_admission,
                                                                                      name='scolarite-inscription-depuis-admission'),
     path('inscriptions/<int:pk>/',                inscription_api.inscription_detail, name='scolarite-inscription-detail'),

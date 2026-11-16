@@ -72,6 +72,8 @@ export const createInscription = (body) => api.post('/scolarite/inscriptions/', 
 export const deleteInscription = (id) => api.delete(`/scolarite/inscriptions/${id}/`)
 export const transitionInscription = (id, body) =>
   api.post(`/scolarite/inscriptions/${id}/transition/`, body)
+export const validerInscriptionsLot = (ids) =>
+  api.post('/scolarite/inscriptions/valider-lot/', { ids })
 export const inscrireDepuisAdmission = (body) =>
   api.post('/scolarite/inscriptions/depuis-admission/', body)
 export const getStatsInscriptions = (params) =>

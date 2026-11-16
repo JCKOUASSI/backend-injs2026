@@ -1,6 +1,7 @@
 """API des dossiers étudiants et des inscriptions administratives."""
 
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Prefetch
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -626,6 +627,62 @@ def inscription_transition(request, pk):
     except inscription_services.InscriptionImpossible as erreur:
         return Response({'error': erreur.messages[0]}, status=409)
     return Response(_serialize_inscription(inscription, detail=True))
+
+
+class ValiderInscriptionsLotSerializer(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), min_length=1, max_length=200,
+    )
+
+    def validate_ids(self, ids):
+        if len(ids) != len(set(ids)):
+            raise serializers.ValidationError('Une inscription ne peut être cochée deux fois.')
+        return ids
+
+
+@extend_schema(request=ValiderInscriptionsLotSerializer, responses={200: OpenApiTypes.OBJECT,
+                                                        400: OpenApiTypes.OBJECT, 409: ErreurInscriptionSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def inscriptions_valider_lot(request):
+    """Valide les inscriptions cochées, par transitions métier et tout-ou-rien.
+
+    Aucun changement direct de statut : les validations, journaux, dates et
+    effets métier du service individuel s'appliquent à chaque inscription.
+    Verrouille par ordre de PK pour réduire le risque de deadlock.
+    """
+    saisie = ValiderInscriptionsLotSerializer(data=request.data)
+    saisie.is_valid(raise_exception=True)
+    ids = saisie.validated_data['ids']
+    S = InscriptionAdministrative.Statut
+    chemins = {
+        S.BROUILLON: (S.EN_ATTENTE, S.A_VALIDER, S.VALIDEE),
+        S.EN_ATTENTE: (S.A_VALIDER, S.VALIDEE),
+        S.A_VALIDER: (S.VALIDEE,),
+    }
+    try:
+        with transaction.atomic():
+            objets = list(InscriptionAdministrative.objects.select_for_update()
+                          .filter(pk__in=ids).order_by('pk'))
+            if len(objets) != len(ids):
+                raise inscription_services.InscriptionImpossible(
+                    'Sélection périmée : une ou plusieurs inscriptions sont introuvables.'
+                )
+            for inscription in objets:
+                if inscription.statut not in chemins:
+                    raise inscription_services.InscriptionImpossible(
+                        f'Inscription {inscription.pk} : le statut ne permet pas la validation.'
+                    )
+            for inscription in objets:
+                for statut in chemins[inscription.statut]:
+                    inscription_services.appliquer_transition(
+                        inscription, statut, acteur=request.user,
+                        commentaire='Validation groupée confirmée',
+                    )
+    except (inscription_services.InscriptionImpossible, ValidationError, IntegrityError) as erreur:
+        message = erreur.messages[0] if hasattr(erreur, 'messages') else str(erreur)
+        return Response({'error': message}, status=409)
+    return Response({'validees': len(objets), 'ids': ids})
 
 
 @extend_schema(request=OpenApiTypes.OBJECT, responses={200: InscriptionAdminDetailSerializer, 201: InscriptionAdminDetailSerializer, 400: OpenApiTypes.OBJECT, 409: ErreurInscriptionSerializer})
