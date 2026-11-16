@@ -244,8 +244,11 @@ def serializer_pour_ref(slug):
             if nom in champs
         ],
     })
+    # Les routes historiques utilisent déjà RefModuleOfficielSerializer et
+    # RefVolumeHoraireFormationSerializer. Un même nom de composant OpenAPI
+    # pour deux schémas distincts supprimait des clés de leur contrat publié.
     serie = type(
-        f'{modele.__name__}Serializer',
+        f'Gestion{modele.__name__}Serializer',
         (RefSocleSerializer,),
         attributs,
     )

@@ -131,6 +131,11 @@ class QrSeanceTests(SeanceEdtFixtureMixin, TestCase):
         self.assertEqual(reponse.status_code, 201, reponse.data)
         token = reponse.data['token']
         self.assertTrue(QRToken.objects.filter(token=token, seance_edt=self.affectation).exists())
+        # Le journal métier trace la génération sans conserver le secret QR
+        # réutilisable par un lecteur des journaux.
+        journal = AuditLog.objects.filter(action=AuditLog.Action.FORMATION_QR_GENERATE).latest('id')
+        self.assertNotIn('token', journal.extra)
+        self.assertEqual(journal.extra['canal'], 'EDT_LMD')
         reponse = self.client.get(f'/api/presences/seances-edt/{self.affectation.pk}/qr/')
         self.assertEqual(reponse.status_code, 200)
         self.assertEqual(reponse.data['token'], token)

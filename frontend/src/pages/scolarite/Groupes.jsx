@@ -60,7 +60,8 @@ export default function Groupes() {
     }
     // Étudiants validés encore sans groupe sur le même périmètre.
     try {
-      const { actif, ...perimetre } = propres
+      const perimetre = { ...propres }
+      delete perimetre.actif
       const res = await getNonAffectesGroupes(perimetre)
       setNonAffectes(typeof res.data?.non_affectes === 'number' ? res.data.non_affectes : null)
     } catch { setNonAffectes(null) }

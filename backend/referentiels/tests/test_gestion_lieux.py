@@ -107,6 +107,11 @@ class GestionSallesTests(GestionLieuxBase):
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         res = self.client.delete(f'/api/referentiels/salles/{salle.id}/')
         self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        lot = self.client.post('/api/referentiels/salles/lot/', {
+            'ids': [salle.pk], 'action': 'supprimer',
+        }, format='json')
+        self.assertEqual(lot.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(RefSalle.objects.filter(pk=salle.pk).exists())
 
 
 class GestionVaguesTests(GestionLieuxBase):

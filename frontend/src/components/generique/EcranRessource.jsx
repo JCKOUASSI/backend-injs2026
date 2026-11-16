@@ -1230,7 +1230,7 @@ function DetailGenerique({ ecran, ligne, cleBase, onFermer }) {
     retry: false,
   })
 
-  const lignes = data?.lignes || []
+  const lignes = useMemo(() => data?.lignes || [], [data?.lignes])
   const racine = data?.racine || null
 
   // Colonnes du détail : déclarées (`detail.colonnes`) ou **déduites** des

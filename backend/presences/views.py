@@ -601,11 +601,10 @@ def _coords_from_payload(donnees):
 
 
 def _jeton_lmd_pour_mobile(qr_token):
-    """``(jeton, erreur)`` — suit un QR de séance LMD remplacé ou expiré.
+    """``(jeton, erreur)`` — refuse un QR LMD remplacé ou expiré.
 
-    Un QR régénéré par l'enseignant invalide l'ancien jeton : le mobile qui
-    présente encore l'ancien QR doit être redirigé vers le remplaçant actif
-    tant que celui-ci est valide (sinon ``TOKEN_EXPIRED``).
+    Le mobile doit scanner le nouveau QR affiché par l'enseignant après une
+    régénération : l'ancien secret n'est jamais redirigé vers le nouveau.
     """
     from . import seances_edt_services as service
 

@@ -65,6 +65,17 @@ class RefPagination(PageNumberPagination):
     max_page_size = 1000
 
 
+# Trois référentiels ont un contrat métier explicite de non-suppression :
+# type d'évaluation (archivage dédié), année académique (calendrier et liens)
+# et salle (créneaux/présences). Les autres conservent le DELETE gardé par
+# dépendances, y compris les plaquettes d'offre qui le testent explicitement.
+SUPPRESSION_INTERDITE_MODELES = frozenset({
+    'referentiels.reftypeevaluation',
+    'scolarite.anneeacademique',
+    'formations.refsalle',
+})
+
+
 class ReferentielSocleViewSet(viewsets.ModelViewSet):
     """Gestion journalisée ; suppression physique limitée aux valeurs non utilisées."""
 
@@ -212,6 +223,11 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
         et SET_NULL comptent aussi comme utilisation. Le journal GFK est
         préservé avec une dernière trace de la suppression physique.
         """
+        if obj._meta.label_lower in SUPPRESSION_INTERDITE_MODELES:
+            return Response(
+                {'detail': 'Suppression interdite pour ce référentiel ; utilisez son cycle de vie.'},
+                status=status.HTTP_405_METHOD_NOT_ALLOWED,
+            )
         utilise = False
         for relation in obj._meta.related_objects:
             # Les relations inverses sont interrogées sur le gestionnaire

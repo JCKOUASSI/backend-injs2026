@@ -155,6 +155,22 @@ class ScanMobileSeanceEdtTests(MobileSeanceEdtMixin, TestCase):
         self.assertEqual(reponse.status_code, 400, reponse.data)
         self.assertEqual(reponse.data['code'], 'LOCATION_REQUIRED')
 
+    def test_qr_remplace_ne_permet_pas_un_nouveau_badgeage(self):
+        """Une copie d'un QR révoqué ne doit pas suivre le jeton actif."""
+        ancien = self.token
+        self.client.force_authenticate(self.enseignant)
+        nouveau = self.client.post(
+            f'/api/presences/seances-edt/{self.affectation.pk}/qr/',
+        ).data['token']
+        self.assertNotEqual(ancien, nouveau)
+        reponse = self._scan(self.auditeurs[0], **self._dans_la_zone())
+        self.assertEqual(reponse.status_code, 400, reponse.data)
+        self.assertEqual(reponse.data['code'], 'TOKEN_EXPIRED')
+        self.assertEqual(Pointage.objects.count(), 0)
+        self.token = nouveau
+        valide = self._scan(self.auditeurs[0], **self._dans_la_zone())
+        self.assertEqual(valide.status_code, 201, valide.data)
+
     def test_qr_expire_refuse(self):
         QRToken.objects.filter(seance_edt=self.affectation).update(
             expire_at=timezone.now() - timedelta(minutes=1))

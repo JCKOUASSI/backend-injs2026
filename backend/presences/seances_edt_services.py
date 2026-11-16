@@ -378,7 +378,9 @@ def generer_jeton(request, affectation, date):
         acteur=request.user, acteur_label=request.user.get_full_name() or request.user.username,
         cible_type='seance_edt', cible_numero=str(affectation.pk),
         cible_nom=affectation.intitule or str(affectation.creneau_template),
-        extra={'date': date.isoformat(), 'token': str(jeton.token), 'canal': 'EDT_LMD'},
+        # Le jeton est un secret de badgeage : ne pas le laisser dans un
+        # journal accessible aux rôles de supervision.
+        extra={'date': date.isoformat(), 'canal': 'EDT_LMD'},
     )
     return jeton
 
@@ -386,10 +388,9 @@ def generer_jeton(request, affectation, date):
 def resoudre_jeton_lmd(token):
     """Résout un jeton QR de séance LMD.
 
-    Retourne ``(jeton, erreur)``. Un QR **remplacé** (régénéré par
-    l'enseignant) est suivi automatiquement tant que son remplaçant est valide ;
-    un QR expiré ou dont la séance n'a plus de jeton actif est refusé
-    (``TOKEN_EXPIRED``) — c'est la partie serveur de l'anti-rejeu.
+    Retourne ``(jeton, erreur)``. Un QR remplacé, expiré ou désactivé
+    est refusé (``TOKEN_EXPIRED``) : une régénération révoque réellement
+    l'ancien secret, même si la séance dispose d'un nouveau QR actif.
     """
     from django.core.exceptions import ValidationError
 
@@ -408,14 +409,8 @@ def resoudre_jeton_lmd(token):
         return None, {'code': 'INVALID_TOKEN',
                       'detail': 'QR code inconnu ou hors séance LMD.'}
     if not jeton.is_valid:
-        remplacement = (QRToken.objects
-                        .filter(seance_edt=jeton.seance_edt, actif=True)
-                        .select_related('seance_edt')
-                        .order_by('-created_at').first())
-        if remplacement is None or not remplacement.is_valid:
-            return None, {'code': 'TOKEN_EXPIRED',
-                          'detail': 'QR code expiré — demandez un réaffichage.'}
-        jeton = remplacement
+        return None, {'code': 'TOKEN_EXPIRED',
+                      'detail': 'QR code expiré ou remplacé — demandez un réaffichage.'}
     return jeton, None
 
 
@@ -486,6 +481,10 @@ def badger_scan(request, *, affectation, date, personne=None, participant=None,
                             'detail': 'La fenêtre de badgeage de cette séance est fermée.'}
 
     filtre_personne = filtres_personne(type_personne, personne)
+    # Comme pour le canal legacy, verrouiller la personne AVANT la recherche :
+    # au premier scan il n'existe encore aucun Pointage à verrouiller.
+    # La garantie de concurrence reste à vérifier sur PostgreSQL.
+    personne.__class__._base_manager.select_for_update().get(pk=personne.pk)
     verrou = (Pointage.objects
               .filter(seance_edt=affectation, date_journee=date, **filtre_personne)
               .select_for_update())
