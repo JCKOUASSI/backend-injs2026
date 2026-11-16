@@ -9,7 +9,7 @@ from rest_framework.test import APIClient
 
 from authentication.models import User
 from formations.models import RefFormation
-from referentiels.models import RefModuleOfficiel, RefVolumeHoraireFormation
+from referentiels.models import RefModuleOfficiel, RefVolumeHoraireFormation, ReferentielJournal
 
 PREFIX = '/api/referentiels/gestion-donnees/'
 
@@ -46,7 +46,6 @@ class GestionOffreTests(TestCase):
             pk = create.data['id']
             self.assertEqual(self.client.get(base + str(pk) + '/').status_code, 200)
             self.assertEqual(self.client.patch(base + str(pk) + '/', {'libelle': data['libelle'] + ' II'}).status_code, 200)
-            self.assertEqual(self.client.delete(base + str(pk) + '/').status_code, 405)
             self.assertEqual(self.client.post(base + str(pk) + '/archiver/').status_code, 200)
             self.assertFalse(model.objects.get(pk=pk).actif)
             self.assertEqual(self.client.get(base).data['count'], 0)
@@ -55,6 +54,32 @@ class GestionOffreTests(TestCase):
             self.assertTrue(model.objects.get(pk=pk).actif)
         self.assertEqual(self.client.post(PREFIX + f'formations/{fid}/archiver/').status_code, 200)
         self.assertEqual(self.client.get('/api/formations/ref/formations/').data, [])
+
+    def test_suppression_isolee_et_archivage_si_utilise(self):
+        base = PREFIX + 'formations/'
+        libre = RefFormation.objects.create(intitule='Cycle libre', code='LIBRE')
+        libre_pk = libre.pk
+        self.assertEqual(self.client.delete(base + str(libre_pk) + '/').status_code, 204)
+        self.assertFalse(RefFormation.objects.filter(pk=libre_pk).exists())
+        self.assertTrue(ReferentielJournal.objects.filter(
+            object_id=libre_pk, detail__suppression_definitive=True,
+        ).exists())
+
+        lie = RefFormation.objects.create(intitule='Cycle utilisé', code='LIE')
+        RefModuleOfficiel.objects.create(formation=lie, libelle='Module lié')
+        response = self.client.delete(base + str(lie.pk) + '/')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertTrue(response.data['archive'])
+        lie.refresh_from_db()
+        self.assertTrue(lie.archive)
+        self.assertTrue(RefModuleOfficiel.objects.filter(formation=lie).exists())
+        self.assertEqual(self.client.post(base + str(lie.pk) + '/reactiver/').status_code, 200)
+
+    def test_suppression_interdite_au_lecteur(self):
+        libre = RefFormation.objects.create(intitule='Cycle à protéger', code='PROT')
+        self.client.force_authenticate(self.lecteur)
+        self.assertEqual(self.client.delete(PREFIX + f'formations/{libre.pk}/').status_code, 403)
+        self.assertTrue(RefFormation.objects.filter(pk=libre.pk).exists())
 
     def test_exports_quatre_formats_et_import_roundtrip_csv_xlsx(self):
         formation = RefFormation.objects.create(intitule='Licence Sports', code='LS')

@@ -3,10 +3,11 @@
 Pattern retenu : ViewSet + DefaultRouter (comme l'app parametres).
 - GET   : tout utilisateur authentifié (alimente React/Flutter — règle 9).
 - POST/PATCH : rôles de gestion (ReferentielPermission).
-- DELETE : jamais exposé (règle 2 — archivage via action dédiée).
+- DELETE : suppression définitive seulement si aucune relation métier ne dépend de la valeur ; sinon archivage réversible.
 """
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError, transaction
+from django.db.models.deletion import ProtectedError, RestrictedError
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status, viewsets
 from rest_framework.pagination import PageNumberPagination
@@ -65,11 +66,11 @@ class RefPagination(PageNumberPagination):
 
 
 class ReferentielSocleViewSet(viewsets.ModelViewSet):
-    """ViewSet de base : CRUD sans suppression, archivage réversible, journal."""
+    """Gestion journalisée ; suppression physique limitée aux valeurs non utilisées."""
 
     permission_classes = [ReferentielPermission]
     pagination_class = RefPagination
-    http_method_names = ['get', 'post', 'patch', 'head', 'options']  # règle 2 : pas de DELETE
+    http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
 
     def get_queryset(self):
         qs = self.queryset
@@ -204,7 +205,74 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
         """Récupère une valeur même archivée (pour archiver/reactiver)."""
         return get_object_or_404(self.queryset, pk=pk)
 
-    # ── Règle 2 : archivage réversible, jamais de suppression physique ──
+    def destroy(self, request, *args, **kwargs):
+        """Supprime une valeur isolée ; conserve toute valeur liée à un dossier.
+
+        Vérifie aussi les relations CASCADE et SET_NULL : une suppression ne
+        doit ni effacer des enfants, ni détacher silencieusement un dossier.
+        Le journal GFK (sans contrainte FK) est préservé avec une trace finale.
+        """
+        with transaction.atomic():
+            obj = get_object_or_404(self.queryset.select_for_update(), pk=kwargs['pk'])
+            utilise = False
+            for relation in obj._meta.related_objects:
+                # Les relations inverses sont interrogées sur le gestionnaire
+                # de base : un enfant archivé est lui aussi une utilisation.
+                if relation.many_to_many:
+                    through = relation.through
+                    champ = next((f for f in through._meta.fields
+                                  if getattr(f, 'related_model', None) == type(obj)), None)
+                    utilise = champ is None or through._base_manager.filter(**{champ.name: obj.pk}).exists()
+                else:
+                    utilise = relation.related_model._base_manager.filter(
+                        **{relation.field.name: obj.pk},
+                    ).exists()
+                if utilise:
+                    break
+
+            if not utilise:
+                # Une autre référence protégée peut encore être ajoutée
+                # entre le contrôle et le DELETE. Le savepoint permet alors
+                # de revenir à l'archivage sans laisser une transaction cassée.
+                try:
+                    with transaction.atomic():
+                        self._journaliser(obj, ReferentielJournal.Action.MODIFICATION, {
+                            'suppression_definitive': True,
+                            'code': getattr(obj, 'code', None),
+                            'libelle': getattr(obj, 'libelle', str(obj)),
+                        })
+                        obj.delete()
+                    return Response(status=status.HTTP_204_NO_CONTENT)
+                except (ProtectedError, RestrictedError, IntegrityError):
+                    utilise = True
+
+            if not hasattr(obj, 'archive'):
+                if not hasattr(obj, 'actif'):
+                    return Response(
+                        {'detail': 'Valeur utilisée : ni archivage ni désactivation disponibles.'},
+                        status=status.HTTP_409_CONFLICT,
+                    )
+                if obj.actif:
+                    obj.actif = False
+                    obj.save(update_fields=['actif'])
+                    self._journaliser(obj, ReferentielJournal.Action.DESACTIVATION,
+                                      {'motif': 'Suppression demandée : valeur déjà utilisée'})
+                return Response({'detail': 'Valeur utilisée : désactivée sans effacer ses liens.',
+                                 'desactive': True})
+            if not obj.archive:
+                if hasattr(obj, 'archiver'):
+                    obj.archiver(request.user, motif='Suppression demandée : valeur déjà utilisée')
+                else:
+                    obj.archive = True
+                    if hasattr(obj, 'actif'):
+                        obj.actif = False
+                    obj.save()
+                    self._journaliser(obj, ReferentielJournal.Action.ARCHIVAGE,
+                                      {'motif': 'Suppression demandée : valeur déjà utilisée'})
+            return Response({'detail': 'Valeur utilisée : archivée sans effacer ses liens.',
+                             'archive': True})
+
+    # Archivage explicite, toujours réversible.
     @action(detail=True, methods=['post'])
     def archiver(self, request, pk=None):
         obj = self._get_any_object(pk)
@@ -340,8 +408,8 @@ from .serializers import serializer_pour_ref  # noqa: E402
 class RefGeneriqueViewSet(ReferentielSocleViewSet):
     """CRUD d'un référentiel du registre, sélectionné par son slug d'URL.
 
-    Réutilise intégralement le comportement du socle : pas de DELETE,
-    archivage réversible, journalisation, anti-doublon de libellé.
+    Réutilise le comportement du socle : suppression sûre ou archivage,
+    journalisation et contrôle des doublons de libellé.
     """
 
     #: Renseigné par le routeur DRF ; déclaré ici pour la lisibilité.

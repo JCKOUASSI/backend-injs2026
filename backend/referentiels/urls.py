@@ -42,6 +42,7 @@ for _slug, _entree in REGISTRE.items():
         rf'^{_slug}/(?P<pk>[0-9]+)/$',
         views.RefGeneriqueViewSet.as_view({
             'get': 'retrieve', 'patch': 'partial_update', 'put': 'update',
+            'delete': 'destroy',
         }, slug=_slug),
         name=f'ref-{_slug}-detail',
     ))
@@ -64,7 +65,7 @@ for _slug in ('formations', 'modules-officiels', 'volumes-modules'):
         path(_prefix + 'import/', views.RefGeneriqueViewSet.as_view(
             {'post': 'importer'}, slug=_slug), name=f'gestion-{_slug}-import'),
         re_path(rf'^{_prefix}(?P<pk>[0-9]+)/$', views.RefGeneriqueViewSet.as_view(
-            {'get': 'retrieve', 'patch': 'partial_update'}, slug=_slug), name=f'gestion-{_slug}-detail'),
+            {'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy'}, slug=_slug), name=f'gestion-{_slug}-detail'),
         *[re_path(rf'^{_prefix}(?P<pk>[0-9]+)/{action}/$',
                   views.RefGeneriqueViewSet.as_view({'post': action}, slug=_slug),
                   name=f'gestion-{_slug}-{action}')

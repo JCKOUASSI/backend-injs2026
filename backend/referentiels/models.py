@@ -45,7 +45,8 @@ class RefSocle(models.Model):
     date_activation = models.DateTimeField(null=True, blank=True)
     date_desactivation = models.DateTimeField(null=True, blank=True)
 
-    # Règle 2 — archivage (soft delete), jamais de suppression physique
+    # Règle 2 — archivage réversible pour les valeurs déjà utilisées.
+    # Une valeur isolée peut être supprimée par l'API avec contrôle des liens.
     archive = models.BooleanField(default=False, db_index=True)
 
     # Règle 7 — rattachement facultatif à une année académique

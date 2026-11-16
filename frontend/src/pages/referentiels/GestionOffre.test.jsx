@@ -77,7 +77,7 @@ describe('plaquettes Offre de formation', () => {
     await settle()
     fireEvent.click(screen.getByRole('button', { name: /^Supprimer$/ }))
     await settle()
-    expect(apiMock.post).toHaveBeenCalledWith(`/referentiels/gestion-donnees/${slug}/7/archiver/`, {})
+    expect(apiMock.delete).toHaveBeenCalledWith(`/referentiels/gestion-donnees/${slug}/7/`)
   })
 
   it('transmet un CSV au serveur en multipart et appelle le téléchargement binaire', async () => {

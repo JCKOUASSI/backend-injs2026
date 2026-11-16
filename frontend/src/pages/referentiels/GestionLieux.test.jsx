@@ -211,7 +211,7 @@ describe('écran générique — présentations liste / cartes et pagination', (
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('supprime logiquement après confirmation (désactivation tracée)', async () => {
+  it('demande la suppression sûre au serveur après confirmation', async () => {
     monter30()
     await settle()
 
@@ -219,12 +219,12 @@ describe('écran générique — présentations liste / cartes et pagination', (
     await settle()
     const alerte = screen.getByRole('alertdialog')
     expect(within(alerte).getByText('Supprimer cette valeur ?')).toBeTruthy()
-    expect(within(alerte).getByText('désactivée')).toBeTruthy()
-    expect(within(alerte).getByText(/La suppression physique est désactivée/)).toBeTruthy()
+    expect(within(alerte).getByText(/supprimée définitivement/)).toBeTruthy()
+    expect(within(alerte).getByText(/Si elle est liée à d’autres données/)).toBeTruthy()
 
     fireEvent.click(within(alerte).getByRole('button', { name: 'Supprimer' }))
     await settle()
-    expect(apiMock.patch).toHaveBeenCalledWith('/referentiels/salles/1/', { actif: false })
+    expect(apiMock.delete).toHaveBeenCalledWith('/referentiels/salles/1/')
     expect(screen.queryByRole('alertdialog')).toBeNull()
   })
 

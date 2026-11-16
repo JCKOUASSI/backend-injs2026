@@ -4,7 +4,7 @@ Niveaux, semestres, parcours et types de formation sont gérés par le CRUD
 générique du module Référentiels alors que leurs modèles n'héritent pas du
 socle (pas de provenance, pas d'archivage, ``intitule`` au lieu de
 ``libelle``, semestre sans colonne code). Le contrat d'API reste unifié :
-``code`` / ``libelle`` partout, journalisation, anti-doublon, pas de DELETE.
+``code`` / ``libelle`` partout, journalisation et suppression sûre des valeurs isolées.
 Les UE/ECUE, elles, restent pilotées par le module Maquettes (cycle de
 vie) : leur carte y renvoie via le bouton « Gérer ».
 """
@@ -60,12 +60,23 @@ class GestionNiveauxTests(TestCase):
         }, format='json')
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_archivage_non_supporte_et_delete_interdit(self):
+    def test_archivage_non_supporte_et_suppression_isolee(self):
         niveau = Niveau.objects.create(code='M1', libelle='Master 1', ordre=4)
         res = self.client.post(f'/api/referentiels/niveaux/{niveau.id}/archiver/')
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         res = self.client.delete(f'/api/referentiels/niveaux/{niveau.id}/')
-        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Niveau.objects.filter(pk=niveau.pk).exists())
+
+    def test_niveau_avec_semestre_est_desactive_sans_cascade(self):
+        niveau = Niveau.objects.create(code='D3', libelle='Doctorat 3', ordre=8)
+        semestre = Semestre.objects.create(niveau=niveau, numero=16, libelle='S16')
+        res = self.client.delete(f'/api/referentiels/niveaux/{niveau.pk}/')
+        self.assertEqual(res.status_code, 200, res.data)
+        self.assertTrue(res.data['desactive'])
+        niveau.refresh_from_db()
+        self.assertFalse(niveau.actif)
+        self.assertTrue(Semestre.objects.filter(pk=semestre.pk, niveau=niveau).exists())
 
     def test_journalisation_sur_modele_hors_socle(self):
         res = self.client.post('/api/referentiels/niveaux/', {

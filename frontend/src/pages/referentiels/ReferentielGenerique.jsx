@@ -446,27 +446,28 @@ export default function ReferentielGenerique() {
     }
   }
 
-  // Suppression LOGIQUE : le socle interdit la suppression physique
-  // (traçabilité + éléments protégés par les données qui les référencent).
-  // Archivage quand le modèle le supporte, désactivation sinon — dans les
-  // deux cas la valeur disparaît des listes actives et reste récupérable.
+  // L'API arbitre la suppression : 204 si la valeur n'est référencée nulle
+  // part, 200 + archive si elle est liée à un dossier. Ne jamais le deviner
+  // dans le navigateur : des relations peuvent être invisibles dans la liste.
   const confirmerSuppression = async () => {
     if (!suppression) return
     setEnvoi(true)
     try {
-      if (archivageSupporte) {
+      if (suppression.action === 'archiver') {
         await api.post(`${cheminGestion}${suppression.id}/archiver/`, {})
-        toast.success?.(
-          `« ${suppression.libelle} » ${suppression.action === 'archiver' ? 'archivé' : 'supprimé (archivé)'} — consultable via le filtre « Archivés ».`)
+        toast.success?.(`« ${suppression.libelle} » archivé — réactivable depuis le filtre « Archivés ».`)
       } else {
-        await api.patch(`${cheminGestion}${suppression.id}/`, { actif: false })
-        toast.success?.(
-          `« ${suppression.libelle} » supprimé — récupérable via le filtre « Inactifs ».`)
+        const res = await api.delete(`${cheminGestion}${suppression.id}/`)
+        toast.success?.(res.data?.archive
+          ? `« ${suppression.libelle} » est utilisé : archivé sans effacer ses liens.`
+          : res.data?.desactive
+            ? `« ${suppression.libelle} » est utilisé : désactivé sans effacer ses liens.`
+            : `« ${suppression.libelle} » supprimé définitivement.`)
       }
       setSuppression(null)
       await charger({ silencieux: true })
-    } catch {
-      toast.error?.('Suppression impossible.')
+    } catch (err) {
+      toast.error?.(err.response?.data?.detail || 'Suppression impossible.')
     } finally {
       setEnvoi(false)
     }
@@ -1156,19 +1157,17 @@ export default function ReferentielGenerique() {
             <div className="ref-modale-corps">
               <p>
                 <strong>{suppression.libelle}</strong>{' '}
-                {archivageSupporte ? (
-                  <>sera <strong>archivée</strong> : elle ne sera plus proposée dans les
-                  nouvelles opérations, mais reste consultable via le filtre « Archivés »
-                  et réactivable à tout moment.</>
+                {suppression.action === 'archiver' ? (
+                  <>sera <strong>archivée</strong> et pourra être réactivée depuis le filtre « Archivés ».</>
                 ) : (
-                  <>sera <strong>désactivée</strong> : elle disparaîtra de la liste des
-                  valeurs actives, et reste récupérable via le filtre « Inactifs ».</>
+                  <>sera <strong>supprimée définitivement</strong> si elle n’est utilisée nulle part.
+                    Si elle est liée à d’autres données, elle sera archivée sans effacer ces liens
+                    {archivageSupporte ? ' et pourra être réactivée.' : ' si ce modèle le permet.'}</>
                 )}
               </p>
               <p className="ref-suppression-note">
-                La suppression physique est désactivée sur les référentiels : une valeur
-                peut être référencée par des données existantes (par exemple des séances
-                d’emploi du temps) et l’historique doit être préservé.
+                L’opération est contrôlée par le serveur et journalisée. Confirmez uniquement
+                si vous souhaitez retirer cette valeur des opérations courantes.
               </p>
             </div>
             <footer className="ref-modale-pied">
