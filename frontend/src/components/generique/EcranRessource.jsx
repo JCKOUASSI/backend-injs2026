@@ -663,6 +663,9 @@ export function ListeGenerique({ ecran, cleBase }) {
   const [recherche, setRecherche] = useState('')
   const [page, setPage] = useState(1)
   const [selection, setSelection] = useState(null)
+  // Sélection de la page affichée, distincte de la fiche ouverte (selection).
+  // Aucune action destructive générique : chaque workflow attend son API dédiée.
+  const [lignesCochees, setLignesCochees] = useState([])
   const [confirmation, setConfirmation] = useState(null)
   const [edition, setEdition] = useState(null)
   const rechercheDebounced = useDebounce(recherche, 350)
@@ -730,6 +733,14 @@ export function ListeGenerique({ ecran, cleBase }) {
   })
 
   const lignes = useMemo(() => data?.results || [], [data])
+  // Un changement de requête/page ne doit jamais conserver une sélection
+  // invisible. « Tout » ne concerne que les lignes de la page courante.
+  useEffect(() => { setLignesCochees([]) }, [cle, data])
+  const clesVisibles = lignes.map((ligne, index) => String(ligne.id ?? `index-${index}`))
+  const toutesCochees = clesVisibles.length > 0 && clesVisibles.every((id) => lignesCochees.includes(id))
+  const basculerCoche = (id) => setLignesCochees((actuelles) => (
+    actuelles.includes(id) ? actuelles.filter((cleLigne) => cleLigne !== id) : [...actuelles, id]
+  ))
 
   // Formulaire déclaré par le descripteur (`ecran.formulaire`). Sans lui,
   // l'écran reste strictement en lecture : on n'affiche jamais un bouton
@@ -999,6 +1010,9 @@ export function ListeGenerique({ ecran, cleBase }) {
             <span className="gen-count-pill">
               {isFetching ? 'Chargement…' : `${data?.count ?? lignes.length} élément(s)`}
             </span>
+            {lignesCochees.length > 0 && (
+              <span className="gen-count-pill" role="status">{lignesCochees.length} sélectionné(s) sur cette page</span>
+            )}
             {formulaireCreation && peutGerer && (
               <button
                 type="button"
@@ -1017,6 +1031,11 @@ export function ListeGenerique({ ecran, cleBase }) {
           <table className="table table-sm table-hover align-middle mb-0 gen-table">
             <thead>
               <tr>
+                <th scope="col" className="text-center">
+                  <input type="checkbox" className="form-check-input" aria-label="Tout sélectionner (page affichée)"
+                    checked={toutesCochees} disabled={clesVisibles.length === 0}
+                    onChange={(e) => setLignesCochees(e.target.checked ? clesVisibles : [])} />
+                </th>
                 {colonnes.map((c) => (
                   <th key={c.cle || c.libelle} scope="col" style={c.largeur ? { width: c.largeur } : undefined}>
                     {c.libelle}
@@ -1035,6 +1054,12 @@ export function ListeGenerique({ ecran, cleBase }) {
                   onClick={() => ecran.detail && setSelection(ligne)}
                   style={ecran.detail ? { cursor: 'pointer' } : undefined}
                 >
+                  <td className="text-center" onClick={(e) => e.stopPropagation()}>
+                    <input type="checkbox" className="form-check-input"
+                      aria-label={`Sélectionner la ligne ${ligne.numero || ligne.nom || ligne.id || index + 1}`}
+                      checked={lignesCochees.includes(clesVisibles[index])}
+                      onChange={() => basculerCoche(clesVisibles[index])} />
+                  </td>
                   {colonnes.map((c) => (
                     <td key={c.cle || c.libelle}><Cellule ligne={ligne} colonne={c} /></td>
                   ))}
@@ -1089,7 +1114,7 @@ export function ListeGenerique({ ecran, cleBase }) {
               ))}
               {lignes.length === 0 && !isFetching && (
                 <tr>
-                  <td colSpan={Math.max(1, colonnes.length) + 1}>
+                  <td colSpan={Math.max(1, colonnes.length) + 2}>
                     <div className="gen-empty">
                       <i className="bi bi-inbox" aria-hidden="true"></i>
                       <span className="gen-empty-title">Aucun résultat</span>

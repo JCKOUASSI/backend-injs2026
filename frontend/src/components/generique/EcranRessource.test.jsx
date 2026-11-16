@@ -149,12 +149,44 @@ describe('rendu de la liste', () => {
   })
 })
 
+describe('sélection des lignes de la page', () => {
+  it('permet de cocher plusieurs lignes, tout sélectionner et tout désélectionner sans action serveur', async () => {
+    monter()
+    await screen.findByText('DOS-001')
+    const tout = screen.getByRole('checkbox', { name: 'Tout sélectionner (page affichée)' })
+    const premiere = screen.getByRole('checkbox', { name: 'Sélectionner la ligne DOS-001' })
+    const seconde = screen.getByRole('checkbox', { name: 'Sélectionner la ligne DOS-002' })
+    fireEvent.click(premiere)
+    expect(premiere.checked).toBe(true)
+    expect(seconde.checked).toBe(false)
+    fireEvent.click(tout)
+    expect(premiere.checked).toBe(true)
+    expect(seconde.checked).toBe(true)
+    fireEvent.click(tout)
+    expect(premiere.checked).toBe(false)
+    expect(seconde.checked).toBe(false)
+    expect(apiController.api.post).not.toHaveBeenCalled()
+    expect(apiController.api.delete).not.toHaveBeenCalled()
+  })
+
+  it('efface la sélection quand la page change, même si les identifiants se répètent', async () => {
+    reponseLignes = { count: 100, results: LIGNES.results }
+    monter()
+    await screen.findByText('DOS-001')
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Tout sélectionner (page affichée)' }))
+    expect(screen.getByRole('checkbox', { name: 'Sélectionner la ligne DOS-001' }).checked).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Suivant' }))
+    await waitFor(() => expect(derniersParams()).toMatchObject({ page: 2 }))
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Sélectionner la ligne DOS-001' }).checked).toBe(false))
+  })
+})
+
 describe('colonnes automatiques', () => {
   it('déduit les colonnes des champs prioritaires puis du premier enregistrement', async () => {
     monter({ id: 'test_auto', titre: 'Auto', endpoint: '/test/lignes/', priorite: ['numero', 'statut'] })
     expect(await screen.findByText('DOS-001')).toBeTruthy()
     const entetes = [...document.querySelectorAll('thead th')].map((th) => th.textContent)
-    expect(entetes.slice(0, 2)).toEqual(['Numéro', 'Statut'])
+    expect(entetes.slice(1, 3)).toEqual(['Numéro', 'Statut'])
   })
 
   it('n\'affiche pas les champs techniques', async () => {
