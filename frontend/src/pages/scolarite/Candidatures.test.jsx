@@ -117,6 +117,34 @@ describe('pages/scolarite/Candidatures — liste et filtres', () => {
     expect(screen.getByText(/année 2025-2026/i)).toBeInTheDocument()
   })
 
+  it('sélectionne plusieurs candidatures ou toutes les lignes chargées sans transition serveur', async () => {
+    mount()
+    await screen.findByText('C-005')
+    const tout = screen.getByRole('checkbox', { name: 'Tout sélectionner les candidatures affichées' })
+    const premiere = screen.getByRole('checkbox', { name: 'Sélectionner la candidature C-005' })
+    const seconde = screen.getByRole('checkbox', { name: 'Sélectionner la candidature C-006' })
+    fireEvent.click(premiere)
+    expect(premiere.checked).toBe(true)
+    expect(seconde.checked).toBe(false)
+    fireEvent.click(tout)
+    expect(seconde.checked).toBe(true)
+    fireEvent.click(tout)
+    expect(premiere.checked).toBe(false)
+    expect(posts(() => true)).toHaveLength(0)
+  })
+
+  it('sélectionne indépendamment les pièces du dossier affiché', async () => {
+    mount()
+    await screen.findByText('C-005')
+    ouvrirDossier('C-005')
+    await screen.findByText('CNI')
+    const tout = screen.getByRole('checkbox', { name: 'Tout sélectionner les pièces affichées' })
+    fireEvent.click(tout)
+    expect(screen.getByRole('checkbox', { name: 'Sélectionner la pièce CNI' }).checked).toBe(true)
+    expect(screen.getByRole('checkbox', { name: 'Sélectionner la pièce Diplôme' }).checked).toBe(true)
+    expect(posts(() => true)).toHaveLength(0)
+  })
+
   it('recherche et filtre par statut en passant les paramètres au service', async () => {
     mount()
     await screen.findByText('C-005')

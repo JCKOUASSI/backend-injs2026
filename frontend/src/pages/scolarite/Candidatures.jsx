@@ -54,6 +54,7 @@ function DossierPanel({ candidature, onClose, onChange }) {
   const { showToast } = useToast()
   const [detail, setDetail] = useState(candidature)
   const [pieces, setPieces] = useState([])
+  const [piecesCochees, setPiecesCochees] = useState([])
   const [chargement, setChargement] = useState(true)
   const [action, setAction] = useState(null)
 
@@ -65,6 +66,7 @@ function DossierPanel({ candidature, onClose, onChange }) {
         getPieces(candidature.id),
       ])
       setDetail(detailRes.data)
+      setPiecesCochees([])
       setPieces(piecesRes.data.pieces || [])
     } catch (err) {
       showToast(messageErreur(err, 'Chargement du dossier impossible'), 'error')
@@ -179,6 +181,10 @@ function DossierPanel({ candidature, onClose, onChange }) {
               <table className="cand-table cand-table--simple">
                 <thead>
                   <tr>
+                    <th scope="col"><input type="checkbox" aria-label="Tout sélectionner les pièces affichées"
+                      checked={pieces.length > 0 && pieces.every((p) => piecesCochees.includes(p.id))}
+                      disabled={!pieces.length}
+                      onChange={(e) => setPiecesCochees(e.target.checked ? pieces.map((p) => p.id) : [])} /></th>
                     <th scope="col">Pièce</th>
                     <th scope="col">Statut</th>
                     <th scope="col">Fichier</th>
@@ -188,6 +194,10 @@ function DossierPanel({ candidature, onClose, onChange }) {
                 <tbody>
                   {pieces.map((piece) => (
                     <tr key={piece.id}>
+                      <td><input type="checkbox" aria-label={`Sélectionner la pièce ${piece.type_piece}`}
+                        checked={piecesCochees.includes(piece.id)}
+                        onChange={() => setPiecesCochees((ids) => ids.includes(piece.id)
+                          ? ids.filter((id) => id !== piece.id) : [...ids, piece.id])} /></td>
                       <td>
                         {piece.type_piece}
                         {piece.obligatoire && <span className="mp-requis" title="Obligatoire">*</span>}
@@ -441,6 +451,7 @@ function NouvelleCandidature({ annee, formations, niveaux, onCree, onAnnuler }) 
 export default function Candidatures() {
   const { showToast } = useToast()
   const [candidatures, setCandidatures] = useState([])
+  const [candidaturesCochees, setCandidaturesCochees] = useState([])
   const [totalCandidatures, setTotalCandidatures] = useState(0)
   const [annee, setAnnee] = useState(null)
   const [formations, setFormations] = useState([])
@@ -464,6 +475,7 @@ export default function Candidatures() {
       const res = await listCandidatures(params)
       const data = res.data
       const lignes = Array.isArray(data) ? data : (data?.results || [])
+      setCandidaturesCochees([])
       setCandidatures(lignes)
       setTotalCandidatures(Array.isArray(data) ? data.length : (data?.count ?? lignes.length))
     } catch (err) {
@@ -594,6 +606,9 @@ export default function Candidatures() {
           <span className="cand-count-pill">
             {candidatures.length} dossier{candidatures.length > 1 ? 's' : ''}
           </span>
+          {candidaturesCochees.length > 0 && (
+            <span className="cand-count-pill" role="status">{candidaturesCochees.length} sélectionné(s) parmi les dossiers affichés</span>
+          )}
         </div>
         <div className="cand-panel-body">
           <div className="cand-filters">
@@ -629,6 +644,10 @@ export default function Candidatures() {
               <table className="cand-table cand-table--candidatures">
                 <thead>
                   <tr>
+                    <th scope="col"><input type="checkbox" aria-label="Tout sélectionner les candidatures affichées"
+                      checked={candidatures.length > 0 && candidatures.every((c) => candidaturesCochees.includes(c.id))}
+                      disabled={!candidatures.length}
+                      onChange={(e) => setCandidaturesCochees(e.target.checked ? candidatures.map((c) => c.id) : [])} /></th>
                     <th>N°</th><th>Candidat</th><th>Formation</th><th>Niveau</th>
                     <th>Statut</th><th>Dossier</th><th className="cand-th-actions"><span className="cand-sr-only">Actions</span></th>
                   </tr>
@@ -636,6 +655,10 @@ export default function Candidatures() {
                 <tbody>
                   {candidatures.map((c) => (
                     <tr key={c.id}>
+                      <td><input type="checkbox" aria-label={`Sélectionner la candidature ${c.numero}`}
+                        checked={candidaturesCochees.includes(c.id)}
+                        onChange={() => setCandidaturesCochees((ids) => ids.includes(c.id)
+                          ? ids.filter((id) => id !== c.id) : [...ids, c.id])} /></td>
                       <td className="cand-col-etroit"><span className="cand-numero">{c.numero}</span></td>
                       <td><span className="cand-etudiant">{c.candidat}</span></td>
                       <td className="cand-col-formation">
@@ -666,7 +689,7 @@ export default function Candidatures() {
                   ))}
                   {candidatures.length === 0 && (
                     <tr>
-                      <td colSpan={7}>
+                      <td colSpan={8}>
                         <div className="cand-vide">
                           <span className="cand-vide-icone" aria-hidden="true">
                             <i className="bi bi-inbox"></i>
