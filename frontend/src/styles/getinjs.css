@@ -380,6 +380,15 @@
   background: #fff;
 }
 .getinjs.gen-page .gen-choix-item { margin: .2rem 0; }
+.getinjs.gen-page .gen-choix-tout {
+  position: sticky;
+  top: -.4rem;
+  z-index: 1;
+  padding: .35rem 0;
+  background: #fff;
+  border-bottom: 1px solid #b7cee7;
+  font-weight: 700;
+}
 
 .getinjs.gen-page .gen-contraintes {
   background: linear-gradient(180deg, #f7fbff, var(--injs-blue-pale));

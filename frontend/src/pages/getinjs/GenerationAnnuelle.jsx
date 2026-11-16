@@ -66,11 +66,17 @@ function Statut({ statut }) {
   return <span className={`badge ${info.classe}`}>{info.libelle}</span>
 }
 
-function ChoixMultiples({ titre, options, selection, onChange, disabled = false }) {
+function ChoixMultiples({ titre, options, selection, onChange, onChangeTout, disabled = false }) {
+  const tousVisiblesCoches = options.length > 0 && options.every(({ id }) => selection.includes(id))
   return (
     <fieldset className="gen-choix-multiples" disabled={disabled}>
       <legend className="form-label gen-label">{titre}</legend>
       <div className="gen-choix-liste">
+        {options.length > 0 && <label className="form-check gen-choix-item gen-choix-tout">
+          <input type="checkbox" className="form-check-input"
+            checked={tousVisiblesCoches} onChange={() => onChangeTout(!tousVisiblesCoches)} />
+          <span className="form-check-label">Tout sélectionner (options visibles)</span>
+        </label>}
         {options.length ? options.map(({ id, label }) => (
           <label key={id} className="form-check gen-choix-item">
             <input type="checkbox" className="form-check-input"
@@ -573,30 +579,42 @@ export default function GenerationAnnuelle() {
                   <ChoixMultiples titre="Filières (sélection multiple)"
                     options={filieresRef.map((code) => ({ id: code, label: code }))}
                     selection={filieresSel}
-                    onChange={(id) => { basculer(setFilieresSel, id); setFormationsSel([]); setGroupesSel([]) }} />
+                    onChange={(id) => { basculer(setFilieresSel, id); setFormationsSel([]); setGroupesSel([]) }}
+                    onChangeTout={(cocher) => {
+                      setFilieresSel(cocher ? filieresRef : []); setFormationsSel([]); setGroupesSel([])
+                    }} />
                 </div>
                 <div className="col-md-6">
                   <ChoixMultiples titre="Formations / parcours (sélection multiple)"
                     options={formationsFiltrees.map((f) => ({ id: f.id, label: f.intitule }))}
                     selection={formationsSel}
-                    onChange={(id) => { basculer(setFormationsSel, id); setGroupesSel([]) }} />
+                    onChange={(id) => { basculer(setFormationsSel, id); setGroupesSel([]) }}
+                    onChangeTout={(cocher) => {
+                      setFormationsSel(cocher ? formationsFiltrees.map((f) => f.id) : []); setGroupesSel([])
+                    }} />
                 </div>
                 <div className="col-md-6">
                   <ChoixMultiples titre="Niveaux (sélection multiple)"
                     options={niveauxRef.map((n) => ({ id: n.id, label: `${n.code} — ${n.libelle}` }))}
                     selection={niveauxSel}
-                    onChange={(id) => { basculer(setNiveauxSel, id); setGroupesSel([]) }} />
+                    onChange={(id) => { basculer(setNiveauxSel, id); setGroupesSel([]) }}
+                    onChangeTout={(cocher) => {
+                      setNiveauxSel(cocher ? niveauxRef.map((n) => n.id) : []); setGroupesSel([])
+                    }} />
                 </div>
                 <div className="col-md-6">
                   <ChoixMultiples titre="Groupes (sélection multiple)"
                     options={groupesOptions.map((g) => ({ id: g.id,
                       label: `${g.nom} — ${formationsRef.find((f) => f.id === g.ref_formation_id)?.intitule || g.ref_formation_id}` }))}
-                    selection={groupesSel} onChange={(id) => basculer(setGroupesSel, id)} />
+                    selection={groupesSel} onChange={(id) => basculer(setGroupesSel, id)}
+                    onChangeTout={(cocher) => setGroupesSel(cocher ? groupesOptions.map((g) => g.id) : [])} />
                 </div>
                 <div className="col-md-6">
                   <ChoixMultiples titre="Semestres (sélection multiple)"
                     options={Array.from({ length: 10 }, (_, i) => ({ id: i + 1, label: `Semestre ${i + 1} (S${i + 1})` }))}
-                    selection={semestresSel} onChange={(id) => basculer(setSemestresSel, id)} />
+                    selection={semestresSel} onChange={(id) => basculer(setSemestresSel, id)}
+                    onChangeTout={(cocher) => setSemestresSel(cocher
+                      ? Array.from({ length: 10 }, (_, i) => i + 1) : [])} />
                 </div>
               </div>
 

@@ -344,6 +344,28 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     confirmation.mockRestore()
   })
 
+  it('Tout sélectionner coche uniquement les options visibles et se décoche', async () => {
+    const user = userEvent.setup()
+    rendre()
+    await screen.findByText('L1-G1 — Licence en Journalisme')
+    const filieres = screen.getByRole('group', { name: /Filières/ })
+    const formations = screen.getByRole('group', { name: /Formations \/ parcours/ })
+    const niveaux = screen.getByRole('group', { name: /Niveaux/ })
+    const groupes = screen.getByRole('group', { name: /Groupes/ })
+    const semestres = screen.getByRole('group', { name: /Semestres/ })
+    await user.click(within(filieres).getByRole('checkbox', { name: 'F01' }))
+    await user.click(within(formations).getByRole('checkbox', { name: /Tout sélectionner/ }))
+    expect(within(formations).getByRole('checkbox', { name: 'Licence en Journalisme' })).toBeChecked()
+    expect(within(formations).queryByRole('checkbox', { name: 'Licence en Communication' })).not.toBeInTheDocument()
+    await user.click(within(niveaux).getByRole('checkbox', { name: /Tout sélectionner/ }))
+    await user.click(within(groupes).getByRole('checkbox', { name: /Tout sélectionner/ }))
+    await user.click(within(semestres).getByRole('checkbox', { name: /Tout sélectionner/ }))
+    expect(within(groupes).getByRole('checkbox', { name: /L1-G1/ })).toBeChecked()
+    expect(within(semestres).getByRole('checkbox', { name: 'Semestre 10 (S10)' })).toBeChecked()
+    await user.click(within(groupes).getByRole('checkbox', { name: /Tout sélectionner/ }))
+    expect(within(groupes).getByRole('checkbox', { name: /L1-G1/ })).not.toBeChecked()
+  })
+
   it('ne lance pas la génération automatique si la confirmation est refusée', async () => {
     const user = userEvent.setup()
     const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(false)
