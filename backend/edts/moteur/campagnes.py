@@ -319,15 +319,23 @@ def executer_campagne(campagne_id, execution_id):
         return None
 
     from django.db import connection
-    from django.test.utils import CaptureQueriesContext
 
     from edts.moteur.annee import generer_annee
 
     parametres = campagne.parametres or {}
     _marquer_execution_active(execution_id)
     debut = time.monotonic()
+    requetes_sql = [0]
+
+    def compter_requete(execute, sql, params, many, context):
+        # CaptureQueriesContext conserve chaque SQL et tous ses paramètres en
+        # mémoire : une génération de 177 groupes peut épuiser le worker.
+        # Le compteur mesure les mêmes appels sans garder les requêtes.
+        requetes_sql[0] += 1
+        return execute(sql, params, many, context)
+
     try:
-        with CaptureQueriesContext(connection) as requetes:
+        with connection.execute_wrapper(compter_requete):
             perimetre = campagne.perimetre or {}
             bilan = generer_annee(
                 campagne.annee_academique_id,
@@ -357,7 +365,7 @@ def executer_campagne(campagne_id, execution_id):
         statut_execution, statut_campagne = _statuts_depuis_bilan(bilan, anomalies)
         statistiques = {
             'duree_ms': duree_ms,
-            'requetes_sql': len(requetes.captured_queries),
+            'requetes_sql': requetes_sql[0],
             'effectif_importe': bilan.get('totaux', {}).get('etudiants_couverts'),
             'seances_placees': bilan.get('totaux', {}).get('seances_placees'),
             'seances_non_placees': bilan.get('totaux', {}).get('seances_non_placees'),

@@ -369,6 +369,18 @@
   border-color: var(--injs-blue-royal);
 }
 
+.getinjs.gen-page .gen-choix-multiples { min-width: 0; border: 0; margin: 0; padding: 0; }
+.getinjs.gen-page .gen-choix-multiples legend { float: none; width: auto; margin-bottom: .35rem; }
+.getinjs.gen-page .gen-choix-liste {
+  max-height: 8rem;
+  overflow-y: auto;
+  padding: .4rem .7rem;
+  border: 1px solid #b7cee7;
+  border-radius: .5rem;
+  background: #fff;
+}
+.getinjs.gen-page .gen-choix-item { margin: .2rem 0; }
+
 .getinjs.gen-page .gen-contraintes {
   background: linear-gradient(180deg, #f7fbff, var(--injs-blue-pale));
   border: 1px solid #d7e5f5;
