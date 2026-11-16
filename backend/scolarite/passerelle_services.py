@@ -133,6 +133,8 @@ def synchroniser(inscription, formation, acteur=None):
 
     Idempotent : relancer la synchronisation ne produit aucun doublon.
     """
+    if inscription.archive:
+        raise PasserelleImpossible('Inscription archivée : réactivez-la avant toute nouvelle opération.')
     if not inscription.est_valide:
         raise PasserelleImpossible(
             "L'inscription administrative doit être validée avant toute synchronisation."

@@ -81,6 +81,16 @@
 .insc-lot [role="status"] { font-weight: 700; }
 .insc-col-selection { width: 2.8rem; text-align: center; }
 .insc-col-selection input { width: 1.05rem; height: 1.05rem; cursor: pointer; }
+.insc-archive-badge {
+  display: inline-block;
+  margin-left: .4rem;
+  padding: .15rem .45rem;
+  border-radius: .45rem;
+  background: #f0eaf9;
+  color: #62418c;
+  font-size: .75rem;
+  font-weight: 700;
+}
 
 /* Tableau : nom porté par l'avatar, jamais de débordement sur la formation. */
 .insc-table td { vertical-align: middle; }

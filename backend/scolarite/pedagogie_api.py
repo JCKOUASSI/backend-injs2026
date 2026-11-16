@@ -182,6 +182,8 @@ def inscription_pedagogique_detail(request, ligne_id):
     ).filter(pk=ligne_id).first()
     if ligne is None:
         return Response({'error': 'Introuvable'}, status=404)
+    if ligne.inscription.archive:
+        return Response({'error': 'Inscription archivée : réactivez-la avant modification.'}, status=409)
 
     if request.method == 'DELETE':
         pedagogie_services.retirer_ecue(

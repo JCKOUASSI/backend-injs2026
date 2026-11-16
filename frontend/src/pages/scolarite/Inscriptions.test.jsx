@@ -99,6 +99,44 @@ describe('pages/scolarite/Inscriptions — liste et filtres', () => {
   })
 })
 
+describe('pages/scolarite/Inscriptions — retrait sécurisé', () => {
+  it('retire sans suppression optimiste et signale l’archivage renvoyé par le serveur', async () => {
+    const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    apiMock.delete.mockResolvedValueOnce({ data: { archive: true }, status: 200 })
+    mount()
+    await screen.findByText('MAT-001')
+    fireEvent.click(within(rowOf('MAT-001')).getByRole('button', { name: 'Supprimer' }))
+    await settle()
+    expect(confirmation).toHaveBeenCalled()
+    expect(apiMock.delete).toHaveBeenCalledWith('/scolarite/inscriptions/1/')
+    expect(await screen.findByText(/archivée sans modifier son statut/)).toBeInTheDocument()
+    expect(listCalls().length).toBeGreaterThan(1)
+    confirmation.mockRestore()
+  })
+
+  it('consulte puis réactive un dossier archivé sans proposer sa validation', async () => {
+    apiController.reset()
+    apiController.setRoute('/scolarite/inscriptions/', () => [{
+      id: 2, matricule: 'MAT-002', etudiant: 'Karim Diop', etudiant_id: 6,
+      ref_formation: 'L1 LSF', niveau: 'N1', type_inscription_libelle: 'Nouvelle',
+      statut: 'BROUILLON', statut_libelle: 'Brouillon', archive: true,
+      annee_academique: '2025-2026',
+    }])
+    setupRoutes()
+    mount()
+    await screen.findByText('MAT-002')
+    expect(within(rowOf('MAT-002')).queryByRole('checkbox')).not.toBeInTheDocument()
+    expect(within(rowOf('MAT-002')).queryByRole('button', { name: 'Valider' })).not.toBeInTheDocument()
+    fireEvent.change(screen.getByRole('combobox', { name: 'Afficher les archives' }),
+      { target: { value: '1' } })
+    await settle()
+    expect(listCalls().at(-1)).toMatchObject({ archive: '1' })
+    fireEvent.click(screen.getByRole('button', { name: 'Réactiver MAT-002' }))
+    await settle()
+    expect(apiMock.post).toHaveBeenCalledWith('/scolarite/inscriptions/2/reactiver/', {})
+  })
+})
+
 describe('pages/scolarite/Inscriptions — validation groupée', () => {
   it('coche seulement les inscriptions validables et attend la confirmation', async () => {
     apiController.setRoute('/scolarite/inscriptions/valider-lot/', { validees: 1, ids: [1] })

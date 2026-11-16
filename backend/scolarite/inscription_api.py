@@ -120,6 +120,8 @@ def _serialize_inscription(inscription, detail=False):
         'type_inscription_libelle': inscription.get_type_inscription_display(),
         'statut': inscription.statut,
         'statut_libelle': inscription.get_statut_display(),
+        'archive': inscription.archive,
+        'archive_le': inscription.archive_le,
         'date_inscription': inscription.date_inscription,
         'date_validation': inscription.date_validation,
         'admission_id': inscription.admission_id,
@@ -317,6 +319,8 @@ class InscriptionAdminReponseSerializer(serializers.Serializer):
     type_inscription_libelle = serializers.CharField()
     statut = serializers.CharField()
     statut_libelle = serializers.CharField()
+    archive = serializers.BooleanField()
+    archive_le = serializers.DateTimeField(allow_null=True)
     date_inscription = serializers.DateField()
     date_validation = serializers.DateTimeField(allow_null=True)
     admission_id = serializers.IntegerField(allow_null=True)
@@ -496,6 +500,12 @@ def inscription_list(request):
     if request.method == 'POST':
         return _inscription_creer(request)
     queryset = _inscription_queryset()
+    # Les archives restent accessibles à la demande, sans se mêler aux
+    # dossiers actifs de la page de gestion.
+    if request.query_params.get('archive') == '1':
+        queryset = queryset.filter(archive=True)
+    elif request.query_params.get('archives') != '1':
+        queryset = queryset.filter(archive=False)
     for champ in (
         'statut', 'type_inscription', 'annee_academique_id',
         'ref_formation_id', 'niveau_id', 'etudiant_id', 'vague_id',
@@ -572,6 +582,8 @@ def inscription_detail(request, pk):
     if inscription is None:
         return Response({'error': 'Introuvable'}, status=404)
     if request.method == 'PATCH':
+        if inscription.archive:
+            return Response({'error': 'Inscription archivée : réactivez-la avant modification.'}, status=409)
         # Le statut ne se modifie que par l'endpoint de transition.
         # Lot L1/L3 : un changement de parcours passe par le service dédié
         # (historisation JournalScolarite + EvenementScolarite REORIENTATION).
@@ -599,13 +611,28 @@ def inscription_detail(request, pk):
             return Response(erreur.message_dict, status=400)
         inscription.save()
     if request.method == 'DELETE':
-        if inscription.statut == InscriptionAdministrative.Statut.VALIDEE:
-            return Response(
-                {'error': 'Une inscription validée ne peut pas être supprimée.'},
-                status=409,
-            )
-        inscription.delete()
-        return Response(status=204)
+        try:
+            resultat = inscription_services.supprimer_ou_archiver(pk, acteur=request.user)
+        except InscriptionAdministrative.DoesNotExist:
+            return Response({'error': 'Introuvable'}, status=404)
+        if resultat == 'supprime':
+            return Response(status=204)
+        return Response({'detail': 'Inscription utilisée : archivée sans effacer ses liens.',
+                         'archive': True})
+    return Response(_serialize_inscription(inscription, detail=True))
+
+
+@extend_schema(request=None, responses={200: InscriptionAdminDetailSerializer, 404: ErreurInscriptionSerializer,
+                                        409: ErreurInscriptionSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def inscription_reactiver(request, pk):
+    try:
+        inscription = inscription_services.reactiver_inscription(pk, acteur=request.user)
+    except InscriptionAdministrative.DoesNotExist:
+        return Response({'error': 'Introuvable'}, status=404)
+    except inscription_services.InscriptionImpossible as erreur:
+        return Response({'error': erreur.messages[0]}, status=409)
     return Response(_serialize_inscription(inscription, detail=True))
 
 
@@ -724,6 +751,8 @@ def inscrire_depuis_admission(request):
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def inscription_stats(request):
     """Effectifs inscrits, par statut puis par niveau, formation, vague et catégorie."""
+    # Les bilans historiques conservent les inscriptions archivées : archiver
+    # n'annule pas une validation et ne doit pas réécrire les effectifs passés.
     queryset = InscriptionAdministrative.objects.all()
     if 'annee_academique_id' in request.query_params:
         queryset = queryset.filter(annee_academique_id=request.query_params['annee_academique_id'])

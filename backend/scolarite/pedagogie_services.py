@@ -61,6 +61,8 @@ def generer_inscriptions_pedagogiques(inscription, semestre=None, groupe=None, a
     Idempotent : les ECUE déjà rattachées ne sont ni recréées ni modifiées, ce
     qui permet de relancer la génération après une évolution de la maquette.
     """
+    if inscription.archive:
+        raise PedagogieImpossible('Inscription archivée : réactivez-la avant toute nouvelle opération.')
     if not inscription.est_valide:
         raise PedagogieImpossible(
             'Les inscriptions pédagogiques nécessitent une inscription administrative validée. '
@@ -122,6 +124,8 @@ def generer_inscriptions_pedagogiques(inscription, semestre=None, groupe=None, a
 @transaction.atomic
 def ajouter_ecue(inscription, ecue, groupe=None, acteur=None, motif=''):
     """Ajoute manuellement une ECUE, en contrôlant son appartenance à la maquette."""
+    if inscription.archive:
+        raise PedagogieImpossible('Inscription archivée : réactivez-la avant toute nouvelle opération.')
     if not inscription.est_valide:
         raise PedagogieImpossible(
             "L'inscription administrative doit être validée."
@@ -161,6 +165,8 @@ def ajouter_ecue(inscription, ecue, groupe=None, acteur=None, motif=''):
 @transaction.atomic
 def retirer_ecue(ligne, acteur=None, motif=''):
     """Retire une ECUE d'une inscription pédagogique, avec traçabilité."""
+    if ligne.inscription.archive:
+        raise PedagogieImpossible('Inscription archivée : réactivez-la avant toute nouvelle opération.')
     reference = f'{ligne.inscription.etudiant.matricule} / {ligne.ecue.code}'
     journaliser(
         JournalScolarite.Action.INSCRIPTION_PEDAGOGIQUE_MANUELLE,

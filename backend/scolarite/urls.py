@@ -26,6 +26,8 @@ urlpatterns = [
     path('inscriptions/<int:pk>/',                inscription_api.inscription_detail, name='scolarite-inscription-detail'),
     path('inscriptions/<int:pk>/transition/',     inscription_api.inscription_transition,
                                                                                      name='scolarite-inscription-transition'),
+    path('inscriptions/<int:pk>/reactiver/',      inscription_api.inscription_reactiver,
+                                                                                     name='scolarite-inscription-reactiver'),
     path('inscriptions/<int:pk>/radier/',         inscription_api.inscription_radier, name='scolarite-inscription-radier'),
     path('inscriptions/<int:pk>/changer-parcours/', inscription_api.inscription_changer_parcours,
                                                                                      name='scolarite-inscription-changer-parcours'),

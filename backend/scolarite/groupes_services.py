@@ -53,6 +53,8 @@ def verifier_compatibilite(inscription, groupe):
 @transaction.atomic
 def affecter_groupe(inscription, groupe, acteur=None, motif='', ignorer_capacite=False):
     """Affecte une inscription à un groupe, en clôturant l'affectation précédente."""
+    if inscription.archive:
+        raise AffectationImpossible('Inscription archivée : réactivez-la avant toute nouvelle opération.')
     if not inscription.est_valide:
         raise AffectationImpossible(
             "L'inscription administrative doit être validée avant toute affectation."
@@ -113,6 +115,8 @@ def affecter_groupe(inscription, groupe, acteur=None, motif='', ignorer_capacite
 @transaction.atomic
 def retirer_du_groupe(inscription, acteur=None, motif=''):
     """Clôture l'affectation active sans en créer de nouvelle."""
+    if inscription.archive:
+        raise AffectationImpossible('Inscription archivée : réactivez-la avant toute nouvelle opération.')
     affectation = inscription.affectations.filter(active=True).select_related('groupe').first()
     if affectation is None:
         raise AffectationImpossible("Cette inscription n'est affectée à aucun groupe.")
