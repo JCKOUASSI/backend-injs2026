@@ -401,6 +401,17 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     expect(screen.getByText(/12 séances · V1/)).toBeInTheDocument()
   })
 
+  it('affiche la cause persistante d’une génération en échec dans l’historique', async () => {
+    apiController.reset()
+    apiController.setRoute('/edts/campagnes/historique/', {
+      executions: [{ ...HISTORIQUE.executions[0], statut: 'ECHEC',
+        erreur: 'Exécution interrompue : le serveur a redémarré pendant la génération.' }],
+    })
+    routes()
+    rendre()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Exécution interrompue')
+  })
+
   it('charge explicitement 500 événements et pagine l’historique par 15', async () => {
     const user = userEvent.setup()
     // 20 exécutions : la première requête demande limite=500 au serveur.

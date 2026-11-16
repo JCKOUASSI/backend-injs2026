@@ -110,6 +110,36 @@ class ExecutionOrphelineTests(BaseCampagneTest):
         execution.refresh_from_db()
         self.assertEqual(execution.statut, ExecutionCampagne.Statut.EN_COURS)
 
+    def test_autre_worker_vivant_ne_repare_pas_une_generation_longue(self):
+        import os
+        import socket
+        import threading
+
+        _campagne, execution = self._campagne_en_cours_orpheline()
+        execution.statistiques = {'worker': {
+            'hostname': socket.gethostname(), 'pid': os.getpid(),
+            'tid': threading.get_native_id(),
+        }}
+        execution.save(update_fields=['statistiques'])
+        # Le registre local ne contient pas le fil de l'autre worker ;
+        # l'identité système persistée prouve qu'il tourne encore.
+        self.assertFalse(C.reparer_execution_orpheline(execution))
+        execution.refresh_from_db()
+        self.assertEqual(execution.statut, ExecutionCampagne.Statut.EN_COURS)
+
+    def test_worker_vivant_fil_mort_est_repare(self):
+        import os
+        import socket
+        from unittest.mock import patch
+
+        _campagne, execution = self._campagne_en_cours_orpheline()
+        execution.statistiques = {'worker': {
+            'hostname': socket.gethostname(), 'pid': os.getpid(), 'tid': 99999999,
+        }}
+        execution.save(update_fields=['statistiques'])
+        with patch('edts.moteur.campagnes.os.path.exists', return_value=False):
+            self.assertTrue(C.reparer_execution_orpheline(execution))
+
     def test_execution_jeune_jamais_reparee(self):
         campagne = self.campagne()
         C.marquer_pret(campagne.pk, user=self.admin)
@@ -420,6 +450,19 @@ class HistoriqueEtPerimetresFinsTests(BaseCampagneTest):
         self.assertIn('conflits', ligne)
         # Le niveau L1 de la fabrique couvre les semestres S1 et S2.
         self.assertEqual(ligne['semestres'], ['S1', 'S2'])
+
+    def test_historique_signale_la_cause_d_un_echec(self):
+        campagne = self.campagne(libelle='Interruption historique')
+        ExecutionCampagne.objects.create(
+            campagne=campagne, numero=1, statut=ExecutionCampagne.Statut.ECHEC,
+            erreur='Exécution interrompue pendant la génération',
+        )
+        client = APIClient()
+        client.force_authenticate(user=self.admin)
+        reponse = client.get('/api/edts/campagnes/historique/')
+        self.assertEqual(reponse.status_code, 200, reponse.data)
+        self.assertEqual(reponse.data['executions'][0]['erreur'],
+                         'Exécution interrompue pendant la génération')
 
     def test_historique_vide_sans_execution(self):
         self.campagne(libelle='Jamais lancée')

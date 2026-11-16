@@ -27,6 +27,8 @@ Le module ne duplique ni le RBAC (``edts.permissions``) ni les validateurs
 
 from __future__ import annotations
 
+import os
+import socket
 import threading
 import time
 
@@ -69,6 +71,15 @@ AGE_MIN_ORPHELINE_S = 120
 def _marquer_execution_active(execution_id):
     with _VERROU_REGISTRE:
         _EXECUTIONS_ACTIVES.add(execution_id)
+    # Identité du fil conservée en DB pour les autres workers Gunicorn.
+    execution = ExecutionCampagne.objects.filter(pk=execution_id).first()
+    if execution:
+        statistiques = execution.statistiques or {}
+        statistiques['worker'] = {
+            'hostname': socket.gethostname(), 'pid': os.getpid(),
+            'tid': threading.get_native_id(),
+        }
+        ExecutionCampagne.objects.filter(pk=execution_id).update(statistiques=statistiques)
 
 
 def _marquer_execution_terminee(execution_id):
@@ -87,6 +98,28 @@ def reparer_execution_orpheline(execution):
         return False
     with _VERROU_REGISTRE:
         if execution.pk in _EXECUTIONS_ACTIVES:
+            return False
+    # Gunicorn exécute plusieurs workers : le registre ci-dessus est local au
+    # worker ayant reçu le GET /statut/. Ne jamais déclarer mort un autre
+    # worker vivant sur le même conteneur après le délai de 120 secondes.
+    proprietaire = (execution.statistiques or {}).get('worker') or {}
+    pid = proprietaire.get('pid')
+    if pid and proprietaire.get('hostname') == socket.gethostname():
+        try:
+            os.kill(int(pid), 0)
+        except (ProcessLookupError, ValueError):
+            pass  # le processus propriétaire n'existe plus
+        except PermissionError:
+            return False  # impossible de prouver la mort : ne pas écraser
+        else:
+            tid = proprietaire.get('tid')
+            if not tid or os.path.exists(f'/proc/{int(pid)}/task/{int(tid)}'):
+                return False
+            # Worker vivant mais fil de génération mort : réparation possible.
+    elif pid:
+        # Une autre instance/containeur peut encore traiter l'exécution.
+        # Sans ordonnanceur partagé, ne la réparer qu'après une longue durée.
+        if execution.demarree_le and (timezone.now() - execution.demarree_le).total_seconds() < 6 * 3600:
             return False
     demarree = execution.demarree_le
     if demarree is not None and (timezone.now() - demarree).total_seconds() < AGE_MIN_ORPHELINE_S:
@@ -247,6 +280,7 @@ def demarrer_campagne(campagne_id, *, user=None, asynchrone=True):
             numero=numero,
             statut=ExecutionCampagne.Statut.EN_COURS,
             lancee_par=user if getattr(user, 'is_authenticated', False) else None,
+            statistiques={'worker': {'hostname': socket.gethostname(), 'pid': os.getpid()}},
         )
         campagne.statut = S.EN_COURS
         campagne.demarree_le = timezone.now()

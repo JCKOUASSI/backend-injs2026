@@ -946,6 +946,9 @@ def historique_generations_api(request):
             'date': execution.demarree_le.isoformat() if execution.demarree_le else None,
             'statut': execution.statut,
             'duree_ms': execution.duree_ms,
+            'erreur': execution.erreur if execution.statut == ExecutionCampagne.Statut.ECHEC else '',
+            'motif_echec': bilan.get('motif_echec') or '',
+            'explication': (bilan.get('detail') or {}).get('explication') or '',
             'perimetre': {
                 'filieres': filieres,
                 'formations': formations,

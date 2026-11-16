@@ -297,6 +297,18 @@ export default function GenerationAnnuelle() {
       if (statutFinal?.erreur) {
         throw new Error(statutFinal.erreur)
       }
+      if (statutFinal?.statut === 'ECHEC') {
+        const { data: echec } = await api.get(`/edts/campagnes/${campagne.id}/resultat/`)
+        const motif = echec?.campagne?.anomalies?.[0]?.explication
+          || echec?.campagne?.execution_courante?.erreur
+          || echec?.campagne?.status_global || 'Consultez le bilan et les groupes dans l’historique.'
+        setBilan({ status_global: 'IMPOSSIBLE', motif_echec: motif,
+          totaux: echec?.totaux, groupes: echec?.groupes,
+          detail: { explication: motif } })
+        showToast(`Génération échouée : ${motif}`, 'error')
+        chargerHistorique()
+        return
+      }
       const { data: resultat } = await api.get(`/edts/campagnes/${campagne.id}/resultat/`)
       const bilanCampagne = {
         status_global: resultat.campagne?.status_global,
@@ -818,6 +830,11 @@ export default function GenerationAnnuelle() {
                         <span className={`badge ${STATUTS_EXECUTION[ligne.statut]?.classe || 'badge-neutral'}`}>
                           {STATUTS_EXECUTION[ligne.statut]?.libelle || ligne.statut}
                         </span>
+                        {ligne.statut === 'ECHEC' && (ligne.erreur || ligne.explication || ligne.motif_echec) && (
+                          <span className="d-block small text-danger mt-1" role="alert">
+                            {ligne.erreur || ligne.explication || libelleMotif(ligne.motif_echec)}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
