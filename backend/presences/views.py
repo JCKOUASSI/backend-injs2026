@@ -644,7 +644,7 @@ def _scan_seance_edt_mobile(*, request, qr_token, personne, type_str, device_id,
     action, pointage, erreur = service.badger_scan(
         request, personne=personne, affectation=affectation, date=date,
         device_id=device_id, coords=_coords_from_payload(donnees),
-        type_personne=type_str)
+        type_personne=type_str, jeton=qr_token)
     if erreur:
         return Response(service.normaliser_erreur(
             erreur, type_personne=type_str), status=status.HTTP_400_BAD_REQUEST)

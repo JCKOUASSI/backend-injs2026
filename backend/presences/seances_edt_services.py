@@ -459,7 +459,7 @@ def _controle_geofence_edt(affectation, coords):
 
 @transaction.atomic
 def badger_scan(request, *, affectation, date, personne=None, participant=None,
-                device_id='', coords=None, type_personne='participant'):
+                device_id='', coords=None, type_personne='participant', jeton=None):
     """Entrée/sortie au scan du QR — anti-fraude : 1 entrée + 1 sortie par séance.
 
     Le contrôle de périmètre géographique est appliqué **à l'entrée** : la sortie
@@ -473,6 +473,16 @@ def badger_scan(request, *, affectation, date, personne=None, participant=None,
     Retourne (action, pointage, None) ou (None, None, réponse-dict d'erreur).
     """
     personne = personne if personne is not None else participant
+    if jeton is not None:
+        # Le QR a été lu AVANT cette transaction par l'API. Verrouiller puis
+        # revérifier sa version en base évite un scan écrit après révocation ;
+        # la génération/révocation concurrente attend le commit du scan.
+        courant = QRToken.objects.select_for_update().filter(pk=jeton.pk).first()
+        if courant is None or courant.seance_edt_id != affectation.pk or not courant.is_valid:
+            return None, None, {
+                'code': 'TOKEN_EXPIRED',
+                'detail': 'QR code expiré ou remplacé — demandez un réaffichage.',
+            }
     now = timezone.now()
     debut, fin = horodatages(affectation, date)
     ouverture, cloture = fenetre_scan(affectation, date)
@@ -486,7 +496,7 @@ def badger_scan(request, *, affectation, date, personne=None, participant=None,
     filtre_personne = filtres_personne(type_personne, personne)
     # Comme pour le canal legacy, verrouiller la personne AVANT la recherche :
     # au premier scan il n'existe encore aucun Pointage à verrouiller.
-    # La garantie de concurrence reste à vérifier sur PostgreSQL.
+    # Testé sur PostgreSQL isolé ; un double scan ferme encore l'entrée.
     personne.__class__._base_manager.select_for_update().get(pk=personne.pk)
     verrou = (Pointage.objects
               .filter(seance_edt=affectation, date_journee=date, **filtre_personne)

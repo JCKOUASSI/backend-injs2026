@@ -303,7 +303,8 @@ def scan_seance(request):
 
     action, pointage, erreur = service.badger_scan(
         request, personne=personne, affectation=affectation, date=date,
-        device_id=device_id, coords=coords or None, type_personne=type_str)
+        device_id=device_id, coords=coords or None, type_personne=type_str,
+        jeton=jeton)
     if erreur:
         return Response(service.normaliser_erreur(
             erreur, type_personne=type_str), status=400)

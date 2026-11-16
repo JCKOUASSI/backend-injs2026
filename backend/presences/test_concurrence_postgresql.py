@@ -5,7 +5,8 @@ Django crée sa base test_<POSTGRES_DB>. Jamais sur le serveur de production.
 Sous SQLite ces scénarios sont ignorés explicitement, pas déclarés réussis.
 """
 from concurrent.futures import ThreadPoolExecutor
-from threading import Barrier
+from threading import Barrier, Event
+from unittest.mock import patch
 
 from django.db import close_old_connections, connection
 from django.test import TransactionTestCase
@@ -53,6 +54,90 @@ class ConcurrenceScanPostgres(MobileSeanceEdtMixin, TransactionTestCase):
         # Contrat ACTUEL : le second scan ferme la présence. Il faut arbitrer
         # une fenêtre anti-double-tap avant de qualifier l'assiduité de fiable.
         self.assertEqual({r[1] for r in reponses}, {'ENTREE', 'SORTIE'})
+
+    def test_revocation_entre_validation_et_enregistrement(self):
+        """La validation initiale du QR ne suffit pas contre une révocation.
+
+        Le scan atteint le service après résolution du jeton sur une autre
+        connexion ; la transaction principale le révoque avant l'écriture.
+        """
+        from formations.models import QRToken
+        from presences import seances_edt_services as service
+
+        atteint_service, reprendre = Event(), Event()
+        original = service.badger_scan
+
+        def suspendre(*args, **kwargs):
+            atteint_service.set()
+            if not reprendre.wait(timeout=10):
+                raise AssertionError('Timeout de synchronisation du scan QR')
+            return original(*args, **kwargs)
+
+        def scan():
+            close_old_connections()
+            try:
+                client = APIClient()
+                client.force_authenticate(self.auditeurs[0])
+                return client.post('/api/scan/secure/', {
+                    'token_qr': self.token, 'device_id': 'revocation-pendant-scan',
+                    **self._dans_la_zone(),
+                }, format='json')
+            finally:
+                connection.close()
+
+        with patch.object(service, 'badger_scan', side_effect=suspendre):
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(scan)
+                try:
+                    self.assertTrue(atteint_service.wait(timeout=10))
+                    QRToken.objects.filter(token=self.token).update(actif=False)
+                finally:
+                    reprendre.set()
+                response = future.result(timeout=30)
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertEqual(response.data['code'], 'TOKEN_EXPIRED')
+        self.assertFalse(Pointage.objects.filter(seance_edt=self.affectation).exists())
+
+    def test_expiration_entre_validation_et_enregistrement(self):
+        from django.utils import timezone
+        from datetime import timedelta
+        from formations.models import QRToken
+        from presences import seances_edt_services as service
+
+        atteint_service, reprendre = Event(), Event()
+        original = service.badger_scan
+
+        def suspendre(*args, **kwargs):
+            atteint_service.set()
+            if not reprendre.wait(timeout=10):
+                raise AssertionError('Timeout de synchronisation du scan QR')
+            return original(*args, **kwargs)
+
+        def scan():
+            close_old_connections()
+            try:
+                client = APIClient()
+                client.force_authenticate(self.auditeurs[0])
+                return client.post('/api/scan/secure/', {
+                    'token_qr': self.token, 'device_id': 'expiration-pendant-scan',
+                    **self._dans_la_zone(),
+                }, format='json')
+            finally:
+                connection.close()
+
+        with patch.object(service, 'badger_scan', side_effect=suspendre):
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(scan)
+                try:
+                    self.assertTrue(atteint_service.wait(timeout=10))
+                    QRToken.objects.filter(token=self.token).update(
+                        expire_at=timezone.now() - timedelta(seconds=1))
+                finally:
+                    reprendre.set()
+                response = future.result(timeout=30)
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertEqual(response.data['code'], 'TOKEN_EXPIRED')
+        self.assertFalse(Pointage.objects.filter(seance_edt=self.affectation).exists())
 
     def test_scans_simultanes_etudiants_distincts(self):
         reponses = self._scans_simultanes(self.auditeurs)
