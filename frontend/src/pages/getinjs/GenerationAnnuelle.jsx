@@ -324,6 +324,11 @@ export default function GenerationAnnuelle() {
         showToast('Prévisualisez d’abord ce périmètre exact ; la sélection ou les contraintes ont changé.', 'error')
         return
       }
+    } else if (semainesListe().length < 2) {
+      const message = 'Une seule semaine ne couvre pas l’année. La génération annuelle exige un calendrier institutionnel S1/S2 et des semaines officielles ; aucune campagne n’a été créée.'
+      setErreurGeneration(message)
+      showToast(message, 'error')
+      return
     } else if (!window.confirm(
       `Générer pour TOUS les groupes de ${annees.find((a) => String(a.id) === String(anneeId))?.libelle || anneeId} ? `
       + `Le calcul peut durer longtemps et remplacer les séances générées existantes du périmètre.`,
@@ -341,6 +346,7 @@ export default function GenerationAnnuelle() {
         semaines: semainesListe(),
         perimetre: construirePerimetre(mode),
         parametres: {
+          mode_generation: mode,
           persister: true,
           remplacer: true,
           inclure_maquette: true,

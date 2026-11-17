@@ -164,6 +164,17 @@ class CycleDeVieCampagneTests(BaseCampagneTest):
             self.campagne()
         self.assertEqual(ctx.exception.motif, 'CAMPAGNE_DEJA_EXISTANTE')
 
+    def test_creation_annuelle_une_semaine_refusee_sans_ecriture(self):
+        with self.assertRaises(C.TransitionRefusee) as ctx:
+            C.creer_campagne(
+                annee_academique_id=self.annee.pk,
+                libelle='Fausse année en semaine 1', semaines=[1],
+                parametres={'mode_generation': 'automatique', 'persister': True},
+                user=self.admin,
+            )
+        self.assertEqual(ctx.exception.motif, 'ANNEE_INCOMPLETE')
+        self.assertFalse(CampagneGeneration.objects.exists())
+
     def test_annee_introuvable_refusee(self):
         with self.assertRaises(C.TransitionRefusee) as ctx:
             C.creer_campagne(annee_academique_id=999999, libelle='X', user=self.admin)

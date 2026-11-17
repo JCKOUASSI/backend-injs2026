@@ -298,6 +298,8 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(true)
     rendre()
     await screen.findByLabelText(/Année académique/)
+    await user.clear(screen.getByLabelText('Semaines planifiées'))
+    await user.type(screen.getByLabelText('Semaines planifiées'), '1,2')
     await user.click(screen.getByRole('button', { name: /Lancer la génération automatique/i }))
 
     await waitFor(() =>
@@ -305,6 +307,7 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
         annee_academique_id: 2,
         perimetre: { formations: [], niveaux: [], groupes: [], semestres: [] },
         parametres: expect.objectContaining({
+          mode_generation: 'automatique',
           persister: true,
           inclure_samedi: true,
           eviter_pause_meridienne: true,
@@ -336,6 +339,8 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(true)
     rendre()
     await choisirPerimetre(user)
+    await user.clear(screen.getByLabelText('Semaines planifiées'))
+    await user.type(screen.getByLabelText('Semaines planifiées'), '1,2')
     await user.click(screen.getByRole('button', { name: /Lancer la génération automatique/i }))
     await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith('/edts/campagnes/',
       expect.objectContaining({ perimetre: {
@@ -366,11 +371,22 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     expect(within(groupes).getByRole('checkbox', { name: /L1-G1/ })).not.toBeChecked()
   })
 
+  it('refuse une génération prétendue annuelle avec la seule semaine 1', async () => {
+    const user = userEvent.setup()
+    rendre()
+    await screen.findByLabelText(/Année académique/)
+    await user.click(screen.getByRole('button', { name: /Lancer la génération automatique/i }))
+    expect(screen.getByRole('alert')).toHaveTextContent(/Une seule semaine ne couvre pas l’année/)
+    expect(apiMock.post).not.toHaveBeenCalledWith('/edts/campagnes/', expect.anything())
+  })
+
   it('ne lance pas la génération automatique si la confirmation est refusée', async () => {
     const user = userEvent.setup()
     const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(false)
     rendre()
     await screen.findByLabelText(/Année académique/)
+    await user.clear(screen.getByLabelText('Semaines planifiées'))
+    await user.type(screen.getByLabelText('Semaines planifiées'), '1,2')
     await user.click(screen.getByRole('button', { name: /Lancer la génération automatique/i }))
     expect(apiMock.post).not.toHaveBeenCalledWith('/edts/campagnes/', expect.anything())
     confirmation.mockRestore()

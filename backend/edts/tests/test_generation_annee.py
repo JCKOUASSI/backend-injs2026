@@ -460,6 +460,28 @@ class GenerationAnneeTests(BaseAnneeTest):
         self.assertEqual(cible['totaux']['nb_groupes_non_planifies'], 1)
         self.assertEqual(cible['status_global'], A.ANNEE_PARTIELLE)
 
+    def test_maquette_active_sans_volumes_signalee_pour_tous_les_groupes(self):
+        from scolarite.models import Groupe
+        from edts.moteur.campagnes import extraire_anomalies
+
+        # Fixture isolée : des ECUE présentes mais sans volume officiel ne
+        # doivent ni inventer des séances ni être déclarées sans maquette.
+        ECUE.objects.filter(pk=self.ecue.pk).update(volume_cm=0, volume_td=0)
+        for numero in range(51):
+            Groupe.objects.create(
+                annee_academique=self.annee, ref_formation=self.formation,
+                niveau=self.f.niveau, nom=f'L1-SANS-VOLUME-{numero}',
+            )
+        bilan = A.generer_annee(self.annee.pk, semaines=[1])
+        self.assertEqual(bilan['motif_echec'], BM.MOTIF_VOLUMES_ABSENTS)
+        self.assertEqual(bilan['totaux']['seances_placees'], 0)
+        self.assertEqual(bilan['totaux']['nb_groupes_non_planifies'], 51)
+        self.assertEqual({l['motif_echec'] for l in bilan['groupes']},
+                         {BM.MOTIF_VOLUMES_ABSENTS})
+        self.assertEqual(len(bilan['sources']['maquette']['detail']['sans_volume']), 50)
+        self.assertEqual(len(extraire_anomalies(bilan)), 51)
+        self.assertIn('volumes', extraire_anomalies(bilan)[-1]['explication'].lower())
+
     def test_groupe_sans_maquette_signale(self):
         from scolarite.models import Groupe
 
@@ -475,13 +497,13 @@ class GenerationAnneeTests(BaseAnneeTest):
         bilan = A.generer_annee(self.annee.pk, semaines=[1])
         ligne = bilan['groupes'][0]
         self.assertEqual(ligne['statut'], 'NON_PLANIFIE')
-        self.assertEqual(ligne['motif_echec'], A.MOTIF_AUCUN_BESOIN)
+        self.assertEqual(ligne['motif_echec'], BM.MOTIF_AUCUNE_MAQUETTE)
         self.assertEqual(bilan['status_global'], A.ANNEE_IMPOSSIBLE)
 
         # Une année impossible doit expliquer POURQUOI au niveau global, et
         # indiquer l'action à mener : « Impossible » sans motif n'est pas
         # exploitable par un secrétariat.
-        self.assertEqual(bilan['motif_echec'], A.MOTIF_AUCUN_BESOIN)
+        self.assertEqual(bilan['motif_echec'], BM.MOTIF_AUCUNE_MAQUETTE)
         self.assertIn('explication', bilan['detail'])
         self.assertIn('action_recommandee', bilan['detail'])
         self.assertIn('maquette', bilan['detail']['action_recommandee'].lower())

@@ -169,6 +169,13 @@ def creer_campagne(*, annee_academique_id, libelle, user=None,
         })
 
     semaines = sorted({int(s) for s in (semaines or [1]) if str(s).isdigit()}) or [1]
+    if (parametres or {}).get('mode_generation') == 'automatique' and len(semaines) < 2:
+        raise TransitionRefusee('ANNEE_INCOMPLETE', {
+            'explication': (
+                'Une seule semaine ne couvre pas l’année : aucune campagne annuelle '
+                'n’a été créée. Le calendrier institutionnel S1/S2 reste nécessaire.'
+            ),
+        })
     if CampagneGeneration.objects.filter(annee_academique=annee, libelle=libelle).exists():
         raise TransitionRefusee('CAMPAGNE_DEJA_EXISTANTE', {
             'explication': (
@@ -479,8 +486,15 @@ def extraire_anomalies(bilan):
 def _explication_motif(motif):
     return {
         'AUCUN_BESOIN_PLANIFIABLE': (
-            'Aucun besoin horaire calculable pour ce groupe : ni affectation '
-            'pédagogique, ni maquette active ne le couvre.'
+            'Aucun besoin horaire calculable pour ce groupe ; vérifiez les '
+            'affectations et la maquette pédagogique.'
+        ),
+        'AUCUNE_MAQUETTE_ACTIVE': (
+            'Aucune maquette active ne couvre la formation et le niveau de ce groupe.'
+        ),
+        'VOLUMES_HORAIRES_ABSENTS': (
+            'Une maquette active existe, mais ses ECUE ne portent aucun volume '
+            'CM, TD ou TP positif. Renseignez les volumes institutionnels.'
         ),
         'EDT_STATUT_NON_MODIFIABLE': (
             'L’emploi du temps de ce groupe est déjà validé ou publié : il ne '

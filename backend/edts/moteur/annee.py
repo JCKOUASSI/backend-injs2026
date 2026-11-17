@@ -34,7 +34,9 @@ from edts.moteur import contraintes as C
 from edts.moteur import generation as G
 from edts.moteur import orchestration as O
 from edts.moteur.besoins import calculate_teaching_needs
-from edts.moteur.besoins_maquette import besoins_depuis_maquette
+from edts.moteur.besoins_maquette import (
+    MOTIF_AUCUNE_MAQUETTE, MOTIF_VOLUMES_ABSENTS, besoins_depuis_maquette,
+)
 
 # ── Statuts globaux (mêmes conventions que l'orchestration coordonnée) ───────
 ANNEE_COMPLETE = 'COMPLETE'
@@ -274,6 +276,10 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
             'detail': resultat_maquette.detail,
         }
 
+    detail_sources_maquette = detail_maquette.get('detail') or {}
+    sans_volume_ids = set(detail_sources_maquette.get('groupes_sans_volume_ids') or [])
+    sans_maquette_ids = set(detail_sources_maquette.get('groupes_sans_maquette_ids') or [])
+
     # ── 2 bis. Contraintes de périmètre demandées à l'écran ─────────────
     # Semestre ciblé : ne conserver que les besoins de ce semestre. Un
     # besoin sans semestre rattaché ne peut pas prouver qu'il appartient
@@ -328,6 +334,12 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
 
         if not besoins:
             hors_semestre = groupe.pk in groupes_autres_semestres
+            motif_sans_besoin = (
+                MOTIF_VOLUMES_ABSENTS
+                if groupe.pk in sans_volume_ids else
+                MOTIF_AUCUNE_MAQUETTE
+                if groupe.pk in sans_maquette_ids else MOTIF_AUCUN_BESOIN
+            )
             lignes.append({
                 'groupe_id': groupe.pk,
                 'groupe': groupe.nom,
@@ -337,7 +349,7 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
                 'vague': groupe.vague.libelle if groupe.vague else None,
                 'effectif': effectif,
                 'statut': 'HORS_SEMESTRE' if hors_semestre else 'NON_PLANIFIE',
-                'motif_echec': None if hors_semestre else MOTIF_AUCUN_BESOIN,
+                'motif_echec': None if hors_semestre else motif_sans_besoin,
                 'seances_attendues': 0,
                 'seances_placees': 0,
                 'seances_non_placees': 0,
@@ -565,18 +577,17 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
                 'explication': 'Les groupes ont des besoins connus uniquement dans d’autres semestres.',
                 'action_recommandee': 'Vérifiez le semestre ciblé et les maquettes des groupes.',
             }
-        elif all(l['motif_echec'] == MOTIF_AUCUN_BESOIN for l in lignes):
-            motif_global = MOTIF_AUCUN_BESOIN
+        elif all(l['seances_attendues'] == 0 for l in lignes):
+            motifs = {l['motif_echec'] for l in lignes}
+            motif_global = motifs.pop() if len(motifs) == 1 else MOTIF_AUCUN_BESOIN
             detail_global = {
                 'explication': (
-                    'Les groupes existent mais aucun besoin horaire n’a pu être '
-                    'calculé : ni affectation pédagogique, ni maquette active ne '
-                    'couvre ces cohortes. Aucune séance n’est inventée.'
+                    'Les groupes existent mais aucun besoin horaire calculable '
+                    'n’a été trouvé. Chaque groupe porte son motif précis.'
                 ),
                 'action_recommandee': (
-                    'Renseignez les affectations pédagogiques du groupe, ou '
-                    'activez une maquette (UE/ECUE) pour sa formation et son '
-                    'niveau, puis relancez la génération.'
+                    'Vérifiez les affectations ou les maquettes actives et les '
+                    'volumes CM/TD/TP des ECUE ; ne renseignez que les volumes officiels.'
                 ),
             }
         else:
