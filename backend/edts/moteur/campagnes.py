@@ -47,7 +47,7 @@ TRANSITIONS = {
     S.PRET: {S.EN_COURS},
     S.EN_COURS: {S.TERMINE, S.TERMINE_AVEC_ANOMALIES, S.ECHEC},
     S.TERMINE: {S.VALIDE, S.EN_COURS},          # relance possible
-    S.TERMINE_AVEC_ANOMALIES: {S.EN_COURS, S.VALIDE},
+    S.TERMINE_AVEC_ANOMALIES: {S.EN_COURS},  # relancer après correction, jamais valider un lot partiel
     S.ECHEC: {S.EN_COURS, S.BROUILLON},
     S.VALIDE: {S.PUBLIE},
     S.PUBLIE: set(),                             # figé : on crée une nouvelle campagne
@@ -503,8 +503,22 @@ def valider_campagne(campagne_id, *, user=None):
     from edts.moteur.validation import valider_emploi_du_temps
 
     campagne = _charger(campagne_id)
-    if campagne.statut not in (S.TERMINE, S.TERMINE_AVEC_ANOMALIES):
-        _exiger(campagne, (S.TERMINE, S.TERMINE_AVEC_ANOMALIES))
+    bilan = campagne.bilan or {}
+    # La validation des seuls EDT persistés ne qualifie pas les groupes du
+    # périmètre restés sans plan : une campagne partielle ne peut jamais
+    # devenir « validée » sur la foi de ses quelques EDT réussis.
+    if (campagne.statut != S.TERMINE
+            or bilan.get('status_global') != 'COMPLETE'
+            or campagne.anomalies):
+        raise TransitionRefusee('VALIDATION_BLOQUANTE', {
+            'explication': (
+                'La campagne n’est pas complète et sans anomalies : corrigez '
+                'les groupes et séances non planifiés puis relancez la génération.'
+            ),
+            'statut_courant': campagne.statut,
+            'status_global': bilan.get('status_global'),
+            'nb_anomalies': len(campagne.anomalies or []),
+        })
 
     edt_ids = [
         ligne['edt_id'] for ligne in (campagne.bilan or {}).get('groupes', [])

@@ -195,6 +195,28 @@ class CycleDeVieCampagneTests(BaseCampagneTest):
             C.demarrer_campagne(campagne.pk, user=self.admin, asynchrone=False)
         self.assertEqual(ctx.exception.motif, 'CAMPAGNE_DEJA_EN_COURS')
 
+    def test_validation_refuse_campagne_partielle_meme_avec_edt_persistes(self):
+        """Des EDT valides isolément ne blanchissent pas les groupes manquants."""
+        campagne = self.campagne(libelle='Validation partielle')
+        edt = EmploiDuTemps.objects.create(
+            annee_academique=self.annee, population_type='GROUPE',
+            population_id=1, titre='EDT isolé',
+        )
+        campagne.statut = CampagneGeneration.Statut.TERMINE_AVEC_ANOMALIES
+        campagne.bilan = {
+            'status_global': 'PARTIELLE',
+            'groupes': [{'edt_id': edt.pk}, {'statut': 'NON_PLANIFIE'}],
+        }
+        campagne.anomalies = [{'motif': 'AUCUN_BESOIN_PLANIFIABLE'}]
+        campagne.save()
+        with self.assertRaises(C.TransitionRefusee) as ctx:
+            C.valider_campagne(campagne.pk, user=self.direction)
+        self.assertEqual(ctx.exception.motif, 'VALIDATION_BLOQUANTE')
+        campagne.refresh_from_db()
+        edt.refresh_from_db()
+        self.assertEqual(campagne.statut, CampagneGeneration.Statut.TERMINE_AVEC_ANOMALIES)
+        self.assertNotEqual(edt.statut, 'VALIDE')
+
     def test_publication_refusee_avant_validation(self):
         campagne = self.campagne()
         C.marquer_pret(campagne.pk, user=self.admin)
