@@ -143,17 +143,17 @@ def semaine_academique(affectation, date):
     return (date - annee.date_debut).days // 7 + 1
 
 
-def est_seance_du_jour(affectation, date):
-    """True si `affectation` a séance ce jour-là (jour + plage de semaines)."""
-    if not affectation.actif:
-        return False
+def occurrence_planifiee_du_jour(affectation, date):
+    """Jour/semaine du créneau, même si la séance a été annulée logiquement."""
     numero = semaine_academique(affectation, date)
-    if numero is None:
+    if numero is None or not (affectation.semaine_debut <= numero <= affectation.semaine_fin):
         return False
-    if not (affectation.semaine_debut <= numero <= affectation.semaine_fin):
-        return False
-    code_jour = getattr(affectation.creneau_template, 'jour', None)
-    return _JOURS.get(code_jour) == date.weekday()
+    return _JOURS.get(getattr(affectation.creneau_template, 'jour', None)) == date.weekday()
+
+
+def est_seance_du_jour(affectation, date):
+    """True si `affectation` est active et prévue à cette date."""
+    return affectation.actif and occurrence_planifiee_du_jour(affectation, date)
 
 
 def horodatages(affectation, date):

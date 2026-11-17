@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, fireEvent } from '@testing-library/react'
 
 vi.mock('@/services/api', async (importOriginal) => {
   const actual = await importOriginal()
@@ -10,7 +10,7 @@ vi.mock('@/services/api', async (importOriginal) => {
 import { apiController } from '@/test/utils/mockApi'
 import { renderWithProviders } from '@/test/utils/renderWithProviders'
 import { makeUser } from '@/test/utils/factories'
-import DashboardEngineView from '@/pages/DashboardEngineView'
+import DashboardEngineView, { messageErreurDashboard } from '@/pages/DashboardEngineView'
 
 /**
  * Le tableau de bord doit rester utilisable pendant le chargement et lorsque
@@ -48,6 +48,34 @@ describe('DashboardEngineView — chargement et panne de l’API', () => {
     expect(
       await screen.findByText(/Erreur lors du chargement des indicateurs/i),
     ).toBeInTheDocument()
+  })
+
+  it('affiche le code serveur sans fuite de détail interne et permet de réessayer', async () => {
+    let appels = 0
+    apiController.setRoute('/dashboard/overview/', () => {
+      appels += 1
+      if (appels === 1) {
+        const err = new Error('Server Error')
+        err.response = { status: 500, data: { detail: 'trace SQL sensible' } }
+        throw err
+      }
+      return { annee_academique: '2026-2027', kpis: {} }
+    })
+    const user = makeUser('ADMIN')
+    renderWithProviders(<DashboardEngineView />, { authUser: user })
+    expect(await screen.findByText(/HTTP 500/)).toBeInTheDocument()
+    expect(screen.queryByText(/trace SQL sensible/)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Réessayer/ }))
+    expect(await screen.findByText('Étudiants Inscrits')).toBeInTheDocument()
+    expect(appels).toBe(2)
+  })
+
+  it('distingue expiration de session, refus et route absente sans divulguer le serveur', () => {
+    expect(messageErreurDashboard({ response: { status: 401 } })).toMatch(/Reconnectez-vous/)
+    expect(messageErreurDashboard({ response: { status: 403 } })).toMatch(/HTTP 403/)
+    expect(messageErreurDashboard({ response: { status: 404 } })).toMatch(/HTTP 404/)
+    expect(messageErreurDashboard({ response: { status: 503, data: { detail: 'secret' } } }))
+      .not.toContain('secret')
   })
 
   it('n’invente aucun effectif quand l’API ne renvoie rien', async () => {

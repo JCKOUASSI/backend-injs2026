@@ -145,6 +145,28 @@ class StatutSeanceTests(BaseSupervision):
             supervision.statut_seance(affectation, self.aujourdhui, timezone.now()),
             'EN_COURS')
 
+    def test_annulations_hors_semaine_ne_polluent_pas_le_dashboard_du_jour(self):
+        """Un historique annulé ne doit ni grossir le résumé ni ralentir la vue."""
+        annulee = AffectationCreneau.objects.create(
+            emploi_du_temps=self.edt, creneau_template=self.template,
+            semaine_debut=1, semaine_fin=1, groupe=self.groupe,
+            formation=self.formation, actif=False, intitule='Ancienne séance annulée',
+        )
+        resultat = supervision.supervision_seances(self.admin, self.aujourdhui)
+        self.assertEqual(resultat['resume']['seances_total'], 1)
+        self.assertNotIn(annulee.pk, [s['id'] for s in resultat['seances']])
+        client = APIClient()
+        client.force_authenticate(self.admin)
+        overview = client.get('/api/dashboard/overview/')
+        self.assertEqual(overview.status_code, 200, overview.data)
+        self.assertEqual(overview.data['kpis']['seances_jour'], 1)
+        # Une annulation sur la semaine ET le jour demandé reste visible.
+        annulee.semaine_debut = annulee.semaine_fin = 4
+        annulee.save(update_fields=['semaine_debut', 'semaine_fin'])
+        resultat = supervision.supervision_seances(self.admin, self.aujourdhui)
+        self.assertEqual(resultat['resume']['seances_total'], 2)
+        self.assertIn(annulee.pk, [s['id'] for s in resultat['seances']])
+
     def test_seance_annulee_reste_visible_avec_son_statut(self):
         """``actif=False`` = annulation logique : elle ne disparaît pas."""
         self.affectation.actif = False

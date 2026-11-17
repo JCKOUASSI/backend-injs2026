@@ -406,8 +406,15 @@ def supervision_seances(user, date=None, *, statut=None, formation_id=None,
 
     date = date or timezone.localdate()
     maintenant = timezone.now()
+    # Préfiltrer côté SQL avant de charger les relations lourdes : un tableau
+    # du jour ne doit pas lire les EDT de toutes les années, ni toutes les
+    # séances annulées historiques (qui étaient affichées quel que soit le jour).
+    jour = next(code for code, index in service._JOURS.items() if index == date.weekday())
     base = (AffectationCreneau.objects
-            .filter(emploi_du_temps__statut__in=('VALIDE', 'PUBLIE'))
+            .filter(emploi_du_temps__statut__in=('VALIDE', 'PUBLIE'),
+                    emploi_du_temps__annee_academique__date_debut__lte=date,
+                    emploi_du_temps__annee_academique__date_fin__gte=date,
+                    creneau_template__jour=jour)
             .select_related(
                 'creneau_template', 'emploi_du_temps', 'emploi_du_temps__annee_academique',
                 'groupe', 'formation', 'salle', 'formateur',
@@ -435,9 +442,9 @@ def supervision_seances(user, date=None, *, statut=None, formation_id=None,
 
     affectations = []
     for affectation in base.order_by('creneau_template__heure_debut', 'id'):
-        # ``actif=False`` = annulation logique : elle reste visible (statut
-        # ANNULEE) ; seules les séances actives sont discriminées par le jour.
-        if affectation.actif and not service.est_seance_du_jour(affectation, date):
+        # Une annulation reste visible UNIQUEMENT à sa date planifiée, pas
+        # tous les jours de l'année ou de chaque autre semaine.
+        if not service.occurrence_planifiee_du_jour(affectation, date):
             continue
         affectations.append(affectation)
 
