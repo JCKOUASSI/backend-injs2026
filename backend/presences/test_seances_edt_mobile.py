@@ -159,6 +159,25 @@ class ScanMobileSeanceEdtTests(MobileSeanceEdtMixin, TestCase):
         self.assertEqual(self._scan(self.auditeurs[0], **self._dans_la_zone()).data['code'],
                          'ALREADY_SCANNED')
 
+    def test_fenetre_configuree_dans_parametres(self):
+        from parametres.models import Parametre
+        from presences.seances_edt_services import CLE_ANTI_DOUBLE_TAP
+
+        Parametre.objects.create(
+            cle=CLE_ANTI_DOUBLE_TAP, libelle='Anti-double-tap EDT (test)',
+            categorie='presences', type='integer', valeur='8', valeur_defaut='4',
+        )
+        entree = self._scan(self.auditeurs[0], **self._dans_la_zone())
+        self.assertEqual(entree.status_code, 201, entree.data)
+        Pointage.objects.filter(pk=entree.data['pointage_id']).update(
+            timestamp_entree=timezone.now() - timedelta(seconds=6))
+        doublon = self._scan(self.auditeurs[0], **self._dans_la_zone())
+        self.assertEqual(doublon.data['code'], 'DUPLICATE_SCAN')
+        Parametre.objects.filter(cle=CLE_ANTI_DOUBLE_TAP).update(valeur='3')
+        sortie = self._scan(self.auditeurs[0], **self._dans_la_zone())
+        self.assertEqual(sortie.status_code, 200, sortie.data)
+        self.assertEqual(sortie.data['action'], 'SORTIE')
+
     def test_autre_utilisateur_n_est_pas_bloque(self):
         self.assertEqual(self._scan(self.auditeurs[0], **self._dans_la_zone()).status_code, 201)
         self.assertEqual(self._scan(self.auditeurs[1], **self._dans_la_zone()).status_code, 201)

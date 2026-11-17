@@ -152,7 +152,7 @@ class GenerationAnneeTests(BaseAnneeTest):
                          'REPARTITION_ANNUELLE_NON_CONFORME')
         self.assertEqual(AffectationCreneau.objects.filter(actif=True).count(), 0)
 
-    def test_annee_s1_s2_multi_formation_sans_calendrier_institutionnel_refusee(self):
+    def test_annee_s1_s2_refus_auto_et_deux_perimetres_manuels_isoles(self):
         """Dates indicatives de la mission ≠ bornes S1/S2 validées en base.
 
         La garde ne doit jamais persister les récurrences 1..39 d'une année
@@ -188,6 +188,31 @@ class GenerationAnneeTests(BaseAnneeTest):
                          {'REPARTITION_ANNUELLE_NON_CONFORME'})
         self.assertEqual(AffectationCreneau.objects.filter(actif=True).count(), 0)
         self.assertEqual(EmploiDuTemps.objects.count(), 0)
+
+        # Démonstration technique uniquement : l'opérateur cible EXPLICITEMENT
+        # chaque semestre et ses semaines dans la base de test. Ces semaines
+        # illustratives ne constituent PAS un calendrier institutionnel.
+        s1 = A.generer_annee(self.annee.pk, semaines=list(range(1, 18)),
+                             semestre_numeros=[1], persister=True)
+        s2 = A.generer_annee(self.annee.pk, semaines=list(range(18, 40)),
+                             semestre_numeros=[2], persister=True)
+        self.assertEqual(s1['status_global'], A.ANNEE_COMPLETE, s1)
+        self.assertEqual(s2['status_global'], A.ANNEE_COMPLETE, s2)
+        lignes = list(AffectationCreneau.objects.filter(actif=True)
+                      .select_related('creneau_template'))
+        self.assertEqual(len(lignes), 6)
+        self.assertEqual({a.ecue_id for a in lignes}, {self.ecue.pk, ecue2.pk})
+        self.assertEqual(len({a.groupe_id for a in lignes}), 2)
+        self.assertEqual(sum(a.semaine_fin - a.semaine_debut + 1 for a in lignes), 6)
+        self.assertEqual(sum(
+            (a.creneau_template.heure_fin.hour - a.creneau_template.heure_debut.hour)
+            * (a.semaine_fin - a.semaine_debut + 1) for a in lignes), 12)
+        self.assertTrue(all(a.semaine_debut <= 17 for a in lignes if a.ecue_id == self.ecue.pk))
+        self.assertTrue(all(a.semaine_debut >= 18 for a in lignes if a.ecue_id == ecue2.pk))
+        from edts.moteur import validation as V
+        violations = []
+        V.verifier_conflits(V.placements_seances(lignes), violations, [])
+        self.assertEqual(violations, [])
 
     def test_cohorte_importee_planifiee(self):
         self.importer([
