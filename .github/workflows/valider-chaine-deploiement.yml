@@ -93,13 +93,16 @@ jobs:
       - name: Tests fonctionnels (sans VPS, sans Docker Hub, sans déploiement)
         run: ./scripts/tester-deploiement-injs.sh
 
+      - name: Tests du transfert local Mac → VPS (Docker simulé)
+        run: bash ./scripts/tester-deploiement-local.sh
+
       - name: Synthèse
         if: always()
         run: |
           {
             echo "## Validation de la chaîne de déploiement INJS-LMD"
             echo ""
-            echo "Les deux scripts de contrôle ont été exécutés sur cette révision."
+            echo "Les trois scripts de contrôle ont été exécutés sur cette révision."
             echo "Aucun déploiement, aucune connexion SSH, aucun appel au registre :"
             echo "ces contrôles sont purement locaux au runner."
             echo ""
