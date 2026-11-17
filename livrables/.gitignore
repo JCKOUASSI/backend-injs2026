@@ -1,0 +1,4 @@
+# Archives de transfert Mac/VPS générées, non versionnées.
+*.tar.gz
+*.tar.gz.sha256
+*.tar

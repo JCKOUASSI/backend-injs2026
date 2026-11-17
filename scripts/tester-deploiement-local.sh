@@ -81,4 +81,12 @@ fi
 if (DEPLOY_IMAGES_LOCALES=inconnue; preparer_images) >/dev/null 2>&1; then
   echo 'Mode inconnu accepté' >&2; exit 1
 fi
-echo 'Mode local : images vérifiées, pas de pull, tags synchronisés.'
+# Après un premier déploiement, la sauvegarde .env contient l'ancien tag.
+# S'il manque localement, le rollback doit échouer AVANT compose down.
+if (cmd_rollback) >/dev/null 2>&1; then
+  echo 'Rollback avec ancienne image manquante accepté' >&2; exit 1
+fi
+if grep -q '^down|' "$TMP/compose-calls"; then
+  echo 'Rollback a arrêté la stack avant vérification des images' >&2; exit 1
+fi
+echo 'Mode local : images vérifiées, pas de pull, tags synchronisés, rollback fermé.'
