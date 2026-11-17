@@ -1,15 +1,14 @@
 """Génère la trame de recette NON exécutée des dix espaces retenus (openpyxl)."""
 from pathlib import Path
-from datetime import date
 from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.formatting.rule import CellIsRule
 from openpyxl.utils import get_column_letter
 from openpyxl.workbook.properties import CalcProperties
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / 'dossier_trvx/Manuel_utilisateurs/Recette_Validation_10_Hubs_INJS_2026.xlsx'
+OUT = ROOT / 'dossier_trvx/Manuel_jeu_test2026/Recette_Validation_10_Hubs_INJS_2026.xlsx'
 # Périmètre proposé : huit composants *Hub.jsx + deux espaces transversaux.
 # Les routes sont des points d'entrée de recette, pas des attestations de fonctionnement.
 HUBS = {
@@ -133,5 +132,8 @@ for ws in wb:
  ws.sheet_properties.pageSetUpPr.fitToPage=True
  ws.page_setup.fitToWidth=1
  ws.sheet_properties.outlinePr.summaryBelow=True
+# Une régénération ne doit jamais écraser une recette déjà renseignée ou signée.
+if OUT.exists():
+ raise SystemExit(f"Refus d'écraser le classeur existant : {OUT}")
 OUT.parent.mkdir(parents=True,exist_ok=True);wb.save(OUT)
 print(OUT, 'hubs=',len(HUBS),'cases=',len(rows),'bytes=',OUT.stat().st_size)
