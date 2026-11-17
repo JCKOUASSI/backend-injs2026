@@ -1,0 +1,63 @@
+# Finalisation technique QR / Présences / EDT — branche `arena/a8060ecf-backend-injs2026`
+
+**Périmètre :** dépôt Arena `/home/user/backend-injs2026`, pas le disque macOS de l'utilisateur. Date d'exécution : 17 novembre 2026 (horloge du conteneur). Référence initiale : `291c754` (ancêtre vérifié), arbre propre au début. Base de test Django PostgreSQL 16.15 locale isolée, UTF8, jamais la production. Aucun déploiement, accès au VPS ni migration de production.
+
+## A. Synthèse exécutive
+
+- La protection anti-double-tap du **canal QR EDT/LMD** est implémentée dans le service partagé des deux routes. Elle n'utilise ni cookie ni mémoire du navigateur et conserve le verrou du QR et celui de la personne. Un doublon inférieur à quatre secondes retourne `DUPLICATE_SCAN` / `SCAN_DUPLIQUE` sans mise à jour du pointage ni journal SQL additionnel. Une sortie volontaire après la fenêtre reste possible. Le service écrit une ligne de log applicatif sans secret QR.
+- La campagne S1/S2 multi-formation **ne démontre pas un EDT annuel automatique** : même avec une année 2026-2027 datée et des maquettes S1/S2, aucune table ne porte les bornes institutionnelles des semestres ; la garde existante refuse l'écriture plutôt que de mélanger les enseignements. Aucun nouveau calendrier institutionnel n'a été inventé.
+- La CI GitHub **n'a pas été exécutée** sur cette branche : `gh run list` retourne `[]` et la consultation des permissions Actions échoue HTTP 403 `Resource not accessible by integration`. Le workflow est renforcé localement pour initialiser PostgreSQL en UTF8 et propager les échecs de la suite malgré `tee`. Une personne ayant les droits Actions devra lancer et examiner la CI.
+
+**Fiabilité :** protection transactionnelle LMD prouvée sur base PostgreSQL de test ; annualisation automatique NON VALIDÉE ; certification CI BLOQUÉE. L'ancien canal QR `SessionModule`, les terminaux réels et la production ne sont pas qualifiés par la nouvelle règle.
+
+## B. QR / anti-double-tap
+
+**Cartographie.** `presences/views.py` (`/api/scan/secure/`) et `presences/seances_edt_api.py` (`/api/presences/seances-edt/scan/`) résolvent le `QRToken`, vérifient séance du jour, autorisation et appareil, puis appellent `seances_edt_services.badger_scan`. Celui-ci est `transaction.atomic`, verrouille et revérifie le QR avant écriture, verrouille ensuite la ligne de la personne (utile même si aucun pointage n'existe), cherche le pointage ouvert avec `select_for_update`, puis journalise l'entrée ou la sortie. L'endpoint distinct `/api/scan/secure/exit/`, l'ancien canal `SessionModule`, le heartbeat et les émargements manuels conservent leurs règles spécifiques ; aucune sortie automatique par heartbeat n'est supprimée.
+
+**Règle.** `Parametre` centralise la clé `presences.edt.anti_double_tap_secondes` (défaut 4 ; valeurs acceptées 1–60 secondes, valeurs hors plage rabattues à 4). Pour une entrée ouverte, le délai est mesuré sur l'horloge serveur **après** attente du verrou de la personne : `0 <= maintenant - timestamp_entree < seuil` refuse un scan QR de sortie. À partir du seuil, le scan reprend le comportement d'entrée/sortie existant. La règle s'applique à la personne et la séance/date, pas au `device_id`. Les QR invalides et expirés sont refusés avant ce contrôle ; le contrôle de révocation au sein de la transaction reste prioritaire. `DUPLICATE_SCAN` se distingue de `ALREADY_SCANNED` (entrée et sortie déjà terminées). Pour préserver les clients historiques, le code legacy `TOKEN_EXPIRED` est inchangé ; les réponses LMD ajoutent `raison=EXPIRE|REVOQUE` et `code_normalise=QR_EXPIRE|QR_REVOQUE` pour distinguer les deux cas (un QR inconnu conserve `INVALID_TOKEN`). L'absence d'un jeton supprimé en cours de scan est assimilée à une révocation ; le canal historique `SessionModule` n'a pas été modifié.
+
+Fichiers : `backend/presences/seances_edt_services.py`, tests `test_concurrence_postgresql.py`, `test_seances_edt_mobile.py`, `test_seances_edt.py`, `test_presences_completion.py`. Les tests séquentiels plus anciens simulent six secondes écoulées avant une sortie volontaire pour refléter le nouveau contrat ; les tests de sorties par endpoint explicite restent inchangés.
+
+| Test sur PostgreSQL UTF8 | Résultat |
+|---|---|
+| Premier scan ; immédiat ; même personne depuis deux appareils | 201 ; doublon 400, aucune écriture pointage/journal SQL |
+| Écart <3 secondes puis >5 secondes ; répétition après sortie | 400 puis 200 `SORTIE` puis `ALREADY_SCANNED` |
+| Utilisateurs distincts / scans simultanés | Deux lignes distinctes / même étudiant : une entrée et un refus, une seule ligne |
+| QR inconnu, expiré, remplacé ; révocation ou expiration entre validation et écriture | Refus ; tests PostgreSQL existants conservés |
+
+**Régression mesurée :** référence `291c754` : 708/708 Présences+EDT et 4/4 concurrence QR, mais double scan = entrée puis sortie. Campagne après changement : tests ciblés PostgreSQL **115/115 OK**, puis suite `presences edts.tests` **713/713 OK** (5 nouveaux tests : quatre QR séquentiels et un scénario annuel), dont les quatre tests transactionnels, avec double scan désormais refusé. Après l'ajout des codes normalisés révoqué/expiré, la même suite a été rejouée sur une seconde base isolée UTF8 : **713/713 OK**, journal `/tmp/injs-mission-presences-edt-after-normalisation.log`. Une première passe 713 tests avait cinq échecs dus aux anciens tests qui attendaient une sortie immédiate ; ces fixtures ont été mises à jour puis la campagne entière a été relancée avec succès. Journaux temporaires : `/tmp/injs-mission-qr-target.log`, `/tmp/injs-mission-targeted-all.log`, `/tmp/injs-mission-presences-edt-final.log` (non versionnés). Une tentative de **suite backend PostgreSQL globale** a recensé 3 162 tests mais a dépassé 30 minutes sans bilan final ; elle a été interrompue et **ne peut pas être comptée comme réussie** (`/tmp/injs-mission-backend-full.log`). Le serveur PostgreSQL isolé a été arrêté ; aucune suppression de base ni de données de production.
+
+## C. EDT annuel S1/S2 — capacités et scénario isolé
+
+Architecture réutilisée : `edts/moteur/besoins.py`, `besoins_maquette.py` (volumes UE/ECUE), `generation.py` (solveur), `annee.py` (orchestration par groupe et semaines), `orchestration.py` (occupations), `contraintes.py`/`validation.py` (C1/C2/C3, C10), `publication.py` (brouillon puis validation/publication), `edts.models` (EDT, affectations et semaines). `scolarite.AnneeAcademique` porte date début/fin ; `scolarite.Semestre` porte numéro/niveau, **pas de dates**. L'occurrence QR est déduite de la date de début de l'année, du numéro de semaine et du jour/créneau ; une séance récurrente n'est pas une ligne SQL par date. Les fêtes/vacances et reprises d'occurrences ne sont pas déduites d'une liste institutionnelle S1/S2.
+
+**Scénario PostgreSQL isolé** dans `test_generation_annee` : année 2026-2027 datée du 1 septembre 2026 au 31 mai 2027 ; deux formations INJS, groupes L1-G1 (S1) et L1-G2 (S2), six inscrits par groupe, deux maquettes actives et deux ECUE de 4 h CM + 2 h TD chacune, deux salles, quatre créneaux. Les enseignants **ne sont pas inventés** pour des cohortes importées sans affectation pédagogique : ce scénario ne valide pas la couverture enseignants. Demande `semaines=1..39`, `persister=True` sans sélection manuelle des bornes des semestres : deux groupes détectés, statut différent de `COMPLETE`, motif `REPARTITION_ANNUELLE_NON_CONFORME`, **0 EDT, 0 séance/occurrence et 0 h persistées**. Volume pédagogique attendu : 12 h (6 h S1 + 6 h S2), six séances de 2 h ; volume annuel automatique généré/persisté **non validé / 0 h**. Test de refus 1/1 OK. Ceci prouve le refus sûr et non la capacité de générer l'année. Ancienne preuve distincte : un semestre explicitement sélectionné sur quatre semaines, 6 h/3 occurrences persistées, ni S1/S2 automatique ni exercice des jours fériés.
+
+| Fonctionnalité | Existe | Testée ici | Résultat | Observation |
+|---|---|---|---|---|
+| Année datée 2026-2027 | Oui | Oui | Année de test créée | La date de début définit la semaine académique |
+| S1/S2 identifiés par numéro | Oui | Oui | Deux maquettes/groupes détectés | `Semestre` sans dates propres |
+| Bornes institutionnelles S1/S2 | Non | Non | Bloquant | Septembre–décembre / janvier–mai sont indicatifs ; pas de règle institutionnelle validée |
+| Besoins/volumes ECUE | Oui | Oui | 6 h par groupe dans la fixture | Absence d'enseignants affectés dans cet exemple |
+| Génération annuelle automatique S1/S2 | Partielle | Oui (refus) | Non validée, aucune écriture | Répartition des semaines entre semestres inconnue |
+| Occurrences unitaires hebdomadaires | Oui (manuel mono-semestre) | Oui (tests historiques) | 6 h/3 occurrences sur fixture S1 | Ne démontre pas une année |
+| Conflits enseignant/groupe/salle | Oui | Tests existants | Tests unitaires passent | Ne prouve pas l'absence de conflits sur l'année réelle |
+| Jours fériés / interruptions annuelles | Pas de calendrier exploité ici | Non | Inconnu/non validé | Canevas horaire et indisponibilités ne valent pas calendrier férié |
+| Modification d'une séance / calendrier | API/modèle présents | Non dans scénario S1/S2 | Non validé | Effet sur séances publiées et pointages existants à arbitrer |
+| Rattachement EDT → présence → QR | Oui (FK ECUE des nouvelles séances) | Tests existants | Passants sur fixtures | Impossible de tester le pointage d'un EDT annuel refusé |
+
+## D. CI GitHub
+
+Workflow `.github/workflows/ci.yml` : déclenchement `push` sur `main`, `pull_request` et `workflow_dispatch`. Backend Python 3.11, PostgreSQL 16 service `qr_badge`, `manage.py check`, `makemigrations --check --dry-run`, contrôle d'hygiène, `collectstatic`, **suite backend complète** (QR/Présences/EDT inclus), journal artefact ; frontend Node 20 `npm ci`, lint, Vitest, build. `REDIS_URL` absent : les tests utilisent le cache local au processus, pas de service Redis requis. La base Django de test `test_qr_badge` dérive du modèle PostgreSQL ; `POSTGRES_INITDB_ARGS` fixe désormais explicitement `--encoding=UTF8 --locale=C.UTF-8` à la création du service. `set -o pipefail` garantit que le job échoue si Django échoue malgré `tee`.
+
+**Aucune CI validée.** `gh run list --branch arena/a8060ecf-backend-injs2026` retourne `[]`. L'intégration Arena reçoit HTTP 403 `Resource not accessible by integration` pour les permissions Actions : elle ne peut ni consulter ce paramètre ni déclencher le workflow. Le 403 n'identifie pas à lui seul le réglage exact manquant. Une personne habilitée à exécuter les workflows Actions (`Actions: write` ou permission équivalente du dépôt/organisation ; accès en lecture aux exécutions/artefacts) doit : ouvrir Actions → CI → Run workflow → sélectionner `arena/a8060ecf-backend-injs2026` → lancer ; ou exécuter `gh workflow run ci.yml --ref arena/a8060ecf-backend-injs2026` avec son propre accès autorisé ; attendre les jobs Backend et Frontend ; vérifier les logs et l'artefact `backend-tests-log`. La branche doit contenir le commit de cette mission avant ce lancement. Aucune modification de paramètres de sécurité ni contournement des permissions n'est requis.
+
+## E–G. État et décision
+
+| Chantier | Statut | Motif |
+|---|---|---|
+| QR anti-double-tap EDT/LMD | VALIDÉ PARTIELLEMENT | Transaction et distinction normalisée révoqué/expiré testées sur PostgreSQL ; canal legacy, clients/terminaux réels et CI non qualifiés |
+| EDT annuel automatique S1/S2 | NON VALIDÉ | Absence de bornes calendaires institutionnelles, refus sûr de l'écriture |
+| CI sur branche cible | BLOQUÉ | HTTP 403 ; aucune exécution Actions vérifiée |
+
+**DÉPLOIEMENT INTERDIT EN L'ÉTAT.** Aucun déploiement demandé ni réalisé. Obtenir le calendrier officiel S1/S2, préciser interruptions et arbitrage des modifications de séances déjà pointées ; tester réellement l'année (y compris enseignants, conflits, QR, volumes et reprise) et faire exécuter la CI par une personne habilitée avant nouvelle décision.

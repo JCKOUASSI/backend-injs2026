@@ -152,6 +152,43 @@ class GenerationAnneeTests(BaseAnneeTest):
                          'REPARTITION_ANNUELLE_NON_CONFORME')
         self.assertEqual(AffectationCreneau.objects.filter(actif=True).count(), 0)
 
+    def test_annee_s1_s2_multi_formation_sans_calendrier_institutionnel_refusee(self):
+        """Dates indicatives de la mission ≠ bornes S1/S2 validées en base.
+
+        La garde ne doit jamais persister les récurrences 1..39 d'une année
+        sous prétexte que les besoins sont répartis entre S1 et S2.
+        """
+        from scolarite.models import Semestre
+        from datetime import date
+
+        self.annee.date_debut = date(2026, 9, 1)
+        self.annee.date_fin = date(2027, 5, 31)
+        self.annee.save(update_fields=['date_debut', 'date_fin'])
+        f2 = FabriqueLMD(self).creer_base(perimetre='INJS', filiere='F02', suffixe='S2')
+        f2.semestre, _ = Semestre.objects.get_or_create(
+            niveau=self.f.niveau, numero=2, defaults={'libelle': 'S2'})
+        f2.creer_salle(nom='Salle B', capacite=60)
+        maquette2, _, ecue2 = f2.creer_maquette()
+        ecue2.volume_cm, ecue2.volume_td = 4, 2
+        ecue2.save()
+        maquette2.statut = Maquette.Statut.ACTIVE
+        maquette2.save()
+        self.importer([
+            f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'
+            for i in range(6)
+        ] + [
+            f'INJS-S2-{i:03d};Nom{i};{f2.cycle.intitule};L1;S2;L1-G2;V1'
+            for i in range(6)
+        ])
+        bilan = A.generer_annee(self.annee.pk, semaines=list(range(1, 40)),
+                                persister=True, budget=1500)
+        self.assertNotEqual(bilan['status_global'], A.ANNEE_COMPLETE)
+        self.assertEqual(bilan['totaux']['nb_groupes'], 2)
+        self.assertEqual({g['motif_echec'] for g in bilan['groupes']},
+                         {'REPARTITION_ANNUELLE_NON_CONFORME'})
+        self.assertEqual(AffectationCreneau.objects.filter(actif=True).count(), 0)
+        self.assertEqual(EmploiDuTemps.objects.count(), 0)
+
     def test_cohorte_importee_planifiee(self):
         self.importer([
             f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'

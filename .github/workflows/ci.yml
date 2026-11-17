@@ -48,6 +48,7 @@ jobs:
           POSTGRES_DB: qr_badge
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
+          POSTGRES_INITDB_ARGS: '--encoding=UTF8 --locale=C.UTF-8'
         ports:
           - 5432:5432
         options: >-
@@ -91,7 +92,9 @@ jobs:
         run: python manage.py collectstatic --noinput
 
       - name: Tests
-        run: python manage.py test --verbosity 1 2>&1 | tee /tmp/backend-tests.log
+        run: |
+          set -o pipefail
+          python manage.py test --verbosity 1 2>&1 | tee /tmp/backend-tests.log
 
       # Les journaux d'exécution ne sont pas toujours accessibles depuis un
       # environnement restreint : on republie l'essentiel des échecs sous forme

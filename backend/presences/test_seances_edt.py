@@ -181,6 +181,8 @@ class ScanSeanceTests(SeanceEdtFixtureMixin, TestCase):
         self.assertEqual(entree.status_code, 201, entree.data)
         self.assertEqual(entree.data['action'], 'ENTREE')
         self.assertEqual(entree.data['statut_assiduite'], Pointage.StatutAssiduite.PRESENT)
+        Pointage.objects.filter(pk=entree.data['pointage_id']).update(
+            timestamp_entree=timezone.now() - timedelta(seconds=6))
         sortie = self._scan(self.auditeurs[0])
         self.assertEqual(sortie.status_code, 200, sortie.data)
         self.assertEqual(sortie.data['action'], 'SORTIE')
@@ -192,6 +194,8 @@ class ScanSeanceTests(SeanceEdtFixtureMixin, TestCase):
 
     def test_double_complet_refuse(self):
         self._scan(self.auditeurs[0])
+        Pointage.objects.filter(seance_edt=self.affectation).update(
+            timestamp_entree=timezone.now() - timedelta(seconds=6))
         self._scan(self.auditeurs[0])
         reponse = self._scan(self.auditeurs[0])
         self.assertEqual(reponse.status_code, 400)
@@ -408,6 +412,8 @@ class GeofenceSeanceEdtTests(SeanceEdtFixtureMixin, TestCase):
         """
         entree = self._scan(self.auditeurs[0], **self._dans_la_zone())
         self.assertEqual(entree.status_code, 201, entree.data)
+        Pointage.objects.filter(pk=entree.data['pointage_id']).update(
+            timestamp_entree=timezone.now() - timedelta(seconds=6))
         sortie = self._scan(self.auditeurs[0], latitude=LAT_INJS_MARCORY + 0.010,
                             longitude=LON_INJS_MARCORY, accuracy_m=10)
         self.assertEqual(sortie.status_code, 200, sortie.data)

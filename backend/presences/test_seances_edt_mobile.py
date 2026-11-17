@@ -115,6 +115,9 @@ class ScanMobileSeanceEdtTests(MobileSeanceEdtMixin, TestCase):
                          self.participants[0].matricule)
         self.assertIsNotNone(entree.data['heure_entree'])
 
+        # Sortie volontaire après la fenêtre anti-double-tap.
+        Pointage.objects.filter(pk=entree.data['pointage_id']).update(
+            timestamp_entree=timezone.now() - timedelta(seconds=6))
         sortie = self._scan(self.auditeurs[0], **self._dans_la_zone())
         self.assertEqual(sortie.status_code, 200, sortie.data)
         self.assertEqual(sortie.data['action'], 'SORTIE')
@@ -125,6 +128,51 @@ class ScanMobileSeanceEdtTests(MobileSeanceEdtMixin, TestCase):
         self.assertEqual(pointage.statut, Pointage.Statut.TERMINE)
         self.assertEqual(pointage.annee_academique_id, self.annee.pk)
         self.assertEqual(pointage.groupe_lmd_id, self.groupe.pk)
+
+    def test_double_tap_immediat_et_autre_terminal_sans_ecriture(self):
+        entree = self._scan(self.auditeurs[0], **self._dans_la_zone())
+        self.assertEqual(entree.status_code, 201, entree.data)
+        journal = AuditLog.objects.count()
+        premier = Pointage.objects.get(pk=entree.data['pointage_id'])
+        doublon = self._scan(self.auditeurs[0], device='second-terminal',
+                             **self._dans_la_zone())
+        self.assertEqual(doublon.status_code, 400, doublon.data)
+        self.assertEqual(doublon.data['code'], 'DUPLICATE_SCAN')
+        self.assertEqual(doublon.data['code_normalise'], 'SCAN_DUPLIQUE')
+        self.assertEqual(AuditLog.objects.count(), journal)
+        premier.refresh_from_db()
+        self.assertIsNone(premier.timestamp_sortie)
+        self.assertEqual(Pointage.objects.filter(seance_edt=self.affectation).count(), 1)
+
+    def test_seuil_trois_secondes_et_sortie_apres_cinq_secondes(self):
+        entree = self._scan(self.auditeurs[0], **self._dans_la_zone())
+        self.assertEqual(entree.status_code, 201, entree.data)
+        Pointage.objects.filter(pk=entree.data['pointage_id']).update(
+            timestamp_entree=timezone.now() - timedelta(seconds=2))
+        self.assertEqual(self._scan(self.auditeurs[0], **self._dans_la_zone()).data['code'],
+                         'DUPLICATE_SCAN')
+        Pointage.objects.filter(pk=entree.data['pointage_id']).update(
+            timestamp_entree=timezone.now() - timedelta(seconds=6))
+        sortie = self._scan(self.auditeurs[0], **self._dans_la_zone())
+        self.assertEqual(sortie.status_code, 200, sortie.data)
+        self.assertEqual(sortie.data['action'], 'SORTIE')
+        self.assertEqual(self._scan(self.auditeurs[0], **self._dans_la_zone()).data['code'],
+                         'ALREADY_SCANNED')
+
+    def test_autre_utilisateur_n_est_pas_bloque(self):
+        self.assertEqual(self._scan(self.auditeurs[0], **self._dans_la_zone()).status_code, 201)
+        self.assertEqual(self._scan(self.auditeurs[1], **self._dans_la_zone()).status_code, 201)
+        self.assertEqual(Pointage.objects.filter(seance_edt=self.affectation).count(), 2)
+
+    def test_doublon_apres_expiration_du_qr_refuse_comme_expire(self):
+        self.assertEqual(self._scan(self.auditeurs[0], **self._dans_la_zone()).status_code, 201)
+        QRToken.objects.filter(token=self.token).update(
+            expire_at=timezone.now() - timedelta(seconds=1))
+        reponse = self._scan(self.auditeurs[0], **self._dans_la_zone())
+        self.assertEqual(reponse.data['code'], 'TOKEN_EXPIRED')
+        self.assertEqual(reponse.data['code_normalise'], 'QR_EXPIRE')
+        self.assertEqual(reponse.data['raison'], 'EXPIRE')
+        self.assertIsNone(Pointage.objects.get(seance_edt=self.affectation).timestamp_sortie)
 
     def test_auditeur_hors_groupe_refuse(self):
         dehors = User.objects.create_user(username='dehors-mobile', password='x',
@@ -199,6 +247,8 @@ class ScanMobileSeanceEdtTests(MobileSeanceEdtMixin, TestCase):
         reponse = self._scan(self.auditeurs[0], **self._dans_la_zone())
         self.assertEqual(reponse.status_code, 400, reponse.data)
         self.assertEqual(reponse.data['code'], 'TOKEN_EXPIRED')
+        self.assertEqual(reponse.data['code_normalise'], 'QR_REVOQUE')
+        self.assertEqual(reponse.data['raison'], 'REVOQUE')
         self.assertEqual(Pointage.objects.count(), 0)
         self.token = nouveau
         valide = self._scan(self.auditeurs[0], **self._dans_la_zone())
@@ -210,6 +260,8 @@ class ScanMobileSeanceEdtTests(MobileSeanceEdtMixin, TestCase):
         reponse = self._scan(self.auditeurs[0], **self._dans_la_zone())
         self.assertEqual(reponse.status_code, 400, reponse.data)
         self.assertEqual(reponse.data['code'], 'TOKEN_EXPIRED')
+        self.assertEqual(reponse.data['code_normalise'], 'QR_EXPIRE')
+        self.assertEqual(reponse.data['raison'], 'EXPIRE')
 
     def test_token_inconnu_refuse(self):
         self.client.force_authenticate(self.auditeurs[0])
@@ -298,6 +350,8 @@ class CheckStatusMobileSeanceEdtTests(MobileSeanceEdtMixin, TestCase):
         self.assertEqual(en_salle.data['action_suivante'], 'SORTIE')
         self.assertIsNotNone(en_salle.data['heure_entree'])
 
+        Pointage.objects.filter(seance_edt=self.affectation).update(
+            timestamp_entree=timezone.now() - timedelta(seconds=6))
         self._scan(self.auditeurs[0], **self._dans_la_zone())
         termine = self._check_status(self.auditeurs[0])
         self.assertEqual(termine.data['statut'], 'TERMINE')

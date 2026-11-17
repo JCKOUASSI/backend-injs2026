@@ -50,10 +50,12 @@ class ConcurrenceScanPostgres(MobileSeanceEdtMixin, TransactionTestCase):
         self.assertEqual(Pointage.objects.filter(
             seance_edt=self.affectation, participant=self.participants[0],
         ).count(), 1, reponses)
-        self.assertEqual(sorted(r[0] for r in reponses), [200, 201], reponses)
-        # Contrat ACTUEL : le second scan ferme la présence. Il faut arbitrer
-        # une fenêtre anti-double-tap avant de qualifier l'assiduité de fiable.
-        self.assertEqual({r[1] for r in reponses}, {'ENTREE', 'SORTIE'})
+        self.assertEqual(sorted(r[0] for r in reponses), [201, 400], reponses)
+        self.assertEqual({r[1] for r in reponses}, {'ENTREE', None})
+        self.assertEqual({r[2] for r in reponses}, {None, 'DUPLICATE_SCAN'})
+        self.assertIsNone(Pointage.objects.get(
+            seance_edt=self.affectation, participant=self.participants[0],
+        ).timestamp_sortie)
 
     def test_revocation_entre_validation_et_enregistrement(self):
         """La validation initiale du QR ne suffit pas contre une révocation.
@@ -96,6 +98,7 @@ class ConcurrenceScanPostgres(MobileSeanceEdtMixin, TransactionTestCase):
                 response = future.result(timeout=30)
         self.assertEqual(response.status_code, 400, response.data)
         self.assertEqual(response.data['code'], 'TOKEN_EXPIRED')
+        self.assertEqual(response.data['code_normalise'], 'QR_REVOQUE')
         self.assertFalse(Pointage.objects.filter(seance_edt=self.affectation).exists())
 
     def test_expiration_entre_validation_et_enregistrement(self):
@@ -137,6 +140,7 @@ class ConcurrenceScanPostgres(MobileSeanceEdtMixin, TransactionTestCase):
                 response = future.result(timeout=30)
         self.assertEqual(response.status_code, 400, response.data)
         self.assertEqual(response.data['code'], 'TOKEN_EXPIRED')
+        self.assertEqual(response.data['code_normalise'], 'QR_EXPIRE')
         self.assertFalse(Pointage.objects.filter(seance_edt=self.affectation).exists())
 
     def test_scans_simultanes_etudiants_distincts(self):
