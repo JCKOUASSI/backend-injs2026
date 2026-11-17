@@ -334,6 +334,21 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     )
   })
 
+  it('signale immédiatement un suivi HTTP 401 sans prétendre que le calcul a échoué', async () => {
+    const user = userEvent.setup()
+    const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    apiController.replaceRoute('/edts/campagnes/1/statut/', () =>
+      Promise.reject(Object.assign(new Error('Accès refusé'), { response: { status: 401 } })))
+    rendre()
+    await screen.findByLabelText(/Année académique/)
+    await user.clear(screen.getByLabelText('Semaines planifiées'))
+    await user.type(screen.getByLabelText('Semaines planifiées'), '1,2')
+    await user.click(screen.getByRole('button', { name: /Lancer la génération automatique/i }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Suivi indisponible.*HTTP 401/)
+    expect(apiMock.get).not.toHaveBeenCalledWith('/edts/campagnes/1/resultat/')
+    confirmation.mockRestore()
+  })
+
   it('ignore les cases cochées dans le mode automatique, après confirmation', async () => {
     const user = userEvent.setup()
     const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(true)

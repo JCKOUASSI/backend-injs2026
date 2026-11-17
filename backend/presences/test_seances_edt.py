@@ -120,6 +120,21 @@ class SeanceDuJourTests(SeanceEdtFixtureMixin, TestCase):
             semaine_debut=99, semaine_fin=100)
         self.assertEqual(service.seances_du_jour(self.admin, self.date_seance), [])
 
+    def test_pas_de_qr_hors_bornes_de_l_annee_meme_si_la_semaine_couvre_la_date(self):
+        # La semaine 4 chevauche la fin de l'année ; ses jours ultérieurs
+        # ne doivent pas recréer une séance ni ouvrir un QR hors année.
+        self.annee.date_fin = self.date_seance - timedelta(days=1)
+        self.annee.save(update_fields=['date_fin'])
+        self.assertIsNone(service.semaine_academique(self.affectation, self.date_seance))
+        self.assertFalse(service.est_seance_du_jour(self.affectation, self.date_seance))
+        self.assertEqual(service.seances_du_jour(self.admin, self.date_seance), [])
+
+    def test_pas_de_qr_avant_debut_de_l_annee(self):
+        self.annee.date_debut = self.date_seance + timedelta(days=1)
+        self.annee.save(update_fields=['date_debut'])
+        self.assertIsNone(service.semaine_academique(self.affectation, self.date_seance))
+        self.assertEqual(service.seances_du_jour(self.admin, self.date_seance), [])
+
 
 class QrSeanceTests(SeanceEdtFixtureMixin, TestCase):
     def setUp(self):
@@ -139,6 +154,16 @@ class QrSeanceTests(SeanceEdtFixtureMixin, TestCase):
         reponse = self.client.get(f'/api/presences/seances-edt/{self.affectation.pk}/qr/')
         self.assertEqual(reponse.status_code, 200)
         self.assertEqual(reponse.data['token'], token)
+
+    def test_qr_refuse_apres_fin_de_l_annee_sans_jeton_ni_journal(self):
+        self.annee.date_fin = self.date_seance - timedelta(days=1)
+        self.annee.save(update_fields=['date_fin'])
+        self.client.force_authenticate(self.enseignant)
+        reponse = self.client.post(f'/api/presences/seances-edt/{self.affectation.pk}/qr/')
+        self.assertEqual(reponse.status_code, 400)
+        self.assertFalse(QRToken.objects.filter(seance_edt=self.affectation).exists())
+        self.assertFalse(AuditLog.objects.filter(
+            action=AuditLog.Action.FORMATION_QR_GENERATE).exists())
 
     def test_lecture_du_secret_refusee_a_un_encadrant_non_affecte(self):
         self.client.force_authenticate(self.enseignant)

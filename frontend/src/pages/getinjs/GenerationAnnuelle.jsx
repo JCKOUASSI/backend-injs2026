@@ -366,6 +366,12 @@ export default function GenerationAnnuelle() {
       await api.post(`/edts/campagnes/${campagne.id}/demarrer/`, { asynchrone: true })
       etape = 'suivi du calcul'
       const statutFinal = await attendreFinGeneration(campagne.id)
+      if (statutFinal?.en_cours !== false) {
+        // Une attente expirée n'est pas une campagne terminée : ne jamais
+        // interroger /resultat/ ni afficher un bilan provisoire comme final.
+        chargerHistorique()
+        return
+      }
       if (statutFinal?.erreur) {
         throw new Error(statutFinal.erreur)
       }
@@ -404,11 +410,15 @@ export default function GenerationAnnuelle() {
       chargerVersions()
     } catch (err) {
       const corps = err?.response?.data
-      const motif = corps?.detail?.explication || corps?.motif_echec
+      const motif = err?.suiviIndisponible ? err.message : (
+        corps?.detail?.explication || corps?.motif_echec
         || formatApiErrors(corps)
         || (err?.message && err.message !== 'Network Error' ? err.message : null)
         || 'Erreur réseau/serveur (vérifiez l’historique de la campagne).'
-      const message = `Échec à l’étape « ${etape} » : ${motif}`
+      )
+      const message = err?.suiviIndisponible
+        ? `Suivi indisponible pour la campagne : ${motif}`
+        : `Échec à l’étape « ${etape} » : ${motif}`
       setErreurGeneration(message)
       showToast(message, 'error')
       chargerHistorique()
@@ -420,12 +430,27 @@ export default function GenerationAnnuelle() {
   const attendreFinGeneration = async (campagneId) => {
     const delaiMax = 20 * 60 * 1000
     const debutAttente = Date.now()
+    let erreursConsecutives = 0
     for (;;) {
       let statut = null
       try {
         const { data } = await api.get(`/edts/campagnes/${campagneId}/statut/`)
+        if (!data || typeof data.en_cours !== 'boolean') throw new Error('Réponse de suivi invalide')
         statut = data
-      } catch { statut = null }
+        erreursConsecutives = 0
+      } catch (err) {
+        const http = err?.response?.status
+        erreursConsecutives += 1
+        if ([401, 403, 404].includes(http) || erreursConsecutives >= 3) {
+          const raison = http ? `HTTP ${http}` : 'réseau ou réponse invalide'
+          const erreur = new Error(
+            `lecture du statut impossible (${raison}). Le calcul peut encore être en cours ; `
+            + 'consultez l’historique avant toute relance.',
+          )
+          erreur.suiviIndisponible = true
+          throw erreur
+        }
+      }
       if (statut && statut.en_cours === false) return statut
       if (Date.now() - debutAttente > delaiMax) {
         showToast(

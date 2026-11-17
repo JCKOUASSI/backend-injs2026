@@ -138,7 +138,9 @@ def _parametre(cle):
 def semaine_academique(affectation, date):
     """Numéro de semaine académique de `date` (1-based) pour l'EDT donné."""
     annee = getattr(affectation.emploi_du_temps, 'annee_academique', None)
-    if annee is None or annee.date_debut is None:
+    if (annee is None or annee.date_debut is None
+            or date < annee.date_debut
+            or (annee.date_fin is not None and date > annee.date_fin)):
         return None
     return (date - annee.date_debut).days // 7 + 1
 

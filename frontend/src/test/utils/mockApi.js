@@ -120,6 +120,13 @@ function makeApiMock() {
     setRoute(match, data, status = 200) {
       routes.push({ match, data, status })
     },
+    /** Remplace une route déjà enregistrée sans modifier la priorité des mocks. */
+    replaceRoute(match, data, status = 200) {
+      const route = routes.find((item) => item.match === match)
+      if (!route) throw new Error(`Route de test inconnue : ${match}`)
+      route.data = data
+      route.status = status
+    },
     /** Réinitialise les routes et l'utilisateur courant (appelé en beforeEach). */
     reset() {
       routes.length = 0
