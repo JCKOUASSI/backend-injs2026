@@ -29,6 +29,13 @@ from django.core.management.base import BaseCommand
 
 # Dossier unique autorisé pour les modèles d'import versionnés.
 MODELS_DIR = "docs/modeles/"
+# Livrables documentaires officiels explicitement demandés : chemins exacts,
+# jamais une exception globale sur dossier_trvx/ (les imports restent interdits).
+OFFICIAL_DOCUMENT_WORKBOOKS = frozenset({
+    "dossier_trvx/Manuel_utilisateurs/Manuel_Utilisateur_INJS_LMD_2026.xlsx",
+    "dossier_trvx/Manuel_utilisateurs/Recette_Validation_10_Hubs_INJS_2026.xlsx",
+    "dossier_trvx/Manuel_jeu_test2026/Recette_Validation_10_Hubs_INJS_2026.xlsx",
+})
 # Fichiers de données interdits partout, sauf exceptions ci-dessous.
 DATA_PATTERNS = ("*.xlsx", "*.xls", "*.csv", "*.numbers")
 FORBIDDEN_NAMES = (".env",)
@@ -87,6 +94,8 @@ def find_violations(tracked_files):
             continue
         if any(fnmatch.fnmatch(name, pat) for pat in DATA_PATTERNS):
             if path.startswith(MODELS_DIR):
+                continue
+            if path in OFFICIAL_DOCUMENT_WORKBOOKS:
                 continue
             if _is_synthetic_test_fixture(path):
                 continue
