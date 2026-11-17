@@ -127,9 +127,25 @@ log "Finalisation des maquettes LMD (exemples + validation/activation)…"
 # d'accès) puis jeu d'exemple des écrans Candidatures/Admissions/Campagnes
 # (dossiers couvrant les 12 statuts, 7 campagnes, concours classé et publié). Idempotent.
 log "Module Admissions : référentiels et données d'exemple…"
-(cd "$BACKEND" && "$VENV/bin/python" manage.py init_referentiels_admission \
-  && "$VENV/bin/python" manage.py seed_candidatures_demo) \
-  && touch "$BACKEND/.admissions_demo_ok"
+(cd "$BACKEND" && "$VENV/bin/python" manage.py init_referentiels_admission)
+# La cohorte de la capture a été complétée de 3500 à 5000 sans réécrire les
+# profils initiaux : ne JAMAIS la régénérer via le seed 5000 homogène.
+read -r effectif_demo complement_capture < <(cd "$BACKEND" && "$VENV/bin/python" - <<'PY'
+import django
+django.setup()
+from formations.models import Formateur, Participant
+print(Participant.objects.filter(email__regex=r'\.\d+@exemple\.ci$').count(),
+      int(Formateur.objects.filter(numerobadge='ENS-CAPTURE-001').exists()))
+PY
+)
+if [ "$complement_capture" = "1" ]; then
+  log "Cohorte complétée préservée : seed_candidatures_demo ignoré."
+elif [ "$effectif_demo" = "5000" ]; then
+  (cd "$BACKEND" && "$VENV/bin/python" manage.py seed_candidatures_demo --effectif 5000)
+else
+  (cd "$BACKEND" && "$VENV/bin/python" manage.py seed_candidatures_demo)
+fi
+touch "$BACKEND/.admissions_demo_ok"
 
 # Équivalences et dispenses : demandes d'exemple sur les cohortes réelles
 # (2 types × 9 statuts répartis sur les 40 cohortes, cibles UE/ECUE des

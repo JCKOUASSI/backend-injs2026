@@ -504,6 +504,13 @@ class Command(BaseCommand):
         # Refuser une augmentation silencieuse après un précédent seed :
         # sinon on obtiendrait plus que la cible et une parité faussée.
         deja = Participant.objects.filter(email__regex=r'\.\d+@exemple\.ci$').count()
+        # Le complément local 3500 → 5000 utilise des identités déterministes
+        # distinctes d'un seed homogène 5000. Une régénération complète les
+        # mélangerait et doublerait silencieusement les inscriptions.
+        from formations.models import Formateur
+        if deja == 5000 and Formateur.objects.filter(numerobadge='ENS-CAPTURE-001').exists():
+            raise CommandError('Complément additif de la capture déjà présent : '
+                               'ne pas régénérer la cohorte avec seed_candidatures_demo.')
         if deja and deja != self.effectif_cible:
             raise CommandError(
                 f'{deja} étudiants fictifs déjà présents : cible {self.effectif_cible}. '
@@ -1369,7 +1376,7 @@ class Command(BaseCommand):
 
 
     # ── Effectifs étudiants (cible paramétrable, parité exacte) ───────────────
-    def _effectifs_etudiants(self, annee, bilan):
+    def _effectifs_etudiants(self, annee, bilan, *, indice_initial=0):
         """Registre complet d'étudiants d'exemple, créé en masse.
 
         Répartition : 8 filières × (L1/L2/L3 + M1/M2) selon POIDS_NIVEAUX ;
@@ -1465,7 +1472,9 @@ class Command(BaseCommand):
         decalages = {'L1': 0, 'M1': 0, 'L2': 1, 'M2': 1, 'L3': 2}
         ages_base = {'L1': 18, 'L2': 19, 'L3': 20, 'M1': 22, 'M2': 23}
         participants, liens = [], []  # (participant, cohorte, méta inscription)
-        indice = 0
+        # Extension explicite d'une cohorte démo : suffixes disjoints des
+        # identités existantes, sans modifier ni régénérer leurs dossiers.
+        indice = indice_initial
         for formation, code_niveau, diplome, effectif in cohortes:
             liste_parcours = list(Parcours.objects.filter(
                 ref_formation=formation).order_by('id'))

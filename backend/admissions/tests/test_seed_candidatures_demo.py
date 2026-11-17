@@ -62,6 +62,34 @@ class SeedCandidaturesDemoTests(TestCase):
     def _seed(self, **options):
         call_command('seed_candidatures_demo', stdout=StringIO(), **options)
 
+    def test_complement_additif_3500_vers_5000_preserve_les_dossiers(self):
+        """Un complément explicitement décalé ne réécrit pas les 3500 anciens."""
+        from admissions.management.commands.seed_candidatures_demo import Command
+        from django.utils import timezone
+
+        self._seed()
+        cohorte = Participant.objects.filter(email__regex=r'\.\d+@exemple\.ci$')
+        avant = set(cohorte.values_list('pk', flat=True))
+        nb_inscriptions = InscriptionAdministrative.objects.count()
+        seed = Command(stdout=StringIO())
+        seed.effectif_cible = 1500
+        seed.aujourdhui = timezone.localdate()
+        seed.acteur = self.admin
+        annee = AnneeAcademique.objects.get(courante=True)
+        seed._effectifs_etudiants(annee, {'etudiants': 0}, indice_initial=3500)
+        self.assertEqual(cohorte.count(), 5000)
+        self.assertEqual(cohorte.filter(sexe='FEMININ').count(), 2500)
+        self.assertEqual(cohorte.filter(sexe='MASCULIN').count(), 2500)
+        self.assertTrue(avant.issubset(set(cohorte.values_list('pk', flat=True))))
+        self.assertEqual(InscriptionAdministrative.objects.count(), nb_inscriptions + 1500)
+        seed._effectifs_etudiants(annee, {'etudiants': 0}, indice_initial=3500)
+        self.assertEqual(cohorte.count(), 5000)
+        from formations.models import Formateur
+        from django.core.management.base import CommandError
+        Formateur.objects.create(numerobadge='ENS-CAPTURE-001', nom='Démo', prenom='Test')
+        with self.assertRaisesMessage(CommandError, 'Complément additif'):
+            self._seed(effectif=5000)
+
     def test_effectif_5000_paritaire_et_idempotent(self):
         self._seed(effectif=5000)
         bulk = Participant.objects.filter(email__regex=r'\.\d+@exemple\.ci$')
