@@ -729,8 +729,8 @@ export default function GenerationAnnuelle() {
               </ol>
               <h3 className="gen-sous-titre">Bon à savoir</h3>
               <ul className="gen-savoir">
-                <li>Un semestre = une grille ; les semestres impairs et pairs ne se chevauchent pas.</li>
-                <li>32 créneaux hebdomadaires (5 jours × 6 créneaux + samedi matin).</li>
+                <li>La répartition S1/S2 exige des bornes institutionnelles ; elle ne se déduit pas du numéro de semestre.</li>
+                <li>Le nombre de créneaux dépend du canevas horaire enregistré, jamais d’un total fixe.</li>
                 <li>Les quotas par groupe évitent les semaines surchargées.</li>
                 <li>Relancer la génération remplace proprement l'ancienne version du périmètre.</li>
               </ul>
