@@ -436,6 +436,30 @@ class GenerationAnneeTests(BaseAnneeTest):
         # Ici le motif « salle » est le vrai : aucune salle n'existe.
         self.assertEqual(ligne['motif_echec'], G.MOTIF_AUCUNE_SALLE_COMPATIBLE)
 
+    def test_groupe_sans_besoins_ne_permet_pas_un_faux_bilan_complet(self):
+        from scolarite.models import Groupe, Niveau
+
+        self.importer([f'INJS-001;Nom;{self.formation.intitule};L1;S1;L1-G1;V1'])
+        # Même périmètre, mais aucun besoin dérivable pour ce niveau : le
+        # premier groupe peut être complet sans que l'année entière le soit.
+        niveau, _ = Niveau.objects.get_or_create(
+            code='L2', defaults={'libelle': 'Licence 2', 'ordre': 2},
+        )
+        Groupe.objects.create(
+            annee_academique=self.annee, ref_formation=self.formation,
+            niveau=niveau, nom='L2-SANS-BESOIN',
+        )
+        bilan = A.generer_annee(self.annee.pk, semaines=[1])
+        self.assertEqual(bilan['totaux']['nb_groupes'], 2)
+        self.assertEqual(bilan['totaux']['nb_groupes_complets'], 1)
+        self.assertEqual(bilan['totaux']['nb_groupes_non_planifies'], 1)
+        self.assertEqual(bilan['status_global'], A.ANNEE_PARTIELLE)
+        # Cibler S1 ne fait pas disparaître un groupe sans aucun besoin
+        # connu : son semestre ne peut pas être déduit d'un besoin inexistant.
+        cible = A.generer_annee(self.annee.pk, semaines=[1], semestre_numeros=[1])
+        self.assertEqual(cible['totaux']['nb_groupes_non_planifies'], 1)
+        self.assertEqual(cible['status_global'], A.ANNEE_PARTIELLE)
+
     def test_groupe_sans_maquette_signale(self):
         from scolarite.models import Groupe
 

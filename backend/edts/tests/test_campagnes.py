@@ -512,7 +512,9 @@ class HistoriqueEtPerimetresFinsTests(BaseCampagneTest):
         self.assertEqual(bilan['semestres_filtres'], [9])
         self.assertTrue(bilan['groupes'])
         self.assertTrue(all(
-            ligne['statut'] == 'NON_PLANIFIE' for ligne in bilan['groupes']))
+            ligne['statut'] == 'HORS_SEMESTRE' for ligne in bilan['groupes']))
+        self.assertEqual(bilan['totaux']['nb_groupes_planifies'], 0)
+        self.assertEqual(bilan['status_global'], 'IMPOSSIBLE')
 
 
 class HistoriqueLimiteTests(BaseCampagneTest):

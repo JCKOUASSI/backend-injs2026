@@ -218,6 +218,7 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
         groupes_filtres = sorted({int(g) for g in groupe_ids})
         groupes_injs = [g for g in groupes_injs if g.pk in set(groupes_filtres)]
     semestres_filtres = None
+    groupes_autres_semestres = set()
 
     if not groupes_injs:
         return {
@@ -284,10 +285,18 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
         numero_par_semestre = dict(
             Semestre.objects.values_list('id', 'numero'))
         for gid, besoins_groupe in list(besoins_par_groupe.items()):
-            besoins_par_groupe[gid] = [
+            filtres = [
                 b for b in besoins_groupe
                 if numero_par_semestre.get(b.semestre_id) in semestres_filtres
             ]
+            if besoins_groupe and not filtres and all(
+                numero_par_semestre.get(b.semestre_id) is not None
+                for b in besoins_groupe
+            ):
+                groupes_autres_semestres.add(gid)
+            besoins_par_groupe[gid] = filtres
+        # Les groupes de l'autre semestre restent dans le bilan pour rendre
+        # visible le périmètre exclu, sans devenir des anomalies du semestre.
 
     # Canevas proposé au moteur : samedi et pause méridienne sont des
     # retraits explicites de créneaux types, pas des préférences.
@@ -318,6 +327,7 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
         effectif = effectifs.get(groupe.pk) or groupe.capacite_max or None
 
         if not besoins:
+            hors_semestre = groupe.pk in groupes_autres_semestres
             lignes.append({
                 'groupe_id': groupe.pk,
                 'groupe': groupe.nom,
@@ -326,8 +336,8 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
                 'niveau': groupe.niveau.code,
                 'vague': groupe.vague.libelle if groupe.vague else None,
                 'effectif': effectif,
-                'statut': 'NON_PLANIFIE',
-                'motif_echec': MOTIF_AUCUN_BESOIN,
+                'statut': 'HORS_SEMESTRE' if hors_semestre else 'NON_PLANIFIE',
+                'motif_echec': None if hors_semestre else MOTIF_AUCUN_BESOIN,
                 'seances_attendues': 0,
                 'seances_placees': 0,
                 'seances_non_placees': 0,
@@ -522,7 +532,10 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
     # planifiés / 0 non planifiés affichés alors que 127 groupes n'avaient
     # rien placé et que les anomalies disaient l'inverse).
     planifies = [l for l in lignes if (l['seances_placees'] or 0) > 0]
-    a_planifier = [l for l in lignes if (l['seances_attendues'] or 0) > 0]
+    # Un groupe sans besoin calculable appartient tout de même au périmètre :
+    # l'omettre du dénominateur déclarait l'année COMPLETE à tort si les
+    # autres groupes étaient planifiés.
+    a_planifier = [l for l in lignes if l['statut'] != 'HORS_SEMESTRE']
     complet = [
         l for l in planifies
         if (l['seances_non_placees'] == 0 and l['conflits'] == 0
@@ -546,7 +559,13 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
     motif_global = None
     detail_global = {}
     if status_global == ANNEE_IMPOSSIBLE:
-        if all(l['motif_echec'] == MOTIF_AUCUN_BESOIN for l in lignes):
+        if lignes and all(l['statut'] == 'HORS_SEMESTRE' for l in lignes):
+            motif_global = 'AUCUN_GROUPE_DANS_SEMESTRE'
+            detail_global = {
+                'explication': 'Les groupes ont des besoins connus uniquement dans d’autres semestres.',
+                'action_recommandee': 'Vérifiez le semestre ciblé et les maquettes des groupes.',
+            }
+        elif all(l['motif_echec'] == MOTIF_AUCUN_BESOIN for l in lignes):
             motif_global = MOTIF_AUCUN_BESOIN
             detail_global = {
                 'explication': (
