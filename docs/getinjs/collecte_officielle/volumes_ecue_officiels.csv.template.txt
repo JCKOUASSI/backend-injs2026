@@ -1,0 +1,1 @@
+annee_academique,formation_code,niveau_code,semestre_numero,ue_code,ecue_code,volume_cm_h,volume_td_h,volume_tp_h,volume_stage_h,reference_maquette,page_ou_ligne,statut_validation,fonction_validateur,date_validation

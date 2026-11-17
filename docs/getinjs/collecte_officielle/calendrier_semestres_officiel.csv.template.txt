@@ -1,0 +1,1 @@
+annee_academique,niveau_code,semestre_numero,date_debut,date_fin,semaines_enseignement,interruptions_et_feries,regle_rattrapage,reference_calendrier,page_ou_ligne,statut_validation,fonction_validateur,date_validation
