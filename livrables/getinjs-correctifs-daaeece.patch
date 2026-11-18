@@ -1,0 +1,148 @@
+diff --git a/backend/edts/moteur/import_inscrits.py b/backend/edts/moteur/import_inscrits.py
+index d77f765..af04765 100644
+--- a/backend/edts/moteur/import_inscrits.py
++++ b/backend/edts/moteur/import_inscrits.py
+@@ -47,6 +47,7 @@ REJET_MATRICULE_MANQUANT = 'MATRICULE_MANQUANT'
+ REJET_NOM_MANQUANT = 'NOM_MANQUANT'
+ REJET_FORMATION_ABSENTE = 'FORMATION_ABSENTE'
+ REJET_FORMATION_HORS_PERIMETRE = 'FORMATION_HORS_PERIMETRE'
++REJET_CODE_FILIERE_INCOHERENT = 'CODE_FILIERE_INCOHERENT'
+ REJET_NIVEAU_ABSENT = 'NIVEAU_ABSENT'
+ REJET_SEMESTRE_ABSENT = 'SEMESTRE_ABSENT'
+ REJET_FICHIER_VIDE = 'FICHIER_VIDE'
+@@ -260,30 +261,36 @@ def _trouver_formation(valeur, code_filiere=''):
+ 
+     perimetre = formations_injs()
+ 
+-    if code_filiere:
+-        code = str(code_filiere).strip().upper()
+-        trouvee = perimetre.filter(filiere_code__iexact=code).first()
+-        if trouvee is not None:
+-            return trouvee
+-
++    code = str(code_filiere or '').strip().upper()
+     texte = str(valeur or '').strip()
+-    if not texte:
+-        return None
+-    trouvee = perimetre.filter(intitule__iexact=texte).first()
+-    if trouvee is not None:
+-        return trouvee
+-    trouvee = perimetre.filter(code__iexact=texte).first()
+-    if trouvee is not None:
++    if texte:
++        # Le même code de filière peut désigner deux cycles (Licence/Master).
++        # Résoudre d'abord le cycle exact, puis vérifier le code déclaré :
++        # sélectionner « le premier F01 » en ignorant « MASTER » corromprait
++        # silencieusement la cohorte de l'étudiant.
++        trouvee = (perimetre.filter(intitule__iexact=texte).first()
++                   or perimetre.filter(code__iexact=texte).first())
++        if trouvee is None:
++            cible = normaliser_cle(texte)
++            for formation in perimetre:
++                if normaliser_cle(formation.intitule) == cible:
++                    trouvee = formation
++                    break
++            if trouvee is None:
++                candidats = [formation for formation in perimetre
++                             if cible and cible in normaliser_cle(formation.intitule)]
++                # Une abréviation commune aux deux cycles est ambiguë.
++                if len(candidats) == 1:
++                    trouvee = candidats[0]
++        if trouvee is None or (code and trouvee.filiere_code.upper() != code):
++            return None
+         return trouvee
+-
+-    # Recherche tolérante : « Education Motricite » ≈ « Éducation Motricité ».
+-    cible = normaliser_cle(texte)
+-    for formation in perimetre:
+-        if normaliser_cle(formation.intitule) == cible:
+-            return formation
+-    for formation in perimetre:
+-        if cible and cible in normaliser_cle(formation.intitule):
+-            return formation
++    if code:
++        # Sans intitulé, un code à plusieurs cycles n'identifie pas la
++        # formation : refuser l'ambiguïté plutôt que deviner Licence/Master.
++        candidats = list(perimetre.filter(filiere_code__iexact=code)[:2])
++        if len(candidats) == 1:
++            return candidats[0]
+     return None
+ 
+ 
+@@ -454,16 +461,23 @@ def _resoudre_ligne(ligne, correspondance, annee, ligne_numero, appliquer, erreu
+     filiere_code = _valeur(ligne, correspondance, 'filiere_code')
+     formation = _trouver_formation(formation_texte, filiere_code)
+     if formation is None:
+-        # Distinguer « inconnue » de « connue mais hors périmètre INJS ».
++        # Distinguer cycle absent, hors périmètre et code contradictoire.
+         from formations.models import RefFormation
++        from formations.referentiel_injs_l6 import formations_injs
+ 
++        connue = formations_injs().filter(intitule__iexact=formation_texte).first()
++        incoherent = bool(connue and filiere_code and
++                          connue.filiere_code.upper() != filiere_code.upper())
+         hors = RefFormation.objects.filter(intitule__iexact=formation_texte).exists()
+-        motif = REJET_FORMATION_HORS_PERIMETRE if hors else REJET_FORMATION_ABSENTE
++        motif = (REJET_CODE_FILIERE_INCOHERENT if incoherent else
++                 REJET_FORMATION_HORS_PERIMETRE if hors else REJET_FORMATION_ABSENTE)
++        detail = (' a un code de filière différent de celui du fichier.' if incoherent
++                  else ' existe mais n’appartient pas au périmètre INJS.' if hors
++                  else ' introuvable au référentiel INJS.')
+         erreurs.append(LigneErreur(
+             ligne_numero, motif,
+             f'Matricule {matricule} : formation « {formation_texte or filiere_code} »'
+-            + (' existe mais n’appartient pas au périmètre INJS.'
+-               if hors else ' introuvable au référentiel INJS.'),
++            + detail,
+         ))
+         return None
+ 
+diff --git a/frontend/src/pages/getinjs/GenerationAnnuelle.jsx b/frontend/src/pages/getinjs/GenerationAnnuelle.jsx
+index aa7c95f..0421317 100644
+--- a/frontend/src/pages/getinjs/GenerationAnnuelle.jsx
++++ b/frontend/src/pages/getinjs/GenerationAnnuelle.jsx
+@@ -260,9 +260,7 @@ export default function GenerationAnnuelle() {
+       : '/edts/lmd/import/inscrits/'
+ 
+     try {
+-      const { data } = await api.post(chemin, donnees, {
+-        headers: { 'Content-Type': 'multipart/form-data' },
+-      })
++      const { data } = await api.post(chemin, donnees)
+       setRapport(data)
+       if (mode === 'import') {
+         showToast(`${data.creees || 0} inscription(s) créée(s), ${data.mises_a_jour || 0} mise(s) à jour.`, 'success')
+diff --git a/frontend/src/pages/getinjs/ImportEtudiants.jsx b/frontend/src/pages/getinjs/ImportEtudiants.jsx
+index d20c8b3..128b9f1 100644
+--- a/frontend/src/pages/getinjs/ImportEtudiants.jsx
++++ b/frontend/src/pages/getinjs/ImportEtudiants.jsx
+@@ -133,9 +133,7 @@ export default function ImportEtudiants() {
+     donnees.append('fichier', fichier)
+ 
+     try {
+-      const { data } = await api.post('/edts/lmd/import/inscrits/', donnees, {
+-        headers: { 'Content-Type': 'multipart/form-data' },
+-      })
++      const { data } = await api.post('/edts/lmd/import/inscrits/', donnees)
+       setRapport(data)
+       showToast(`${data.creees || 0} inscription(s) créée(s), ${data.mises_a_jour || 0} mise(s) à jour.`, 'success')
+       chargerJournal(anneeId)
+diff --git a/frontend/src/services/api.js b/frontend/src/services/api.js
+index c5d9a33..bd8c7bf 100644
+--- a/frontend/src/services/api.js
++++ b/frontend/src/services/api.js
+@@ -149,6 +149,14 @@ const request = async (method, path, body, config = {}) => {
+     ...getAuthHeaders(),
+     ...(config.headers || {}),
+   }
++  // Le navigateur doit produire Content-Type avec son boundary exact.
++  // Un appelant qui force « multipart/form-data » sans boundary casse le
++  // parseur DRF AVANT que l'API d'import puisse lire le fichier.
++  if (isFormData) {
++    for (const name of Object.keys(headers)) {
++      if (name.toLowerCase() === 'content-type') delete headers[name]
++    }
++  }
+   const init = {
+     method,
+     headers,

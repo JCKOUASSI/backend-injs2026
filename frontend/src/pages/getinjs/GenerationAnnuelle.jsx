@@ -144,6 +144,18 @@ export default function GenerationAnnuelle() {
   const [inclureSamedi, setInclureSamedi] = useState(true)
   const [eviterPause, setEviterPause] = useState(true)
   const [publierDirect, setPublierDirect] = useState(false)
+  const anneeSelectionnee = annees.find((a) => String(a.id) === String(anneeId))
+  const calendrierPropose = useMemo(() => {
+    if (!anneeSelectionnee?.date_debut || !anneeSelectionnee?.date_fin) return null
+    const debut = Date.parse(`${anneeSelectionnee.date_debut}T12:00:00Z`)
+    const fin = Date.parse(`${anneeSelectionnee.date_fin}T12:00:00Z`)
+    const total = Math.ceil((fin - debut + 86400000) / (7 * 86400000))
+    if (!Number.isFinite(total) || total < 4 || total > 53) return null
+    const impairs = Math.floor(total / 2)
+    return { total, impairs, pairs: total - impairs,
+      bascule: new Date(debut + impairs * 7 * 86400000).toISOString().slice(0, 10) }
+  }, [anneeSelectionnee])
+
   const [maxSeances, setMaxSeances] = useState('30')
 
   useEffect(() => { setDernierApercu(null) }, [
@@ -260,9 +272,7 @@ export default function GenerationAnnuelle() {
       : '/edts/lmd/import/inscrits/'
 
     try {
-      const { data } = await api.post(chemin, donnees, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      const { data } = await api.post(chemin, donnees)
       setRapport(data)
       if (mode === 'import') {
         showToast(`${data.creees || 0} inscription(s) créée(s), ${data.mises_a_jour || 0} mise(s) à jour.`, 'success')
@@ -324,14 +334,18 @@ export default function GenerationAnnuelle() {
         showToast('Prévisualisez d’abord ce périmètre exact ; la sélection ou les contraintes ont changé.', 'error')
         return
       }
-    } else if (semainesListe().length < 2) {
-      const message = 'Une seule semaine ne couvre pas l’année. La génération annuelle exige un calendrier institutionnel S1/S2 et des semaines officielles ; aucune campagne n’a été créée.'
+    } else if (!calendrierPropose) {
+      const message = 'Dates de l’année absentes ou incompatibles avec une proposition (4 à 53 semaines).'
       setErreurGeneration(message)
       showToast(message, 'error')
       return
     } else if (!window.confirm(
-      `Générer pour TOUS les groupes de ${annees.find((a) => String(a.id) === String(anneeId))?.libelle || anneeId} ? `
-      + `Le calcul peut durer longtemps et remplacer les séances générées existantes du périmètre.`,
+      `CALENDRIER PROVISOIRE NON OFFICIEL pour ${anneeSelectionnee?.libelle || anneeId}.\n`
+      + `Du ${anneeSelectionnee.date_debut} au ${anneeSelectionnee.date_fin} : `
+      + `semaines 1 à ${calendrierPropose.impairs} (semestres impairs), `
+      + `${calendrierPropose.impairs + 1} à ${calendrierPropose.total} (semestres pairs).\n`
+      + `Bascule estimée : ${calendrierPropose.bascule}. Confirmer ce découpage ? `
+      + 'Les EDT resteront en brouillon ; aucune publication automatique.',
     )) return
     setEnCours('generation')
     setBilan(null)
@@ -347,13 +361,17 @@ export default function GenerationAnnuelle() {
         perimetre: construirePerimetre(mode),
         parametres: {
           mode_generation: mode,
+          ...(mode === 'automatique' ? {
+            calendrier_previsionnel_confirme: true,
+            calendrier_dates_confirmees: [annee.date_debut, annee.date_fin],
+          } : {}),
           persister: true,
           remplacer: true,
           inclure_maquette: true,
           inclure_samedi: inclureSamedi,
           eviter_pause_meridienne: eviterPause,
-          max_seances_par_groupe_semaine: maxSeances ? Number(maxSeances) : null,
-          publier_direct: publierDirect,
+          max_seances_par_groupe_semaine: mode === 'automatique' ? null : (maxSeances ? Number(maxSeances) : null),
+          publier_direct: mode === 'manuel' && publierDirect,
         },
       })
       etape = 'préparation des données'
@@ -401,7 +419,7 @@ export default function GenerationAnnuelle() {
         + `${resultat.totaux?.seances_placees ?? 0} séance(s) placée(s).`,
         bilanCampagne.status_global === 'COMPLETE' ? 'success' : 'warning',
       )
-      if (publierDirect) {
+      if (mode === 'manuel' && publierDirect) {
         await api.post(`/edts/campagnes/${campagne.id}/valider/`, {})
         await api.post(`/edts/campagnes/${campagne.id}/publier/`, {})
         showToast('Emplois du temps validés puis publiés.', 'success')
@@ -712,6 +730,17 @@ export default function GenerationAnnuelle() {
                 puis prévisualisez avant de générer. Mode automatique : toutes les formations, tous les niveaux,
                 tous les groupes et tous les semestres de l’année, indépendamment des cases cochées ;
                 confirmation obligatoire. Une génération partielle ne couvre pas les séances non placées.
+              </div>
+              <div className="alert alert-warning small mt-3 mb-0" role="note">
+                <strong>Calendrier automatique provisoire — NON OFFICIEL.</strong>{' '}
+                {calendrierPropose ? <>
+                  Année {anneeSelectionnee?.libelle} : {anneeSelectionnee.date_debut} au {anneeSelectionnee.date_fin}.
+                  Semestres impairs : semaines 1–{calendrierPropose.impairs} ; semestres pairs :
+                  semaines {calendrierPropose.impairs + 1}–{calendrierPropose.total}.
+                  Bascule estimée : {calendrierPropose.bascule}. Confirmation requise au lancement.
+                </> : 'Renseignez les dates de l’année académique (4 à 53 semaines).'}
+                {' '}Les semaines saisies ci-dessus ne concernent que le mode manuel.
+                Les EDT automatiques restent en brouillon, sans publication.
               </div>
               {erreurGeneration && <div className="alert alert-danger mt-3" role="alert">{erreurGeneration}</div>}
               <div className="d-flex flex-wrap align-items-center gap-2 mt-3">

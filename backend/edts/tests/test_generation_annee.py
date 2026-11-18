@@ -678,3 +678,56 @@ class BilanContraintesSouplesTests(BaseAnneeTest):
         self.assertEqual(avec['totaux']['seances_non_placees'],
                          temoin['totaux']['seances_non_placees'])
         self.assertEqual(avec['status_global'], temoin['status_global'])
+
+class CalendrierProvisoireTests(BaseAnneeTest):
+    def test_deux_semestres_restent_dans_deux_brouillons_sans_ecrasement(self):
+        from datetime import date
+        from scolarite.models import Semestre
+        from edts.moteur.calendrier_previsionnel import proposer
+
+        self.annee.date_debut = date(2026, 9, 1)
+        self.annee.date_fin = date(2027, 5, 31)
+        self.annee.save(update_fields=['date_debut', 'date_fin'])
+        f2 = FabriqueLMD(self).creer_base(perimetre='INJS', filiere='F02', suffixe='S2')
+        f2.semestre, _ = Semestre.objects.get_or_create(
+            niveau=self.f.niveau, numero=2, defaults={'libelle': 'S2'})
+        f2.creer_salle(nom='Salle B', capacite=60)
+        maquette2, _, ecue2 = f2.creer_maquette()
+        ecue2.volume_cm, ecue2.volume_td = 4, 2
+        ecue2.save()
+        maquette2.statut = Maquette.Statut.ACTIVE
+        maquette2.save()
+        self.importer([
+            f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'
+            for i in range(6)
+        ] + [
+            f'INJS-S2-{i:03d};Nom{i};{f2.cycle.intitule};L1;S2;L1-G2;V1'
+            for i in range(6)
+        ])
+        calendrier = proposer(self.annee)
+        bilan = A.generer_annee(
+            self.annee.pk, semaines=calendrier['impairs'] + calendrier['pairs'],
+            calendrier_previsionnel=calendrier, persister=True, budget=1500,
+        )
+        self.assertEqual(bilan['status_global'], A.ANNEE_COMPLETE, bilan)
+        self.assertEqual(bilan['totaux']['edts_persistes'], 2)
+        seances = list(AffectationCreneau.objects.filter(actif=True))
+        self.assertEqual(len(seances), 6)
+        self.assertEqual({a.emploi_du_temps_id for a in seances},
+                         set(EmploiDuTemps.objects.values_list('id', flat=True)))
+        self.assertTrue(all(a.semaine_debut == a.semaine_fin for a in seances))
+        self.assertTrue(all(a.semaine_debut in calendrier['impairs']
+                            for a in seances if a.ecue_id == self.ecue.pk))
+        self.assertTrue(all(a.semaine_debut in calendrier['pairs']
+                            for a in seances if a.ecue_id == ecue2.pk))
+        self.assertEqual(set(EmploiDuTemps.objects.values_list('statut', flat=True)),
+                         {'BROUILLON'})
+        # Une relance ne doit jamais modifier un EDT déjà validé.
+        EmploiDuTemps.objects.update(statut='VALIDE')
+        ids_avant = set(AffectationCreneau.objects.filter(actif=True)
+                        .values_list('id', flat=True))
+        A.generer_annee(self.annee.pk,
+                        semaines=calendrier['impairs'] + calendrier['pairs'],
+                        calendrier_previsionnel=calendrier, persister=True)
+        self.assertEqual(ids_avant, set(AffectationCreneau.objects.filter(actif=True)
+                                        .values_list('id', flat=True)))

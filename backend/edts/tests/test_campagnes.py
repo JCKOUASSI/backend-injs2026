@@ -172,8 +172,30 @@ class CycleDeVieCampagneTests(BaseCampagneTest):
                 parametres={'mode_generation': 'automatique', 'persister': True},
                 user=self.admin,
             )
-        self.assertEqual(ctx.exception.motif, 'ANNEE_INCOMPLETE')
+        self.assertEqual(ctx.exception.motif, 'CALENDRIER_NON_CONFIRME')
         self.assertFalse(CampagneGeneration.objects.exists())
+
+    def test_calendrier_confirme_recalcule_et_brouillon_force(self):
+        from edts.moteur.calendrier_previsionnel import proposer
+        self.annee.refresh_from_db()
+        dates = proposer(self.annee)
+        campagne = self.campagne(
+            semaines=[1], mode_generation='automatique',
+            calendrier_previsionnel_confirme=True,
+            calendrier_dates_confirmees=[dates['date_debut'], dates['date_fin']],
+            publier_direct=True, max_seances_par_groupe_semaine=30,
+        )
+        self.assertEqual(campagne.semaines, dates['impairs'] + dates['pairs'])
+        self.assertFalse(campagne.parametres['publier_direct'])
+        self.assertIsNone(campagne.parametres['max_seances_par_groupe_semaine'])
+        self.assertEqual(campagne.parametres['calendrier_previsionnel'], dates)
+
+    def test_calendrier_perime_refuse(self):
+        with self.assertRaises(C.TransitionRefusee) as ctx:
+            self.campagne(mode_generation='automatique',
+                          calendrier_previsionnel_confirme=True,
+                          calendrier_dates_confirmees=['2020-01-01', '2020-06-01'])
+        self.assertEqual(ctx.exception.motif, 'CALENDRIER_MODIFIE')
 
     def test_annee_introuvable_refusee(self):
         with self.assertRaises(C.TransitionRefusee) as ctx:

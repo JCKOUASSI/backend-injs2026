@@ -15,7 +15,7 @@ import GenerationAnnuelle from './GenerationAnnuelle'
 
 const ANNEES = [
   { id: 1, libelle: '2024-2025', courante: false },
-  { id: 2, libelle: '2025-2026', courante: true },
+  { id: 2, libelle: '2025-2026', courante: true, date_debut: '2025-10-01', date_fin: '2026-06-30' },
 ]
 
 const SYNTHESE = {
@@ -239,7 +239,6 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
       expect(apiMock.post).toHaveBeenCalledWith(
         '/edts/lmd/import/inscrits/analyser/',
         expect.any(FormData),
-        { headers: { 'Content-Type': 'multipart/form-data' } },
       ),
     )
 
@@ -270,7 +269,6 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
       expect(apiMock.post).toHaveBeenCalledWith(
         '/edts/lmd/import/inscrits/',
         expect.any(FormData),
-        expect.anything(),
       ),
     )
     await waitFor(() =>
@@ -311,11 +309,13 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
           persister: true,
           inclure_samedi: true,
           eviter_pause_meridienne: true,
-          max_seances_par_groupe_semaine: 30,
+          max_seances_par_groupe_semaine: null,
+          calendrier_previsionnel_confirme: true,
+          publier_direct: false,
         }),
       })),
     )
-    expect(confirmation).toHaveBeenCalledWith(expect.stringContaining('TOUS les groupes'))
+    expect(confirmation).toHaveBeenCalledWith(expect.stringContaining('CALENDRIER PROVISOIRE NON OFFICIEL'))
     confirmation.mockRestore()
     expect(apiMock.post).toHaveBeenCalledWith('/edts/campagnes/1/donnees-pretes/', {})
     // Démarrage asynchrone (le synchrone expirait en HTTP) + statut suivi.
@@ -386,13 +386,15 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     expect(within(groupes).getByRole('checkbox', { name: /L1-G1/ })).not.toBeChecked()
   })
 
-  it('refuse une génération prétendue annuelle avec la seule semaine 1', async () => {
+  it('propose une année provisoire même si le champ manuel contient seulement 1', async () => {
     const user = userEvent.setup()
+    const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(false)
     rendre()
-    await screen.findByLabelText(/Année académique/)
+    await screen.findByText(/Calendrier automatique provisoire/)
     await user.click(screen.getByRole('button', { name: /Lancer la génération automatique/i }))
-    expect(screen.getByRole('alert')).toHaveTextContent(/Une seule semaine ne couvre pas l’année/)
+    expect(confirmation).toHaveBeenCalledWith(expect.stringContaining('semaines 1 à'))
     expect(apiMock.post).not.toHaveBeenCalledWith('/edts/campagnes/', expect.anything())
+    confirmation.mockRestore()
   })
 
   it('ne lance pas la génération automatique si la confirmation est refusée', async () => {

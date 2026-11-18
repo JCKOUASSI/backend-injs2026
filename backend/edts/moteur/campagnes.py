@@ -169,13 +169,34 @@ def creer_campagne(*, annee_academique_id, libelle, user=None,
         })
 
     semaines = sorted({int(s) for s in (semaines or [1]) if str(s).isdigit()}) or [1]
-    if (parametres or {}).get('mode_generation') == 'automatique' and len(semaines) < 2:
-        raise TransitionRefusee('ANNEE_INCOMPLETE', {
-            'explication': (
-                'Une seule semaine ne couvre pas l’année : aucune campagne annuelle '
-                'n’a été créée. Le calendrier institutionnel S1/S2 reste nécessaire.'
-            ),
-        })
+    parametres = dict(parametres or {})
+    if parametres.get('mode_generation') == 'automatique':
+        if not parametres.get('calendrier_previsionnel_confirme'):
+            raise TransitionRefusee('CALENDRIER_NON_CONFIRME', {
+                'explication': ('Confirmez le calendrier provisoire de l’année avant '
+                                'toute génération automatique ; il n’est pas officiel.'),
+            })
+        from edts.moteur.calendrier_previsionnel import proposer
+        try:
+            calendrier = proposer(annee)
+        except ValueError as exc:
+            raise TransitionRefusee('CALENDRIER_INVALIDE', {
+                'explication': str(exc),
+            }) from exc
+        if parametres.get('calendrier_dates_confirmees') != [
+                calendrier['date_debut'], calendrier['date_fin']]:
+            raise TransitionRefusee('CALENDRIER_MODIFIE', {
+                'explication': 'Les dates de l’année ont changé : rechargez et confirmez la nouvelle proposition.',
+            })
+        # Les semaines sont recalculées côté serveur à partir de l'année ;
+        # celles d'un client ne peuvent pas falsifier les périodes.
+        semaines = calendrier['impairs'] + calendrier['pairs']
+        parametres['calendrier_previsionnel'] = calendrier
+        parametres['publier_direct'] = False
+        parametres['max_seances_par_groupe_semaine'] = None
+        # L'automatique ne peut pas se dire « toute l'année » avec un
+        # périmètre partiel choisi dans la requête.
+        perimetre = {}
     if CampagneGeneration.objects.filter(annee_academique=annee, libelle=libelle).exists():
         raise TransitionRefusee('CAMPAGNE_DEJA_EXISTANTE', {
             'explication': (
@@ -342,6 +363,12 @@ def executer_campagne(campagne_id, execution_id):
         return execute(sql, params, many, context)
 
     try:
+        if parametres.get('mode_generation') == 'automatique':
+            from edts.moteur.calendrier_previsionnel import proposer
+            if proposer(campagne.annee_academique) != parametres.get('calendrier_previsionnel'):
+                raise TransitionRefusee('CALENDRIER_MODIFIE', {
+                    'explication': 'Dates modifiées depuis la confirmation : créez une nouvelle campagne.',
+                })
         with connection.execute_wrapper(compter_requete):
             perimetre = campagne.perimetre or {}
             bilan = generer_annee(
@@ -359,6 +386,7 @@ def executer_campagne(campagne_id, execution_id):
                 niveau_ids=perimetre.get('niveaux') or None,
                 groupe_ids=perimetre.get('groupes') or None,
                 semestre_numeros=perimetre.get('semestres') or None,
+                calendrier_previsionnel=parametres.get('calendrier_previsionnel'),
                 # Contraintes et options de la maquette : samedi, pause
                 # méridienne et quota hebdomadaire par groupe.
                 inclure_samedi=bool(parametres.get('inclure_samedi', True)),

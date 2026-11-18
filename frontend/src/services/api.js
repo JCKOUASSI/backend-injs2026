@@ -149,6 +149,14 @@ const request = async (method, path, body, config = {}) => {
     ...getAuthHeaders(),
     ...(config.headers || {}),
   }
+  // Le navigateur doit produire Content-Type avec son boundary exact.
+  // Un appelant qui force « multipart/form-data » sans boundary casse le
+  // parseur DRF AVANT que l'API d'import puisse lire le fichier.
+  if (isFormData) {
+    for (const name of Object.keys(headers)) {
+      if (name.toLowerCase() === 'content-type') delete headers[name]
+    }
+  }
   const init = {
     method,
     headers,

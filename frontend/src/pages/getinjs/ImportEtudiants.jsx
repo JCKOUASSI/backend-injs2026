@@ -133,9 +133,7 @@ export default function ImportEtudiants() {
     donnees.append('fichier', fichier)
 
     try {
-      const { data } = await api.post('/edts/lmd/import/inscrits/', donnees, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      const { data } = await api.post('/edts/lmd/import/inscrits/', donnees)
       setRapport(data)
       showToast(`${data.creees || 0} inscription(s) créée(s), ${data.mises_a_jour || 0} mise(s) à jour.`, 'success')
       chargerJournal(anneeId)
