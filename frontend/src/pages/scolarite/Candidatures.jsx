@@ -20,6 +20,7 @@ import {
   transitionCandidature,
   verifierPiece,
 } from '../../services/scolarite'
+import { FORMATS_PIECES_CANDIDATURE, AIDE_PIECES_CANDIDATURE } from '../../utils/piecesCandidature'
 import '../../styles/candidatures.css'
 import '../../styles/modale-premium.css'
 
@@ -177,6 +178,7 @@ function DossierPanel({ candidature, onClose, onChange }) {
             <h3 className="cand-section-titre">
               <i className="bi bi-paperclip" aria-hidden="true"></i>Pièces justificatives
             </h3>
+            <p className="small text-muted">Formats acceptés : {AIDE_PIECES_CANDIDATURE}.</p>
             <div className="cand-table-wrap">
               <table className="cand-table cand-table--simple">
                 <thead>
@@ -209,8 +211,13 @@ function DossierPanel({ candidature, onClose, onChange }) {
                           <input
                             type="file"
                             className="cand-televerser-input"
-                            aria-label={`Téléverser la pièce ${piece.type_piece}`}
-                            onChange={(e) => televerser(piece, e.target.files?.[0])}
+                            aria-label={`${piece.a_fichier ? 'Remplacer' : 'Téléverser'} la pièce ${piece.type_piece}`}
+                            accept={FORMATS_PIECES_CANDIDATURE}
+                            title={AIDE_PIECES_CANDIDATURE}
+                            onChange={(e) => {
+                              televerser(piece, e.target.files?.[0])
+                              e.target.value = ''
+                            }}
                           />
                           <i className="bi bi-cloud-arrow-up" aria-hidden="true"></i>
                           <span>{piece.a_fichier ? 'Remplacer' : 'Téléverser'}</span>

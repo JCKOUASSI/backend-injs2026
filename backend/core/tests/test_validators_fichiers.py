@@ -7,7 +7,11 @@ vérifient qu'ils s'appliquent bien là où les fichiers entrent (services), et
 pas seulement dans l'admin Django.
 """
 
+from io import BytesIO
+from zipfile import ZipFile
+
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import SimpleTestCase, TestCase
 
 from core.validators import (
@@ -30,6 +34,18 @@ class ValidateursUnitaireTests(SimpleTestCase):
 
     def test_pdf_accepte(self):
         valider_piece_candidature(FauxFichier('diplome.pdf'))  # ne lève pas
+
+    def test_docx_authentique_accepte_et_faux_docx_refuse(self):
+        archive = BytesIO()
+        with ZipFile(archive, 'w') as document:
+            document.writestr('[Content_Types].xml', '<Types/>')
+            document.writestr('word/document.xml', '<document/>')
+        valider_piece_candidature(SimpleUploadedFile('engagement.DOCX', archive.getvalue()))
+        for contenu in (b'<script/>', b'PK not a ZIP'):
+            with self.assertRaises(ValidationError):
+                valider_piece_candidature(SimpleUploadedFile('faux.docx', contenu))
+        with self.assertRaises(ValidationError):
+            valider_preuve_paiement(SimpleUploadedFile('recu.docx', archive.getvalue()))
 
     def test_extension_refusee(self):
         for nom in ('script.exe', 'page.html', 'archive.zip', 'sans_extension'):

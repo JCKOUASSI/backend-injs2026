@@ -8,10 +8,12 @@ comme la bande passante n'étaient bornés par rien.
 
 Les limites ci-dessous sont volontairement généreuses pour un dossier
 administratif scanné (10 Mio par pièce) tout en restant strictes sur les
-formats : un document officiel est un PDF ou une image.
+formats : les candidatures acceptent aussi Word OOXML (.docx), mais les
+preuves de paiement restent limitées aux PDF et images.
 """
 
 from pathlib import Path
+from zipfile import BadZipFile, ZipFile
 
 from django.core.exceptions import ValidationError
 
@@ -21,6 +23,7 @@ TAILLE_MAX_PIECE = 10 * 1024 * 1024
 TAILLE_MAX_PREUVE = 5 * 1024 * 1024
 
 EXTENSIONS_DOCUMENT = ('.pdf', '.jpg', '.jpeg', '.png')
+EXTENSIONS_PIECE_CANDIDATURE = (*EXTENSIONS_DOCUMENT, '.docx')
 
 
 def _verifier_fichier(valeur, extensions, taille_max, libelle):
@@ -42,10 +45,25 @@ def _verifier_fichier(valeur, extensions, taille_max, libelle):
 
 
 def valider_piece_candidature(valeur):
-    """Pièce d'un dossier de candidature : PDF ou image, 10 Mio maximum."""
+    """Pièce de candidature : PDF, image ou vrai DOCX, 10 Mio maximum."""
     if not valeur:
         return
-    _verifier_fichier(valeur, EXTENSIONS_DOCUMENT, TAILLE_MAX_PIECE, 'Pièce jointe')
+    _verifier_fichier(valeur, EXTENSIONS_PIECE_CANDIDATURE, TAILLE_MAX_PIECE, 'Pièce jointe')
+    if Path(valeur.name).suffix.lower() == '.docx':
+        # Une extension seule ne suffit pas : un .docx est une archive OOXML.
+        # On ne décompresse rien (protection contre les archives malveillantes).
+        try:
+            position = valeur.tell()
+            try:
+                valeur.seek(0)
+                with ZipFile(valeur) as document:
+                    noms = set(document.namelist())
+                    if not {'[Content_Types].xml', 'word/document.xml'} <= noms:
+                        raise ValidationError('Pièce jointe : document Word .docx invalide.')
+            finally:
+                valeur.seek(position)
+        except (BadZipFile, OSError, ValueError, AttributeError, TypeError) as erreur:
+            raise ValidationError('Pièce jointe : document Word .docx invalide.') from erreur
 
 
 def valider_preuve_paiement(valeur):

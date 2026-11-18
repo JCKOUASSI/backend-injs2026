@@ -461,6 +461,7 @@ describe('contrôle des dossiers de scolarité', () => {
     expect(await screen.findByText('Diplôme')).toBeTruthy()
     expect(apiController.findCall('get', pieces)).toBeTruthy()
     expect(screen.queryByTestId('detail-action-Valider la pièce')).toBeNull()
+    expect(screen.getByLabelText('Déposer la pièce : Diplôme').accept).toContain('.docx')
     fireEvent.change(screen.getByLabelText('Déposer la pièce : Diplôme'), {
       target: { files: [new File(['pdf'], 'diplome.pdf', { type: 'application/pdf' })] },
     })

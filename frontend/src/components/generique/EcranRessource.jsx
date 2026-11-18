@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext'
 import { ADMIN_LEVEL_ROLES } from '../../utils/roles'
 import { parsePaginatedResponse } from '../../utils/paginatedResponse'
 import { messageErreur } from '../../services/scolarite'
+import { FORMATS_PIECES_CANDIDATURE, AIDE_PIECES_CANDIDATURE } from '../../utils/piecesCandidature'
 import { useDebounce } from '../../hooks/useDebounce'
 
 /**
@@ -1320,6 +1321,9 @@ function DetailGenerique({ ecran, ligne, cleBase, onFermer }) {
             )}
             {endpoint && (
               <>
+                {actionsDetail.some((action) => action.depot) && (
+                  <p className="small text-muted">Formats acceptés : {AIDE_PIECES_CANDIDATURE}.</p>
+                )}
                 {detail.resume && racine && (
                   <div className="gen-detail-kpis">
                     {detail.resume.map((r) => {
@@ -1366,7 +1370,8 @@ function DetailGenerique({ ecran, ligne, cleBase, onFermer }) {
                                   if (action.depot) return (
                                     <label key={action.libelle} className={`btn btn-sm ${action.apparence || 'btn-outline-primary'} me-1 ${mutation.isPending ? 'disabled' : ''}`}>
                                       <input type="file" className="visually-hidden"
-                                        accept=".pdf,.jpg,.jpeg,.png"
+                                        accept={FORMATS_PIECES_CANDIDATURE}
+                                        title={AIDE_PIECES_CANDIDATURE}
                                         aria-label={`${action.libelle} : ${sous.type_piece || sous.id}`}
                                         disabled={mutation.isPending}
                                         onChange={(event) => {

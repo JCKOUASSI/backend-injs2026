@@ -230,6 +230,23 @@ describe('pages/scolarite/Candidatures — panneau Dossier (écritures)', () => 
     expect(await screen.findByText('Transition métier impossible.')).toBeInTheDocument()
   })
 
+  it('remplace une pièce par un .docx via le même endpoint de dépôt', async () => {
+    mount()
+    await screen.findByText('C-005')
+    ouvrirDossier('C-005')
+    const input = await screen.findByLabelText('Remplacer la pièce CNI')
+    expect(input.accept).toContain('.docx')
+    fireEvent.change(input, {
+      target: { files: [new File(['docx'], 'engagement.docx', {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      })] },
+    })
+    await waitFor(() => {
+      const depot = posts((p) => p === '/admissions/pieces/51/deposer/')[0]
+      expect(depot.body.get('fichier').name).toBe('engagement.docx')
+    })
+  })
+
   it('dépose un fichier pour une pièce (POST FormData multipart)', async () => {
     mount()
     await screen.findByText('C-005')
@@ -241,6 +258,8 @@ describe('pages/scolarite/Candidatures — panneau Dossier (écritures)', () => 
       .closest('tr')
       .querySelector('input[type="file"]')
     expect(input).not.toBeNull()
+    expect(input.accept).toContain('.docx')
+    expect(screen.getByText(/Formats acceptés : PDF, JPG, PNG ou Word/)).toBeInTheDocument()
     fireEvent.change(input, {
       target: { files: [new File(['contenu'], 'cni.pdf', { type: 'application/pdf' })] },
     })
