@@ -344,6 +344,42 @@ class CandidatureAPITests(AdmissionFixture, TestCase):
         self.assertEqual(verification.status_code, 200)
         self.assertEqual(verification.json()['statut'], 'VALIDEE')
 
+    def test_depot_refuse_fichier_absent_ou_format_interdit(self):
+        candidature = self.creer_candidature()
+        piece = candidature.pieces.get(type_piece=self.piece_obligatoire)
+        url = f'/api/admissions/pieces/{piece.id}/deposer/'
+        self.assertEqual(self.client.post(url, {}, format='multipart').status_code, 400)
+        response = self.client.post(
+            url, {'fichier': SimpleUploadedFile('script.html', b'<script/>')}, format='multipart',
+        )
+        self.assertEqual(response.status_code, 400)
+        piece.refresh_from_db()
+        self.assertEqual(piece.statut, PieceCandidature.Statut.MANQUANTE)
+        self.assertFalse(piece.fichier)
+
+    def test_verification_refuse_piece_sans_fichier_et_statuts_internes(self):
+        candidature = self.creer_candidature()
+        piece = candidature.pieces.get(type_piece=self.piece_obligatoire)
+        url = f'/api/admissions/pieces/{piece.id}/verifier/'
+        for statut in ('VALIDEE', 'REFUSEE', 'MANQUANTE', 'EN_VERIFICATION'):
+            response = self.client.post(url, {'statut': statut}, format='json')
+            self.assertEqual(response.status_code, 400)
+        piece.refresh_from_db()
+        self.assertEqual(piece.statut, PieceCandidature.Statut.MANQUANTE)
+        self.assertEqual(candidature.taux_completude, 0)
+
+    def test_verification_refuse_statut_interne_meme_avec_fichier(self):
+        candidature = self.creer_candidature()
+        piece = candidature.pieces.get(type_piece=self.piece_obligatoire)
+        services.deposer_piece(piece, fichier=SimpleUploadedFile('diplome.pdf', b'contenu'))
+        response = self.client.post(
+            f'/api/admissions/pieces/{piece.id}/verifier/',
+            {'statut': 'MANQUANTE'}, format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+        piece.refresh_from_db()
+        self.assertEqual(piece.statut, PieceCandidature.Statut.EN_VERIFICATION)
+
     def test_telechargement_protege(self):
         candidature = self.creer_candidature()
         piece = candidature.pieces.first()

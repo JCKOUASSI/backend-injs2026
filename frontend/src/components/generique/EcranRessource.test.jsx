@@ -437,6 +437,46 @@ describe('panneau de détail', () => {
   })
 })
 
+describe('contrôle des dossiers de scolarité', () => {
+  it('ouvre explicitement le dossier, dépose une pièce puis permet de la valider', async () => {
+    const dossier = { ...LIGNES.results[0], candidat: 'Ama Kouassi', pieces_validees: 0, pieces_obligatoires: 1 }
+    reponseLignes = { count: 1, results: [dossier] }
+    apiController.setRoute('/admissions/candidatures/', () => reponseLignes)
+    const pieces = '/admissions/candidatures/1/pieces/'
+    let statutPiece = 'MANQUANTE'
+    apiController.setRoute(pieces, () => ({
+      pieces: [{ id: 9, type_piece: 'Diplôme', obligatoire: true, statut: statutPiece, a_fichier: statutPiece !== 'MANQUANTE' }],
+      pieces_validees: statutPiece === 'VALIDEE' ? 1 : 0,
+      pieces_obligatoires: 1, taux_completude: statutPiece === 'VALIDEE' ? 100 : 0,
+      dossier_complet: statutPiece === 'VALIDEE',
+    }))
+    apiController.setRoute('/admissions/pieces/9/deposer/', () => { statutPiece = 'EN_VERIFICATION'; return {} })
+    apiController.setRoute('/admissions/pieces/9/verifier/', () => { statutPiece = 'VALIDEE'; return {} })
+    monter(ECRANS.controle_dossiers)
+    await screen.findByText('DOS-001')
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Sélectionner la ligne DOS-001' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Contrôler le dossier : DOS-001' }))
+    expect(await screen.findByRole('dialog')).toBeTruthy()
+    expect(await screen.findByText('Diplôme')).toBeTruthy()
+    expect(apiController.findCall('get', pieces)).toBeTruthy()
+    expect(screen.queryByTestId('detail-action-Valider la pièce')).toBeNull()
+    fireEvent.change(screen.getByLabelText('Déposer la pièce : Diplôme'), {
+      target: { files: [new File(['pdf'], 'diplome.pdf', { type: 'application/pdf' })] },
+    })
+    await waitFor(() => {
+      const appel = apiController.findCall('post', '/admissions/pieces/9/deposer/')
+      expect(appel).toBeTruthy()
+      expect(appel[1].get('fichier').name).toBe('diplome.pdf')
+    })
+    fireEvent.click(await screen.findByTestId('detail-action-Valider la pièce'))
+    await waitFor(() => {
+      expect(apiController.findCall('post', '/admissions/pieces/9/verifier/')[1]).toEqual({ statut: 'VALIDEE' })
+    })
+    expect(await screen.findByText('100 %')).toBeTruthy()
+  })
+})
+
 describe('variantes de descripteur', () => {
   it('un descripteur d\'indicateurs rend des cartes et non un tableau', async () => {
     apiController.setRoute('/test/indicateurs/', { total_dossiers: 42, taux_conformite: 0.87 })

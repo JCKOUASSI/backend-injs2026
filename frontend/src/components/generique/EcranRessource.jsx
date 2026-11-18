@@ -1041,7 +1041,7 @@ export function ListeGenerique({ ecran, cleBase }) {
                     {c.libelle}
                   </th>
                 ))}
-                {((ecran.actions || []).length > 0 || peutGererFormulaire) && (
+                {(ecran.detail || (ecran.actions || []).length > 0 || peutGererFormulaire) && (
                   <th scope="col" className="text-end">Actions</th>
                 )}
               </tr>
@@ -1063,8 +1063,16 @@ export function ListeGenerique({ ecran, cleBase }) {
                   {colonnes.map((c) => (
                     <td key={c.cle || c.libelle}><Cellule ligne={ligne} colonne={c} /></td>
                   ))}
-                  {((ecran.actions || []).length > 0 || peutGererFormulaire) && (
+                  {(ecran.detail || (ecran.actions || []).length > 0 || peutGererFormulaire) && (
                     <td className="text-end" onClick={(e) => e.stopPropagation()}>
+                      {ecran.detail && (
+                        <button type="button" className="btn btn-sm btn-outline-primary me-1"
+                          onClick={() => setSelection(ligne)}
+                          aria-label={`${ecran.libelleOuverture || 'Ouvrir le détail'} : ${ligne.numero || ligne.nom || ligne.id || index + 1}`}>
+                          <i className="bi bi-folder2-open me-1" aria-hidden="true"></i>
+                          {ecran.libelleOuverture || 'Ouvrir'}
+                        </button>
+                      )}
                       {peutGererFormulaire && (
                         <button
                           type="button"
@@ -1245,7 +1253,14 @@ function DetailGenerique({ ecran, ligne, cleBase, onFermer }) {
   )
 
   const mutation = useMutation({
-    mutationFn: ({ action, ligne: sousLigne }) => executerActionGenerique(action, sousLigne),
+    mutationFn: ({ action, ligne: sousLigne, fichier }) => {
+      if (fichier && action.depot) {
+        const corps = new FormData()
+        corps.append('fichier', fichier)
+        return api.post(action.chemin(sousLigne), corps)
+      }
+      return executerActionGenerique(action, sousLigne)
+    },
     onSuccess: (_res, variables) => {
       showToast(variables.action.succes || 'Action enregistrée.')
       queryClient.invalidateQueries({ queryKey: cleDetail })
@@ -1348,6 +1363,20 @@ function DetailGenerique({ ecran, ligne, cleBase, onFermer }) {
                               <td className="text-end text-nowrap">
                                 {actionsDetail.map((action) => {
                                   if (action.visible && !action.visible(sous)) return null
+                                  if (action.depot) return (
+                                    <label key={action.libelle} className={`btn btn-sm ${action.apparence || 'btn-outline-primary'} me-1 ${mutation.isPending ? 'disabled' : ''}`}>
+                                      <input type="file" className="visually-hidden"
+                                        accept=".pdf,.jpg,.jpeg,.png"
+                                        aria-label={`${action.libelle} : ${sous.type_piece || sous.id}`}
+                                        disabled={mutation.isPending}
+                                        onChange={(event) => {
+                                          const fichier = event.target.files?.[0]
+                                          if (fichier) mutation.mutate({ action, ligne: sous, fichier })
+                                          event.target.value = ''
+                                        }} />
+                                      <i className="bi bi-cloud-arrow-up me-1" aria-hidden="true"></i>{action.libelle}
+                                    </label>
+                                  )
                                   const cible = action.vers ? action.vers(sous) : null
                                   return (
                                     <button
