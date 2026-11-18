@@ -15,6 +15,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import SimpleTestCase, TestCase
 
 from core.validators import (
+    EXTENSIONS_PIECE_CANDIDATURE,
+    SIGNATURE_OFFICE_ANCIEN,
     TAILLE_MAX_PIECE,
     TAILLE_MAX_PREUVE,
     valider_piece_candidature,
@@ -46,6 +48,48 @@ class ValidateursUnitaireTests(SimpleTestCase):
                 valider_piece_candidature(SimpleUploadedFile('faux.docx', contenu))
         with self.assertRaises(ValidationError):
             valider_preuve_paiement(SimpleUploadedFile('recu.docx', archive.getvalue()))
+
+    def test_documents_courants_acceptes_mais_pas_les_archives_libres(self):
+        for extension, dossier, fichier in (
+            ('.docx', '[Content_Types].xml', 'word/document.xml'),
+            ('.xlsx', '[Content_Types].xml', 'xl/workbook.xml'),
+            ('.pptx', '[Content_Types].xml', 'ppt/presentation.xml'),
+        ):
+            archive = BytesIO()
+            with ZipFile(archive, 'w') as document:
+                document.writestr(dossier, '<Types/>')
+                document.writestr(fichier, '<document/>')
+            valider_piece_candidature(SimpleUploadedFile(f'piece{extension}', archive.getvalue()))
+            with self.assertRaises(ValidationError):
+                valider_piece_candidature(SimpleUploadedFile(f'fausse{extension}', b'PK not a ZIP'))
+
+        for extension, media_type in (
+            ('.odt', 'application/vnd.oasis.opendocument.text'),
+            ('.ods', 'application/vnd.oasis.opendocument.spreadsheet'),
+            ('.odp', 'application/vnd.oasis.opendocument.presentation'),
+        ):
+            archive = BytesIO()
+            with ZipFile(archive, 'w') as document:
+                document.writestr('mimetype', media_type)
+                document.writestr('content.xml', '<document/>')
+            valider_piece_candidature(SimpleUploadedFile(f'piece{extension}', archive.getvalue()))
+            with self.assertRaises(ValidationError):
+                valider_piece_candidature(SimpleUploadedFile(f'fausse{extension}', b'PK not a ZIP'))
+
+        for extension in ('.doc', '.xls', '.ppt'):
+            valider_piece_candidature(SimpleUploadedFile(f'piece{extension}', SIGNATURE_OFFICE_ANCIEN + b'data'))
+            with self.assertRaises(ValidationError):
+                valider_piece_candidature(SimpleUploadedFile(f'fausse{extension}', b'<html>'))
+        valider_piece_candidature(SimpleUploadedFile('piece.rtf', b'{\\rtf1 test}'))
+        with self.assertRaises(ValidationError):
+            valider_piece_candidature(SimpleUploadedFile('fausse.rtf', b'<script/>'))
+
+        for extension in ('.txt', '.csv', '.gif', '.webp', '.bmp', '.tif', '.tiff', '.heic', '.heif'):
+            self.assertIn(extension, EXTENSIONS_PIECE_CANDIDATURE)
+            valider_piece_candidature(SimpleUploadedFile(f'piece{extension}', b'contenu'))
+        for extension in ('.exe', '.html', '.zip', '.7z', '.js', '.svg', '.docm', '.xlsm'):
+            with self.assertRaises(ValidationError, msg=extension):
+                valider_piece_candidature(SimpleUploadedFile(f'interdit{extension}', b'contenu'))
 
     def test_extension_refusee(self):
         for nom in ('script.exe', 'page.html', 'archive.zip', 'sans_extension'):

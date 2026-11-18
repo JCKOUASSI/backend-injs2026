@@ -8,8 +8,9 @@ comme la bande passante n'étaient bornés par rien.
 
 Les limites ci-dessous sont volontairement généreuses pour un dossier
 administratif scanné (10 Mio par pièce) tout en restant strictes sur les
-formats : les candidatures acceptent aussi Word OOXML (.docx), mais les
-preuves de paiement restent limitées aux PDF et images.
+formats : les candidatures acceptent les documents bureautiques et images
+courants (pas d'exécutables, HTML ni archives génériques). Les preuves de
+paiement restent limitées aux PDF et images.
 """
 
 from pathlib import Path
@@ -23,7 +24,23 @@ TAILLE_MAX_PIECE = 10 * 1024 * 1024
 TAILLE_MAX_PREUVE = 5 * 1024 * 1024
 
 EXTENSIONS_DOCUMENT = ('.pdf', '.jpg', '.jpeg', '.png')
-EXTENSIONS_PIECE_CANDIDATURE = (*EXTENSIONS_DOCUMENT, '.docx')
+EXTENSIONS_PIECE_CANDIDATURE = (
+    *EXTENSIONS_DOCUMENT, '.gif', '.webp', '.bmp', '.tif', '.tiff', '.heic', '.heif',
+    '.doc', '.docx', '.odt', '.rtf', '.txt', '.csv',
+    '.xls', '.xlsx', '.ods', '.ppt', '.pptx', '.odp',
+)
+# OOXML et OpenDocument sont des archives structurées, PAS des ZIP libres.
+OOXML_FICHIERS = {
+    '.docx': 'word/document.xml',
+    '.xlsx': 'xl/workbook.xml',
+    '.pptx': 'ppt/presentation.xml',
+}
+ODF_TYPES = {
+    '.odt': 'application/vnd.oasis.opendocument.text',
+    '.ods': 'application/vnd.oasis.opendocument.spreadsheet',
+    '.odp': 'application/vnd.oasis.opendocument.presentation',
+}
+SIGNATURE_OFFICE_ANCIEN = b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'
 
 
 def _verifier_fichier(valeur, extensions, taille_max, libelle):
@@ -44,26 +61,45 @@ def _verifier_fichier(valeur, extensions, taille_max, libelle):
         )
 
 
+def _verifier_bureautique(valeur, extension):
+    """Refuse les fichiers renommés en Office/ODF sans archive ou signature attendue."""
+    try:
+        position = valeur.tell()
+        try:
+            valeur.seek(0)
+            if extension in OOXML_FICHIERS or extension in ODF_TYPES:
+                with ZipFile(valeur) as document:
+                    noms = set(document.namelist())
+                    if extension in OOXML_FICHIERS:
+                        valide = {'[Content_Types].xml', OOXML_FICHIERS[extension]} <= noms
+                    else:
+                        # La chaîne mimetype ODF doit rester courte : ne jamais
+                        # décompresser un membre arbitraire de l'archive.
+                        info = document.getinfo('mimetype')
+                        valide = 'content.xml' in noms and info.file_size <= 128
+                        if valide:
+                            valide = document.read('mimetype').decode('ascii') == ODF_TYPES[extension]
+                    if not valide:
+                        raise ValidationError(f'Pièce jointe : fichier {extension} invalide.')
+            elif extension in ('.doc', '.xls', '.ppt'):
+                if valeur.read(8) != SIGNATURE_OFFICE_ANCIEN:
+                    raise ValidationError(f'Pièce jointe : fichier {extension} invalide.')
+            elif extension == '.rtf' and not valeur.read(5).startswith(b'{\\rtf'):
+                raise ValidationError('Pièce jointe : fichier .rtf invalide.')
+        finally:
+            valeur.seek(position)
+    except (BadZipFile, KeyError, OSError, ValueError, AttributeError, TypeError, UnicodeError) as erreur:
+        raise ValidationError(f'Pièce jointe : fichier {extension} invalide.') from erreur
+
+
 def valider_piece_candidature(valeur):
-    """Pièce de candidature : PDF, image ou vrai DOCX, 10 Mio maximum."""
+    """Documents usuels (sans exécutables ni archives libres), 10 Mio maximum."""
     if not valeur:
         return
     _verifier_fichier(valeur, EXTENSIONS_PIECE_CANDIDATURE, TAILLE_MAX_PIECE, 'Pièce jointe')
-    if Path(valeur.name).suffix.lower() == '.docx':
-        # Une extension seule ne suffit pas : un .docx est une archive OOXML.
-        # On ne décompresse rien (protection contre les archives malveillantes).
-        try:
-            position = valeur.tell()
-            try:
-                valeur.seek(0)
-                with ZipFile(valeur) as document:
-                    noms = set(document.namelist())
-                    if not {'[Content_Types].xml', 'word/document.xml'} <= noms:
-                        raise ValidationError('Pièce jointe : document Word .docx invalide.')
-            finally:
-                valeur.seek(position)
-        except (BadZipFile, OSError, ValueError, AttributeError, TypeError) as erreur:
-            raise ValidationError('Pièce jointe : document Word .docx invalide.') from erreur
+    extension = Path(valeur.name).suffix.lower()
+    if extension in OOXML_FICHIERS or extension in ODF_TYPES or extension in ('.doc', '.xls', '.ppt', '.rtf'):
+        _verifier_bureautique(valeur, extension)
 
 
 def valider_preuve_paiement(valeur):

@@ -235,7 +235,10 @@ describe('pages/scolarite/Candidatures — panneau Dossier (écritures)', () => 
     await screen.findByText('C-005')
     ouvrirDossier('C-005')
     const input = await screen.findByLabelText('Remplacer la pièce CNI')
-    expect(input.accept).toContain('.docx')
+    for (const format of ['.docx', '.doc', '.xlsx', '.xls', '.odt', '.ods', '.pptx', '.txt', '.csv', '.heic']) {
+      expect(input.accept.split(',')).toContain(format)
+    }
+    expect(input.accept.split(',')).not.toContain('.zip')
     fireEvent.change(input, {
       target: { files: [new File(['docx'], 'engagement.docx', {
         type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -259,7 +262,7 @@ describe('pages/scolarite/Candidatures — panneau Dossier (écritures)', () => 
       .querySelector('input[type="file"]')
     expect(input).not.toBeNull()
     expect(input.accept).toContain('.docx')
-    expect(screen.getByText(/Formats acceptés : PDF, JPG, PNG ou Word/)).toBeInTheDocument()
+    expect(screen.getByText(/Formats acceptés : Documents PDF, Word, OpenDocument, Excel/)).toBeInTheDocument()
     fireEvent.change(input, {
       target: { files: [new File(['contenu'], 'cni.pdf', { type: 'application/pdf' })] },
     })
