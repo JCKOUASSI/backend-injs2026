@@ -3220,6 +3220,10 @@ def api_import_excel(request):
             status=403,
         )
 
+    if import_type == 'participants' and request.data.get('strict') == 'true':
+        from .registre_import import importer_registre
+        return importer_registre(request, uploaded)
+
     from .management.commands.import_excel import Command as ImportCommand
 
     cmd = ImportCommand()

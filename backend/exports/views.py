@@ -3434,6 +3434,38 @@ def export_finance_encadrants_excel(request):
     return response
 
 
+@extend_schema(responses={(200, 'text/csv'): OpenApiTypes.BINARY, 403: ExportDetailErreurSerializer})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def export_liste_classe_csv(request):
+    """Registre filtré, toutes pages, au format importable CSV UTF-8."""
+    from .participants_list_export import export_liste_classe_csv
+    ctx, err = _liste_classe_export_context(request)
+    if err:
+        return err
+    response = HttpResponse(export_liste_classe_csv(ctx['blocks']), content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="liste_etudiants.csv"'
+    return response
+
+
+@extend_schema(responses={(200, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'): OpenApiTypes.BINARY, 403: ExportDetailErreurSerializer})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def export_liste_classe_word(request):
+    """Liste de classe Word sur le même périmètre que PDF/Excel."""
+    from .participants_list_export import export_liste_classe_word
+    ctx, err = _liste_classe_export_context(request)
+    if err:
+        return err
+    try:
+        buffer = export_liste_classe_word(ctx['blocks'], ctx['meta'])
+    except RuntimeError as exc:
+        return Response({'detail': str(exc)}, status=503)
+    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    response['Content-Disposition'] = 'attachment; filename="listes_classe_auditeurs.docx"'
+    return response
+
+
 @extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 400: ExportDetailErreurSerializer, 403: ExportDetailErreurSerializer, 404: ExportDetailErreurSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

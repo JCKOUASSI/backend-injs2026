@@ -22,4 +22,6 @@ urlpatterns = [
     # Export liste de classe auditeurs (par groupe)
     path('participants/liste-classe/pdf/', views.export_liste_classe_pdf, name='export-liste-classe-pdf'),
     path('participants/liste-classe/excel/', views.export_liste_classe_excel, name='export-liste-classe-excel'),
+    path('participants/liste-classe/word/', views.export_liste_classe_word, name='export-liste-classe-word'),
+    path('participants/liste-classe/csv/', views.export_liste_classe_csv, name='export-liste-classe-csv'),
 ]

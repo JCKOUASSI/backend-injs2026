@@ -873,3 +873,42 @@ describe('pages/Participants.jsx — registre premium (indicateurs et filière)'
     expect(within(ligne).getByText(/Secrétariat des Études — Licence/)).toBeInTheDocument()
   })
 })
+
+describe('registre — exports et import CSV/Excel', () => {
+  beforeEach(() => {
+    apiController.reset()
+    window.localStorage.clear()
+    window.sessionStorage.clear()
+    apiController.setRoute(LIST, listHandler)
+    apiController.setRoute(REFS, referentiels)
+    stubBlobDownload()
+  })
+
+  it('propose Word et CSV filtrés par groupe', async () => {
+    mount()
+    await waitForTable()
+    fireEvent.change(filterSelect('Tous (groupe)'), { target: { value: 'G1' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Liste des étudiants Word' }))
+    await waitFor(() => expect(apiMock.getBlob).toHaveBeenCalledWith(
+      '/exports/participants/liste-classe/word/?groupe=G1'))
+    fireEvent.click(screen.getByRole('button', { name: 'Liste des étudiants CSV' }))
+    await waitFor(() => expect(apiMock.getBlob).toHaveBeenCalledWith(
+      '/exports/participants/liste-classe/csv/?groupe=G1'))
+  })
+
+  it('importe les étudiants en mode strict avec matricule obligatoire', async () => {
+    apiController.setRoute('/formations/import-excel/', { created: 1, errors: [] })
+    mount()
+    await waitForTable()
+    const fichier = new File(['matricule;nom;prenom\nA-1;Kouassi;Jean\n'], 'etudiants.csv', { type: 'text/csv' })
+    fireEvent.change(screen.getByLabelText('Fichier étudiants à importer'), { target: { files: [fichier] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Importer la liste' }))
+    await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith(
+      '/formations/import-excel/', expect.any(FormData)))
+    const data = apiMock.post.mock.calls.find(([path]) => path === '/formations/import-excel/')[1]
+    expect(data.get('strict')).toBe('true')
+    expect(data.get('type')).toBe('participants')
+    expect(data.get('file')).toBe(fichier)
+    expect(await screen.findByText(/Import terminé : 1 créé/)).toBeInTheDocument()
+  })
+})
