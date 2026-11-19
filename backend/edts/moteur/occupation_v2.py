@@ -62,6 +62,41 @@ class IndexOccupation:
                 self._masques[cle] = self._masques.get(cle, 0) | masque
         return conflits
 
+    def score_souple(self, jour: date, groupe_id: int, debut: int, fin: int,
+                     politique: dict | None) -> float:
+        """Score pondéré borné, sans requête SQL ; zéro si politique inactive."""
+        if not politique or not politique.get('actives'):
+            return 0.0
+        masque = self._masques.get((jour, 'GROUPE', groupe_id), 0) | self._masque(debut, fin)
+        minutes = masque.bit_count()
+        poids_trou = int(politique.get('poids_trou', 1))
+        poids_surcharge = int(politique.get('poids_surcharge', 3))
+        poids_consecutif = int(politique.get('poids_consecutif', 2))
+        maximum_jour = float(politique.get('max_heures_par_jour', 8)) * 60
+        maximum_suite = int(float(politique.get('max_heures_consecutives', 4)) * 60)
+        surcharge = max(0.0, minutes - maximum_jour) / 60
+        premier = (masque & -masque).bit_length() - 1
+        trous = (masque.bit_length() - premier - minutes) / 60
+        # Une suite de bits 1 perd un bit à chaque AND avec son décalage ;
+        # arrêter dès que le seuil est franchi (au plus 1 440 itérations).
+        consecutives = 0
+        chaine = masque
+        while chaine and consecutives <= maximum_suite:
+            chaine &= chaine << 1
+            consecutives += 1
+        depassement = max(0, consecutives - maximum_suite) / 60
+        return (poids_surcharge * surcharge + poids_consecutif * depassement +
+                (poids_trou * trous if politique.get('penaliser_trous', True) else 0))
+
+    def charge_jour(self, jour: date, groupe_id: int) -> tuple[int, int]:
+        """(minutes déjà occupées, nombre de trous), sans autre accès SQL."""
+        masque = self._masques.get((jour, 'GROUPE', groupe_id), 0)
+        if not masque:
+            return 0, 0
+        premier = (masque & -masque).bit_length() - 1
+        dernier = masque.bit_length()
+        return masque.bit_count(), (dernier - premier) - masque.bit_count()
+
     @property
     def nombre_ressources_dates(self) -> int:
         return len(self._masques)
