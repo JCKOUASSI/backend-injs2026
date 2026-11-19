@@ -208,7 +208,7 @@ def inscription_retirer_groupe(request, pk):
 def repartition_automatique(request):
     """Répartit les inscriptions validées d'un périmètre sur les groupes disponibles."""
     inscriptions = InscriptionAdministrative.objects.filter(
-        statut=InscriptionAdministrative.Statut.VALIDEE,
+        statut=InscriptionAdministrative.Statut.VALIDEE, archive=False,
     ).select_related('etudiant__participant')
     for champ in ('annee_academique_id', 'ref_formation_id', 'niveau_id', 'parcours_id'):
         if request.data.get(champ):

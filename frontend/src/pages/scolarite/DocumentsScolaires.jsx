@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../services/api'
+import { downloadFile } from '../../utils/downloadFile'
 import { useToast } from '../../context/ToastContext'
 import { useDebounce } from '../../hooks/useDebounce'
 import {
@@ -47,14 +48,7 @@ export default function DocumentsScolaires() {
     setEnCours(cle)
     try {
       const { blob, fileName } = await api.getBlob(chemin)
-      const url = URL.createObjectURL(blob)
-      const lien = window.document.createElement('a')
-      lien.href = url
-      lien.download = fileName || 'document.pdf'
-      window.document.body.appendChild(lien)
-      lien.click()
-      lien.remove()
-      URL.revokeObjectURL(url)
+      downloadFile(blob, fileName || 'document.pdf')
       showToast(`${libelle} téléchargé.`)
     } catch (err) {
       showToast(messageErreur(err, 'Génération refusée par le serveur.'), 'error')

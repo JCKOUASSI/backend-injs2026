@@ -8,10 +8,10 @@ import '../../styles/admissions.css'
 import '../../styles/inscriptions.css'
 import '../../styles/modale-premium.css'
 import {
-  createInscription, deleteInscription, getAnneeCourante, getInscription,
+  actionInscriptionsLot, createInscription, deleteInscription, getAnneeCourante, getInscription,
   getRefCategories, getRefFormations, getRefGrades, getRefScolarite,
   getRefVagues, getStatsInscriptions, listEtudiants, listInscriptions,
-  messageErreur, transitionInscription, updateInscription,
+  messageErreur, reactiverInscription, transitionInscription, updateInscription, validerInscriptionsLot,
 } from '../../services/scolarite'
 
 const TYPES_INSCRIPTION = [
@@ -56,12 +56,15 @@ export default function Inscriptions() {
   const [totalInscriptions, setTotalInscriptions] = useState(0)
   const [loading, setLoading] = useState(true)
   const [enCours, setEnCours] = useState(null)
+  const [selection, setSelection] = useState([])
+  const [confirmerLot, setConfirmerLot] = useState(false)
+  const [confirmerActionLot, setConfirmerActionLot] = useState(null)
   const [creation, setCreation] = useState(false)
   const [modification, setModification] = useState(null)
   const [dossier, setDossier] = useState(null)
   const [filtres, setFiltres] = useState({
     statut: '', q: '', annee_academique_id: '', ref_formation_id: '',
-    niveau_id: '', type_inscription: '',
+    niveau_id: '', type_inscription: '', archive: '',
   })
   const [annees, setAnnees] = useState([])
   const [formations, setFormations] = useState([])
@@ -80,6 +83,9 @@ export default function Inscriptions() {
       const res = await listInscriptions(params)
       const lignes = enListe(res)
       setInscriptions(lignes)
+      setSelection([])
+      setConfirmerLot(false)
+      setConfirmerActionLot(null)
       setTotalInscriptions(Array.isArray(res.data) ? res.data.length : (res.data?.count ?? lignes.length))
     } catch (err) {
       showToast(messageErreur(err, 'Chargement des inscriptions impossible'), 'error')
@@ -87,6 +93,8 @@ export default function Inscriptions() {
   }, [filtres, showToast])
 
   useEffect(() => { charger() }, [charger])
+  // La sélection ne peut pas traverser un changement de périmètre.
+  useEffect(() => { setSelection([]); setConfirmerLot(false); setConfirmerActionLot(null) }, [filtres])
 
   // Référentiels des filtres + année courante par défaut (une seule fois).
   useEffect(() => {
@@ -134,18 +142,72 @@ export default function Inscriptions() {
     finally { setEnCours(null) }
   }
 
+  // Seules les inscriptions ayant un chemin de validation sont cochables.
+  // Le serveur revérifie chaque état et applique toutes les transitions dans
+  // une transaction : aucune validation partielle en cas d'erreur.
+  const validables = inscriptions.filter((i) => !i.archive && CHEMIN_VALIDATION[i.statut])
+  const coches = inscriptions.filter((i) => selection.includes(i.id))
+  const selectionValidable = coches.length > 0 && coches.every((i) => !i.archive && CHEMIN_VALIDATION[i.statut])
+  const cocher = (id) => setSelection((ids) => ids.includes(id)
+    ? ids.filter((n) => n !== id) : [...ids, id])
+  const cocherPage = () => setSelection((ids) => ids.length === validables.length
+    && validables.every((i) => ids.includes(i.id))
+    ? [] : validables.map((i) => i.id))
+  const cocherTous = () => setSelection((ids) => ids.length === inscriptions.length
+    ? [] : inscriptions.map((i) => i.id))
+
+  const confirmerRetraitLot = async () => {
+    if (!coches.length || !confirmerActionLot) return
+    setEnCours('lot')
+    try {
+      const res = await actionInscriptionsLot(confirmerActionLot, selection)
+      const comptes = res.data.resultats.reduce((acc, ligne) => {
+        acc[ligne.resultat] = (acc[ligne.resultat] || 0) + 1
+        return acc
+      }, {})
+      showToast(`Lot terminé : ${comptes.supprime || 0} supprimée(s), ${comptes.archive || 0} archivée(s), ${comptes.reactive || 0} réactivée(s).`)
+      await charger()
+    } catch (err) {
+      showToast(messageErreur(err, 'Action groupée annulée : aucun dossier modifié.'), 'error')
+    } finally { setEnCours(null) }
+  }
+
+  const confirmerValidationLot = async () => {
+    if (!selection.length) return
+    setEnCours('lot')
+    try {
+      const res = await validerInscriptionsLot(selection)
+      showToast(`${res.data.validees} inscription(s) validée(s).`)
+      setSelection([])
+      setConfirmerLot(false)
+      await charger()
+    } catch (err) {
+      showToast(messageErreur(err, 'Validation groupée annulée : aucun dossier modifié.'), 'error')
+    } finally { setEnCours(null) }
+  }
+
   const supprimer = async (id) => {
-    if (!window.confirm('Supprimer cette inscription administrative ? Irréversible.')) return
-    const precedent = inscriptions
-    setInscriptions(inscriptions.filter((i) => i.id !== id))
+    if (!window.confirm('Retirer cette inscription ? Seul un brouillon isolé sera supprimé définitivement ; tout dossier lié sera archivé et récupérable.')) return
     setEnCours(id)
     try {
-      await deleteInscription(id)
-      showToast('Inscription supprimée')
+      const res = await deleteInscription(id)
+      showToast(res.data?.archive
+        ? 'Inscription utilisée : archivée sans modifier son statut ni ses liens.'
+        : 'Brouillon isolé supprimé définitivement.')
+      await charger()
     } catch (err) {
-      showToast(messageErreur(err, 'Suppression impossible'), 'error')
-      setInscriptions(precedent)
+      showToast(messageErreur(err, 'Retrait impossible'), 'error')
     } finally { setEnCours(null) }
+  }
+
+  const reactiver = async (id) => {
+    setEnCours(id)
+    try {
+      await reactiverInscription(id)
+      showToast('Inscription réactivée sans modifier son statut.')
+      await charger()
+    } catch (err) { showToast(messageErreur(err, 'Réactivation impossible'), 'error') }
+    finally { setEnCours(null) }
   }
 
   const kpis = useMemo(() => {
@@ -169,7 +231,7 @@ export default function Inscriptions() {
   )?.libelle
   const reinitialiser = () => setFiltres((f) => ({
     statut: '', q: '', annee_academique_id: f.annee_academique_id,
-    ref_formation_id: '', niveau_id: '', type_inscription: '',
+    ref_formation_id: '', niveau_id: '', type_inscription: '', archive: '',
   }))
 
 
@@ -300,6 +362,15 @@ export default function Inscriptions() {
             </select>
             <select
               className="cand-filter-select"
+              aria-label="Afficher les archives"
+              value={filtres.archive}
+              onChange={(e) => setFiltres({ ...filtres, archive: e.target.value })}
+            >
+              <option value="">Dossiers courants</option>
+              <option value="1">Dossiers archivés</option>
+            </select>
+            <select
+              className="cand-filter-select"
               aria-label="Filtrer par formation"
               value={filtres.ref_formation_id}
               onChange={(e) => setFiltres({ ...filtres, ref_formation_id: e.target.value })}
@@ -342,6 +413,34 @@ export default function Inscriptions() {
           </div>
         </div>
 
+        {!loading && inscriptions.length > 0 && (
+          <div className="insc-lot" role="group" aria-label="Actions sur les inscriptions cochées">
+            <span role="status">{selection.length} inscription(s) cochée(s) sur {inscriptions.length} affichée(s) (maximum 200 ; pas tout le filtre)</span>
+            {validables.length > 0 && <button type="button" className="insc-btn-reinitialiser"
+              disabled={enCours !== null} onClick={cocherPage}>
+              Cocher les validables affichées
+            </button>}
+            <button type="button" className="insc-btn-reinitialiser" disabled={enCours !== null}
+              onClick={cocherTous}>
+              {selection.length === inscriptions.length ? 'Tout décocher' : 'Cocher toutes les affichées'}
+            </button>
+            {validables.length > 0 && <button type="button" className="cand-btn-principal"
+              disabled={!selectionValidable || enCours !== null}
+              onClick={() => setConfirmerLot(true)}>
+              Valider la sélection ({selection.length})
+            </button>}
+            {filtres.archive === '1' ? (
+              <button type="button" className="cand-btn-principal" disabled={!coches.length || enCours !== null}
+                onClick={() => setConfirmerActionLot('reactiver')}>Réactiver la sélection ({selection.length})</button>
+            ) : <>
+              <button type="button" className="insc-btn-reinitialiser" disabled={!coches.length || enCours !== null}
+                onClick={() => setConfirmerActionLot('archiver')}>Archiver la sélection ({selection.length})</button>
+              <button type="button" className="mp-bouton mp-bouton--danger" disabled={!coches.length || enCours !== null}
+                onClick={() => setConfirmerActionLot('retirer')}>Supprimer ou archiver la sélection ({selection.length})</button>
+            </>}
+          </div>
+        )}
+
         {loading ? (
           <div className="cand-chargement"><span className="spinner-border" aria-hidden="true"></span>Chargement des dossiers…</div>
         ) : (
@@ -349,6 +448,12 @@ export default function Inscriptions() {
             <table className="cand-table cand-table--inscriptions insc-table">
               <thead>
                 <tr>
+                  <th scope="col" className="insc-col-selection">
+                    <input type="checkbox" aria-label="Sélectionner toutes les inscriptions affichées"
+                      checked={inscriptions.length > 0 && selection.length === inscriptions.length}
+                      disabled={!inscriptions.length || enCours !== null}
+                      onChange={cocherTous} />
+                  </th>
                   <th scope="col">Étudiant</th>
                   <th scope="col">Formation</th>
                   <th scope="col">Type</th>
@@ -360,6 +465,11 @@ export default function Inscriptions() {
               <tbody>
                 {inscriptions.map((i) => (
                   <tr key={i.id}>
+                    <td className="insc-col-selection">
+                      <input type="checkbox" aria-label={`Sélectionner l’inscription ${i.matricule}`}
+                        checked={selection.includes(i.id)} disabled={enCours !== null}
+                        onChange={() => cocher(i.id)} />
+                    </td>
                     <td>
                       <div className="adm-candidat">
                         <span className="adm-avatar" aria-hidden="true">{initiales(i.etudiant)}</span>
@@ -393,10 +503,13 @@ export default function Inscriptions() {
                         <span className="adm-meta">validée le {dateFR(i.date_validation)}</span>
                       )}
                     </td>
-                    <td><StatutBadge statut={i.statut} libelle={i.statut_libelle} /></td>
+                    <td>
+                      <StatutBadge statut={i.statut} libelle={i.statut_libelle} />
+                      {i.archive && <span className="insc-archive-badge">Archivée</span>}
+                    </td>
                     <td className="cand-col-actions">
                       <div className="adm-actions">
-                        {CHEMIN_VALIDATION[i.statut] && (
+                        {!i.archive && CHEMIN_VALIDATION[i.statut] && (
                           <button
                             className="insc-action insc-action--succes"
                             disabled={enCours === i.id}
@@ -428,15 +541,20 @@ export default function Inscriptions() {
                         >
                           <i className="bi bi-person-lines-fill" aria-hidden="true"></i>
                         </Link>
-                        <button
-                          className="cand-action cand-action--danger"
-                          disabled={enCours === i.id}
-                          onClick={() => supprimer(i.id)}
-                          aria-label="Supprimer"
-                          title="Supprimer l’inscription"
-                        >
-                          <i className="bi bi-trash3" aria-hidden="true"></i>
-                        </button>
+                        {i.archive ? (
+                          <button className="insc-action" type="button" disabled={enCours !== null}
+                            onClick={() => reactiver(i.id)} aria-label={`Réactiver ${i.matricule}`}
+                            title="Remettre cette inscription dans les dossiers courants">
+                            <i className="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                            Réactiver
+                          </button>
+                        ) : (
+                          <button className="cand-action cand-action--danger" type="button"
+                            disabled={enCours !== null} onClick={() => supprimer(i.id)}
+                            aria-label="Supprimer" title="Supprimer si isolée, archiver si utilisée">
+                            <i className="bi bi-trash3" aria-hidden="true"></i>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -467,6 +585,50 @@ export default function Inscriptions() {
           </div>
         )}
       </div>
+
+      {confirmerActionLot && (
+        <FenetreModale idTitre="insc-action-lot-titre"
+          titre={confirmerActionLot === 'reactiver' ? 'Réactiver les inscriptions cochées ?'
+            : confirmerActionLot === 'archiver' ? 'Archiver les inscriptions cochées ?'
+              : 'Supprimer ou archiver les inscriptions cochées ?'}
+          icone="bi bi-archive" onClose={() => { if (enCours === null) setConfirmerActionLot(null) }}
+          pied={<>
+            <button type="button" className="mp-bouton mp-bouton--fantome"
+              disabled={enCours !== null} onClick={() => setConfirmerActionLot(null)}>Annuler</button>
+            <button type="button" className="mp-bouton mp-bouton--danger"
+              disabled={enCours !== null} onClick={confirmerRetraitLot}>
+              Confirmer pour {selection.length} inscription(s)
+            </button>
+          </>}>
+          <p>Seules les {selection.length} lignes cochées parmi les {inscriptions.length} affichées seront traitées.</p>
+          <p>{confirmerActionLot === 'retirer'
+            ? 'Seuls les brouillons isolés seront effacés définitivement. Tous les dossiers utilisés seront archivés, sans perte d’historique.'
+            : confirmerActionLot === 'archiver'
+              ? 'Archivage récupérable sans modification du statut métier ni des liens.'
+              : 'Les dossiers archivés seront réactivés sans changer leur statut métier.'}</p>
+          <p>Opération atomique : en cas d’erreur, aucun dossier ne sera modifié.</p>
+        </FenetreModale>
+      )}
+
+      {confirmerLot && (
+        <FenetreModale idTitre="insc-lot-titre" titre="Confirmer la validation groupée ?"
+          icone="bi bi-check2-circle" onClose={() => { if (enCours === null) setConfirmerLot(false) }}
+          pied={<>
+            <button type="button" className="mp-bouton mp-bouton--fantome"
+              disabled={enCours !== null} onClick={() => setConfirmerLot(false)}>Annuler</button>
+            <button type="button" className="mp-bouton mp-bouton--principal"
+              disabled={enCours !== null} onClick={confirmerValidationLot}>
+              {enCours === 'lot' ? 'Validation…' : `Valider ${selection.length} inscription(s)`}
+            </button>
+          </>}>
+          <div className="mp-corps">
+            <p>Les {selection.length} inscriptions cochées parmi les dossiers affichés seront validées.
+              Le serveur vérifiera chaque transition et l’année académique : si une inscription
+              est bloquée, le lot entier sera annulé.</p>
+            <p>Cette action est journalisée et peut ouvrir le parcours pédagogique selon la configuration.</p>
+          </div>
+        </FenetreModale>
+      )}
 
       {dossier && <DossierInscription id={dossier} onClose={() => setDossier(null)} onRefresh={charger}
         onModifier={(id) => { setDossier(null); setModification(id); }} />}
@@ -506,14 +668,25 @@ function DossierInscription({ id, onClose, onRefresh, onModifier }) {
   }
 
   const supprimer = async () => {
-    if (!window.confirm('Supprimer cette inscription administrative ? Irréversible.')) return
+    if (!window.confirm('Retirer cette inscription ? Seul un brouillon isolé sera supprimé définitivement ; les dossiers utilisés seront archivés.')) return
     setEnCours(id)
     try {
-      await deleteInscription(id)
-      showToast('Inscription supprimée')
+      const res = await deleteInscription(id)
+      showToast(res.data?.archive ? 'Inscription archivée, historique conservé.' : 'Brouillon isolé supprimé.')
       onRefresh()
       onClose()
-    } catch (err) { showToast(messageErreur(err, 'Suppression impossible'), 'error') }
+    } catch (err) { showToast(messageErreur(err, 'Retrait impossible'), 'error') }
+    finally { setEnCours(null) }
+  }
+
+  const reactiver = async () => {
+    setEnCours(id)
+    try {
+      await reactiverInscription(id)
+      showToast('Inscription réactivée.')
+      onRefresh()
+      onClose()
+    } catch (err) { showToast(messageErreur(err, 'Réactivation impossible'), 'error') }
     finally { setEnCours(null) }
   }
 
@@ -542,22 +715,26 @@ function DossierInscription({ id, onClose, onRefresh, onModifier }) {
               {LIBELLES_STATUT[cible] || cible}
             </button>
           ))}
-          <button
+          {!data.archive && <button
             type="button"
             className="mp-bouton mp-bouton--fantome"
             onClick={() => { onClose(); onModifier(id) }}
           >
             <i className="bi bi-pencil-square" aria-hidden="true"></i>
             Modifier
-          </button>
-          <button
-            type="button"
-            className="mp-bouton mp-bouton--danger"
-            onClick={supprimer}
-          >
-            <i className="bi bi-trash3" aria-hidden="true"></i>
-            Supprimer
-          </button>
+          </button>}
+          {data.archive ? (
+            <button type="button" className="mp-bouton mp-bouton--fantome"
+              disabled={enCours === id} onClick={reactiver}>
+              Réactiver
+            </button>
+          ) : (
+            <button type="button" className="mp-bouton mp-bouton--danger"
+              disabled={enCours === id} onClick={supprimer}>
+              <i className="bi bi-trash3" aria-hidden="true"></i>
+              Supprimer ou archiver
+            </button>
+          )}
           <button type="button" className="mp-bouton mp-bouton--fantome" onClick={onClose}>
             Fermer
           </button>
@@ -573,6 +750,7 @@ function DossierInscription({ id, onClose, onRefresh, onModifier }) {
           </div>
           <div style={{ marginLeft: 'auto' }}>
             <StatutBadge statut={data.statut} libelle={data.statut_libelle} />
+            {data.archive && <span className="insc-archive-badge">Archivée</span>}
           </div>
         </div>
 

@@ -149,6 +149,14 @@ const request = async (method, path, body, config = {}) => {
     ...getAuthHeaders(),
     ...(config.headers || {}),
   }
+  // Le navigateur doit produire Content-Type avec son boundary exact.
+  // Un appelant qui force « multipart/form-data » sans boundary casse le
+  // parseur DRF AVANT que l'API d'import puisse lire le fichier.
+  if (isFormData) {
+    for (const name of Object.keys(headers)) {
+      if (name.toLowerCase() === 'content-type') delete headers[name]
+    }
+  }
   const init = {
     method,
     headers,
@@ -167,6 +175,7 @@ const request = async (method, path, body, config = {}) => {
     try {
       const newToken = await refreshAccessToken()
       init.headers.Authorization = `Bearer ${newToken}`
+      init.headers['X-JWT-Access'] = newToken
       res = await fetch(url, init)
     } catch {
       _onSessionExpired()
@@ -184,7 +193,7 @@ const getBlob = async (path) => {
   if (res.status === 401) {
     try {
       const newToken = await refreshAccessToken()
-      res = await fetch(url, { method: 'GET', headers: { ...headers, Authorization: `Bearer ${newToken}` } })
+      res = await fetch(url, { method: 'GET', headers: { ...headers, Authorization: `Bearer ${newToken}`, 'X-JWT-Access': newToken } })
     } catch {
       _onSessionExpired()
       throw new Error('Session expired')

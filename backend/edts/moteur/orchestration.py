@@ -92,6 +92,8 @@ def _occupation_depuis_affectation(aff):
         'jour': creneau.jour,
         'heure_debut': creneau.heure_debut,
         'heure_fin': creneau.heure_fin,
+        'semaine_debut': aff.semaine_debut,
+        'semaine_fin': aff.semaine_fin,
     }
 
 

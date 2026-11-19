@@ -114,6 +114,19 @@ describe('services/api.js', () => {
       expect(init.body).toBe(fd)
     })
 
+    it('retire aussi un Content-Type multipart forcé par erreur pour FormData', async () => {
+      const f = installFetch(async () => fetchResponse({}))
+      const fd = new FormData()
+      fd.append('fichier', new File(['test'], 'inscrits.csv'))
+      await api.post('/edts/lmd/import/inscrits/analyser/', fd, {
+        headers: { 'content-type': 'multipart/form-data', 'X-Test': 'preserve' },
+      })
+      const init = f.mock.calls[0][1]
+      expect(Object.keys(init.headers).some((name) => name.toLowerCase() === 'content-type')).toBe(false)
+      expect(init.headers['X-Test']).toBe('preserve')
+      expect(init.body).toBe(fd)
+    })
+
     it('retourne data=null pour une réponse 204 vide', async () => {
       installFetch(async () => fetchResponse('', { status: 204 }))
       const res = await api.delete('/x/1/')
@@ -271,7 +284,7 @@ describe('services/api.js', () => {
       installFetch(async (url, init) => {
         if (url === REFRESH_URL) return fetchResponse({ access: 'new' })
         if (url.includes('/exports/'))
-          return init.headers.Authorization === 'Bearer new'
+          return init.headers.Authorization === 'Bearer new' && init.headers['X-JWT-Access'] === 'new'
             ? fetchResponse(new Blob(['x'], { type: 'text/csv' }), { status: 200, headers: { 'Content-Type': 'text/csv' } })
             : fetchResponse({}, { status: 401 })
         return fetchResponse({})

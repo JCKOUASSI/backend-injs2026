@@ -138,6 +138,11 @@ def _peut_editer(request, emploi):
     peut le retirer de la file (transition EN_VALIDATION → BROUILLON autorisée)
     pour corriger, ce qui garde le dossier d'examen cohérent pour la Direction.
     """
+    # Le chemin historique ne sait pas mettre à jour la date/clé et le
+    # registre QR d'une occurrence v2. Même la Direction ne peut le forcer.
+    if emploi.affectations.filter(cle_occurrence_v2__isnull=False).exists():
+        return Response({'detail': 'EDT v2 : utiliser le service transactionnel BENCH v2 ; édition historique refusée.',
+                         'code': 'QR_V2_CHEMIN_HERITE_REFUSE'}, status=status.HTTP_409_CONFLICT)
     from .permissions import _peut_valider
     if _peut_valider(request.user):
         return None
@@ -606,6 +611,9 @@ def emploi_du_temps_detail_api(request, pk):
         return Response(_serialize_emploi_du_temps(e))
 
     if request.method == 'DELETE':
+        if e.affectations.filter(cle_occurrence_v2__isnull=False).exists():
+            return Response({'code': 'QR_V2_CHEMIN_HERITE_REFUSE',
+                             'detail': 'Suppression d’un EDT v2 refusée.'}, status=status.HTTP_409_CONFLICT)
         from .permissions import _peut_planifier, _peut_valider
         est_validateur = _peut_valider(request.user)
         if e.statut == 'ARCHIVE':
@@ -701,6 +709,11 @@ def _transition(request, pk, vers):
     e = EmploiDuTemps.objects.select_related('annee_academique').filter(pk=pk).first()
     if e is None:
         return None, Response({'detail': 'Emploi du temps introuvable'}, status=status.HTTP_404_NOT_FOUND)
+    # Publication historique sans préflight QR interdite ; la route LMD
+    # contrôlée renvoie le motif QR_V2_NON_PUBLIABLE si nécessaire.
+    if vers == 'PUBLIE' and e.affectations.filter(cle_occurrence_v2__isnull=False).exists():
+        return e, Response({'detail': 'Publication v2 non disponible par la route historique.',
+                            'code': 'QR_V2_CHEMIN_HERITE_REFUSE'}, status=status.HTTP_409_CONFLICT)
     role = _role_de_l_action(request)
     autorise = TRANSITIONS.get((e.statut, vers))
     if autorise is None:
@@ -1168,6 +1181,9 @@ def emploi_du_temps_generer_api(request, pk):
     e = EmploiDuTemps.objects.filter(pk=pk).first()
     if e is None:
         return Response({'detail': 'Emploi du temps introuvable'}, status=status.HTTP_404_NOT_FOUND)
+    if e.affectations.filter(cle_occurrence_v2__isnull=False).exists():
+        return Response({'detail': 'Génération historique interdite sur un EDT v2.',
+                         'code': 'QR_V2_CHEMIN_HERITE_REFUSE'}, status=status.HTTP_409_CONFLICT)
     if e.statut != 'BROUILLON':
         return Response({'detail': 'La génération ne s’applique qu’à un emploi du temps en brouillon.'},
                         status=status.HTTP_409_CONFLICT)

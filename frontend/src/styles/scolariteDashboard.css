@@ -555,3 +555,30 @@
   .presences-stats-row { grid-template-columns: 1fr; }
   .section-card-header { align-items: flex-start; }
 }
+
+/* Formats premium : contraste élevé, relief discret, focus clavier visible. */
+.scolarite-export-btn-group {
+  gap: .35rem;
+  padding: .3rem;
+  border-radius: .9rem;
+  background: #f5f8fd;
+  border-color: #dbe4f2;
+  box-shadow: 0 4px 16px rgba(15, 35, 70, .08);
+}
+.export-pill-btn {
+  gap: .3rem;
+  border: 1px solid transparent;
+  border-radius: .65rem;
+  padding: .5rem .85rem;
+  font-size: .8rem;
+  font-weight: 700;
+}
+.export-pill-btn:last-child { border-right: 1px solid transparent; }
+.export-pill-btn--pdf { color: #a42335; background: #fff0f1; }
+.export-pill-btn--excel { color: #11633d; background: #eaf8f0; }
+.export-pill-btn--word { color: #174a91; background: #eaf2ff; }
+.export-pill-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 12px rgba(15, 35, 70, .14); }
+.export-pill-btn:focus-visible { outline: 3px solid #1d4fbf; outline-offset: 2px; }
+.export-pill-btn:disabled { opacity: .55; cursor: wait; }
+.scolarite-export-error { padding: .75rem 1rem; color: #a42335; background: #fff0f1; border-radius: .65rem; }
+@media (prefers-reduced-motion: reduce) { .export-pill-btn { transition: none; } }

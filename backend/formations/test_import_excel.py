@@ -183,6 +183,76 @@ class ImportExcelAPITest(TestCase):
         )
         self.client.force_authenticate(self.user)
 
+    def test_import_participants_csv_strict_rollback_sur_erreur(self):
+        from formations.models import Participant
+        contenu = ('matricule;nom;prenom;sexe\n'
+                   'P-STRICT-1;Kouassi;Jean;MASCULIN\n'
+                   'P-STRICT-2;;Marie;FEMININ\n').encode('utf-8')
+        res = self.client.post('/api/formations/import-excel/', {
+            'type': 'participants', 'strict': 'true',
+            'file': SimpleUploadedFile('etudiants.csv', contenu),
+        }, format='multipart')
+        self.assertEqual(res.status_code, 400, res.data)
+        self.assertFalse(Participant.objects.filter(matricule='P-STRICT-1').exists())
+        self.assertIn('nom et prénom obligatoires', ' '.join(res.data['errors']))
+
+    def test_import_participants_csv_strict_matricule_requis(self):
+        from formations.models import Participant
+        contenu = b'matricule;nom;prenom\n;Kouassi;Jean\n'
+        res = self.client.post('/api/formations/import-excel/', {
+            'type': 'participants', 'strict': 'true',
+            'file': SimpleUploadedFile('etudiants.csv', contenu),
+        }, format='multipart')
+        self.assertEqual(res.status_code, 400, res.data)
+        self.assertEqual(Participant.objects.count(), 0)
+
+    def test_import_participants_csv_strict_refuse_matricules_doublons(self):
+        from formations.models import Participant
+        contenu = b'matricule;nom;prenom\nP-1;Kouassi;Jean\nP-1;Kouassi;Marie\n'
+        res = self.client.post('/api/formations/import-excel/', {
+            'type': 'participants', 'strict': 'true',
+            'file': SimpleUploadedFile('etudiants.csv', contenu),
+        }, format='multipart')
+        self.assertEqual(res.status_code, 400, res.data)
+        self.assertEqual(Participant.objects.count(), 0)
+
+    def test_import_participants_csv_strict_refuse_lignes_apres_trou(self):
+        from formations.models import Participant
+        contenu = b'matricule;nom;prenom\nP-1;Kouassi;Jean\n\nP-2;Kouassi;Marie\n'
+        res = self.client.post('/api/formations/import-excel/', {
+            'type': 'participants', 'strict': 'true',
+            'file': SimpleUploadedFile('etudiants.csv', contenu),
+        }, format='multipart')
+        self.assertEqual(res.status_code, 400, res.data)
+        self.assertEqual(Participant.objects.count(), 0)
+
+    def test_import_participants_csv_strict_succes(self):
+        from formations.models import Participant
+        contenu = b'matricule;nom;prenom;sexe\nP-STRICT-3;Kouassi;Jean;MASCULIN\n'
+        res = self.client.post('/api/formations/import-excel/', {
+            'type': 'participants', 'strict': 'true',
+            'file': SimpleUploadedFile('etudiants.csv', contenu),
+        }, format='multipart')
+        self.assertEqual(res.status_code, 200, res.data)
+        self.assertEqual(Participant.objects.get(matricule='P-STRICT-3').nom, 'Kouassi')
+
+    def test_import_participants_xlsx_strict_matricule_requis(self):
+        from formations.models import Participant
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Participants'
+        ws.append(['matricule', 'nom', 'prenom'])
+        ws.append(['P-STRICT-4', 'Kouassi', 'Jean'])
+        ws.append(['', 'Kouassi', 'Marie'])
+        buf = BytesIO()
+        wb.save(buf)
+        res = self.client.post('/api/formations/import-excel/', {
+            'type': 'participants', 'strict': 'true',
+            'file': SimpleUploadedFile('etudiants.xlsx', buf.getvalue()),
+        }, format='multipart')
+        self.assertEqual(res.status_code, 400, res.data)
+        self.assertFalse(Participant.objects.filter(matricule='P-STRICT-4').exists())
+
     def test_api_import_formations_resolves_site(self):
         xlsx = build_formations_xlsx({})
         res = self.client.post(

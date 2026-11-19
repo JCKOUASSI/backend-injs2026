@@ -258,6 +258,7 @@ export const ECRANS = {
     id: 'controle_dossiers',
     titre: 'Contrôle des dossiers',
     titreListe: 'Dossiers de candidature',
+    libelleOuverture: 'Contrôler le dossier',
     fil: 'Scolarité',
     icone: 'bi-folder-check',
     introduction: 'File de contrôle des dossiers de candidature : ouvrez un '
@@ -372,6 +373,13 @@ export const ECRANS = {
       // Dossier de l'écran Candidatures) : télécharger le fichier déposé,
       // valider ou refuser — une pièce sans fichier ne peut pas être statuée.
       actions: [
+        {
+          libelle: 'Déposer la pièce', depot: true,
+          chemin: (p) => `/admissions/pieces/${p.id}/deposer/`,
+          apparence: 'btn-outline-primary',
+          succes: 'Pièce déposée pour vérification.',
+          erreur: 'Dépôt refusé par le serveur.',
+        },
         {
           libelle: 'Télécharger la pièce', icone: 'bi-download',
           telechargement: true,

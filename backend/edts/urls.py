@@ -11,6 +11,7 @@ from . import api
 from . import api_getinjs as g
 from . import api_interop as interop
 from . import api_lmd as lmd
+from . import api_v2_experimental as v2
 
 # Pas d'app_name volontaire : le jeu de routes est monté deux fois
 # (/api/edts/ et /api/timetable/) — un namespace dupliqué déclenche urls.W005.
@@ -21,6 +22,10 @@ from . import api_lmd as lmd
 # ``POST /api/edts/emplois/{id}/generer/`` (generer_brouillon) reste le chemin
 # contractuel d'origine ; la couche LMD y ajoute le moteur du LOT 2.
 urlpatterns_lmd = [
+    # Phase 5 : façade isolée ; jamais de bascule implicite des routes historiques.
+    path('v2/bench/simuler-ligne/', v2.simuler_ligne_api, name='edt-v2-bench-simuler'),
+    path('v2/bench/placer-ligne/', v2.placer_ligne_api, name='edt-v2-bench-placer'),
+    path('v2/bench/executions/<int:pk>/', v2.execution_etat_api, name='edt-v2-bench-execution'),
     # Pré-requis (§7, §17)
     # `lmd/audit/` est déclarée AVANT `lmd/<int:pk>/audit/` : ces deux chemins
     # sont distincts (`int:pk` ne capture pas le littéral « audit »), et cet

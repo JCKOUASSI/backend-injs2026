@@ -43,6 +43,10 @@ project_structure.txt
 backend/.seed_ok
 backend/.referentiels_ok
 backend/.lmd_ok
+# Marqueurs éphémères de reconstruction de l'aperçu (pas des données source)
+backend/.*_demo_ok
+backend/.journal_parcours_ok
+backend/.maquettes_finalisees_ok
 backend/.venv/.deps_ok
 backend/db.sqlite3
 # P00-02 — données nominatives et classeurs d'import : hors dépôt
@@ -110,3 +114,6 @@ dossier_trvx/Documentation_TableauDeBord_Referentiels_INJS.xlsx
 deploy/production/logs/
 deploy/production/.env.bak-*
 deploy/production/.env.avant-rollback-*
+
+# Preuves produites par le workflow de déploiement (runner uniquement)
+/evidence/

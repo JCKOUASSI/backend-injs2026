@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import api from '../../services/api'
+import { downloadFile } from '../../utils/downloadFile'
 import { useToast } from '../../context/ToastContext'
 import '../../styles/candidatures.css'
 import '../../styles/referentiels.css'
@@ -21,6 +22,7 @@ const LIBELLES_CHAMPS = {
   description: 'Description',
   actif: 'Actif',
   source_document: 'Source documentaire',
+  source: 'Source du cycle',
   fiabilite: 'Fiabilité',
   nom_complet: 'Dénomination complète',
   ordre: "Ordre d'affichage",
@@ -60,6 +62,17 @@ const LIBELLES_CHAMPS = {
   courante: 'Année courante',
   cloturee: 'Clôturée',
   date_cloture: 'Date de clôture',
+  type_diplome: 'Type de diplôme',
+  domaine: 'Domaine',
+  duree_annees: 'Durée (années)',
+  nb_semestres: 'Nombre de semestres',
+  nb_credites: 'Crédits ECTS',
+  perimetre: 'Périmètre',
+  filiere_code: 'Code filière',
+  filiere: 'Filière',
+  semestre: 'Semestre',
+  heures_cm: 'Heures CM', heures_td: 'Heures TD', heures_tp: 'Heures TP',
+  heures_stage: 'Heures stage', heures_total: 'Total heures',
 }
 
 /** Ordre de lecture imposé aux tables importées, du plus signifiant au détail. */
@@ -159,8 +172,11 @@ export default function ReferentielGenerique() {
   const [form, setForm] = useState({})
   const [erreursForm, setErreursForm] = useState({})
   const [envoi, setEnvoi] = useState(false)
+  const [echange, setEchange] = useState(false)
   const [detail, setDetail] = useState(null)
   const [suppression, setSuppression] = useState(null)
+  const [selection, setSelection] = useState([])
+  const [actionLot, setActionLot] = useState(null)
   const [lectureSeule, setLectureSeule] = useState(false)
   // Affichage : la liste historique reste le défaut ; la vue « cartes » et
   // la pagination évitent les écrans de centaines de lignes (166 salles).
@@ -179,6 +195,7 @@ export default function ReferentielGenerique() {
   const champsChoix = entree?.champs_choix || {}
   const champsNumeriques = entree?.champs_numeriques || []
   const champsDates = entree?.champs_dates || []
+  const cheminGestion = entree?.route_gestion || `/referentiels/${slug}/`
   // Certains modèles tracent leur provenance sans porter de description
   // (sites, bâtiments, salles, vagues) : ne pas afficher un champ mort.
   const aUneDescription = entree ? entree.a_une_description !== false : true
@@ -234,8 +251,14 @@ export default function ReferentielGenerique() {
       // 2b. Référentiel modifiable : la route générique et les options des
       //     sélecteurs (dont le chemin est fourni par le registre).
       const routes = courante.selecteurs_routes || {}
+      // L'entrée vient d'être reçue, mais setEntree n'a pas encore mis à jour
+      // l'état React. Ne pas utiliser `cheminGestion` issu de l'ancien rendu :
+      // pour les cycles/modules/volumes, sa valeur initiale est une route 404.
+      // Cette 404 pouvait arriver après le rechargement et laisser une erreur
+      // affichée alors que les vraies API répondent toutes 200.
+      const routeGestion = courante.route_gestion || `/referentiels/${slug}/`
       const [liste, ...paires] = await Promise.all([
-        api.get(`/referentiels/${slug}/`, { params: { archives: 1, page_size: 1000 } }),
+        api.get(routeGestion, { params: { archives: 1, page_size: 1000 } }),
         ...(courante.selecteurs || []).map(async (fk) => {
           const route = routes[fk]?.route
           if (!route) return [fk, []]
@@ -244,6 +267,7 @@ export default function ReferentielGenerique() {
         }),
       ])
       setLignes(listeRecue(liste.data))
+      setSelection([])
       setOptions(Object.fromEntries(paires))
     } catch (e) {
       setErreur(
@@ -308,7 +332,42 @@ export default function ReferentielGenerique() {
   const pageSure = Math.min(page, nbPages)
   const lignesPage = lignesFiltrees.slice((pageSure - 1) * PAR_PAGE, pageSure * PAR_PAGE)
 
+  // Une sélection ne traverse jamais un changement de filtre, de page ou de
+  // référentiel : le périmètre d'un lot reste visible et vérifiable.
   useEffect(() => { setPage(1) }, [recherche, filtreActif, filtresSelecteurs, vue, slug])
+  useEffect(() => { setSelection([]); setActionLot(null) },
+    [recherche, filtreActif, filtresSelecteurs, vue, pageSure, slug])
+
+  const basculerSelection = (id) => setSelection((ids) => ids.includes(id)
+    ? ids.filter((n) => n !== id) : [...ids, id])
+  const basculerPage = () => setSelection((ids) => (
+    lignesPage.every((ligne) => ids.includes(ligne.id))
+      ? [] : lignesPage.map((ligne) => ligne.id)
+  ))
+  const selectionArchivee = selection.some((id) =>
+    lignesPage.find((ligne) => ligne.id === id)?.archive)
+
+  const confirmerActionLot = async () => {
+    if (!actionLot || selection.length === 0) return
+    setEnvoi(true)
+    try {
+      const res = await api.post(`${cheminGestion}lot/`, {
+        ids: selection, action: actionLot,
+      })
+      const bilans = res.data?.resultats || []
+      const compte = (resultat) => bilans.filter((ligne) => ligne.resultat === resultat).length
+      toast.success?.(`${bilans.length} valeur(s) traitée(s) : ${compte('supprime')} supprimée(s), `
+        + `${compte('archive')} archivée(s), ${compte('active')} activée(s), `
+        + `${compte('desactive')} désactivée(s).`)
+      setSelection([])
+      setActionLot(null)
+      await charger({ silencieux: true })
+    } catch (err) {
+      toast.error?.(err.response?.data?.detail || 'Action groupée annulée : aucune modification appliquée.')
+    } finally {
+      setEnvoi(false)
+    }
+  }
   useEffect(() => {
     try { localStorage.setItem(`ref-vue-${slug}`, vue) } catch { /* stockage indisponible */ }
   }, [vue, slug])
@@ -374,7 +433,7 @@ export default function ReferentielGenerique() {
       delete corps.fiabilite
       delete corps.source_document
     }
-    if (!provenanceSuivie || !aUneDescription) delete corps.description
+    if (!aUneDescription) delete corps.description
     champsDates.forEach((champ) => {
       if (corps[champ] === '') corps[champ] = null
     })
@@ -394,11 +453,11 @@ export default function ReferentielGenerique() {
     if (corps.ordre !== undefined && corps.ordre !== '') corps.ordre = Number(corps.ordre)
     try {
       if (modal.mode === 'creation') {
-        await api.post(`/referentiels/${slug}/`, corps)
+        await api.post(cheminGestion, corps)
         toast.success?.('Référentiel enregistré.')
       } else {
         delete corps.code
-        await api.patch(`/referentiels/${slug}/${modal.ligne.id}/`, corps)
+        await api.patch(`${cheminGestion}${modal.ligne.id}/`, corps)
         toast.success?.('Référentiel mis à jour.')
       }
       setModal(null)
@@ -424,34 +483,35 @@ export default function ReferentielGenerique() {
 
   const basculerStatut = async (ligne) => {
     try {
-      await api.patch(`/referentiels/${slug}/${ligne.id}/`, { actif: !ligne.actif })
+      await api.patch(`${cheminGestion}${ligne.id}/`, { actif: !ligne.actif })
       await charger({ silencieux: true })
     } catch {
       toast.error?.('Changement de statut impossible.')
     }
   }
 
-  // Suppression LOGIQUE : le socle interdit la suppression physique
-  // (traçabilité + éléments protégés par les données qui les référencent).
-  // Archivage quand le modèle le supporte, désactivation sinon — dans les
-  // deux cas la valeur disparaît des listes actives et reste récupérable.
+  // L'API arbitre la suppression : 204 si la valeur n'est référencée nulle
+  // part, 200 + archive si elle est liée à un dossier. Ne jamais le deviner
+  // dans le navigateur : des relations peuvent être invisibles dans la liste.
   const confirmerSuppression = async () => {
     if (!suppression) return
     setEnvoi(true)
     try {
-      if (archivageSupporte) {
-        await api.post(`/referentiels/${slug}/${suppression.id}/archiver/`, {})
-        toast.success?.(
-          `« ${suppression.libelle} » supprimé — consultable via le filtre « Archivés ».`)
+      if (suppression.action === 'archiver') {
+        await api.post(`${cheminGestion}${suppression.id}/archiver/`, {})
+        toast.success?.(`« ${suppression.libelle} » archivé — réactivable depuis le filtre « Archivés ».`)
       } else {
-        await api.patch(`/referentiels/${slug}/${suppression.id}/`, { actif: false })
-        toast.success?.(
-          `« ${suppression.libelle} » supprimé — récupérable via le filtre « Inactifs ».`)
+        const res = await api.delete(`${cheminGestion}${suppression.id}/`)
+        toast.success?.(res.data?.archive
+          ? `« ${suppression.libelle} » est utilisé : archivé sans effacer ses liens.`
+          : res.data?.desactive
+            ? `« ${suppression.libelle} » est utilisé : désactivé sans effacer ses liens.`
+            : `« ${suppression.libelle} » supprimé définitivement.`)
       }
       setSuppression(null)
       await charger({ silencieux: true })
-    } catch {
-      toast.error?.('Suppression impossible.')
+    } catch (err) {
+      toast.error?.(err.response?.data?.detail || 'Suppression impossible.')
     } finally {
       setEnvoi(false)
     }
@@ -459,10 +519,45 @@ export default function ReferentielGenerique() {
 
   const reactiver = async (ligne) => {
     try {
-      await api.post(`/referentiels/${slug}/${ligne.id}/reactiver/`, {})
+      await api.post(`${cheminGestion}${ligne.id}/reactiver/`, {})
       await charger({ silencieux: true })
     } catch {
       toast.error?.('Réactivation impossible.')
+    }
+  }
+
+  const exporter = async (format) => {
+    setEchange(true)
+    try {
+      const params = new URLSearchParams({ export: format })
+      if (filtreActif === 'archives') { params.set('archives', '1'); params.set('archive', '1') }
+      if (filtreActif === 'inactifs') params.set('actif', '0')
+      if (filtreActif === 'tous') params.set('archives', '1')
+      const { blob, fileName } = await api.getBlob(`${cheminGestion}export/?${params}`)
+      downloadFile(blob, fileName || `${slug}.${format}`)
+      toast.success?.(`Export ${format.toUpperCase()} téléchargé.`)
+    } catch (e) {
+      toast.error?.(e.response?.data?.detail || e.message || 'Export impossible.')
+    } finally {
+      setEchange(false)
+    }
+  }
+
+  const importer = async (event) => {
+    const fichier = event.target.files?.[0]
+    if (!fichier) return
+    event.target.value = ''
+    setEchange(true)
+    try {
+      const corps = new FormData()
+      corps.append('fichier', fichier)
+      const res = await api.post(`${cheminGestion}import/`, corps)
+      toast.success?.(`Import terminé : ${res.data.crees} créé(s), ${res.data.modifies} modifié(s).`)
+      await charger({ silencieux: true })
+    } catch (e) {
+      toast.error?.(e.response?.data?.detail || 'Import impossible : vérifiez les colonnes du fichier.')
+    } finally {
+      setEchange(false)
     }
   }
 
@@ -503,7 +598,7 @@ export default function ReferentielGenerique() {
 
   const optionsPour = (fk) => {
     const dependDe = DEPENDANCES[fk]
-    const liste = options[fk] || []
+    const liste = (options[fk] || []).filter((o) => !o.archive || String(o.id) === String(form[fk]))
     if (dependDe && form[dependDe]) {
       return liste.filter((o) => String(o[dependDe]) === String(form[dependDe]))
     }
@@ -544,6 +639,13 @@ export default function ReferentielGenerique() {
               aria-label={`${ligne.actif ? 'Désactiver' : 'Activer'} ${ligne.libelle}`}
             >
               <i className={`bi ${ligne.actif ? 'bi-toggle-on' : 'bi-toggle-off'}`} aria-hidden="true"></i>
+            </button>
+          )}
+          {archivageSupporte && entree.route_gestion && !ligne.archive && (
+            <button type="button" className="ref-action" title="Archiver"
+              aria-label={`Archiver ${ligne.libelle}`}
+              onClick={() => setSuppression({ ...ligne, action: 'archiver' })}>
+              <i className="bi bi-archive" aria-hidden="true"></i>
             </button>
           )}
           {archivageSupporte && ligne.archive ? (
@@ -641,6 +743,25 @@ export default function ReferentielGenerique() {
             <span className="cand-count-pill">
               {lignesFiltrees.length} / {lignes.length}
             </span>
+            {entree.route_gestion && (
+              <div className="ref-echanges" aria-label="Importer et exporter ce référentiel">
+                <label className="cand-btn-fantome ref-import" aria-disabled={echange}>
+                  <i className="bi bi-upload" aria-hidden="true"></i> Importer CSV / Excel
+                  <input type="file" accept=".csv,.xlsx" aria-label="Importer un fichier CSV ou Excel"
+                    disabled={echange} onChange={importer} />
+                </label>
+                {[
+                  ['docx', 'Word'], ['xlsx', 'Excel'], ['csv', 'CSV'], ['pdf', 'PDF'],
+                ].map(([format, libelle]) => (
+                  <button key={format} type="button" className={`ref-export ref-export--${format}`}
+                    disabled={echange} onClick={() => exporter(format)}
+                    aria-label={`Exporter ${entree.libelle} en ${libelle}`}>
+                    <i className={`bi bi-file-earmark-${format === 'xlsx' ? 'excel' : format === 'docx' ? 'word' : format}`} aria-hidden="true"></i>
+                    {libelle}
+                  </button>
+                ))}
+              </div>
+            )}
             {lectureSeule ? (
               <span className="ref-pastille ref-pastille--neutre">
                 <i className="bi bi-lock" aria-hidden="true"></i>
@@ -664,6 +785,15 @@ export default function ReferentielGenerique() {
                 modifiables ici : une correction passe par la source puis par un
                 nouvel import, afin de préserver la traçabilité.
               </span>
+            </p>
+          )}
+          {entree.route_gestion && (
+            <p className="ref-note-texte">
+              Pour importer, utilisez l’export CSV ou Excel comme modèle : une ligne sans identifiant
+              crée une valeur, une ligne avec « id » la met à jour. Les rattachements « formation »
+              ou « filiere » utilisent l’identifiant du référentiel correspondant. L’import est annulé
+              en entier si une ligne comporte une erreur. « Supprimer » efface une valeur isolée ;
+              une valeur liée à d’autres données est archivée ou désactivée sans effacer ses liens.
             </p>
           )}
           <div className="ref-filtres">
@@ -743,6 +873,27 @@ export default function ReferentielGenerique() {
           </div>
         </div>
 
+        {!lectureSeule && lignesPage.length > 0 && (
+          <div className="ref-actions-lot" role="group" aria-label="Actions sur les valeurs cochées">
+            <span role="status">{selection.length} sélectionnée(s) sur cette page</span>
+            <button type="button" className="cand-btn-fantome" onClick={basculerPage}>
+              {selection.length === lignesPage.length ? 'Tout décocher' : 'Cocher la page'}
+            </button>
+            {[
+              ['activer', 'Activer'], ['desactiver', 'Désactiver'],
+              ['archiver', 'Archiver'], ['supprimer', 'Supprimer'],
+            ].map(([action, libelle]) => (
+              <button key={action} type="button" className="cand-btn-fantome"
+                disabled={!selection.length || envoi
+                  || (action === 'archiver' && (!archivageSupporte || selectionArchivee))
+                  || (action === 'activer' && selectionArchivee)}
+                onClick={() => setActionLot(action)}>
+                {libelle} la sélection
+              </button>
+            ))}
+          </div>
+        )}
+
         {lignesFiltrees.length === 0 ? (
           <div className="cand-vide">
             <span className="cand-vide-icone" aria-hidden="true">
@@ -762,6 +913,13 @@ export default function ReferentielGenerique() {
             {lignesPage.map((ligne) => (
               <article className={`ref-carte${ligne.archive ? ' is-archive' : ''}`} key={ligne.id} role="listitem">
                 <header className="ref-carte-entete">
+                  {!lectureSeule && (
+                    <label className="ref-selection-ligne">
+                      <input type="checkbox" checked={selection.includes(ligne.id)}
+                        onChange={() => basculerSelection(ligne.id)}
+                        aria-label={`Sélectionner ${ligne.libelle}`} />
+                    </label>
+                  )}
                   {aUnCode && ligne.code
                     ? <span className="ref-carte-code">{ligne.code}</span>
                     : <span></span>}
@@ -805,6 +963,13 @@ export default function ReferentielGenerique() {
             <table className={`cand-table ref-table${lectureSeule ? ' ref-table--lecture' : ''}`}>
               <thead>
                 <tr>
+                  {!lectureSeule && (
+                    <th scope="col" className="ref-col-selection">
+                      <input type="checkbox" aria-label="Sélectionner toutes les valeurs de cette page"
+                        checked={lignesPage.length > 0 && selection.length === lignesPage.length}
+                        onChange={basculerPage} />
+                    </th>
+                  )}
                   {colonnes.map((c) => (
                     <th key={c.cle} scope="col" data-colonne={c.cle}>{c.libelle}</th>
                   ))}
@@ -814,6 +979,13 @@ export default function ReferentielGenerique() {
               <tbody>
                 {lignesPage.map((ligne) => (
                   <tr key={ligne.id} className={ligne.archive ? 'is-archive' : ''}>
+                    {!lectureSeule && (
+                      <td className="ref-col-selection">
+                        <input type="checkbox" aria-label={`Sélectionner ${ligne.libelle}`}
+                          checked={selection.includes(ligne.id)}
+                          onChange={() => basculerSelection(ligne.id)} />
+                      </td>
+                    )}
                     {colonnes.map((c) => (
                       <td
                         key={c.cle}
@@ -1016,6 +1188,8 @@ export default function ReferentielGenerique() {
                     placeholder="Document officiel attestant la valeur"
                   />
                 </div>
+                </>
+                )}
                 {aUneDescription && (
                 <div className="cand-champ ref-champ-large">
                   <label className="cand-etiquette" htmlFor="ref-description">Description</label>
@@ -1027,8 +1201,6 @@ export default function ReferentielGenerique() {
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                   />
                 </div>
-                )}
-                </>
                 )}
               </div>
 
@@ -1063,28 +1235,55 @@ export default function ReferentielGenerique() {
         </div>
       )}
 
+      {actionLot && (
+        <div className="ref-modale-voile" role="presentation">
+          <div className="ref-modale ref-modale--etroite" role="alertdialog" aria-modal="true"
+            aria-labelledby="ref-lot-titre">
+            <header className="ref-modale-head">
+              <h2 className="ref-modale-titre" id="ref-lot-titre">Confirmer l’action groupée ?</h2>
+            </header>
+            <div className="ref-modale-corps">
+              <p>{actionLot} {selection.length} valeur(s) cochée(s) sur cette page de « {entree.libelle} » ?</p>
+              {actionLot === 'supprimer' && <p>
+                Les valeurs isolées seront supprimées définitivement ; celles déjà utilisées
+                seront archivées ou désactivées sans effacer leurs liens.
+              </p>}
+              <p>Si une valeur ne peut pas être traitée, le lot entier est annulé.</p>
+            </div>
+            <footer className="ref-modale-pied">
+              <div className="ref-modale-boutons">
+                <button type="button" className="cand-btn-fantome" disabled={envoi}
+                  onClick={() => setActionLot(null)}>Annuler</button>
+                <button type="button" className="ref-btn-danger" disabled={envoi}
+                  onClick={confirmerActionLot}>
+                  {envoi ? 'Traitement…' : `Confirmer ${actionLot}`}
+                </button>
+              </div>
+            </footer>
+          </div>
+        </div>
+      )}
+
       {suppression && (
         <div className="ref-modale-voile" role="presentation">
           <div className="ref-modale ref-modale--etroite" role="alertdialog" aria-modal="true">
             <header className="ref-modale-head">
-              <h2 className="ref-modale-titre">Supprimer cette valeur ?</h2>
+              <h2 className="ref-modale-titre">{suppression.action === 'archiver' ? 'Archiver cette valeur ?' : 'Supprimer cette valeur ?'}</h2>
             </header>
             <div className="ref-modale-corps">
               <p>
                 <strong>{suppression.libelle}</strong>{' '}
-                {archivageSupporte ? (
-                  <>sera <strong>archivée</strong> : elle ne sera plus proposée dans les
-                  nouvelles opérations, mais reste consultable via le filtre « Archivés »
-                  et réactivable à tout moment.</>
+                {suppression.action === 'archiver' ? (
+                  <>sera <strong>archivée</strong> et pourra être réactivée depuis le filtre « Archivés ».</>
                 ) : (
-                  <>sera <strong>désactivée</strong> : elle disparaîtra de la liste des
-                  valeurs actives, et reste récupérable via le filtre « Inactifs ».</>
+                  <>sera <strong>supprimée définitivement</strong> si elle n’est utilisée nulle part.
+                    Si elle est liée à d’autres données, elle sera archivée sans effacer ces liens
+                    {archivageSupporte ? ' et pourra être réactivée.' : ' si ce modèle le permet.'}</>
                 )}
               </p>
               <p className="ref-suppression-note">
-                La suppression physique est désactivée sur les référentiels : une valeur
-                peut être référencée par des données existantes (par exemple des séances
-                d’emploi du temps) et l’historique doit être préservé.
+                L’opération est contrôlée par le serveur et journalisée. Confirmez uniquement
+                si vous souhaitez retirer cette valeur des opérations courantes.
               </p>
             </div>
             <footer className="ref-modale-pied">
@@ -1093,7 +1292,7 @@ export default function ReferentielGenerique() {
                   Annuler
                 </button>
                 <button type="button" className="ref-btn-danger" onClick={confirmerSuppression} disabled={envoi}>
-                  {envoi ? 'Suppression…' : 'Supprimer'}
+                  {envoi ? 'Traitement…' : suppression.action === 'archiver' ? 'Archiver' : 'Supprimer'}
                 </button>
               </div>
             </footer>

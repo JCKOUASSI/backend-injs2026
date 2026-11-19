@@ -266,7 +266,7 @@ class GenerationAnneeApiTests(BaseApiTest):
         )
         self.assertEqual(reponse.status_code, 409)
         self.assertEqual(reponse.data['status_global'], 'IMPOSSIBLE')
-        self.assertEqual(reponse.data['motif_echec'], 'AUCUN_BESOIN_PLANIFIABLE')
+        self.assertEqual(reponse.data['motif_echec'], 'AUCUNE_MAQUETTE_ACTIVE')
         self.assertTrue(reponse.data['detail']['explication'])
         self.assertTrue(reponse.data['detail']['action_recommandee'])
 

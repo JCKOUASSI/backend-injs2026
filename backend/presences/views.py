@@ -601,11 +601,10 @@ def _coords_from_payload(donnees):
 
 
 def _jeton_lmd_pour_mobile(qr_token):
-    """``(jeton, erreur)`` — suit un QR de séance LMD remplacé ou expiré.
+    """``(jeton, erreur)`` — refuse un QR LMD remplacé ou expiré.
 
-    Un QR régénéré par l'enseignant invalide l'ancien jeton : le mobile qui
-    présente encore l'ancien QR doit être redirigé vers le remplaçant actif
-    tant que celui-ci est valide (sinon ``TOKEN_EXPIRED``).
+    Le mobile doit scanner le nouveau QR affiché par l'enseignant après une
+    régénération : l'ancien secret n'est jamais redirigé vers le nouveau.
     """
     from . import seances_edt_services as service
 
@@ -645,7 +644,7 @@ def _scan_seance_edt_mobile(*, request, qr_token, personne, type_str, device_id,
     action, pointage, erreur = service.badger_scan(
         request, personne=personne, affectation=affectation, date=date,
         device_id=device_id, coords=_coords_from_payload(donnees),
-        type_personne=type_str)
+        type_personne=type_str, jeton=qr_token)
     if erreur:
         return Response(service.normaliser_erreur(
             erreur, type_personne=type_str), status=status.HTTP_400_BAD_REQUEST)
@@ -796,19 +795,12 @@ def scan_view(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Si le token a été remplacé (regeneration QR), utiliser le token actif courant
+    # Une régénération révoque l'ancien secret, même si un QR neuf existe.
     if not qr_token.actif:
-        replacement = QRToken.objects.filter(
-            session=qr_token.session,
-            actif=True,
-        ).order_by('-created_at').first()
-        if replacement and replacement.is_valid:
-            qr_token = replacement
-        else:
-            return Response(
-                {'code': 'TOKEN_EXPIRED', 'detail': 'QR code désactivé. Aucun QR actif pour cette séance.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        return Response(
+            {'code': 'TOKEN_EXPIRED', 'detail': 'QR code désactivé ou remplacé.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     seance = qr_token.session
     if not seance:
@@ -1079,19 +1071,12 @@ def secure_scan_view(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Si le token a été remplacé (regeneration QR), utiliser le token actif courant
+    # Une régénération révoque l'ancien secret, même si un QR neuf existe.
     if not qr_token.actif:
-        replacement = QRToken.objects.filter(
-            session=qr_token.session,
-            actif=True,
-        ).order_by('-created_at').first()
-        if replacement and replacement.is_valid:
-            qr_token = replacement
-        else:
-            return Response(
-                {'code': 'TOKEN_EXPIRED', 'detail': 'QR code désactivé. Aucun QR actif pour cette séance.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        return Response(
+            {'code': 'TOKEN_EXPIRED', 'detail': 'QR code désactivé ou remplacé.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     seance = qr_token.session
     if not seance:
@@ -1429,17 +1414,10 @@ def secure_scan_heartbeat(request):
         )
 
     if not qr_token.actif:
-        replacement = QRToken.objects.filter(
-            session=qr_token.session,
-            actif=True,
-        ).order_by('-created_at').first()
-        if replacement and replacement.is_valid:
-            qr_token = replacement
-        else:
-            return Response(
-                {'code': 'TOKEN_EXPIRED', 'detail': 'QR code désactivé. Aucun QR actif pour cette séance.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        return Response(
+            {'code': 'TOKEN_EXPIRED', 'detail': 'QR code désactivé ou remplacé.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     seance = qr_token.session
     if not seance:
@@ -3103,6 +3081,15 @@ def _cached_offline_data_response(token):
     Un verrou Redis (cache.add) protège contre la ruée vers le cache (thundering
     herd) : une seule requête regénère le payload, les autres attendent le résultat.
     """
+    # Le contenu volumineux est mis en cache, pas la décision de sécurité :
+    # un QR désactivé/expiré ne doit jamais recevoir le payload déjà calculé.
+    qr_actuel = QRToken.objects.select_related('session').filter(token=token).first()
+    if qr_actuel is None:
+        return Response({'detail': 'Token invalide.'}, status=status.HTTP_404_NOT_FOUND)
+    if not qr_actuel.is_valid or qr_actuel.session_id is None:
+        return Response({'detail': 'Token expiré ou désactivé.'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
     cache_key = offline_data_cache_key(token)
     cached_json = cache.get(cache_key)
     if cached_json is not None:
@@ -3154,19 +3141,10 @@ def _get_formation_offline_data_payload(token):
     if qr_token.is_expired:
         raise OfflineDataError('Token expiré.', status.HTTP_400_BAD_REQUEST)
 
-    # Si le token a été remplacé (regeneration QR), utiliser le token actif courant
     if not qr_token.actif:
-        replacement = QRToken.objects.filter(
-            session=qr_token.session,
-            actif=True,
-        ).order_by('-created_at').first()
-        if replacement and replacement.is_valid:
-            qr_token = replacement
-        else:
-            raise OfflineDataError(
-                'Token désactivé. Aucun QR actif pour cette séance.',
-                status.HTTP_400_BAD_REQUEST,
-            )
+        raise OfflineDataError(
+            'Token désactivé ou remplacé.', status.HTTP_400_BAD_REQUEST,
+        )
 
     if not qr_token.session:
         raise OfflineDataError(
@@ -3412,7 +3390,10 @@ def audit_log_list(request):
             'pointage_id': log.pointage_id,
             'ip_address': log.ip_address,
             'device_id': log.device_id,
-            'extra': log.extra,
+            # Anciens journaux QR : conserver l'enregistrement en base, mais
+            # ne jamais republier un secret de badgeage via l'API d'audit.
+            'extra': {k: v for k, v in (log.extra or {}).items()
+                      if k.lower() not in {'token', 'token_qr', 'qr_token'}},
         })
 
     if paginer:
@@ -3650,18 +3631,9 @@ def secure_check_badge_status(request):
         return _check_status_seance_edt_mobile(
             request=request, qr_token=qr_token, personne=personne, type_str=type_str)
 
-    if not qr_token.is_valid and qr_token.actif:
+    # Ne pas afficher l'état d'une séance à partir d'un secret révoqué.
+    if not qr_token.is_valid:
         return Response({'statut': 'INCONNU', 'action_suivante': 'ENTREE'})
-
-    # QR remplacé mais valide : suivre le remplaçant
-    if not qr_token.actif:
-        replacement = QRToken.objects.filter(
-            session=qr_token.session, actif=True,
-        ).order_by('-created_at').first()
-        if replacement and replacement.is_valid:
-            qr_token = replacement
-        else:
-            return Response({'statut': 'INCONNU', 'action_suivante': 'ENTREE'})
 
     seance = qr_token.session
     if not seance:

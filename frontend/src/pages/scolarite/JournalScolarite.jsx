@@ -89,7 +89,6 @@ export default function JournalScolarite() {
   const [pagesAu, setPagesAu] = useState(1)
   const [pageAu, setPageAu] = useState(1)
   const [chargementAu, setChargementAu] = useState(false)
-  const [auditCharge, setAuditCharge] = useState(false)
   const [actionFiltre, setActionFiltre] = useState('')
   const [objetFiltre, setObjetFiltre] = useState('')
   const [rechercheAu, setRechercheAu] = useState('')
@@ -151,7 +150,6 @@ export default function JournalScolarite() {
       setAudits(Array.isArray(data.results) ? data.results : [])
       setTotalAu(typeof data.count === 'number' ? data.count : 0)
       setPagesAu(Math.max(1, typeof data.total_pages === 'number' ? data.total_pages : 1))
-      setAuditCharge(true)
     } catch (err) {
       toast.showToast(messageErreur(err, 'Chargement de la traçabilité impossible.'), 'error')
     } finally {

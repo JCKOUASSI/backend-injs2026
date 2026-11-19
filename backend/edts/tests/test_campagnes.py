@@ -110,6 +110,36 @@ class ExecutionOrphelineTests(BaseCampagneTest):
         execution.refresh_from_db()
         self.assertEqual(execution.statut, ExecutionCampagne.Statut.EN_COURS)
 
+    def test_autre_worker_vivant_ne_repare_pas_une_generation_longue(self):
+        import os
+        import socket
+        import threading
+
+        _campagne, execution = self._campagne_en_cours_orpheline()
+        execution.statistiques = {'worker': {
+            'hostname': socket.gethostname(), 'pid': os.getpid(),
+            'tid': threading.get_native_id(),
+        }}
+        execution.save(update_fields=['statistiques'])
+        # Le registre local ne contient pas le fil de l'autre worker ;
+        # l'identité système persistée prouve qu'il tourne encore.
+        self.assertFalse(C.reparer_execution_orpheline(execution))
+        execution.refresh_from_db()
+        self.assertEqual(execution.statut, ExecutionCampagne.Statut.EN_COURS)
+
+    def test_worker_vivant_fil_mort_est_repare(self):
+        import os
+        import socket
+        from unittest.mock import patch
+
+        _campagne, execution = self._campagne_en_cours_orpheline()
+        execution.statistiques = {'worker': {
+            'hostname': socket.gethostname(), 'pid': os.getpid(), 'tid': 99999999,
+        }}
+        execution.save(update_fields=['statistiques'])
+        with patch('edts.moteur.campagnes.os.path.exists', return_value=False):
+            self.assertTrue(C.reparer_execution_orpheline(execution))
+
     def test_execution_jeune_jamais_reparee(self):
         campagne = self.campagne()
         C.marquer_pret(campagne.pk, user=self.admin)
@@ -133,6 +163,39 @@ class CycleDeVieCampagneTests(BaseCampagneTest):
         with self.assertRaises(C.TransitionRefusee) as ctx:
             self.campagne()
         self.assertEqual(ctx.exception.motif, 'CAMPAGNE_DEJA_EXISTANTE')
+
+    def test_creation_annuelle_une_semaine_refusee_sans_ecriture(self):
+        with self.assertRaises(C.TransitionRefusee) as ctx:
+            C.creer_campagne(
+                annee_academique_id=self.annee.pk,
+                libelle='Fausse année en semaine 1', semaines=[1],
+                parametres={'mode_generation': 'automatique', 'persister': True},
+                user=self.admin,
+            )
+        self.assertEqual(ctx.exception.motif, 'CALENDRIER_NON_CONFIRME')
+        self.assertFalse(CampagneGeneration.objects.exists())
+
+    def test_calendrier_confirme_recalcule_et_brouillon_force(self):
+        from edts.moteur.calendrier_previsionnel import proposer
+        self.annee.refresh_from_db()
+        dates = proposer(self.annee)
+        campagne = self.campagne(
+            semaines=[1], mode_generation='automatique',
+            calendrier_previsionnel_confirme=True,
+            calendrier_dates_confirmees=[dates['date_debut'], dates['date_fin']],
+            publier_direct=True, max_seances_par_groupe_semaine=30,
+        )
+        self.assertEqual(campagne.semaines, dates['impairs'] + dates['pairs'])
+        self.assertFalse(campagne.parametres['publier_direct'])
+        self.assertIsNone(campagne.parametres['max_seances_par_groupe_semaine'])
+        self.assertEqual(campagne.parametres['calendrier_previsionnel'], dates)
+
+    def test_calendrier_perime_refuse(self):
+        with self.assertRaises(C.TransitionRefusee) as ctx:
+            self.campagne(mode_generation='automatique',
+                          calendrier_previsionnel_confirme=True,
+                          calendrier_dates_confirmees=['2020-01-01', '2020-06-01'])
+        self.assertEqual(ctx.exception.motif, 'CALENDRIER_MODIFIE')
 
     def test_annee_introuvable_refusee(self):
         with self.assertRaises(C.TransitionRefusee) as ctx:
@@ -164,6 +227,28 @@ class CycleDeVieCampagneTests(BaseCampagneTest):
         with self.assertRaises(C.TransitionRefusee) as ctx:
             C.demarrer_campagne(campagne.pk, user=self.admin, asynchrone=False)
         self.assertEqual(ctx.exception.motif, 'CAMPAGNE_DEJA_EN_COURS')
+
+    def test_validation_refuse_campagne_partielle_meme_avec_edt_persistes(self):
+        """Des EDT valides isolément ne blanchissent pas les groupes manquants."""
+        campagne = self.campagne(libelle='Validation partielle')
+        edt = EmploiDuTemps.objects.create(
+            annee_academique=self.annee, population_type='GROUPE',
+            population_id=1, titre='EDT isolé',
+        )
+        campagne.statut = CampagneGeneration.Statut.TERMINE_AVEC_ANOMALIES
+        campagne.bilan = {
+            'status_global': 'PARTIELLE',
+            'groupes': [{'edt_id': edt.pk}, {'statut': 'NON_PLANIFIE'}],
+        }
+        campagne.anomalies = [{'motif': 'AUCUN_BESOIN_PLANIFIABLE'}]
+        campagne.save()
+        with self.assertRaises(C.TransitionRefusee) as ctx:
+            C.valider_campagne(campagne.pk, user=self.direction)
+        self.assertEqual(ctx.exception.motif, 'VALIDATION_BLOQUANTE')
+        campagne.refresh_from_db()
+        edt.refresh_from_db()
+        self.assertEqual(campagne.statut, CampagneGeneration.Statut.TERMINE_AVEC_ANOMALIES)
+        self.assertNotEqual(edt.statut, 'VALIDE')
 
     def test_publication_refusee_avant_validation(self):
         campagne = self.campagne()
@@ -421,6 +506,19 @@ class HistoriqueEtPerimetresFinsTests(BaseCampagneTest):
         # Le niveau L1 de la fabrique couvre les semestres S1 et S2.
         self.assertEqual(ligne['semestres'], ['S1', 'S2'])
 
+    def test_historique_signale_la_cause_d_un_echec(self):
+        campagne = self.campagne(libelle='Interruption historique')
+        ExecutionCampagne.objects.create(
+            campagne=campagne, numero=1, statut=ExecutionCampagne.Statut.ECHEC,
+            erreur='Exécution interrompue pendant la génération',
+        )
+        client = APIClient()
+        client.force_authenticate(user=self.admin)
+        reponse = client.get('/api/edts/campagnes/historique/')
+        self.assertEqual(reponse.status_code, 200, reponse.data)
+        self.assertEqual(reponse.data['executions'][0]['erreur'],
+                         'Exécution interrompue pendant la génération')
+
     def test_historique_vide_sans_execution(self):
         self.campagne(libelle='Jamais lancée')
         client = APIClient()
@@ -447,7 +545,9 @@ class HistoriqueEtPerimetresFinsTests(BaseCampagneTest):
         self.assertEqual(bilan['semestres_filtres'], [9])
         self.assertTrue(bilan['groupes'])
         self.assertTrue(all(
-            ligne['statut'] == 'NON_PLANIFIE' for ligne in bilan['groupes']))
+            ligne['statut'] == 'HORS_SEMESTRE' for ligne in bilan['groupes']))
+        self.assertEqual(bilan['totaux']['nb_groupes_planifies'], 0)
+        self.assertEqual(bilan['status_global'], 'IMPOSSIBLE')
 
 
 class HistoriqueLimiteTests(BaseCampagneTest):

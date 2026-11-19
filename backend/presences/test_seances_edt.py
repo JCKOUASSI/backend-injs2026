@@ -120,6 +120,21 @@ class SeanceDuJourTests(SeanceEdtFixtureMixin, TestCase):
             semaine_debut=99, semaine_fin=100)
         self.assertEqual(service.seances_du_jour(self.admin, self.date_seance), [])
 
+    def test_pas_de_qr_hors_bornes_de_l_annee_meme_si_la_semaine_couvre_la_date(self):
+        # La semaine 4 chevauche la fin de l'année ; ses jours ultérieurs
+        # ne doivent pas recréer une séance ni ouvrir un QR hors année.
+        self.annee.date_fin = self.date_seance - timedelta(days=1)
+        self.annee.save(update_fields=['date_fin'])
+        self.assertIsNone(service.semaine_academique(self.affectation, self.date_seance))
+        self.assertFalse(service.est_seance_du_jour(self.affectation, self.date_seance))
+        self.assertEqual(service.seances_du_jour(self.admin, self.date_seance), [])
+
+    def test_pas_de_qr_avant_debut_de_l_annee(self):
+        self.annee.date_debut = self.date_seance + timedelta(days=1)
+        self.annee.save(update_fields=['date_debut'])
+        self.assertIsNone(service.semaine_academique(self.affectation, self.date_seance))
+        self.assertEqual(service.seances_du_jour(self.admin, self.date_seance), [])
+
 
 class QrSeanceTests(SeanceEdtFixtureMixin, TestCase):
     def setUp(self):
@@ -131,9 +146,34 @@ class QrSeanceTests(SeanceEdtFixtureMixin, TestCase):
         self.assertEqual(reponse.status_code, 201, reponse.data)
         token = reponse.data['token']
         self.assertTrue(QRToken.objects.filter(token=token, seance_edt=self.affectation).exists())
+        # Le journal métier trace la génération sans conserver le secret QR
+        # réutilisable par un lecteur des journaux.
+        journal = AuditLog.objects.filter(action=AuditLog.Action.FORMATION_QR_GENERATE).latest('id')
+        self.assertNotIn('token', journal.extra)
+        self.assertEqual(journal.extra['canal'], 'EDT_LMD')
         reponse = self.client.get(f'/api/presences/seances-edt/{self.affectation.pk}/qr/')
         self.assertEqual(reponse.status_code, 200)
         self.assertEqual(reponse.data['token'], token)
+
+    def test_qr_refuse_apres_fin_de_l_annee_sans_jeton_ni_journal(self):
+        self.annee.date_fin = self.date_seance - timedelta(days=1)
+        self.annee.save(update_fields=['date_fin'])
+        self.client.force_authenticate(self.enseignant)
+        reponse = self.client.post(f'/api/presences/seances-edt/{self.affectation.pk}/qr/')
+        self.assertEqual(reponse.status_code, 400)
+        self.assertFalse(QRToken.objects.filter(seance_edt=self.affectation).exists())
+        self.assertFalse(AuditLog.objects.filter(
+            action=AuditLog.Action.FORMATION_QR_GENERATE).exists())
+
+    def test_lecture_du_secret_refusee_a_un_encadrant_non_affecte(self):
+        self.client.force_authenticate(self.enseignant)
+        token = self.client.post(
+            f'/api/presences/seances-edt/{self.affectation.pk}/qr/').data['token']
+        autre = User.objects.create_user(username='autre-qr', password='x', role='ENCADRANT')
+        self.client.force_authenticate(autre)
+        reponse = self.client.get(f'/api/presences/seances-edt/{self.affectation.pk}/qr/')
+        self.assertEqual(reponse.status_code, 403)
+        self.assertNotIn(token, str(reponse.data))
 
     def test_un_seul_jeton_actif_par_seance(self):
         self.client.force_authenticate(self.enseignant)
@@ -166,6 +206,8 @@ class ScanSeanceTests(SeanceEdtFixtureMixin, TestCase):
         self.assertEqual(entree.status_code, 201, entree.data)
         self.assertEqual(entree.data['action'], 'ENTREE')
         self.assertEqual(entree.data['statut_assiduite'], Pointage.StatutAssiduite.PRESENT)
+        Pointage.objects.filter(pk=entree.data['pointage_id']).update(
+            timestamp_entree=timezone.now() - timedelta(seconds=6))
         sortie = self._scan(self.auditeurs[0])
         self.assertEqual(sortie.status_code, 200, sortie.data)
         self.assertEqual(sortie.data['action'], 'SORTIE')
@@ -177,6 +219,8 @@ class ScanSeanceTests(SeanceEdtFixtureMixin, TestCase):
 
     def test_double_complet_refuse(self):
         self._scan(self.auditeurs[0])
+        Pointage.objects.filter(seance_edt=self.affectation).update(
+            timestamp_entree=timezone.now() - timedelta(seconds=6))
         self._scan(self.auditeurs[0])
         reponse = self._scan(self.auditeurs[0])
         self.assertEqual(reponse.status_code, 400)
@@ -393,6 +437,8 @@ class GeofenceSeanceEdtTests(SeanceEdtFixtureMixin, TestCase):
         """
         entree = self._scan(self.auditeurs[0], **self._dans_la_zone())
         self.assertEqual(entree.status_code, 201, entree.data)
+        Pointage.objects.filter(pk=entree.data['pointage_id']).update(
+            timestamp_entree=timezone.now() - timedelta(seconds=6))
         sortie = self._scan(self.auditeurs[0], latitude=LAT_INJS_MARCORY + 0.010,
                             longitude=LON_INJS_MARCORY, accuracy_m=10)
         self.assertEqual(sortie.status_code, 200, sortie.data)

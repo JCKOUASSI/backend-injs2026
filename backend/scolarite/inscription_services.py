@@ -5,7 +5,8 @@ candidat admis en étudiant régulièrement inscrit. Entièrement transactionnel
 """
 
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
+from django.db.models.deletion import ProtectedError, RestrictedError
 from django.utils import timezone
 
 from formations.models import Participant
@@ -40,12 +41,16 @@ class InscriptionImpossible(ValidationError):
 
 
 def transitions_possibles(inscription):
+    if inscription.archive:
+        return []
     return sorted(TRANSITIONS.get(inscription.statut, set()))
 
 
 @transaction.atomic
 def appliquer_transition(inscription, nouveau_statut, acteur=None, commentaire=''):
     """Applique une transition de statut d'inscription, horodate la validation."""
+    if inscription.archive:
+        raise InscriptionImpossible('Inscription archivée : réactivez-la avant toute transition.')
     if nouveau_statut == inscription.statut:
         raise InscriptionImpossible(
             f'L’inscription est déjà au statut « {inscription.get_statut_display()} ».'
@@ -100,6 +105,95 @@ def appliquer_transition(inscription, nouveau_statut, acteur=None, commentaire='
     return inscription
 
 
+def _inscription_utilisee(inscription):
+    """Conserve toute inscription liée, même par CASCADE/SET_NULL ou audit.
+
+    Les gestionnaires de base incluent les lignes archivées des modèles liés.
+    Les journaux à clé logique (sans FK) sont vérifiés explicitement.
+    """
+    if (inscription.admission_id or inscription.date_validation or inscription.archive
+            or inscription.statut != S.BROUILLON):
+        return True
+    if JournalScolarite.objects.filter(
+        objet_type='InscriptionAdministrative', objet_id=inscription.pk,
+    ).exists():
+        return True
+    for relation in inscription._meta.related_objects:
+        if relation.many_to_many:
+            through = relation.through
+            champ = next((f for f in through._meta.fields
+                          if getattr(f, 'related_model', None) == type(inscription)), None)
+            if champ is None or through._base_manager.filter(**{champ.name: inscription.pk}).exists():
+                return True
+        elif relation.related_model._base_manager.filter(
+            **{relation.field.name: inscription.pk},
+        ).exists():
+            return True
+    return False
+
+
+@transaction.atomic
+def supprimer_ou_archiver(inscription_id, acteur=None):
+    """Efface uniquement le brouillon isolé ; archive toute inscription utilisée.
+
+    Le statut métier (notamment VALIDEE) ne change jamais sous une action de
+    retrait. Un journal de suppression est écrit AVANT l'effacement du seul
+    brouillon isolé ; il reste consultable après la suppression physique.
+    """
+    inscription = InscriptionAdministrative.objects.select_for_update().get(pk=inscription_id)
+    if not _inscription_utilisee(inscription):
+        try:
+            with transaction.atomic():
+                JournalScolarite.objects.create(
+                    action=JournalScolarite.Action.INSCRIPTION_SUPPRIMEE,
+                    objet_type='InscriptionAdministrative', objet_id=inscription.pk,
+                    objet_libelle=str(inscription)[:255],
+                    acteur=acteur if getattr(acteur, 'pk', None) else None,
+                    acteur_label=(getattr(acteur, 'username', '') or '')[:150],
+                    ancienne_valeur=S.BROUILLON,
+                    commentaire='Suppression définitive d’un brouillon isolé',
+                )
+                inscription.delete()
+            return 'supprime'
+        except (ProtectedError, RestrictedError, IntegrityError):
+            # Nouvelle relation concurrente : le savepoint annule le DELETE
+            # et le journal de suppression ; on conserve le dossier.
+            pass
+    if not inscription.archive:
+        inscription.archive = True
+        inscription.archive_le = timezone.now()
+        inscription.save(update_fields=['archive', 'archive_le', 'updated_at'])
+        journaliser(JournalScolarite.Action.INSCRIPTION_ARCHIVEE, objet=inscription,
+                   acteur=acteur, commentaire='Retrait sans altérer le statut ni les liens')
+    return 'archive'
+
+
+@transaction.atomic
+def archiver_inscription(inscription_id, acteur=None):
+    """Archive explicitement même un brouillon isolé, sans toucher au statut."""
+    inscription = InscriptionAdministrative.objects.select_for_update().get(pk=inscription_id)
+    if inscription.archive:
+        raise InscriptionImpossible('Cette inscription est déjà archivée.')
+    inscription.archive = True
+    inscription.archive_le = timezone.now()
+    inscription.save(update_fields=['archive', 'archive_le', 'updated_at'])
+    journaliser(JournalScolarite.Action.INSCRIPTION_ARCHIVEE, objet=inscription,
+               acteur=acteur, commentaire='Archivage explicite')
+    return inscription
+
+
+@transaction.atomic
+def reactiver_inscription(inscription_id, acteur=None):
+    inscription = InscriptionAdministrative.objects.select_for_update().get(pk=inscription_id)
+    if not inscription.archive:
+        raise InscriptionImpossible('Cette inscription n’est pas archivée.')
+    inscription.archive = False
+    inscription.archive_le = None
+    inscription.save(update_fields=['archive', 'archive_le', 'updated_at'])
+    journaliser(JournalScolarite.Action.INSCRIPTION_REACTIVEE, objet=inscription, acteur=acteur)
+    return inscription
+
+
 def _auto_pedagogie_active():
     """L'enchaînement validation → pédagogie est-il activé par l'établissement ?"""
     from django.conf import settings
@@ -137,6 +231,8 @@ def changer_parcours(inscription, nouveau_parcours, acteur=None, motif=''):
     Trace : JournalScolarite (ancienne/nouvelle valeur) + EvenementScolarite
     de type REORIENTATION. Aucune donnée n'est supprimée.
     """
+    if inscription.archive:
+        raise InscriptionImpossible('Inscription archivée : réactivez-la avant modification.')
     if nouveau_parcours.ref_formation_id != inscription.ref_formation_id:
         raise InscriptionImpossible(
             "Le nouveau parcours n'appartient pas à la formation de l'inscription."
@@ -172,6 +268,8 @@ def radier_inscription(inscription, acteur=None, motif=''):
     La radiation n'efface jamais les données : le dossier, les notes et
     l'historique restent intacts et consultables.
     """
+    if inscription.archive:
+        raise InscriptionImpossible('Inscription archivée : réactivez-la avant radiation.')
     if inscription.statut != S.VALIDEE:
         raise InscriptionImpossible(
             f'Radiation impossible : l’inscription est « {inscription.get_statut_display()} » '

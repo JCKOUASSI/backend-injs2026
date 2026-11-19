@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Téléchargements — Manuel utilisateur officiel INJS 2026</title>
+<link rel="stylesheet" href="../html/assets/css/manuel.css">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: "Inter", "Segoe UI", Roboto, system-ui, sans-serif;
+    background: #EAF3FB; color: #1E293B; line-height: 1.6;
+  }
+  .bandeau {
+    background: linear-gradient(120deg, #0B2545, #073763 60%, #0d3f70);
+    color: #fff; padding: 34px 22px 30px;
+  }
+  .bandeau-inner, .enveloppe { max-width: 980px; margin: 0 auto; }
+  .sur-titre {
+    font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: #9EC8F0; font-weight: 700; margin: 0 0 8px;
+  }
+  .bandeau h1 { font-size: clamp(24px, 4vw, 34px); margin: 0 0 6px; line-height: 1.2; }
+  .bandeau p { margin: 0; color: #C9DEF2; font-size: 15px; }
+  .enveloppe { padding: 26px 22px 60px; }
+  .grille {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(295px, 1fr));
+    gap: 18px; margin-top: 24px;
+  }
+  .carte {
+    background: #fff; border: 1px solid #CBD5E1; border-radius: 12px;
+    padding: 20px; display: flex; flex-direction: column;
+    box-shadow: 0 1px 3px rgba(15,23,42,.06);
+  }
+  .carte h2 { font-size: 17px; margin: 0 0 8px; color: #073763; line-height: 1.3; }
+  .carte p { margin: 0 0 10px; font-size: 14px; color: #475569; flex: 1; }
+  .meta { font-size: 12px; color: #64748B; }
+  .meta code { font-family: ui-monospace, monospace; font-size: 11px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .btn {
+    display: inline-block; padding: 10px 16px; border-radius: 8px;
+    background: #073763; color: #fff; text-decoration: none;
+    font-size: 13.5px; font-weight: 600; border: 1px solid #073763;
+  }
+  .btn:hover { background: #0B2545; }
+  .btn-second { background: #fff; color: #073763; }
+  .btn-second:hover { background: #EAF3FB; }
+  .note {
+    margin-top: 30px; padding: 16px 18px; background: #fff;
+    border-left: 4px solid #4A90D9; border-radius: 0 8px 8px 0;
+    font-size: 13.5px; color: #475569;
+  }
+  .note strong { color: #073763; }
+  footer { max-width: 980px; margin: 0 auto; padding: 0 22px 40px;
+            font-size: 12px; color: #64748B; }
+</style>
+</head>
+<body>
+<header class="bandeau">
+  <div class="bandeau-inner">
+    <p class="sur-titre">Institut National de la Jeunesse et des Sports — Abidjan</p>
+    <h1>Manuel utilisateur officiel — Édition 2026</h1>
+    <p>Tous les fichiers de l'édition, prêts à télécharger.</p>
+  </div>
+</header>
+
+<main class="enveloppe">
+  <div class="grille">
+      <article class="carte">
+        <h2>Manuel complet — archive ZIP</h2>
+        <p>Tout le manuel : PDF, HTML, sources et captures. À conserver comme référence de l'édition 2026.</p>
+        <p class="meta">10,0 Mo · SHA-256 <code>8edb1bf1df025512…</code></p>
+        <div class="actions">
+          <a class="btn" href="MANUEL_UTILISATEUR_OFFICIEL_INJS_2026_COMPLET.zip" download>⤓ Télécharger l'archive complète</a>
+          
+        </div>
+      </article>
+      <article class="carte">
+        <h2>Manuel imprimable — PDF A4</h2>
+        <p>Version paginée, avec sommaire, signets, index des profils et glossaire. Prête à imprimer et à diffuser.</p>
+        <p class="meta">4,3 Mo · SHA-256 <code>f589491311b06ca5…</code></p>
+        <div class="actions">
+          <a class="btn" href="MANUEL_UTILISATEUR_OFFICIEL_INJS_2026.pdf" download>⤓ Télécharger le PDF</a>
+          <a class="btn btn-second" href="MANUEL_UTILISATEUR_OFFICIEL_INJS_2026.pdf" target="_blank" rel="noopener">Ouvrir dans le navigateur</a>
+        </div>
+      </article>
+      <article class="carte">
+        <h2>Manuel interactif — HTML autonome</h2>
+        <p>Version consultable hors ligne : recherche locale, filtres par profil, par module, par type d'opération et par niveau de responsabilité.</p>
+        <p class="meta">3,3 Mo · SHA-256 <code>92818bac7d8272c6…</code></p>
+        <div class="actions">
+          <a class="btn" href="MANUEL_UTILISATEUR_OFFICIEL_INJS_2026_HTML.zip" download>⤓ Télécharger le HTML</a>
+          <a class="btn btn-second" href="../html/index.html" target="_blank" rel="noopener">Ouvrir le manuel en ligne</a>
+        </div>
+      </article>
+      <article class="carte">
+        <h2>Rapport de production</h2>
+        <p>Méthode, sources, vérifications et limites assumées de cette édition.</p>
+        <p class="meta">24 Ko · SHA-256 <code>442d8be0106d5782…</code></p>
+        <div class="actions">
+          <a class="btn" href="RAPPORT_PRODUCTION.md" download>⤓ Télécharger le rapport</a>
+          
+        </div>
+      </article>
+  </div>
+
+  <div class="note">
+    <p><strong>Comment utiliser ces fichiers.</strong> Le PDF est destiné à
+    l'impression et à la diffusion. L'archive HTML se décompresse et s'ouvre
+    avec n'importe quel navigateur, sans connexion Internet : la recherche et
+    les filtres fonctionnent en local.</p>
+    <p><strong>Contenu du manuel interactif.</strong> 19 captures
+    d'écran, recherche locale, filtres combinables et bascule clair / sombre.
+    Rien n'est chargé depuis un serveur extérieur.</p>
+    <p><strong>Édition du 09/11/2026.</strong> Les empreintes SHA-256 affichées
+    permettent de vérifier qu'un fichier téléchargé est intact.</p>
+  </div>
+</main>
+
+<footer>
+  <p>Manuel utilisateur officiel INJS 2026 — document de formation interne.
+  Aucune donnée personnelle n'y figure.</p>
+</footer>
+</body>
+</html>

@@ -27,6 +27,8 @@ Le module ne duplique ni le RBAC (``edts.permissions``) ni les validateurs
 
 from __future__ import annotations
 
+import os
+import socket
 import threading
 import time
 
@@ -45,7 +47,7 @@ TRANSITIONS = {
     S.PRET: {S.EN_COURS},
     S.EN_COURS: {S.TERMINE, S.TERMINE_AVEC_ANOMALIES, S.ECHEC},
     S.TERMINE: {S.VALIDE, S.EN_COURS},          # relance possible
-    S.TERMINE_AVEC_ANOMALIES: {S.EN_COURS, S.VALIDE},
+    S.TERMINE_AVEC_ANOMALIES: {S.EN_COURS},  # relancer après correction, jamais valider un lot partiel
     S.ECHEC: {S.EN_COURS, S.BROUILLON},
     S.VALIDE: {S.PUBLIE},
     S.PUBLIE: set(),                             # figé : on crée une nouvelle campagne
@@ -69,6 +71,15 @@ AGE_MIN_ORPHELINE_S = 120
 def _marquer_execution_active(execution_id):
     with _VERROU_REGISTRE:
         _EXECUTIONS_ACTIVES.add(execution_id)
+    # Identité du fil conservée en DB pour les autres workers Gunicorn.
+    execution = ExecutionCampagne.objects.filter(pk=execution_id).first()
+    if execution:
+        statistiques = execution.statistiques or {}
+        statistiques['worker'] = {
+            'hostname': socket.gethostname(), 'pid': os.getpid(),
+            'tid': threading.get_native_id(),
+        }
+        ExecutionCampagne.objects.filter(pk=execution_id).update(statistiques=statistiques)
 
 
 def _marquer_execution_terminee(execution_id):
@@ -87,6 +98,28 @@ def reparer_execution_orpheline(execution):
         return False
     with _VERROU_REGISTRE:
         if execution.pk in _EXECUTIONS_ACTIVES:
+            return False
+    # Gunicorn exécute plusieurs workers : le registre ci-dessus est local au
+    # worker ayant reçu le GET /statut/. Ne jamais déclarer mort un autre
+    # worker vivant sur le même conteneur après le délai de 120 secondes.
+    proprietaire = (execution.statistiques or {}).get('worker') or {}
+    pid = proprietaire.get('pid')
+    if pid and proprietaire.get('hostname') == socket.gethostname():
+        try:
+            os.kill(int(pid), 0)
+        except (ProcessLookupError, ValueError):
+            pass  # le processus propriétaire n'existe plus
+        except PermissionError:
+            return False  # impossible de prouver la mort : ne pas écraser
+        else:
+            tid = proprietaire.get('tid')
+            if not tid or os.path.exists(f'/proc/{int(pid)}/task/{int(tid)}'):
+                return False
+            # Worker vivant mais fil de génération mort : réparation possible.
+    elif pid:
+        # Une autre instance/containeur peut encore traiter l'exécution.
+        # Sans ordonnanceur partagé, ne la réparer qu'après une longue durée.
+        if execution.demarree_le and (timezone.now() - execution.demarree_le).total_seconds() < 6 * 3600:
             return False
     demarree = execution.demarree_le
     if demarree is not None and (timezone.now() - demarree).total_seconds() < AGE_MIN_ORPHELINE_S:
@@ -136,6 +169,34 @@ def creer_campagne(*, annee_academique_id, libelle, user=None,
         })
 
     semaines = sorted({int(s) for s in (semaines or [1]) if str(s).isdigit()}) or [1]
+    parametres = dict(parametres or {})
+    if parametres.get('mode_generation') == 'automatique':
+        if not parametres.get('calendrier_previsionnel_confirme'):
+            raise TransitionRefusee('CALENDRIER_NON_CONFIRME', {
+                'explication': ('Confirmez le calendrier provisoire de l’année avant '
+                                'toute génération automatique ; il n’est pas officiel.'),
+            })
+        from edts.moteur.calendrier_previsionnel import proposer
+        try:
+            calendrier = proposer(annee)
+        except ValueError as exc:
+            raise TransitionRefusee('CALENDRIER_INVALIDE', {
+                'explication': str(exc),
+            }) from exc
+        if parametres.get('calendrier_dates_confirmees') != [
+                calendrier['date_debut'], calendrier['date_fin']]:
+            raise TransitionRefusee('CALENDRIER_MODIFIE', {
+                'explication': 'Les dates de l’année ont changé : rechargez et confirmez la nouvelle proposition.',
+            })
+        # Les semaines sont recalculées côté serveur à partir de l'année ;
+        # celles d'un client ne peuvent pas falsifier les périodes.
+        semaines = calendrier['impairs'] + calendrier['pairs']
+        parametres['calendrier_previsionnel'] = calendrier
+        parametres['publier_direct'] = False
+        parametres['max_seances_par_groupe_semaine'] = None
+        # L'automatique ne peut pas se dire « toute l'année » avec un
+        # périmètre partiel choisi dans la requête.
+        perimetre = {}
     if CampagneGeneration.objects.filter(annee_academique=annee, libelle=libelle).exists():
         raise TransitionRefusee('CAMPAGNE_DEJA_EXISTANTE', {
             'explication': (
@@ -247,6 +308,7 @@ def demarrer_campagne(campagne_id, *, user=None, asynchrone=True):
             numero=numero,
             statut=ExecutionCampagne.Statut.EN_COURS,
             lancee_par=user if getattr(user, 'is_authenticated', False) else None,
+            statistiques={'worker': {'hostname': socket.gethostname(), 'pid': os.getpid()}},
         )
         campagne.statut = S.EN_COURS
         campagne.demarree_le = timezone.now()
@@ -285,15 +347,29 @@ def executer_campagne(campagne_id, execution_id):
         return None
 
     from django.db import connection
-    from django.test.utils import CaptureQueriesContext
 
     from edts.moteur.annee import generer_annee
 
     parametres = campagne.parametres or {}
     _marquer_execution_active(execution_id)
     debut = time.monotonic()
+    requetes_sql = [0]
+
+    def compter_requete(execute, sql, params, many, context):
+        # CaptureQueriesContext conserve chaque SQL et tous ses paramètres en
+        # mémoire : une génération de 177 groupes peut épuiser le worker.
+        # Le compteur mesure les mêmes appels sans garder les requêtes.
+        requetes_sql[0] += 1
+        return execute(sql, params, many, context)
+
     try:
-        with CaptureQueriesContext(connection) as requetes:
+        if parametres.get('mode_generation') == 'automatique':
+            from edts.moteur.calendrier_previsionnel import proposer
+            if proposer(campagne.annee_academique) != parametres.get('calendrier_previsionnel'):
+                raise TransitionRefusee('CALENDRIER_MODIFIE', {
+                    'explication': 'Dates modifiées depuis la confirmation : créez une nouvelle campagne.',
+                })
+        with connection.execute_wrapper(compter_requete):
             perimetre = campagne.perimetre or {}
             bilan = generer_annee(
                 campagne.annee_academique_id,
@@ -310,6 +386,7 @@ def executer_campagne(campagne_id, execution_id):
                 niveau_ids=perimetre.get('niveaux') or None,
                 groupe_ids=perimetre.get('groupes') or None,
                 semestre_numeros=perimetre.get('semestres') or None,
+                calendrier_previsionnel=parametres.get('calendrier_previsionnel'),
                 # Contraintes et options de la maquette : samedi, pause
                 # méridienne et quota hebdomadaire par groupe.
                 inclure_samedi=bool(parametres.get('inclure_samedi', True)),
@@ -323,7 +400,7 @@ def executer_campagne(campagne_id, execution_id):
         statut_execution, statut_campagne = _statuts_depuis_bilan(bilan, anomalies)
         statistiques = {
             'duree_ms': duree_ms,
-            'requetes_sql': len(requetes.captured_queries),
+            'requetes_sql': requetes_sql[0],
             'effectif_importe': bilan.get('totaux', {}).get('etudiants_couverts'),
             'seances_placees': bilan.get('totaux', {}).get('seances_placees'),
             'seances_non_placees': bilan.get('totaux', {}).get('seances_non_placees'),
@@ -437,8 +514,15 @@ def extraire_anomalies(bilan):
 def _explication_motif(motif):
     return {
         'AUCUN_BESOIN_PLANIFIABLE': (
-            'Aucun besoin horaire calculable pour ce groupe : ni affectation '
-            'pédagogique, ni maquette active ne le couvre.'
+            'Aucun besoin horaire calculable pour ce groupe ; vérifiez les '
+            'affectations et la maquette pédagogique.'
+        ),
+        'AUCUNE_MAQUETTE_ACTIVE': (
+            'Aucune maquette active ne couvre la formation et le niveau de ce groupe.'
+        ),
+        'VOLUMES_HORAIRES_ABSENTS': (
+            'Une maquette active existe, mais ses ECUE ne portent aucun volume '
+            'CM, TD ou TP positif. Renseignez les volumes institutionnels.'
         ),
         'EDT_STATUT_NON_MODIFIABLE': (
             'L’emploi du temps de ce groupe est déjà validé ou publié : il ne '
@@ -461,8 +545,22 @@ def valider_campagne(campagne_id, *, user=None):
     from edts.moteur.validation import valider_emploi_du_temps
 
     campagne = _charger(campagne_id)
-    if campagne.statut not in (S.TERMINE, S.TERMINE_AVEC_ANOMALIES):
-        _exiger(campagne, (S.TERMINE, S.TERMINE_AVEC_ANOMALIES))
+    bilan = campagne.bilan or {}
+    # La validation des seuls EDT persistés ne qualifie pas les groupes du
+    # périmètre restés sans plan : une campagne partielle ne peut jamais
+    # devenir « validée » sur la foi de ses quelques EDT réussis.
+    if (campagne.statut != S.TERMINE
+            or bilan.get('status_global') != 'COMPLETE'
+            or campagne.anomalies):
+        raise TransitionRefusee('VALIDATION_BLOQUANTE', {
+            'explication': (
+                'La campagne n’est pas complète et sans anomalies : corrigez '
+                'les groupes et séances non planifiés puis relancez la génération.'
+            ),
+            'statut_courant': campagne.statut,
+            'status_global': bilan.get('status_global'),
+            'nb_anomalies': len(campagne.anomalies or []),
+        })
 
     edt_ids = [
         ligne['edt_id'] for ligne in (campagne.bilan or {}).get('groupes', [])

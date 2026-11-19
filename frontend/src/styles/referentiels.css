@@ -8,6 +8,23 @@
 
 .ref-page { min-width: 0; }
 
+.ref-actions-lot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .55rem;
+  margin: 0 0 1rem;
+  padding: .7rem;
+  border: 1px solid #d7e4f5;
+  border-radius: .75rem;
+  background: #f5f9ff;
+}
+.ref-actions-lot [role="status"] { margin-right: .25rem; font-weight: 700; }
+.ref-actions-lot button:disabled { opacity: .55; cursor: not-allowed; }
+.ref-col-selection { width: 2.8rem; text-align: center; }
+.ref-col-selection input, .ref-selection-ligne input { width: 1.05rem; height: 1.05rem; cursor: pointer; }
+.ref-selection-ligne { display: inline-flex; align-items: center; margin-right: .5rem; }
+
 /* ── 1. BANDEAU ── */
 .ref-hero-pastilles {
   display: flex;
@@ -823,3 +840,26 @@
 @media (max-width: 720px) {
   .ref-detail-grille { grid-template-columns: 1fr; }
 }
+
+/* Actions d'échange des plaquettes : formats identifiables et utilisables au clavier. */
+.ref-panel-actions { flex-wrap: wrap; justify-content: flex-end; }
+.ref-echanges { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; }
+.ref-import { display: inline-flex; align-items: center; gap: .4rem; cursor: pointer; margin: 0; }
+.ref-import input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.ref-import:focus-within { outline: 3px solid #1d4fbf; outline-offset: 2px; }
+.ref-import[aria-disabled="true"] { opacity: .55; cursor: wait; }
+.ref-export {
+  display: inline-flex; align-items: center; justify-content: center; gap: .35rem;
+  padding: .48rem .72rem; border-radius: .65rem; font-size: .78rem;
+  font-weight: 700; border: 1px solid transparent; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(15, 35, 70, .08);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.ref-export--pdf { color: #97243a; background: #fff0f1; border-color: #f5ccd2; }
+.ref-export--xlsx { color: #11633d; background: #eaf8f0; border-color: #bce4ce; }
+.ref-export--csv { color: #71510a; background: #fff7df; border-color: #efdca1; }
+.ref-export--docx { color: #174a91; background: #eaf2ff; border-color: #c6d9fa; }
+.ref-export:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 14px rgba(15, 35, 70, .16); }
+.ref-export:focus-visible { outline: 3px solid #1d4fbf; outline-offset: 2px; }
+.ref-export:disabled { opacity: .55; cursor: wait; }
+@media (prefers-reduced-motion: reduce) { .ref-export { transition: none; } }

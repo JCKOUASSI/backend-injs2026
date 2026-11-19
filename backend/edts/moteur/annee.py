@@ -34,7 +34,9 @@ from edts.moteur import contraintes as C
 from edts.moteur import generation as G
 from edts.moteur import orchestration as O
 from edts.moteur.besoins import calculate_teaching_needs
-from edts.moteur.besoins_maquette import besoins_depuis_maquette
+from edts.moteur.besoins_maquette import (
+    MOTIF_AUCUNE_MAQUETTE, MOTIF_VOLUMES_ABSENTS, besoins_depuis_maquette,
+)
 
 # ── Statuts globaux (mêmes conventions que l'orchestration coordonnée) ───────
 ANNEE_COMPLETE = 'COMPLETE'
@@ -45,6 +47,126 @@ ANNEE_IMPOSSIBLE = 'IMPOSSIBLE'
 MOTIF_AUCUN_BESOIN = 'AUCUN_BESOIN_PLANIFIABLE'
 MOTIF_EDT_NON_MODIFIABLE = 'EDT_STATUT_NON_MODIFIABLE'
 MOTIF_VALIDATION = 'VALIDATION_BLOQUANTE'
+
+
+def _generer_occurrences_par_semaine(*, annee_id, groupe_id, semaines, besoins,
+                                    occupations, creneaux, budget, politique):
+    """Réutilise le solveur existant sur des occurrences unitaires par semaine.
+
+    Aucun bloc pluri-hebdomadaire n'est inventé : chaque placement porte sa
+    semaine exacte. Les occupations déjà posées ne bloquent que leurs semaines
+    réelles ; une période disjointe peut réutiliser une salle/enseignant.
+    Une année multi-semestre requiert encore un calendrier institutionnel
+    explicite : l'appelant refuse ce cas au lieu d'inventer ses bornes.
+    """
+    from dataclasses import replace
+
+    par_semaine = {s: [] for s in semaines}
+    for besoin in besoins:
+        for i in range(besoin.nb_seances):
+            semaine = semaines[i * len(semaines) // besoin.nb_seances]
+            par_semaine[semaine].append(replace(
+                besoin, nb_seances=1, volume_horaire=besoin.duree_seance_heures,
+            ))
+
+    placements, non_places, warnings = [], [], []
+    reste = budget
+    for semaine, unitaires in par_semaine.items():
+        if not unitaires:
+            continue
+        if reste <= 0:
+            non_places.extend(G.BesoinNonPlace(b, 'Budget de recherche épuisé.')
+                              for b in unitaires)
+            continue
+        occ_semaine = [o for o in occupations if (
+            o.get('semaine_debut', semaine) <= semaine <= o.get('semaine_fin', semaine))]
+        occ_semaine.extend(p for p in placements if p.semaine_debut == semaine)
+        resultat = G.generate_schedule(
+            annee_academique_id=annee_id, groupe_ids=[groupe_id],
+            semaines=[semaine], budget=reste, besoins=unitaires,
+            occupations_initiales=occ_semaine, creneaux=creneaux,
+            contraintes_souples=politique,
+        )
+        placements.extend(resultat.placements)
+        non_places.extend(resultat.non_places)
+        warnings.extend(resultat.warnings)
+        reste = max(0, reste - resultat.metrics['creneaux_explores'])
+
+    attendues = sum(b.nb_seances for b in besoins)
+    placees = len(placements)
+    heures_attendues = round(sum(b.volume_horaire for b in besoins), 2)
+    heures_placees = round(sum(p.besoin.duree_seance_heures for p in placements), 2)
+    statut = (G.GENERATION_OK if placees == attendues else
+              G.GENERATION_PARTIELLE if placements else G.GENERATION_IMPOSSIBLE)
+    return G.GenerationResult(
+        status=statut, placements=placements, non_places=non_places,
+        finalite=(G.FINALITE_COMPLETE if statut == G.GENERATION_OK else
+                  G.FINALITE_PARTIAL if placements else G.FINALITE_IMPOSSIBLE),
+        warnings=warnings, motif_echec=(None if statut == G.GENERATION_OK else
+                                         'OCCURRENCES_NON_PLACEES'),
+        metrics={
+            'seances_attendues': attendues, 'seances_placees': placees,
+            'seances_non_placees': attendues - placees,
+            'heures_attendues': heures_attendues, 'heures_placees': heures_placees,
+            'taux_couverture': round(100 * placees / attendues, 2) if attendues else 0,
+            'creneaux_explores': budget - reste,
+            'budget_configured': budget, 'budget_restant': reste,
+            'nb_placements_effectues': placees,
+            'contraintes_souples': C.resume_souples(placements, politique),
+        },
+    )
+
+
+def _generer_calendrier_provisoire(*, annee_id, groupe_id, besoins, calendrier,
+                                    occupations, creneaux, budget, politique):
+    """Planifie chaque semestre dans sa plage, puis réunit UN plan par EDT.
+
+    Aucun besoin sans semestre connu n'est attribué par supposition. Le
+    résultat n'est complet que si chaque occurrence des deux périodes l'est.
+    """
+    from scolarite.models import Semestre
+
+    numeros = dict(Semestre.objects.values_list('id', 'numero'))
+    placements, non_places, warnings = [], [], []
+    reste = budget
+    for parite, cle in ((1, 'impairs'), (0, 'pairs')):
+        selection = [b for b in besoins if numeros.get(b.semestre_id, 0) % 2 == parite
+                     and numeros.get(b.semestre_id) is not None]
+        if not selection:
+            continue
+        resultat = _generer_occurrences_par_semaine(
+            annee_id=annee_id, groupe_id=groupe_id,
+            semaines=calendrier[cle], besoins=selection,
+            occupations=occupations + [
+                {'enseignant_id': p.enseignant_id, 'groupe_id': p.groupe_id,
+                 'salle_id': p.salle_id, 'jour': p.jour,
+                 'heure_debut': p.heure_debut, 'heure_fin': p.heure_fin,
+                 'semaine_debut': p.semaine_debut, 'semaine_fin': p.semaine_fin}
+                for p in placements
+            ], creneaux=creneaux, budget=reste, politique=politique,
+        )
+        placements.extend(resultat.placements)
+        non_places.extend(resultat.non_places)
+        warnings.extend(resultat.warnings)
+        reste = max(0, reste - resultat.metrics['creneaux_explores'])
+    inconnus = [b for b in besoins if numeros.get(b.semestre_id) is None]
+    non_places.extend(G.BesoinNonPlace(b, 'Semestre non identifiable.') for b in inconnus)
+    attendues = sum(b.nb_seances for b in besoins)
+    placees = len(placements)
+    statut = (G.GENERATION_OK if placees == attendues and not inconnus else
+              G.GENERATION_PARTIELLE if placements else G.GENERATION_IMPOSSIBLE)
+    return G.GenerationResult(
+        status=statut, placements=placements, non_places=non_places,
+        warnings=warnings, motif_echec=None if statut == G.GENERATION_OK else
+        ('SEMESTRE_NON_IDENTIFIABLE' if inconnus else 'OCCURRENCES_NON_PLACEES'),
+        metrics={'seances_attendues': attendues, 'seances_placees': placees,
+                 'seances_non_placees': attendues - placees,
+                 'heures_attendues': round(sum(b.volume_horaire for b in besoins), 2),
+                 'heures_placees': round(sum(p.besoin.duree_seance_heures for p in placements), 2),
+                 'taux_couverture': round(100 * placees / attendues, 2) if attendues else 0,
+                 'creneaux_explores': budget - reste,
+                 'contraintes_souples': C.resume_souples(placements, politique)},
+    )
 
 
 def _edt_du_groupe(annee_academique_id, groupe, semaines, *, creer):
@@ -84,7 +206,8 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
                   inclure_maquette=True, formation_ids=None,
                   niveau_ids=None, groupe_ids=None, semestre_numeros=None,
                   inclure_samedi=True, eviter_pause_meridienne=False,
-                  max_seances_par_groupe_semaine=None):
+                  max_seances_par_groupe_semaine=None,
+                  calendrier_previsionnel=None):
     """Génère les EDT de tous les groupes INJS d'une année académique.
 
     :param annee_academique_id: année cible (obligatoire).
@@ -150,6 +273,7 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
         groupes_filtres = sorted({int(g) for g in groupe_ids})
         groupes_injs = [g for g in groupes_injs if g.pk in set(groupes_filtres)]
     semestres_filtres = None
+    groupes_autres_semestres = set()
 
     if not groupes_injs:
         return {
@@ -205,6 +329,10 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
             'detail': resultat_maquette.detail,
         }
 
+    detail_sources_maquette = detail_maquette.get('detail') or {}
+    sans_volume_ids = set(detail_sources_maquette.get('groupes_sans_volume_ids') or [])
+    sans_maquette_ids = set(detail_sources_maquette.get('groupes_sans_maquette_ids') or [])
+
     # ── 2 bis. Contraintes de périmètre demandées à l'écran ─────────────
     # Semestre ciblé : ne conserver que les besoins de ce semestre. Un
     # besoin sans semestre rattaché ne peut pas prouver qu'il appartient
@@ -216,10 +344,18 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
         numero_par_semestre = dict(
             Semestre.objects.values_list('id', 'numero'))
         for gid, besoins_groupe in list(besoins_par_groupe.items()):
-            besoins_par_groupe[gid] = [
+            filtres = [
                 b for b in besoins_groupe
                 if numero_par_semestre.get(b.semestre_id) in semestres_filtres
             ]
+            if besoins_groupe and not filtres and all(
+                numero_par_semestre.get(b.semestre_id) is not None
+                for b in besoins_groupe
+            ):
+                groupes_autres_semestres.add(gid)
+            besoins_par_groupe[gid] = filtres
+        # Les groupes de l'autre semestre restent dans le bilan pour rendre
+        # visible le périmètre exclu, sans devenir des anomalies du semestre.
 
     # Canevas proposé au moteur : samedi et pause méridienne sont des
     # retraits explicites de créneaux types, pas des préférences.
@@ -250,6 +386,13 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
         effectif = effectifs.get(groupe.pk) or groupe.capacite_max or None
 
         if not besoins:
+            hors_semestre = groupe.pk in groupes_autres_semestres
+            motif_sans_besoin = (
+                MOTIF_VOLUMES_ABSENTS
+                if groupe.pk in sans_volume_ids else
+                MOTIF_AUCUNE_MAQUETTE
+                if groupe.pk in sans_maquette_ids else MOTIF_AUCUN_BESOIN
+            )
             lignes.append({
                 'groupe_id': groupe.pk,
                 'groupe': groupe.nom,
@@ -258,8 +401,8 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
                 'niveau': groupe.niveau.code,
                 'vague': groupe.vague.libelle if groupe.vague else None,
                 'effectif': effectif,
-                'statut': 'NON_PLANIFIE',
-                'motif_echec': MOTIF_AUCUN_BESOIN,
+                'statut': 'HORS_SEMESTRE' if hors_semestre else 'NON_PLANIFIE',
+                'motif_echec': None if hors_semestre else motif_sans_besoin,
                 'seances_attendues': 0,
                 'seances_placees': 0,
                 'seances_non_placees': 0,
@@ -288,16 +431,68 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
                         dataclasses.replace(besoin, nb_seances=restant))
                     restant = 0
 
-        resultat = G.generate_schedule(
-            annee_academique_id=annee_academique_id,
-            groupe_ids=[groupe.pk],
-            semaines=semaines,
-            budget=budget,
-            occupations_initiales=occupations,
-            besoins=besoins_quotas,
-            contraintes_souples=politique_souples,
-            creneaux=creneaux_annee,
-        )
+        semestres_besoins = {b.semestre_id for b in besoins_quotas if b.semestre_id}
+        # Les semaines ne sont attribuables à un semestre que si l'appelant
+        # a explicitement ciblé CE semestre (génération manuelle). L'appel
+        # automatique annuel n'a pas de calendrier S1/S2 en base et ne doit
+        # jamais répartir S1 arbitrairement sur toute l'année.
+        occurrences_unitaires = (len(semaines) > 1
+                                 and semestres_filtres is not None
+                                 and len(semestres_filtres) == 1
+                                 and len(semestres_besoins) == 1
+                                 and not max_seances_par_groupe_semaine)
+        if calendrier_previsionnel:
+            resultat = _generer_calendrier_provisoire(
+                annee_id=annee_academique_id, groupe_id=groupe.pk,
+                besoins=besoins_quotas, calendrier=calendrier_previsionnel,
+                occupations=occupations, creneaux=creneaux_annee,
+                budget=budget, politique=politique_souples,
+            )
+        elif occurrences_unitaires:
+            resultat = _generer_occurrences_par_semaine(
+                annee_id=annee_academique_id, groupe_id=groupe.pk,
+                semaines=semaines, besoins=besoins_quotas,
+                occupations=occupations, creneaux=creneaux_annee,
+                budget=budget, politique=politique_souples,
+            )
+        else:
+            resultat = G.generate_schedule(
+                annee_academique_id=annee_academique_id,
+                groupe_ids=[groupe.pk],
+                semaines=semaines,
+                budget=budget,
+                occupations_initiales=occupations,
+                besoins=besoins_quotas,
+                contraintes_souples=politique_souples,
+                creneaux=creneaux_annee,
+            )
+
+        # Contrôle conservateur des récurrences multi-semaines. Le solveur
+        # historique compte `nb_seances` sur un bloc [min,max] ; la base et le
+        # QR exécutent pourtant UNE séance à chaque semaine de l'intervalle.
+        # Ne jamais enregistrer ni qualifier COMPLETE un tel plan lorsque le
+        # nombre d'occurrences/les heures diffèrent des besoins. Les périmètres
+        # à une seule semaine conservent pour l'instant leur contrat historique.
+        repartition_invalide = False
+        occurrences_reelles = heures_reelles = 0
+        if len(semaines) > 1 and resultat.placements:
+            for place in resultat.placements:
+                duree_minutes = (
+                    (place.heure_fin.hour * 60 + place.heure_fin.minute)
+                    - (place.heure_debut.hour * 60 + place.heure_debut.minute)
+                ) % (24 * 60)
+                semaines_recurrentes = place.semaine_fin - place.semaine_debut + 1
+                occurrences_reelles += semaines_recurrentes
+                heures_reelles += semaines_recurrentes * duree_minutes / 60
+            repartition_invalide = (
+                not (occurrences_unitaires or calendrier_previsionnel)
+                or occurrences_reelles != attendues_avant_quota
+                or abs(heures_reelles - sum(b.volume_horaire for b in besoins)) > 0.01
+                or (not calendrier_previsionnel
+                    and len({b.semestre_id for b in besoins if b.semestre_id}) > 1)
+                or any(s not in semaines for p in resultat.placements
+                       for s in range(p.semaine_debut, p.semaine_fin + 1))
+            )
 
         # Coordination : ces placements pèsent sur les groupes suivants.
         for place in resultat.placements:
@@ -308,6 +503,8 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
                 'jour': place.jour,
                 'heure_debut': place.heure_debut,
                 'heure_fin': place.heure_fin,
+                'semaine_debut': place.semaine_debut,
+                'semaine_fin': place.semaine_fin,
             })
 
         ligne = {
@@ -343,6 +540,15 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
             'edt_cree': False,
         }
 
+        if len(semaines) > 1 and resultat.placements:
+            ligne['occurrences_recurrentes'] = occurrences_reelles
+            ligne['heures_recurrentes'] = round(heures_reelles, 2)
+            ligne['heures_prevues'] = round(sum(b.volume_horaire for b in besoins), 2)
+            ligne['repartition_verifiee'] = not repartition_invalide
+            if repartition_invalide:
+                ligne['statut'] = G.GENERATION_PARTIELLE
+                ligne['motif_echec'] = 'REPARTITION_ANNUELLE_NON_CONFORME'
+
         if attendues_avant_quota > ligne['seances_attendues']:
             # Le quota a écrêté des séances : elles redeviennent des
             # attendues non placées explicites (jamais masquées).
@@ -358,11 +564,41 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
 
         # ── 4. Persistance éventuelle (transaction par EDT) ───────────────────
         if persister and resultat.placements:
-            cible = _edt_du_groupe(annee_academique_id, groupe, semaines, creer=True)
-            persistance = O._persister_si_possible(cible, resultat, remplacer=remplacer)
+            from edts.moteur import validation as V
+
+            if calendrier_previsionnel and resultat.status != G.GENERATION_OK:
+                ligne['persistance'] = {
+                    'effectuee': False, 'motif_refus': resultat.motif_echec or 'ANNEE_INCOMPLETE',
+                }
+                ligne['statut'] = 'NON_PERSISTE'
+                lignes.append(ligne)
+                continue
+
+            if repartition_invalide:
+                ligne['persistance'] = {
+                    'effectuee': False,
+                    'motif_refus': 'REPARTITION_ANNUELLE_NON_CONFORME',
+                }
+                ligne['statut'] = 'NON_PERSISTE'
+                lignes.append(ligne)
+                continue
+
+            # Prévalider AVANT de créer la cible : C10 refuse un volume
+            # incomplet et ne doit pas laisser un BROUILLON vide en base.
+            rapport = V.validate_schedule(resultat.placements, resultat.non_places)
+            if not rapport.valide:
+                persistance = {
+                    'effectuee': False,
+                    'motif_refus': 'VALIDATION_BLOQUANTE',
+                    'violations': [v.as_dict() for v in rapport.violations],
+                    'warnings': rapport.warnings,
+                }
+            else:
+                cible = _edt_du_groupe(annee_academique_id, groupe, semaines, creer=True)
+                persistance = O._persister_si_possible(cible, resultat, remplacer=remplacer)
+                ligne['edt_id'] = cible['edt'].pk if cible['edt'] else None
+                ligne['edt_cree'] = cible['cree']
             ligne['persistance'] = persistance
-            ligne['edt_id'] = cible['edt'].pk if cible['edt'] else None
-            ligne['edt_cree'] = cible['cree']
             if not persistance.get('effectuee'):
                 ligne['statut'] = 'NON_PERSISTE'
                 ligne['motif_echec'] = persistance.get('motif_refus')
@@ -377,10 +613,15 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
     # planifiés / 0 non planifiés affichés alors que 127 groupes n'avaient
     # rien placé et que les anomalies disaient l'inverse).
     planifies = [l for l in lignes if (l['seances_placees'] or 0) > 0]
-    a_planifier = [l for l in lignes if (l['seances_attendues'] or 0) > 0]
+    # Un groupe sans besoin calculable appartient tout de même au périmètre :
+    # l'omettre du dénominateur déclarait l'année COMPLETE à tort si les
+    # autres groupes étaient planifiés.
+    a_planifier = [l for l in lignes if l['statut'] != 'HORS_SEMESTRE']
     complet = [
         l for l in planifies
-        if l['seances_non_placees'] == 0 and l['conflits'] == 0
+        if (l['seances_non_placees'] == 0 and l['conflits'] == 0
+            and l['statut'] == G.GENERATION_OK
+            and (not persister or l.get('persistance', {}).get('effectuee')))
     ]
     if not planifies:
         status_global = ANNEE_IMPOSSIBLE
@@ -399,18 +640,23 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
     motif_global = None
     detail_global = {}
     if status_global == ANNEE_IMPOSSIBLE:
-        if all(l['motif_echec'] == MOTIF_AUCUN_BESOIN for l in lignes):
-            motif_global = MOTIF_AUCUN_BESOIN
+        if lignes and all(l['statut'] == 'HORS_SEMESTRE' for l in lignes):
+            motif_global = 'AUCUN_GROUPE_DANS_SEMESTRE'
+            detail_global = {
+                'explication': 'Les groupes ont des besoins connus uniquement dans d’autres semestres.',
+                'action_recommandee': 'Vérifiez le semestre ciblé et les maquettes des groupes.',
+            }
+        elif all(l['seances_attendues'] == 0 for l in lignes):
+            motifs = {l['motif_echec'] for l in lignes}
+            motif_global = motifs.pop() if len(motifs) == 1 else MOTIF_AUCUN_BESOIN
             detail_global = {
                 'explication': (
-                    'Les groupes existent mais aucun besoin horaire n’a pu être '
-                    'calculé : ni affectation pédagogique, ni maquette active ne '
-                    'couvre ces cohortes. Aucune séance n’est inventée.'
+                    'Les groupes existent mais aucun besoin horaire calculable '
+                    'n’a été trouvé. Chaque groupe porte son motif précis.'
                 ),
                 'action_recommandee': (
-                    'Renseignez les affectations pédagogiques du groupe, ou '
-                    'activez une maquette (UE/ECUE) pour sa formation et son '
-                    'niveau, puis relancez la génération.'
+                    'Vérifiez les affectations ou les maquettes actives et les '
+                    'volumes CM/TD/TP des ECUE ; ne renseignez que les volumes officiels.'
                 ),
             }
         else:
@@ -435,6 +681,7 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
         'niveaux_filtres': niveaux_filtres,
         'groupes_filtres': groupes_filtres,
         'semestres_filtres': semestres_filtres,
+        'calendrier_previsionnel': calendrier_previsionnel,
         'semaines': {'debut': min(semaines), 'fin': max(semaines)},
         'groupes': lignes,
         'totaux': {

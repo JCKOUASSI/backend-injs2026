@@ -24,6 +24,21 @@ import { DashboardSkeleton, DashboardErrorState } from '@/components/dashboard/S
 import SeancesEnDirect from '@/pages/SeancesEnDirect'
 import campusHeroImg from '@/assets/campus-injs.jpg'
 
+// La page reste consultable même si un onglet échoue : afficher le code HTTP
+// et une action utile, sans afficher de traceback ni de chiffres inventés.
+export function messageErreurDashboard(err) {
+  const status = err?.response?.status
+  if (status === 401 || err?.message === 'Session expired') {
+    return 'Votre session a expiré. Reconnectez-vous pour charger les indicateurs (HTTP 401).'
+  }
+  if (status === 403) return 'Vous n’avez pas accès à ces indicateurs (HTTP 403).'
+  if (status === 404) return 'Le service du tableau de bord est indisponible (HTTP 404).'
+  if (status >= 500) return `Le serveur des indicateurs ne répond pas correctement (HTTP ${status}). Réessayez plus tard ou contactez l’administrateur.`
+  if (status >= 400) return err?.response?.data?.detail || `Impossible de charger les indicateurs (HTTP ${status}).`
+  if (err?.message === 'panne réseau') return 'Erreur lors du chargement des indicateurs. Vérifiez votre connexion puis réessayez.'
+  return 'Erreur lors du chargement des indicateurs. Vérifiez votre connexion puis réessayez.'
+}
+
 export default function DashboardEngineView() {
   const { user } = useAuth()
   const role = user?.role || 'DIRECTION'
@@ -78,8 +93,10 @@ export default function DashboardEngineView() {
       const mm = String(now.getMinutes()).padStart(2, '0')
       setLastSyncTime(`${d}/${m}/${y} ${hh}:${mm}`)
     } catch (err) {
-      console.error(`Erreur chargement dashboard ${tab}:`, err)
-      setError(err?.response?.data?.detail || 'Erreur lors du chargement des indicateurs.')
+      // Ne pas journaliser l'objet d'erreur brut : une passerelle peut y
+      // inclure du SQL, des informations de session ou des données internes.
+      console.error(`Erreur chargement dashboard ${tab} (HTTP ${err?.response?.status || 'réseau'})`)
+      setError(messageErreurDashboard(err))
     } finally {
       setLoading(false)
     }

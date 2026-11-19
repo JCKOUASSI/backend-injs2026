@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
@@ -74,6 +74,10 @@ export default function Participants() {
   const [detailNotesFiche, setDetailNotesFiche] = useState(null)
   const [detailPointagesLoading, setDetailPointagesLoading] = useState(false)
   const [exportingListeClasse, setExportingListeClasse] = useState(false)
+  const [importFile, setImportFile] = useState(null)
+  const [importing, setImporting] = useState(false)
+  const [importReport, setImportReport] = useState(null)
+  const importInput = useRef(null)
 
   const debouncedSearch = useDebounce(search)
 
@@ -295,6 +299,32 @@ export default function Participants() {
     return params.toString()
   }
 
+  const handleImport = async () => {
+    if (!importFile) return
+    if (!/\.(csv|xlsx)$/i.test(importFile.name) || importFile.size > 20 * 1024 * 1024) {
+      setImportReport({ error: 'Choisissez un CSV ou XLSX de 20 Mo maximum.' })
+      return
+    }
+    setImporting(true)
+    setImportReport(null)
+    const payload = new FormData()
+    payload.append('type', 'participants')
+    payload.append('strict', 'true')
+    payload.append('file', importFile)
+    try {
+      const { data } = await api.post('/formations/import-excel/', payload)
+      setImportReport({ success: true, message: `Import terminé : ${data.created || 0} créé(s), ${data.updated || 0} mis à jour.` })
+      setImportFile(null)
+      if (importInput.current) importInput.current.value = ''
+      loadParticipants()
+    } catch (err) {
+      const data = err.response?.data
+      setImportReport({ error: data?.error || 'Import refusé.', errors: data?.errors || [] })
+    } finally {
+      setImporting(false)
+    }
+  }
+
   const handleExportListeClasse = async (fmt) => {
     setExportingListeClasse(true)
     try {
@@ -304,7 +334,7 @@ export default function Participants() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = fileName || `liste_classe.${fmt === 'pdf' ? 'pdf' : 'xlsx'}`
+      a.download = fileName || `liste_etudiants.${{ pdf: 'pdf', excel: 'xlsx', word: 'docx', csv: 'csv' }[fmt]}`
       document.body.appendChild(a)
       a.click()
       a.remove()
@@ -504,6 +534,28 @@ export default function Participants() {
                   <i className="bi bi-file-earmark-excel" aria-hidden="true"></i>
                   {groupeFilter ? 'Liste de classe Excel' : 'Listes de classe Excel'}
                 </button>
+                <button type="button" className="cand-btn-fantome etud-btn-export"
+                  disabled={exportingListeClasse} onClick={() => handleExportListeClasse('word')}>
+                  <i className="bi bi-file-earmark-word" aria-hidden="true"></i> Liste des étudiants Word
+                </button>
+                <button type="button" className="cand-btn-fantome etud-btn-export"
+                  disabled={exportingListeClasse} onClick={() => handleExportListeClasse('csv')}>
+                  <i className="bi bi-filetype-csv" aria-hidden="true"></i> Liste des étudiants CSV
+                </button>
+              </>
+            )}
+            {canCreate && (
+              <>
+                <label className="cand-btn-fantome etud-btn-export" htmlFor="import-etudiants-fichier">
+                  <i className="bi bi-upload" aria-hidden="true"></i> Choisir CSV ou Excel
+                </label>
+                <input id="import-etudiants-fichier" ref={importInput} type="file"
+                  className="visually-hidden" accept=".csv,.xlsx" aria-label="Fichier étudiants à importer"
+                  onChange={(e) => { setImportFile(e.target.files?.[0] || null); setImportReport(null) }} />
+                <button type="button" className="cand-btn-fantome etud-btn-export"
+                  disabled={!importFile || importing} onClick={handleImport}>
+                  {importing ? 'Import en cours…' : 'Importer la liste'}
+                </button>
               </>
             )}
             {(filtresActifs > 0 || search) && (
@@ -513,6 +565,18 @@ export default function Participants() {
               </button>
             )}
           </div>
+          {canCreate && (
+            <div className="mt-2 small">
+              {importFile && <span>Fichier sélectionné : {importFile.name}. </span>}
+              Le CSV exporté ici est réimportable. L’import CSV/XLSX met à jour les matricules existants ; toute ligne sans matricule ou en erreur annule le lot. L’Excel « liste de classe » est un document de lecture : pour importer un XLSX, utilisez un onglet Participants avec les colonnes matricule, nom et prenom.
+              {importReport && (
+                <div role="alert" className={importReport.error ? 'text-danger' : 'text-success'}>
+                  {importReport.error || importReport.message}
+                  {importReport.errors?.length > 0 && <ul>{importReport.errors.map((msg, i) => <li key={i}>{msg}</li>)}</ul>}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 

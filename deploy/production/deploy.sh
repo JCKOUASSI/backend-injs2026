@@ -96,6 +96,34 @@ compose() {
   docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
 }
 
+# Transfert direct depuis un Mac : images chargées et vérifiées sur le VPS,
+# sans registre ni GitHub Actions. Opt-in explicite ; la valeur inconnue échoue.
+# Le tag n'est qu'un identifiant de provenance du paquet source, pas une
+# preuve cryptographique : vérifier aussi le SHA-256 de l'archive transférée.
+verifier_images_locales() {
+  local tag_be="$1" tag_fe="$2" ref plateforme identifiant
+  valider_tag "$tag_be"
+  valider_tag "$tag_fe"
+  for ref in "${INJS_BACKEND_IMAGE:-jckouassi/injs-be}:$tag_be" \
+             "${INJS_FRONTEND_IMAGE:-jckouassi/injs-fe}:$tag_fe" \
+             'nginx:1.27-alpine'; do
+    plateforme="$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "$ref" 2>/dev/null)" \
+      || die "Image locale absente : $ref. Aucun tirage implicite autorisé en mode local."
+    [ "$plateforme" = 'linux/amd64' ] \
+      || die "Plateforme incorrecte pour $ref : $plateforme (attendu linux/amd64)."
+    identifiant="$(docker image inspect --format '{{.Id}}' "$ref")"
+    log "Image locale vérifiée : $ref ($identifiant, $plateforme)."
+  done
+}
+
+preparer_images() {
+  case "${DEPLOY_IMAGES_LOCALES:-non}" in
+    non) compose pull ;;
+    oui) verifier_images_locales "${INJS_BACKEND_TAG:-}" "${INJS_FRONTEND_TAG:-}" ;;
+    *) die "DEPLOY_IMAGES_LOCALES invalide : seule la valeur oui ou non est acceptée." ;;
+  esac
+}
+
 charger_env() {
   [ -f "$ENV_FILE" ] || die "Fichier d'environnement introuvable : $ENV_FILE (copier .env.example et le renseigner hors Git)."
   set -a
@@ -497,8 +525,8 @@ cmd_plan() {
   log "Plan calculé pour les tags ACTUELLEMENT référencés dans $ENV_FILE (backend=${INJS_BACKEND_TAG:-?}, frontend=${INJS_FRONTEND_TAG:-?}) : pour analyser une cible, renseigner d'abord ces tags dans le .env serveur."
   identifier_postgres
   local plan="$LOG_DIR/plan-$HORODATAGE.txt"
-  log "Récupération des images (le plan exige l'image du nouveau code)…"
-  compose pull
+  log "Préparation des images (le plan exige l'image du nouveau code)…"
+  preparer_images
   log "Calcul du plan de migrations (aucune application)…"
   compose run --rm backend python manage.py migrate --plan | tee "$plan"
   analyser_plan "$plan"
@@ -523,12 +551,18 @@ cmd_deployer() {
   sed -i "s/^INJS_FRONTEND_TAG=.*/INJS_FRONTEND_TAG=$tag/" "$ENV_FILE"
   grep -q "^INJS_BACKEND_TAG=$tag" "$ENV_FILE" || die "INJS_BACKEND_TAG non mis à jour dans $ENV_FILE."
   grep -q "^INJS_FRONTEND_TAG=$tag" "$ENV_FILE" || die "INJS_FRONTEND_TAG non mis à jour dans $ENV_FILE."
+  # docker compose donne priorité aux variables exportées sur --env-file.
+  # charger_env a exporté les ANCIENS tags : synchroniser les deux sources
+  # avant pull/run/up, sinon l'ancien code serait déployé sous un nouveau tag.
+  INJS_BACKEND_TAG="$tag"
+  INJS_FRONTEND_TAG="$tag"
+  export INJS_BACKEND_TAG INJS_FRONTEND_TAG
 
   # 2. Sauvegarde préalable vérifiée + comptages de référence.
   cmd_sauvegarde
 
-  # 3. Récupération des images officielles.
-  compose pull
+  # 3. Récupération par registre ou vérification des images transférées.
+  preparer_images
 
   # 4. Porte de contrôle des migrations, puis application explicite.
   local plan="$LOG_DIR/plan-$HORODATAGE.txt"
@@ -597,6 +631,11 @@ cmd_rollback() {
   fi
   [ -f "$COMPOSE_FILE" ] || die "Fichier compose introuvable : $COMPOSE_FILE. Rollback refusé."
   log "Configuration précédente entièrement validée (tags, variables, secrets, port, compose) : $dernier_bak (backend=$tag_be, frontend=$tag_fe)"
+  # En mode local, refuser un rollback AVANT l'arrêt si l'ancienne image
+  # n'est plus disponible. L'ancienne stack historique reste hors de portée.
+  if [ "${DEPLOY_IMAGES_LOCALES:-non}" = 'oui' ]; then
+    verifier_images_locales "$tag_be" "$tag_fe"
+  fi
 
   # 2. Sauvegarder l'état courant, puis restaurer et revérifier.
   compose down
@@ -611,7 +650,7 @@ cmd_rollback() {
   log "Anciennes images disponibles localement :"
   docker images --format '  {{.Repository}}:{{.Tag}} ({{.ID}})' \
     | grep -E 'injs-be|injs-fe' || log "  (aucune listée — récupération par pull)"
-  compose pull
+  preparer_images
   compose up -d
   compose ps
 

@@ -36,6 +36,9 @@ Usage
 -----
     python manage.py importer_referentiels_injs --dry-run
     python manage.py importer_referentiels_injs
+    # Sur une base dont le calendrier est déjà piloté par la scolarité :
+    python manage.py importer_referentiels_injs --preserver-calendrier --dry-run
+    python manage.py importer_referentiels_injs --preserver-calendrier
 """
 
 import json
@@ -117,6 +120,11 @@ class Command(BaseCommand):
         parser.add_argument(
             '--sans-cycles', action='store_true',
             help="N'exige pas la création préalable des 8 cycles LMD documentés.",
+        )
+        parser.add_argument(
+            '--preserver-calendrier', action='store_true',
+            help="Ne crée ni ne modifie les années académiques (dates, année courante, clôture). "
+                 "À privilégier lorsque la scolarité a déjà arrêté son calendrier.",
         )
 
     # ── Utilitaires ────────────────────────────────────────────────────────
@@ -564,7 +572,7 @@ class Command(BaseCommand):
         return bilan
 
     # ── Bloc 6 : nomenclatures administratives et années ─────────────────
-    def _importer_administratif(self):
+    def _importer_administratif(self, preserver_calendrier=False):
         """Modes de paiement, frais, documents, notifications, années.
 
         Même discipline que le bloc pédagogique : chaque valeur porte la
@@ -601,6 +609,14 @@ class Command(BaseCommand):
                 cree += c
                 maj += not c
             bilan[cle_bloc] = self._compter(cree, maj)
+
+        if preserver_calendrier:
+            # Une année déjà pilotée par la scolarité peut avoir des dates
+            # distinctes du calendrier documentaire. Ne pas réécrire ses
+            # dates, ses statuts ou sa provenance, ni ajouter des années
+            # planifiées à son insu (notamment sur une base de production).
+            bilan['annees_academiques'] = 'préservées (aucune lecture/écriture du calendrier)'
+            return bilan
 
         # Années académiques : l'année courante est traitée la première
         # (sur une base neuve, c'est la plus ancienne ligne de la table,
@@ -665,7 +681,9 @@ class Command(BaseCommand):
             bilan_pedagogiques = self._importer_pedagogiques()
             bilan_lieux = {} if options['sans_lieux'] else self._importer_lieux()
             bilan_volumes = self._importer_volumes()
-            bilan_administratif = self._importer_administratif()
+            bilan_administratif = self._importer_administratif(
+                preserver_calendrier=options['preserver_calendrier'],
+            )
 
             if dry_run:
                 transaction.set_rollback(True)

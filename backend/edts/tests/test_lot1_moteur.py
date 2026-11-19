@@ -200,8 +200,8 @@ class TestFinalite(TestCase):
     def test_finalite_budget_exhauste_quand_budget_epuise(self):
         """Scenario 4 : budget de recherche epuise -> BUDGET_EXHAUSTED / PARTIELLE.
 
-        Le solveur est « tout ou rien » : avec 2 besoins et un budget de 1,
-        il explore le premier, epuise le budget, et renvoie None.
+        Avec 2 besoins et un budget de 1, le premier placement exploité
+        reste disponible comme plan partiel après épuisement du budget.
         """
         self.f.creer_affectation(volume=2, groupe=self.groupe)
         self.f.creer_affectation(volume=2, groupe=self.groupe2)
@@ -210,8 +210,8 @@ class TestFinalite(TestCase):
         self.assertEqual(r.finalite, G.FINALITE_BUDGET_EXHAUSTED)
         self.assertEqual(r.metrics['finalite'], G.FINALITE_BUDGET_EXHAUSTED)
         self.assertEqual(r.metrics['budget_configured'], 1)
-        self.assertEqual(len(r.placements), 0)
-        self.assertTrue(r.non_places)
+        self.assertEqual(len(r.placements), 1)
+        self.assertEqual(len(r.non_places), 1)
 
     def test_finalite_impossible_quand_blocage_démontré(self):
         """Scenario 5 : aucun placement possible, budget non epuise -> IMPOSSIBLE."""

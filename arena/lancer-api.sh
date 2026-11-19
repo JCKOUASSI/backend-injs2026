@@ -23,4 +23,11 @@ export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
 export DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-arena.settings_sandbox}"
 
 cd "$ROOT/backend"
+# Une base SQLite neuve peut laisser /api/ répondre 200 alors que /api/auth/login/
+# échoue en 500 (tables absentes). En aperçu seulement, préparer le schéma AVANT
+# de rendre le serveur accessible. migrate est idempotent et crée aussi le
+# compte de démonstration via le signal post_migrate.
+if [ "$DJANGO_SETTINGS_MODULE" = "arena.settings_sandbox" ]; then
+  "$VENV/bin/python" manage.py migrate --noinput
+fi
 exec "$VENV/bin/python" manage.py runserver 0.0.0.0:$PORT

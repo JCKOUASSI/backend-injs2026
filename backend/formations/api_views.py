@@ -3220,6 +3220,10 @@ def api_import_excel(request):
             status=403,
         )
 
+    if import_type == 'participants' and request.data.get('strict') == 'true':
+        from .registre_import import importer_registre
+        return importer_registre(request, uploaded)
+
     from .management.commands.import_excel import Command as ImportCommand
 
     cmd = ImportCommand()
@@ -3419,7 +3423,7 @@ def _ref_formation_nettoye(data, obj=None):
 @permission_classes([IsAuthenticated, IsDFRC])
 def ref_formation_list(request):
     if request.method == 'GET':
-        data = [_ref_formation_payload(o) for o in RefFormation.objects.all()]
+        data = [_ref_formation_payload(o) for o in RefFormation.objects.filter(archive=False)]
         return Response(data)
     payload, err = _ref_formation_nettoye(request.data)
     if err:

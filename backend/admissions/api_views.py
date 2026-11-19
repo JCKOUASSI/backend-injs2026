@@ -512,7 +512,12 @@ def piece_deposer(request, piece_id):
         for champ in ('numero_document', 'date_delivrance', 'date_expiration')
         if request.data.get(champ)
     }
-    services.deposer_piece(piece, fichier=request.FILES.get('fichier'), acteur=request.user, **champs)
+    if not request.FILES.get('fichier'):
+        return Response({'fichier': ['Sélectionnez un fichier à déposer.']}, status=400)
+    try:
+        services.deposer_piece(piece, fichier=request.FILES['fichier'], acteur=request.user, **champs)
+    except ValidationError as erreur:
+        return Response(getattr(erreur, 'message_dict', {'fichier': erreur.messages}), status=400)
     return Response(_serialize_piece(piece))
 
 
@@ -524,8 +529,10 @@ def piece_verifier(request, piece_id):
     if piece is None:
         return Response({'error': 'Introuvable'}, status=404)
     statut = request.data.get('statut')
-    if statut not in PieceCandidature.Statut.values:
-        return Response({'statut': ['Statut inconnu.']}, status=400)
+    if statut not in (PieceCandidature.Statut.VALIDEE, PieceCandidature.Statut.REFUSEE):
+        return Response({'statut': ['Seules la validation et le refus sont autorisés.']}, status=400)
+    if not piece.fichier:
+        return Response({'fichier': ['Déposez un fichier avant de statuer sur cette pièce.']}, status=400)
     services.verifier_piece(
         piece, statut, acteur=request.user, commentaire=request.data.get('commentaire', ''),
     )

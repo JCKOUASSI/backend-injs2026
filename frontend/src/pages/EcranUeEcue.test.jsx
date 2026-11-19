@@ -543,9 +543,9 @@ describe('visibilité sur maquette gelée (demande 03/11 — retour utilisateur)
     expect(screen.getByTestId('cloner-maquette-barre')).toBeInTheDocument()
 
     fireEvent.click(screen.getByTestId('cloner-maquette-barre'))
-    // Après clonage : cases actives, sélection et barre de masse utilisables.
-    expect(await screen.findByTestId('nouvelle-ue')).toBeInTheDocument()
-    expect(screen.getByTestId('cocher-ue-10').disabled).toBe(false)
+    // Après clonage, les UE se rechargent de façon asynchrone : le bouton
+    // « Nouvelle UE » est déjà présent avant le retour de la liste.
+    await waitFor(() => expect(screen.getByTestId('cocher-ue-10')).toBeEnabled())
     fireEvent.click(screen.getByTestId('cocher-ue-10'))
     expect(await screen.findByTestId('barre-actions-ue')).toBeInTheDocument()
   })
@@ -571,8 +571,7 @@ describe('bascule automatique au choix d’une maquette gelée (demande 03/11)',
     // Bascule automatique : on reste sur la copie éditable, cases actives.
     expect(screen.getByTestId('choix-maquette').value).toBe('3')
     expect(await screen.findByText(/copie brouillon/)).toBeInTheDocument()
-    expect(screen.getByTestId('nouvelle-ue')).toBeInTheDocument()
-    expect(screen.getByTestId('cocher-ue-10').disabled).toBe(false)
+    await waitFor(() => expect(screen.getByTestId('cocher-ue-10')).toBeEnabled())
     fireEvent.click(screen.getByTestId('cocher-ue-10'))
     expect(await screen.findByTestId('barre-actions-ue')).toBeInTheDocument()
   })

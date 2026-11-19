@@ -1,6 +1,7 @@
 """API des dossiers étudiants et des inscriptions administratives."""
 
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Prefetch
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -119,6 +120,8 @@ def _serialize_inscription(inscription, detail=False):
         'type_inscription_libelle': inscription.get_type_inscription_display(),
         'statut': inscription.statut,
         'statut_libelle': inscription.get_statut_display(),
+        'archive': inscription.archive,
+        'archive_le': inscription.archive_le,
         'date_inscription': inscription.date_inscription,
         'date_validation': inscription.date_validation,
         'admission_id': inscription.admission_id,
@@ -316,6 +319,8 @@ class InscriptionAdminReponseSerializer(serializers.Serializer):
     type_inscription_libelle = serializers.CharField()
     statut = serializers.CharField()
     statut_libelle = serializers.CharField()
+    archive = serializers.BooleanField()
+    archive_le = serializers.DateTimeField(allow_null=True)
     date_inscription = serializers.DateField()
     date_validation = serializers.DateTimeField(allow_null=True)
     admission_id = serializers.IntegerField(allow_null=True)
@@ -495,6 +500,12 @@ def inscription_list(request):
     if request.method == 'POST':
         return _inscription_creer(request)
     queryset = _inscription_queryset()
+    # Les archives restent accessibles à la demande, sans se mêler aux
+    # dossiers actifs de la page de gestion.
+    if request.query_params.get('archive') == '1':
+        queryset = queryset.filter(archive=True)
+    elif request.query_params.get('archives') != '1':
+        queryset = queryset.filter(archive=False)
     for champ in (
         'statut', 'type_inscription', 'annee_academique_id',
         'ref_formation_id', 'niveau_id', 'etudiant_id', 'vague_id',
@@ -571,6 +582,8 @@ def inscription_detail(request, pk):
     if inscription is None:
         return Response({'error': 'Introuvable'}, status=404)
     if request.method == 'PATCH':
+        if inscription.archive:
+            return Response({'error': 'Inscription archivée : réactivez-la avant modification.'}, status=409)
         # Le statut ne se modifie que par l'endpoint de transition.
         # Lot L1/L3 : un changement de parcours passe par le service dédié
         # (historisation JournalScolarite + EvenementScolarite REORIENTATION).
@@ -598,13 +611,28 @@ def inscription_detail(request, pk):
             return Response(erreur.message_dict, status=400)
         inscription.save()
     if request.method == 'DELETE':
-        if inscription.statut == InscriptionAdministrative.Statut.VALIDEE:
-            return Response(
-                {'error': 'Une inscription validée ne peut pas être supprimée.'},
-                status=409,
-            )
-        inscription.delete()
-        return Response(status=204)
+        try:
+            resultat = inscription_services.supprimer_ou_archiver(pk, acteur=request.user)
+        except InscriptionAdministrative.DoesNotExist:
+            return Response({'error': 'Introuvable'}, status=404)
+        if resultat == 'supprime':
+            return Response(status=204)
+        return Response({'detail': 'Inscription utilisée : archivée sans effacer ses liens.',
+                         'archive': True})
+    return Response(_serialize_inscription(inscription, detail=True))
+
+
+@extend_schema(request=None, responses={200: InscriptionAdminDetailSerializer, 404: ErreurInscriptionSerializer,
+                                        409: ErreurInscriptionSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def inscription_reactiver(request, pk):
+    try:
+        inscription = inscription_services.reactiver_inscription(pk, acteur=request.user)
+    except InscriptionAdministrative.DoesNotExist:
+        return Response({'error': 'Introuvable'}, status=404)
+    except inscription_services.InscriptionImpossible as erreur:
+        return Response({'error': erreur.messages[0]}, status=409)
     return Response(_serialize_inscription(inscription, detail=True))
 
 
@@ -626,6 +654,124 @@ def inscription_transition(request, pk):
     except inscription_services.InscriptionImpossible as erreur:
         return Response({'error': erreur.messages[0]}, status=409)
     return Response(_serialize_inscription(inscription, detail=True))
+
+
+class ValiderInscriptionsLotSerializer(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), min_length=1, max_length=200,
+    )
+
+    def validate_ids(self, ids):
+        if len(ids) != len(set(ids)):
+            raise serializers.ValidationError('Une inscription ne peut être cochée deux fois.')
+        return ids
+
+
+@extend_schema(request=ValiderInscriptionsLotSerializer, responses={200: OpenApiTypes.OBJECT,
+                                                        400: OpenApiTypes.OBJECT, 409: ErreurInscriptionSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def inscriptions_valider_lot(request):
+    """Valide les inscriptions cochées, par transitions métier et tout-ou-rien.
+
+    Aucun changement direct de statut : les validations, journaux, dates et
+    effets métier du service individuel s'appliquent à chaque inscription.
+    Verrouille par ordre de PK pour réduire le risque de deadlock.
+    """
+    saisie = ValiderInscriptionsLotSerializer(data=request.data)
+    saisie.is_valid(raise_exception=True)
+    ids = saisie.validated_data['ids']
+    S = InscriptionAdministrative.Statut
+    chemins = {
+        S.BROUILLON: (S.EN_ATTENTE, S.A_VALIDER, S.VALIDEE),
+        S.EN_ATTENTE: (S.A_VALIDER, S.VALIDEE),
+        S.A_VALIDER: (S.VALIDEE,),
+    }
+    try:
+        with transaction.atomic():
+            objets = list(InscriptionAdministrative.objects.select_for_update()
+                          .filter(pk__in=ids).order_by('pk'))
+            if len(objets) != len(ids):
+                raise inscription_services.InscriptionImpossible(
+                    'Sélection périmée : une ou plusieurs inscriptions sont introuvables.'
+                )
+            for inscription in objets:
+                if inscription.statut not in chemins:
+                    raise inscription_services.InscriptionImpossible(
+                        f'Inscription {inscription.pk} : le statut ne permet pas la validation.'
+                    )
+            for inscription in objets:
+                for statut in chemins[inscription.statut]:
+                    inscription_services.appliquer_transition(
+                        inscription, statut, acteur=request.user,
+                        commentaire='Validation groupée confirmée',
+                    )
+    except (inscription_services.InscriptionImpossible, ValidationError, IntegrityError) as erreur:
+        message = erreur.messages[0] if hasattr(erreur, 'messages') else str(erreur)
+        return Response({'error': message}, status=409)
+    return Response({'validees': len(objets), 'ids': ids})
+
+
+class ActionInscriptionsLotSerializer(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), min_length=1, max_length=200,
+    )
+    action = serializers.ChoiceField(choices=('retirer', 'archiver', 'reactiver'))
+
+    def validate_ids(self, ids):
+        if len(ids) != len(set(ids)):
+            raise serializers.ValidationError('Une inscription ne peut être cochée deux fois.')
+        return ids
+
+
+@extend_schema(request=ActionInscriptionsLotSerializer, responses={200: OpenApiTypes.OBJECT,
+                                                        400: OpenApiTypes.OBJECT, 409: ErreurInscriptionSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def inscriptions_action_lot(request):
+    """Retire, archive ou réactive les lignes cochées, en transaction unique.
+
+    Retirer suit strictement la même règle que DELETE individuel : une ligne
+    utilisée est archivée, jamais supprimée par cascade. Tous les identifiants
+    sont contrôlés avant la première mutation ; tout échec annule aussi les
+    journaux et suppressions déjà exécutés dans ce lot.
+    """
+    saisie = ActionInscriptionsLotSerializer(data=request.data)
+    saisie.is_valid(raise_exception=True)
+    ids = saisie.validated_data['ids']
+    action = saisie.validated_data['action']
+    try:
+        with transaction.atomic():
+            objets = list(InscriptionAdministrative.objects.select_for_update()
+                          .filter(pk__in=ids).order_by('pk'))
+            if len(objets) != len(ids):
+                raise inscription_services.InscriptionImpossible(
+                    'Sélection périmée : une ou plusieurs inscriptions sont introuvables.'
+                )
+            for objet in objets:
+                if action == 'reactiver' and not objet.archive:
+                    raise inscription_services.InscriptionImpossible(
+                        f'Inscription {objet.pk} : non archivée.'
+                    )
+                if action != 'reactiver' and objet.archive:
+                    raise inscription_services.InscriptionImpossible(
+                        f'Inscription {objet.pk} : déjà archivée.'
+                    )
+            resultats = []
+            for objet in objets:
+                if action == 'retirer':
+                    resultat = inscription_services.supprimer_ou_archiver(objet.pk, acteur=request.user)
+                elif action == 'archiver':
+                    inscription_services.archiver_inscription(objet.pk, acteur=request.user)
+                    resultat = 'archive'
+                else:
+                    inscription_services.reactiver_inscription(objet.pk, acteur=request.user)
+                    resultat = 'reactive'
+                resultats.append({'id': objet.pk, 'resultat': resultat})
+    except (inscription_services.InscriptionImpossible, IntegrityError) as erreur:
+        message = erreur.messages[0] if hasattr(erreur, 'messages') else str(erreur)
+        return Response({'error': message}, status=409)
+    return Response({'resultats': resultats})
 
 
 @extend_schema(request=OpenApiTypes.OBJECT, responses={200: InscriptionAdminDetailSerializer, 201: InscriptionAdminDetailSerializer, 400: OpenApiTypes.OBJECT, 409: ErreurInscriptionSerializer})
@@ -667,6 +813,8 @@ def inscrire_depuis_admission(request):
 @permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
 def inscription_stats(request):
     """Effectifs inscrits, par statut puis par niveau, formation, vague et catégorie."""
+    # Les bilans historiques conservent les inscriptions archivées : archiver
+    # n'annule pas une validation et ne doit pas réécrire les effectifs passés.
     queryset = InscriptionAdministrative.objects.all()
     if 'annee_academique_id' in request.query_params:
         queryset = queryset.filter(annee_academique_id=request.query_params['annee_academique_id'])

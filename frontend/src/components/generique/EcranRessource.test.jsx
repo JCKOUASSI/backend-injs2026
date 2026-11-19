@@ -149,12 +149,44 @@ describe('rendu de la liste', () => {
   })
 })
 
+describe('sélection des lignes de la page', () => {
+  it('permet de cocher plusieurs lignes, tout sélectionner et tout désélectionner sans action serveur', async () => {
+    monter()
+    await screen.findByText('DOS-001')
+    const tout = screen.getByRole('checkbox', { name: 'Tout sélectionner (page affichée)' })
+    const premiere = screen.getByRole('checkbox', { name: 'Sélectionner la ligne DOS-001' })
+    const seconde = screen.getByRole('checkbox', { name: 'Sélectionner la ligne DOS-002' })
+    fireEvent.click(premiere)
+    expect(premiere.checked).toBe(true)
+    expect(seconde.checked).toBe(false)
+    fireEvent.click(tout)
+    expect(premiere.checked).toBe(true)
+    expect(seconde.checked).toBe(true)
+    fireEvent.click(tout)
+    expect(premiere.checked).toBe(false)
+    expect(seconde.checked).toBe(false)
+    expect(apiController.api.post).not.toHaveBeenCalled()
+    expect(apiController.api.delete).not.toHaveBeenCalled()
+  })
+
+  it('efface la sélection quand la page change, même si les identifiants se répètent', async () => {
+    reponseLignes = { count: 100, results: LIGNES.results }
+    monter()
+    await screen.findByText('DOS-001')
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Tout sélectionner (page affichée)' }))
+    expect(screen.getByRole('checkbox', { name: 'Sélectionner la ligne DOS-001' }).checked).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Suivant' }))
+    await waitFor(() => expect(derniersParams()).toMatchObject({ page: 2 }))
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Sélectionner la ligne DOS-001' }).checked).toBe(false))
+  })
+})
+
 describe('colonnes automatiques', () => {
   it('déduit les colonnes des champs prioritaires puis du premier enregistrement', async () => {
     monter({ id: 'test_auto', titre: 'Auto', endpoint: '/test/lignes/', priorite: ['numero', 'statut'] })
     expect(await screen.findByText('DOS-001')).toBeTruthy()
     const entetes = [...document.querySelectorAll('thead th')].map((th) => th.textContent)
-    expect(entetes.slice(0, 2)).toEqual(['Numéro', 'Statut'])
+    expect(entetes.slice(1, 3)).toEqual(['Numéro', 'Statut'])
   })
 
   it('n\'affiche pas les champs techniques', async () => {
@@ -402,6 +434,47 @@ describe('panneau de détail', () => {
       expect(apiController.findCall('get', '/test/lignes/1/pieces/')).toBeTruthy()
     })
     expect(await screen.findByText('CNI')).toBeTruthy()
+  })
+})
+
+describe('contrôle des dossiers de scolarité', () => {
+  it('ouvre explicitement le dossier, dépose une pièce puis permet de la valider', async () => {
+    const dossier = { ...LIGNES.results[0], candidat: 'Ama Kouassi', pieces_validees: 0, pieces_obligatoires: 1 }
+    reponseLignes = { count: 1, results: [dossier] }
+    apiController.setRoute('/admissions/candidatures/', () => reponseLignes)
+    const pieces = '/admissions/candidatures/1/pieces/'
+    let statutPiece = 'MANQUANTE'
+    apiController.setRoute(pieces, () => ({
+      pieces: [{ id: 9, type_piece: 'Diplôme', obligatoire: true, statut: statutPiece, a_fichier: statutPiece !== 'MANQUANTE' }],
+      pieces_validees: statutPiece === 'VALIDEE' ? 1 : 0,
+      pieces_obligatoires: 1, taux_completude: statutPiece === 'VALIDEE' ? 100 : 0,
+      dossier_complet: statutPiece === 'VALIDEE',
+    }))
+    apiController.setRoute('/admissions/pieces/9/deposer/', () => { statutPiece = 'EN_VERIFICATION'; return {} })
+    apiController.setRoute('/admissions/pieces/9/verifier/', () => { statutPiece = 'VALIDEE'; return {} })
+    monter(ECRANS.controle_dossiers)
+    await screen.findByText('DOS-001')
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Sélectionner la ligne DOS-001' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Contrôler le dossier : DOS-001' }))
+    expect(await screen.findByRole('dialog')).toBeTruthy()
+    expect(await screen.findByText('Diplôme')).toBeTruthy()
+    expect(apiController.findCall('get', pieces)).toBeTruthy()
+    expect(screen.queryByTestId('detail-action-Valider la pièce')).toBeNull()
+    expect(screen.getByLabelText('Déposer la pièce : Diplôme').accept).toContain('.docx')
+    fireEvent.change(screen.getByLabelText('Déposer la pièce : Diplôme'), {
+      target: { files: [new File(['pdf'], 'diplome.pdf', { type: 'application/pdf' })] },
+    })
+    await waitFor(() => {
+      const appel = apiController.findCall('post', '/admissions/pieces/9/deposer/')
+      expect(appel).toBeTruthy()
+      expect(appel[1].get('fichier').name).toBe('diplome.pdf')
+    })
+    fireEvent.click(await screen.findByTestId('detail-action-Valider la pièce'))
+    await waitFor(() => {
+      expect(apiController.findCall('post', '/admissions/pieces/9/verifier/')[1]).toEqual({ statut: 'VALIDEE' })
+    })
+    expect(await screen.findByText('100 %')).toBeTruthy()
   })
 })
 

@@ -229,17 +229,6 @@ export default function Login() {
             </a>
           </div>
 
-          <div className="login-demo">
-            <strong>Comptes démo</strong>
-            <p>
-              Admin : <code>admin</code> / <code>admin123</code>
-              {' · '}
-              Secrétariat : <code>secretariat</code> / <code>sec123</code>
-              {' · '}
-              INJS : <code>injs</code> / <code>injs123</code>
-            </p>
-          </div>
-
           <div className="login-form-footer">
             <span>Développé par Ophir Technologies</span>
           </div>

@@ -3,10 +3,11 @@
 Pattern retenu : ViewSet + DefaultRouter (comme l'app parametres).
 - GET   : tout utilisateur authentifié (alimente React/Flutter — règle 9).
 - POST/PATCH : rôles de gestion (ReferentielPermission).
-- DELETE : jamais exposé (règle 2 — archivage via action dédiée).
+- DELETE : suppression définitive seulement si aucune relation métier ne dépend de la valeur ; sinon archivage réversible.
 """
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError, transaction
+from django.db.models.deletion import ProtectedError, RestrictedError
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status, viewsets
 from rest_framework.pagination import PageNumberPagination
@@ -64,12 +65,23 @@ class RefPagination(PageNumberPagination):
     max_page_size = 1000
 
 
+# Trois référentiels ont un contrat métier explicite de non-suppression :
+# type d'évaluation (archivage dédié), année académique (calendrier et liens)
+# et salle (créneaux/présences). Les autres conservent le DELETE gardé par
+# dépendances, y compris les plaquettes d'offre qui le testent explicitement.
+SUPPRESSION_INTERDITE_MODELES = frozenset({
+    'referentiels.reftypeevaluation',
+    'scolarite.anneeacademique',
+    'formations.refsalle',
+})
+
+
 class ReferentielSocleViewSet(viewsets.ModelViewSet):
-    """ViewSet de base : CRUD sans suppression, archivage réversible, journal."""
+    """Gestion journalisée ; suppression physique limitée aux valeurs non utilisées."""
 
     permission_classes = [ReferentielPermission]
     pagination_class = RefPagination
-    http_method_names = ['get', 'post', 'patch', 'head', 'options']  # règle 2 : pas de DELETE
+    http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
 
     def get_queryset(self):
         qs = self.queryset
@@ -81,6 +93,8 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
         if _a_le_champ(modele, 'archive') \
                 and self.request.query_params.get('archives') not in ('1', 'true'):
             qs = qs.filter(archive=False)
+        if _a_le_champ(modele, 'archive') and self.request.query_params.get('archive') == '1':
+            qs = qs.filter(archive=True)
         actif = self.request.query_params.get('actif')
         if actif is not None and _a_le_champ(modele, 'actif'):
             qs = qs.filter(actif=actif.lower() in ('true', '1', 'yes'))
@@ -139,11 +153,13 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
             # le contrôle suit alors le même périmètre que la contrainte.
             unicite_par = self._entree().get('unicite_par')
             if unicite_par and serializer is not None:
-                portee = serializer.validated_data.get(unicite_par)
-                if portee is None and serializer.instance is not None:
-                    portee = getattr(serializer.instance, unicite_par, None)
-                if portee is not None:
-                    filtres = {unicite_par: portee}
+                filtres = {}
+                for nom in ([unicite_par] if isinstance(unicite_par, str) else unicite_par):
+                    portee = serializer.validated_data.get(nom)
+                    if portee is None and serializer.instance is not None:
+                        portee = getattr(serializer.instance, nom, None)
+                    if portee is not None:
+                        filtres[nom] = portee
         if libelle and _a_le_champ(modele, champ) and libelle_en_doublon(
                 modele, libelle, pk_exclu, champ=champ, filtres=filtres):
             raise ValidationError(
@@ -200,7 +216,82 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
         """Récupère une valeur même archivée (pour archiver/reactiver)."""
         return get_object_or_404(self.queryset, pk=pk)
 
-    # ── Règle 2 : archivage réversible, jamais de suppression physique ──
+    def _supprimer_obj(self, obj, request):
+        """Suppression gardée, utilisable par DELETE et par le traitement en lot.
+
+        L'appelant tient un verrou et une transaction. Les relations CASCADE
+        et SET_NULL comptent aussi comme utilisation. Le journal GFK est
+        préservé avec une dernière trace de la suppression physique.
+        """
+        if obj._meta.label_lower in SUPPRESSION_INTERDITE_MODELES:
+            return Response(
+                {'detail': 'Suppression interdite pour ce référentiel ; utilisez son cycle de vie.'},
+                status=status.HTTP_405_METHOD_NOT_ALLOWED,
+            )
+        utilise = False
+        for relation in obj._meta.related_objects:
+            # Les relations inverses sont interrogées sur le gestionnaire
+            # de base : un enfant archivé est lui aussi une utilisation.
+            if relation.many_to_many:
+                through = relation.through
+                champ = next((f for f in through._meta.fields
+                              if getattr(f, 'related_model', None) == type(obj)), None)
+                utilise = champ is None or through._base_manager.filter(**{champ.name: obj.pk}).exists()
+            else:
+                utilise = relation.related_model._base_manager.filter(
+                    **{relation.field.name: obj.pk},
+                ).exists()
+            if utilise:
+                break
+
+        if not utilise:
+            # Une autre référence protégée peut encore être ajoutée
+            # entre le contrôle et le DELETE. Le savepoint permet alors
+            # de revenir à l'archivage sans laisser une transaction cassée.
+            try:
+                with transaction.atomic():
+                    self._journaliser(obj, ReferentielJournal.Action.MODIFICATION, {
+                        'suppression_definitive': True,
+                        'code': getattr(obj, 'code', None),
+                        'libelle': getattr(obj, 'libelle', str(obj)),
+                    })
+                    obj.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            except (ProtectedError, RestrictedError, IntegrityError):
+                utilise = True
+
+        if not hasattr(obj, 'archive'):
+            if not hasattr(obj, 'actif'):
+                return Response(
+                    {'detail': 'Valeur utilisée : ni archivage ni désactivation disponibles.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            if obj.actif:
+                obj.actif = False
+                obj.save(update_fields=['actif'])
+                self._journaliser(obj, ReferentielJournal.Action.DESACTIVATION,
+                                  {'motif': 'Suppression demandée : valeur déjà utilisée'})
+            return Response({'detail': 'Valeur utilisée : désactivée sans effacer ses liens.',
+                             'desactive': True})
+        if not obj.archive:
+            if hasattr(obj, 'archiver'):
+                obj.archiver(request.user, motif='Suppression demandée : valeur déjà utilisée')
+            else:
+                obj.archive = True
+                if hasattr(obj, 'actif'):
+                    obj.actif = False
+                obj.save()
+                self._journaliser(obj, ReferentielJournal.Action.ARCHIVAGE,
+                                  {'motif': 'Suppression demandée : valeur déjà utilisée'})
+        return Response({'detail': 'Valeur utilisée : archivée sans effacer ses liens.',
+                         'archive': True})
+
+    def destroy(self, request, *args, **kwargs):
+        with transaction.atomic():
+            obj = get_object_or_404(self.queryset.select_for_update(), pk=kwargs['pk'])
+            return self._supprimer_obj(obj, request)
+
+    # Archivage explicite, toujours réversible.
     @action(detail=True, methods=['post'])
     def archiver(self, request, pk=None):
         obj = self._get_any_object(pk)
@@ -214,7 +305,15 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
             )
         if obj.archive:
             return Response({'detail': 'Valeur déjà archivée.'}, status=status.HTTP_400_BAD_REQUEST)
-        obj.archiver(request.user, motif=request.data.get('motif', ''))
+        if hasattr(obj, 'archiver'):
+            obj.archiver(request.user, motif=request.data.get('motif', ''))
+        else:
+            obj.archive = True
+            if hasattr(obj, 'actif'):
+                obj.actif = False
+            obj.save()
+            self._journaliser(obj, ReferentielJournal.Action.ARCHIVAGE,
+                              {'motif': request.data.get('motif', '')})
         return Response({'detail': 'Valeur archivée.', 'archive': True})
 
     @action(detail=True, methods=['post'])
@@ -230,7 +329,15 @@ class ReferentielSocleViewSet(viewsets.ModelViewSet):
             )
         if not obj.archive:
             return Response({'detail': 'Valeur non archivée.'}, status=status.HTTP_400_BAD_REQUEST)
-        obj.reactiver(request.user, motif=request.data.get('motif', ''))
+        if hasattr(obj, 'reactiver'):
+            obj.reactiver(request.user, motif=request.data.get('motif', ''))
+        else:
+            obj.archive = False
+            if hasattr(obj, 'actif'):
+                obj.actif = True
+            obj.save()
+            self._journaliser(obj, ReferentielJournal.Action.REACTIVATION,
+                              {'motif': request.data.get('motif', '')})
         return Response({'detail': 'Valeur réactivée.', 'archive': False, 'actif': True})
 
 
@@ -317,11 +424,25 @@ from .registre import (  # noqa: E402
 from .serializers import serializer_pour_ref  # noqa: E402
 
 
+class LotReferentielsSerializer(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), min_length=1, max_length=100,
+    )
+    action = serializers.ChoiceField(choices=(
+        'activer', 'desactiver', 'archiver', 'supprimer',
+    ))
+
+    def validate_ids(self, ids):
+        if len(ids) != len(set(ids)):
+            raise serializers.ValidationError('Chaque valeur doit être sélectionnée une seule fois.')
+        return ids
+
+
 class RefGeneriqueViewSet(ReferentielSocleViewSet):
     """CRUD d'un référentiel du registre, sélectionné par son slug d'URL.
 
-    Réutilise intégralement le comportement du socle : pas de DELETE,
-    archivage réversible, journalisation, anti-doublon de libellé.
+    Réutilise le comportement du socle : suppression sûre ou archivage,
+    journalisation et contrôle des doublons de libellé.
     """
 
     #: Renseigné par le routeur DRF ; déclaré ici pour la lisibilité.
@@ -346,6 +467,77 @@ class RefGeneriqueViewSet(ReferentielSocleViewSet):
 
     def get_serializer_class(self):
         return serializer_pour_ref(self.kwargs.get('slug') or self.slug)
+
+    def lot(self, request):
+        """Traite jusqu'à 100 lignes dans une seule transaction vérifiée.
+
+        Les identifiants sont toujours ceux du registre ciblé, indépendants
+        des filtres/archives du GET. Une ligne manquante ou non compatible
+        annule le lot entier, y compris les traces de journal.
+        """
+        payload = LotReferentielsSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        ids = payload.validated_data['ids']
+        action_lot = payload.validated_data['action']
+        with transaction.atomic():
+            objets = {
+                obj.pk: obj for obj in self.queryset.select_for_update()
+                .filter(pk__in=ids).order_by('pk')
+            }
+            if len(objets) != len(ids):
+                raise ValidationError({'detail': 'Sélection périmée : une ou plusieurs valeurs sont introuvables.'})
+            for obj in objets.values():
+                if action_lot == 'archiver' and (not hasattr(obj, 'archive') or obj.archive):
+                    raise ValidationError({'detail': 'Archivage impossible pour une ou plusieurs valeurs.'})
+                if action_lot == 'activer' and (not hasattr(obj, 'actif') or getattr(obj, 'archive', False)):
+                    raise ValidationError({'detail': 'Réactivez les valeurs archivées avant de les activer.'})
+                if action_lot == 'desactiver' and not hasattr(obj, 'actif'):
+                    raise ValidationError({'detail': 'Désactivation non prise en charge.'})
+
+            resultats = []
+            for pk in ids:
+                obj = objets[pk]
+                if action_lot == 'supprimer':
+                    res = self._supprimer_obj(obj, request)
+                    if res.status_code >= 400:
+                        raise ValidationError({'detail': res.data['detail']})
+                    resultat = ('supprime' if res.status_code == 204 else
+                                'archive' if res.data.get('archive') else 'desactive')
+                elif action_lot == 'archiver':
+                    if hasattr(obj, 'archiver'):
+                        obj.archiver(request.user, motif='Archivage en lot')
+                    else:
+                        obj.archive = True
+                        if hasattr(obj, 'actif'):
+                            obj.actif = False
+                        obj.save()
+                        self._journaliser(obj, ReferentielJournal.Action.ARCHIVAGE,
+                                          {'motif': 'Archivage en lot'})
+                    resultat = 'archive'
+                else:
+                    actif = action_lot == 'activer'
+                    if obj.actif != actif:
+                        methode = getattr(obj, action_lot, None)
+                        if callable(methode):
+                            methode(request.user, motif='Action en lot')
+                        else:
+                            obj.actif = actif
+                            obj.save(update_fields=['actif'])
+                            self._journaliser(obj, (
+                                ReferentielJournal.Action.ACTIVATION if actif else
+                                ReferentielJournal.Action.DESACTIVATION
+                            ), {'motif': 'Action en lot'})
+                    resultat = 'active' if actif else 'desactive'
+                resultats.append({'id': pk, 'resultat': resultat})
+        return Response({'resultats': resultats})
+
+    def exporter(self, request):
+        from .echanges import exporter
+        return exporter(self, request)
+
+    def importer(self, request):
+        from .echanges import importer
+        return importer(self, request)
 
     def get_queryset(self):
         # La lecture des valeurs archivées reste possible (?archives=1) : la
@@ -435,12 +627,9 @@ class TableauDeBordReferentielsView(APIView):
 
 
 class RefModuleOfficielViewSet(viewsets.ReadOnlyModelViewSet):
-    """Modules officiels des maquettes — lecture seule.
+    """Lecture historique des modules (gestion journalisée sous gestion-donnees).
 
-    Ces lignes proviennent de l'import du document « Formations et Modules
-    INJS » : les modifier à la main romprait la traçabilité, elles ne sont
-    donc jamais éditables par l'API. Les filtres `filiere`, `semestre` et
-    `formation` alimentent les sélecteurs dépendants du front.
+    Les filtres filière, semestre et formation servent les sélecteurs existants.
     """
 
     queryset = RefModuleOfficiel.objects.select_related('formation')
@@ -449,7 +638,7 @@ class RefModuleOfficielViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = RefPagination
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset().filter(archive=False)
         params = self.request.query_params
         if params.get('filiere'):
             qs = qs.filter(filiere_code=params['filiere'])
@@ -461,9 +650,9 @@ class RefModuleOfficielViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RefVolumeHoraireFormationViewSet(viewsets.ReadOnlyModelViewSet):
-    """Volumes horaires de modélisation — lecture seule."""
+    """Lecture historique des volumes de modélisation (CRUD dans gestion-donnees)."""
 
-    queryset = RefVolumeHoraireFormation.objects.select_related('formation')
+    queryset = RefVolumeHoraireFormation.objects.select_related('formation').filter(archive=False)
     serializer_class = RefVolumeHoraireFormationSerializer
     permission_classes = [ReferentielPermission]
     pagination_class = RefPagination

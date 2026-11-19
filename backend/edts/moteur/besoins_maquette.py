@@ -154,6 +154,7 @@ def besoins_depuis_maquette(*, annee_academique_id=None, groupe_ids=None,
         )
         if maquette is None:
             sans_maquette.append({
+                'groupe_id': groupe.pk,
                 'groupe': groupe.nom,
                 'formation': groupe.ref_formation.intitule,
                 'niveau': groupe.niveau.code,
@@ -201,7 +202,10 @@ def besoins_depuis_maquette(*, annee_academique_id=None, groupe_ids=None,
                     besoins.append(replace(besoin, difficulte=calculer_difficulte(besoin)))
 
         if not any(b.groupe_id == groupe.pk for b in besoins):
-            sans_volume.append({'groupe': groupe.nom, 'maquette': maquette.libelle or f'v{maquette.version}'})
+            sans_volume.append({
+                'groupe_id': groupe.pk, 'groupe': groupe.nom,
+                'maquette': maquette.libelle or f'v{maquette.version}',
+            })
 
     if not besoins:
         motifs = []
@@ -221,6 +225,8 @@ def besoins_depuis_maquette(*, annee_academique_id=None, groupe_ids=None,
                 ),
                 'sans_maquette': sans_maquette[:50],
                 'sans_volume': sans_volume[:50],
+                'groupes_sans_maquette_ids': [g['groupe_id'] for g in sans_maquette],
+                'groupes_sans_volume_ids': [g['groupe_id'] for g in sans_volume],
                 'groupes_hors_perimetre': hors_perimetre,
             },
         )
@@ -230,6 +236,8 @@ def besoins_depuis_maquette(*, annee_academique_id=None, groupe_ids=None,
         detail={
             'sans_maquette': sans_maquette[:50],
             'sans_volume': sans_volume[:50],
+            'groupes_sans_maquette_ids': [g['groupe_id'] for g in sans_maquette],
+            'groupes_sans_volume_ids': [g['groupe_id'] for g in sans_volume],
             'groupes_hors_perimetre': hors_perimetre,
             'effectifs_connus': len([g for g in effectifs if g]),
         },

@@ -550,6 +550,12 @@ def generate_api(request):
     persister = _booleen(request.data.get('persister'))
     remplacer = _booleen(request.data.get('remplacer'))
     edt_id = _int(request.data.get('emploi_du_temps_id'))
+    if persister and edt_id:
+        from edts.models import EmploiDuTemps
+        from edts.api_v2_experimental import annee_a_occurrences_v2
+        edt_cible = EmploiDuTemps.objects.filter(pk=edt_id).first()
+        if edt_cible and annee_a_occurrences_v2(edt_cible.annee_academique_id):
+            return Response({'code': 'QR_V2_CHEMIN_HERITE_REFUSE'}, status=status.HTTP_409_CONFLICT)
 
     resultat = G.generate_schedule(semaines=_semaines_de_requete(request), **params)
     if resultat.status == G.GENERATION_IMPOSSIBLE:
@@ -656,6 +662,10 @@ def generate_coordinated_api(request):
             'action_recommandee': 'Vérifier l’identifiant transmis.',
         }, status.HTTP_404_NOT_FOUND)
 
+    if _booleen(request.data.get('persister')):
+        from edts.api_v2_experimental import annee_a_occurrences_v2
+        if annee_a_occurrences_v2(annee_id):
+            return Response({'code': 'QR_V2_CHEMIN_HERITE_REFUSE'}, status=status.HTTP_409_CONFLICT)
     bilan = O.generer_coordonne(
         annee_id,
         semaines=_semaines_de_requete(request),
@@ -970,6 +980,10 @@ def item_move_api(request, pk):
                         status=status.HTTP_404_NOT_FOUND)
     if request.method == 'GET':
         return _candidats_deplacement(affectation)
+    if affectation.cle_occurrence_v2:
+        return Response({'code': 'QR_V2_CHEMIN_HERITE_REFUSE',
+                         'detail': 'Déplacement v2 interdit par la route historique.'},
+                        status=status.HTTP_409_CONFLICT)
 
     edt = affectation.emploi_du_temps
     if edt.statut in ('PUBLIE', 'ARCHIVE'):
@@ -1070,6 +1084,10 @@ def item_cancel_api(request, pk):
         return Response({'detail': 'Affectation introuvable'},
                         status=status.HTTP_404_NOT_FOUND)
     edt = affectation.emploi_du_temps
+    if affectation.cle_occurrence_v2:
+        return Response({'code': 'QR_V2_CHEMIN_HERITE_REFUSE',
+                         'detail': 'Annulation v2 interdite par la route historique.'},
+                        status=status.HTTP_409_CONFLICT)
     if edt.statut in ('PUBLIE', 'ARCHIVE'):
         return _reponse_erreur('STATUT_EDT_INVALIDE', {
             'explication': f'Le statut « {edt.statut} » interdit toute modification.',

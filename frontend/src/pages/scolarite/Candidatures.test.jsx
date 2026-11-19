@@ -117,6 +117,34 @@ describe('pages/scolarite/Candidatures — liste et filtres', () => {
     expect(screen.getByText(/année 2025-2026/i)).toBeInTheDocument()
   })
 
+  it('sélectionne plusieurs candidatures ou toutes les lignes chargées sans transition serveur', async () => {
+    mount()
+    await screen.findByText('C-005')
+    const tout = screen.getByRole('checkbox', { name: 'Tout sélectionner les candidatures affichées' })
+    const premiere = screen.getByRole('checkbox', { name: 'Sélectionner la candidature C-005' })
+    const seconde = screen.getByRole('checkbox', { name: 'Sélectionner la candidature C-006' })
+    fireEvent.click(premiere)
+    expect(premiere.checked).toBe(true)
+    expect(seconde.checked).toBe(false)
+    fireEvent.click(tout)
+    expect(seconde.checked).toBe(true)
+    fireEvent.click(tout)
+    expect(premiere.checked).toBe(false)
+    expect(posts(() => true)).toHaveLength(0)
+  })
+
+  it('sélectionne indépendamment les pièces du dossier affiché', async () => {
+    mount()
+    await screen.findByText('C-005')
+    ouvrirDossier('C-005')
+    await screen.findByText('CNI')
+    const tout = screen.getByRole('checkbox', { name: 'Tout sélectionner les pièces affichées' })
+    fireEvent.click(tout)
+    expect(screen.getByRole('checkbox', { name: 'Sélectionner la pièce CNI' }).checked).toBe(true)
+    expect(screen.getByRole('checkbox', { name: 'Sélectionner la pièce Diplôme' }).checked).toBe(true)
+    expect(posts(() => true)).toHaveLength(0)
+  })
+
   it('recherche et filtre par statut en passant les paramètres au service', async () => {
     mount()
     await screen.findByText('C-005')
@@ -202,6 +230,26 @@ describe('pages/scolarite/Candidatures — panneau Dossier (écritures)', () => 
     expect(await screen.findByText('Transition métier impossible.')).toBeInTheDocument()
   })
 
+  it('remplace une pièce par un .docx via le même endpoint de dépôt', async () => {
+    mount()
+    await screen.findByText('C-005')
+    ouvrirDossier('C-005')
+    const input = await screen.findByLabelText('Remplacer la pièce CNI')
+    for (const format of ['.docx', '.doc', '.xlsx', '.xls', '.odt', '.ods', '.pptx', '.txt', '.csv', '.heic']) {
+      expect(input.accept.split(',')).toContain(format)
+    }
+    expect(input.accept.split(',')).not.toContain('.zip')
+    fireEvent.change(input, {
+      target: { files: [new File(['docx'], 'engagement.docx', {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      })] },
+    })
+    await waitFor(() => {
+      const depot = posts((p) => p === '/admissions/pieces/51/deposer/')[0]
+      expect(depot.body.get('fichier').name).toBe('engagement.docx')
+    })
+  })
+
   it('dépose un fichier pour une pièce (POST FormData multipart)', async () => {
     mount()
     await screen.findByText('C-005')
@@ -213,6 +261,8 @@ describe('pages/scolarite/Candidatures — panneau Dossier (écritures)', () => 
       .closest('tr')
       .querySelector('input[type="file"]')
     expect(input).not.toBeNull()
+    expect(input.accept).toContain('.docx')
+    expect(screen.getByText(/Formats acceptés : Documents PDF, Word, OpenDocument, Excel/)).toBeInTheDocument()
     fireEvent.change(input, {
       target: { files: [new File(['contenu'], 'cni.pdf', { type: 'application/pdf' })] },
     })

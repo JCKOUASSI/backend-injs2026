@@ -27,6 +27,7 @@ from django.test import TestCase
 from edts.moteur import import_inscrits as I
 from edts.models import InscriptionImportee
 from edts.tests.test_lot2_moteur import FabriqueLMD
+from formations.models import RefFormation
 from scolarite.models import Groupe
 
 CSV_ENTETE = 'matricule;nom;prenoms;sexe;formation;niveau;semestre;groupe;vague\n'
@@ -52,6 +53,24 @@ class BaseImportTest(TestCase):
 
 
 class LectureDuFichierTests(BaseImportTest):
+    def test_code_filiere_ne_masque_pas_le_cycle_master(self):
+        master = RefFormation.objects.create(
+            intitule='FORMATION TEST INJS — MASTER', perimetre='INJS',
+            filiere_code='F01',
+        )
+        entete = 'matricule;nom;formation;filiere_code;niveau\n'
+        rapport = self.importer((entete +
+            f'GET-M01;Kouassi;{master.intitule};F01;L1\n').encode(), appliquer=True)
+        self.assertEqual(rapport.lignes_valides, 1)
+        self.assertEqual(InscriptionImportee.objects.get(matricule='GET-M01').ref_formation, master)
+
+    def test_code_filiere_contradictoire_refuse_et_non_resolu_par_premier_cycle(self):
+        entete = 'matricule;nom;formation;filiere_code;niveau\n'
+        rapport = self.importer((entete +
+            f'GET-M02;Kouassi;{self.formation.intitule};F08;L1\n').encode())
+        self.assertEqual(rapport.lignes_valides, 0)
+        self.assertEqual(rapport.erreurs[0].motif, I.REJET_CODE_FILIERE_INCOHERENT)
+
     def test_csv_point_virgule(self):
         rapport = self.importer(_csv([
             f'INJS-001;Kouassi;Aya;F;{self.formation.intitule};L1;S1;L1-G1;V1',

@@ -25,6 +25,19 @@ class FindViolationsTests(TestCase):
         ]
         self.assertEqual(find_violations(tracked), [])
 
+    def test_seuls_les_trois_classeurs_documentaires_officiels_sont_exemptes(self):
+        officiels = [
+            "dossier_trvx/Manuel_utilisateurs/Manuel_Utilisateur_INJS_LMD_2026.xlsx",
+            "dossier_trvx/Manuel_utilisateurs/Recette_Validation_10_Hubs_INJS_2026.xlsx",
+            "dossier_trvx/Manuel_jeu_test2026/Recette_Validation_10_Hubs_INJS_2026.xlsx",
+        ]
+        interdits = [
+            "dossier_trvx/Manuel_jeu_test2026/import_participants.xlsx",
+            "dossier_trvx/Manuel_utilisateurs/Recette_reelle_avec_donnees.xlsx",
+            "backend/import_formateurs.xlsx",
+        ]
+        self.assertEqual(find_violations(officiels + interdits), sorted(interdits))
+
     def test_detecte_donnees_nominatives(self):
         tracked = [
             "backend/import_participants.csv",

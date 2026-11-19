@@ -47,6 +47,7 @@ REJET_MATRICULE_MANQUANT = 'MATRICULE_MANQUANT'
 REJET_NOM_MANQUANT = 'NOM_MANQUANT'
 REJET_FORMATION_ABSENTE = 'FORMATION_ABSENTE'
 REJET_FORMATION_HORS_PERIMETRE = 'FORMATION_HORS_PERIMETRE'
+REJET_CODE_FILIERE_INCOHERENT = 'CODE_FILIERE_INCOHERENT'
 REJET_NIVEAU_ABSENT = 'NIVEAU_ABSENT'
 REJET_SEMESTRE_ABSENT = 'SEMESTRE_ABSENT'
 REJET_FICHIER_VIDE = 'FICHIER_VIDE'
@@ -260,30 +261,36 @@ def _trouver_formation(valeur, code_filiere=''):
 
     perimetre = formations_injs()
 
-    if code_filiere:
-        code = str(code_filiere).strip().upper()
-        trouvee = perimetre.filter(filiere_code__iexact=code).first()
-        if trouvee is not None:
-            return trouvee
-
+    code = str(code_filiere or '').strip().upper()
     texte = str(valeur or '').strip()
-    if not texte:
-        return None
-    trouvee = perimetre.filter(intitule__iexact=texte).first()
-    if trouvee is not None:
+    if texte:
+        # Le même code de filière peut désigner deux cycles (Licence/Master).
+        # Résoudre d'abord le cycle exact, puis vérifier le code déclaré :
+        # sélectionner « le premier F01 » en ignorant « MASTER » corromprait
+        # silencieusement la cohorte de l'étudiant.
+        trouvee = (perimetre.filter(intitule__iexact=texte).first()
+                   or perimetre.filter(code__iexact=texte).first())
+        if trouvee is None:
+            cible = normaliser_cle(texte)
+            for formation in perimetre:
+                if normaliser_cle(formation.intitule) == cible:
+                    trouvee = formation
+                    break
+            if trouvee is None:
+                candidats = [formation for formation in perimetre
+                             if cible and cible in normaliser_cle(formation.intitule)]
+                # Une abréviation commune aux deux cycles est ambiguë.
+                if len(candidats) == 1:
+                    trouvee = candidats[0]
+        if trouvee is None or (code and trouvee.filiere_code.upper() != code):
+            return None
         return trouvee
-    trouvee = perimetre.filter(code__iexact=texte).first()
-    if trouvee is not None:
-        return trouvee
-
-    # Recherche tolérante : « Education Motricite » ≈ « Éducation Motricité ».
-    cible = normaliser_cle(texte)
-    for formation in perimetre:
-        if normaliser_cle(formation.intitule) == cible:
-            return formation
-    for formation in perimetre:
-        if cible and cible in normaliser_cle(formation.intitule):
-            return formation
+    if code:
+        # Sans intitulé, un code à plusieurs cycles n'identifie pas la
+        # formation : refuser l'ambiguïté plutôt que deviner Licence/Master.
+        candidats = list(perimetre.filter(filiere_code__iexact=code)[:2])
+        if len(candidats) == 1:
+            return candidats[0]
     return None
 
 
@@ -454,16 +461,23 @@ def _resoudre_ligne(ligne, correspondance, annee, ligne_numero, appliquer, erreu
     filiere_code = _valeur(ligne, correspondance, 'filiere_code')
     formation = _trouver_formation(formation_texte, filiere_code)
     if formation is None:
-        # Distinguer « inconnue » de « connue mais hors périmètre INJS ».
+        # Distinguer cycle absent, hors périmètre et code contradictoire.
         from formations.models import RefFormation
+        from formations.referentiel_injs_l6 import formations_injs
 
+        connue = formations_injs().filter(intitule__iexact=formation_texte).first()
+        incoherent = bool(connue and filiere_code and
+                          connue.filiere_code.upper() != filiere_code.upper())
         hors = RefFormation.objects.filter(intitule__iexact=formation_texte).exists()
-        motif = REJET_FORMATION_HORS_PERIMETRE if hors else REJET_FORMATION_ABSENTE
+        motif = (REJET_CODE_FILIERE_INCOHERENT if incoherent else
+                 REJET_FORMATION_HORS_PERIMETRE if hors else REJET_FORMATION_ABSENTE)
+        detail = (' a un code de filière différent de celui du fichier.' if incoherent
+                  else ' existe mais n’appartient pas au périmètre INJS.' if hors
+                  else ' introuvable au référentiel INJS.')
         erreurs.append(LigneErreur(
             ligne_numero, motif,
             f'Matricule {matricule} : formation « {formation_texte or filiere_code} »'
-            + (' existe mais n’appartient pas au périmètre INJS.'
-               if hors else ' introuvable au référentiel INJS.'),
+            + detail,
         ))
         return None
 

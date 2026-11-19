@@ -551,6 +551,34 @@ class ScanFormateurBadgeNormalizationTest(TestCase):
         )
         ModuleFormateur.objects.create(module=self.module, formateur=self.formateur)
 
+    def test_donnees_hors_ligne_en_cache_refusees_apres_revocation(self):
+        url = '/api/scan/offline-data/'
+        params = {'token': str(self.token.token)}
+        premier = self.client.get(url, params)
+        self.assertEqual(premier.status_code, status.HTTP_200_OK)
+        # Même en cas de copie serveur déjà en cache, l'accès est réévalué.
+        self.token.actif = False
+        self.token.save(update_fields=['actif'])
+        revoque = self.client.get(url, params)
+        self.assertEqual(revoque.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_ancien_qr_public_revoque_meme_si_un_nouveau_est_valide(self):
+        self.token.actif = False
+        self.token.save(update_fields=['actif'])
+        nouveau = QRToken.objects.create(
+            session=self.seance, expire_at=timezone.now() + timedelta(hours=1), actif=True,
+        )
+        ancien = self.client.post('/api/scan/', {
+            'token_qr': str(self.token.token), 'numero_participant': self.formateur.numerobadge,
+        }, format='json')
+        self.assertEqual(ancien.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(ancien.data['code'], 'TOKEN_EXPIRED')
+        self.assertFalse(Pointage.objects.filter(session=self.seance).exists())
+        valide = self.client.post('/api/scan/', {
+            'token_qr': str(nouveau.token), 'numero_participant': self.formateur.numerobadge,
+        }, format='json')
+        self.assertEqual(valide.status_code, status.HTTP_201_CREATED)
+
     def test_scan_formateur_accepts_lowercase_badge(self):
         res = self.client.post(
             '/api/scan/',
@@ -624,6 +652,28 @@ class SecureScanFormateurEncadrantTest(TestCase):
         self.encadrant.save(update_fields=['matricule', 'first_name', 'last_name'])
         self.module.superviseur = self.encadrant
         self.module.save(update_fields=['superviseur'])
+
+    def test_ancien_qr_securise_et_etat_revoques(self):
+        self.token.actif = False
+        self.token.save(update_fields=['actif'])
+        nouveau = QRToken.objects.create(
+            session=self.seance, expire_at=timezone.now() + timedelta(hours=1), actif=True,
+        )
+        self.client.force_authenticate(self.formateur_user)
+        ancien = self.client.post('/api/scan/secure/', {
+            'token_qr': str(self.token.token), 'device_id': 'test-device-revoked',
+        }, format='json')
+        self.assertEqual(ancien.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(ancien.data['code'], 'TOKEN_EXPIRED')
+        etat = self.client.get('/api/scan/secure/check-status/', {
+            'token_qr': str(self.token.token),
+        })
+        self.assertEqual(etat.data['statut'], 'INCONNU')
+        self.assertFalse(Pointage.objects.filter(session=self.seance).exists())
+        valide = self.client.post('/api/scan/secure/', {
+            'token_qr': str(nouveau.token), 'device_id': 'test-device-revoked',
+        }, format='json')
+        self.assertEqual(valide.status_code, status.HTTP_201_CREATED)
 
     def test_secure_scan_formateur_entree(self):
         self.client.force_authenticate(self.formateur_user)
@@ -1002,6 +1052,21 @@ class AuditLogChargementExpliciteTests(TestCase):
                 action=AuditLog.Action.USER_LOGIN,
                 cible_type='USER', cible_numero=f'U{i}',
             )
+
+    def test_anciens_secrets_qr_masques_sans_effacer_le_journal(self):
+        from .models import AuditLog
+        ligne = AuditLog.objects.create(
+            action=AuditLog.Action.FORMATION_QR_GENERATE,
+            extra={'token': 'secret-historique', 'canal': 'EDT_LMD'},
+        )
+        for params in ({'limite': 10}, {'page_size': 10}):
+            res = self.client.get('/api/audit-logs/', params)
+            self.assertEqual(res.status_code, status.HTTP_200_OK)
+            entree = next(x for x in res.data['results'] if x['id'] == ligne.pk)
+            self.assertEqual(entree['extra'], {'canal': 'EDT_LMD'})
+            self.assertNotIn('secret-historique', str(res.data))
+        ligne.refresh_from_db()
+        self.assertEqual(ligne.extra['token'], 'secret-historique')
 
     def test_limite_historique_inchangee(self):
         res = self.client.get('/api/audit-logs/', {'limite': 2})

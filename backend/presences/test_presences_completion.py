@@ -83,6 +83,8 @@ class SortieVolontaireTests(MobileSeanceEdtMixin, TestCase):
     def test_double_entree_bloquee_avec_code_normalise(self):
         self.assertEqual(
             self._scan(self.auditeurs[0], **self._dans_la_zone()).status_code, 201)
+        Pointage.objects.filter(seance_edt=self.affectation).update(
+            timestamp_entree=timezone.now() - timedelta(seconds=6))
         self.assertEqual(
             self._scan(self.auditeurs[0], **self._dans_la_zone()).data['action'],
             'SORTIE')

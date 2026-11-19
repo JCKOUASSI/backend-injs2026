@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '../../services/api'
+import { exporterScolarite } from '../../utils/exportScolarite'
 import { getAnneeCourante, messageErreur } from '../../services/scolarite'
 import '../../styles/scolariteDashboard.css'
 import { anneeAcademiqueCourante } from '../../utils/anneeAcademique'
@@ -10,6 +11,8 @@ export default function ScolariteDashboard() {
   const [annee, setAnnee] = useState(null)
   const [loading, setLoading] = useState(true)
   const [erreur, setErreur] = useState('')
+  const [exportEnCours, setExportEnCours] = useState('')
+  const [exportErreur, setExportErreur] = useState('')
 
   // Données dynamiques du tableau de bord
   const [stats, setStats] = useState({
@@ -115,64 +118,15 @@ export default function ScolariteDashboard() {
     charger()
   }, [charger])
 
-  // Fonctions d'export (PDF, Excel, Word)
-  const handleExport = (format, titre) => {
-    if (format === 'PDF') {
-      window.print()
-      return
-    }
-    if (format === 'Excel') {
-      const csvContent =
-        'data:text/csv;charset=utf-8,' +
-        encodeURIComponent(
-          `RAPPORT INJS UFR STAPS-JL — ${titre}\n` +
-          `Date: ${new Date().toLocaleDateString('fr-FR')}\n\n` +
-          `Indicateur;Valeur\n` +
-          `Étudiants inscrits;${stats.etudiantsInscrits}\n` +
-          `Professeurs & Encadreurs;${stats.professeurs}\n` +
-          `Présents aujourd'hui;${stats.presentsAujourdhui}\n` +
-          `Taux de présence;${stats.tauxPresence}%\n` +
-          `L1;${stats.niveaux.L1}\n` +
-          `L2;${stats.niveaux.L2}\n` +
-          `L3;${stats.niveaux.L3}\n` +
-          `M1;${stats.niveaux.M1}\n` +
-          `M2;${stats.niveaux.M2}\n`
-        )
-      const downloadAnchor = document.createElement('a')
-      downloadAnchor.setAttribute('href', csvContent)
-      downloadAnchor.setAttribute('download', `INJS_Scolarite_${titre.replace(/\s+/g, '_')}.csv`)
-      document.body.appendChild(downloadAnchor)
-      downloadAnchor.click()
-      downloadAnchor.remove()
-      return
-    }
-    if (format === 'Word') {
-      const docHtml = `
-        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-        <head><title>${titre}</title></head>
-        <body style="font-family: Arial, sans-serif;">
-          <h2>INJS UFR STAPS-JL — ${titre}</h2>
-          <p>Année académique : ${annee?.libelle || anneeAcademiqueCourante()}</p>
-          <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse;">
-            <tr style="background:#f0f4f8;"><th>Indicateur</th><th>Valeur</th></tr>
-            <tr><td>Étudiants inscrits</td><td>${stats.etudiantsInscrits}</td></tr>
-            <tr><td>Professeurs & Encadreurs</td><td>${stats.professeurs}</td></tr>
-            <tr><td>Présents aujourd'hui</td><td>${stats.presentsAujourdhui}</td></tr>
-            <tr><td>Taux de présence (jour)</td><td>${stats.tauxPresence}%</td></tr>
-            <tr><td>Frais payés</td><td>${stats.fraisPayes}</td></tr>
-            <tr><td>Frais en attente</td><td>${stats.fraisEnAttente}</td></tr>
-          </table>
-        </body></html>
-      `
-      const blob = new Blob(['\ufeff' + docHtml], { type: 'application/msword' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `INJS_Scolarite_${titre.replace(/\s+/g, '_')}.doc`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
+  const handleExport = async (format, titre) => {
+    setExportEnCours(`${titre}-${format}`)
+    setExportErreur('')
+    try {
+      await exporterScolarite(format, titre, stats, annee?.libelle || anneeAcademiqueCourante())
+    } catch (error) {
+      setExportErreur(error.message || 'Impossible de générer le fichier.')
+    } finally {
+      setExportEnCours('')
     }
   }
 
@@ -189,6 +143,7 @@ export default function ScolariteDashboard() {
 
   return (
     <div className="scolarite-dashboard-page">
+      {exportErreur && <p role="alert" className="scolarite-export-error">{exportErreur}</p>}
       {/* ── 1. EN-TÊTE DE PAGE ── */}
       <div className="scolarite-header">
         <div className="scolarite-title-block">
@@ -201,7 +156,8 @@ export default function ScolariteDashboard() {
           <div className="scolarite-export-btn-group">
             <button
               type="button"
-              className="export-pill-btn"
+              className="export-pill-btn export-pill-btn--pdf"
+              disabled={!!exportEnCours}
               onClick={() => handleExport('PDF', 'Synthese_Generale')}
               title="Exporter en PDF"
             >
@@ -210,7 +166,8 @@ export default function ScolariteDashboard() {
             </button>
             <button
               type="button"
-              className="export-pill-btn"
+              className="export-pill-btn export-pill-btn--excel"
+              disabled={!!exportEnCours}
               onClick={() => handleExport('Excel', 'Synthese_Generale')}
               title="Exporter en Excel"
             >
@@ -219,7 +176,8 @@ export default function ScolariteDashboard() {
             </button>
             <button
               type="button"
-              className="export-pill-btn"
+              className="export-pill-btn export-pill-btn--word"
+              disabled={!!exportEnCours}
               onClick={() => handleExport('Word', 'Synthese_Generale')}
               title="Exporter en Word"
             >
@@ -374,7 +332,8 @@ export default function ScolariteDashboard() {
             <div className="scolarite-export-btn-group">
               <button
                 type="button"
-                className="export-pill-btn"
+                className="export-pill-btn export-pill-btn--pdf"
+                disabled={!!exportEnCours}
                 onClick={() => handleExport('PDF', 'Repartition_Niveaux')}
                 title="Exporter en PDF"
               >
@@ -383,7 +342,8 @@ export default function ScolariteDashboard() {
               </button>
               <button
                 type="button"
-                className="export-pill-btn"
+                className="export-pill-btn export-pill-btn--excel"
+                disabled={!!exportEnCours}
                 onClick={() => handleExport('Excel', 'Repartition_Niveaux')}
                 title="Exporter en Excel"
               >
@@ -392,7 +352,8 @@ export default function ScolariteDashboard() {
               </button>
               <button
                 type="button"
-                className="export-pill-btn"
+                className="export-pill-btn export-pill-btn--word"
+                disabled={!!exportEnCours}
                 onClick={() => handleExport('Word', 'Repartition_Niveaux')}
                 title="Exporter en Word"
               >
@@ -498,7 +459,8 @@ export default function ScolariteDashboard() {
             <div className="scolarite-export-btn-group">
               <button
                 type="button"
-                className="export-pill-btn"
+                className="export-pill-btn export-pill-btn--pdf"
+                disabled={!!exportEnCours}
                 onClick={() => handleExport('PDF', 'Finances_Etudiants')}
                 title="Exporter en PDF"
               >
@@ -507,7 +469,8 @@ export default function ScolariteDashboard() {
               </button>
               <button
                 type="button"
-                className="export-pill-btn"
+                className="export-pill-btn export-pill-btn--excel"
+                disabled={!!exportEnCours}
                 onClick={() => handleExport('Excel', 'Finances_Etudiants')}
                 title="Exporter en Excel"
               >
@@ -516,7 +479,8 @@ export default function ScolariteDashboard() {
               </button>
               <button
                 type="button"
-                className="export-pill-btn"
+                className="export-pill-btn export-pill-btn--word"
+                disabled={!!exportEnCours}
                 onClick={() => handleExport('Word', 'Finances_Etudiants')}
                 title="Exporter en Word"
               >

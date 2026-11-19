@@ -99,6 +99,124 @@ describe('pages/scolarite/Inscriptions — liste et filtres', () => {
   })
 })
 
+describe('pages/scolarite/Inscriptions — retrait sécurisé', () => {
+  it('retire sans suppression optimiste et signale l’archivage renvoyé par le serveur', async () => {
+    const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    apiMock.delete.mockResolvedValueOnce({ data: { archive: true }, status: 200 })
+    mount()
+    await screen.findByText('MAT-001')
+    fireEvent.click(within(rowOf('MAT-001')).getByRole('button', { name: 'Supprimer' }))
+    await settle()
+    expect(confirmation).toHaveBeenCalled()
+    expect(apiMock.delete).toHaveBeenCalledWith('/scolarite/inscriptions/1/')
+    expect(await screen.findByText(/archivée sans modifier son statut/)).toBeInTheDocument()
+    expect(listCalls().length).toBeGreaterThan(1)
+    confirmation.mockRestore()
+  })
+
+  it('consulte puis réactive un dossier archivé sans proposer sa validation', async () => {
+    apiController.reset()
+    apiController.setRoute('/scolarite/inscriptions/', () => [{
+      id: 2, matricule: 'MAT-002', etudiant: 'Karim Diop', etudiant_id: 6,
+      ref_formation: 'L1 LSF', niveau: 'N1', type_inscription_libelle: 'Nouvelle',
+      statut: 'BROUILLON', statut_libelle: 'Brouillon', archive: true,
+      annee_academique: '2025-2026',
+    }])
+    setupRoutes()
+    mount()
+    await screen.findByText('MAT-002')
+    expect(within(rowOf('MAT-002')).getByRole('checkbox')).toBeInTheDocument()
+    expect(within(rowOf('MAT-002')).queryByRole('button', { name: 'Valider' })).not.toBeInTheDocument()
+    fireEvent.change(screen.getByRole('combobox', { name: 'Afficher les archives' }),
+      { target: { value: '1' } })
+    await settle()
+    expect(listCalls().at(-1)).toMatchObject({ archive: '1' })
+    fireEvent.click(screen.getByRole('button', { name: 'Réactiver MAT-002' }))
+    await settle()
+    expect(apiMock.post).toHaveBeenCalledWith('/scolarite/inscriptions/2/reactiver/', {})
+  })
+})
+
+describe('pages/scolarite/Inscriptions — actions groupées de retrait', () => {
+  it('confirme le retrait des lignes affichées, sans envoyer de requêtes individuelles', async () => {
+    apiController.setRoute('/scolarite/inscriptions/action-lot/', { resultats: [
+      { id: 1, resultat: 'supprime' }, { id: 2, resultat: 'archive' },
+    ] })
+    mount()
+    await screen.findByText('MAT-001')
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Sélectionner toutes les inscriptions affichées' }))
+    expect(screen.getByRole('button', { name: 'Valider la sélection (2)' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Supprimer ou archiver la sélection (2)' }))
+    expect(apiMock.post).not.toHaveBeenCalledWith('/scolarite/inscriptions/action-lot/',
+      { action: 'retirer', ids: [1, 2] })
+    expect(screen.getByText(/Seuls les brouillons isolés seront effacés/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer pour 2 inscription(s)' }))
+    await settle()
+    expect(apiMock.post).toHaveBeenCalledWith('/scolarite/inscriptions/action-lot/',
+      { action: 'retirer', ids: [1, 2] })
+    expect(apiMock.delete).not.toHaveBeenCalled()
+    expect(await screen.findByText(/1 supprimée\(s\), 1 archivée\(s\)/)).toBeInTheDocument()
+  })
+
+  it('sélectionne et réactive les archives en lot', async () => {
+    apiController.reset()
+    apiController.setRoute('/scolarite/inscriptions/', () => [{
+      id: 8, matricule: 'ARCH-008', etudiant: 'Archive Test', etudiant_id: 8,
+      statut: 'VALIDEE', statut_libelle: 'Validée', archive: true,
+    }])
+    setupRoutes()
+    apiController.setRoute('/scolarite/inscriptions/action-lot/', {
+      resultats: [{ id: 8, resultat: 'reactive' }],
+    })
+    mount()
+    await screen.findByText('ARCH-008')
+    fireEvent.change(screen.getByRole('combobox', { name: 'Afficher les archives' }),
+      { target: { value: '1' } })
+    await settle()
+    fireEvent.click(within(rowOf('ARCH-008')).getByRole('checkbox'))
+    fireEvent.click(screen.getByRole('button', { name: 'Réactiver la sélection (1)' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer pour 1 inscription(s)' }))
+    await settle()
+    expect(apiMock.post).toHaveBeenCalledWith('/scolarite/inscriptions/action-lot/',
+      { action: 'reactiver', ids: [8] })
+  })
+})
+
+describe('pages/scolarite/Inscriptions — validation groupée', () => {
+  it('coche seulement les inscriptions validables et attend la confirmation', async () => {
+    apiController.setRoute('/scolarite/inscriptions/valider-lot/', { validees: 1, ids: [1] })
+    mount()
+    await screen.findByText('MAT-001')
+    // Toutes les lignes sont sélectionnables pour le retrait, mais seules
+    // les validables peuvent être soumises au workflow de validation.
+    expect(within(rowOf('MAT-002')).getByRole('checkbox')).toBeInTheDocument()
+    const caseInscription = within(rowOf('MAT-001')).getByRole('checkbox', {
+      name: 'Sélectionner l’inscription MAT-001',
+    })
+    fireEvent.click(caseInscription)
+    const bouton = screen.getByRole('button', { name: 'Valider la sélection (1)' })
+    fireEvent.click(bouton)
+    expect(apiMock.post).not.toHaveBeenCalledWith('/scolarite/inscriptions/valider-lot/', { ids: [1] })
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
+    fireEvent.click(bouton)
+    fireEvent.click(screen.getByRole('button', { name: 'Valider 1 inscription(s)' }))
+    await settle()
+    expect(apiMock.post).toHaveBeenCalledWith('/scolarite/inscriptions/valider-lot/', { ids: [1] })
+    expect(within(rowOf('MAT-001')).getByRole('checkbox').checked).toBe(false)
+  })
+
+  it('efface la sélection au changement de filtre', async () => {
+    mount()
+    await screen.findByText('MAT-001')
+    fireEvent.click(screen.getByRole('button', { name: 'Cocher les validables affichées' }))
+    expect(screen.getByRole('button', { name: 'Valider la sélection (1)' }).disabled).toBe(false)
+    fireEvent.change(screen.getByPlaceholderText(/Rechercher un étudiant/i),
+      { target: { value: 'Awa' } })
+    await settle()
+    expect(screen.getByRole('button', { name: 'Valider la sélection (0)' }).disabled).toBe(true)
+  })
+})
+
 describe('pages/scolarite/Inscriptions — validation en cascade', () => {
   it('valide un brouillon en enchaînant EN_ATTENTE → A_VALIDER → VALIDEE puis recharge', async () => {
     mount()

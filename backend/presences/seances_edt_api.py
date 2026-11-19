@@ -221,15 +221,17 @@ def qr_seance(request, pk):
         return Response(err, status=400)
     if not service.est_seance_du_jour(affectation, date):
         return Response({'detail': 'Aucune séance planifiée ce jour pour ce créneau.'}, status=400)
-    jeton = service.jeton_actif(affectation, date)
+    # Le GET restitue le secret actif : il exige la même garde objet que le
+    # POST, même si l'appelant dispose de la permission QR globale.
+    if not service.peut_gerer_seance(request.user, affectation):
+        return Response({'detail': 'Seul l’enseignant de la séance (ou un compte habilité) '
+                                   'peut ouvrir le QR.'}, status=403)
     if request.method == 'GET':
+        jeton = service.jeton_actif(affectation, date)
         if jeton is None:
             return Response({'actif': False, 'token': None, 'expire_a': None})
         return Response({'actif': True, 'token': str(jeton.token),
                          'expire_a': jeton.expire_at.isoformat()})
-    if not service.peut_gerer_seance(request.user, affectation):
-        return Response({'detail': 'Seul l’enseignant de la séance (ou un compte habilité) '
-                                   'peut ouvrir le QR.'}, status=403)
     jeton = service.generer_jeton(request, affectation, date)
     debut, _ = service.horodatages(affectation, date)
     return Response({
@@ -301,7 +303,8 @@ def scan_seance(request):
 
     action, pointage, erreur = service.badger_scan(
         request, personne=personne, affectation=affectation, date=date,
-        device_id=device_id, coords=coords or None, type_personne=type_str)
+        device_id=device_id, coords=coords or None, type_personne=type_str,
+        jeton=jeton)
     if erreur:
         return Response(service.normaliser_erreur(
             erreur, type_personne=type_str), status=400)

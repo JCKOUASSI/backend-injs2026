@@ -33,6 +33,7 @@ MOTIF_VERSION_CONFLIT = 'VERSION_EDT_MODIFIEE'
 MOTIF_VALIDATION_BLOQUANTE = 'VALIDATION_BLOQUANTE'
 MOTIF_AUCUNE_AFFECTATION = 'AUCUNE_AFFECTATION_A_PUBLIER'
 MOTIF_PLAN_INCOMPLET = 'PLAN_INCOMPLET'
+MOTIF_QR_V2_NON_PUBLIABLE = 'QR_V2_NON_PUBLIABLE'
 
 
 def empreinte_generation(*, annee_academique_id=None, ref_formation_id=None,
@@ -72,6 +73,22 @@ def persister_plan(emploi_du_temps, placements, remplacer=False):
     (interdit par l'étape 43).
     """
     from edts.models import AffectationCreneau
+    from scolarite.models import AnneeAcademique
+
+    # Sérialiser avec les placements v2 (qui verrouillent également l'année) :
+    # une simple lecture de garde hors verrou laisserait une fenêtre de course.
+    AnneeAcademique.objects.select_for_update().get(pk=emploi_du_temps.annee_academique_id)
+
+    # Les appels directs (campagnes, commandes, tests) ne passent pas toujours
+    # par les gardes HTTP. Une année avec occurrences datées v2 ne doit jamais
+    # être réécrite par le persisteur legacy, y compris remplacer=False :
+    # ce chemin ne maintient ni la clé métier ni le registre/instantané QR.
+    # Contrôler avant la première écriture et dans la transaction appelante.
+    if AffectationCreneau.objects.filter(
+        emploi_du_temps__annee_academique_id=emploi_du_temps.annee_academique_id,
+        cle_occurrence_v2__isnull=False,
+    ).exists():
+        raise ValueError('QR_V2_CHEMIN_HERITE_REFUSE')
 
     if remplacer:
         AffectationCreneau.objects.filter(
@@ -91,6 +108,7 @@ def persister_plan(emploi_du_temps, placements, remplacer=False):
             formation_id=besoin.ref_formation_id,
             groupe_id=besoin.groupe_id,
             affectation_pedagogique_id=besoin.affectation_pedagogique_id,
+            ecue_id=besoin.ecue_id,
             # -- Enseignant : FK métier Formateur (identifiant INJS).
             # `TeachingNeed` est immuable et n'expose que l'identifiant ; le
             # libellé reste porté par la dénormalisation de l'EDT. Sans cette
@@ -170,6 +188,16 @@ def publier_emploi_du_temps(emploi_du_temps_id, *, user=None, force=False,
                 'statuts_autorises': ['BROUILLON', 'EN_VALIDATION', 'VALIDE'],
             },
         }
+
+    # Garde strictement additif : les EDT hérités conservent leur parcours,
+    # mais une occurrence datée v2 ne peut être publiée sans rapprochement QR.
+    # Même force=True n'écarte pas cette protection.
+    from edts.moteur.qr_v2 import anomalies_publication_v2
+    anomalies_qr = anomalies_publication_v2(emploi_du_temps)
+    if anomalies_qr:
+        return {'publie': False, 'motif_echec': MOTIF_QR_V2_NON_PUBLIABLE,
+                'detail': {'explication': 'Présences QR non prêtes pour cet EDT v2.',
+                           'anomalies': anomalies_qr}}
 
     rapport = valider_emploi_du_temps(emploi_du_temps, besoins_attendus)
     if not rapport.valide and not force:

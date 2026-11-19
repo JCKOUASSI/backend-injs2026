@@ -12,6 +12,9 @@ Conventions héritées du socle présences (préserver) :
 - ``AuditLog`` pour tout geste sensible (scan, forçage avec motif, clôture auto).
 """
 from datetime import datetime, timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.db import transaction
@@ -30,6 +33,7 @@ CODES_NORMALISES = {
     'INVALID_TOKEN': 'QR_INVALIDE',
     'TOKEN_EXPIRED': 'QR_EXPIRE',
     'ALREADY_SCANNED': 'DOUBLE_ENTREE',
+    'DUPLICATE_SCAN': 'SCAN_DUPLIQUE',
     'NOT_IN_LIST': 'ETUDIANT_HORS_GROUPE',
     'NOT_IN_GROUP': 'ETUDIANT_HORS_GROUPE',
     'HORS_SEANCE': 'SEANCE_INACTIVE',
@@ -45,7 +49,9 @@ CODES_NORMALISES = {
 ACTIONS_RECOMMANDEES = {
     'QR_INVALIDE': 'Scannez le QR affiché par l’enseignant pour cette séance.',
     'QR_EXPIRE': 'Demandez à l’enseignant de réafficher le QR de la séance.',
+    'QR_REVOQUE': 'Ce QR a été remplacé ; scannez le nouveau QR de la séance.',
     'DOUBLE_ENTREE': 'Votre présence est déjà complète pour cette séance.',
+    'SCAN_DUPLIQUE': 'Votre entrée est enregistrée ; attendez avant de scanner pour sortir.',
     'ETUDIANT_HORS_GROUPE': 'Vérifiez votre inscription dans le groupe de la séance auprès du secrétariat.',
     'ENSEIGNANT_NON_AFFECTE': 'Seul l’enseignant affecté à la séance peut badger.',
     'ACTIVITE_NON_AUTORISEE': 'Demandez votre habilitation d’encadrement pour cette séance au secrétariat.',
@@ -69,6 +75,8 @@ def normaliser_erreur(erreur, *, type_personne='participant'):
         return erreur
     code = erreur.get('code')
     normalise = CODES_NORMALISES.get(code, code)
+    if code == 'TOKEN_EXPIRED' and erreur.get('raison') == 'REVOQUE':
+        normalise = 'QR_REVOQUE'
     if code == 'UTILISATEUR_NON_AUTORISE':
         # Même refus legacy, deux lectures métier selon le profil.
         normalise = ('ACTIVITE_NON_AUTORISEE' if type_personne == 'encadrant'
@@ -104,9 +112,10 @@ CLE_OUVERTURE_ANTICIPEE = 'presences.edt.ouverture_anticipee_minutes'
 CLE_TOLERANCE_RETARD = 'presences.edt.tolerance_retard_minutes'
 CLE_TOLERANCE_CLOTURE = 'presences.edt.tolerance_cloture_minutes'
 CLE_NOTIFIER_CLOTURE = 'presences.edt.notifier_a_cloture'
+CLE_ANTI_DOUBLE_TAP = 'presences.edt.anti_double_tap_secondes'
 
 DEFAUTS = {CLE_OUVERTURE_ANTICIPEE: 10, CLE_TOLERANCE_RETARD: 10, CLE_TOLERANCE_CLOTURE: 15,
-           CLE_NOTIFIER_CLOTURE: 1}
+           CLE_NOTIFIER_CLOTURE: 1, CLE_ANTI_DOUBLE_TAP: 4}
 
 
 def _parametre(cle):
@@ -129,22 +138,31 @@ def _parametre(cle):
 def semaine_academique(affectation, date):
     """Numéro de semaine académique de `date` (1-based) pour l'EDT donné."""
     annee = getattr(affectation.emploi_du_temps, 'annee_academique', None)
-    if annee is None or annee.date_debut is None:
+    if (annee is None or annee.date_debut is None
+            or date < annee.date_debut
+            or (annee.date_fin is not None and date > annee.date_fin)):
         return None
     return (date - annee.date_debut).days // 7 + 1
 
 
-def est_seance_du_jour(affectation, date):
-    """True si `affectation` a séance ce jour-là (jour + plage de semaines)."""
-    if not affectation.actif:
-        return False
+def occurrence_planifiee_du_jour(affectation, date):
+    """Jour/semaine du créneau, même si la séance a été annulée logiquement."""
     numero = semaine_academique(affectation, date)
-    if numero is None:
+    if numero is None or not (affectation.semaine_debut <= numero <= affectation.semaine_fin):
         return False
-    if not (affectation.semaine_debut <= numero <= affectation.semaine_fin):
+    return _JOURS.get(getattr(affectation.creneau_template, 'jour', None)) == date.weekday()
+
+
+def est_seance_du_jour(affectation, date):
+    """Séance badgeable : contrat legacy conservé, v2 QR attesté seulement."""
+    if not affectation.actif or not occurrence_planifiee_du_jour(affectation, date):
         return False
-    code_jour = getattr(affectation.creneau_template, 'jour', None)
-    return _JOURS.get(code_jour) == date.weekday()
+    if affectation.cle_occurrence_v2 or affectation.date_seance:
+        # Aucun flux d'attestation Participant n'existe encore. Refus O(1)
+        # sans requête supplémentaire par séance, même si un statut a été
+        # forcé hors workflow ; la voie legacy reste strictement inchangée.
+        return False
+    return True
 
 
 def horodatages(affectation, date):
@@ -241,15 +259,18 @@ def pointages_du_jour(affectation, date):
 
 
 def ecue_de_seance(affectation):
-    """ECUE de la séance via **son** affectation pédagogique (chaîne LMD).
+    """ECUE explicite de la séance, ou celle de son affectation historique.
 
-    Retourne ``None`` si la séance n'est pas rattachée à une affectation
-    pédagogique : aucune déduction depuis un module ou un groupe n'est tentée
-    (convention « rattachement manuel et explicite » de l'EDT).
+    Pour les cohortes importées, la génération copie `TeachingNeed.ecue_id`
+    vers la FK de séance ; aucun rapprochement par intitulé/groupe n'est tenté.
+    Les séances historiques sans les deux FK restent sans ECUE (pas de backfill
+    conjectural ni de changement destructif de données).
     """
-    if not affectation.affectation_pedagogique_id:
-        return None
-    return getattr(affectation.affectation_pedagogique, 'ecue', None)
+    if affectation.ecue_id:
+        return affectation.ecue
+    if affectation.affectation_pedagogique_id:
+        return getattr(affectation.affectation_pedagogique, 'ecue', None)
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -378,7 +399,9 @@ def generer_jeton(request, affectation, date):
         acteur=request.user, acteur_label=request.user.get_full_name() or request.user.username,
         cible_type='seance_edt', cible_numero=str(affectation.pk),
         cible_nom=affectation.intitule or str(affectation.creneau_template),
-        extra={'date': date.isoformat(), 'token': str(jeton.token), 'canal': 'EDT_LMD'},
+        # Le jeton est un secret de badgeage : ne pas le laisser dans un
+        # journal accessible aux rôles de supervision.
+        extra={'date': date.isoformat(), 'canal': 'EDT_LMD'},
     )
     return jeton
 
@@ -386,10 +409,9 @@ def generer_jeton(request, affectation, date):
 def resoudre_jeton_lmd(token):
     """Résout un jeton QR de séance LMD.
 
-    Retourne ``(jeton, erreur)``. Un QR **remplacé** (régénéré par
-    l'enseignant) est suivi automatiquement tant que son remplaçant est valide ;
-    un QR expiré ou dont la séance n'a plus de jeton actif est refusé
-    (``TOKEN_EXPIRED``) — c'est la partie serveur de l'anti-rejeu.
+    Retourne ``(jeton, erreur)``. Un QR remplacé, expiré ou désactivé
+    est refusé (``TOKEN_EXPIRED``) : une régénération révoque réellement
+    l'ancien secret, même si la séance dispose d'un nouveau QR actif.
     """
     from django.core.exceptions import ValidationError
 
@@ -408,15 +430,21 @@ def resoudre_jeton_lmd(token):
         return None, {'code': 'INVALID_TOKEN',
                       'detail': 'QR code inconnu ou hors séance LMD.'}
     if not jeton.is_valid:
-        remplacement = (QRToken.objects
-                        .filter(seance_edt=jeton.seance_edt, actif=True)
-                        .select_related('seance_edt')
-                        .order_by('-created_at').first())
-        if remplacement is None or not remplacement.is_valid:
-            return None, {'code': 'TOKEN_EXPIRED',
-                          'detail': 'QR code expiré — demandez un réaffichage.'}
-        jeton = remplacement
+        return None, erreur_jeton_inactif(jeton)
     return jeton, None
+
+
+def erreur_jeton_inactif(jeton):
+    """Conserve le code legacy tout en exposant la cause (sans révéler le secret).
+
+    La désactivation/re-génération prime sur la date d'expiration ; un QR
+    désactivé et expiré reste révoqué. Le client mobile ancien lit `code`, le
+    nouveau lit `code_normalise` et `raison`.
+    """
+    raison = 'REVOQUE' if jeton is None or not jeton.actif else 'EXPIRE'
+    return {'code': 'TOKEN_EXPIRED', 'raison': raison,
+            'detail': ('QR code remplacé — scannez le nouveau QR.' if raison == 'REVOQUE'
+                       else 'QR code expiré — demandez un réaffichage.')}
 
 
 # ---------------------------------------------------------------------------
@@ -461,7 +489,7 @@ def _controle_geofence_edt(affectation, coords):
 
 @transaction.atomic
 def badger_scan(request, *, affectation, date, personne=None, participant=None,
-                device_id='', coords=None, type_personne='participant'):
+                device_id='', coords=None, type_personne='participant', jeton=None):
     """Entrée/sortie au scan du QR — anti-fraude : 1 entrée + 1 sortie par séance.
 
     Le contrôle de périmètre géographique est appliqué **à l'entrée** : la sortie
@@ -475,6 +503,15 @@ def badger_scan(request, *, affectation, date, personne=None, participant=None,
     Retourne (action, pointage, None) ou (None, None, réponse-dict d'erreur).
     """
     personne = personne if personne is not None else participant
+    if jeton is not None:
+        # Le QR a été lu AVANT cette transaction par l'API. Verrouiller puis
+        # revérifier sa version en base évite un scan écrit après révocation ;
+        # la génération/révocation concurrente attend le commit du scan.
+        courant = QRToken.objects.select_for_update().filter(pk=jeton.pk).first()
+        if courant is None or courant.seance_edt_id != affectation.pk:
+            return None, None, erreur_jeton_inactif(None)
+        if not courant.is_valid:
+            return None, None, erreur_jeton_inactif(courant)
     now = timezone.now()
     debut, fin = horodatages(affectation, date)
     ouverture, cloture = fenetre_scan(affectation, date)
@@ -486,6 +523,13 @@ def badger_scan(request, *, affectation, date, personne=None, participant=None,
                             'detail': 'La fenêtre de badgeage de cette séance est fermée.'}
 
     filtre_personne = filtres_personne(type_personne, personne)
+    # Comme pour le canal legacy, verrouiller la personne AVANT la recherche :
+    # au premier scan il n'existe encore aucun Pointage à verrouiller.
+    # Testé sur PostgreSQL isolé ; le doublon rapproché est refusé ci-dessous.
+    personne.__class__._base_manager.select_for_update().get(pk=personne.pk)
+    # Mesurer après l'attente du verrou, pas au début de la requête : deux
+    # transactions concurrentes doivent comparer l'heure effectivement lue.
+    now = timezone.now()
     verrou = (Pointage.objects
               .filter(seance_edt=affectation, date_journee=date, **filtre_personne)
               .select_for_update())
@@ -493,6 +537,20 @@ def badger_scan(request, *, affectation, date, personne=None, participant=None,
     ouvert = verrou.filter(timestamp_sortie__isnull=True).order_by('-timestamp_entree').first()
 
     if ouvert is not None:
+        secondes = _parametre(CLE_ANTI_DOUBLE_TAP)
+        if not 1 <= secondes <= 60:
+            secondes = DEFAUTS[CLE_ANTI_DOUBLE_TAP]
+        # La personne verrouillée sérialise aussi le tout premier scan, même
+        # en l'absence de pointage préalable. Pas d'écriture (ni audit DB)
+        # pour un doublon ; seules des références non sensibles sont loguées.
+        if timedelta(0) <= now - ouvert.timestamp_entree < timedelta(seconds=secondes):
+            logger.info('Scan QR rapproché ignoré seance=%s personne=%s pointage=%s',
+                        affectation.pk, personne.pk, ouvert.pk)
+            return None, None, {
+                'code': 'DUPLICATE_SCAN',
+                'detail': 'Entrée déjà enregistrée : scan rapproché ignoré. '
+                          'Réessayez dans quelques secondes pour sortir.',
+            }
         ouvert.timestamp_sortie = min(now, cloture)
         ouvert.statut = Pointage.Statut.TERMINE
         ouvert.type_sortie = Pointage.TypeSortie.SORTIE_QR

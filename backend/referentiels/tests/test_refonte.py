@@ -85,9 +85,11 @@ class RegistreTests(TestCase):
                     continue
                 self.assertIn(route, ecrans | {None}, slug)
 
-    def test_modules_officiels_declare_en_lecture_seule(self):
+    def test_modules_officiels_gerables_sans_changer_la_lecture_historique(self):
         entree = REGISTRE['modules-officiels']
-        self.assertFalse(entree['editable'])
+        self.assertTrue(entree['editable'])
+        self.assertEqual(entree['route_api'], '/referentiels/modules-officiels/')
+        self.assertEqual(entree['route_gestion'], '/referentiels/gestion-donnees/modules-officiels/')
         self.assertEqual(modele_de(entree), RefModuleOfficiel)
 
 
@@ -241,11 +243,11 @@ class CrudGeneriqueTests(TestCase):
         self.assertEqual(journal.count(), 1)
         self.assertEqual(journal.first().detail, {'motif': 'retour en service'})
 
-    def test_delete_non_expose(self):
+    def test_suppression_definitive_seulement_si_non_utilisee(self):
         mention = RefMention.objects.create(code='STASE', libelle='STASE')
         res = self.client.delete(f'/api/referentiels/mentions/{mention.pk}/')
-        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        self.assertTrue(RefMention.objects.filter(pk=mention.pk).exists())
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(RefMention.objects.filter(pk=mention.pk).exists())
 
     def test_auditeur_en_lecture_seule(self):
         self.client.force_authenticate(make_user('aud_gen', role='AUDITEUR'))

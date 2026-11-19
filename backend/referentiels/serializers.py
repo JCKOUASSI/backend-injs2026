@@ -228,6 +228,13 @@ def serializer_pour_ref(slug):
         # la contrainte de base reste le garde-fou.
         attributs[bascule] = serializers.BooleanField(required=False)
 
+    if slug in ('formations', 'modules-officiels', 'volumes-modules'):
+        def valider_provenance(self, attrs):
+            if self.instance is None and 'fiabilite' not in attrs and 'fiabilite' in concrets:
+                attrs['fiabilite'] = 'A_RENSEIGNER'
+            return attrs
+        attributs['validate'] = valider_provenance
+
     attributs['Meta'] = type('Meta', (), {
         'model': modele,
         'fields': champs,
@@ -237,8 +244,11 @@ def serializer_pour_ref(slug):
             if nom in champs
         ],
     })
+    # Les routes historiques utilisent déjà RefModuleOfficielSerializer et
+    # RefVolumeHoraireFormationSerializer. Un même nom de composant OpenAPI
+    # pour deux schémas distincts supprimait des clés de leur contrat publié.
     serie = type(
-        f'{modele.__name__}Serializer',
+        f'Gestion{modele.__name__}Serializer',
         (RefSocleSerializer,),
         attributs,
     )

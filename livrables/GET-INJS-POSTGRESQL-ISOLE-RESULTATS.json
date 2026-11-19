@@ -1,0 +1,402 @@
+{
+  "nature": "BENCHMARK_SYNTHETIQUE_POSTGRESQL_LOCAL_NON_OFFICIEL",
+  "reference": "70d08dad1821caceb61b22fe22cf70e13155bf18",
+  "migrations": {
+    "edts": "0013",
+    "scolarite": "0020"
+  },
+  "postgresql": "17.11 (paquet local de test)",
+  "conditions": {
+    "base": "PostgreSQL local isolé, socket Unix seulement",
+    "encoding": "UTF8",
+    "fsync": "on",
+    "synchronous_commit": "on",
+    "annee": "BENCHMARK-2098-2099 fictive",
+    "graine": 42,
+    "aucune_publication": true
+  },
+  "mesures": {
+    "5000": {
+      "simulation": {
+        "mode": "simulation",
+        "etudiants_synthetiques_importes": 5000,
+        "groupes_cibles": 84,
+        "besoins_cibles": 336,
+        "occurrences_cibles": 4032,
+        "groupes_finies": 84,
+        "occurrences_traitees": 4032,
+        "termine": true,
+        "duree_import_s": 0.956,
+        "duree_calcul_ou_commit_s": 37.644,
+        "maxrss_kib": 72472,
+        "sql_mesure": 673,
+        "decisions": {
+          "PLACEE": 4032,
+          "ECHEC": 0,
+          "A_REVOIR": 0
+        },
+        "codes": {
+          "PLACEMENT_POSSIBLE": 4032
+        },
+        "exemples_echec": [],
+        "placements_persistes": 0,
+        "registres_qr": 0,
+        "limite_s": 600,
+        "source": "FICTIVE_NON_OFFICIELLE"
+      },
+      "commit": {
+        "mode": "commit",
+        "etudiants_synthetiques_importes": 5000,
+        "groupes_cibles": 84,
+        "besoins_cibles": 336,
+        "occurrences_cibles": 4032,
+        "groupes_finies": 84,
+        "occurrences_traitees": 4032,
+        "termine": true,
+        "duree_import_s": 1.05,
+        "duree_calcul_ou_commit_s": 182.139,
+        "maxrss_kib": 84080,
+        "sql_mesure": 130904,
+        "decisions": {
+          "PLACEE": 4032,
+          "ECHEC": 0,
+          "A_REVOIR": 0
+        },
+        "codes": {
+          "PLACEE_QR_A_REVOIR": 4032
+        },
+        "exemples_echec": [],
+        "placements_persistes": 4032,
+        "registres_qr": 4032,
+        "limite_s": 600,
+        "source": "FICTIVE_NON_OFFICIELLE"
+      },
+      "verification_avant_semaine": {
+        "annee": "BENCHMARK-P6-5000",
+        "groupes": 84,
+        "inscrits_synthetiques": 5000,
+        "affectations": 4032,
+        "registres": 4032,
+        "instantanes": 4032,
+        "groupes_avec_48": 84,
+        "groupes_incomplets": 0,
+        "ressources_dates": 3523,
+        "cles_qr_incoherentes": 0,
+        "instantanes_avec_participants": 0,
+        "pointages": 0,
+        "rss_max_kib": 69208
+      },
+      "semaine_apres_annee": {
+        "etudiants_synthetiques": 5000,
+        "groupes": 30,
+        "fenetre": "2099-09-14/17",
+        "occurrences": 120,
+        "p95_groupe_semaine_s": 0.187,
+        "max_groupe_semaine_s": 0.195,
+        "decisions": {
+          "PLACEE": 120
+        },
+        "codes": {
+          "PLACEE_QR_A_REVOIR": 120
+        },
+        "sql": 4992,
+        "affectations_annee": 4152,
+        "registres_annee": 4152,
+        "maxrss_kib": 74264,
+        "source": "FICTIVE_NON_OFFICIELLE"
+      }
+    },
+    "10000": {
+      "simulation": {
+        "mode": "simulation",
+        "etudiants_synthetiques_importes": 10000,
+        "groupes_cibles": 167,
+        "besoins_cibles": 668,
+        "occurrences_cibles": 8016,
+        "groupes_finies": 167,
+        "occurrences_traitees": 8016,
+        "termine": true,
+        "duree_import_s": 2.053,
+        "duree_calcul_ou_commit_s": 142.949,
+        "maxrss_kib": 75360,
+        "sql_mesure": 1337,
+        "decisions": {
+          "PLACEE": 8016,
+          "ECHEC": 0,
+          "A_REVOIR": 0
+        },
+        "codes": {
+          "PLACEMENT_POSSIBLE": 8016
+        },
+        "exemples_echec": [],
+        "placements_persistes": 0,
+        "registres_qr": 0,
+        "limite_s": 600,
+        "source": "FICTIVE_NON_OFFICIELLE"
+      },
+      "commit": {
+        "mode": "commit",
+        "etudiants_synthetiques_importes": 10000,
+        "groupes_cibles": 167,
+        "besoins_cibles": 668,
+        "occurrences_cibles": 8016,
+        "groupes_finies": 167,
+        "occurrences_traitees": 8016,
+        "termine": true,
+        "duree_import_s": 2.081,
+        "duree_calcul_ou_commit_s": 450.383,
+        "maxrss_kib": 87224,
+        "sql_mesure": 260199,
+        "decisions": {
+          "PLACEE": 8016,
+          "ECHEC": 0,
+          "A_REVOIR": 0
+        },
+        "codes": {
+          "PLACEE_QR_A_REVOIR": 8016
+        },
+        "exemples_echec": [],
+        "placements_persistes": 8016,
+        "registres_qr": 8016,
+        "limite_s": 900,
+        "source": "FICTIVE_NON_OFFICIELLE"
+      },
+      "verification_avant_semaine": {
+        "annee": "BENCHMARK-P6-10000",
+        "groupes": 167,
+        "inscrits_synthetiques": 10000,
+        "affectations": 8016,
+        "registres": 8016,
+        "instantanes": 8016,
+        "groupes_avec_48": 167,
+        "groupes_incomplets": 0,
+        "ressources_dates": 6945,
+        "cles_qr_incoherentes": 0,
+        "instantanes_avec_participants": 0,
+        "pointages": 0,
+        "rss_max_kib": 70228
+      },
+      "semaine_apres_annee": {
+        "etudiants_synthetiques": 10000,
+        "groupes": 30,
+        "fenetre": "2099-09-14/17",
+        "occurrences": 120,
+        "p95_groupe_semaine_s": 0.21,
+        "max_groupe_semaine_s": 0.227,
+        "decisions": {
+          "PLACEE": 120
+        },
+        "codes": {
+          "PLACEE_QR_A_REVOIR": 120
+        },
+        "sql": 4992,
+        "affectations_annee": 8136,
+        "registres_annee": 8136,
+        "maxrss_kib": 74508,
+        "source": "FICTIVE_NON_OFFICIELLE"
+      }
+    },
+    "15000": {
+      "simulation": {
+        "mode": "simulation",
+        "etudiants_synthetiques_importes": 15000,
+        "groupes_cibles": 250,
+        "besoins_cibles": 1000,
+        "occurrences_cibles": 12000,
+        "groupes_finies": 250,
+        "occurrences_traitees": 12000,
+        "termine": true,
+        "duree_import_s": 3.055,
+        "duree_calcul_ou_commit_s": 311.594,
+        "maxrss_kib": 78532,
+        "sql_mesure": 2001,
+        "decisions": {
+          "PLACEE": 12000,
+          "ECHEC": 0,
+          "A_REVOIR": 0
+        },
+        "codes": {
+          "PLACEMENT_POSSIBLE": 12000
+        },
+        "exemples_echec": [],
+        "placements_persistes": 0,
+        "registres_qr": 0,
+        "limite_s": 600,
+        "source": "FICTIVE_NON_OFFICIELLE"
+      },
+      "commit": {
+        "mode": "commit",
+        "etudiants_synthetiques_importes": 15000,
+        "groupes_cibles": 250,
+        "besoins_cibles": 1000,
+        "occurrences_cibles": 12000,
+        "groupes_finies": 250,
+        "occurrences_traitees": 12000,
+        "termine": true,
+        "duree_import_s": 3.233,
+        "duree_calcul_ou_commit_s": 823.683,
+        "maxrss_kib": 91940,
+        "sql_mesure": 389255,
+        "decisions": {
+          "PLACEE": 12000,
+          "ECHEC": 0,
+          "A_REVOIR": 0
+        },
+        "codes": {
+          "PLACEE_QR_A_REVOIR": 12000
+        },
+        "exemples_echec": [],
+        "placements_persistes": 12000,
+        "registres_qr": 12000,
+        "limite_s": 1200,
+        "source": "FICTIVE_NON_OFFICIELLE"
+      },
+      "verification_avant_semaine": {
+        "annee": "BENCHMARK-P6-15000",
+        "groupes": 250,
+        "inscrits_synthetiques": 15000,
+        "affectations": 12000,
+        "registres": 12000,
+        "instantanes": 12000,
+        "groupes_avec_48": 250,
+        "groupes_incomplets": 0,
+        "ressources_dates": 10362,
+        "cles_qr_incoherentes": 0,
+        "instantanes_avec_participants": 0,
+        "pointages": 0,
+        "rss_max_kib": 71020
+      },
+      "semaine_apres_annee": {
+        "etudiants_synthetiques": 15000,
+        "groupes": 30,
+        "fenetre": "2099-09-14/17",
+        "occurrences": 120,
+        "p95_groupe_semaine_s": 0.224,
+        "max_groupe_semaine_s": 0.236,
+        "decisions": {
+          "PLACEE": 120
+        },
+        "codes": {
+          "PLACEE_QR_A_REVOIR": 120
+        },
+        "sql": 4992,
+        "affectations_annee": 12120,
+        "registres_annee": 12120,
+        "maxrss_kib": 74220,
+        "source": "FICTIVE_NON_OFFICIELLE"
+      }
+    }
+  },
+  "explain": {
+    "5000": {
+      "mesure": "EXPLAIN ANALYZE sur base synthétique PostgreSQL",
+      "plans": {
+        "groupe_id": {
+          "execution_ms": 0.022,
+          "nodes": [
+            {
+              "type": "Index Scan",
+              "index": "edt_v2_groupe_date_idx",
+              "rows": 4,
+              "temps_ms": 0.016
+            }
+          ]
+        },
+        "formateur_id": {
+          "execution_ms": 0.017,
+          "nodes": [
+            {
+              "type": "Bitmap Heap Scan",
+              "index": null,
+              "rows": 4,
+              "temps_ms": 0.011
+            },
+            {
+              "type": "Bitmap Index Scan",
+              "index": "edt_v2_prof_date_idx",
+              "rows": 4,
+              "temps_ms": 0.006
+            }
+          ]
+        },
+        "salle_id": {
+          "execution_ms": 0.019,
+          "nodes": [
+            {
+              "type": "Bitmap Heap Scan",
+              "index": null,
+              "rows": 4,
+              "temps_ms": 0.012
+            },
+            {
+              "type": "Bitmap Index Scan",
+              "index": "edt_v2_salle_date_idx",
+              "rows": 4,
+              "temps_ms": 0.006
+            }
+          ]
+        }
+      },
+      "index_partiels": [
+        "edt_v2_groupe_date_idx",
+        "edt_v2_prof_date_idx",
+        "edt_v2_salle_date_idx"
+      ]
+    },
+    "15000": {
+      "mesure": "EXPLAIN ANALYZE PostgreSQL 15k synthétique",
+      "plans": {
+        "groupe_id": {
+          "execution_ms": 0.026,
+          "nodes": [
+            {
+              "type": "Index Scan",
+              "index": "edt_v2_groupe_date_idx",
+              "rows": 4,
+              "time_ms": 0.019
+            }
+          ]
+        },
+        "formateur_id": {
+          "execution_ms": 0.019,
+          "nodes": [
+            {
+              "type": "Bitmap Heap Scan",
+              "index": null,
+              "rows": 4,
+              "time_ms": 0.012
+            },
+            {
+              "type": "Bitmap Index Scan",
+              "index": "edt_v2_prof_date_idx",
+              "rows": 4,
+              "time_ms": 0.007
+            }
+          ]
+        },
+        "salle_id": {
+          "execution_ms": 0.021,
+          "nodes": [
+            {
+              "type": "Bitmap Heap Scan",
+              "index": null,
+              "rows": 4,
+              "time_ms": 0.014
+            },
+            {
+              "type": "Bitmap Index Scan",
+              "index": "edt_v2_salle_date_idx",
+              "rows": 4,
+              "time_ms": 0.007
+            }
+          ]
+        }
+      }
+    }
+  },
+  "tests": {
+    "regression_postgres": "181 OK",
+    "api_heritee_postgres": "109 OK",
+    "concurrence": "4 tests PostgreSQL réussis"
+  }
+}

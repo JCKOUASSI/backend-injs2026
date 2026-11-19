@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import api from '../services/api'
+import { downloadFile } from '../utils/downloadFile'
 import { useAuth } from '../context/AuthContext'
 import FinancePeriodFilter from '../components/FinancePeriodFilter'
 import { fmtHeures } from '../components/FinanceStatsGrid'
@@ -111,9 +112,9 @@ const TAB_SECTIONS = {
 const ALERTES_OVERVIEW_CODES = ['taux_presence', 'taux_execution_vh', 'saturation_groupe']
 
 const PJ_EXPORT_FORMATS = [
-  { fmt: 'xlsx', icon: 'bi-file-earmark-excel', label: 'Excel', col: '#0b4489' },
-  { fmt: 'pdf',  icon: 'bi-file-earmark-pdf',   label: 'PDF',   col: '#DC3545' },
-  { fmt: 'docx', icon: 'bi-file-earmark-word',  label: 'Word',  col: '#104A8E' },
+  { fmt: 'xlsx', icon: 'bi-file-earmark-excel', label: 'Excel' },
+  { fmt: 'pdf',  icon: 'bi-file-earmark-pdf',   label: 'PDF' },
+  { fmt: 'docx', icon: 'bi-file-earmark-word',  label: 'Word' },
 ]
 
 const RB_PERIODES = [
@@ -1424,14 +1425,9 @@ export default function Statistiques() {
         if (tb.grade) params.set('grade', tb.grade)
       }
       const { blob, fileName } = await api.getBlob(`/statistiques/point-journalier-export/?${params}`)
-      const ext = format === 'pdf' ? 'pdf' : format === 'docx' ? 'docx' : 'xlsx'
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
+      const ext = format === 'pdf' ? 'pdf' : format === 'docx' ? 'doc' : 'xlsx'
       const moisPart = pjMois ? `_M${pjMois}` : '_annuel'
-      a.download = fileName || `POINT_JOURNALIER_${pjAnnee}${moisPart}.${ext}`
-      a.click()
-      URL.revokeObjectURL(url)
+      downloadFile(blob, fileName || `POINT_JOURNALIER_${pjAnnee}${moisPart}.${ext}`)
     } catch (e) {
       const detail = e.response?.data?.detail
       alert(detail || e.message || 'Erreur lors du téléchargement.')
@@ -1639,13 +1635,8 @@ export default function Statistiques() {
       if (bilan?.categorie && bilan.categorie !== '—') params.set('categorie', bilan.categorie)
       if (rbJustificatifsText.trim()) params.set('justificatifs', rbJustificatifsText.trim())
       const { blob, fileName } = await api.getBlob(`/statistiques/bilans-export/?${params}`)
-      const ext = format === 'pdf' ? 'pdf' : format === 'docx' ? 'docx' : 'xlsx'
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = fileName || `BILANS_${rbAnnee}.${ext}`
-      a.click()
-      URL.revokeObjectURL(url)
+      const ext = format === 'pdf' ? 'pdf' : format === 'docx' ? 'doc' : 'xlsx'
+      downloadFile(blob, fileName || `BILANS_${rbAnnee}.${ext}`)
     } catch (e) {
       const detail = e.response?.data?.detail
       alert(detail || e.message || 'Erreur lors du téléchargement.')
@@ -1682,13 +1673,8 @@ export default function Statistiques() {
         params.set('meta', JSON.stringify({ justificatifs, difficultes }))
       }
       const { blob, fileName } = await api.getBlob(`/statistiques/bilan-fac-export/?${params}`)
-      const ext = format === 'pdf' ? 'pdf' : format === 'docx' ? 'docx' : 'xlsx'
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = fileName || `BILAN_FAC_${facAnnee}.${ext}`
-      a.click()
-      URL.revokeObjectURL(url)
+      const ext = format === 'pdf' ? 'pdf' : format === 'docx' ? 'doc' : 'xlsx'
+      downloadFile(blob, fileName || `BILAN_FAC_${facAnnee}.${ext}`)
     } catch (e) {
       const detail = e.response?.data?.detail
       alert(detail || e.message || 'Erreur lors du téléchargement.')
@@ -2645,12 +2631,11 @@ export default function Statistiques() {
             <button className="btn btn-sm btn-outline-secondary" onClick={fetchBilans} disabled={loadingRb}>
               <i className="bi bi-arrow-clockwise me-1"/>Actualiser
             </button>
-            {PJ_EXPORT_FORMATS.map(({ fmt, icon, label, col }) => (
+            {PJ_EXPORT_FORMATS.map(({ fmt, icon, label }) => (
               <button
                 key={`rb-${fmt}`}
-                className="btn btn-sm"
+                className={`export-format-btn export-format-btn--${fmt}`}
                 disabled={!!exportingRb || loadingRb || !rbData?.bilans?.length}
-                style={{ background: col, color: '#fff', border: 'none', minWidth: 88, opacity: (exportingRb || loadingRb) ? 0.65 : 1 }}
                 onClick={() => downloadBilanExport(fmt)}
                 title={`Exporter les bilans filtrés (${label})`}
               >
@@ -3108,12 +3093,11 @@ export default function Statistiques() {
               <button className="btn btn-sm btn-outline-secondary" onClick={fetchPointJournalier} disabled={loadingPj}>
                 <i className="bi bi-arrow-clockwise me-1"/>Actualiser
               </button>
-              {PJ_EXPORT_FORMATS.map(({ fmt, icon, label, col }) => (
+              {PJ_EXPORT_FORMATS.map(({ fmt, icon, label }) => (
                 <button
                   key={fmt}
-                  className="btn btn-sm"
+                  className={`export-format-btn export-format-btn--${fmt}`}
                   disabled={!!exportingPj || loadingPj || !pjData?.tableaux?.length}
-                  style={{ background: col, color: '#fff', border: 'none', minWidth: 88, opacity: (exportingPj || loadingPj) ? 0.65 : 1 }}
                   onClick={() => downloadPointJournalier(fmt)}
                   title={`Exporter la sélection filtrée (${label})`}
                 >
@@ -4176,16 +4160,12 @@ function BilanFACPanel({ data, sousOnglet, onChangeSousOnglet, onMetaChange, onE
           </div>
           {onExport && (
             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
-              {PJ_EXPORT_FORMATS.map(({ fmt, icon, label, col }) => (
+              {PJ_EXPORT_FORMATS.map(({ fmt, icon, label }) => (
                 <button
                   key={`fac-${fmt}`}
                   type="button"
-                  className="btn btn-sm"
+                  className={`export-format-btn export-format-btn--${fmt}`}
                   disabled={!!exportingFac}
-                  style={{
-                    background: col, color: '#fff', border: 'none', minWidth: 88,
-                    opacity: exportingFac ? 0.65 : 1,
-                  }}
                   onClick={() => onExport(fmt)}
                   title={`Exporter le bilan FAC (${label})`}
                 >

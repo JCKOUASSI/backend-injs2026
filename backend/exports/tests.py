@@ -385,6 +385,46 @@ class ListeClasseExportTest(ExportFixtureMixin, TestCase):
         self.assertTrue(res.content.startswith(b'%PDF'))
         self.assertGreater(len(res.content), 500)
 
+    def test_word_csv_et_acces_sont_filtres(self):
+        import csv
+        from docx import Document
+
+        self.client.force_authenticate(user=self.archive)
+        word = self.client.get('/api/exports/participants/liste-classe/word/?groupe=GROUPE%201')
+        self.assertEqual(word.status_code, 200)
+        self.assertTrue(word.content.startswith(b'PK'))
+        doc = Document(BytesIO(word.content))
+        self.assertIn('KONÉ', ' '.join(c.text for t in doc.tables for r in t.rows for c in r.cells))
+
+        csv_response = self.client.get('/api/exports/participants/liste-classe/csv/?groupe=GROUPE%201')
+        self.assertEqual(csv_response.status_code, 200)
+        lignes = list(csv.DictReader(csv_response.content.decode('utf-8-sig').splitlines(), delimiter=';'))
+        self.assertTrue(lignes)
+        self.assertIn('matricule', lignes[0])
+        self.assertIn('Koné', ' '.join(l['nom'] for l in lignes))
+        self.assertNotIn('Diallo', ' '.join(l['nom'] for l in lignes))
+
+        self.client.force_authenticate(user=self.auditeur)
+        for fmt in ('word', 'csv'):
+            res = self.client.get(f'/api/exports/participants/liste-classe/{fmt}/')
+            self.assertEqual(res.status_code, 403)
+
+    def test_csv_peut_etre_reimporte_sans_nouvelle_inscription_module(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.client.force_authenticate(user=self.admin)
+        fichier = self.client.get('/api/exports/participants/liste-classe/csv/')
+        self.assertEqual(fichier.status_code, 200)
+        avant = Participant.objects.count()
+        res = self.client.post('/api/formations/import-excel/', {
+            'type': 'participants', 'strict': 'true',
+            'file': SimpleUploadedFile('etudiants.csv', fichier.content),
+        }, format='multipart')
+        self.assertEqual(res.status_code, 200, res.data)
+        self.assertEqual(res.data['created'], 0)
+        self.assertEqual(res.data['updated'], avant)
+        self.assertEqual(Participant.objects.count(), avant)
+
     def test_liste_classe_excel_single_groupe(self):
         from openpyxl import load_workbook
 

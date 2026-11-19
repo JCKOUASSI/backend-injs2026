@@ -43,6 +43,9 @@ class JournalScolarite(models.Model):
         CONCOURS_CLASSEMENT_PUBLIE = 'CONCOURS_CLASSEMENT_PUBLIE', 'Classement publié'
         INSCRIPTION_CREEE = 'INSCRIPTION_CREEE', 'Inscription administrative créée'
         INSCRIPTION_TRANSITION = 'INSCRIPTION_TRANSITION', 'Changement de statut d’inscription'
+        INSCRIPTION_ARCHIVEE = 'INSCRIPTION_ARCHIVEE', 'Inscription archivée'
+        INSCRIPTION_REACTIVEE = 'INSCRIPTION_REACTIVEE', 'Inscription réactivée'
+        INSCRIPTION_SUPPRIMEE = 'INSCRIPTION_SUPPRIMEE', 'Brouillon isolé supprimé'
         MATRICULE_GENERE = 'MATRICULE_GENERE', 'Matricule généré'
         INSCRIPTION_PEDAGOGIQUE_GENEREE = 'INSCRIPTION_PEDAGOGIQUE_GENEREE', 'Inscriptions pédagogiques générées'
         INSCRIPTION_PEDAGOGIQUE_MANUELLE = 'INSCRIPTION_PEDAGOGIQUE_MANUELLE', 'Modification pédagogique manuelle'
@@ -571,6 +574,10 @@ class InscriptionAdministrative(models.Model):
     )
     type_inscription = models.CharField(max_length=20, choices=Type.choices, default=Type.PREMIERE)
     statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.BROUILLON)
+    # Retrait de la gestion courante sans annuler une inscription déjà validée.
+    # Les liens pédagogiques, financiers et les journaux restent intacts.
+    archive = models.BooleanField(default=False, db_index=True)
+    archive_le = models.DateTimeField(null=True, blank=True)
     date_inscription = models.DateField(default=timezone.localdate)
     date_validation = models.DateTimeField(null=True, blank=True)
     valide_par = models.ForeignKey(

@@ -66,6 +66,30 @@ function Statut({ statut }) {
   return <span className={`badge ${info.classe}`}>{info.libelle}</span>
 }
 
+function ChoixMultiples({ titre, options, selection, onChange, onChangeTout, disabled = false }) {
+  const tousVisiblesCoches = options.length > 0 && options.every(({ id }) => selection.includes(id))
+  return (
+    <fieldset className="gen-choix-multiples" disabled={disabled}>
+      <legend className="form-label gen-label">{titre}</legend>
+      <div className="gen-choix-liste">
+        {options.length > 0 && <label className="form-check gen-choix-item gen-choix-tout">
+          <input type="checkbox" className="form-check-input"
+            checked={tousVisiblesCoches} onChange={() => onChangeTout(!tousVisiblesCoches)} />
+          <span className="form-check-label">Tout sélectionner (options visibles)</span>
+        </label>}
+        {options.length ? options.map(({ id, label }) => (
+          <label key={id} className="form-check gen-choix-item">
+            <input type="checkbox" className="form-check-input"
+              checked={selection.includes(id)} onChange={() => onChange(id)} />
+            <span className="form-check-label">{label}</span>
+          </label>
+        )) : <span className="text-muted small">Aucune option disponible</span>}
+      </div>
+      <small className="text-muted">{selection.length} sélectionné(s) sur {options.length}</small>
+    </fieldset>
+  )
+}
+
 function Compte({ libelle, valeur }) {
   return (
     <div className="getinjs-compte">
@@ -101,6 +125,7 @@ export default function GenerationAnnuelle() {
   const [rapport, setRapport] = useState(null)
   const [synthese, setSynthese] = useState(null)
   const [bilan, setBilan] = useState(null)
+  const [erreurGeneration, setErreurGeneration] = useState('')
   const [enCours, setEnCours] = useState('')
   const [semaines, setSemaines] = useState('1')
   const [telechargement, setTelechargement] = useState(false)
@@ -110,15 +135,33 @@ export default function GenerationAnnuelle() {
   const [formationsRef, setFormationsRef] = useState([])
   const [niveauxRef, setNiveauxRef] = useState([])
   const [groupesRef, setGroupesRef] = useState([])
-  const [filiereCode, setFiliereCode] = useState('')
-  const [formationId, setFormationId] = useState('')
-  const [niveauId, setNiveauId] = useState('')
-  const [groupeId, setGroupeId] = useState('')
-  const [semestreSel, setSemestreSel] = useState('')
+  const [filieresSel, setFilieresSel] = useState([])
+  const [formationsSel, setFormationsSel] = useState([])
+  const [niveauxSel, setNiveauxSel] = useState([])
+  const [groupesSel, setGroupesSel] = useState([])
+  const [semestresSel, setSemestresSel] = useState([])
+  const [dernierApercu, setDernierApercu] = useState(null)
   const [inclureSamedi, setInclureSamedi] = useState(true)
   const [eviterPause, setEviterPause] = useState(true)
   const [publierDirect, setPublierDirect] = useState(false)
+  const anneeSelectionnee = annees.find((a) => String(a.id) === String(anneeId))
+  const calendrierPropose = useMemo(() => {
+    if (!anneeSelectionnee?.date_debut || !anneeSelectionnee?.date_fin) return null
+    const debut = Date.parse(`${anneeSelectionnee.date_debut}T12:00:00Z`)
+    const fin = Date.parse(`${anneeSelectionnee.date_fin}T12:00:00Z`)
+    const total = Math.ceil((fin - debut + 86400000) / (7 * 86400000))
+    if (!Number.isFinite(total) || total < 4 || total > 53) return null
+    const impairs = Math.floor(total / 2)
+    return { total, impairs, pairs: total - impairs,
+      bascule: new Date(debut + impairs * 7 * 86400000).toISOString().slice(0, 10) }
+  }, [anneeSelectionnee])
+
   const [maxSeances, setMaxSeances] = useState('30')
+
+  useEffect(() => { setDernierApercu(null) }, [
+    anneeId, filieresSel, formationsSel, niveauxSel, groupesSel, semestresSel,
+    semaines, inclureSamedi, eviterPause, maxSeances,
+  ])
 
   // Historique des générations et emplois du temps versionnés (réels).
   const [historique, setHistorique] = useState([])
@@ -229,9 +272,7 @@ export default function GenerationAnnuelle() {
       : '/edts/lmd/import/inscrits/'
 
     try {
-      const { data } = await api.post(chemin, donnees, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      const { data } = await api.post(chemin, donnees)
       setRapport(data)
       if (mode === 'import') {
         showToast(`${data.creees || 0} inscription(s) créée(s), ${data.mises_a_jour || 0} mise(s) à jour.`, 'success')
@@ -251,51 +292,118 @@ export default function GenerationAnnuelle() {
   const semainesListe = () => semaines
     .split(',').map((s) => s.trim()).filter((s) => /^\d+$/.test(s)).map(Number)
 
-  const construirePerimetre = () => {
-    const formations = formationId
-      ? [Number(formationId)]
-      : (filiereCode
-        ? formationsRef.filter((f) => f.filiere_code === filiereCode).map((f) => f.id)
-        : [])
+  const basculer = (setter, id) => setter((ids) => ids.includes(id)
+    ? ids.filter((valeur) => valeur !== id) : [...ids, id])
+
+  const construirePerimetre = (mode = 'manuel') => {
+    if (mode === 'automatique') return { formations: [], niveaux: [], groupes: [], semestres: [] }
+    const formations = formationsSel.length ? formationsSel
+      : formationsRef.filter((f) => filieresSel.includes(f.filiere_code)).map((f) => f.id)
     return {
       formations,
-      niveaux: niveauId ? [Number(niveauId)] : [],
-      groupes: groupeId ? [Number(groupeId)] : [],
-      semestres: semestreSel ? [Number(semestreSel)] : [],
+      niveaux: niveauxSel,
+      groupes: groupesSel,
+      semestres: semestresSel,
     }
   }
 
-  const lancerGeneration = async () => {
+  const perimetreManuelValide = () => {
+    const perimetre = construirePerimetre()
+    if (!perimetre.formations.length || !perimetre.niveaux.length
+        || !perimetre.groupes.length || !perimetre.semestres.length) {
+      showToast('Sélectionnez au moins une formation (ou filière), un niveau, un groupe et un semestre avec les cases à cocher.', 'error')
+      return false
+    }
+    if (!perimetre.groupes.every((id) => groupesOptions.some((g) => g.id === id))) {
+      showToast('Un groupe ne correspond plus au périmètre choisi : vérifiez la sélection.', 'error')
+      return false
+    }
+    return true
+  }
+
+  const signatureApercu = () => JSON.stringify({
+    anneeId, perimetre: construirePerimetre(), semaines: semainesListe(),
+    inclureSamedi, eviterPause, maxSeances,
+  })
+
+  const lancerGeneration = async (mode) => {
     if (!anneeId) return showToast('Choisissez une année académique.', 'error')
+    if (mode === 'manuel') {
+      if (!perimetreManuelValide()) return
+      if (dernierApercu !== signatureApercu()) {
+        showToast('Prévisualisez d’abord ce périmètre exact ; la sélection ou les contraintes ont changé.', 'error')
+        return
+      }
+    } else if (!calendrierPropose) {
+      const message = 'Dates de l’année absentes ou incompatibles avec une proposition (4 à 53 semaines).'
+      setErreurGeneration(message)
+      showToast(message, 'error')
+      return
+    } else if (!window.confirm(
+      `CALENDRIER PROVISOIRE NON OFFICIEL pour ${anneeSelectionnee?.libelle || anneeId}.\n`
+      + `Du ${anneeSelectionnee.date_debut} au ${anneeSelectionnee.date_fin} : `
+      + `semaines 1 à ${calendrierPropose.impairs} (semestres impairs), `
+      + `${calendrierPropose.impairs + 1} à ${calendrierPropose.total} (semestres pairs).\n`
+      + `Bascule estimée : ${calendrierPropose.bascule}. Confirmer ce découpage ? `
+      + 'Les EDT resteront en brouillon ; aucune publication automatique.',
+    )) return
     setEnCours('generation')
     setBilan(null)
+    setErreurGeneration('')
+    let etape = 'création de la campagne'
     try {
       const annee = annees.find((a) => String(a.id) === String(anneeId))
       const horodatage = new Date().toLocaleString('fr-FR')
       const { data: campagne } = await api.post('/edts/campagnes/', {
         annee_academique_id: Number(anneeId),
-        libelle: `Génération ${annee?.libelle || anneeId} — ${horodatage}`,
+        libelle: `Génération ${mode} ${annee?.libelle || anneeId} — ${horodatage}`,
         semaines: semainesListe(),
-        perimetre: construirePerimetre(),
+        perimetre: construirePerimetre(mode),
         parametres: {
+          mode_generation: mode,
+          ...(mode === 'automatique' ? {
+            calendrier_previsionnel_confirme: true,
+            calendrier_dates_confirmees: [annee.date_debut, annee.date_fin],
+          } : {}),
           persister: true,
           remplacer: true,
           inclure_maquette: true,
           inclure_samedi: inclureSamedi,
           eviter_pause_meridienne: eviterPause,
-          max_seances_par_groupe_semaine: maxSeances ? Number(maxSeances) : null,
-          publier_direct: publierDirect,
+          max_seances_par_groupe_semaine: mode === 'automatique' ? null : (maxSeances ? Number(maxSeances) : null),
+          publier_direct: mode === 'manuel' && publierDirect,
         },
       })
+      etape = 'préparation des données'
       await api.post(`/edts/campagnes/${campagne.id}/donnees-pretes/`, {})
+      etape = 'démarrage du calcul'
       // Démarrage ASYNCHRONE : la génération peut durer plusieurs minutes
       // sur un périmètre complet — l'exécuter dans la requête HTTP la
       // faisait expirer (toast « Une erreur est survenue »). Le serveur
       // répond 202 immédiatement et l'avancement se suit sur /statut/.
       await api.post(`/edts/campagnes/${campagne.id}/demarrer/`, { asynchrone: true })
+      etape = 'suivi du calcul'
       const statutFinal = await attendreFinGeneration(campagne.id)
+      if (statutFinal?.en_cours !== false) {
+        // Une attente expirée n'est pas une campagne terminée : ne jamais
+        // interroger /resultat/ ni afficher un bilan provisoire comme final.
+        chargerHistorique()
+        return
+      }
       if (statutFinal?.erreur) {
         throw new Error(statutFinal.erreur)
+      }
+      if (statutFinal?.statut === 'ECHEC') {
+        const { data: echec } = await api.get(`/edts/campagnes/${campagne.id}/resultat/`)
+        const motif = echec?.campagne?.anomalies?.[0]?.explication
+          || echec?.campagne?.execution_courante?.erreur
+          || echec?.campagne?.status_global || 'Consultez le bilan et les groupes dans l’historique.'
+        setBilan({ status_global: 'IMPOSSIBLE', motif_echec: motif,
+          totaux: echec?.totaux, groupes: echec?.groupes,
+          detail: { explication: motif } })
+        showToast(`Génération échouée : ${motif}`, 'error')
+        chargerHistorique()
+        return
       }
       const { data: resultat } = await api.get(`/edts/campagnes/${campagne.id}/resultat/`)
       const bilanCampagne = {
@@ -311,7 +419,7 @@ export default function GenerationAnnuelle() {
         + `${resultat.totaux?.seances_placees ?? 0} séance(s) placée(s).`,
         bilanCampagne.status_global === 'COMPLETE' ? 'success' : 'warning',
       )
-      if (publierDirect) {
+      if (mode === 'manuel' && publierDirect) {
         await api.post(`/edts/campagnes/${campagne.id}/valider/`, {})
         await api.post(`/edts/campagnes/${campagne.id}/publier/`, {})
         showToast('Emplois du temps validés puis publiés.', 'success')
@@ -320,13 +428,18 @@ export default function GenerationAnnuelle() {
       chargerVersions()
     } catch (err) {
       const corps = err?.response?.data
-      showToast(
+      const motif = err?.suiviIndisponible ? err.message : (
         corps?.detail?.explication || corps?.motif_echec
         || formatApiErrors(corps)
         || (err?.message && err.message !== 'Network Error' ? err.message : null)
-        || 'Génération impossible.',
-        'error',
+        || 'Erreur réseau/serveur (vérifiez l’historique de la campagne).'
       )
+      const message = err?.suiviIndisponible
+        ? `Suivi indisponible pour la campagne : ${motif}`
+        : `Échec à l’étape « ${etape} » : ${motif}`
+      setErreurGeneration(message)
+      showToast(message, 'error')
+      chargerHistorique()
     } finally {
       setEnCours('')
     }
@@ -335,12 +448,27 @@ export default function GenerationAnnuelle() {
   const attendreFinGeneration = async (campagneId) => {
     const delaiMax = 20 * 60 * 1000
     const debutAttente = Date.now()
+    let erreursConsecutives = 0
     for (;;) {
       let statut = null
       try {
         const { data } = await api.get(`/edts/campagnes/${campagneId}/statut/`)
+        if (!data || typeof data.en_cours !== 'boolean') throw new Error('Réponse de suivi invalide')
         statut = data
-      } catch { statut = null }
+        erreursConsecutives = 0
+      } catch (err) {
+        const http = err?.response?.status
+        erreursConsecutives += 1
+        if ([401, 403, 404].includes(http) || erreursConsecutives >= 3) {
+          const raison = http ? `HTTP ${http}` : 'réseau ou réponse invalide'
+          const erreur = new Error(
+            `lecture du statut impossible (${raison}). Le calcul peut encore être en cours ; `
+            + 'consultez l’historique avant toute relance.',
+          )
+          erreur.suiviIndisponible = true
+          throw erreur
+        }
+      }
       if (statut && statut.en_cours === false) return statut
       if (Date.now() - debutAttente > delaiMax) {
         showToast(
@@ -356,7 +484,10 @@ export default function GenerationAnnuelle() {
 
   const previsualiser = async () => {
     if (!anneeId) return showToast('Choisissez une année académique.', 'error')
+    if (!perimetreManuelValide()) return
     setEnCours('previsualisation')
+    setDernierApercu(null)
+    setErreurGeneration('')
     setBilan(null)
     try {
       const perimetre = construirePerimetre()
@@ -375,6 +506,7 @@ export default function GenerationAnnuelle() {
         max_seances_par_groupe_semaine: maxSeances ? Number(maxSeances) : null,
       })
       setBilan(data && Array.isArray(data.groupes) ? data : null)
+      if (data?.totaux?.seances_placees > 0) setDernierApercu(signatureApercu())
       showToast(
         `Prévisualisation ${STATUT_GLOBAL[data.status_global]?.libelle || data.status_global} : `
         + `${data.totaux?.seances_placees ?? 0} séance(s) placée(s) (rien n'a été écrit).`,
@@ -415,17 +547,18 @@ export default function GenerationAnnuelle() {
     [formationsRef],
   )
   const formationsFiltrees = useMemo(
-    () => (filiereCode
-      ? formationsRef.filter((f) => f.filiere_code === filiereCode)
+    () => (filieresSel.length
+      ? formationsRef.filter((f) => filieresSel.includes(f.filiere_code))
       : formationsRef),
-    [formationsRef, filiereCode],
+    [formationsRef, filieresSel],
   )
   const groupesOptions = useMemo(
     () => groupesRef.filter((g) => (
-      (!formationId || g.ref_formation_id === Number(formationId))
-      && (!niveauId || g.niveau_id === Number(niveauId))
+      (!formationsSel.length || formationsSel.includes(g.ref_formation_id))
+      && (!filieresSel.length || formationsFiltrees.some((f) => f.id === g.ref_formation_id))
+      && (!niveauxSel.length || niveauxSel.includes(g.niveau_id))
     )),
-    [groupesRef, formationId, niveauId],
+    [groupesRef, formationsSel, filieresSel, formationsFiltrees, niveauxSel],
   )
 
   return (
@@ -492,72 +625,45 @@ export default function GenerationAnnuelle() {
                   </select>
                 </div>
                 <div className="col-md-6">
-                  <label className="form-label gen-label" htmlFor="gen-filiere">Filière (mention)</label>
-                  <select
-                    id="gen-filiere"
-                    className="form-select"
-                    value={filiereCode}
-                    onChange={(e) => { setFiliereCode(e.target.value); setFormationId('') }}
-                  >
-                    <option value="">Toutes les filières</option>
-                    {filieresRef.map((code) => <option key={code} value={code}>{code}</option>)}
-                  </select>
+                  <ChoixMultiples titre="Filières (sélection multiple)"
+                    options={filieresRef.map((code) => ({ id: code, label: code }))}
+                    selection={filieresSel}
+                    onChange={(id) => { basculer(setFilieresSel, id); setFormationsSel([]); setGroupesSel([]) }}
+                    onChangeTout={(cocher) => {
+                      setFilieresSel(cocher ? filieresRef : []); setFormationsSel([]); setGroupesSel([])
+                    }} />
                 </div>
                 <div className="col-md-6">
-                  <label className="form-label gen-label" htmlFor="gen-formation">Formation / parcours</label>
-                  <select
-                    id="gen-formation"
-                    className="form-select"
-                    value={formationId}
-                    onChange={(e) => setFormationId(e.target.value)}
-                  >
-                    <option value="">Toutes les formations</option>
-                    {formationsFiltrees.map((f) => (
-                      <option key={f.id} value={f.id}>{f.intitule}</option>
-                    ))}
-                  </select>
+                  <ChoixMultiples titre="Formations / parcours (sélection multiple)"
+                    options={formationsFiltrees.map((f) => ({ id: f.id, label: f.intitule }))}
+                    selection={formationsSel}
+                    onChange={(id) => { basculer(setFormationsSel, id); setGroupesSel([]) }}
+                    onChangeTout={(cocher) => {
+                      setFormationsSel(cocher ? formationsFiltrees.map((f) => f.id) : []); setGroupesSel([])
+                    }} />
                 </div>
                 <div className="col-md-6">
-                  <label className="form-label gen-label" htmlFor="gen-niveau">Niveau</label>
-                  <select
-                    id="gen-niveau"
-                    className="form-select"
-                    value={niveauId}
-                    onChange={(e) => setNiveauId(e.target.value)}
-                  >
-                    <option value="">Tous les niveaux</option>
-                    {niveauxRef.map((n) => (
-                      <option key={n.id} value={n.id}>{n.code} — {n.libelle}</option>
-                    ))}
-                  </select>
+                  <ChoixMultiples titre="Niveaux (sélection multiple)"
+                    options={niveauxRef.map((n) => ({ id: n.id, label: `${n.code} — ${n.libelle}` }))}
+                    selection={niveauxSel}
+                    onChange={(id) => { basculer(setNiveauxSel, id); setGroupesSel([]) }}
+                    onChangeTout={(cocher) => {
+                      setNiveauxSel(cocher ? niveauxRef.map((n) => n.id) : []); setGroupesSel([])
+                    }} />
                 </div>
                 <div className="col-md-6">
-                  <label className="form-label gen-label" htmlFor="gen-groupe">Groupe (optionnel)</label>
-                  <select
-                    id="gen-groupe"
-                    className="form-select"
-                    value={groupeId}
-                    onChange={(e) => setGroupeId(e.target.value)}
-                  >
-                    <option value="">Tous les groupes du périmètre</option>
-                    {groupesOptions.map((g) => (
-                      <option key={g.id} value={g.id}>{g.nom}</option>
-                    ))}
-                  </select>
+                  <ChoixMultiples titre="Groupes (sélection multiple)"
+                    options={groupesOptions.map((g) => ({ id: g.id,
+                      label: `${g.nom} — ${formationsRef.find((f) => f.id === g.ref_formation_id)?.intitule || g.ref_formation_id}` }))}
+                    selection={groupesSel} onChange={(id) => basculer(setGroupesSel, id)}
+                    onChangeTout={(cocher) => setGroupesSel(cocher ? groupesOptions.map((g) => g.id) : [])} />
                 </div>
                 <div className="col-md-6">
-                  <label className="form-label gen-label" htmlFor="gen-semestre">Semestre</label>
-                  <select
-                    id="gen-semestre"
-                    className="form-select"
-                    value={semestreSel}
-                    onChange={(e) => setSemestreSel(e.target.value)}
-                  >
-                    <option value="">Toute l'année (2 semestres par niveau)</option>
-                    {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((n) => (
-                      <option key={n} value={n}>{`Semestre ${n} (S${n})`}</option>
-                    ))}
-                  </select>
+                  <ChoixMultiples titre="Semestres (sélection multiple)"
+                    options={Array.from({ length: 10 }, (_, i) => ({ id: i + 1, label: `Semestre ${i + 1} (S${i + 1})` }))}
+                    selection={semestresSel} onChange={(id) => basculer(setSemestresSel, id)}
+                    onChangeTout={(cocher) => setSemestresSel(cocher
+                      ? Array.from({ length: 10 }, (_, i) => i + 1) : [])} />
                 </div>
               </div>
 
@@ -619,15 +725,33 @@ export default function GenerationAnnuelle() {
                 </div>
               </div>
 
+              <div className="alert alert-info small mt-3 mb-0" role="note">
+                Mode manuel : cochez une formation ou une filière, au moins un niveau, un groupe et un semestre,
+                puis prévisualisez avant de générer. Mode automatique : toutes les formations, tous les niveaux,
+                tous les groupes et tous les semestres de l’année, indépendamment des cases cochées ;
+                confirmation obligatoire. Une génération partielle ne couvre pas les séances non placées.
+              </div>
+              <div className="alert alert-warning small mt-3 mb-0" role="note">
+                <strong>Calendrier automatique provisoire — NON OFFICIEL.</strong>{' '}
+                {calendrierPropose ? <>
+                  Année {anneeSelectionnee?.libelle} : {anneeSelectionnee.date_debut} au {anneeSelectionnee.date_fin}.
+                  Semestres impairs : semaines 1–{calendrierPropose.impairs} ; semestres pairs :
+                  semaines {calendrierPropose.impairs + 1}–{calendrierPropose.total}.
+                  Bascule estimée : {calendrierPropose.bascule}. Confirmation requise au lancement.
+                </> : 'Renseignez les dates de l’année académique (4 à 53 semaines).'}
+                {' '}Les semaines saisies ci-dessus ne concernent que le mode manuel.
+                Les EDT automatiques restent en brouillon, sans publication.
+              </div>
+              {erreurGeneration && <div className="alert alert-danger mt-3" role="alert">{erreurGeneration}</div>}
               <div className="d-flex flex-wrap align-items-center gap-2 mt-3">
-                <button
-                  type="button"
-                  className="btn btn-dark gen-btn-lancer"
-                  onClick={lancerGeneration}
-                  disabled={enCours !== ''}
-                >
+                <button type="button" className="btn btn-dark gen-btn-lancer"
+                  onClick={() => lancerGeneration('manuel')} disabled={enCours !== ''}>
                   <i className="bi bi-play-fill me-1" aria-hidden="true"></i>
-                  {enCours === 'generation' ? 'Génération…' : 'Lancer la génération'}
+                  {enCours === 'generation' ? 'Génération…' : 'Lancer la génération manuelle'}
+                </button>
+                <button type="button" className="btn btn-outline-danger"
+                  onClick={() => lancerGeneration('automatique')} disabled={enCours !== ''}>
+                  Lancer la génération automatique (toute l’année)
                 </button>
                 <button
                   type="button"
@@ -659,8 +783,8 @@ export default function GenerationAnnuelle() {
               </ol>
               <h3 className="gen-sous-titre">Bon à savoir</h3>
               <ul className="gen-savoir">
-                <li>Un semestre = une grille ; les semestres impairs et pairs ne se chevauchent pas.</li>
-                <li>32 créneaux hebdomadaires (5 jours × 6 créneaux + samedi matin).</li>
+                <li>La répartition S1/S2 exige des bornes institutionnelles ; elle ne se déduit pas du numéro de semestre.</li>
+                <li>Le nombre de créneaux dépend du canevas horaire enregistré, jamais d’un total fixe.</li>
                 <li>Les quotas par groupe évitent les semaines surchargées.</li>
                 <li>Relancer la génération remplace proprement l'ancienne version du périmètre.</li>
               </ul>
@@ -818,6 +942,11 @@ export default function GenerationAnnuelle() {
                         <span className={`badge ${STATUTS_EXECUTION[ligne.statut]?.classe || 'badge-neutral'}`}>
                           {STATUTS_EXECUTION[ligne.statut]?.libelle || ligne.statut}
                         </span>
+                        {ligne.statut === 'ECHEC' && (ligne.erreur || ligne.explication || ligne.motif_echec) && (
+                          <span className="d-block small text-danger mt-1" role="alert">
+                            {ligne.erreur || ligne.explication || libelleMotif(ligne.motif_echec)}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}

@@ -41,6 +41,9 @@ import './styles/personnel.css'
 import './styles/administration.css'
 // Design premium sobre Espace Archives.
 import './styles/archives.css'
+// Socle transversal des modules web : géométrie et accessibilité cohérentes,
+// sans écraser les couleurs et états métier de chaque page.
+import './styles/unificationModules.css'
 
 /**
  * Erreurs hors rendu React : promesses rejetées, erreurs d'événement, échec

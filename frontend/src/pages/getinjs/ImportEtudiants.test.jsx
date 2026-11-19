@@ -129,7 +129,6 @@ describe('GET-INJS — Importer les étudiants inscrits (fenêtre dédiée)', ()
       expect(apiMock.post).toHaveBeenCalledWith(
         '/edts/lmd/import/inscrits/',
         expect.any(FormData),
-        { headers: { 'Content-Type': 'multipart/form-data' } },
       ),
     )
     const envoi = apiMock.post.mock.calls.find(

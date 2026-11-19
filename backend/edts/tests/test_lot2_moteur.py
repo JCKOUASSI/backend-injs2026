@@ -14,8 +14,9 @@ Couverture :
 """
 
 from datetime import time
+from types import SimpleNamespace
 
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 
 from formations.models import (
     Formateur, RefBatiment, RefFormation, RefSalle, RefSite,
@@ -33,6 +34,46 @@ from scolarite.models import (
     AffectationPedagogique, AnneeAcademique, ECUE, Maquette, Niveau, Parcours,
     Semestre, UE,
 )
+
+
+class TestConflitsSemaines(SimpleTestCase):
+    """Une plage récurrente se compare sur l'intervalle, pas son seul début."""
+
+    def test_intervalles_chevauchants_detectes_sur_toutes_les_ressources(self):
+        commun = dict(jour='LUNDI', heure_debut=time(8), heure_fin=time(10),
+                      enseignant_id=1, groupe_id=2, salle_id=3)
+        a = SimpleNamespace(**commun, semaine_debut=1, semaine_fin=4)
+        b = SimpleNamespace(**commun, semaine_debut=2, semaine_fin=3)
+        violations = []
+        V.verifier_conflits([a, b], violations, [])
+        self.assertEqual({v.code_contrainte for v in violations}, {
+            C.C1_CONFLIT_ENSEIGNANT, C.C2_CONFLIT_GROUPE, C.C3_CONFLIT_SALLE,
+        })
+
+    def test_adaptateur_seances_persistees_conserve_la_fin_de_periode(self):
+        creneau = SimpleNamespace(jour='LUNDI', heure_debut=time(8), heure_fin=time(10))
+        def seance(pk, debut, fin):
+            return SimpleNamespace(
+                pk=pk, creneau_template_id=1, creneau_template=creneau,
+                affectation_pedagogique=None, semaine_debut=debut, semaine_fin=fin,
+                groupe_id=2, salle_id=3,
+            )
+        places = V.placements_seances([seance(1, 1, 4), seance(2, 2, 3)])
+        self.assertEqual(places[0].semaine_fin, 4)
+        violations = []
+        V.verifier_conflits(places, violations, [])
+        self.assertEqual({v.code_contrainte for v in violations}, {
+            C.C2_CONFLIT_GROUPE, C.C3_CONFLIT_SALLE,
+        })
+
+    def test_intervalles_disjoints_autorisent_la_meme_ressource(self):
+        commun = dict(jour='LUNDI', heure_debut=time(8), heure_fin=time(10),
+                      enseignant_id=1, groupe_id=2, salle_id=3)
+        a = SimpleNamespace(**commun, semaine_debut=1, semaine_fin=2)
+        b = SimpleNamespace(**commun, semaine_debut=3, semaine_fin=4)
+        violations = []
+        V.verifier_conflits([a, b], violations, [])
+        self.assertEqual(violations, [])
 
 
 class FabriqueLMD:

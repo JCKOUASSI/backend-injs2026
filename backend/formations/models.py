@@ -243,6 +243,7 @@ class RefFormation(models.Model):
 
     intitule = models.CharField(max_length=255, unique=True)
     actif = models.BooleanField(default=True)
+    archive = models.BooleanField(default=False, db_index=True)
     # --- Lot L6 (référentiel officiel INJS) : qualification + traçabilité ---
     perimetre = models.CharField(
         max_length=20, choices=Perimetre.choices, default=Perimetre.NON_DETERMINE,

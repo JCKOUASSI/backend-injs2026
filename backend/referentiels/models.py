@@ -45,7 +45,8 @@ class RefSocle(models.Model):
     date_activation = models.DateTimeField(null=True, blank=True)
     date_desactivation = models.DateTimeField(null=True, blank=True)
 
-    # Règle 2 — archivage (soft delete), jamais de suppression physique
+    # Règle 2 — archivage réversible pour les valeurs déjà utilisées.
+    # Une valeur isolée peut être supprimée par l'API avec contrôle des liens.
     archive = models.BooleanField(default=False, db_index=True)
 
     # Règle 7 — rattachement facultatif à une année académique
@@ -377,6 +378,8 @@ class RefVolumeHoraireFormation(models.Model):
     heures_stage = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     heures_total = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
 
+    actif = models.BooleanField(default=True, db_index=True)
+    archive = models.BooleanField(default=False, db_index=True)
     source_document = models.CharField(max_length=255, blank=True, default='')
     fiabilite = models.CharField(
         max_length=20, choices=Fiabilite.choices, default=Fiabilite.MODELISE,
@@ -435,6 +438,8 @@ class RefModuleOfficiel(models.Model):
         max_length=20, choices=EtatVentilation.choices,
         default=EtatVentilation.A_VENTILER,
     )
+    actif = models.BooleanField(default=True, db_index=True)
+    archive = models.BooleanField(default=False, db_index=True)
     source_document = models.CharField(max_length=255, blank=True, default='')
     fiabilite = models.CharField(
         max_length=20, choices=Fiabilite.choices, default=Fiabilite.OFFICIEL,

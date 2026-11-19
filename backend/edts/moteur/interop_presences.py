@@ -156,6 +156,13 @@ def assurer_registre(affectation, acteur=None):
     la même clé métier — il est rattaché, l'UUID est conservé ; sinon
     création d'un nouveau registre en BROUILLON.
     """
+    # Compatibilité des routes QR existantes : pour une occurrence datée v2,
+    # ne JAMAIS revenir à la clé legacy (AP:id), qui fusionne les semaines.
+    if affectation.cle_occurrence_v2:
+        from edts.moteur.qr_v2 import assurer_occurrence
+        resultat = assurer_occurrence(affectation, acteur=acteur)
+        return SeanceRegistre.objects.get(pk=resultat.registre_id), resultat.cree
+
     registre = SeanceRegistre.objects.filter(affectation=affectation).first()
     if registre is not None:
         return registre, False
@@ -208,6 +215,13 @@ def transitionner(registre, nouveau_statut, acteur=None, motif=''):
             f'Transition {avant} → {nouveau} non autorisée. '
             f'Issues possibles : {sorted(autorises) or "aucune (état terminal)"}.'
         )
+    if nouveau == SeanceRegistre.Statut.PUBLIEE and registre.affectation_id:
+        aff = registre.affectation
+        if aff.cle_occurrence_v2 or aff.date_seance:
+            from edts.moteur.qr_v2 import anomalies_publication_v2
+            if (not aff.actif or aff.emploi_du_temps.statut != 'PUBLIE' or
+                    anomalies_publication_v2(aff.emploi_du_temps)):
+                raise ValueError('QR_V2_NON_PUBLIABLE : séance active et identités QR attestées requises.')
 
     registre.statut = nouveau
     champs = ['statut', 'modifie_par', 'updated_at']
@@ -272,6 +286,12 @@ def reprogrammer(registre_annule, nouvelle_affectation, acteur=None, motif=''):
     """
     if registre_annule.statut != SeanceRegistre.Statut.ANNULEE:
         raise ValueError('Seule une séance ANNULEE peut être reprogrammée.')
+    if nouvelle_affectation.cle_occurrence_v2:
+        from edts.moteur.qr_v2 import assurer_occurrence, lier_reprogrammation
+        resultat = assurer_occurrence(nouvelle_affectation, acteur=acteur)
+        nouveau = SeanceRegistre.objects.get(pk=resultat.registre_id)
+        lier_reprogrammation(registre_annule, nouveau, motif=motif, acteur=acteur)
+        return nouveau
     nouveau, _ = assurer_registre(nouvelle_affectation, acteur=acteur)
     if nouveau.id == registre_annule.id:
         raise ValueError('La reprogrammation doit créer une nouvelle séance.')
@@ -355,7 +375,16 @@ def peut_ouvrir_session_presence(registre):
     publiée, ni une séance annulée ou terminée ne peuvent ouvrir une
     session officielle de présence (§4.1 à 4.4 de l'extension).
     """
-    return registre.statut in STATUTS_EXPLOITABLES_PRESENCE
+    if registre.statut not in STATUTS_EXPLOITABLES_PRESENCE:
+        return False
+    aff = registre.affectation
+    if aff is not None and (aff.cle_occurrence_v2 or aff.date_seance):
+        # Aucun flux d'attestation Participant n'existe encore : ne pas
+        # réévaluer tout l'EDT à chaque ligne de la liste publiée (N²), ni
+        # transformer un statut forcé en droit de badgeage. Réexaminer cette
+        # garde seulement avec le futur contrat d'attestation explicite.
+        return False
+    return True
 
 
 def groupe_de_la_seance(affectation):

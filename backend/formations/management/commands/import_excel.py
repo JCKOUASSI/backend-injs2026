@@ -208,7 +208,9 @@ class Command(BaseCommand):
             def __init__(self, content_bytes):
                 self._rows_data = []
                 text = content_bytes.decode('utf-8-sig')
-                reader = csv.reader(io.StringIO(text))
+                premiere_ligne = text.splitlines()[0] if text.splitlines() else ''
+                delimiter = ';' if premiere_ligne.count(';') > premiere_ligne.count(',') else ','
+                reader = csv.reader(io.StringIO(text), delimiter=delimiter)
                 for row in reader:
                     self._rows_data.append(
                         tuple(v.strip() if v.strip() else None for v in row)

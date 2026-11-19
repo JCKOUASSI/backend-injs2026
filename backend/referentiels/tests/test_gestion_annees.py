@@ -113,6 +113,12 @@ class GestionAnneesTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         res = self.client.delete(f'/api/referentiels/annees/{annee.id}/')
         self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertTrue(AnneeAcademique.objects.filter(pk=annee.pk).exists())
+        lot = self.client.post('/api/referentiels/annees/lot/', {
+            'ids': [annee.pk], 'action': 'supprimer',
+        }, format='json')
+        self.assertEqual(lot.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(AnneeAcademique.objects.filter(pk=annee.pk).exists())
         self.client.force_authenticate(make_user('aud_annees', role='AUDITEUR'))
         res = self.client.post('/api/referentiels/annees/', {
             'libelle': '2030-2031',

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
+import { downloadFile } from '../utils/downloadFile'
 import { useToast } from '../context/ToastContext'
 import { useAuth } from '../context/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
@@ -416,14 +417,7 @@ export default function Edts() {
     const libelle = { csv: 'CSV', xlsx: 'Excel', pdf: 'PDF' }[format]
     try {
       const { blob, fileName } = await api.getBlob(chemin)
-      const url = URL.createObjectURL(blob)
-      const lien = document.createElement('a')
-      lien.href = url
-      lien.download = fileName || `edt-${selectedId}.${format}`
-      document.body.appendChild(lien)
-      lien.click()
-      lien.remove()
-      URL.revokeObjectURL(url)
+      downloadFile(blob, fileName || `edt-${selectedId}.${format}`)
       showToast(`Export ${libelle} téléchargé`)
     } catch (err) {
       showToast(messageErreurApi(err, `Export ${libelle} impossible`), 'error')

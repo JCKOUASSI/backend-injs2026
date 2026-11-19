@@ -31,6 +31,12 @@ describe('pages/Login.jsx', () => {
     expect(screen.getAllByText(/INJS/i).length).toBeGreaterThan(0)
   })
 
+  it('ne publie pas les identifiants des comptes de démonstration sur la connexion', () => {
+    renderLogin()
+    expect(screen.queryByText(/Comptes démo/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/admin123|sec123|injs123/i)).not.toBeInTheDocument()
+  })
+
   it('soumet les identifiants et établit la session', async () => {
     const user = makeUser('ADMIN', { username: 'admin' })
     apiMock.post.mockResolvedValueOnce({ data: makeLoginResponse(user) })

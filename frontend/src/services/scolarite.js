@@ -70,8 +70,13 @@ export const getInscription = (id) => api.get(`/scolarite/inscriptions/${id}/`)
 export const updateInscription = (id, body) => api.patch(`/scolarite/inscriptions/${id}/`, body)
 export const createInscription = (body) => api.post('/scolarite/inscriptions/', body)
 export const deleteInscription = (id) => api.delete(`/scolarite/inscriptions/${id}/`)
+export const reactiverInscription = (id) => api.post(`/scolarite/inscriptions/${id}/reactiver/`, {})
 export const transitionInscription = (id, body) =>
   api.post(`/scolarite/inscriptions/${id}/transition/`, body)
+export const validerInscriptionsLot = (ids) =>
+  api.post('/scolarite/inscriptions/valider-lot/', { ids })
+export const actionInscriptionsLot = (action, ids) =>
+  api.post('/scolarite/inscriptions/action-lot/', { action, ids })
 export const inscrireDepuisAdmission = (body) =>
   api.post('/scolarite/inscriptions/depuis-admission/', body)
 export const getStatsInscriptions = (params) =>

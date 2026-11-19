@@ -423,3 +423,69 @@ def liste_classe_filename(blocks, fmt):
         return f"liste_classe_{groupe_slug}.{ext}"
     ext = 'pdf' if fmt == 'pdf' else 'xlsx'
     return f"listes_classe_auditeurs.{ext}"
+
+
+# CSV réimportable par formations/import-excel/ : les colonnes sont celles de
+# _import_participants, pas celles du tableau de classe (décisions du jury).
+_IMPORT_COLUMNS = (
+    'matricule', 'nom', 'prenom', 'sexe', 'date_naissance', 'lieu_naissance',
+    'email', 'telephone', 'telephone2', 'type_concours', 'libelle_concours',
+    'categorie', 'grade', 'groupe', 'grade_groupe', 'vague',
+)
+
+
+def export_liste_classe_csv(blocks):
+    import csv
+
+    output = io.StringIO()
+    output.write('\ufeff')  # Excel macOS/Windows : UTF-8 avec accents
+    writer = csv.writer(output, delimiter=';')
+    writer.writerow(_IMPORT_COLUMNS)
+    for block in blocks:
+        for p in block['participants']:
+            values = []
+            for field in _IMPORT_COLUMNS:
+                value = getattr(p, field, '') or ''
+                if field == 'date_naissance' and value:
+                    value = value.isoformat()
+                text = str(value)
+                # Empêche l'exécution de formules dans un tableur. Les
+                # données normales restent réimportables sans transformation.
+                if text.lstrip().startswith(('=', '+', '-', '@')):
+                    text = "'" + text
+                values.append(text)
+            writer.writerow(values)
+    return output.getvalue().encode('utf-8')
+
+
+def export_liste_classe_word(blocks, meta=None):
+    try:
+        from docx import Document
+        from docx.enum.section import WD_ORIENT
+        from docx.shared import Cm, Pt
+    except ImportError as exc:
+        raise RuntimeError('python-docx non disponible') from exc
+
+    doc = Document()
+    section = doc.sections[0]
+    section.orientation = WD_ORIENT.LANDSCAPE
+    section.page_width, section.page_height = Cm(29.7), Cm(21)
+    style = doc.styles['Normal']
+    style.font.size = Pt(8)
+    doc.add_heading('Liste de classe — étudiants', 0)
+    doc.add_paragraph((meta or {}).get('filtres_label', 'Tous les groupes'))
+    if not blocks:
+        doc.add_paragraph('Aucun étudiant trouvé pour les critères sélectionnés.')
+    for block in blocks:
+        doc.add_heading(f"{block['groupe']} — {block['effectif']} étudiant(s)", level=2)
+        table = doc.add_table(rows=1, cols=len(_TABLE_HEADERS))
+        table.style = 'Table Grid'
+        for cell, text in zip(table.rows[0].cells, _TABLE_HEADERS):
+            cell.text = text
+        for idx, participant in enumerate(block['participants'], start=1):
+            for cell, value in zip(table.add_row().cells, _participant_table_row(idx, participant)):
+                cell.text = str(value)
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
