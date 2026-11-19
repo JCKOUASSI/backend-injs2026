@@ -130,7 +130,10 @@ def seances_publiees_api(request):
         registres = registres.filter(
             affectation__affectation_pedagogique__ref_formation_id=formation,
         )
-    elements = [svc.contexte_seance(r) for r in registres]
+    # Un statut PUBLIEE forcé hors workflow ne rend pas une occurrence v2
+    # visible comme séance officielle pour les consommateurs QR.
+    elements = [svc.contexte_seance(r) for r in registres
+                if svc.peut_ouvrir_session_presence(r)]
     return Response(_paginer(request, elements))
 
 
@@ -255,7 +258,12 @@ def emploi_reconcilier_api(request, pk):
         return Response(
             {'error': 'Emploi du temps introuvable.'}, status=status.HTTP_404_NOT_FOUND,
         )
-    bilan = svc.reconcilier_emploi_du_temps(emploi, acteur=request.user)
+    try:
+        bilan = svc.reconcilier_emploi_du_temps(emploi, acteur=request.user)
+    except ValueError as exc:
+        # Une publication v2 non attestée refuse toute la réconciliation,
+        # sans laisser une réponse HTTP 500 ou un état partiellement publié.
+        return Response({'error': str(exc)}, status=status.HTTP_409_CONFLICT)
     return Response({'emploi_du_temps_id': emploi.id, **bilan})
 
 

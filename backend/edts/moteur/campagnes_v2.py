@@ -14,7 +14,7 @@ from uuid import uuid4
 from django.db import transaction
 from django.utils import timezone
 
-from edts.moteur.application_v2 import _autoriser_bench, appliquer_ligne, proposer_ligne
+from edts.moteur.application_v2 import _autoriser_bench, appliquer_proposition_automatique, proposer_ligne
 from edts.moteur.planification_v2 import DecisionLigne, TravailSeance
 
 
@@ -153,10 +153,11 @@ def executer_campagne_v2(execution_id: int, *, travaux: Iterable[TravailSeance] 
                 disponibles, simulation = tee(nouveaux_travaux())
                 for travail, proposition in zip(disponibles, simuler_campagne_v2(
                         simulation, revision=revision, graine=graine, politique=politique)):
-                    decision = (appliquer_ligne(travail, proposition, revision=revision, graine=graine)
+                    decision = (appliquer_proposition_automatique(travail, proposition,
+                                revision=revision, graine=graine)
                                 if proposition.statut == 'PLACEE' else proposition)
-                    if decision.code == 'DEJA_PLACEE':
-                        decision = DecisionLigne('PLACEE', 'DEJA_PLACEE', travail.cle(),
+                    if decision.code.startswith('DEJA_PLACEE'):
+                        decision = DecisionLigne('PLACEE', decision.code, travail.cle(),
                             jour=decision.jour, creneau_id=decision.creneau_id,
                             salle_id=decision.salle_id, score_souple=decision.score_souple)
                     resultats.append(ExecutionLigne(
@@ -190,15 +191,19 @@ def executer_campagne_v2(execution_id: int, *, travaux: Iterable[TravailSeance] 
             execution = ExecutionCampagne.objects.select_for_update().get(pk=execution_id)
             if execution.worker_id != identifiant_worker:
                 raise RuntimeError('Lease expiré pendant le calcul.')
-            execution.statut = ('TERMINE_AVEC_ANOMALIES'
-                if (not execution.lignes_traitees or execution.lignes_echec
-                    or execution.lignes_a_revoir) else 'TERMINE')
-            execution.terminee_le = timezone.now()
+            from django.db.models import Count
+            codes = (ExecutionLigne.objects.filter(execution=execution)
+                .exclude(code_contrainte__in=('PLACEMENT_POSSIBLE', 'DEJA_PLACEE'))
+                .values('code_contrainte').annotate(nombre=Count('id'))
+                .order_by('code_contrainte'))
+            execution.anomalies = [{'code': ligne['code_contrainte'],
+                                    'nombre': ligne['nombre']} for ligne in codes]
             if not execution.lignes_traitees:
-                execution.anomalies = [{'code': 'AUCUN_GROUPE_INJS',
-                    'explication': 'Aucune ligne à planifier dans le périmètre.'}]
+                execution.anomalies.append({'code': 'AUCUN_GROUPE_INJS', 'nombre': 0})
+            execution.statut = ('TERMINE_AVEC_ANOMALIES' if execution.anomalies else 'TERMINE')
+            execution.terminee_le = timezone.now()
             execution.statistiques = {'moteur_v2': True, 'graine': graine,
-                'non_publiable_sans_qr': True,
+                'non_publiable_sans_rapprochement_qr': True,
                 'score_souple_total': sum(ExecutionLigne.objects.filter(
                     execution=execution, statut='PLACEE').values_list('score_souple', flat=True))}
             execution.worker_id = ''

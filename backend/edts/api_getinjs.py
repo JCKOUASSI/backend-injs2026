@@ -703,6 +703,13 @@ def generate_annee_api(request):
             brut = [x for x in brut.replace(' ', '').split(',') if x]
         return [int(x) for x in brut if str(x).isdigit()] if brut else None
 
+    if _booleen(request.data.get('persister')):
+        from edts.api_v2_experimental import annee_a_occurrences_v2
+        if annee_a_occurrences_v2(annee_id):
+            return Response({'code': 'QR_V2_CHEMIN_HERITE_REFUSE',
+                             'detail': 'Génération héritée interdite sur une année avec QR v2.'},
+                            status=status.HTTP_409_CONFLICT)
+
     bilan = generer_annee(
         annee_id,
         semaines=semaines,
@@ -992,6 +999,11 @@ def campagne_demarrer_api(request, pk):
     """
     from edts.moteur.campagnes import TransitionRefusee, demarrer_campagne
 
+    from edts.models import CampagneGeneration
+    from edts.api_v2_experimental import annee_a_occurrences_v2
+    campagne = CampagneGeneration.objects.filter(pk=pk).first()
+    if campagne and annee_a_occurrences_v2(campagne.annee_academique_id):
+        return Response({'code': 'QR_V2_CHEMIN_HERITE_REFUSE'}, status=status.HTTP_409_CONFLICT)
     asynchrone = str(request.data.get('asynchrone', 'true')).lower() not in ('false', '0', 'non')
     try:
         resultat = demarrer_campagne(pk, user=request.user, asynchrone=asynchrone)

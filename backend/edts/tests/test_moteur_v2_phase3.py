@@ -66,10 +66,12 @@ class MoteurV2BenchTests(TestCase):
                 appliquer_ligne(self.travail, p, revision=1)
         self.assertFalse(AffectationCreneau.objects.exists())
 
-    def test_ajout_idempotent_et_deplacement_sans_qr(self):
+    def test_ajout_idempotent_et_deplacement_brouillon_qr(self):
         p = proposer_ligne(self.travail, revision=1)
         self.assertEqual(appliquer_ligne(self.travail, p, revision=1).statut, 'PLACEE')
-        self.assertEqual(appliquer_ligne(self.travail, p, revision=1).code, 'DEJA_PLACEE')
+        uuid_avant = SeanceRegistre.objects.get().uuid
+        self.assertEqual(appliquer_ligne(self.travail, p, revision=1).code,
+                         'DEJA_PLACEE_QR_A_REVOIR')
         cible = proposer_ligne(self.travail, revision=1, jour=self.cible,
                                exclure_cle=self.travail.cle())
         self.assertEqual(cible.statut, 'PLACEE')
@@ -77,12 +79,15 @@ class MoteurV2BenchTests(TestCase):
         aff = AffectationCreneau.objects.get(cle_occurrence_v2=self.travail.cle())
         self.assertEqual(aff.date_seance, self.cible)
         self.assertEqual(AffectationCreneau.objects.count(), 1)
+        self.assertEqual(SeanceRegistre.objects.get().uuid, uuid_avant)
 
     def test_registre_qr_interdit_le_deplacement(self):
         p = proposer_ligne(self.travail, revision=1)
         appliquer_ligne(self.travail, p, revision=1)
         aff = AffectationCreneau.objects.get(cle_occurrence_v2=self.travail.cle())
-        SeanceRegistre.objects.create(affectation=aff, cle_metier='f' * 64)
+        registre = SeanceRegistre.objects.get(affectation=aff)
+        registre.statut = SeanceRegistre.Statut.PUBLIEE
+        registre.save(update_fields=['statut'])
         cible = proposer_ligne(self.travail, revision=1, jour=self.cible,
                                exclure_cle=self.travail.cle())
         self.assertEqual(deplacer_ligne(self.travail, cible, revision=1).code, 'QR_PROTEGE')
@@ -112,11 +117,11 @@ class MoteurV2BenchTests(TestCase):
         self.assertEqual(partiel['etat'], 'INTERROMPU')
         self.assertEqual(ExecutionLigne.objects.count(), 1)
         final = executer_campagne_v2(execution.pk, travaux=iter(travaux), revision=1)
-        self.assertEqual(final['etat'], 'TERMINE')
+        self.assertEqual(final['etat'], 'TERMINE_AVEC_ANOMALIES')
         self.assertEqual(final['lignes_placees'], 2)
         self.assertEqual(ExecutionLigne.objects.count(), 2)
         self.assertEqual(AffectationCreneau.objects.count(), 2)
-        self.assertEqual(SeanceRegistre.objects.count(), 0)  # phase 4 requise
+        self.assertEqual(SeanceRegistre.objects.count(), 2)  # UUID stables, brouillons non publiables
 
     def test_erreur_dans_groupe_annule_tout_le_checkpoint(self):
         from dataclasses import replace

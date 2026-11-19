@@ -75,6 +75,7 @@ import CoursLmd from './pages/CoursLmd'
 import EdtNew from './pages/EdtNew'
 import GetInjsApp from './pages/getinjs/GetInjsApp'
 import GenerationAnnuelle from './pages/getinjs/GenerationAnnuelle'
+import BenchV2 from './pages/getinjs/BenchV2'
 import ImportEtudiants from './pages/getinjs/ImportEtudiants'
 import EtudiantsInscrits from './pages/getinjs/EtudiantsInscrits'
 import ReferentielsInjs from './pages/getinjs/Referentiels'
@@ -1118,6 +1119,13 @@ function App() {
               </Layout>
             </ProtectedRoute>
           } />
+          {import.meta.env.DEV && <Route path="/edt/bench-v2" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Prototype v2 fictif</li></>}>
+                <BenchV2 />
+              </Layout>
+            </ProtectedRoute>
+          } />}
           <Route path="/edt/generation-annuelle" element={
             <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Génération annuelle</li></>}>

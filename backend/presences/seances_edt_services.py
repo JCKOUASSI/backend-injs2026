@@ -154,8 +154,15 @@ def occurrence_planifiee_du_jour(affectation, date):
 
 
 def est_seance_du_jour(affectation, date):
-    """True si `affectation` est active et prévue à cette date."""
-    return affectation.actif and occurrence_planifiee_du_jour(affectation, date)
+    """Séance badgeable : contrat legacy conservé, v2 QR attesté seulement."""
+    if not affectation.actif or not occurrence_planifiee_du_jour(affectation, date):
+        return False
+    if affectation.cle_occurrence_v2 or affectation.date_seance:
+        # Aucun flux d'attestation Participant n'existe encore. Refus O(1)
+        # sans requête supplémentaire par séance, même si un statut a été
+        # forcé hors workflow ; la voie legacy reste strictement inchangée.
+        return False
+    return True
 
 
 def horodatages(affectation, date):

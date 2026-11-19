@@ -1,7 +1,7 @@
-"""Façade manuelle/automatique expérimentale (phase 3, test BENCH uniquement).
+"""Façade manuelle/automatique expérimentale (BENCH uniquement).
 
-Aucune écriture QR en phase 3. La persistance est rigoureusement interdite
-hors année BENCHMARK et flag explicite ; la phase 4 livrera l'UPSERT QR.
+La persistance et l'UPSERT QR sont interdits hors DEBUG, année BENCHMARK
+et drapeau explicite ; aucune publication automatique.
 """
 from __future__ import annotations
 
@@ -111,7 +111,10 @@ def appliquer_ligne(travail: TravailSeance, proposition: DecisionLigne, *,
     if existant is not None:
         if (existant.date_seance == proposition.jour and existant.creneau_template_id == proposition.creneau_id
                 and existant.salle_id == proposition.salle_id and existant.actif):
-            return replace(proposition, code='DEJA_PLACEE')
+            from edts.moteur.qr_v2 import assurer_occurrence
+            resultat_qr = assurer_occurrence(existant)
+            return replace(proposition, code=('DEJA_PLACEE_QR_A_REVOIR'
+                           if resultat_qr.anomalies else 'DEJA_PLACEE'))
         return DecisionLigne('A_REVOIR', 'OCCURRENCE_EXISTANTE_PROTEGEE', travail.cle())
     # Revalidation du contexte depuis la DB à l'intérieur de la transaction.
     courante = proposer_ligne(travail, revision=revision, graine=graine, jour=proposition.jour)
@@ -136,13 +139,19 @@ def appliquer_ligne(travail: TravailSeance, proposition: DecisionLigne, *,
             not compatible_salle(salle, {'CM': 'COURS', 'TD': 'TD', 'TP': 'TP', 'EXAM': 'EVALUATION'}[travail.type_seance]) or
             not capacite_suffisante(salle, travail.effectif)):
         return DecisionLigne('ECHEC', 'PROPOSITION_EXPIREE', travail.cle())
-    # La proposition doit figurer parmi les options actuellement recevables.
-    # « proposer_ligne » peut sélectionner un autre créneau optimal : autoriser
-    # explicitement une de ses alternatives, toujours après vérification.
-    if (proposition.jour, slot.pk, salle.pk) not in (
-        (courante.jour, courante.creneau_id, courante.salle_id), *courante.alternatives
-    ):
-        return DecisionLigne('ECHEC', 'PROPOSITION_EXPIREE', travail.cle())
+    # La proposition annuelle est classée dans une fenêtre différente de
+    # celle du recalcul sur un jour précis. Elle peut sortir du top 4 *sans*
+    # être invalide : sa présence parmi les alternatives n'est donc PAS une
+    # contrainte dure. Recontrôler explicitement la disponibilité du triplet
+    # (enseignant, salle, plage) avant l'écriture, puis l'occupation SQL.
+    from edts.models import DisponibiliteHoraire
+    from edts.moteur.planification_v2 import _indisponible
+    indispos = DisponibiliteHoraire.objects.filter(
+        annee_academique=annee, statut='INDISPONIBLE', jour=slot.jour).filter(
+        Q(enseignant_id=travail.formateur_id) | Q(salle_id=salle.pk))
+    if _indisponible(indispos.iterator(chunk_size=256), travail, salle,
+                    proposition.jour, debut, fin):
+        return DecisionLigne('ECHEC', 'INDISPONIBILITE', travail.cle())
     # Deux demandes simultanées sont sérialisées par (année, date) ; la
     # relecture ci-dessus refuse les collisions mais la liste de candidats
     # doit être vérifiée à nouveau pour la cible demandée.
@@ -162,7 +171,7 @@ def appliquer_ligne(travail: TravailSeance, proposition: DecisionLigne, *,
     if edt.semaine_fin < semaine:
         edt.semaine_fin = semaine
         edt.save(update_fields=['semaine_fin', 'updated_at'])
-    AffectationCreneau.objects.create(
+    affectation = AffectationCreneau.objects.create(
         emploi_du_temps=edt, creneau_template=slot,
         semaine_debut=semaine, semaine_fin=semaine,
         date_seance=proposition.jour, cle_occurrence_v2=travail.cle(),
@@ -173,16 +182,37 @@ def appliquer_ligne(travail: TravailSeance, proposition: DecisionLigne, *,
         affectation_pedagogique_id=travail.affectation_pedagogique_id,
         nature={'CM': 'COURS', 'TD': 'TD', 'TP': 'TP', 'EXAM': 'EVALUATION'}[travail.type_seance],
         intitule='BENCHMARK — séance non publiable', actif=True)
-    return proposition
+    from edts.moteur.qr_v2 import assurer_occurrence
+    resultat_qr = assurer_occurrence(affectation)
+    return replace(proposition, code=('PLACEE_QR_A_REVOIR' if resultat_qr.anomalies
+                                       else 'PLACEMENT_POSSIBLE'))
+
+
+def appliquer_proposition_automatique(travail: TravailSeance, proposition: DecisionLigne,
+                                       *, revision: int, graine: int = 0) -> DecisionLigne:
+    """Répare seulement une simulation devenue obsolète après un commit précédent.
+
+    La simulation anticipe virtuellement les lignes, mais un candidat hors des
+    alternatives courantes est refusé par appliquer_ligne. Reproposer depuis
+    l'occupation SQL *actuelle* puis réappliquer sous ses propres verrous ;
+    jamais forcer une proposition expirée, ni écraser une séance QR.
+    """
+    decision = appliquer_ligne(travail, proposition, revision=revision, graine=graine)
+    if decision.code not in ('PROPOSITION_EXPIREE', 'OCCUPATION', 'INDISPONIBILITE'):
+        return decision
+    courante = proposer_ligne(travail, revision=revision, graine=graine)
+    if courante.statut != 'PLACEE':
+        return courante
+    return appliquer_ligne(travail, courante, revision=revision, graine=graine)
 
 
 @transaction.atomic
 def deplacer_ligne(travail: TravailSeance, proposition: DecisionLigne, *,
                    revision: int, version_attendue=None) -> DecisionLigne:
-    """Déplace une ligne BENCH sans registre ; ancien placement conservé si refus.
+    """Déplace uniquement un brouillon BENCH futur sans pointage.
 
-    Une ligne porteuse d'un registre, d'un pointage ou d'un historique QR ne
-    peut être déplacée avant l'intégration du protocole phase 4.
+    Le registre et son UUID restent attachés à la même affectation ; une
+    séance publiée, ouverte, pointée ou passée demeure immuable.
     """
     from edts.models import AffectationCreneau, CreneauTemplate, VerrouJour
     from edts.models_interop import SeanceRegistre
@@ -203,7 +233,12 @@ def deplacer_ligne(travail: TravailSeance, proposition: DecisionLigne, *,
         return DecisionLigne('A_REVOIR', 'EDT_NON_MODIFIABLE', travail.cle())
     if (version_attendue is not None and aff.updated_at != version_attendue):
         return DecisionLigne('A_REVOIR', 'VERSION_OBSOLETE', travail.cle())
-    if SeanceRegistre.objects.filter(affectation=aff).exists() or aff.pointages.exists():
+    from django.utils import timezone
+    registre = SeanceRegistre.objects.select_for_update().filter(affectation=aff).first()
+    if (aff.date_seance <= timezone.localdate() or
+            proposition.jour <= timezone.localdate() or aff.pointages.exists() or
+            (registre and (registre.cle_metier != travail.cle() or
+             registre.statut != SeanceRegistre.Statut.BROUILLON))):
         return DecisionLigne('A_REVOIR', 'QR_PROTEGE', travail.cle())
     for jour in sorted({aff.date_seance, proposition.jour}):
         verrou, _ = VerrouJour.objects.get_or_create(annee_academique=annee, date=jour)
@@ -223,6 +258,7 @@ def deplacer_ligne(travail: TravailSeance, proposition: DecisionLigne, *,
     if (debut, fin) != (proposition.debut, proposition.fin):
         return DecisionLigne('ECHEC', 'PROPOSITION_EXPIREE', travail.cle())
     semaine = semaine_academique(annee, proposition.jour)
+    ancienne_date = aff.date_seance
     aff.date_seance = proposition.jour
     aff.semaine_debut = aff.semaine_fin = semaine
     aff.creneau_template = slot
@@ -233,4 +269,50 @@ def deplacer_ligne(travail: TravailSeance, proposition: DecisionLigne, *,
     aff.save(update_fields=['date_seance', 'semaine_debut', 'semaine_fin',
         'creneau_template', 'salle', 'salle_nom', 'minute_debut', 'minute_fin',
         'revision_calendrier', 'updated_at'])
-    return proposition
+    from edts.moteur.qr_v2 import assurer_occurrence, deplacer_brouillon
+    resultat_qr = (deplacer_brouillon(registre, ancienne_date=ancienne_date,
+                                     nouvelle_date=proposition.jour)
+                   if registre else assurer_occurrence(aff))
+    return replace(proposition, code=('DEPLACE_QR_A_REVOIR' if resultat_qr.anomalies
+                                       else 'DEPLACE'))
+
+
+@transaction.atomic
+def reprogrammer_ligne(origine_uuid, nouveau_travail: TravailSeance,
+                       proposition: DecisionLigne, *, revision: int,
+                       motif: str) -> DecisionLigne:
+    """Nouvelle occurrence liée à une séance QR terminale, sans modifier l'ancienne.
+
+    Le nouvel ordinal donne une clé distincte ; l'ancienne affectation et son
+    UUID/instantané/pointages demeurent inchangés. BENCH uniquement.
+    """
+    from edts.models import AffectationCreneau
+    from edts.models_interop import SeanceRegistre
+    from edts.moteur.qr_v2 import IntegrationQRBloquee, lier_reprogrammation
+
+    from scolarite.models import AnneeAcademique
+    # Même ordre de verrous que appliquer_ligne/deplacer_ligne : année avant QR.
+    annee = AnneeAcademique.objects.select_for_update().get(pk=nouveau_travail.annee_id)
+    _autoriser_bench(annee)
+    # affectation est nullable sur le registre historique : SELECT FOR UPDATE
+    # sur un LEFT JOIN est interdit par PostgreSQL. Charger la relation après
+    # verrouillage du registre, dans la même transaction.
+    ancien = SeanceRegistre.objects.select_for_update().filter(uuid=origine_uuid).first()
+    if (ancien is None or ancien.affectation is None or
+            ancien.statut not in ('ANNULEE', 'TERMINEE') or
+            not motif.strip() or
+            ancien.affectation.emploi_du_temps.annee_academique_id != nouveau_travail.annee_id or
+            ancien.affectation.groupe_id != nouveau_travail.groupe_id or
+            ancien.cle_metier == nouveau_travail.cle()):
+        return DecisionLigne('A_REVOIR', 'QR_ORIGINE_NON_REPROGRAMMABLE', nouveau_travail.cle())
+    decision = appliquer_ligne(nouveau_travail, proposition, revision=revision)
+    if decision.statut != 'PLACEE':
+        return decision
+    nouvelle_aff = AffectationCreneau.objects.get(cle_occurrence_v2=nouveau_travail.cle())
+    nouveau_registre = SeanceRegistre.objects.get(affectation=nouvelle_aff)
+    if nouveau_registre.pk == ancien.pk:
+        raise IntegrationQRBloquee('Identité QR partagée par deux séances.')
+    if nouveau_registre.seance_origine_id == ancien.pk:
+        return replace(decision, code='DEJA_REPROGRAMMEE_QR_A_REVOIR')
+    lier_reprogrammation(ancien, nouveau_registre, motif=motif)
+    return replace(decision, code='REPROGRAMMEE_QR_A_REVOIR')
