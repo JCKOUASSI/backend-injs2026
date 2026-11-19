@@ -192,25 +192,4 @@ erDiagram
 - `GET-INJS-SCHEMA-70d08da-principal.mmd`, `-interop.mmd` : diagrammes Mermaid ouvrables dans GitHub.
 - `GET-INJS-SCHEMA-70d08da.zip` : l’ensemble et son manifeste SHA-256.
 
-## Vérification facultative du schéma SQL réel sur le VPS
-
-Si un **DDL PostgreSQL exact** est requis, le code seul ne suffit pas : un administrateur peut effectuer un `pg_dump --schema-only` en lecture seule **depuis son Mac vers un fichier privé local**, sans envoyer l’export dans le dépôt public. Ce document ne contient aucun dump de production. La commande suivante reprend le conteneur, la base et le rôle constatés lors de la sauvegarde du déploiement ; confirmer qu’ils sont toujours les bons avant exécution. Elle exporte le **schéma de toute la base**, pas seulement les 28 tables GET INJS APP ; elle n’exporte aucune ligne de données.
-
-```sh
-SORTIE="$HOME/Downloads/injs-schema-production.sql"
-[ ! -e "$SORTIE" ] || { echo "STOP : fichier déjà présent"; return 1; }
-umask 077
-TMP=$(mktemp "$HOME/Downloads/.injs-schema-XXXXXX") || return 1
-if ssh -o StrictHostKeyChecking=yes almalinux@152.228.233.123 \
-  'docker exec injs-db pg_dump -U injs_lmd_app -d injs_lmd_prod_20261026 --schema-only --no-owner --no-acl' > "$TMP" && [ -s "$TMP" ]; then
-  mv "$TMP" "$SORTIE"
-  echo "DDL SQL réel enregistré localement : $SORTIE"
-else
-  rm -f "$TMP"
-  echo "ÉCHEC : export incomplet, aucun fichier final conservé"
-fi
-```
-
-Ne pas publier ce fichier SQL dans GitHub ou dans le chat ; il peut révéler des détails d’architecture interne même sans enregistrements personnels.
-
 **Note calendrier :** l’année `2026-2027` a reçu en production des dates **provisoires non officielles** `01/10/2026`–`30/09/2027`. Ce sont des **valeurs de données**, pas des colonnes supplémentaires ni une norme de schéma.
