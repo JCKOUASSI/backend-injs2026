@@ -404,6 +404,13 @@ class AffectationCreneau(models.Model):
         ),
     )
     actif = models.BooleanField(default=True, db_index=True)
+    # Phase 2 : valeurs absentes sur les placements historiques. Aucune
+    # conversion implicite des plages existantes ni des registres QR liés.
+    date_seance = models.DateField(null=True, blank=True)
+    cle_occurrence_v2 = models.CharField(max_length=64, null=True, blank=True, unique=True)
+    minute_debut = models.PositiveSmallIntegerField(null=True, blank=True)
+    minute_fin = models.PositiveSmallIntegerField(null=True, blank=True)
+    revision_calendrier = models.PositiveIntegerField(null=True, blank=True)
     cree_par = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -428,6 +435,18 @@ class AffectationCreneau(models.Model):
                 fields=['emploi_du_temps', 'creneau_template', 'semaine_debut', 'semaine_fin'],
                 name='edts__edt_creneau_semaine_idx',
             ),
+            models.Index(fields=['groupe', 'date_seance'], condition=models.Q(actif=True, date_seance__isnull=False), name='edt_v2_groupe_date_idx'),
+            models.Index(fields=['formateur', 'date_seance'], condition=models.Q(actif=True, date_seance__isnull=False), name='edt_v2_prof_date_idx'),
+            models.Index(fields=['salle', 'date_seance'], condition=models.Q(actif=True, date_seance__isnull=False), name='edt_v2_salle_date_idx'),
+        ]
+        constraints = [
+            models.CheckConstraint(condition=(
+                models.Q(date_seance__isnull=True) | models.Q(semaine_debut=models.F('semaine_fin'))
+            ), name='edt_v2_occurrence_semaine_unique'),
+            models.CheckConstraint(condition=(
+                models.Q(minute_debut__isnull=True, minute_fin__isnull=True) |
+                models.Q(minute_debut__gte=0, minute_fin__gt=models.F('minute_debut'), minute_fin__lte=1440)
+            ), name='edt_v2_plage_minutes_valide'),
         ]
 
     def clean(self):
@@ -874,6 +893,16 @@ class ExecutionCampagne(models.Model):
         blank=True, default='',
         help_text='Message technique de l’échec — jamais masqué.',
     )
+    # Métadonnées de reprise ; aucun worker n'est activé en phase 2.
+    lease_jusqua = models.DateTimeField(null=True, blank=True)
+    heartbeat_le = models.DateTimeField(null=True, blank=True)
+    worker_id = models.CharField(max_length=64, blank=True, default='')
+    lignes_lues = models.PositiveIntegerField(default=0)
+    lignes_traitees = models.PositiveIntegerField(default=0)
+    lignes_placees = models.PositiveIntegerField(default=0)
+    lignes_a_revoir = models.PositiveIntegerField(default=0)
+    lignes_echec = models.PositiveIntegerField(default=0)
+    version_calendrier = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         ordering = ['-numero']
@@ -1063,6 +1092,15 @@ class PolitiqueContraintesSouples(models.Model):
     def charger(cls):
         """Politique enregistrée, ou ``None`` si personne n'a encore réglé."""
         return cls.objects.filter(pk=1).first()
+
+
+# ── Fondations de la refonte (phase 2, inactives sans activation explicite) ──
+from .models_fondations import (  # noqa: E402,F401
+    ExecutionLigne,
+    PeriodeAcademique,
+    RevisionCalendrier,
+    VerrouJour,
+)
 
 
 # ── Interopérabilité Présences (extension GET INJS APP) ─────────────────────
