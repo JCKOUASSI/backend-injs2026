@@ -1,0 +1,33 @@
+erDiagram
+  edts_affectationcreneau {
+    bigint id PK
+  }
+  edts_emploidutemps {
+    bigint id PK
+  }
+  formations_refsalle {
+    bigint id PK
+  }
+  gi_salle_geolocalisation {
+    bigint id PK
+  }
+  gi_seance_evenement {
+    bigint id PK
+  }
+  gi_seance_historique {
+    bigint id PK
+  }
+  gi_seance_instantane {
+    bigint id PK
+  }
+  gi_seance_registre {
+    bigint id PK
+  }
+  edts_emploidutemps ||--o{ edts_affectationcreneau : emploi_du_temps_id
+  formations_refsalle o|--o{ edts_affectationcreneau : salle_id
+  formations_refsalle ||--o| gi_salle_geolocalisation : salle_id
+  gi_seance_registre ||--o{ gi_seance_evenement : registre_id
+  gi_seance_registre ||--o{ gi_seance_historique : registre_id
+  gi_seance_registre ||--o{ gi_seance_instantane : registre_id
+  edts_affectationcreneau o|--o| gi_seance_registre : affectation_id
+  gi_seance_registre o|--o{ gi_seance_registre : seance_origine_id
