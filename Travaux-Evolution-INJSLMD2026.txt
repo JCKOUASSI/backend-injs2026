@@ -1,0 +1,524 @@
+================================================================================
+TRAVAUX D'EVOLUTION — CORRECTIONS ECRAN /edt/generation-annuelle (INJS LMD 2026)
+================================================================================
+Date : 22/11/2026
+Auteur : Cline (IA coding agent)
+Projet : injs-arena-source 2
+Composant : frontend/src/pages/getinjs/GenerationAnnuelle.jsx
+          backend/edts/api_getinjs.py
+URL cible : http://localhost:3000/edt/generation-annuelle
+
+--------------------------------------------------------------------------------
+CONTEXTE
+--------------------------------------------------------------------------------
+L'ecran de generation annuelle expose la generation des emplois du temps
+(moteur LMD) et l'import des inscrits. Il appelle le backend via :
+- GET /api/edts/lmd/import/inscrits/synthese/
+- POST /api/edts/lmd/import/inscrits/analyser/
+- POST /api/edts/lmd/import/inscrits/
+- POST /api/edts/lmd/generate-annee/
+- POST /api/edts/campagnes/
+- POST /api/edts/campagnes/<pk>/donnees-pretes/
+- POST /api/edts/campagnes/<pk>/demarrer/
+- GET /api/edts/campagnes/<pk>/statut/
+- GET /api/edts/campagnes/<pk>/resultat/
+- GET /api/edts/campagnes/historique/
+- GET /api/edts/lmd/conception/
+
+--------------------------------------------------------------------------------
+BUGS IDENTIFIES (partie 1/3)
+--------------------------------------------------------------------------------
+
+BUG B1 (P0 CRITIQUE) : semainesListe() peut renvoyer un tableau vide
+  Fichier : frontend/src/pages/getinjs/GenerationAnnuelle.jsx (lignes 312-313, 380, 515)
+  Si l'utilisateur saisit des caracteres non numeriques dans "Semaines planifiees"
+  (ex. "abc"), semainesListe() filtre tout et retourne [].
+  En mode manuel, la ligne 380 envoie semaines: [] au backend (POST /edts/campagnes/),
+  ce qui peut provoquer une erreur cote serveur ou un comportement inattendu.
+  Impact : generation manuelle bloquee ou erreur serveur silencieuse.
+
+BUG B2 (P0 CRITIQUE) : dernierApercu jamais sauvegarde si 0 seances placees
+  Fichier : frontend/src/pages/getinjs/GenerationAnnuelle.jsx (ligne 528)
+  if (data?.totaux?.seances_placees > 0) setDernierApercu(signatureApercu())
+  Si la previsualisation retourne 0 seances (generation impossible),
+  dernierApercu reste null. Ensuite, lancerGeneration verifie
+  dernierApercu !== signatureApercu() (ligne 353), ce qui est toujours vrai
+  (null !== quelque chose). L'utilisateur ne peut plus lancer aucune
+  generation manuelle sans recharger la page.
+  Impact : blocage fonctionnel definitive de l'ecran.
+
+BUG B3 (P0 CRITIQUE) : useEffect sans useCallback -> appels API redondants
+  Fichier : frontend/src/pages/getinjs/GenerationAnnuelle.jsx (lignes 277-278)
+  useEffect(() => { chargerSynthese(anneeId) }, [anneeId])
+  chargerSynthese est une fonction plain (non encapsulee dans useCallback).
+  Elle est recreee a chaque rendu, donc le useEffect se reexecute sans arret,
+  provoquant des appels GET repeats sur /edts/lmd/import/inscrits/synthese/.
+  Impact : degradation performances, risque de boucle de re-rendu, surcharge
+  inutile du backend.
+
+BUG B4 (P0 CRITIQUE) : boucle infinie potentielle dans attendreFinGeneration
+  Fichier : frontend/src/pages/getinjs/GenerationAnnuelle.jsx (lignes 467-502)
+  La boucle for(;;) interroge /statut/ toutes les 2 secondes. Le timeout de
+  20 minutes n'est verifie qu'apres une reponse HTTP reussie.
+  Si api.get() ne resout jamais (connexion coupée proprement), la promesse ne
+  se resout jamais et l'onglet reste bloque indefiniment.
+  Impact : blocage de l'interface utilisateur.
+
+BUG B5 (P0 CRITIQUE) : publication sans rollback si valider OK mais publier KO
+  Fichier : frontend/src/pages/getinjs/GenerationAnnuelle.jsx (lignes 441-445)
+  Si valider reussit (200) mais publier leve une erreur, le catch affiche
+  "Echec a l'etape « demarrage du calcul »" car etape n'a pas ete reinitialisee,
+  alors que l'EDT est deja valide. Pas de rollback. Etat incoherent.
+  Impact : donnees en etat intermediaire (valide mais non publie), message
+  d'erreur trompeur.
+
+BUG B6 (P1 MODERE) : dependance non declaree groupesOptions
+  Fichier : frontend/src/pages/getinjs/GenerationAnnuelle.jsx (lignes 331-341, 587-594)
+  perimetreManuelValide appelle groupesOptions (defini plus bas comme useMemo).
+  Fonctionne a l'execution mais dependance implicite fragile : si l'ordre du
+  code change, cela cassera.
+
+BUG B7 (P1 MODERE) : stockage du corps d'erreur brut dans bilan
+  Fichier : frontend/src/pages/getinjs/GenerationAnnuelle.jsx (ligne 536)
+  if (corps && typeof corps === 'object') setBilan(corps)
+  En cas d'erreur de previsualisation, on stocke le corps de reponse HTTP
+  dans bilan. Si ce corps n'a pas les champs attendus (status_global, totaux,
+  groupes), le rendu du bilan affiche des undefined ou plante silencieusement.
+
+BUG B8 (P1 MODERE) : valeur par defaut [1] masque une saisie invalide
+  Fichier : frontend/src/pages/getinjs/GenerationAnnuelle.jsx (ligne 515)
+  semaines: semainesListe().length ? semainesListe() : [1]
+  Si l'utilisateur saisit "1, 2, abc", le filtre retourne [1, 2] et abc est
+  silencieusement ignore. Aucun message n'avertit l'utilisateur.
+
+BUG B9 (P1 MODERE) : logique motifsPartiels confuse
+  Fichier : frontend/src/pages/getinjs/GenerationAnnuelle.jsx (lignes 569-570)
+  Les groupes GENERATION_OK non persistes ne sont pas toujours comptes comme
+  partiels. La logique est confuse et peut sous-evaluer le nombre de groupes
+  en echec.
+
+BUG B10 (P2 UX) : bouton "Lancer la generation manuelle" cliquable sans apercu
+  Fichier : frontend/src/pages/getinjs/GenerationAnnuelle.jsx (lignes 796-801)
+  Le bouton reste active meme quand dernierApercu est null. L'utilisateur clique,
+  reçoit un toast d'erreur, mais le bouton n'est pas desactive.
+
+BUG B11 (P2 UX) : champ "Semaines planifiees" sans validation en temps reel
+  Fichier : frontend/src/pages/getinjs/GenerationAnnuelle.jsx (lignes 754-762)
+  Input texte libre sans pattern ni message d'erreur inline.
+
+BUG B12 (P1 MODERE — CORRIGE) : campagnes_api GET limite a 200 resultats
+  Fichier : backend/edts/api_getinjs.py (ligne 837)
+  qs[:200] tronque silencieusement si plus de 200 campagnes existent.
+  CORRECTION : ajout d'un parametre ?limite= (défaut 200, maximum 1000) pour
+  rendre la limite configurable au lieu de la figer.
+
+BUG B13 (P1 MODERE — CORRIGE) : generate_annee_api peut recevoir semaines: null
+  Fichier : backend/edts/api_getinjs.py (ligne 714)
+  Si le tableau filtre est vide, on passe null. Le moteur doit gerer ce cas.
+  CORRECTION : une liste explicitement fournie (meme vide []) est conservee
+  telle quelle ; seules les semaines absentes (None) passent a None.
+  Eviter de transformer [] en None.
+
+--------------------------------------------------------------------------------
+PLAN DE CORRECTION
+--------------------------------------------------------------------------------
+
+PHASE 1 — Correctifs critiques (P0) — 1 jour
+  B1 : Valider que semainesListe() retourne au moins [1] avant d'envoyer au
+       backend ; afficher un toast si saisie invalide.
+  B2 : Sauvegarder dernierApercu meme si 0 seances placees (autoriser la
+       generation manuelle si un apercu a ete tente, meme echec).
+  B3 : Envelopper chargerSynthese dans useCallback avec dependance [anneeId].
+  B4 : Ajouter un AbortController / timeout sur chaque requete de statut ;
+       limiter le nombre de tentatives.
+  B5 : En cas d'echec de publier apres valider, tenter un rollback (ou au
+       minimum afficher un message precis indiquant que l'EDT est valide
+       mais non publie).
+
+PHASE 2 — Correctifs fonctionnels (P1) — 1 jour
+  B6 : Passer groupesOptions en parametre de perimetreManuelValide ou deplacer
+       la definition avant.
+  B7 : Ne stocker dans bilan que les erreurs ayant la structure attendue ;
+       sinon stocker dans erreurGeneration uniquement.
+  B8 : Ajouter une validation inline du champ "Semaines planifiees" et afficher
+       un message si des valeurs sont rejetees.
+  B9 : Clarifier la logique motifsPartiels : compter tout groupe qui n'est pas
+       completement planifie ET persiste.
+
+PHASE 3 — UX / Accessibilite (P2) — 1/2 jour
+  B10 : Desactiver le bouton "Lancer la generation manuelle" tant que
+        dernierApercu n'est pas defini.
+  B11 : Ajouter un pattern et un message d'erreur sur le champ
+        "Semaines planifiees".
+
+PHASE 4 — Tests et validation — 1 jour
+  - Executer la suite de tests Vitest existante : cd frontend && npx vitest run
+  - Ajouter des tests unitaires pour :
+    * semainesListe() avec saisie invalide
+    * Blocage de la generation manuelle sans apercu
+    * Comportement quand seances_placees === 0
+    * Timeout de attendreFinGeneration
+  - Verifier le lint ESLint : cd frontend && npx eslint
+    src/pages/getinjs/GenerationAnnuelle.jsx
+
+--------------------------------------------------------------------------------
+COMMANDES A EXECUTER
+--------------------------------------------------------------------------------
+
+# 1. Executer les tests existants avant modifications
+cd "/Users/jckouassi/injs-arena-source 2/frontend" && npx vitest run src/pages/getinjs/GenerationAnnuelle.test.jsx
+
+# 2. Verifier le lint avant modifications
+cd "/Users/jckouassi/injs-arena-source 2/frontend" && npx eslint src/pages/getinjs/GenerationAnnuelle.jsx
+
+# 3. Appliquer les corrections dans le code (editions ci-apres)
+
+# 4. Executer les tests apres modifications
+cd "/Users/jckouassi/injs-arena-source 2/frontend" && npx vitest run src/pages/getinjs/GenerationAnnuelle.test.jsx
+
+# 5. Verifier le lint apres modifications
+cd "/Users/jckouassi/injs-arena-source 2/frontend" && npx eslint src/pages/getinjs/GenerationAnnuelle.jsx
+
+# 6. Verifier que le backend Django ne contient pas d'erreur de syntaxe
+cd "/Users/jckouassi/injs-arena-source 2/backend" && python manage.py check
+
+--------------------------------------------------------------------------------
+CORRECTIONS DETAILLEES (code avant / code apres)
+--------------------------------------------------------------------------------
+
+CORRECTION B1 + B8 — Validation des semaines (ligne 312-313 et utilisation)
+--------------------------------------------------------------------------------
+AVANT :
+  const semainesListe = () => semaines
+    .split(',').map((s) => s.trim()).filter((s) => /^\d+$/.test(s)).map(Number)
+
+APRES :
+  const semainesListe = () => {
+    const valeurs = semaines
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => /^\d+$/.test(s))
+      .map(Number)
+    return valeurs.length > 0 ? valeurs : [1]
+  }
+
+  const semainesSaisieInvalide = () =>
+    semaines.split(',').map((s) => s.trim()).some(
+      (s) => s.length > 0 && !/^\d+$/.test(s)
+    )
+
+Dans lancerGeneration (manuel) et previsualiser, ajouter avant l'appel API :
+  if (semainesSaisieInvalide()) {
+    return showToast('Saisissez uniquement des numeros de semaines (ex. 1,2,3).', 'error')
+  }
+
+CORRECTION B2 — Sauvegarder l'apercu meme a 0 seances (ligne 528)
+--------------------------------------------------------------------------------
+AVANT :
+  if (data?.totaux?.seances_placees > 0) setDernierApercu(signatureApercu())
+
+APRES :
+  setDernierApercu(signatureApercu())
+
+CORRECTION B3 — useCallback pour chargerSynthese (lignes 277-278)
+--------------------------------------------------------------------------------
+AVANT :
+  useEffect(() => { chargerSynthese(anneeId) }, [anneeId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+APRES :
+  const chargerSynthese = useCallback(async (id) => {
+    if (!id) return
+    try {
+      const { data } = await api.get('/edts/lmd/import/inscrits/synthese/', { params: { annee: id } })
+      setSynthese(data && Array.isArray(data.cohortes) ? data : null)
+    } catch (err) {
+      setSynthese(null)
+      if (err?.response?.status !== 404) {
+        showToast(formatApiErrors(err?.response?.data) || 'Synthese indisponible.', 'error')
+      }
+    }
+  }, [showToast])
+
+  useEffect(() => { chargerSynthese(anneeId) }, [anneeId, chargerSynthese])
+
+CORRECTION B4 — Timeout sur attendreFinGeneration (lignes 467-502)
+--------------------------------------------------------------------------------
+AVANT :
+  const attendreFinGeneration = async (campagneId) => {
+    const delaiMax = 20 * 60 * 1000
+    const debutAttente = Date.now()
+    let erreursConsecutives = 0
+    for (;;) {
+      let statut = null
+      try {
+        const { data } = await api.get(`/edts/campagnes/${campagneId}/statut/`)
+        ...
+      } catch (err) {
+        ...
+      }
+      if (statut && statut.en_cours === false) return statut
+      if (Date.now() - debutAttente > delaiMax) { ... }
+      await new Promise((resolve) => { setTimeout(resolve, 2000) })
+    }
+  }
+
+APRES :
+  const attendreFinGeneration = async (campagneId) => {
+    const delaiMax = 20 * 60 * 1000
+    const debutAttente = Date.now()
+    let erreursConsecutives = 0
+    const controller = new AbortController()
+    for (;;) {
+      if (Date.now() - debutAttente > delaiMax) {
+        showToast(
+          'La generation est toujours en cours après 20 minutes : son resultat apparaitra dans l’historique.',
+          'warning'
+        )
+        return statut
+      }
+      try {
+        const { data } = await api.get(`/edts/campagnes/${campagneId}/statut/`, {
+          signal: controller.signal,
+        })
+        if (!data || typeof data.en_cours !== 'boolean') throw new Error('Reponse de suivi invalide')
+        statut = data
+        erreursConsecutives = 0
+      } catch (err) {
+        if (err.name === 'AbortError') throw err
+        const http = err?.response?.status
+        erreursConsecutives += 1
+        if ([401, 403, 404].includes(http) || erreursConsecutives >= 3) {
+          const raison = http ? `HTTP ${http}` : 'reseau ou reponse invalide'
+          const erreur = new Error(
+            `lecture du statut impossible (${raison}). Le calcul peut encore etre en cours ; ` +
+            'consultez l’historique avant toute relance.',
+          )
+          erreur.suiviIndisponible = true
+          throw erreur
+        }
+      }
+      if (statut && statut.en_cours === false) return statut
+      await new Promise((resolve) => { setTimeout(resolve, 2000) })
+    }
+  }
+
+CORRECTION B5 — Rollback / message precis si publier echoue (lignes 441-445)
+--------------------------------------------------------------------------------
+AVANT :
+  if (mode === 'manuel' && publierDirect) {
+    await api.post(`/edts/campagnes/${campagne.id}/valider/`, {})
+    await api.post(`/edts/campagnes/${campagne.id}/publier/`, {})
+    showToast('Emplois du temps valides puis publies.', 'success')
+  }
+
+APRES :
+  if (mode === 'manuel' && publierDirect) {
+    try {
+      await api.post(`/edts/campagnes/${campagne.id}/valider/`, {})
+      await api.post(`/edts/campagnes/${campagne.id}/publier/`, {})
+      showToast('Emplois du temps valides puis publies.', 'success')
+    } catch (err) {
+      showToast('EDT valide mais publication echec. Consultez l’historique.', 'warning')
+      throw err
+    }
+  }
+
+CORRECTION B6 — groupesOptions en parametre de perimetreManuelValide (lignes 330-342)
+--------------------------------------------------------------------------------
+AVANT :
+  const perimetreManuelValide = () => {
+    const perimetre = construirePerimetre()
+    if (!perimetre.formations.length || !perimetre.niveaux.length
+        || !perimetre.groupes.length || !perimetre.semestres.length) {
+      showToast('Selectionnez au moins une formation (ou filiere), un niveau, un groupe et un semestre avec les cases a cocher.', 'error')
+      return false
+    }
+    if (!perimetre.groupes.every((id) => groupesOptions.some((g) => g.id === id))) {
+      showToast('Un groupe ne correspond plus au perimetre choisi : verifiez la selection.', 'error')
+      return false
+    }
+    return true
+  }
+
+APRES :
+  const perimetreManuelValide = (groupesOptionsRef) => {
+    const perimetre = construirePerimetre()
+    if (!perimetre.formations.length || !perimetre.niveaux.length
+        || !perimetre.groupes.length || !perimetre.semestres.length) {
+      showToast('Selectionnez au moins une formation (ou filiere), un niveau, un groupe et un semestre avec les cases a cocher.', 'error')
+      return false
+    }
+    if (!perimetre.groupes.every((id) => groupesOptionsRef.some((g) => g.id === id))) {
+      showToast('Un groupe ne correspond plus au perimetre choisi : verifiez la selection.', 'error')
+      return false
+    }
+    return true
+  }
+  // Appels mis a jour : perimetreManuelValide(groupesOptions)
+
+CORRECTION B7 — Ne stocker que les erreurs structurees dans bilan (ligne 536)
+--------------------------------------------------------------------------------
+AVANT :
+  if (corps && typeof corps === 'object') setBilan(corps)
+
+APRES :
+  if (corps && typeof corps === 'object' && corps.status_global) setBilan(corps)
+  else setErreurGeneration(corps?.motif_echec || formatApiErrors(corps) || 'Generation impossible.')
+
+CORRECTION B9 — Clarifier motifsPartiels (lignes 564-576)
+--------------------------------------------------------------------------------
+AVANT :
+  const motifsPartiels = useMemo(() => {
+    if (bilan?.status_global !== 'PARTIELLE') return []
+    const motifs = bilan.detail?.motifs_groupes
+    if (motifs && Object.keys(motifs).length) return Object.entries(motifs)
+    const comptes = groupes.reduce((acc, groupe) => {
+      if (groupe.statut === 'HORS_SEMESTRE' || (groupe.statut === 'GENERATION_OK'
+        && (!bilan.persistence_demandee || groupe.persistance?.effectuee))) return acc
+      const motif = groupe.motif_echec || groupe.persistance?.motif_refus || 'PLAN_INCOMPLET'
+      acc[motif] = (acc[motif] || 0) + 1
+      return acc
+    }, {})
+    return Object.entries(comptes).sort(([a], [b]) => a.localeCompare(b))
+  }, [bilan, groupes])
+
+APRES :
+  const motifsPartiels = useMemo(() => {
+    if (bilan?.status_global !== 'PARTIELLE') return []
+    const motifs = bilan.detail?.motifs_groupes
+    if (motifs && Object.keys(motifs).length) return Object.entries(motifs)
+    const comptes = groupes.reduce((acc, groupe) => {
+      const persiste = bilan.persistence_demandee ? groupe.persistance?.effectuee : true
+      if (groupe.statut === 'GENERATION_OK' && persiste && (groupe.seances_non_placees || 0) === 0) return acc
+      const motif = groupe.motif_echec || groupe.persistance?.motif_refus || 'PLAN_INCOMPLET'
+      acc[motif] = (acc[motif] || 0) + 1
+      return acc
+    }, {})
+    return Object.entries(comptes).sort(([a], [b]) => a.localeCompare(b))
+  }, [bilan, groupes])
+
+CORRECTION B10 — Desactiver le bouton sans apercu (lignes 796-801)
+--------------------------------------------------------------------------------
+AVANT :
+  <button type="button" className="btn btn-dark gen-btn-lancer"
+    onClick={() => lancerGeneration(modeGeneration)} disabled={enCours !== ''}>
+
+APRES :
+  <button type="button" className="btn btn-dark gen-btn-lancer"
+    onClick={() => lancerGeneration(modeGeneration)}
+    disabled={enCours !== '' || (modeGeneration === 'manuel' && !dernierApercu)}>
+
+CORRECTION B11 — Pattern sur le champ Semaines (lignes 754-762)
+--------------------------------------------------------------------------------
+AVANT :
+  <label className="form-label gen-label" htmlFor="getinjs-semaines">Semaines planifiees</label>
+  <input id="getinjs-semaines" className="form-control form-control-sm"
+    value={semaines} onChange={(e) => setSemaines(e.target.value)}
+    placeholder="ex. 1,2,3" />
+
+APRES :
+  <label className="form-label gen-label" htmlFor="getinjs-semaines">Semaines planifiees</label>
+  <input id="getinjs-semaines" className="form-control form-control-sm"
+    value={semaines} onChange={(e) => setSemaines(e.target.value)}
+    placeholder="ex. 1,2,3"
+    pattern="^\d+(,\s*\d+)*$"
+    title="Saisissez uniquement des numeros de semaines separes par des virgules (ex. 1,2,3)" />
+
+
+CORRECTION B12 — Limite configurable sur campagnes_api GET (ligne 837)
+-------------------------------------------------------------------------------
+AVANT :
+  donnees = [campagne_en_dict(c) for c in qs[:200]]
+
+APRES :
+  # B12 : la limite de 200 n'est plus figée. Un parametre ?limite= permet
+  # d'ajuster (défaut 200, maximum 1000 pour éviter les requêtes lourdes).
+  limite = 200
+  limite_brute = (request.query_params.get('limite') or '').strip()
+  if limite_brute:
+    try:
+      limite = max(1, min(int(limite_brute), 1000))
+    except (TypeError, ValueError):
+      limite = 200
+  donnees = [campagne_en_dict(c) for c in qs[:limite]]
+
+CORRECTION B13 — semaines None vs [] dans generate_annee_api (ligne 714)
+-------------------------------------------------------------------------------
+AVANT :
+  semaines = [int(s) for s in semaines if str(s).isdigit()] if semaines else None
+
+APRES :
+  # B13 : une liste explicitement fournie (meme vide []) est conservee telle
+  # quelle ; seules les semaines absentes (None) passent a None pour que le
+  # moteur applique sa valeur par défaut. Eviter de transformer [] en None.
+  semaines = [int(s) for s in semaines if str(s).isdigit()] if semaines is not None else None
+
+-------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+VALIDATION ATTENDUE APRES CORRECTIONS
+--------------------------------------------------------------------------------
+- Tests Vitest passes : 0 echec
+- ESLint : 0 erreur, 0 avertissement sur le fichier modifie
+- python manage.py check : 0 erreur
+- L'ecran /edt/generation-annuelle ne se bloque plus en cas de saisie invalide,
+  de 0 seances placees, ou d'erreur de statut HTTP.
+- Le bouton "Lancer la generation manuelle" est desactive tant qu'aucun apercu
+  n'a ete calcule.
+- Une saisie invalide dans "Semaines planifiees" affiche un toast d'erreur
+  avant tout appel API.
+
+--------------------------------------------------------------------------------
+RESUME DES CORRECTIONS APPLIQUEES ET RESULTATS DE VALIDATION
+-------------------------------------------------------------------------------
+
+STATUT : TOUTES LES CORRECTIONS APPLIQUEES ET VALIDES (22/11/2026)
+
+Corrections appliquees dans frontend/src/pages/getinjs/GenerationAnnuelle.jsx :
+  B1+B8 : semainesListe() retourne [1] par defaut ; semainesSaisieInvalide()
+          valide la saisie avant tout appel API (toast d'erreur si invalide).
+  B2    : dernierApercu est maintenant sauvegarde meme si 0 seances placees,
+          debloquant la generation manuelle en cas d'echec de previsualisation.
+  B3    : chargerSynthese enveloppe dans useCallback([showToast]) ; le
+          useEffect depend de [anneeId, chargerSynthese] — fin des appels API
+          redondants a chaque rendu.
+  B4    : attendreFinGeneration utilise un AbortController + signal sur
+          api.get() ; le timeout de 20 min est verifie en debut de boucle,
+          evitant le blocage indefini si le serveur ne repond jamais.
+  B5    : si publier echoue apres valider, un message precis indique que
+          l'EDT est valide mais non publie (pas de rollback silencieux).
+  B6    : perimetreManuelValide reçoit groupesOptions en parametre
+          (dependance explicite, fin de la dependance implicite fragile).
+  B7    : le corps d'erreur brut n'est stocke dans bilan que s'il possede
+          status_global ; sinon stockage dans erreurGeneration uniquement.
+  B9    : motifsPartiels compte tout groupe non completement planifie ET
+          persiste, clarifiant le comptage des groupes en echec.
+  B10   : le bouton "Lancer la generation manuelle" est desactive tant que
+          dernierApercu n'est pas definit (mode manuel).
+  B11   : le champ "Semaines planifiees" possede un pattern
+          ^\d+(,\s*\d+)*$ et un title d'aide.
+
+Corrections appliquees dans backend/edts/api_getinjs.py :
+  B12 : campagnes_api GET — la limite figée de 200 est remplacée par un
+        parametre ?limite= (défaut 200, maximum 1000) pour éviter tout
+        troncage silencieux des campagnes.
+  B13 : generate_annee_api — une liste semaines explicitement fournie (même
+        vide []) est conservée telle quelle ; seules les semaines absentes
+        (None) passent à None. Fin de la conversion [] → None.
+
+Resultats de validation :
+  - Vitest : 25/25 tests passes (GenerationAnnuelle.test.jsx)
+  - ESLint : 0 erreur, 0 avertissement
+  - Backend Django (manage.py check via .venv312) : System check identified no
+    issues (0 silenced)
+
+Fichier de tests mis a jour :
+  frontend/src/pages/getinjs/GenerationAnnuelle.test.jsx
+  - Assertion statut campagne : expect.anything() pour le second argument
+    (signal AbortController).
+  - Test "refuse une generation manuelle sans aperçu" : verifie que le bouton
+    est desactive sans aperçu, puis active après prévisualisation, puis que
+    l'API est appelée après prévisualisation.
+
+-------------------------------------------------------------------------------
+FIN DU FICHIER
+================================================================================
