@@ -53,10 +53,32 @@ class SeedStagesTests(TestCase):
         self.assertEqual(res.data['organismes'], 20)
         self.assertEqual(res.data['etudiants_en_stage'], 3)
 
+    def test_seed_preserves_convention_metier_existante(self):
+        call_command('seed_stages_demo')
+        convention = ConventionStage.objects.order_by('id').first()
+        convention.commentaires = 'Saisie métier hors DEMO'
+        convention.sujet = 'Sujet saisi par un gestionnaire'
+        convention.save(update_fields=('commentaires', 'sujet'))
+
+        call_command('seed_stages_demo')
+
+        convention.refresh_from_db()
+        self.assertEqual(convention.commentaires, 'Saisie métier hors DEMO')
+        self.assertEqual(convention.sujet, 'Sujet saisi par un gestionnaire')
+        self.assertEqual(ConventionStage.objects.count(), 3)
+
     def test_seed_idempotent_puis_purge(self):
         call_command('seed_stages_demo')
+        identifiants_avant = list(
+            ConventionStage.objects.order_by('id').values_list('id', flat=True),
+        )
         call_command('seed_stages_demo')
         self.assertEqual(ConventionStage.objects.count(), 3)
+        self.assertEqual(
+            list(ConventionStage.objects.order_by('id').values_list('id', flat=True)),
+            identifiants_avant,
+            'Le seed doit réutiliser les conventions DEMO sans les supprimer/recréer.',
+        )
         self.assertEqual(OrganismeAccueil.objects.count(), 20)
         call_command('seed_stages_demo', '--purger')
         self.assertEqual(ConventionStage.objects.count(), 0)

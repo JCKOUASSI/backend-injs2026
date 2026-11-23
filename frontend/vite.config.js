@@ -64,13 +64,16 @@ export default defineConfig(({ mode }) => {
         },
       },
     ],
-    resolve: { alias },
+    // Le shell et ses composants doivent partager le même dispatcher React.
+    // Utile lorsque Vite optimise des dépendances qui réimportent React par
+    // plusieurs chemins (sinon useContext peut lire un dispatcher null).
+    resolve: { alias, dedupe: ['react', 'react-dom'] },
     server: {
       // Ports du projet : l'API Django sur 8000, le front sur 3000 (règle projet).
       port: 3000,
       strictPort: true,
       host: true,
-      allowedHosts: ['.e2b.app', '.trycloudflare.com', 'localhost', '127.0.0.1'],
+      allowedHosts: ['.e2b.app', '.trycloudflare.com', '.arena.site', 'localhost', '127.0.0.1'],
       hmr,
       proxy: {
         // Aligne le frontend sur le backend réellement écouté (127.0.0.1:8000).
@@ -90,7 +93,7 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       strictPort: true,
       host: true,
-      allowedHosts: ['.e2b.app', '.trycloudflare.com', 'localhost', '127.0.0.1'],
+      allowedHosts: ['.e2b.app', '.trycloudflare.com', '.arena.site', 'localhost', '127.0.0.1'],
       proxy: {
         '/api': proxyOpts,
         '/static': proxyOpts,

@@ -11,9 +11,10 @@ que ses écrans existaient. Cette commande crée un jeu de démonstration
   périodes cohérentes avec chaque statut ;
 - les évaluations des stages terminés/soutenus (notes déterministes).
 
-Idempotente : organismes reconnus par nom, conventions d'exemple
-régénérées à identique. ``--dry-run`` simule, ``--purger`` retire tout
-(organismes reconnus par leur courriel de contact d'exemple).
+Idempotente et non destructive : organismes reconnus par nom, conventions
+existantes conservées et seules les manquantes créées. Les conventions métier
+ne sont jamais remplacées. ``--dry-run`` simule, ``--purger`` reste une action
+manuelle explicitement distincte (organismes reconnus par leur courriel DEMO).
 """
 import random
 from datetime import date, timedelta
@@ -166,11 +167,10 @@ class Command(BaseCommand):
         pas = max(1, len(inscriptions) // CIBLE_CONVENTIONS)
         selection = inscriptions[::pas][:CIBLE_CONVENTIONS]
 
-        # ── Conventions (régénérées à identique) ──────────────────────────
-        if not dry_run:
-            ConventionStage.objects.filter(
-                annee_academique=annee, commentaires__startswith=MARQUE,
-            ).delete()
+        # ── Conventions (création uniquement, sans suppression) ─────────
+        conventions_creees = 0
+        conventions_existantes = 0
+        conventions_ignorees = 0
 
         tuteurs_par_org = {}
         if not dry_run:
@@ -220,31 +220,47 @@ class Command(BaseCommand):
                 convention.note_soutenance = Decimal(alea.randint(100, 185)) / 10
                 convention.mention = str(_mention(float(convention.note_rapport)))
                 convention.date_soutenance = maintenant
+            existante = ConventionStage.objects.filter(
+                etudiant=inscription.etudiant,
+                annee_academique=annee,
+            ).exclude(statut=ConventionStage.Statut.ARCHIVEE).first()
+            if existante:
+                if existante.commentaires.startswith(MARQUE):
+                    conventions_existantes += 1
+                else:
+                    # Ne jamais remplacer une convention métier par un exemple.
+                    conventions_ignorees += 1
+                continue
+
             conventions.append(convention)
+            conventions_creees += 1
+            evaluation_data = None
             if statut in ('TERMINEE', 'SOUTENUE', 'VALIDEE_JURY'):
                 notes = [Decimal(alea.randint(95, 185)) / 10 for _ in range(5)]
                 finale = sum(notes) / len(notes)
+                evaluation_data = (notes, finale)
                 evaluations.append((convention, notes, finale))
 
-        if not dry_run:
-            ConventionStage.objects.bulk_create(conventions, batch_size=200)
-            EvaluationStage.objects.bulk_create([
-                EvaluationStage(
-                    convention=convention,
-                    note_aptitude=notes[0], note_integration=notes[1],
-                    note_autonomie=notes[2], note_production=notes[3],
-                    note_rapport=notes[4],
-                    appreciation_libre='Travail sérieux et bonne intégration (exemple).',
-                    note_finale=finale.quantize(Decimal('0.01')),
-                    mention=_mention(float(finale)),
-                    date_validation=maintenant,
-                )
-                for convention, notes, finale in evaluations
-            ], batch_size=200)
+            if not dry_run:
+                convention.save()
+                if evaluation_data:
+                    notes, finale = evaluation_data
+                    EvaluationStage.objects.create(
+                        convention=convention,
+                        note_aptitude=notes[0], note_integration=notes[1],
+                        note_autonomie=notes[2], note_production=notes[3],
+                        note_rapport=notes[4],
+                        appreciation_libre='Travail sérieux et bonne intégration (exemple).',
+                        note_finale=finale.quantize(Decimal('0.01')),
+                        mention=_mention(float(finale)),
+                        date_validation=maintenant,
+                    )
 
         verbe = 'seraient créées' if dry_run else 'créées'
         self.stdout.write(self.style.SUCCESS(
             f'Stages d’exemple : {len(organismes)} organisme(s), '
-            f'{len(conventions)} convention(s) {verbe} et '
-            f'{len(evaluations)} évaluation(s) ({annee.libelle}).',
+            f'{len(conventions)} convention(s) DEMO {verbe} '
+            f'({conventions_creees} nouvelle(s), {conventions_existantes} déjà présente(s), '
+            f'{conventions_ignorees} préexistante(s) non-DEMO ignorée(s)) et '
+            f'{len(evaluations)} évaluation(s) DEMO visée(s) ({annee.libelle}).',
         ))
