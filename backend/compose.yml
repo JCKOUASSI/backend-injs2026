@@ -63,6 +63,7 @@ services:
       sh -c "while true; do
         python manage.py process_mobile_heartbeats;
         python manage.py auto_close_pointages --skip-heartbeat;
+        python manage.py auto_close_seances_edt;
         python manage.py auto_sessions;
         sleep 300;
       done"
