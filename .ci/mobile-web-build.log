@@ -1,7 +1,7 @@
 == résumé du run ==
 deps     : success
 build    : success
-commit   : 375789953fc8af651d6dad204a3efa3cff94242d
+commit   : 23f1cdd468265371c050cec45be9d15bf8b58b07
 
 Resolving dependencies...
 Downloading packages...
@@ -108,9 +108,8 @@ Analyzing qr_badge_mobile...
    info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/widgets/qr_badge_logo.dart:1:1 • deprecated_member_use
    info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/widgets/scan_frame_overlay.dart:1:1 • deprecated_member_use
    info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/widgets/session_status_banner.dart:1:1 • deprecated_member_use
-warning • The asset file 'assets/app.env' doesn't exist. Try creating the file or fixing the path to the file • pubspec.yaml:84:7 • asset_does_not_exist
 
-23 issues found. (ran in 6.5s)
+22 issues found. (ran in 8.3s)
 Compiling lib/main.dart for the Web...                          
 Wasm dry run findings:
 Found incompatibilities with WebAssembly.
@@ -128,48 +127,7 @@ Note: WebAssembly compilation failed due to legacy web imports.
 dart:html, dart:js, and legacy JS interop libraries are deprecated and planned for removal from the Dart SDK in a future release. Migrate your project to package:web and dart:js_interop.
 See https://flutter.dev/to/wasm-errors for diagnostic and migration guidance.
 Use --no-wasm-dry-run to disable these warnings.
-Error detected in pubspec.yaml:
-No file or variants found for asset: assets/app.env.
-
-Target web_release_bundle failed: Exception: Failed to bundle asset files.
-#0      copyAssets (package:flutter_tools/src/build_system/targets/assets.dart:62:5)
-<asynchronous suspension>
-#1      WebReleaseBundle.build (package:flutter_tools/src/build_system/targets/web.dart:1232:29)
-<asynchronous suspension>
-#2      _BuildInstance._invokeInternal (package:flutter_tools/src/build_system/build_system.dart:975:9)
-<asynchronous suspension>
-#3      Future.wait.<anonymous closure> (dart:async/future.dart:567:21)
-<asynchronous suspension>
-#4      _BuildInstance.invokeTarget (package:flutter_tools/src/build_system/build_system.dart:913:32)
-<asynchronous suspension>
-#5      FlutterBuildSystem.build (package:flutter_tools/src/build_system/build_system.dart:682:16)
-<asynchronous suspension>
-#6      WebBuilder.buildWeb (package:flutter_tools/src/web/compile.dart:125:34)
-<asynchronous suspension>
-#7      BuildWebCommand.runCommand (package:flutter_tools/src/commands/build_web.dart:236:5)
-<asynchronous suspension>
-#8      FlutterCommand.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command.dart:1268:27)
-<asynchronous suspension>
-#9      AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
-<asynchronous suspension>
-#10     CommandRunner.runCommand (package:args/command_runner.dart:212:13)
-<asynchronous suspension>
-#11     FlutterCommandRunner.runCommand.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:651:9)
-<asynchronous suspension>
-#12     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
-<asynchronous suspension>
-#13     FlutterCommandRunner.runCommand (package:flutter_tools/src/runner/flutter_command_runner.dart:585:5)
-<asynchronous suspension>
-#14     FlutterCommandRunner.run (package:flutter_tools/src/runner/flutter_command_runner.dart:355:5)
-<asynchronous suspension>
-#15     run.<anonymous closure>.<anonymous closure>.<anonymous closure> (package:flutter_tools/runner.dart:167:15)
-<asynchronous suspension>
-#16     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
-<asynchronous suspension>
-#17     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
-<asynchronous suspension>
-#18     main (package:flutter_tools/executable.dart:115:3)
-<asynchronous suspension>
-
-Compiling lib/main.dart for the Web...                             31.5s
-Error: Failed to compile application for the Web.
+Font asset "CupertinoIcons.ttf" was tree-shaken, reducing it from 257628 to 844 bytes (99.7% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 7588 bytes (99.5% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Compiling lib/main.dart for the Web...                             39.4s
+✓ Built build/web
