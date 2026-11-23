@@ -251,8 +251,58 @@ class GenerationAnneeApiTests(BaseApiTest):
         self.assertEqual(reponse.status_code, 200)
         self.assertEqual(reponse.data['totaux']['nb_groupes'], 1)
         self.assertEqual(reponse.data['totaux']['etudiants_couverts'], 12)
+        self.assertEqual(reponse.data['semaines_selectionnees'], [1])
         self.assertGreater(reponse.data['totaux']['seances_placees'], 0)
         self.assertFalse(reponse.data['persistence_demandee'])
+
+    def test_generation_transmet_le_filtre_batiments_locaux_au_moteur(self):
+        from unittest.mock import patch
+
+        from formations.models import RefBatiment, RefSalle
+
+        batiment = RefBatiment.objects.create(
+            site=self.f.site, nom='Bâtiment génération ciblée',
+        )
+        salle = RefSalle.objects.create(
+            site=self.f.site, batiment=batiment, nom='Salle génération ciblée',
+        )
+        bilan = {'status_global': 'COMPLETE', 'groupes': [], 'totaux': {},
+                 'persistence_demandee': False}
+        with patch('edts.moteur.annee.generer_annee', return_value=bilan) as generer:
+            response = self.client.post('/api/edts/lmd/generate-annee/', {
+                'annee_academique_id': self.annee.pk, 'semaines': [1],
+                'batiments': [batiment.pk], 'salles': [salle.pk],
+                'semestres': [1], 'persister': True,
+                'autoriser_plan_partiel': True,
+            }, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(generer.call_args.kwargs['batiment_ids'], [batiment.pk])
+        self.assertEqual(generer.call_args.kwargs['salle_ids'], [salle.pk])
+        self.assertIs(generer.call_args.kwargs['autoriser_plan_partiel'], True)
+
+    def test_generation_refuse_une_salle_hors_du_batiment_choisi(self):
+        from formations.models import RefBatiment, RefSalle
+
+        batiment = RefBatiment.objects.create(site=self.f.site, nom='Bâtiment choisi')
+        autre_batiment = RefBatiment.objects.create(site=self.f.site, nom='Autre bâtiment')
+        salle = RefSalle.objects.create(
+            site=self.f.site, batiment=autre_batiment, nom='Salle ailleurs',
+        )
+        response = self.client.post('/api/edts/lmd/generate-annee/', {
+            'annee_academique_id': self.annee.pk, 'semaines': [1],
+            'batiments': [batiment.pk], 'salles': [salle.pk],
+        }, format='json')
+        self.assertEqual(response.status_code, 400)
+
+    def test_generation_refuse_une_liste_de_semaines_vide_ou_hors_plage(self):
+        for semaines in ([], [0], [54], [1, 'x']):
+            with self.subTest(semaines=semaines):
+                reponse = self.client.post(
+                    '/api/edts/lmd/generate-annee/',
+                    {'annee_academique_id': self.annee.pk, 'semaines': semaines},
+                    format='json',
+                )
+                self.assertEqual(reponse.status_code, 400, reponse.data)
 
     def test_generation_persistee_cree_des_brouillons(self):
         self.client.post(

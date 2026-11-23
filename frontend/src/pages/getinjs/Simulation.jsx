@@ -33,7 +33,7 @@ function recommandationsPour(bilan, options) {
     pistes.push({
       niveau: 'bloquant',
       titre: 'Corriger d’abord les salles compatibles',
-      texte: `${salle.length} groupe(s) ont échoué pour AUCUNE_SALLE_COMPATIBLE${salle.length ? ` : ${salle.map((g) => g.groupe).join(', ')}` : ''}. Le moteur attribue cette cause aux contraintes de capacité ou de compatibilité de salle (C4/C7). Vérifiez les salles actives, leur capacité réelle et leur type par rapport aux séances de la maquette. Changer les semaines, le semestre ou les cases de groupe ne corrigera pas cette cause à lui seul. Relancez ensuite la même sélection pour mesurer l’effet.`,
+      texte: `${salle.length} groupe(s) ont échoué pour AUCUNE_SALLE_COMPATIBLE${salle.length ? ` : ${salle.map((g) => g.groupe).join(', ')}` : ''}. Le moteur attribue cette cause aux contraintes de capacité ou de compatibilité de salle (C4/C7). Vérifiez que les bâtiments et salles cochés incluent bien des lieux compatibles, ainsi que leur capacité réelle et leur type par rapport aux séances de la maquette. Pour tester si le filtre de locaux réduit la couverture, décochez tous les bâtiments et locaux afin de laisser utiliser tous les lieux actifs. Changer les semaines, le semestre ou les cases de groupe ne corrigera pas cette cause à lui seul.`,
     })
   }
   for (const [cause, titre, texte] of [
@@ -54,10 +54,18 @@ function recommandationsPour(bilan, options) {
         'VOLUMES_HORAIRES_ABSENTS', 'AUCUN_BESOIN_PLANIFIABLE'].includes(g.motif_echec))
   if (groupesSansCauseStructurelle.length) {
     const variantes = []
+    if (options.nbSemaines <= 1) {
+      variantes.push('renseigner plusieurs semaines officielles du semestre : avec une seule semaine, tous les besoins sont en concurrence pour les seuls créneaux de cette semaine')
+    }
     if (!options.inclureSamedi) variantes.push('inclure le samedi si le canevas réel contient des créneaux ce jour-là')
     if (options.eviterPause) variantes.push('autoriser les créneaux de pause méridienne si le canevas réel en propose')
-    if (Number(options.maxSeances) < 60) variantes.push('tester un quota hebdomadaire plus élevé, dans la limite de 60')
-    variantes.push('ajouter des semaines valides du calendrier de l’année')
+    const quota = Number(options.maxSeances)
+    if (quota > 0 && quota < 60
+        && groupesSansCauseStructurelle.some((g) =>
+          (g.seances_placees || 0) >= quota * Math.max(1, options.nbSemaines))) {
+      variantes.push('tester un quota hebdomadaire plus élevé, dans la limite de 60, car au moins un groupe a atteint son plafond sur les semaines sélectionnées')
+    }
+    if (options.nbSemaines > 1) variantes.push('vérifier que toutes les semaines sélectionnées appartiennent au calendrier officiel')
     pistes.push({
       niveau: 'essai',
       titre: 'Comparer une variante de contraintes, sans changer le périmètre',
@@ -90,15 +98,19 @@ export default function Simulation() {
   const [formations, setFormations] = useState([])
   const [niveaux, setNiveaux] = useState([])
   const [groupes, setGroupes] = useState([])
+  const [batiments, setBatiments] = useState([])
+  const [salles, setSalles] = useState([])
+  const [batimentsSel, setBatimentsSel] = useState([])
+  const [sallesSel, setSallesSel] = useState([])
   const [filieresSel, setFilieresSel] = useState([])
   const [formationsSel, setFormationsSel] = useState([])
   const [niveauxSel, setNiveauxSel] = useState([])
   const [groupesSel, setGroupesSel] = useState([])
   const [semestresSel, setSemestresSel] = useState([])
-  const [semaines, setSemaines] = useState('1')
+  const [semaines, setSemaines] = useState('')
   const [inclureSamedi, setInclureSamedi] = useState(true)
   const [eviterPause, setEviterPause] = useState(true)
-  const [maxSeances, setMaxSeances] = useState('30')
+  const [maxSeances, setMaxSeances] = useState('')
   const [campagne, setCampagne] = useState(null)
   const [resultat, setResultat] = useState(null)
   const [historique, setHistorique] = useState([])
@@ -113,13 +125,16 @@ export default function Simulation() {
       api.get('/scolarite/ref/annees/'),
       api.get('/formations/ref/formations/'),
       api.get('/scolarite/ref/niveaux/'),
-    ]).then(([anneesRes, formationsRes, niveauxRes]) => {
+      api.get('/edts/simulations/ressources/'),
+    ]).then(([anneesRes, formationsRes, niveauxRes, ressourcesRes]) => {
       if (!active) return
       const anneeListe = liste(anneesRes.data)
       setAnnees(anneeListe)
       setAnneeId(String(anneeListe.find((a) => a.courante)?.id || anneeListe[0]?.id || ''))
       setFormations(liste(formationsRes.data))
       setNiveaux(liste(niveauxRes.data))
+      setBatiments(liste(ressourcesRes.data?.batiments))
+      setSalles(liste(ressourcesRes.data?.salles))
     }).catch((err) => { if (active) setErreur(formatApiErrors(err?.response?.data) || 'Référentiels indisponibles.') })
     return () => { active = false }
   }, [])
@@ -195,7 +210,7 @@ export default function Simulation() {
     }
     if (!semainesListe.length || semaines.split(',').some((s) => !/^\s*\d+\s*$/.test(s))
         || semainesListe.some((s) => s > 53)) {
-      setErreur('Les semaines doivent être des numéros entiers de 1 à 53, séparés par des virgules.')
+      setErreur('Saisissez les semaines officielles à simuler : numéros entiers de 1 à 53, séparés par des virgules. Une seule semaine ne représente pas tout un semestre.')
       return
     }
     setChargement(true)
@@ -204,7 +219,8 @@ export default function Simulation() {
     try {
       const { data: created } = await api.post('/edts/simulations/', {
         annee_academique_id: Number(anneeId), semaines: semainesListe,
-        perimetre: { formations: formationsSel, niveaux: niveauxSel, groupes: groupesSel, semestres: semestresSel },
+        perimetre: { formations: formationsSel, niveaux: niveauxSel, groupes: groupesSel, semestres: semestresSel,
+          batiments: batimentsSel, salles: sallesSel },
         parametres: { inclure_maquette: true, inclure_samedi: inclureSamedi,
           eviter_pause_meridienne: eviterPause, max_seances_par_groupe_semaine: Number(maxSeances) || null },
       })
@@ -238,22 +254,40 @@ export default function Simulation() {
 
   const bilan = resultat || BILAN_VIDE
   const totaux = bilan.totaux || {}
+  const optionsEnregistrees = campagne?.parametres?.simulation ? campagne.parametres : null
+  const semainesPourRecommandation = campagne?.semaines || nombres(semaines)
   const recommandations = useMemo(() => recommandationsPour(bilan, {
-    inclureSamedi, eviterPause, maxSeances,
-  }), [bilan, inclureSamedi, eviterPause, maxSeances])
+    inclureSamedi: optionsEnregistrees ? optionsEnregistrees.inclure_samedi !== false : inclureSamedi,
+    eviterPause: optionsEnregistrees ? Boolean(optionsEnregistrees.eviter_pause_meridienne) : eviterPause,
+    maxSeances: optionsEnregistrees
+      ? optionsEnregistrees.max_seances_par_groupe_semaine ?? '' : maxSeances,
+    nbSemaines: semainesPourRecommandation.length,
+  }), [bilan, optionsEnregistrees, inclureSamedi, eviterPause, maxSeances, semainesPourRecommandation])
   const couverture = totaux.seances_attendues
     ? Math.round((totaux.seances_placees || 0) * 100 / totaux.seances_attendues) : null
   const peutAccepter = campagne?.parametres?.simulation
     && ['TERMINE', 'TERMINE_AVEC_ANOMALIES'].includes(campagne.statut)
+  const perimetreResultat = campagne?.perimetre || {}
+  const nomBatiment = (id) => batiments.find((item) => Number(item.id) === Number(id))?.nom || `Bâtiment ${id}`
+  const nomSalle = (id) => salles.find((item) => Number(item.id) === Number(id))?.nom || `Local ${id}`
+  const lieuxResultat = perimetreResultat.salles?.length
+    ? `Locaux sélectionnés : ${perimetreResultat.salles.map(nomSalle).join(', ')}${perimetreResultat.batiments?.length ? ` · bâtiments : ${perimetreResultat.batiments.map(nomBatiment).join(', ')}` : ''}`
+    : perimetreResultat.batiments?.length
+      ? `Tous les locaux actifs des bâtiments : ${perimetreResultat.batiments.map(nomBatiment).join(', ')}`
+      : 'Tous les locaux actifs (aucun filtre de bâtiment ou local)'
+  const semainesResultat = campagne?.semaines?.length ? campagne.semaines.join(', ') : 'non renseignées'
+  const quotaResultat = campagne?.parametres?.max_seances_par_groupe_semaine
+    ? `${campagne.parametres.max_seances_par_groupe_semaine} séances/groupe/semaine`
+    : 'aucun quota hebdomadaire'
 
   return (
     <main className="container-fluid py-3">
       <header className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div><h1 className="h3 mb-1">Simulation EDT — GET INJS</h1>
-          <p className="text-muted mb-0">Même moteur que Génération manuelle. Calcul non persistant, revue humaine, transfert explicite.</p></div>
+          <p className="text-muted mb-0">Même moteur que Génération manuelle. Aucun EDT n’est écrit ou modifié; le résultat est conservé dans l’historique, avec revue humaine et transfert explicite.</p></div>
         <Link className="btn btn-outline-secondary" to="/edt/generation-annuelle">Aller à Génération</Link>
       </header>
-      <div className="alert alert-info" role="note"><strong>Simulation sans écriture.</strong> Les résultats ne créent, ne remplacent, ne valident et ne publient aucun EDT. Un transfert ne lance pas la génération : il préremplit son formulaire, où une nouvelle prévisualisation reste obligatoire.</div>
+      <div className="alert alert-info" role="note"><strong>Simulation sans modification d’EDT.</strong> La campagne et son résultat sont enregistrés dans l’historique, mais aucun EDT n’est créé, remplacé, validé ou publié. Un transfert ne lance pas la génération : il préremplit son formulaire, où une nouvelle prévisualisation reste obligatoire.</div>
       {erreur && <div className="alert alert-danger" role="alert">{erreur}</div>}
       <form className="card card-body mb-4" onSubmit={lancer}>
         <h2 className="h5">Périmètre et contraintes réels</h2>
@@ -264,15 +298,20 @@ export default function Simulation() {
           <ChampMultiple id="sim-niveaux" label="Niveaux" values={niveauxSel} options={niveaux.map((n) => [n.id, n.code || n.libelle])} onChange={setNiveauxSel} />
           <ChampMultiple id="sim-groupes" label="Groupes de l’année" values={groupesSel} options={groupesDisponibles.map((g) => [g.id, `${g.nom} — ${g.niveau_code || g.niveau || g.niveau_id}`])} onChange={setGroupesSel} />
           <ChampMultiple id="sim-semestres" label="Semestres" values={semestresSel} options={SEMESTRES.map((s) => [s, `Semestre ${s} (S${s})`])} onChange={setSemestresSel} />
-          <div className="col-md-3"><label className="form-label" htmlFor="sim-semaines">Semaines (1–53)</label><input id="sim-semaines" className="form-control" value={semaines} onChange={(e) => setSemaines(e.target.value)} placeholder="1,2,3" /></div>
-          <div className="col-md-3"><label className="form-label" htmlFor="sim-quota">Séances max / groupe / semaine</label><input id="sim-quota" type="number" min="1" max="60" className="form-control" value={maxSeances} onChange={(e) => setMaxSeances(e.target.value)} /></div>
+          <div className="col-12"><p className="small text-muted mb-0">Pour viser la meilleure couverture, conservez toutes les ressources. Une sélection plus étroite sert à tester un scénario : si aucun bâtiment ni local n’est coché, tous les lieux actifs sont disponibles.</p></div>
+          <ChampMultiple id="sim-batiments" label="Bâtiments actifs (facultatif)" values={batimentsSel} options={batiments.map((b) => [b.id, b.nom])} onChange={setBatimentsSel} />
+          <ChampMultiple id="sim-salles" label="Salles et espaces actifs (facultatif)" values={sallesSel} options={salles.map((s) => [s.id, `${s.nom}${s.batiment_id ? ` — ${batiments.find((b) => Number(b.id) === Number(s.batiment_id))?.nom || `Bâtiment ${s.batiment_id}`}` : ''} · ${s.type_espace__libelle || s.type_lieu}${s.capacite != null ? ` · capacité ${s.capacite}` : ''}`])} onChange={setSallesSel} />
+          <div className="col-12"><p className="small text-muted mb-0">Si les deux listes sont renseignées, seules les salles cochées dans les bâtiments cochés seront utilisées. Les espaces sportifs et autres lieux référencés sont traités comme ressources de planification.</p></div>
+          <div className="col-md-3"><label className="form-label" htmlFor="sim-semaines">Semaines officielles à simuler (1–53)</label><input id="sim-semaines" className="form-control" value={semaines} onChange={(e) => setSemaines(e.target.value)} placeholder="Ex. 1,2,3,…" aria-describedby="sim-semaines-aide" /><small id="sim-semaines-aide" className="form-text text-muted">Requis. Indiquez les vraies semaines du semestre; une seule semaine ne couvre pas le semestre. Ne devinez pas les semaines.</small></div>
+          <div className="col-md-3"><label className="form-label" htmlFor="sim-quota">Quota max / groupe / semaine (facultatif)</label><input id="sim-quota" type="number" min="1" max="60" className="form-control" value={maxSeances} onChange={(e) => setMaxSeances(e.target.value)} placeholder="Aucun quota" aria-describedby="sim-quota-aide" /><small id="sim-quota-aide" className="form-text text-muted">Vide = aucun plafonnement; conseillé pour mesurer la couverture maximale.</small></div>
           <div className="col-md-3 d-flex flex-column justify-content-center"><label className="form-check"><input className="form-check-input" type="checkbox" checked={inclureSamedi} onChange={(e) => setInclureSamedi(e.target.checked)} /> Inclure samedi</label><label className="form-check"><input className="form-check-input" type="checkbox" checked={eviterPause} onChange={(e) => setEviterPause(e.target.checked)} /> Éviter pause méridienne</label></div>
         </div>
         <div className="mt-3"><button className="btn btn-primary" type="submit" disabled={chargement}>{chargement ? 'Calcul en cours…' : 'Simuler avec le moteur EDT'}</button>{campagne?.statut === 'EN_COURS' && <span className="ms-3" role="status">Calcul réel en arrière-plan, suivi de son statut…</span>}</div>
       </form>
 
       {resultat && <section className="card card-body mb-4" aria-label="Résultat de simulation">
-        <div className="d-flex flex-wrap justify-content-between gap-2"><div><h2 className="h5 mb-1">Résultat : {campagne?.status_global || campagne?.statut_libelle}</h2><p className="text-muted">{campagne?.libelle} · Simulation persistée dans l’historique · les EDT restent inchangés.</p></div><span className={`badge ${campagne?.status_global === 'COMPLETE' ? 'text-bg-success' : 'text-bg-warning'}`}>{campagne?.status_global || campagne?.statut}</span></div>
+        <div className="d-flex flex-wrap justify-content-between gap-2"><div><h2 className="h5 mb-1">Résultat : {campagne?.status_global || campagne?.statut_libelle}</h2><p className="text-muted">{campagne?.libelle} · Résultat conservé dans l’historique · aucun EDT n’a été modifié.</p></div><span className={`badge ${campagne?.status_global === 'COMPLETE' ? 'text-bg-success' : 'text-bg-warning'}`}>{campagne?.status_global || campagne?.statut}</span></div>
+        <p className="small text-muted">Paramètres réellement calculés : semaines {semainesResultat} · {lieuxResultat} · {quotaResultat} · samedi {campagne?.parametres?.inclure_samedi === false ? 'exclu' : 'inclus'} · pause méridienne {campagne?.parametres?.eviter_pause_meridienne ? 'évitée' : 'autorisée'}.</p>
         <div className="row g-2 mb-3">
           <Indicateur label="Groupes calculés" value={bilan.sources?.nb_groupes ?? '—'} /><Indicateur label="Séances placées / attendues" value={`${totaux.seances_placees ?? '—'} / ${totaux.seances_attendues ?? '—'}`} /><Indicateur label="Couverture observée" value={couverture == null ? '—' : `${couverture} %`} /><Indicateur label="Non placées / conflits" value={`${totaux.seances_non_placees ?? '—'} / ${totaux.conflits ?? '—'}`} />
         </div>

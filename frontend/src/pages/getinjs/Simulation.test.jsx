@@ -16,7 +16,10 @@ import Simulation from './Simulation'
 const CAMPAGNE = {
   id: 41, annee_academique_id: 2, libelle: 'Simulation de test', statut: 'TERMINE',
   statut_libelle: 'Terminé', status_global: 'PARTIELLE',
-  parametres: { simulation: true, simulation_acceptee: { par: 'admin' } },
+  semaines: [1],
+  perimetre: { formations: [8], niveaux: [3], groupes: [11], semestres: [1], batiments: [21], salles: [31] },
+  parametres: { simulation: true, simulation_acceptee: { par: 'admin' },
+    inclure_samedi: true, eviter_pause_meridienne: true, max_seances_par_groupe_semaine: null },
 }
 const RESULTAT = {
   campagne: { ...CAMPAGNE, parametres: { simulation: true } },
@@ -34,6 +37,10 @@ function setup() {
   apiController.setRoute('/scolarite/ref/annees/', [{ id: 2, libelle: '2025-2026', courante: true }])
   apiController.setRoute('/formations/ref/formations/', [{ id: 8, intitule: 'Licence test' }])
   apiController.setRoute('/scolarite/ref/niveaux/', [{ id: 3, code: 'L1' }])
+  apiController.setRoute('/edts/simulations/ressources/', {
+    batiments: [{ id: 21, nom: 'Bâtiment A' }],
+    salles: [{ id: 31, nom: 'Salle A1', batiment_id: 21, type_lieu: 'SALLE', capacite: 40 }],
+  })
   apiController.setRoute('/scolarite/ref/groupes/', [{ id: 11, nom: 'L1-G1', niveau_code: 'L1', ref_formation_id: 8, niveau_id: 3 }])
   apiController.setRoute('/edts/campagnes/', { count: 0, results: [] })
   apiController.setRoute('/edts/simulations/', CAMPAGNE, 201)
@@ -55,15 +62,19 @@ describe('GET INJS — simulation non destructive', () => {
     await user.click(screen.getByRole('checkbox', { name: 'L1' }))
     await user.click(screen.getByRole('checkbox', { name: 'L1-G1 — L1' }))
     await user.click(screen.getByRole('checkbox', { name: 'Semestre 1 (S1)' }))
+    await user.type(screen.getByLabelText(/Semaines officielles à simuler/), '1')
+    await user.click(screen.getByRole('checkbox', { name: 'Bâtiment A' }))
+    await user.click(screen.getByRole('checkbox', { name: /Salle A1/ }))
     await user.click(screen.getByRole('button', { name: 'Simuler avec le moteur EDT' }))
     expect(await screen.findByRole('heading', { name: /Résultat : PARTIELLE/ })).toBeInTheDocument()
     expect(screen.getByText('75 %')).toBeInTheDocument()
     expect(screen.getByText('OCCURRENCES_NON_PLACEES')).toBeInTheDocument()
+    expect(screen.getByText(/Paramètres réellement calculés : semaines 1/)).toHaveTextContent(/Salle A1/)
     expect(screen.getByRole('region', { name: 'Pistes d’amélioration de la couverture' }))
-      .toHaveTextContent(/ajouter des semaines valides/)
+      .toHaveTextContent(/plusieurs semaines officielles/)
     expect(screen.getByText(/ne garantissent pas un optimum/)).toBeInTheDocument()
     const body = apiMock.post.mock.calls.find(([path]) => path === '/edts/simulations/')[1]
-    expect(body.perimetre).toEqual({ formations: [8], niveaux: [3], groupes: [11], semestres: [1] })
+    expect(body.perimetre).toEqual({ formations: [8], niveaux: [3], groupes: [11], semestres: [1], batiments: [21], salles: [31] })
     expect(body.parametres.persister).toBeUndefined()
     await user.click(screen.getByRole('button', { name: 'Accepter après revue humaine' }))
     expect(await screen.findByRole('link', { name: 'Transférer vers Génération → Manuel' }))
@@ -86,6 +97,7 @@ describe('GET INJS — simulation non destructive', () => {
     await user.click(screen.getByRole('checkbox', { name: 'L1' }))
     await user.click(screen.getByRole('checkbox', { name: 'L1-G1 — L1' }))
     await user.click(screen.getByRole('checkbox', { name: 'Semestre 1 (S1)' }))
+    await user.type(screen.getByLabelText(/Semaines officielles à simuler/), '1')
     await user.click(screen.getByRole('button', { name: 'Simuler avec le moteur EDT' }))
     const pistes = await screen.findByRole('region', { name: 'Pistes d’amélioration de la couverture' })
     expect(pistes).toHaveTextContent(/Corriger d’abord les salles compatibles/)
@@ -101,6 +113,20 @@ describe('GET INJS — simulation non destructive', () => {
     await user.click(tout)
     expect(screen.getByRole('checkbox', { name: 'L1' })).toBeChecked()
     expect(screen.getByRole('button', { name: 'Tout désélectionner : Niveaux' })).toBeInTheDocument()
+  })
+
+  it('ne lance pas par défaut une seule semaine ou un quota implicite', async () => {
+    const user = userEvent.setup()
+    setup()
+    expect(screen.getByLabelText(/Semaines officielles à simuler/)).toHaveValue('')
+    expect(screen.getByLabelText(/Quota max/)).toHaveValue(null)
+    await user.click(await screen.findByRole('checkbox', { name: 'Licence test' }))
+    await user.click(screen.getByRole('checkbox', { name: 'L1' }))
+    await user.click(screen.getByRole('checkbox', { name: 'L1-G1 — L1' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Semestre 1 (S1)' }))
+    await user.click(screen.getByRole('button', { name: 'Simuler avec le moteur EDT' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/semaines officielles à simuler/)
+    expect(apiMock.post).not.toHaveBeenCalledWith('/edts/simulations/', expect.anything())
   })
 
   it('refuse de simuler tant que le périmètre requis n’est pas sélectionné', async () => {

@@ -39,6 +39,18 @@ const AGENTS = {
   ],
 }
 
+const ENSEIGNANTS = {
+  results: [
+    {
+      id: 8, numerobadge: 'ENS-DEMO-001', nom: 'KOFFI', prenom: 'Aya',
+      email: 'aya.koffi@demo.injs.ci', telephone: '+225 07 08 01 11 17',
+      grade: { libelle: 'Maître assistant' }, statut_enseignant: 'Titulaire',
+      specialite: 'Sciences humaines et sociales',
+      enseignements: { nb_ecue: 8, heures: 120, formations: ['Licence Éducation'] },
+    },
+  ], count: 1, total_pages: 1,
+}
+
 const DISPONIBILITES = {
   results: [
     {
@@ -54,6 +66,7 @@ function preparer() {
   apiController.reset()
   apiController.setRoute('/rh/stats/', () => STATS)
   apiController.setRoute('/rh/agents/', () => AGENTS)
+  apiController.setRoute('/formations/formateurs/list/', () => ENSEIGNANTS)
   apiController.setRoute('/rh/affectations/', () => ({ results: [] }))
   apiController.setRoute('/rh/disponibilites/', () => DISPONIBILITES)
   apiController.setRoute('/rh/documents/', () => ({ results: [] }))
@@ -82,6 +95,18 @@ describe('Hub Personnel premium', () => {
     expect(container.textContent).toContain('22 agents actifs sur 24')
     expect(container.textContent).not.toContain('FONCTIONNAIRE')
     expect(screen.getByText('01/09/2020')).toBeInTheDocument()
+  })
+
+  it('consulte le registre formateurs existant avec grade et enseignements sans le confondre avec les agents RH', async () => {
+    const user = userEvent.setup()
+    mount()
+    await waitFor(() => expect(screen.getByText('EX-AGT-001')).toBeInTheDocument())
+    await user.click(screen.getByRole('tab', { name: /Enseignants/ }))
+    await waitFor(() => expect(screen.getByText('ENS-DEMO-001')).toBeInTheDocument())
+    expect(screen.getByText('Maître assistant')).toBeInTheDocument()
+    expect(screen.getByText('Titulaire')).toBeInTheDocument()
+    expect(screen.getByText(/8 ECUE · 120 h · Licence Éducation/)).toBeInTheDocument()
+    expect(screen.getByText(/Vue de consultation du registre Formateurs existant/)).toBeInTheDocument()
   })
 
   it('bascule vers les disponibilités', async () => {

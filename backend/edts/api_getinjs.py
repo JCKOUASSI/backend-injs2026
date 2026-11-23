@@ -737,19 +737,52 @@ def generate_annee_api(request):
     if erreur is not None:
         return erreur
 
-    semaines = request.data.get('semaines')
-    if isinstance(semaines, str):
-        semaines = [s for s in semaines.replace(' ', '').split(',') if s]
-    # B13 : une liste explicitement fournie (même vide) est conservée telle
-    # quelle ; seules les semaines absentes (None) passent à None pour que le
-    # moteur applique sa valeur par défaut. Eviter de transformer [] en None.
-    semaines = [int(s) for s in semaines if str(s).isdigit()] if semaines is not None else None
+    semaines_brutes = request.data.get('semaines')
+    if isinstance(semaines_brutes, str):
+        semaines_brutes = [s.strip() for s in semaines_brutes.split(',')]
+    if semaines_brutes is not None:
+        if not isinstance(semaines_brutes, list) or not semaines_brutes:
+            return Response({'detail': 'Indiquez au moins une semaine réelle, numérotée de 1 à 53.'}, status=400)
+        if any(isinstance(s, bool) or not str(s).isdigit()
+               or not 1 <= int(s) <= 53 for s in semaines_brutes):
+            return Response({'detail': 'Les semaines doivent être des numéros entiers de 1 à 53.'}, status=400)
+        semaines = sorted({int(s) for s in semaines_brutes})
+    else:
+        semaines = None
 
     def _ids(cle):
         brut = request.data.get(cle)
         if isinstance(brut, str):
             brut = [x for x in brut.replace(' ', '').split(',') if x]
         return [int(x) for x in brut if str(x).isdigit()] if brut else None
+
+    def _ids_lieux(cle):
+        brut = request.data.get(cle)
+        if brut in (None, '', []):
+            return []
+        if isinstance(brut, str):
+            brut = [x.strip() for x in brut.split(',')]
+        if (not isinstance(brut, list) or any(
+                isinstance(x, bool) or not str(x).isdigit() for x in brut)):
+            return None
+        return sorted({int(x) for x in brut})
+
+    batiment_ids = _ids_lieux('batiments')
+    salle_ids = _ids_lieux('salles')
+    if batiment_ids is None or salle_ids is None:
+        return Response({'detail': 'Les identifiants de bâtiments et de locaux doivent être des listes d’entiers.'}, status=400)
+    if batiment_ids or salle_ids:
+        from formations.models import RefBatiment, RefSalle
+
+        batiments_valides = set(RefBatiment.objects.filter(
+            actif=True, pk__in=batiment_ids,
+        ).values_list('pk', flat=True))
+        salles_qs = RefSalle.objects.filter(actif=True, pk__in=salle_ids)
+        if batiment_ids:
+            salles_qs = salles_qs.filter(batiment_id__in=batiment_ids)
+        salles_valides = set(salles_qs.values_list('pk', flat=True))
+        if batiments_valides != set(batiment_ids) or salles_valides != set(salle_ids):
+            return Response({'detail': 'Le périmètre contient un bâtiment ou un local inactif, introuvable ou incompatible avec les bâtiments sélectionnés.'}, status=400)
 
     if _booleen(request.data.get('persister')):
         from edts.api_v2_experimental import annee_a_occurrences_v2
@@ -773,6 +806,9 @@ def generate_annee_api(request):
             request.data.get('eviter_pause_meridienne')),
         max_seances_par_groupe_semaine=_int(
             request.data.get('max_seances_par_groupe_semaine')),
+        batiment_ids=batiment_ids or None,
+        salle_ids=salle_ids or None,
+        autoriser_plan_partiel=_booleen(request.data.get('autoriser_plan_partiel')),
     )
 
     if bilan['status_global'] == ANNEE_IMPOSSIBLE:
@@ -820,6 +856,21 @@ def conception_api(request):
 # SIMULATION GET-INJS — exécutions non persistantes du moteur EDT existant.
 # ══════════════════════════════════════════════════════════════════════════════
 
+@api_view(['GET'])
+@permission_classes([IsEdtReadOnlyOrPlanification])
+def simulation_ressources_api(request):
+    """Référentiel de lieux actifs, accessible aux planificateurs EDT."""
+    from formations.models import RefBatiment, RefSalle
+
+    batiments = list(RefBatiment.objects.filter(actif=True).order_by('nom').values('id', 'nom'))
+    salles = list(RefSalle.objects.filter(actif=True).select_related(
+        'batiment', 'type_espace',
+    ).order_by('batiment__nom', 'nom').values(
+        'id', 'nom', 'batiment_id', 'type_lieu', 'type_espace__libelle', 'capacite',
+    ))
+    return Response({'batiments': batiments, 'salles': salles})
+
+
 @extend_schema(request=OpenApiTypes.OBJECT, responses={201: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
 @api_view(['POST'])
 @permission_classes([IsEdtPlanification])
@@ -831,6 +882,7 @@ def simulation_creer_api(request):
     """
     from edts.moteur.campagnes import TransitionRefusee, campagne_en_dict, creer_campagne
     from formations.referentiel_injs_l6 import formations_injs
+    from formations.models import RefBatiment, RefSalle
     from scolarite.models import Groupe, Niveau, Semestre
 
     annee_id = _int(request.data.get('annee_academique_id'))
@@ -856,6 +908,10 @@ def simulation_creer_api(request):
     niveaux = ids('niveaux')
     groupes = ids('groupes')
     semestres = ids('semestres')
+    batiments = ids('batiments') if perimetre.get('batiments') else []
+    salles = ids('salles') if perimetre.get('salles') else []
+    if (perimetre.get('batiments') and not batiments) or (perimetre.get('salles') and not salles):
+        return Response({'detail': 'La sélection de bâtiments ou salles est invalide.'}, status=400)
     if not isinstance(semaines_brutes, list) or any(
             isinstance(s, bool) or not str(s).isdigit() for s in semaines_brutes):
         semaines = []
@@ -890,7 +946,13 @@ def simulation_creer_api(request):
         any(numero in numeros_semestres_par_niveau.get(niveau_id, set()) for niveau_id in niveaux_groupes)
         for numero in semestres
     )
-    if (formations_valides != set(formations) or niveaux_valides != set(niveaux)
+    batiments_valides = set(RefBatiment.objects.filter(actif=True, pk__in=batiments).values_list('pk', flat=True))
+    salles_qs = RefSalle.objects.filter(actif=True, pk__in=salles)
+    if batiments:
+        salles_qs = salles_qs.filter(batiment_id__in=batiments)
+    salles_valides = set(salles_qs.values_list('pk', flat=True))
+    if (batiments_valides != set(batiments) or salles_valides != set(salles)
+            or formations_valides != set(formations) or niveaux_valides != set(niveaux)
             or {pk for pk, _niveau, _formation in lignes_groupes_valides} != set(groupes)
             or niveaux_groupes != set(niveaux) or formations_groupes != set(formations)
             or not semestres_coherents):
@@ -904,6 +966,7 @@ def simulation_creer_api(request):
     options.update({
         'simulation': True, 'persister': False, 'remplacer': False,
         'publier_direct': False, 'mode_generation': 'manuel',
+        'autoriser_plan_partiel': False,
         'inclure_maquette': _booleen(parametres.get('inclure_maquette', True)),
         'inclure_samedi': _booleen(parametres.get('inclure_samedi', True)),
         'eviter_pause_meridienne': _booleen(parametres.get('eviter_pause_meridienne')),
@@ -915,6 +978,7 @@ def simulation_creer_api(request):
             semaines=semaines, perimetre={
                 'formations': formations, 'niveaux': niveaux,
                 'groupes': groupes, 'semestres': semestres,
+                'batiments': batiments, 'salles': salles,
             }, parametres=options,
         )
     except TransitionRefusee as exc:
@@ -1028,6 +1092,36 @@ def campagnes_api(request):
         semaines = [s for s in semaines.replace(' ', '').split(',') if s]
     perimetre = request.data.get('perimetre') or {}
     parametres = request.data.get('parametres') or {}
+    if not isinstance(perimetre, dict) or not isinstance(parametres, dict):
+        return Response({'detail': 'Périmètre et paramètres doivent être des objets.'}, status=400)
+    if any(cle in perimetre for cle in ('batiments', 'salles')):
+        from formations.models import RefBatiment, RefSalle
+
+        def ids_lieux(cle):
+            brut = perimetre.get(cle, [])
+            if brut in (None, '', []):
+                return []
+            if isinstance(brut, str):
+                brut = [x.strip() for x in brut.split(',')]
+            if (not isinstance(brut, list) or any(
+                    isinstance(x, bool) or not str(x).isdigit() for x in brut)):
+                return None
+            return sorted({int(x) for x in brut})
+
+        batiments = ids_lieux('batiments')
+        salles = ids_lieux('salles')
+        if batiments is None or salles is None:
+            return Response({'detail': 'Les identifiants de bâtiments et de locaux doivent être des listes d’entiers.'}, status=400)
+        batiments_valides = set(RefBatiment.objects.filter(
+            actif=True, pk__in=batiments,
+        ).values_list('pk', flat=True))
+        salles_qs = RefSalle.objects.filter(actif=True, pk__in=salles)
+        if batiments:
+            salles_qs = salles_qs.filter(batiment_id__in=batiments)
+        salles_valides = set(salles_qs.values_list('pk', flat=True))
+        if batiments_valides != set(batiments) or salles_valides != set(salles):
+            return Response({'detail': 'Le périmètre contient un bâtiment ou un local inactif, introuvable ou incompatible avec les bâtiments sélectionnés.'}, status=400)
+        perimetre['batiments'], perimetre['salles'] = batiments, salles
     try:
         campagne = creer_campagne(
             annee_academique_id=annee_id,

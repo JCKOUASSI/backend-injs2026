@@ -595,6 +595,83 @@ describe('pages/scolarite/Maquettes.jsx — sélection, CRUD, exports et import'
     const [, confirmation] = apiMock.post.mock.calls[1]
     expect(confirmation.get('etape')).toBe('confirmer')
     expect(confirmation.get('empreinte')).toBe('empreinte-test')
-    expect(await screen.findByText('1 maquette importée en brouillon.')).toBeInTheDocument()
+    expect(await screen.findByText(/1 maquette importée en brouillon/)).toBeInTheDocument()
   })
+})
+
+describe('pages/scolarite/Maquettes.jsx — compléments sélection/export/lecture', () => {
+  it('exporte la vue courante par défaut quand aucune maquette n’est cochée', async () => {
+    mount()
+    await screen.findByText('Licence 1 LSF')
+
+    fireEvent.click(screen.getByRole('button', { name: 'CSV' }))
+
+    await waitFor(() => expect(apiMock.getBlob).toHaveBeenCalledWith(
+      '/scolarite/maquettes/export/csv/?ids=1%2C2%2C3%2C4%2C5',
+    ))
+    expect(downloadFile).toHaveBeenCalled()
+  })
+
+  it('conserve les cases sélectionnées au changement des filtres locaux', async () => {
+    mount()
+    await screen.findByText('Licence 1 LSF')
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Sélectionner Licence 1 LSF Licence 1' }))
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Master' } })
+
+    expect(screen.getByText('1 sélectionnée')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Modifier', exact: true })).toBeEnabled()
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: '' } })
+    expect(screen.getByRole('checkbox', { name: 'Sélectionner Licence 1 LSF Licence 1' })).toBeChecked()
+  })
+
+  it('ouvre un détail de maquette en lecture seule depuis la sélection', async () => {
+    mount()
+    await screen.findByText('Licence 1 LSF')
+    apiController.setRoute('/scolarite/maquettes/1/', {
+      id: 1,
+      ref_formation: 'Licence 1 LSF',
+      niveau: 'L1',
+      annee_academique: '2026-2027',
+      version: 1,
+      statut: 'BROUILLON',
+      parcours: null,
+      commentaire_validation: '',
+      unites_enseignement: [{
+        id: 10, code: 'UE1', intitule: 'Sciences du sport', credits: 6,
+        caractere: 'OBLIGATOIRE', semestre: { libelle: 'Semestre 1' },
+        ecues: [{
+          id: 100, code: 'ECUE1', intitule: 'Anatomie', credits: 3, coefficient: 1,
+          volume_cm: 12, volume_td: 8, volume_tp: 4, volume_total: 24, archive: false,
+        }],
+      }],
+    })
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Sélectionner Licence 1 LSF Licence 1' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Visualiser' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Visualiser la maquette' })
+    expect(within(dialog).getByText('Consultation en lecture seule · contenu pédagogique')).toBeInTheDocument()
+    expect(within(dialog).getByRole('heading', { name: /Sciences du sport/ })).toBeInTheDocument()
+    expect(within(dialog).getAllByRole('row').at(-1).textContent).toContain('Anatomie')
+    expect(within(dialog).queryByRole('button', { name: 'Modifier', exact: true })).not.toBeInTheDocument()
+  })
+})
+
+describe('pages/scolarite/Maquettes.jsx — suppression groupée', () => {
+  it('confirme une suppression multiple en indiquant le nombre et tente chaque élément sélectionné', async () => {
+    mount()
+    await screen.findByText('Licence 1 LSF')
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Sélectionner toutes les maquettes affichées' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Supprimer (5)' }))
+
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('5 maquette(s) sélectionnée(s)'))
+    await waitFor(() => expect(apiMock.delete).toHaveBeenCalledTimes(5))
+    expect(apiMock.delete.mock.calls.map(([path]) => path)).toEqual([
+      '/scolarite/maquettes/1/',
+      '/scolarite/maquettes/2/',
+      '/scolarite/maquettes/3/',
+      '/scolarite/maquettes/4/',
+      '/scolarite/maquettes/5/',
+    ])
+  })
+
 })

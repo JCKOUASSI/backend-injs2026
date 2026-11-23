@@ -114,9 +114,30 @@ describe('affichage et lecture', () => {
     expect(await attendreEcran()).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Maquettes' })).toBeInTheDocument()
     expect(screen.getByText('Sciences de la vie et de la santé')).toBeInTheDocument()
+    // Le statut reste affiché fidèlement jusqu’à l’activation métier effective.
+    expect(screen.getAllByTestId('statut-BROUILLON')).toHaveLength(2)
+    expect(screen.getAllByTestId('statut-BROUILLON').map((badge) => badge.textContent)).toEqual(['Brouillon', 'Brouillon'])
     // Le panneau ECUE suit la sélection par défaut (première UE).
     expect(await screen.findByTestId('ligne-ecue-100')).toBeInTheDocument()
     expect(screen.getByTestId('etat-maquette')).toHaveTextContent('Brouillon — contenu modifiable')
+  })
+
+  it('active toutes les UE et tous les ECUE de la maquette affichée dans l’ordre métier', async () => {
+    monter()
+    await attendreEcran()
+
+    fireEvent.click(screen.getByTestId('activer-toute-maquette'))
+    const boite = await screen.findByRole('dialog')
+    expect(within(boite).getByText(/Activer toutes les UE et tous les ECUE de la maquette/)).toBeInTheDocument()
+    fireEvent.click(within(boite).getByRole('button', { name: 'Activer toutes les UE et ECUE' }))
+
+    await waitFor(() => {
+      expect(apiController.findCall('post', '/scolarite/ues/10/statut/')).toBeTruthy()
+      expect(apiController.findCall('post', '/scolarite/ecues/100/statut/')).toBeTruthy()
+    })
+    expect(apiController.findCall('post', '/scolarite/ues/10/statut/')[1]).toEqual({ statut: 'ACTIVE' })
+    expect(apiController.findCall('post', '/scolarite/ecues/100/statut/')[1]).toEqual({ statut: 'ACTIVE' })
+    expect(await screen.findByText(/Activation de la maquette : 2 éléments activés/)).toBeInTheDocument()
   })
 
   it('sélectionne le brouillon de l’année courante avant une maquette historique', async () => {

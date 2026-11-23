@@ -362,6 +362,8 @@ export default function EcranUeEcue() {
   const [exportDetaille, setExportDetaille] = useState(false)
   const [suppression, setSuppression] = useState(null)
   const [suppressionMasse, setSuppressionMasse] = useState(null)
+  const [activationTotaleDemandee, setActivationTotaleDemandee] = useState(false)
+  const [activationTotaleEnCours, setActivationTotaleEnCours] = useState(false)
   const [recherche, setRecherche] = useState('')
   // Sélection multiple (cases à cocher) : ids des UE et des ECUE cochés.
   const [selectionUe, setSelectionUe] = useState([])
@@ -474,6 +476,11 @@ export default function EcranUeEcue() {
   }, [ues, recherche])
 
   const ue = ues.find((u) => Number(u.id) === Number(ueId)) || null
+  const nbElementsAActiver = ues.reduce((total, unite) => (
+    total
+      + Number(unite.statut !== 'ACTIVE')
+      + (unite.ecues || []).filter((ecue) => ecue.statut !== 'ACTIVE').length
+  ), 0)
 
   // Synthèse de la maquette sélectionnée, calculée sur les UE déjà chargées.
   const synthese = useMemo(() => {
@@ -859,6 +866,56 @@ export default function EcranUeEcue() {
     rafraichir()
   }
 
+  const activerTouteLaMaquette = async () => {
+    setActivationTotaleDemandee(false)
+    setActivationTotaleEnCours(true)
+    let actives = 0
+    let refusees = 0
+    let ecuesBloqueesParLeurUe = 0
+
+    try {
+      // L’API impose l’ordre métier : l’UE doit être ACTIVE avant ses ECUE.
+      // Les éléments déjà actifs sont conservés; les autres suivent leur
+      // transition explicite et chaque refus est comptabilisé sans interrompre
+      // les autres UE de la maquette.
+      for (const unite of ues) {
+        let ueActive = unite.statut === 'ACTIVE'
+        if (!ueActive) {
+          try {
+            await changerStatut.mutateAsync({ type: 'ue', element: unite, statut: 'ACTIVE' })
+            actives += 1
+            ueActive = true
+          } catch {
+            refusees += 1
+          }
+        }
+        if (!ueActive) {
+          ecuesBloqueesParLeurUe += (unite.ecues || []).filter((ecue) => ecue.statut !== 'ACTIVE').length
+          continue
+        }
+        for (const ecue of unite.ecues || []) {
+          if (ecue.statut === 'ACTIVE') continue
+          try {
+            await changerStatut.mutateAsync({ type: 'ecue', element: ecue, statut: 'ACTIVE' })
+            actives += 1
+          } catch {
+            refusees += 1
+          }
+        }
+      }
+
+      let bilan = `Activation de la maquette : ${actives} élément${actives > 1 ? 's' : ''} activé${actives > 1 ? 's' : ''} (UE/ECUE).`
+      if (refusees) bilan += ` ${refusees} refusée${refusees > 1 ? 's' : ''} par le serveur.`
+      if (ecuesBloqueesParLeurUe) {
+        bilan += ` ${ecuesBloqueesParLeurUe} ECUE non traitée${ecuesBloqueesParLeurUe > 1 ? 's' : ''} car leur UE n’a pas pu être activée.`
+      }
+      showToast(bilan, refusees || ecuesBloqueesParLeurUe ? 'error' : 'success')
+      rafraichir()
+    } finally {
+      setActivationTotaleEnCours(false)
+    }
+  }
+
   const confirmerSuppressionMasse = async () => {
     const { type, elements } = suppressionMasse
     setSuppressionMasse(null)
@@ -1210,6 +1267,19 @@ export default function EcranUeEcue() {
                 <span className="gen-count-pill">
                   {uesQuery.isLoading ? 'Chargement…' : `${uesFiltrees.length} UE`}
                 </span>
+                {peutGerer && maquetteEditable && nbElementsAActiver > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-success"
+                    onClick={() => setActivationTotaleDemandee(true)}
+                    disabled={activationTotaleEnCours || changerStatut.isPending}
+                    data-testid="activer-toute-maquette"
+                    title={`Activer ${nbElementsAActiver} UE/ECUE de la maquette affichée`}
+                  >
+                    <i className="bi bi-check2-all me-1" aria-hidden="true"></i>
+                    {activationTotaleEnCours ? 'Activation…' : 'Tout activer'}
+                  </button>
+                )}
                 {peutGerer && maquetteEditable && (
                   <button
                     type="button"
@@ -1754,6 +1824,17 @@ export default function EcranUeEcue() {
             </form>
           </section>
         </div>
+      )}
+
+      {activationTotaleDemandee && (
+        <ConfirmModal
+          message={`Activer toutes les UE et tous les ECUE de la maquette ${maquette?.ref_formation || 'affichée'} — ${maquette?.niveau || ''} ?`}
+          detail={`${nbElementsAActiver} UE/ECUE à activer. Chaque UE sera activée avant ses ECUE; les statuts et le journal métier seront mis à jour. Les éléments déjà actifs ne seront pas modifiés.`}
+          confirmLabel="Activer toutes les UE et ECUE"
+          variant="success"
+          onConfirm={activerTouteLaMaquette}
+          onCancel={() => setActivationTotaleDemandee(false)}
+        />
       )}
 
       {suppression && (

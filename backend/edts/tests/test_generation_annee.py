@@ -138,8 +138,10 @@ class GenerationAnneeTests(BaseAnneeTest):
         self.importer([f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'
                        for i in range(20)])
         depart = monotonic()
-        bilan = A.generer_annee(self.annee.pk, semaines=[1, 2, 3, 4],
-                                semestre_numeros=[1], persister=True)
+        bilan = A.generer_annee(
+            self.annee.pk, semaines=[1, 2, 3, 4], semestre_numeros=[1],
+            max_seances_par_groupe_semaine=1, persister=True,
+        )
         duree_s = monotonic() - depart
         ligne = bilan['groupes'][0]
         self.assertEqual(ligne['seances_attendues'], 3)
@@ -147,6 +149,7 @@ class GenerationAnneeTests(BaseAnneeTest):
         self.assertEqual(ligne['occurrences_recurrentes'], 3)
         self.assertEqual(ligne['heures_recurrentes'], 6)
         self.assertEqual(ligne['heures_prevues'], 6)
+        self.assertTrue(ligne['repartition_verifiee'])
         self.assertEqual(ligne['statut'], G.GENERATION_OK)
         self.assertEqual(bilan['status_global'], A.ANNEE_COMPLETE)
         self.assertTrue(ligne['persistance']['effectuee'])
@@ -160,6 +163,42 @@ class GenerationAnneeTests(BaseAnneeTest):
         print(f'ANNUEL_DIAGNOSTIC: 20 étudiants, 4 semaines, S1, '
               f'6h prévues, {ligne["heures_recurrentes"]:g}h persistées, '
               f'{len(seances)} occurrences, durée {duree_s:.3f}s')
+
+    def test_generation_manuel_partielle_acceptee_persiste_uniquement_les_seances_placees(self):
+        """Après consentement, un EDT brouillon peut conserver le plan partiel sûr.
+
+        Les occurrences absentes restent dans le bilan et ne rendent jamais le
+        plan publiable; elles ne doivent toutefois pas annuler les placements
+        valides déjà calculés pour le semestre ciblé.
+        """
+        from edts.models import CreneauTemplate
+
+        ECUE.objects.filter(pk=self.ecue.pk).update(volume_cm=10, volume_td=8)
+        self.importer([f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'
+                       for i in range(20)])
+        premier = CreneauTemplate.objects.order_by('pk').first()
+        CreneauTemplate.objects.exclude(pk=premier.pk).delete()
+
+        bilan = A.generer_annee(
+            self.annee.pk,
+            semaines=[1, 2, 3, 4],
+            semestre_numeros=[1],
+            persister=True,
+            autoriser_plan_partiel=True,
+        )
+
+        ligne = bilan['groupes'][0]
+        self.assertEqual(bilan['status_global'], A.ANNEE_PARTIELLE)
+        self.assertEqual(ligne['seances_attendues'], 9)
+        self.assertEqual(ligne['seances_placees'], 4)
+        self.assertEqual(ligne['seances_non_placees'], 5)
+        self.assertEqual(ligne['motif_echec'], 'OCCURRENCES_NON_PLACEES', ligne)
+        self.assertTrue(ligne['repartition_verifiee'])
+        self.assertTrue(ligne['persistance']['effectuee'])
+        self.assertTrue(ligne['persistance']['couverture_partielle_acceptee'])
+        self.assertEqual(ligne['seances_persistees'], 4)
+        self.assertEqual(EmploiDuTemps.objects.count(), 1)
+        self.assertEqual(AffectationCreneau.objects.filter(actif=True).count(), 4)
 
     def test_automatique_sans_calendrier_semestre_refuse_l_annee_complete(self):
         self.importer([f'INJS-{i:03d};Nom{i};{self.formation.intitule};L1;S1;L1-G1;V1'
@@ -356,6 +395,24 @@ class GenerationAnneeTests(BaseAnneeTest):
         self.assertIsNone(ligne['repartition_verifiee'])
         self.assertEqual(EmploiDuTemps.objects.count(), 0)
 
+        # L'accord explicite sur le calendrier provisoire permet ensuite de
+        # garder les placements valides en brouillon, sans blanchir le plan.
+        accepte = A.generer_annee(
+            self.annee.pk,
+            semaines=calendrier['impairs'] + calendrier['pairs'],
+            calendrier_previsionnel=calendrier,
+            persister=True,
+            autoriser_plan_partiel=True,
+        )
+        ligne_acceptee = accepte['groupes'][0]
+        self.assertEqual(accepte['status_global'], A.ANNEE_PARTIELLE)
+        self.assertGreater(ligne_acceptee['seances_placees'], 0)
+        self.assertGreater(ligne_acceptee['seances_non_placees'], 0)
+        self.assertTrue(ligne_acceptee['persistance']['effectuee'])
+        self.assertTrue(ligne_acceptee['persistance']['couverture_partielle_acceptee'])
+        self.assertEqual(ligne_acceptee['seances_persistees'], ligne_acceptee['seances_placees'])
+        self.assertGreater(AffectationCreneau.objects.filter(actif=True).count(), 0)
+
     def test_besoin_initial_impossible_ne_cache_pas_un_besoin_suivant_faisable(self):
         """Une ECUE sans salle compatible ne condamne pas les autres ECUE."""
         from dataclasses import replace
@@ -520,11 +577,11 @@ class GenerationAnneeTests(BaseAnneeTest):
         persister_reel = O._persister_si_possible
         appels = []
 
-        def refuser_premier(cible, resultat, *, remplacer):
+        def refuser_premier(cible, resultat, *, remplacer, **kwargs):
             appels.append(cible)
             if len(appels) == 1:
                 return {'effectuee': False, 'motif_refus': 'VALIDATION_BLOQUANTE'}
-            return persister_reel(cible, resultat, remplacer=remplacer)
+            return persister_reel(cible, resultat, remplacer=remplacer, **kwargs)
 
         with patch.object(O, '_persister_si_possible', side_effect=refuser_premier):
             bilan = A.generer_annee(self.annee.pk, semaines=[1], persister=True)
@@ -568,10 +625,10 @@ class GenerationAnneeTests(BaseAnneeTest):
         anciennes = set(AffectationCreneau.objects.filter(actif=True).values_list('pk', flat=True))
         persister_reel = O._persister_si_possible
 
-        def refuser_cible(cible, resultat, *, remplacer):
+        def refuser_cible(cible, resultat, *, remplacer, **kwargs):
             if cible['edt'].population_id == groupes[0].pk:
                 return {'effectuee': False, 'motif_refus': 'VALIDATION_BLOQUANTE'}
-            return persister_reel(cible, resultat, remplacer=remplacer)
+            return persister_reel(cible, resultat, remplacer=remplacer, **kwargs)
 
         with patch.object(O, '_persister_si_possible', side_effect=refuser_cible):
             bilan = A.generer_annee(self.annee.pk, semaines=[1], persister=True)
