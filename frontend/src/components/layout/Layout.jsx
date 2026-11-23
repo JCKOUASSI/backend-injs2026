@@ -6,7 +6,7 @@ import { LIBELLES_ROLES } from '../../menu/arborescence'
 import AppNotificationsBell from '../AppNotificationsBell'
 import Sidebar from './Sidebar'
 import { FINANCE_MODULE_ROLES } from '../../utils/roles'
-import avatarDirector from '../../assets/avatar-director.jpg'
+import ProfileAvatar from '../ProfileAvatar'
 import api from '../../services/api'
 
 /**
@@ -17,7 +17,7 @@ import api from '../../services/api'
  * - Barre de recherche globale (« Rechercher un étudiant, une formation, un cours... »)
  * - Année académique courante, lue depuis `/api/scolarite/annee-courante/`
  * - Cloche de notification temps réel
- * - Plaquette utilisateur avec avatar exécutif, nom complet et badge de rôle
+ * - Plaquette utilisateur avec photo de profil, nom complet et badge de rôle
  */
 export default function Layout({ children, breadcrumb }) {
   const { user } = useAuth()
@@ -330,30 +330,12 @@ export default function Layout({ children, breadcrumb }) {
                 transition: 'all 0.2s ease',
               }}
             >
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  background: 'linear-gradient(135deg, #071B3A 0%, #1267D6 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 6px rgba(11, 31, 58, 0.15)',
-                  flexShrink: 0,
-                }}
-              >
-                <img
-                  src={avatarDirector}
-                  alt={displayName}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none'
-                    e.currentTarget.parentElement.innerText = userInitials
-                  }}
-                />
-              </div>
+              <ProfileAvatar
+                photoUrl={user?.photo_url}
+                initials={userInitials}
+                name={displayName}
+                size={36}
+              />
 
               <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', lineHeight: 1.15 }}>
                 <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#0F172A' }}>

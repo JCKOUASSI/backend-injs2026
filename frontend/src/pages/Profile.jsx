@@ -3,6 +3,7 @@ import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import ConfirmModal from '../components/ConfirmModal'
+import ProfileAvatar from '../components/ProfileAvatar'
 
 const ROLE_LABELS = {
   DIRECTION: 'Direction',
@@ -52,6 +53,8 @@ export default function Profile() {
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [photoSaving, setPhotoSaving] = useState(false)
+  const [photoError, setPhotoError] = useState('')
 
   const applyProfileData = (d) => {
     setMeta({
@@ -59,6 +62,7 @@ export default function Profile() {
       role: d.role || '',
       secretariat_nom: d.secretariat_nom || null,
       is_active: d.is_active !== false,
+      photo_url: d.photo_url || null,
     })
     const next = {
       first_name: d.first_name || '',
@@ -194,6 +198,42 @@ export default function Profile() {
     }
   }
 
+  const handlePhotoChange = async (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setPhotoError('')
+    setPhotoSaving(true)
+    try {
+      const payload = new FormData()
+      payload.append('photo', file)
+      const { data } = await api.post('/auth/me/photo/', payload)
+      applyProfileData(data)
+      await refreshUser()
+      showToast('Photo de profil mise à jour.')
+    } catch (err) {
+      const issue = err?.response?.data?.photo || err?.response?.data?.detail
+      setPhotoError(Array.isArray(issue) ? issue.join(' ') : issue || 'Impossible de mettre à jour la photo.')
+    } finally {
+      setPhotoSaving(false)
+    }
+  }
+
+  const handlePhotoRemove = async () => {
+    setPhotoError('')
+    setPhotoSaving(true)
+    try {
+      const { data } = await api.delete('/auth/me/photo/')
+      applyProfileData(data)
+      await refreshUser()
+      showToast('Photo de profil supprimée.')
+    } catch (err) {
+      setPhotoError(err?.response?.data?.detail || 'Impossible de supprimer la photo.')
+    } finally {
+      setPhotoSaving(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="loading">
@@ -213,7 +253,7 @@ export default function Profile() {
             <small className="text-muted">
               {isEditing
                 ? 'Modifiez les champs puis enregistrez, ou annulez pour revenir à l’affichage seul.'
-                : 'Consultez vos informations. « Modifier » sous chaque bloc active l’édition (coordonnées ou mot de passe). Le rôle, le secrétariat et l’identifiant de connexion sont gérés par un administrateur.'}
+                : 'Consultez vos informations et mettez à jour votre photo, vos coordonnées ou votre mot de passe. Le rôle, le secrétariat et l’identifiant de connexion sont gérés par un administrateur.'}
             </small>
           </div>
           <button
@@ -241,6 +281,40 @@ export default function Profile() {
           onCancel={() => setShowLogoutConfirm(false)}
         />
       )}
+
+      <div className="card mb-3">
+        <div className="card-header-bar">
+          <span><i className="bi bi-camera me-2"></i>Photo de profil</span>
+        </div>
+        <div className="card-body d-flex flex-wrap align-items-center gap-3">
+          <ProfileAvatar
+            photoUrl={meta.photo_url}
+            initials={`${(baseline.first_name || '')[0] || ''}${(baseline.last_name || '')[0] || ''}`.toUpperCase() || meta.username.slice(0, 2).toUpperCase() || '?'}
+            name="votre profil"
+            size={88}
+          />
+          <div style={{ flex: '1 1 240px' }}>
+            <p className="mb-2">Choisissez une photo JPEG, PNG ou WebP (5 Mio maximum). Elle sera visible dans votre barre de navigation.</p>
+            <label className="btn btn-dfrc btn-sm mb-0">
+              <i className="bi bi-upload me-1"></i>{photoSaving ? 'Enregistrement…' : 'Changer la photo'}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                aria-label="Choisir une photo de profil"
+                disabled={photoSaving}
+                onChange={handlePhotoChange}
+                className="visually-hidden"
+              />
+            </label>
+            {meta.photo_url && (
+              <button type="button" className="btn btn-outline-secondary btn-sm ms-2" disabled={photoSaving} onClick={handlePhotoRemove}>
+                Supprimer la photo
+              </button>
+            )}
+            {photoError && <div className="invalid-feedback d-block mt-2" role="alert">{photoError}</div>}
+          </div>
+        </div>
+      </div>
 
       <div className="card">
         <div className="card-header-bar" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>

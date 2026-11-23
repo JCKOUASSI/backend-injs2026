@@ -158,6 +158,80 @@ class MeProfilePatchTests(TestCase):
         self.assertIn('matricule', resp.data)
 
 
+class MePhotoTests(TestCase):
+    """La photo du profil est validée, authentifiée et servie sans exposition directe du média."""
+
+    def setUp(self):
+        import tempfile
+        from django.test import override_settings
+
+        self.temp_media = tempfile.TemporaryDirectory(prefix='test-user-photo-')
+        self.addCleanup(self.temp_media.cleanup)
+        media_settings = override_settings(MEDIA_ROOT=self.temp_media.name)
+        media_settings.enable()
+        self.addCleanup(media_settings.disable)
+        self.user = make_user(username='photo_user', password='pass12345', role='SECRETARIAT')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    @staticmethod
+    def image_upload(name='portrait.png', color=(18, 103, 214)):
+        import io
+        from PIL import Image
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        buffer = io.BytesIO()
+        Image.new('RGB', (40, 30), color).save(buffer, format='PNG')
+        return SimpleUploadedFile(name, buffer.getvalue(), content_type='image/png')
+
+    def test_photo_can_be_uploaded_read_and_removed(self):
+        response = self.client.post(
+            '/api/auth/me/photo/', {'photo': self.image_upload()}, format='multipart',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data['photo_url'].startswith('/auth/me/photo/?v='))
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.photo.name.endswith('.jpg'))
+        self.assertTrue(self.user.photo.storage.exists(self.user.photo.name))
+
+        image_response = self.client.get('/api/auth/me/photo/')
+        self.assertEqual(image_response.status_code, 200)
+        self.assertEqual(image_response['Content-Type'], 'image/jpeg')
+        self.assertEqual(image_response['Cache-Control'], 'private, no-store')
+        self.assertTrue(b''.join(image_response.streaming_content).startswith(bytes((0xff, 0xd8))))
+
+        removed = self.client.delete('/api/auth/me/photo/')
+        self.assertEqual(removed.status_code, 200)
+        self.assertIsNone(removed.data['photo_url'])
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.photo)
+
+    def test_invalid_image_is_rejected_and_anonymous_cannot_read_photo(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        response = self.client.post('/api/auth/me/photo/', {
+            'photo': SimpleUploadedFile('fake.png', b'not an image', content_type='image/png'),
+        }, format='multipart')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('photo', response.data)
+        self.assertFalse(self.user.photo)
+
+        anonymous = APIClient()
+        self.assertEqual(anonymous.get('/api/auth/me/photo/').status_code, 401)
+
+    def test_oversized_photo_is_rejected(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from .views import MAX_PROFILE_PHOTO_BYTES
+
+        response = self.client.post('/api/auth/me/photo/', {
+            'photo': SimpleUploadedFile(
+                'large.png', b'x' * (MAX_PROFILE_PHOTO_BYTES + 1), content_type='image/png',
+            ),
+        }, format='multipart')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('5 Mio', str(response.data['photo']))
+
+
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
 class WelcomeEmailTests(TestCase):
     """Tests pour l'envoi d'email de bienvenue lors de la création d'un utilisateur."""

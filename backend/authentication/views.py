@@ -1,15 +1,22 @@
+import io
 import logging
 import os
+import uuid
+
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from rest_framework import generics, serializers, status
-from rest_framework.decorators import api_view, permission_classes, throttle_classes, authentication_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes, authentication_classes, parser_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, get_user_model
 from django.db import IntegrityError
 from django.db.models import Q
+from django.core.files.base import ContentFile
+from django.http import FileResponse, Http404
 
 from django.conf import settings as django_settings
 from rest_framework_simplejwt.views import TokenRefreshView as SimpleJWTTokenRefreshView
@@ -55,6 +62,10 @@ def _user_payload(user):
     if effective:
         data['role'] = effective
     data['roles'] = roles or data.get('roles', [])
+    data['photo_url'] = (
+        f'/auth/me/photo/?v={user.photo.name.rsplit("/", 1)[-1]}'
+        if user.photo else None
+    )
     return data
 
 
@@ -334,6 +345,75 @@ def login_view(request):
             status=status.HTTP_403_FORBIDDEN,
         )
     return connexion_sure.finaliser_connexion(user, request, device_id=device_id)
+
+
+MAX_PROFILE_PHOTO_BYTES = 5 * 1024 * 1024
+MAX_PROFILE_PHOTO_PIXELS = 16_000_000
+
+
+@extend_schema(
+    request=OpenApiTypes.BINARY,
+    responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: AuthDetailSerializer},
+)
+@api_view(['GET', 'POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
+def me_photo_view(request):
+    """Lecture authentifiée, remplacement et suppression de la photo personnelle."""
+    user = request.user
+    if request.method == 'GET':
+        if not user.photo:
+            raise Http404('Aucune photo de profil.')
+        try:
+            fichier = user.photo.open('rb')
+        except FileNotFoundError as erreur:
+            raise Http404('Photo absente du stockage.') from erreur
+        response = FileResponse(fichier, content_type='image/jpeg')
+        response['Content-Disposition'] = 'inline; filename="photo-profil.jpg"'
+        response['Cache-Control'] = 'private, no-store'
+        response['X-Content-Type-Options'] = 'nosniff'
+        return response
+
+    old_name = user.photo.name if user.photo else None
+    if request.method == 'DELETE':
+        if user.photo:
+            user.photo.delete(save=True)
+        data = _user_payload(user)
+        data['role_context'] = user_role_context(user)
+        return Response(data)
+
+    fichier = request.FILES.get('photo')
+    if not fichier:
+        raise ValidationError({'photo': 'Sélectionnez une image à envoyer.'})
+    if fichier.size > MAX_PROFILE_PHOTO_BYTES:
+        raise ValidationError({'photo': 'La photo ne peut pas dépasser 5 Mio.'})
+
+    try:
+        with Image.open(fichier) as image:
+            if image.format not in {'JPEG', 'PNG', 'WEBP'}:
+                raise ValidationError({'photo': 'Formats acceptés : JPEG, PNG ou WebP.'})
+            largeur, hauteur = image.size
+            if largeur * hauteur > MAX_PROFILE_PHOTO_PIXELS:
+                raise ValidationError({'photo': 'La photo dépasse la résolution maximale autorisée.'})
+            image.load()
+            image = ImageOps.exif_transpose(image).convert('RGB')
+            image.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+            sortie = io.BytesIO()
+            image.save(sortie, format='JPEG', quality=88, optimize=True)
+    except ValidationError:
+        raise
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError) as erreur:
+        raise ValidationError({'photo': 'Le fichier envoyé n’est pas une image valide.'}) from erreur
+
+    user.photo.save(
+        f'avatar-{uuid.uuid4().hex}.jpg', ContentFile(sortie.getvalue()), save=False,
+    )
+    user.save(update_fields=['photo'])
+    if old_name and old_name != user.photo.name:
+        user.photo.storage.delete(old_name)
+    data = _user_payload(user)
+    data['role_context'] = user_role_context(user)
+    return Response(data)
 
 
 @extend_schema(request=UserSelfProfileSerializer, responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
