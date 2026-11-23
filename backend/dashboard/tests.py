@@ -279,3 +279,44 @@ class OverviewIndicateursReelsTests(APITestCase):
         # 1 diplôme délivré pour 2 dossiers étudiants.
         self.assertEqual(indicateurs['diplomes_delivres'], 1)
         self.assertEqual(indicateurs['taux_diplomation'], 50.0)
+
+    def test_overview_inclut_les_imports_getinjs_sans_doublonner_les_matricules(self):
+        from edts.models import InscriptionImportee
+        from formations.models import RefFormation
+        from scolarite.models import DossierEtudiant, InscriptionAdministrative, Niveau
+
+        formation = RefFormation.objects.create(code='LIC-TEST', intitule='Licence test')
+        niveau = Niveau.objects.create(code='L1', libelle='Licence 1')
+        for matricule in ('INJS26-1001', 'INJS26-1002'):
+            dossier = DossierEtudiant.objects.get(participant__matricule=matricule)
+            InscriptionAdministrative.objects.create(
+                etudiant=dossier, annee_academique=self.annee,
+                ref_formation=formation, niveau=niveau,
+                statut=InscriptionAdministrative.Statut.VALIDEE,
+            )
+
+        for matricule, statut in (
+            ('INJS26-1001', InscriptionImportee.Statut.INSCRIT),  # doublon de la base
+            ('GET-001', InscriptionImportee.Statut.INSCRIT),
+            ('GET-002', InscriptionImportee.Statut.INSCRIT),
+            ('GET-RADIE', InscriptionImportee.Statut.RADIE),
+        ):
+            InscriptionImportee.objects.create(
+                annee_academique=self.annee, matricule=matricule,
+                nom='Importé', ref_formation=formation, niveau=niveau,
+                statut=statut,
+            )
+
+        res = self.client.get('/api/dashboard/overview/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['kpis']['etudiants_inscrits'], 4)
+        inscription_pipeline = next(
+            item for item in res.data['pipeline'] if item['id'] == 'inscription'
+        )
+        self.assertEqual(inscription_pipeline['value'], 4)
+        inscrits_chart = next(
+            serie for serie in res.data['charts']['evolution_effectifs']['series']
+            if serie['nom'] == 'Inscrits'
+        )
+        annee_index = res.data['charts']['evolution_effectifs']['annees'].index('2026-2027')
+        self.assertEqual(inscrits_chart['donnees'][annee_index], 4)

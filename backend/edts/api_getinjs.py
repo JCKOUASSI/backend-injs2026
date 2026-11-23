@@ -263,30 +263,15 @@ def synthese_import_api(request):
     imports au statut INSCRIT, en dédoublonnant un matricule présent dans les
     deux sources.
     """
-    from django.db.models import Subquery
-
     from edts.moteur.annee import effectif_importe, repartition_importee
-    from edts.models import InscriptionImportee
-    from scolarite.models import InscriptionAdministrative
+    from edts.moteur.import_inscrits import effectif_population_consolidee
 
     annee_id, erreur = _annee_de_requete(request)
     if erreur is not None:
         return erreur
 
     repartition = repartition_importee(annee_id)
-    inscriptions_base = InscriptionAdministrative.objects.filter(
-        annee_academique_id=annee_id,
-        statut=InscriptionAdministrative.Statut.VALIDEE,
-    )
-    effectif_base = inscriptions_base.values('etudiant_id').distinct().count()
-    matricules_base = inscriptions_base.values('etudiant__participant__matricule')
-    effectif_importe_sans_doublon = (
-        InscriptionImportee.objects
-        .filter(annee_academique_id=annee_id,
-                statut=InscriptionImportee.Statut.INSCRIT)
-        .exclude(matricule__in=Subquery(matricules_base))
-        .values('matricule').distinct().count()
-    )
+    population = effectif_population_consolidee(annee_id)
     return Response({
         'annee_academique_id': annee_id,
         # Contrat historique : effectif des seuls imports, utilisé par les
@@ -295,9 +280,7 @@ def synthese_import_api(request):
         # Indicateur d'accueil : union des inscriptions valides Scolarité et
         # des imports actifs, sans compter deux fois un matricule présent dans
         # les deux sources. Les inscriptions non validées et radiées sont exclues.
-        'effectif_base': effectif_base,
-        'effectif_importe_sans_doublon': effectif_importe_sans_doublon,
-        'effectif_combine': effectif_base + effectif_importe_sans_doublon,
+        **population,
         'cohortes': repartition,
         'nb_cohortes': len(repartition),
     })
