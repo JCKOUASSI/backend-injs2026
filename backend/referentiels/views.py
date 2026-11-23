@@ -7,6 +7,7 @@ Pattern retenu : ViewSet + DefaultRouter (comme l'app parametres).
 """
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.db.models.deletion import ProtectedError, RestrictedError
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status, viewsets
@@ -576,6 +577,38 @@ class TableauDeBordReferentielsView(APIView):
                 if _a_le_champ(modele, 'fiabilite'):
                     a_renseigner = qs.filter(fiabilite='A_RENSEIGNER').count()
                     total_a_renseigner += a_renseigner
+                elif entree.get('champs_completude'):
+                    # Certains modèles historiques n'ont pas de champ
+                    # ``fiabilite`` : leur complétude peut néanmoins être
+                    # calculée à partir des champs déclarés dans le registre.
+                    champs = entree['champs_completude']
+                    manquante = _condition_champs_manquants(modele, champs)
+                    if manquante is not None:
+                        try:
+                            relations = entree.get('champs_completude_relations', [])
+                            for relation in relations:
+                                nom_relation = relation['relation']
+                                champ_relation = modele._meta.get_field(nom_relation)
+                                modele_enfant = champ_relation.related_model
+                                manque_enfant = _condition_champs_manquants(
+                                    modele_enfant, relation['champs'],
+                                )
+                                if manque_enfant is None:
+                                    manquante = None
+                                    break
+                                cle_parent = f'{champ_relation.field.name}_id'
+                                manquante |= Q(pk__in=modele_enfant.objects.filter(
+                                    manque_enfant,
+                                ).values(cle_parent))
+                                if relation.get('au_moins_une'):
+                                    manquante |= Q(**{f'{nom_relation}__isnull': True})
+                        except (AttributeError, KeyError, TypeError):
+                            # Une configuration relationnelle obsolète ne doit
+                            # jamais faire apparaître le référentiel comme complet.
+                            manquante = None
+                    if manquante is not None:
+                        a_renseigner = qs.filter(manquante).distinct().count()
+                        total_a_renseigner += a_renseigner
                 if _a_le_champ(modele, 'source_document'):
                     sans_source = qs.filter(source_document='').count()
                     total_sans_source += sans_source
@@ -693,6 +726,20 @@ def _routes_selecteurs(entree):
 
 def _a_le_champ(modele, nom):
     return any(f.name == nom for f in modele._meta.get_fields())
+
+
+def _condition_champs_manquants(modele, noms):
+    """Filtre les lignes ayant au moins un champ requis vide, ou None si inconnu."""
+    if not noms or not all(_a_le_champ(modele, nom) for nom in noms):
+        return None
+    condition = Q(pk__isnull=True)
+    for nom in noms:
+        champ = modele._meta.get_field(nom)
+        vide = Q(**{f'{nom}__isnull': True})
+        if champ.empty_strings_allowed:
+            vide |= Q(**{nom: ''})
+        condition |= vide
+    return condition
 
 
 def _champs_choix(modele, entree):

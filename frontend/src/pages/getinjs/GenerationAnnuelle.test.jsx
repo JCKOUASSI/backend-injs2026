@@ -152,11 +152,11 @@ function routes({ synthese = SYNTHESE } = {}) {
   apiController.setRoute('/edts/campagnes/1/resultat/', RESULTAT_CAMPAGNE)
 }
 
-function rendre() {
+function rendre({ initialEntries = ['/'] } = {}) {
   const user = makeUser('ADMIN')
   apiController.setMe(user)
   return render(
-    <AllProviders authUser={user}>
+    <AllProviders authUser={user} initialEntries={initialEntries}>
       <GenerationAnnuelle />
     </AllProviders>,
   )
@@ -200,6 +200,26 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     expect(screen.getByLabelText(/Éviter la pause méridienne/)).toBeChecked()
     expect(screen.getByText('Comment le moteur décide')).toBeInTheDocument()
     expect(screen.getByText('Règles métier appliquées par le moteur')).toBeInTheDocument()
+  })
+
+  it('recharge le périmètre accepté depuis le serveur après navigation/actualisation', async () => {
+    apiController.setRoute('/edts/campagnes/41/', {
+      id: 41, annee_academique_id: 2, semaines: [2, 3],
+      perimetre: { formations: [1], niveaux: [1], groupes: [11], semestres: [1] },
+      parametres: { simulation: true, simulation_acceptee: { par: 'admin' },
+        inclure_samedi: false, eviter_pause_meridienne: true, max_seances_par_groupe_semaine: 12 },
+    })
+    rendre({ initialEntries: ['/edt/generation-annuelle?simulation_id=41'] })
+    await waitFor(() => expect(screen.getByLabelText('Semaines planifiées')).toHaveValue('2,3'))
+    expect(within(screen.getByRole('group', { name: /Formations \/ parcours/ }))
+      .getByRole('checkbox', { name: 'Licence en Journalisme' })).toBeChecked()
+    await screen.findByText('L1-G1 — Licence en Journalisme')
+    expect(within(screen.getByRole('group', { name: /Groupes/ }))
+      .getByRole('checkbox', { name: /L1-G1/ })).toBeChecked()
+    expect(screen.getByLabelText(/Inclure le samedi/)).not.toBeChecked()
+    expect(screen.getByLabelText(/Éviter la pause méridienne/)).toBeChecked()
+    expect(screen.getByRole('button', { name: 'Lancer la génération manuelle' })).toBeDisabled()
+    expect(screen.getByText(/Prévisualisez à nouveau avant toute génération/)).toBeInTheDocument()
   })
 
   it('charge les années et sélectionne l’année courante', async () => {

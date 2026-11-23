@@ -107,6 +107,7 @@ describe('GET INJS APP — contenu du hub (miroir du hub INJS APP)', () => {
     expect(visibles.map((e) => [e.libelle, e.description])).toEqual([
       ['Tableau de bord', 'Pilotage du module'],
       ['Emplois du temps', 'Grille hebdomadaire'],
+      ['Simulation', 'Tester un périmètre EDT sans modifier les emplois du temps'],
       ['Génération', 'Moteur LMD'],
       ['Dimensionnement', 'Besoins de planification'],
       ['Import étudiants', 'Fichier externe'],

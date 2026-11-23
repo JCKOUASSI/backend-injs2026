@@ -32,6 +32,11 @@ const ETAPES = [
     chemin: '/cours',
   },
   {
+    titre: 'Simulation',
+    description: 'Tester un périmètre sans modifier les EDT officiels.',
+    chemin: '/edt/simulation',
+  },
+  {
     titre: 'Génération',
     description: 'Moteur déterministe piloté par campagnes tracées (périmètre, bilan, anomalies).',
     chemin: '/edt/campagnes',

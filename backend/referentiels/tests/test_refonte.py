@@ -13,7 +13,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from authentication.models import User
-from formations.models import RefFormation
+from formations.models import RefBatiment, RefFormation
 from referentiels.models import (
     ReferentielJournal,
     RefEcole,
@@ -308,6 +308,18 @@ class ImportIdempotentTests(TestCase):
         sortie = StringIO()
         call_command('importer_referentiels_injs', '--sans-lieux', stdout=sortie)
         return sortie.getvalue()
+
+    def test_batiments_conservent_la_fiabilite_officielle_validee(self):
+        call_command(
+            'importer_referentiels_injs', '--preserver-calendrier',
+            stdout=StringIO(),
+        )
+        batiments = RefBatiment.objects.all()
+        self.assertEqual(batiments.count(), 16)
+        self.assertEqual(batiments.filter(fiabilite='OFFICIEL').count(), 16)
+        self.assertFalse(batiments.exclude(
+            source_document__contains='validation officielle déclarée le 23/11/2026',
+        ).exists())
 
     def test_volumes_importes(self):
         self._lancer()

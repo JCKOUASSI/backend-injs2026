@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import api from '../../services/api'
 import { useToast } from '../../context/ToastContext'
 import { formatApiErrors } from '../../utils/apiErrors'
@@ -138,6 +138,9 @@ function formatDuree(ms) {
 
 export default function GenerationAnnuelle() {
   const { showToast } = useToast()
+  const [searchParams] = useSearchParams()
+  const simulationTransferee = searchParams.get('simulation_id')
+  const simulationChargee = useRef('')
   const [annees, setAnnees] = useState([])
   const [anneeId, setAnneeId] = useState('')
   const [fichier, setFichier] = useState(null)
@@ -178,6 +181,37 @@ export default function GenerationAnnuelle() {
 
   const [maxSeances, setMaxSeances] = useState('30')
 
+  useEffect(() => {
+    if (!simulationTransferee || simulationChargee.current === simulationTransferee) return
+    simulationChargee.current = simulationTransferee
+    let actif = true
+    api.get(`/edts/campagnes/${simulationTransferee}/`).then(({ data }) => {
+      if (!actif) return
+      const params = data?.parametres || {}
+      const p = data?.perimetre || {}
+      if (!params.simulation || !params.simulation_acceptee) {
+        setErreurGeneration('Cette simulation n’a pas été acceptée par un utilisateur habilité. Aucun périmètre n’a été transféré.')
+        return
+      }
+      setAnneeId(String(data.annee_academique_id))
+      setFormationsSel((p.formations || []).map(Number))
+      setNiveauxSel((p.niveaux || []).map(Number))
+      setGroupesSel((p.groupes || []).map(Number))
+      setSemestresSel((p.semestres || []).map(Number))
+      setSemaines((data.semaines || [1]).join(','))
+      setInclureSamedi(params.inclure_samedi !== false)
+      setEviterPause(Boolean(params.eviter_pause_meridienne))
+      setMaxSeances(String(params.max_seances_par_groupe_semaine || ''))
+      setModeGeneration('manuel')
+      setDernierApercu(null)
+      setBilan(null)
+      showToast('Périmètre et contraintes transférés. Prévisualisez à nouveau avant toute génération.', 'success')
+    }).catch((err) => {
+      if (actif) setErreurGeneration(formatApiErrors(err?.response?.data) || 'Impossible de récupérer le périmètre de simulation.')
+    })
+    return () => { actif = false }
+  }, [simulationTransferee, showToast])
+
   useEffect(() => { setDernierApercu(null) }, [
     anneeId, filieresSel, formationsSel, niveauxSel, groupesSel, semestresSel,
     semaines, inclureSamedi, eviterPause, maxSeances,
@@ -196,11 +230,11 @@ export default function GenerationAnnuelle() {
         const liste = Array.isArray(data) ? data : (data?.results || [])
         setAnnees(liste)
         const courante = liste.find((a) => a.courante) || liste[0]
-        if (courante) setAnneeId(String(courante.id))
+        if (courante && !simulationTransferee) setAnneeId(String(courante.id))
       })
       .catch(() => showToast('Impossible de charger les années académiques.', 'error'))
     return () => { actif = false }
-  }, [showToast])
+  }, [showToast, simulationTransferee])
 
   useEffect(() => {
     let actif = true

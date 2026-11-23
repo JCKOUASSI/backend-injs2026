@@ -8,7 +8,7 @@
  * La carte UE / ECUE renvoie au module Maquettes, toujours par « Gérer ».
  */
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { screen, act, fireEvent } from '@testing-library/react'
+import { screen, act, fireEvent, within } from '@testing-library/react'
 
 vi.mock('@/services/api', async (importOriginal) => {
   const actual = await importOriginal()
@@ -29,7 +29,7 @@ afterEach(async () => { await settle() })
 
 const entreeBase = {
   description: '', icone: 'bi-dot', source: '', total: 3, actifs: 3,
-  archives: 0, a_renseigner: null, sans_source: null,
+  archives: 0, a_renseigner: 0, sans_source: null,
   provenance_suivie: false, archivage_supporte: false, libelle_bouton: '',
   champs: [], selecteurs: [], champs_choix: {}, champs_numeriques: [],
   selecteurs_routes: {}, avertissement: '',
@@ -66,9 +66,14 @@ const ENTREES_LMD = [
     route_ui: '/referentiels/gestion/parcours',
   },
   {
+    ...entreeBase, slug: 'types-formation', libelle: 'Types de formation', editable: true,
+    a_un_code: true, route_api: '/referentiels/types-formation/',
+    route_ui: '/referentiels/gestion/types-formation',
+  },
+  {
     ...entreeBase, slug: 'ue-ecue', libelle: 'UE / ECUE', editable: false,
     a_un_code: true, route_api: '/referentiels/ue-ecue/',
-    route_ui: '/scolarite/maquettes', libelle_bouton: 'Gérer', total: 331,
+    route_ui: '/scolarite/maquettes', libelle_bouton: 'Gérer', total: 531,
   },
 ]
 
@@ -111,6 +116,17 @@ describe('cartes « Système LMD » du tableau de bord', () => {
     ]))
     expect(screen.queryByText('Sans écran dédié')).toBeNull()
     expect(screen.queryByRole('link', { name: /Consulter/ })).toBeNull()
+  })
+
+  it('affiche « Complet » sur les cinq cartes quand leurs champs sont renseignés', async () => {
+    monter(<TableauDeBordReferentiels />, '/referentiels', '/referentiels')
+    await settle()
+
+    for (const entree of ENTREES_LMD) {
+      const carte = screen.getByRole('heading', { name: entree.libelle }).closest('article')
+      expect(within(carte).getByText('Complet')).toBeTruthy()
+      expect(within(carte).queryByText('Provenance non suivie')).toBeNull()
+    }
   })
 })
 

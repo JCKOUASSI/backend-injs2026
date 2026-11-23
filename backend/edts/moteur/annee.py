@@ -266,31 +266,6 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
     groupes_injs = [g for g in groupes if g.ref_formation_id in perimetre]
     hors_perimetre = len(groupes) - len(groupes_injs)
 
-    # B15 : estimation rapide de la couverture théorique maximale avant génération.
-    # Utilisée pour alerter l'utilisateur si le périmètre/semaines choisi ne peut
-    # pas couvrir les besoins de l'année.
-    total_seances_attendues_annee = sum(
-        b.nb_seances
-        for g in groupes_injs
-        for b in besoins_par_groupe.get(g.pk, [])
-    )
-    # Meilleure estimation : 30 séances max par groupe par semaine (quotas moteur)
-    seances_maximales_possibles = groupes_count * semaines_count * 30
-    if total_seances_attendues_annee > 0:
-        couverture_theorique_pct = round(
-            min(100, (seances_maximales_possibles / total_seances_attendues_annee) * 100), 2
-        )
-    else:
-        couverture_theorique_pct = 100
-    # Stocker dans le contexte global pour accès frontend via le bilan API
-    annee_couverture_theorique = {
-        'groupes_count': groupes_count,
-        'semaines_count': semaines_count,
-        'seances_maximales_possibles': seances_maximales_possibles,
-        'total_seances_attendues_annee': total_seances_attendues_annee,
-        'couverture_theorique_pct': couverture_theorique_pct,
-    }
-
     # Périmètre de campagne éventuel : une génération restreinte à certaines
     # formations ne touche pas les autres cohortes de l'année.
     formations_filtrees = None
@@ -366,6 +341,28 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
             'motif_echec': resultat_maquette.motif_echec,
             'detail': resultat_maquette.detail,
         }
+
+    # B15 : calculer la couverture indicative seulement après constitution des
+    # besoins affectations/maquette. Cette position évite de lire une variable
+    # non initialisée et tient compte du sous-périmètre sélectionné.
+    groupes_count = len(groupes_injs)
+    total_seances_attendues_annee = sum(
+        b.nb_seances
+        for g in groupes_injs
+        for b in besoins_par_groupe.get(g.pk, [])
+    )
+    seances_maximales_possibles = groupes_count * semaines_count * 30
+    couverture_theorique_pct = (
+        round(min(100, seances_maximales_possibles / total_seances_attendues_annee * 100), 2)
+        if total_seances_attendues_annee else 100
+    )
+    annee_couverture_theorique = {
+        'groupes_count': groupes_count,
+        'semaines_count': semaines_count,
+        'seances_maximales_possibles': seances_maximales_possibles,
+        'total_seances_attendues_annee': total_seances_attendues_annee,
+        'couverture_theorique_pct': couverture_theorique_pct,
+    }
 
     detail_sources_maquette = detail_maquette.get('detail') or {}
     sans_volume_ids = set(detail_sources_maquette.get('groupes_sans_volume_ids') or [])
@@ -790,10 +787,6 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
         'semaines': {'debut': min(semaines), 'fin': max(semaines)},
         'groupes': lignes,
         'totaux': {
-            # B15 : informations de couverture théorique pour le frontend
-            'couverture_theorique': annee_couverture_theorique,
-        },
-        'sources': {
             'nb_groupes': len(lignes),
             'nb_groupes_planifies': len(groupes_couverts),
             'nb_groupes_planifies_calcules': len(planifies),
@@ -813,6 +806,7 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
                 l['seances_persistees'] if persister else l['seances_placees']
                 for l in lignes
             ),
+            'conflits': sum(l.get('conflits', 0) for l in lignes),
             'affectations_salle_cadrage': sum(
                 l.get('affectations_salle_cadrage', 0) for l in lignes
             ),
@@ -828,29 +822,17 @@ def generer_annee(annee_academique_id, *, semaines=None, persister=False,
             'heures_attendues': round(sum(l.get('heures_attendues', 0) for l in lignes), 2),
             'edts_persistes': len(groupes_enregistres),
             'groupes_hors_perimetre': hors_perimetre,
-            # Bilan des règles souples sur l'année entière (zéro si la
-            # politique est inactive — c'est le cas par défaut).
             'contraintes_souples': {
-                'active': any(
-                    (l.get('contraintes_souples') or {}).get('active')
-                    for l in lignes
-                ),
-                'trous': sum(
-                    (l.get('contraintes_souples') or {}).get('trous', 0)
-                    for l in lignes
-                ),
-                'series_trop_longues': sum(
-                    (l.get('contraintes_souples') or {}).get('series_trop_longues', 0)
-                    for l in lignes
-                ),
-                'journees_surchargees': sum(
-                    (l.get('contraintes_souples') or {}).get('journees_surchargees', 0)
-                    for l in lignes
-                ),
+                'active': any((l.get('contraintes_souples') or {}).get('active') for l in lignes),
+                'trous': sum((l.get('contraintes_souples') or {}).get('trous', 0) for l in lignes),
+                'series_trop_longues': sum((l.get('contraintes_souples') or {}).get('series_trop_longues', 0) for l in lignes),
+                'journees_surchargees': sum((l.get('contraintes_souples') or {}).get('journees_surchargees', 0) for l in lignes),
                 'penalites': sum(l.get('penalites_souples', 0) for l in lignes),
             },
+            'couverture_theorique': annee_couverture_theorique,
         },
         'sources': {
+            'nb_groupes': len(lignes),
             'affectations_pedagogiques': {
                 'groupes': len(groupes_injs) - len(sans_affectation),
                 'motif_echec': resultat_affectations.motif_echec,

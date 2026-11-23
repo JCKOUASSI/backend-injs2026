@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { screen, act, fireEvent } from '@testing-library/react'
+import { screen, act, fireEvent, within } from '@testing-library/react'
 
 vi.mock('@/services/api', async (importOriginal) => {
   const actual = await importOriginal()
@@ -22,7 +22,7 @@ const entries = [
   ...item, editable: true, description: '', icone: 'bi-dot', source: '',
   route_gestion: `/referentiels/gestion-donnees/${item.slug}/`,
   libelle_bouton: 'Gérer',
-  provenance_suivie: true, archivage_supporte: true,
+  provenance_suivie: item.slug !== 'formations', archivage_supporte: true,
   a_une_description: item.slug === 'formations',
   total: 1, actifs: 1, archives: 0, a_renseigner: 0,
   champs_dates: [], champs_numeriques: [], champs_choix: {},
@@ -74,6 +74,14 @@ describe('plaquettes Offre de formation', () => {
       expect(lien.textContent).toContain('Gérer')
       expect(lien.textContent).not.toContain('Consulter')
     }
+  })
+
+  it('affiche « Complet » pour les cycles complets, même sans fiabilité distincte', async () => {
+    setup()
+    await settle()
+    const carte = screen.getByRole('heading', { name: 'Formations (cycles)' }).closest('article')
+    expect(within(carte).getByText('Complet')).toBeTruthy()
+    expect(within(carte).queryByText('Provenance non suivie')).toBeNull()
   })
 
   it.each(entries.map(x => [x.slug, x.libelle]))('%s affiche CRUD, archivage et quatre exports', async (slug, libelle) => {

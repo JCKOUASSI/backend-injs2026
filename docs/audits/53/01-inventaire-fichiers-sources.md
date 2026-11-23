@@ -28,10 +28,10 @@ Sources examinées : 5 fichiers texte déposés par le commanditaire (dossier `/
 | Élément | Contenu observé | Exploitation |
 |---|---|---|
 | Site | **INJS Marcory**, Abidjan | `formations.RefSite` (1, `OFFICIEL`) |
-| Bâtiments | 16 bâtiments nommés (administratif, amphis, salles de cours, labos, gymnases, terrains…) | `formations.RefBatiment` (16, `MODELISE`) |
+| Bâtiments | 16 bâtiments nommés (administratif, amphis, salles de cours, labos, gymnases, terrains…) | `formations.RefBatiment` (16, `OFFICIEL` après validation déclarée le 23/11/2026) |
 | Espaces | **166 espaces** décrits avec type, étage et capacité parfois renseignée | `formations.RefSalle` (166, `MODELISE`) |
 | Nomenclature de codes | La source proposait elle-même des préfixes (AMPHI, COURS, TD, TP, LABORATOIRE…) | `PREFIXES_CODES` de l'import → `AMP-001`, `SC-001`, `TD-001`, `TP-001`, `LAB-001`, `GYM-001`, `SPORT-001`… |
-| Limite déclarée par la source | L'inventaire est présenté comme partiellement reconstitué | Fiabilité `MODELISE`, jamais `OFFICIEL` |
+| Limite déclarée par la source | L'inventaire est présenté comme partiellement reconstitué ; les bâtiments ont ensuite été validés comme officiels par instruction du 23/11/2026 | Bâtiments `OFFICIEL` ; espaces `MODELISE` |
 
 ---
 

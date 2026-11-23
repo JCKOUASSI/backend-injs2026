@@ -17,6 +17,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.http import FileResponse
+from django.utils import timezone
 from rest_framework import status
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -816,6 +817,137 @@ def conception_api(request):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# SIMULATION GET-INJS — exécutions non persistantes du moteur EDT existant.
+# ══════════════════════════════════════════════════════════════════════════════
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
+@api_view(['POST'])
+@permission_classes([IsEdtPlanification])
+def simulation_creer_api(request):
+    """Crée une simulation traçable dans le modèle de campagne existant.
+
+    Le moteur est le même que la génération manuelle. ``persister=False`` est
+    imposé côté serveur : l'aperçu ne peut ni créer ni remplacer un EDT.
+    """
+    from edts.moteur.campagnes import TransitionRefusee, campagne_en_dict, creer_campagne
+    from formations.referentiel_injs_l6 import formations_injs
+    from scolarite.models import Groupe, Niveau, Semestre
+
+    annee_id = _int(request.data.get('annee_academique_id'))
+    perimetre = request.data.get('perimetre')
+    parametres = request.data.get('parametres') or {}
+    semaines_brutes = request.data.get('semaines')
+    if not isinstance(perimetre, dict) or not isinstance(parametres, dict):
+        return Response({'detail': 'Périmètre et options doivent être des objets.'}, status=400)
+
+    def ids(cle):
+        valeur = perimetre.get(cle)
+        if not isinstance(valeur, list) or not valeur:
+            return []
+        if any(isinstance(v, bool) or not str(v).isdigit() for v in valeur):
+            return []
+        try:
+            resultat = sorted({int(v) for v in valeur})
+        except (TypeError, ValueError):
+            return []
+        return resultat
+
+    formations = ids('formations')
+    niveaux = ids('niveaux')
+    groupes = ids('groupes')
+    semestres = ids('semestres')
+    if not isinstance(semaines_brutes, list) or any(
+            isinstance(s, bool) or not str(s).isdigit() for s in semaines_brutes):
+        semaines = []
+    else:
+        semaines = sorted({int(s) for s in semaines_brutes})
+    if (not annee_id or not all((formations, niveaux, groupes, semestres))
+            or not semaines or any(s < 1 or s > 53 for s in semaines)
+            or any(s < 1 or s > 10 for s in semestres)):
+        return Response({'detail': 'Année, semaines (1–53), formations, niveaux, groupes et semestres (1–10) sont requis.'}, status=400)
+    quota_brut = parametres.get('max_seances_par_groupe_semaine')
+    quota = _int(quota_brut) if quota_brut not in (None, '') else None
+    if quota_brut not in (None, '') and (quota is None or quota < 1 or quota > 60):
+        return Response({'detail': 'Le quota hebdomadaire doit être compris entre 1 et 60.'}, status=400)
+
+    formations_valides = set(formations_injs().filter(pk__in=formations).values_list('pk', flat=True))
+    niveaux_valides = set(Niveau.objects.filter(pk__in=niveaux).values_list('pk', flat=True))
+    lignes_groupes_valides = list(Groupe.objects.filter(
+        pk__in=groupes, annee_academique_id=annee_id, actif=True,
+        ref_formation_id__in=formations, niveau_id__in=niveaux,
+    ).values_list('pk', 'niveau_id', 'ref_formation_id'))
+    niveaux_groupes = {niveau_id for _pk, niveau_id, _formation_id in lignes_groupes_valides}
+    formations_groupes = {formation_id for _pk, _niveau_id, formation_id in lignes_groupes_valides}
+    numeros_semestres_par_niveau = {}
+    for niveau_id, numero in Semestre.objects.filter(
+        niveau_id__in=niveaux_groupes, numero__in=semestres,
+    ).values_list('niveau_id', 'numero'):
+        numeros_semestres_par_niveau.setdefault(niveau_id, set()).add(numero)
+    semestres_coherents = all(
+        numeros_semestres_par_niveau.get(niveau_id)
+        for niveau_id in niveaux_groupes
+    ) and all(
+        any(numero in numeros_semestres_par_niveau.get(niveau_id, set()) for niveau_id in niveaux_groupes)
+        for numero in semestres
+    )
+    if (formations_valides != set(formations) or niveaux_valides != set(niveaux)
+            or {pk for pk, _niveau, _formation in lignes_groupes_valides} != set(groupes)
+            or niveaux_groupes != set(niveaux) or formations_groupes != set(formations)
+            or not semestres_coherents):
+        return Response({'detail': 'Le périmètre contient une formation, un niveau, un semestre ou un groupe invalide, incompatible, inactif, hors INJS ou hors de cette année.'}, status=400)
+    libelle = (request.data.get('libelle') or '').strip()
+    if len(libelle) > 255:
+        return Response({'detail': 'Le libellé est limité à 255 caractères.'}, status=400)
+    if not libelle:
+        libelle = f"Simulation GET-INJS — {annee_id} — {timezone.now().strftime('%Y%m%d-%H%M%S-%f')}"
+    options = dict(parametres)
+    options.update({
+        'simulation': True, 'persister': False, 'remplacer': False,
+        'publier_direct': False, 'mode_generation': 'manuel',
+        'inclure_maquette': _booleen(parametres.get('inclure_maquette', True)),
+        'inclure_samedi': _booleen(parametres.get('inclure_samedi', True)),
+        'eviter_pause_meridienne': _booleen(parametres.get('eviter_pause_meridienne')),
+        'max_seances_par_groupe_semaine': quota,
+    })
+    try:
+        campagne = creer_campagne(
+            annee_academique_id=annee_id, libelle=libelle, user=request.user,
+            semaines=semaines, perimetre={
+                'formations': formations, 'niveaux': niveaux,
+                'groupes': groupes, 'semestres': semestres,
+            }, parametres=options,
+        )
+    except TransitionRefusee as exc:
+        return _refus(exc)
+    return Response(campagne_en_dict(campagne), status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([IsEdtPlanification])
+def simulation_accepter_api(request, pk):
+    """Trace l'acceptation humaine d'un résultat (sans valider/publier d'EDT)."""
+    from edts.models import CampagneGeneration
+    from edts.moteur.campagnes import campagne_en_dict
+
+    campagne = CampagneGeneration.objects.filter(pk=pk).first()
+    if campagne is None:
+        return Response({'detail': 'Simulation introuvable.'}, status=404)
+    parametres = dict(campagne.parametres or {})
+    if not parametres.get('simulation'):
+        return Response({'detail': 'Cette campagne n’est pas une simulation.'}, status=409)
+    if campagne.statut not in (CampagneGeneration.Statut.TERMINE,
+                               CampagneGeneration.Statut.TERMINE_AVEC_ANOMALIES):
+        return Response({'detail': 'La simulation doit être terminée avant acceptation.'}, status=409)
+    parametres['simulation_acceptee'] = {
+        'par': getattr(request.user, 'username', None),
+        'le': timezone.now().isoformat(),
+    }
+    campagne.parametres = parametres
+    campagne.save(update_fields=['parametres', 'updated_at'])
+    return Response(campagne_en_dict(campagne))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # LOT 2 — CAMPAGNES DE GÉNÉRATION
 # ══════════════════════════════════════════════════════════════════════════════
 #
@@ -865,6 +997,8 @@ def campagnes_api(request):
         annee_id = _int(request.query_params.get('annee'))
         if annee_id:
             qs = qs.filter(annee_academique_id=annee_id)
+        if _booleen(request.query_params.get('simulation')):
+            qs = qs.filter(parametres__simulation=True)
         # B12 : la limite de 200 n'est plus figée. Un parametre ?limite= permet
         # d'ajuster (défaut 200, maximum 1000 pour éviter les requêtes lourdes).
         limite = 200

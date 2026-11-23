@@ -63,6 +63,96 @@ class BaseCampagneTest(TestCase):
         )
 
 
+class SimulationsApiTests(BaseCampagneTest):
+    def setUp(self):
+        super().setUp()
+        self.groupe = self.f.creer_groupe()
+        self.client_api = APIClient()
+        self.client_api.force_authenticate(user=self.admin)
+
+    def payload(self, groupe_id=None):
+        return {
+            'annee_academique_id': self.annee.pk,
+            'semaines': [1],
+            'perimetre': {
+                'formations': [self.formation.pk], 'niveaux': [self.f.niveau.pk],
+                'groupes': [groupe_id or self.groupe.pk], 'semestres': [1],
+            },
+            'parametres': {'persister': True, 'remplacer': True, 'publier_direct': True},
+        }
+
+    def test_simulation_reelle_reutilise_campagne_et_ne_persiste_pas(self):
+        from edts.moteur.campagnes import demarrer_campagne, marquer_pret
+
+        from edts.models import AffectationCreneau
+
+        before = EmploiDuTemps.objects.count()
+        before_seances = AffectationCreneau.objects.count()
+        response = self.client_api.post('/api/edts/simulations/', self.payload(), format='json')
+        self.assertEqual(response.status_code, 201, response.data)
+        campagne_id = response.data['id']
+        campagne = CampagneGeneration.objects.get(pk=campagne_id)
+        self.assertTrue(campagne.parametres['simulation'])
+        self.assertFalse(campagne.parametres['persister'])
+        self.assertFalse(campagne.parametres['publier_direct'])
+        marquer_pret(campagne_id, user=self.admin)
+        # Même si les paramètres persistés sont altérés, le moteur impose
+        # persister=False au moment de l'exécution d'une simulation.
+        campagne.parametres['persister'] = True
+        campagne.save(update_fields=['parametres'])
+        demarrer_campagne(campagne_id, user=self.admin, asynchrone=False)
+        self.assertEqual(EmploiDuTemps.objects.count(), before)
+        self.assertEqual(AffectationCreneau.objects.count(), before_seances)
+        campagne.refresh_from_db()
+        self.assertEqual(campagne.bilan['groupes'][0]['groupe_id'], self.groupe.pk)
+        self.assertIn(campagne.statut, (CampagneGeneration.Statut.TERMINE,
+                                        CampagneGeneration.Statut.TERMINE_AVEC_ANOMALIES,
+                                        CampagneGeneration.Statut.ECHEC))
+
+    def test_historique_filtre_simulations_sans_melanger_les_generations(self):
+        simulation = self.client_api.post(
+            '/api/edts/simulations/', self.payload(), format='json',
+        )
+        self.assertEqual(simulation.status_code, 201, simulation.data)
+        self.campagne(libelle='GENERATION-ORDINAIRE')
+        response = self.client_api.get('/api/edts/campagnes/', {
+            'annee': self.annee.pk, 'simulation': 'true',
+        })
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual([row['id'] for row in response.data['results']], [simulation.data['id']])
+
+    def test_perimetre_hors_annee_refuse(self):
+        from scolarite.models import Groupe
+        autre = Groupe.objects.create(
+            annee_academique=self.annee, ref_formation=self.formation,
+            parcours=self.f.parcours, niveau=self.f.niveau, nom='GROUPE-AUTRE', actif=False,
+        )
+        response = self.client_api.post('/api/edts/simulations/', self.payload(autre.pk), format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(CampagneGeneration.objects.filter(parametres__simulation=True).exists())
+
+    def test_semestre_sans_correspondance_avec_niveau_du_groupe_refuse(self):
+        payload = self.payload()
+        payload['perimetre']['semestres'] = [2]
+        response = self.client_api.post('/api/edts/simulations/', payload, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(CampagneGeneration.objects.filter(parametres__simulation=True).exists())
+
+    def test_acceptation_humaine_tracee_et_campagne_ordinaire_rejetee(self):
+        simulation = CampagneGeneration.objects.create(
+            annee_academique=self.annee, libelle='SIM-REVUE',
+            statut=CampagneGeneration.Statut.TERMINE,
+            parametres={'simulation': True},
+        )
+        response = self.client_api.post(f'/api/edts/simulations/{simulation.pk}/accepter/', {}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        simulation.refresh_from_db()
+        self.assertEqual(simulation.parametres['simulation_acceptee']['par'], self.admin.username)
+        normal = self.campagne(libelle='GENERATION-NORMALE')
+        refus = self.client_api.post(f'/api/edts/simulations/{normal.pk}/accepter/', {}, format='json')
+        self.assertEqual(refus.status_code, 409)
+
+
 class ExecutionOrphelineTests(BaseCampagneTest):
     """Une exécution dont le fil est mort ne doit pas rester « en cours »."""
 

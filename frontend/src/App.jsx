@@ -139,6 +139,7 @@ const CoursLmd = lazy(() => import('./pages/CoursLmd'))
 const EdtNew = lazy(() => import('./pages/EdtNew'))
 const GetInjsApp = lazy(() => import('./pages/getinjs/GetInjsApp'))
 const GenerationAnnuelle = lazy(() => import('./pages/getinjs/GenerationAnnuelle'))
+const Simulation = lazy(() => import('./pages/getinjs/Simulation'))
 const BenchV2 = lazy(() => import('./pages/getinjs/BenchV2'))
 const ImportEtudiants = lazy(() => import('./pages/getinjs/ImportEtudiants'))
 const EtudiantsInscrits = lazy(() => import('./pages/getinjs/EtudiantsInscrits'))
@@ -564,6 +565,15 @@ function App() {
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Personnel</li><li className="separator">/</li><li>Agents</li></>}>
                 <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
                   <PersonnelHub ongletInitial="agents" />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/personnel/enseignants" element={
+            <ProtectedRoute allowedRoles={SCOLARITE_VIEW_ROLES} capacite={{ module: 'scolarite', action: 'voir' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li>Personnel</li><li className="separator">/</li><li>Enseignants</li></>}>
+                <Suspense fallback={<div className="loading"><div className="spinner"/></div>}>
+                  <PersonnelHub ongletInitial="enseignants" />
                 </Suspense>
               </Layout>
             </ProtectedRoute>
@@ -1126,6 +1136,13 @@ function App() {
               </Layout>
             </ProtectedRoute>
           } />}
+          <Route path="/edt/simulation" element={
+            <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
+              <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Simulation</li></>}>
+                <Simulation />
+              </Layout>
+            </ProtectedRoute>
+          } />
           <Route path="/edt/generation-annuelle" element={
             <ProtectedRoute allowedRoles={OPERATION_VIEW_ROLES} capacite={{ module: 'web', action: 'operationnel' }}>
               <Layout breadcrumb={<><li><Link to="/">Accueil</Link></li><li className="separator">/</li><li><Link to="/edt">Emplois du temps</Link></li><li className="separator">/</li><li>Génération annuelle</li></>}>
