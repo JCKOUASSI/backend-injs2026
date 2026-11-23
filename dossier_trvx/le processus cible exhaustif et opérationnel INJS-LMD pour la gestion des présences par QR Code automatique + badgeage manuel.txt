@@ -1,0 +1,1506 @@
+Voici le processus cible exhaustif et opérationnel INJS-LMD pour la gestion des présences par QR Code automatique + badgeage manuel, avec géolocalisation et contrôle de présence des étudiants, enseignants et encadrants, en conservant l’architecture existante Django API 8000 + React 3000 + Flutter PWA, ainsi que le mécanisme QR → entrée/sortie → heartbeat GPS → sortie/fin de séance → historique.
+
+1. Architecture fonctionnelle globale
+
+ANNÉE ACADÉMIQUE
+      │
+      ▼
+FORMATION
+      │
+      ▼
+PARCOURS
+      │
+      ▼
+NIVEAU
+      │
+      ▼
+SEMESTRE
+      │
+      ▼
+GROUPE
+      │
+      ▼
+MAQUETTE
+      │
+      ▼
+UE
+      │
+      ▼
+ECUE
+      │
+      ▼
+AFFECTATION PÉDAGOGIQUE
+      │
+      ▼
+EMPLOI DU TEMPS
+      │
+      ▼
+SÉANCE
+      │
+      ├───────────────┐
+      ▼               ▼
+   QR SESSION      CONTRÔLE
+      │               │
+      ▼               ▼
+IDENTITÉ          GÉOLOCALISATION
+      │               │
+      └───────┬───────┘
+              ▼
+        BADGEAGE ENTRÉE
+              │
+              ▼
+        HEARTBEAT GPS
+              │
+              ▼
+        BADGEAGE SORTIE
+              │
+              ▼
+       PRÉSENCE VALIDÉE
+              │
+              ▼
+          HISTORIQUE
+              │
+              ▼
+       ÉVALUATIONS / NOTES
+
+La règle fondamentale est :
+
+Une présence ne doit jamais exister indépendamment d’une séance INJS-LMD identifiable.
+
+⸻
+
+2. Les trois populations concernées
+
+Le système doit gérer trois catégories d’acteurs.
+
+Population	QR	Entrée	Sortie	GPS	Heartbeat	Présence
+Étudiant	Oui	Oui	Oui	Oui	Oui	Oui
+Enseignant	Oui	Oui	Oui	Oui	Oui	Oui
+Encadrant	Oui	Oui	Oui	Oui	Oui	Oui
+
+Le moteur ne doit cependant pas traiter les trois populations comme identiques.
+
+Étudiant
+
+Le contrôle principal porte sur :
+
+* appartenance au groupe ;
+* inscription active ;
+* présence à la séance ;
+* position géographique ;
+* heure de badgeage ;
+* continuité de présence.
+
+Enseignant
+
+Le contrôle porte sur :
+
+* affectation pédagogique ;
+* séance concernée ;
+* rôle d’enseignant ;
+* position sur le site ;
+* entrée ;
+* continuité ;
+* sortie.
+
+Encadrant
+
+Le contrôle porte sur :
+
+* mission/activité affectée ;
+* séance ou activité encadrée ;
+* périmètre autorisé ;
+* présence physique ;
+* entrée/sortie ;
+* historique.
+
+⸻
+
+3. Principe du QR Code
+
+Le QR Code ne doit pas être considéré comme une simple image contenant :
+
+ETUDIANT123
+
+Le QR doit représenter une session de badgeage sécurisée et temporaire.
+
+Architecture :
+
+SÉANCE
+   │
+   ▼
+SESSION QR
+   │
+   ├── identifiant
+   ├── séance
+   ├── expiration
+   ├── statut
+   ├── nonce/token
+   └── règles de géolocalisation
+
+Le QR est donc rattaché à :
+
+Année
+Formation
+Parcours
+Niveau
+Semestre
+Groupe
+ECUE
+Affectation pédagogique
+Séance
+
+⸻
+
+4. Cycle de vie d’une séance
+
+Une séance suit un cycle précis.
+
+PLANIFIÉE
+   │
+   ▼
+OUVERTE
+   │
+   ▼
+QR ACTIF
+   │
+   ▼
+BADGEAGES
+   │
+   ▼
+SÉANCE EN COURS
+   │
+   ▼
+QR FERMÉ
+   │
+   ▼
+SÉANCE TERMINÉE
+   │
+   ▼
+HISTORIQUE
+
+États possibles :
+
+PLANIFIÉE
+OUVERTE
+EN_COURS
+TERMINÉE
+ANNULÉE
+
+Une séance annulée ne doit jamais permettre un nouveau badgeage.
+
+⸻
+
+5. Ouverture automatique du QR
+
+Au début de la séance :
+
+heure séance
+      │
+      ▼
+création/ouverture session QR
+      │
+      ▼
+QR affiché dans la salle
+      │
+      ▼
+étudiants / enseignants / encadrants scannent
+
+Le QR peut être renouvelé périodiquement pour éviter qu’une photographie du QR puisse être réutilisée ultérieurement.
+
+Le serveur reste l’autorité.
+
+⸻
+
+6. Processus étudiant — badgeage automatique
+
+Étape 1 — Connexion
+
+L’étudiant ouvre Flutter PWA.
+
+Connexion
+   ↓
+Identification
+   ↓
+Profil étudiant
+   ↓
+Session active
+
+Le serveur vérifie l’identité.
+
+⸻
+
+Étape 2 — Scan
+
+L’étudiant scanne le QR.
+
+Flutter
+   │
+   ▼
+QR
+   │
+   ▼
+API Django
+
+Le client transmet notamment :
+
+token QR
+identité authentifiée
+timestamp
+latitude
+longitude
+précision GPS
+appareil/session
+
+⸻
+
+7. Validation serveur du badgeage
+
+Le serveur vérifie successivement :
+
+A. Identité
+
+Utilisateur authentifié ?
+
+B. QR
+
+QR valide ?
+QR expiré ?
+QR annulé ?
+QR déjà fermé ?
+
+C. Séance
+
+Séance existante ?
+Séance active ?
+Date correcte ?
+Heure compatible ?
+
+D. Inscription
+
+Étudiant inscrit ?
+Inscription active ?
+
+E. Groupe
+
+Étudiant appartient au groupe ?
+
+F. Affectation
+
+Séance liée à une affectation pédagogique ?
+
+G. Géolocalisation
+
+GPS disponible ?
+Position exploitable ?
+Dans le périmètre autorisé ?
+Précision acceptable ?
+
+⸻
+
+8. Géolocalisation au badgeage
+
+La géolocalisation doit être effectuée au moment du badgeage.
+
+Données enregistrées :
+
+latitude
+longitude
+accuracy
+timestamp
+
+Ne pas enregistrer uniquement :
+
+"GPS = OK"
+
+Il faut conserver la mesure permettant l’audit.
+
+⸻
+
+9. Geofence
+
+Le site INJS doit disposer d’une zone géographique configurée.
+
+SITE INJS
+   │
+   └── GEOFENCE
+         │
+         ├── latitude
+         ├── longitude
+         └── rayon
+
+Le serveur calcule :
+
+distance(position utilisateur, centre INJS)
+
+Puis :
+
+distance <= rayon
+        │
+        ├── OUI → géolocalisation acceptable
+        │
+        └── NON → hors périmètre
+
+Important :
+
+Le téléphone ne doit pas être l’autorité finale.
+
+Le client fournit la position.
+
+Le serveur décide.
+
+⸻
+
+10. Résultat du badgeage automatique
+
+Cas accepté
+
+QR valide
++
+séance valide
++
+étudiant autorisé
++
+GPS valide
++
+dans le périmètre
+=
+PRÉSENCE ENTRÉE VALIDÉE
+
+Le serveur enregistre :
+
+participant
+séance
+date
+heure
+position
+précision
+mode = QR_AUTOMATIQUE
+statut
+
+⸻
+
+11. Cas de refus
+
+Le système doit retourner un code explicite.
+
+Exemples :
+
+QR_EXPIRE
+QR_INVALIDE
+SEANCE_INACTIVE
+SEANCE_TERMINEE
+ETUDIANT_NON_INSCRIT
+ETUDIANT_HORS_GROUPE
+HORS_GEOFENCE
+GPS_INDISPONIBLE
+PRECISION_GPS_INSUFFISANTE
+DEJA_BADGE
+UTILISATEUR_NON_AUTORISE
+
+Le frontend doit afficher une explication compréhensible.
+
+Exemple :
+
+Présence non enregistrée.
+Motif :
+Vous êtes actuellement hors du périmètre
+géographique autorisé pour cette séance.
+
+⸻
+
+12. Badgeage d’entrée
+
+La présence doit distinguer au minimum :
+
+ENTRÉE
+SORTIE
+
+Exemple :
+
+08:01 → entrée
+09:58 → sortie
+
+Le système peut alors calculer :
+
+durée = sortie - entrée
+
+⸻
+
+13. Heartbeat GPS
+
+Après une entrée validée :
+
+ENTRÉE VALIDÉE
+      │
+      ▼
+HEARTBEAT ACTIVÉ
+      │
+      ├── position
+      ├── timestamp
+      └── précision
+      │
+      ▼
+API
+
+Le heartbeat permet de contrôler que le participant reste présent pendant la séance.
+
+Le mécanisme existant /api/scan/secure/heartbeat/ doit être conservé/intégré plutôt que remplacé.
+
+⸻
+
+14. Cycle heartbeat
+
+BADGE ENTRÉE
+     │
+     ▼
+HEARTBEAT 1
+     │
+     ▼
+HEARTBEAT 2
+     │
+     ▼
+HEARTBEAT 3
+     │
+     ▼
+...
+     │
+     ▼
+SORTIE / FIN SÉANCE
+     │
+     ▼
+HEARTBEAT ARRÊTÉ
+
+Chaque heartbeat contient :
+
+participant
+séance
+timestamp
+latitude
+longitude
+accuracy
+
+⸻
+
+15. Heartbeat et absence de GPS
+
+Il faut distinguer :
+
+GPS temporairement indisponible
+
+WARNING
+
+et :
+
+Position durablement absente
+
+ANOMALIE
+
+Le système ne doit pas transformer automatiquement une perte ponctuelle du GPS en absence.
+
+⸻
+
+16. Fin automatique de séance
+
+À la fin de la séance :
+
+heure fin
+   │
+   ▼
+fermeture QR
+   │
+   ▼
+arrêt heartbeat
+   │
+   ▼
+clôture présence
+
+Si un étudiant n’a pas explicitement scanné la sortie, le système peut produire :
+
+sortie automatique = fin de séance
+
+mais le statut doit être différent d’une sortie QR explicite.
+
+Exemple :
+
+SORTIE_QR
+SORTIE_AUTOMATIQUE_FIN_SEANCE
+
+Cela garantit la traçabilité.
+
+⸻
+
+17. Badgeage manuel
+
+Le badgeage manuel est un mécanisme exceptionnel et contrôlé.
+
+Il ne doit pas être équivalent au QR automatique.
+
+Architecture :
+
+QR automatique
+       │
+       └── présence normale
+Badgeage manuel
+       │
+       └── exception
+              │
+              ├── utilisateur autorisé
+              ├── motif obligatoire
+              ├── date/heure
+              ├── auteur
+              └── traçabilité
+
+⸻
+
+18. Qui peut forcer une présence ?
+
+Uniquement les profils autorisés par RBAC.
+
+Le système doit vérifier :
+
+utilisateur
+   ↓
+permission
+   ↓
+séance
+   ↓
+participant
+
+Il ne faut jamais accepter :
+
+POST présence manuelle
+
+simplement parce que l’utilisateur est authentifié.
+
+⸻
+
+19. Motif obligatoire
+
+Exemples :
+
+TELEPHONE_INCOMPATIBLE
+GPS_INDISPONIBLE
+QR_NON_LISIBLE
+PANNE_RESEAU
+ERREUR_TECHNIQUE
+PARTICIPANT_PRESENT_SANS_BADGE
+AUTRE
+
+Pour AUTRE, commentaire obligatoire.
+
+⸻
+
+20. Processus de badgeage manuel
+
+Agent autorisé
+      │
+      ▼
+Sélection séance
+      │
+      ▼
+Sélection participant
+      │
+      ▼
+Présence
+      │
+      ▼
+Motif obligatoire
+      │
+      ▼
+Confirmation
+      │
+      ▼
+API
+      │
+      ▼
+Contrôles RBAC
+      │
+      ▼
+Enregistrement
+
+En base :
+
+mode = MANUEL
+auteur = utilisateur
+motif = ...
+date = ...
+heure = ...
+
+⸻
+
+21. Différence automatique / manuel
+
+Élément	Automatique	Manuel
+QR	Oui	Non obligatoire
+GPS	Oui	Peut être disponible
+Geofence	Oui	À tracer selon politique
+Auteur humain	Non	Oui
+Motif	Non	Obligatoire
+Traçabilité	Automatique	Renforcée
+RBAC spécifique	Non	Oui
+Modification ultérieure	Contrôlée	Contrôlée
+
+⸻
+
+22. Modification d’une présence
+
+Une présence ne doit jamais être simplement écrasée.
+
+Exemple :
+
+08:03 QR_AUTOMATIQUE
+
+puis correction :
+
+08:00 MANUEL
+
+Le système doit conserver l’historique :
+
+ancienne valeur
+nouvelle valeur
+auteur
+date
+motif
+
+⸻
+
+23. Géolocalisation des enseignants
+
+Même logique générale :
+
+ENSEIGNANT
+   │
+   ▼
+SESSION / SÉANCE
+   │
+   ▼
+QR
+   │
+   ▼
+POSITION
+   │
+   ▼
+GEOFENCE
+   │
+   ▼
+ENTRÉE
+   │
+   ▼
+HEARTBEAT
+   │
+   ▼
+SORTIE
+
+Mais la validation métier utilise :
+
+Enseignant
+   ↓
+Affectation pédagogique
+   ↓
+ECUE
+   ↓
+Groupe
+   ↓
+Séance
+
+Le système doit donc vérifier que l’enseignant est bien affecté à la séance.
+
+⸻
+
+24. Enseignant non affecté
+
+Si :
+
+enseignant ≠ enseignant de l'affectation pédagogique
+
+alors :
+
+BADGEAGE REFUSÉ
+
+ou traité selon une procédure manuelle exceptionnelle autorisée.
+
+Ne jamais résoudre le problème en utilisant un rapprochement approximatif par nom.
+
+⸻
+
+25. Géolocalisation des encadrants
+
+L’encadrant doit disposer d’une activité ou mission identifiable.
+
+Architecture :
+
+ENCADRANT
+   │
+   ▼
+MISSION / ACTIVITÉ
+   │
+   ▼
+SITE / SÉANCE
+   │
+   ▼
+QR
+   │
+   ▼
+GÉOLOCALISATION
+
+L’encadrant ne doit pas être assimilé automatiquement à un enseignant.
+
+⸻
+
+26. Géolocalisation continue
+
+Il faut distinguer trois niveaux :
+
+Niveau 1 — localisation au badge
+
+position au moment de l'entrée
+
+Niveau 2 — heartbeat
+
+positions périodiques pendant l'activité
+
+Niveau 3 — sortie
+
+position au départ
+
+Cela donne :
+
+ENTRÉE
+  ↓
+POSITION
+  ↓
+HEARTBEAT
+  ↓
+HEARTBEAT
+  ↓
+HEARTBEAT
+  ↓
+SORTIE
+
+⸻
+
+27. Données de géolocalisation
+
+Pour chaque mesure :
+
+participant_id
+séance_id
+timestamp
+latitude
+longitude
+accuracy
+source
+
+La source doit permettre de distinguer par exemple :
+
+BADGE_ENTREE
+HEARTBEAT
+BADGE_SORTIE
+MANUEL
+
+⸻
+
+28. Sécurité de la géolocalisation
+
+Le serveur doit considérer les données GPS comme déclaratives jusqu’à validation.
+
+Le client ne doit pas pouvoir envoyer :
+
+{
+  "inside_geofence": true
+}
+
+et être cru.
+
+Il doit envoyer :
+
+{
+  "latitude": "...",
+  "longitude": "...",
+  "accuracy": "..."
+}
+
+Puis le serveur calcule lui-même :
+
+distance
+geofence
+statut
+
+⸻
+
+29. Gestion de l’horodatage
+
+Le serveur doit être l’autorité temporelle.
+
+Ne pas faire confiance uniquement à :
+
+heure du téléphone
+
+Conserver :
+
+server_timestamp
+client_timestamp
+
+si nécessaire à l’audit.
+
+⸻
+
+30. Anti-rejeu QR
+
+Un QR ancien ne doit pas pouvoir être utilisé plus tard.
+
+Le serveur vérifie :
+
+token
+expiration
+nonce
+séance
+statut
+
+Un QR expiré :
+
+REFUS
+
+⸻
+
+31. QR photographié
+
+Le risque :
+
+Étudiant A
+   ↓
+photographie QR
+   ↓
+Étudiant B
+   ↓
+scan à distance
+
+La géolocalisation réduit ce risque :
+
+QR valide
++
+position hors site
+=
+REFUS
+
+Le renouvellement du QR et la durée de validité réduisent davantage le risque de réutilisation.
+
+⸻
+
+32. Détection d’anomalies
+
+Le système doit identifier au minimum :
+
+DOUBLE_ENTREE
+DOUBLE_SORTIE
+SORTIE_SANS_ENTREE
+ENTREE_HORS_GEOFENCE
+HEARTBEAT_HORS_GEOFENCE
+GPS_IMPRECIS
+GPS_ABSENT
+QR_EXPIRE
+QR_REUTILISE
+PARTICIPANT_NON_AUTORISE
+ENSEIGNANT_NON_AFFECTE
+
+Ces anomalies doivent être historisées.
+
+⸻
+
+33. Tableau de bord enseignant
+
+L’enseignant doit pouvoir voir :
+
+Ma séance
+   ↓
+Étudiants attendus
+   ↓
+Présents
+   ↓
+Absents
+   ↓
+Présences douteuses/anomalies
+
+Exemple :
+
+ECUE : Physiologie
+Groupe : L2 EM-A
+08:00–10:00
+Attendus : 42
+Présents : 38
+Absents : 4
+Anomalies : 2
+
+⸻
+
+34. Tableau de bord encadrant
+
+Même logique adaptée à son activité :
+
+Activité
+Site
+Date
+Heure
+Participants
+Présences
+Anomalies
+
+⸻
+
+35. Tableau de bord administration
+
+Vue consolidée :
+
+Séances aujourd'hui
+Étudiants présents
+Enseignants présents
+Encadrants présents
+Absences
+Badges automatiques
+Badges manuels
+Anomalies GPS
+Anomalies QR
+
+⸻
+
+36. Historique individuel étudiant
+
+Un étudiant doit pouvoir consulter :
+
+Année
+Semestre
+UE
+ECUE
+Séance
+Date
+Heure entrée
+Heure sortie
+Durée
+Mode
+Statut
+
+Exemple :
+
+24/09/2026
+Biomécanique
+08:00–10:00
+Entrée : 07:58
+Sortie : 09:57
+Mode : QR automatique
+GPS : conforme
+Statut : Présent
+
+⸻
+
+37. Historique enseignant
+
+Même principe :
+
+Date
+ECUE
+Groupe
+Salle
+Entrée
+Sortie
+Mode
+GPS
+Statut
+
+⸻
+
+38. Historique encadrant
+
+Date
+Activité
+Lieu
+Entrée
+Sortie
+Mode
+GPS
+Statut
+
+⸻
+
+39. Présence finale
+
+Une présence ne devrait pas être réduite à :
+
+present = true
+
+Le modèle fonctionnel doit permettre de distinguer :
+
+ATTENDU
+PRESENT
+ABSENT
+RETARD
+SORTIE_ANTICIPEE
+ANOMALIE
+JUSTIFIE
+MANUEL
+
+La définition exacte des seuils de retard/durée doit rester une règle métier configurable, et non être codée arbitrairement.
+
+⸻
+
+40. Processus complet étudiant
+
+1. Étudiant authentifié
+        ↓
+2. Inscription vérifiée
+        ↓
+3. Groupe vérifié
+        ↓
+4. Séance ouverte
+        ↓
+5. QR généré
+        ↓
+6. Étudiant scanne
+        ↓
+7. Token QR vérifié
+        ↓
+8. Séance vérifiée
+        ↓
+9. Groupe vérifié
+        ↓
+10. GPS obtenu
+        ↓
+11. Geofence calculé serveur
+        ↓
+12. Présence entrée créée
+        ↓
+13. Heartbeat activé
+        ↓
+14. Positions périodiques
+        ↓
+15. Fin de séance
+        ↓
+16. QR fermé
+        ↓
+17. Sortie
+        ↓
+18. Heartbeat arrêté
+        ↓
+19. Présence clôturée
+        ↓
+20. Historique
+        ↓
+21. Exploitation évaluations
+
+⸻
+
+41. Processus complet enseignant
+
+1. Enseignant authentifié
+        ↓
+2. Affectation pédagogique vérifiée
+        ↓
+3. Séance vérifiée
+        ↓
+4. QR/session active
+        ↓
+5. Scan
+        ↓
+6. GPS
+        ↓
+7. Geofence
+        ↓
+8. Entrée
+        ↓
+9. Heartbeat
+        ↓
+10. Activité pédagogique
+        ↓
+11. Sortie
+        ↓
+12. Historique
+
+⸻
+
+42. Processus complet encadrant
+
+1. Encadrant authentifié
+        ↓
+2. Mission/activité vérifiée
+        ↓
+3. Séance/activité vérifiée
+        ↓
+4. QR
+        ↓
+5. GPS
+        ↓
+6. Geofence
+        ↓
+7. Entrée
+        ↓
+8. Heartbeat
+        ↓
+9. Activité
+        ↓
+10. Sortie
+        ↓
+11. Historique
+
+⸻
+
+43. Processus exceptionnel
+
+Si QR impossible :
+
+QR impossible
+     ↓
+diagnostic
+     ↓
+badgeage manuel autorisé ?
+     ↓
+OUI
+     ↓
+motif obligatoire
+     ↓
+contrôle RBAC
+     ↓
+enregistrement manuel
+     ↓
+audit
+
+Il ne faut jamais faire :
+
+QR impossible
+→ modifier directement la base
+
+⸻
+
+44. Architecture technique cible
+
+                    ┌────────────────────┐
+                    │     React 3000     │
+                    │    GET-INJS Web    │
+                    └─────────┬──────────┘
+                              │
+                              ▼
+                    ┌────────────────────┐
+                    │    Django / DRF    │
+                    │       :8000        │
+                    └─────────┬──────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+   QR SERVICE           GEO SERVICE          PRESENCE SERVICE
+        │                     │                     │
+        └─────────────────────┼─────────────────────┘
+                              │
+                              ▼
+                         PostgreSQL
+                              │
+                              ▼
+                    Historique / Audit
+                              ▲
+                              │
+                    ┌─────────┴─────────┐
+                    │   Flutter PWA     │
+                    │ QR + GPS +        │
+                    │ Heartbeat         │
+                    └───────────────────┘
+
+Le client Flutter reste le client mobile de l’API et le mécanisme QR/géolocalisation/heartbeat existant doit être conservé.
+
+⸻
+
+45. API fonctionnelle cible
+
+À auditer et compléter à partir des endpoints déjà présents :
+
+POST /api/scan/secure/
+POST /api/scan/secure/heartbeat/
+POST /api/scan/secure/exit/
+
+Puis, selon les routes réellement présentes :
+
+GET  /api/presences/
+GET  /api/presences/{id}/
+POST /api/presences/manual/
+POST /api/presences/{id}/correct/
+GET  /api/presences/session/{id}/
+GET  /api/presences/student/{id}/
+GET  /api/presences/teacher/{id}/
+GET  /api/presences/encadrant/{id}/
+
+Ces URLs sont une cible fonctionnelle à auditer, pas une affirmation que toutes existent actuellement.
+
+⸻
+
+46. Règle d’or de la base de données
+
+La chaîne doit être :
+
+Séance
+  │
+  ├── QRSession
+  │
+  └── Présence
+         │
+         ├── participant
+         ├── entrée
+         ├── sortie
+         ├── mode
+         ├── statut
+         ├── motif
+         └── géolocalisations
+                  │
+                  ├── entrée
+                  ├── heartbeat
+                  └── sortie
+
+La présence doit donc être liée à la séance réelle, et non simplement au groupe ou à la formation.
+
+⸻
+
+47. Auditabilité
+
+Pour toute présence, l’administration doit pouvoir répondre :
+
+Qui était présent ? À quelle séance ? À quelle heure ? Par quel moyen ? Depuis quelle position ? Qui a éventuellement corrigé la présence ? Pourquoi ?
+
+Le dossier d’audit doit pouvoir reconstruire :
+
+Utilisateur
+↓
+Séance
+↓
+QR
+↓
+Entrée
+↓
+GPS
+↓
+Heartbeats
+↓
+Sortie
+↓
+Statut final
+↓
+Éventuelle correction
+
+⸻
+
+48. Tests E2E indispensables
+
+Étudiant — nominal
+
+Connexion
+→ scan
+→ GPS OK
+→ geofence OK
+→ entrée
+→ heartbeat
+→ sortie
+→ présence validée
+
+Étudiant — hors périmètre
+
+scan
+→ GPS OK
+→ hors geofence
+→ refus
+
+Étudiant — QR expiré
+
+scan
+→ token expiré
+→ refus
+
+Étudiant — mauvais groupe
+
+scan
+→ séance valide
+→ étudiant non membre du groupe
+→ refus
+
+Enseignant — mauvaise affectation
+
+scan
+→ enseignant non affecté
+→ refus
+
+Encadrant — activité non autorisée
+
+scan
+→ activité inexistante/non autorisée
+→ refus
+
+Manuel
+
+agent autorisé
+→ étudiant
+→ séance
+→ motif
+→ présence manuelle
+→ audit
+
+Utilisateur non autorisé
+
+utilisateur
+→ tentative badgeage manuel
+→ 403
+
+⸻
+
+49. Cas réseau
+
+Flutter doit pouvoir gérer :
+
+GPS disponible
++
+réseau temporairement indisponible
+
+mais le serveur doit rester l’autorité finale.
+
+Il faut éviter qu’un événement local soit présenté immédiatement comme une présence définitivement validée.
+
+On distingue :
+
+EN_ATTENTE_SYNCHRONISATION
+
+puis :
+
+VALIDÉ
+
+ou :
+
+REFUSÉ
+
+après traitement serveur.
+
+⸻
+
+50. Cas batterie / application interrompue
+
+Si Flutter est interrompu après l’entrée :
+
+entrée enregistrée serveur
+      ↓
+heartbeat interrompu
+
+Le système ne doit pas supprimer la présence.
+
+Il doit produire éventuellement :
+
+HEARTBEAT_INTERRUPTU
+
+Puis appliquer la règle métier configurée pour déterminer le statut final.
+
+Le Flutter Web/PWA ne doit pas être considéré comme capable de garantir un heartbeat natif en arrière-plan comme une application mobile native.
+
+⸻
+
+51. Confidentialité et minimisation
+
+La géolocalisation étant une donnée sensible du dispositif opérationnel, le système doit appliquer :
+
+* collecte uniquement lorsqu’elle est nécessaire à la présence ;
+* accès selon RBAC ;
+* journalisation des accès sensibles ;
+* conservation selon politique INJS ;
+* pas de suivi permanent hors activité/séance autorisée ;
+* pas d’affichage public de coordonnées GPS ;
+* séparation entre données opérationnelles et données d’audit.
+
+Le principe fonctionnel est :
+
+Pas de séance/activité
+→ pas de tracking de présence
+
+⸻
+
+52. Résultat final attendu dans GET-INJS
+
+Le menu GET-INJS doit aboutir à une chaîne visible :
+
+ENSEIGNEMENTS
+      ↓
+EMPLOI DU TEMPS
+      ↓
+SÉANCES
+      ↓
+QR PRÉSENCE
+      ↓
+PRÉSENCES
+      ↓
+GÉOLOCALISATION
+      ↓
+HEARTBEAT
+      ↓
+HISTORIQUE
+      ↓
+ÉVALUATIONS
+
+Avec trois entrées fonctionnelles :
+
+Étudiants
+Enseignants
+Encadrants
+
+et pour chacune :
+
+Badgeage
+Géolocalisation
+Présence
+Historique
+Anomalies
+
+⸻
+
+53. Chaîne métier finale INJS-LMD
+
+La chaîne complète devient :
+
+FORMATION
+   ↓
+PARCOURS
+   ↓
+NIVEAU
+   ↓
+SEMESTRE
+   ↓
+GROUPE
+   ↓
+MAQUETTE
+   ↓
+UE
+   ↓
+ECUE
+   ↓
+AFFECTATION PÉDAGOGIQUE
+   ↓
+ENSEIGNANT / ENCADRANT
+   ↓
+EMPLOI DU TEMPS
+   ↓
+SÉANCE
+   ↓
+QR SESSION
+   ↓
+BADGEAGE
+   ↓
+GÉOLOCALISATION
+   ↓
+ENTRÉE
+   ↓
+HEARTBEAT
+   ↓
+SORTIE
+   ↓
+PRÉSENCE
+   ↓
+HISTORIQUE
+   ↓
+ÉVALUATION
+   ↓
+NOTE
+   ↓
+ECTS
+   ↓
+PROGRESSION
+
+C’est cette chaîne qui doit servir de référence fonctionnelle pour terminer la partie Présences + QR + Géolocalisation de GET-INJS.

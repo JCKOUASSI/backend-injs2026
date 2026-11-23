@@ -1,0 +1,733 @@
+/* Écran UE / ECUE — mise en page autonome + thème premium « uex ».
+ *
+ * Le projet n'embarque pas la grille Bootstrap (seuls des composants du socle
+ * sont définis) : les classes `row` / `col-lg-6` n'y produisent aucune colonne.
+ * On pose donc ici une grille explicite, à deux panneaux côte à côte sur grand
+ * écran et empilés en dessous : c'est la structure voulue (maquette → UE →
+ * ECUE), pas un effet de style.
+ *
+ * Le thème premium (préfixe `.uex-`, porté par `.uex-page`) habille la barre
+ * de contexte, la synthèse de la maquette, la liste maître des UE et les
+ * cartes ECUE à barres de volumes empilées — sans toucher au socle partagé
+ * ni aux autres écrans génériques.
+ */
+
+/* ── Grille maître-détail (structure) ─────────────────────────────────── */
+.ue-ecue-colonnes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 1200px) {
+  .ue-ecue-colonnes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ue-ecue-panneau {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ue-ecue-panneau .gen-table-wrap {
+  max-height: 62vh;
+  overflow: auto;
+}
+
+/* Le socle impose `min-width: 720px` aux tableaux génériques : dans un panneau
+   à moitié de largeur, la dernière colonne sortait du cadre. Ici le tableau
+   est une liste de travail, lisible dès 420 px : on lève la
+   contrainte pour ce contexte précis, sans toucher au socle partagé. */
+.ue-ecue-panneau .gen-table {
+  min-width: 0;
+  width: 100%;
+}
+
+.ue-ecue-panneau .gen-table thead th,
+.ue-ecue-panneau .gen-table tbody td {
+  padding: 0.5rem 0.45rem;
+}
+
+/* Code d'UE : bouton de sélection, au rendu identique au code affiché. */
+.ue-ecue-choix {
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  border-radius: 6px;
+}
+
+.ue-ecue-choix:focus-visible {
+  outline: 2px solid var(--injs-blue-royal, #283a87);
+  outline-offset: 2px;
+}
+
+/* Colonnes d'actions compactes : trois boutons icône tiennent dans une
+   largeur étroite, ce qui évite de pousser le tableau hors du panneau. */
+.ue-ecue-panneau .gen-table th:last-child,
+.ue-ecue-panneau .gen-table td:last-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.ue-ecue-legende {
+  font-size: 0.78rem;
+  color: var(--injs-muted, #5d6b85);
+  line-height: 1.35;
+}
+
+.ue-ecue-actions {
+  display: flex;
+  gap: 0.15rem;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+}
+
+/* Les codes officiels d'ECUE sont longs (« EM-S1-UE01-EC01 ») : on réduit leur
+   chasse dans ce contexte pour que le tableau tienne dans son panneau, sans
+   jamais tronquer le code (il reste lisible en entier). */
+.ue-ecue-panneau .gen-code-chip {
+  font-size: 0.71rem;
+  letter-spacing: -0.01em;
+}
+
+.ue-ecue-panneau .gen-table .badge {
+  font-size: 0.72rem;
+  padding: 0.28rem 0.45rem;
+}
+
+/* Boutons icône compacts : trois actions doivent tenir dans la colonne sans
+   repousser le tableau hors du panneau. Le libellé reste accessible par
+   `aria-label` et l'infobulle. */
+.ue-ecue-actions .btn {
+  padding: 0.18rem 0.34rem;
+  line-height: 1;
+  font-size: 0.8rem;
+}
+
+.ue-ecue-formulaire {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.9rem 1rem;
+}
+
+.ue-ecue-formulaire .ue-ecue-pleine-largeur {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 720px) {
+  .ue-ecue-formulaire {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ══ THÈME PREMIUM UEX ══════════════════════════════════════════════════ */
+@keyframes uexFadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes uexSlideIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
+
+/* Barre de contexte : maquette, recherche, statut, métadonnées */
+.uex-toolbar {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: .9rem 1.25rem;
+  padding: 1rem 1.2rem; margin-bottom: 1rem; border-radius: 16px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #F2F7FE 100%);
+  border: 1px solid #E0EAF6;
+  box-shadow: 0 10px 26px -16px rgba(7, 27, 58, .35);
+}
+.uex-toolbar-icone {
+  width: 46px; height: 46px; flex-shrink: 0; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; color: #7DD3FC;
+  background: linear-gradient(135deg, #0A1B36, #283A87);
+  box-shadow: 0 8px 18px -8px rgba(7, 27, 58, .7);
+  align-self: center;
+}
+.uex-toolbar .ue-ecue-champ { display: flex; flex-direction: column; gap: .25rem; }
+.uex-toolbar .ue-ecue-champ--large { flex: 1 1 320px; min-width: 280px; }
+.uex-toolbar .ue-ecue-champ label {
+  font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: #64748B;
+}
+.uex-select { border-radius: 10px !important; font-weight: 600; }
+.uex-recherche {
+  display: flex; align-items: center; gap: .5rem;
+  border: 1px solid #DCE6F2; border-radius: 999px; padding: 0 .85rem;
+  background: #F8FBFF; min-height: 31px;
+}
+.uex-recherche .bi { color: #64748B; font-size: .82rem; }
+.uex-recherche .form-control {
+  border: none !important; background: transparent !important; box-shadow: none !important;
+  padding-left: 0 !important;
+}
+.uex-recherche:focus-within { border-color: #9DB9E4; background: #fff; }
+.uex-etat {
+  margin-left: auto; align-self: center;
+  display: inline-flex; align-items: center; gap: .45rem;
+  border-radius: 999px; padding: .42rem .95rem;
+  font-size: .78rem; font-weight: 750; white-space: nowrap;
+}
+.uex-etat--brouillon { background: #FFF4D6; color: #92600E; border: 1px solid #F5DFA8; }
+.uex-etat--validee { background: #E3F2FD; color: #0D47A1; border: 1px solid #BBDEFB; }
+.uex-etat--active { background: #E6F4EC; color: #0B6E4F; border: 1px solid #BFE3D0; }
+.uex-etat--archivee { background: #EEF2F7; color: #475569; border: 1px solid #D8E1EC; }
+.uex-meta {
+  flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: .45rem;
+}
+.uex-meta span {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: #fff; border: 1px solid #E0EAF6; border-radius: 999px;
+  padding: .28rem .8rem; font-size: .76rem; font-weight: 650; color: #334155;
+}
+.uex-meta .bi { color: #104A8E; }
+
+/* Synthèse de la maquette */
+.uex-kpis {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: .8rem; margin-bottom: 1rem;
+}
+.uex-kpi {
+  display: flex; align-items: center; gap: .8rem;
+  background: #fff; border: 1px solid #E6EDF5; border-radius: 15px;
+  padding: .85rem 1rem; box-shadow: 0 6px 18px -12px rgba(7, 27, 58, .25);
+  animation: uexFadeUp .45s ease-out both;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.uex-kpi:nth-child(2) { animation-delay: .06s; }
+.uex-kpi:nth-child(3) { animation-delay: .12s; }
+.uex-kpi:nth-child(4) { animation-delay: .18s; }
+.uex-kpi:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -12px rgba(7, 27, 58, .35); }
+.uex-kpi-icone {
+  width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+}
+.uex-kpi-icone.is-blue { background: #E8EFF8; color: #104A8E; }
+.uex-kpi-icone.is-indigo { background: #E8EAF6; color: #283A87; }
+.uex-kpi-icone.is-cyan { background: #E0F2F1; color: #0E6B7A; }
+.uex-kpi-icone.is-amber { background: #FFF4D6; color: #92600E; }
+.uex-kpi strong { display: block; font-size: 1.3rem; line-height: 1.1; color: var(--injs-navy); font-variant-numeric: tabular-nums; }
+.uex-kpi span { display: block; font-size: .72rem; color: #64748B; font-weight: 600; }
+.uex-kpi--volumes { flex-direction: column; align-items: stretch; gap: .55rem; }
+.uex-kpi-volumes-tete { display: flex; align-items: center; gap: .8rem; }
+
+/* Bandeau contenu gelé */
+.uex-alerte {
+  display: flex; align-items: flex-start; gap: .7rem;
+  border: 1px solid #F5DFA8; border-left: 4px solid #F59E0B;
+  background: linear-gradient(135deg, #FFFBEB, #FFF7E0);
+  border-radius: 14px; padding: .8rem 1.1rem; margin-bottom: 1rem;
+  color: #78540F; font-size: .88rem; line-height: 1.45;
+  animation: uexFadeUp .4s ease-out both;
+}
+.uex-alerte .bi { color: #D97706; font-size: 1.05rem; margin-top: .1rem; }
+
+/* Panneaux premium */
+.uex-panel {
+  border-radius: 16px !important; border: 1px solid #E6EDF5 !important;
+  box-shadow: 0 10px 26px -16px rgba(7, 27, 58, .3) !important; overflow: hidden;
+}
+.uex-panel .gen-panel-head {
+  background: linear-gradient(135deg, #0A1B36, #1B3264);
+  color: #fff; border-bottom: 3px solid #F59E0B;
+}
+.uex-panel .gen-panel-title { color: #fff !important; }
+.uex-panel .gen-panel-title .bi { color: #7DD3FC; }
+.uex-panel .gen-count-pill {
+  background: rgba(255, 255, 255, .14) !important; color: #E6EEFB !important;
+  border: 1px solid rgba(255, 255, 255, .25);
+}
+.uex-foot { background: #F4F8FD; font-weight: 600; }
+
+/* Liste maître des UE */
+.uex-ligne { animation: uexFadeUp .4s ease-out both; transition: background .15s ease; }
+.uex-ligne:hover { background: #F2F7FE; }
+.uex-ligne--active {
+  background: linear-gradient(90deg, #EAF1FC, #F7FAFF) !important;
+  box-shadow: inset 4px 0 0 #F59E0B;
+}
+.uex-ligne--active .gen-code-chip {
+  background: linear-gradient(135deg, #104A8E, #283A87) !important; color: #fff !important;
+}
+.uex-intitule { font-weight: 600; color: #0F172A; }
+.uex-sem {
+  display: inline-block; border-radius: 999px; padding: .12rem .6rem;
+  background: #E8EFF8; color: #104A8E; font-size: .72rem; font-weight: 750;
+}
+.uex-ects {
+  display: inline-block; border-radius: 999px; padding: .12rem .6rem;
+  background: #EEF2FF; color: #283A87; font-size: .74rem; font-weight: 800;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.uex-badge { border-radius: 999px !important; font-weight: 700 !important; }
+.uex-badge--brouillon { background: #FFF4D6 !important; color: #92600E !important; }
+.uex-badge--active { background: #E6F4EC !important; color: #0B6E4F !important; }
+.uex-badge--desactivee { background: #FDECEC !important; color: #A3222F !important; }
+
+/* Cartes ECUE + barres de volumes */
+.uex-legende-volumes {
+  display: flex; flex-wrap: wrap; gap: 1rem; padding: .7rem 1rem 0;
+  font-size: .74rem; font-weight: 650; color: #64748B;
+}
+.uex-legende-volumes span { display: inline-flex; align-items: center; gap: .4rem; }
+.uex-pastille { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.uex-pastille.is-cm { background: #1265D6; }
+.uex-pastille.is-td { background: #0E9BB5; }
+.uex-pastille.is-tp { background: #283A87; }
+
+.uex-ecue-grille {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+  gap: .85rem; padding: 1rem;
+}
+.uex-ecue-carte {
+  display: flex; flex-direction: column; gap: .55rem;
+  background: #fff; border: 1px solid #E6EDF5; border-radius: 14px;
+  padding: .95rem 1rem;
+  box-shadow: 0 6px 18px -12px rgba(7, 27, 58, .28);
+  animation: uexSlideIn .45s ease-out both;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.uex-ecue-carte:hover {
+  transform: translateY(-3px); border-color: #C7D9F2;
+  box-shadow: 0 14px 28px -14px rgba(7, 27, 58, .4);
+}
+.uex-ecue-entete {
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+}
+.uex-ecue-intitule { margin: 0; font-size: .92rem; font-weight: 700; color: var(--injs-navy); line-height: 1.35; }
+.uex-ecue-volumes { margin-top: auto; }
+.uex-volumes { display: flex; flex-direction: column; gap: .35rem; }
+.uex-volumes-barre {
+  display: flex; height: 9px; border-radius: 999px; overflow: hidden;
+  background: #E9EFF7;
+}
+.uex-volumes-seg { display: block; height: 100%; transition: width .8s ease; }
+.uex-volumes-seg.is-cm { background: linear-gradient(90deg, #104A8E, #1265D6); }
+.uex-volumes-seg.is-td { background: linear-gradient(90deg, #0E9BB5, #38BDF8); }
+.uex-volumes-seg.is-tp { background: linear-gradient(90deg, #283A87, #4A5DB0); }
+.uex-volumes-texte { font-size: .74rem; color: #64748B; font-weight: 600; font-variant-numeric: tabular-nums; }
+.uex-volumes-texte strong { color: var(--injs-navy); }
+.uex-volumes-vide { color: #B6C2D2; }
+.uex-ecue-pied {
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  border-top: 1px dashed #E0EAF6; padding-top: .6rem;
+}
+.uex-vide { grid-column: 1 / -1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .uex-kpi, .uex-ligne, .uex-ecue-carte, .uex-alerte { animation: none; }
+  .uex-kpi, .uex-ecue-carte, .uex-volumes-seg { transition: none; }
+  .uex-kpi:hover, .uex-ecue-carte:hover { transform: none; }
+}
+
+/* ==========================================================================
+   SÉLECTION MULTIPLE & ACTIONS GROUPÉES (demande 03/11)
+   Cases à cocher individuelles et « tout cocher » (état indéterminé =
+   sélection partielle), barre d'actions de masse Activer / Désactiver /
+   Supprimer visible dès qu'une sélection existe.
+   ========================================================================== */
+
+.uex-check {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: #0B2A5B;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.uex-col-check { width: 2.4rem; }
+
+.uex-tout-cocher {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #344054;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.uex-bulkbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin: 0.9rem 1.1rem 0;
+  padding: 0.6rem 0.9rem;
+  border-radius: 12px;
+  background: linear-gradient(120deg, #EAF2FF, #DCEBFF);
+  border: 1px solid #B9D4F5;
+  box-shadow: 0 8px 18px -12px rgba(11, 42, 91, 0.5);
+  animation: uexBulkIn 0.25s ease both;
+}
+
+@keyframes uexBulkIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.uex-bulkbar-compte {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #0B2A5B;
+}
+
+.uex-bulkbar-compte i { color: #1265D6; }
+
+.uex-bulkbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.uex-bulkbar .btn { font-weight: 700; }
+
+/* Carte ECUE cochée : liseré de sélection. */
+.uex-ecue-carte:has(.uex-check:checked) {
+  border-color: #1265D6;
+  box-shadow: 0 0 0 2px rgba(18, 101, 214, 0.35),
+              0 14px 28px -16px rgba(7, 27, 58, 0.4);
+}
+
+/* Ligne UE cochée : fond teinté. */
+.gen-table tbody tr:has(.uex-check:checked) td {
+  background: #EAF2FF;
+}
+
+.uex-btn-cloner { font-weight: 700; white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .uex-bulkbar { animation: none; }
+}
+
+/* ── Mode édition : bouton de clonage dans la barre d'outils ── */
+.uex-btn-edition {
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 8px 18px -8px rgba(217, 119, 6, 0.7);
+}
+
+/* Cases visibles mais verrouillées sur maquette gelée : elles signalent
+   la sélection multiple, activée par le clonage en version brouillon. */
+.uex-check:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Gestion des maquettes : sélection à cases, actions latérales et fichiers. */
+.uex-toolbar-controls {
+  display: grid;
+  flex: 1 1 100%;
+  min-width: 0;
+  gap: 0.8rem;
+}
+
+.uex-maquettes-zone {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: stretch;
+}
+
+.uex-maquettes-liste {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #DCE6F2;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.uex-maquettes-liste-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  background: #F4F8FD;
+  border-bottom: 1px solid #E0EAF6;
+}
+
+.uex-maquettes-liste-entete h3 {
+  margin: 0;
+  color: #0F2747;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.uex-maquettes-liste-entete span,
+.uex-maquettes-tout {
+  color: #64748B;
+  font-size: 0.74rem;
+}
+
+.uex-maquettes-tout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.uex-maquettes-choix {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+  gap: 0.35rem;
+  max-height: 220px;
+  overflow: auto;
+  padding: 0.55rem;
+}
+
+.uex-maquette-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.uex-maquette-option:hover,
+.uex-maquette-option.is-affichee {
+  background: #F2F7FE;
+  border-color: #DCE8F7;
+}
+
+.uex-maquette-option input,
+.uex-maquettes-tout input,
+.uex-maquettes-outil-entete input {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  margin-top: 0.12rem;
+  accent-color: #104A8E;
+}
+
+.uex-maquette-option-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.uex-maquette-option-texte strong {
+  overflow: hidden;
+  color: #0F2747;
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uex-maquette-option-texte small {
+  color: #64748B;
+  font-size: 0.69rem;
+}
+
+.uex-maquettes-vide {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.6rem;
+  color: #64748B;
+  font-size: 0.8rem;
+}
+
+.uex-maquettes-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.45rem;
+  min-width: 132px;
+}
+
+.uex-maquettes-actions .btn {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.uex-maquettes-fichiers {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 1fr);
+  gap: 0.75rem;
+}
+
+.uex-maquettes-export,
+.uex-maquettes-import {
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #E0EAF6;
+  border-radius: 11px;
+  background: #fff;
+}
+
+.uex-maquettes-outil-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  color: #334155;
+  font-size: 0.76rem;
+}
+
+.uex-maquettes-outil-entete label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #64748B;
+  font-size: 0.7rem;
+}
+
+.uex-maquettes-outil-entete input { margin-top: 0; }
+
+.uex-maquettes-boutons,
+.uex-maquettes-import-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.uex-maquettes-import > label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: #334155;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.uex-maquettes-import-actions input {
+  min-width: 0;
+  max-width: 100%;
+  font-size: 0.72rem;
+}
+
+.uex-maquettes-import > small {
+  display: block;
+  margin-top: 0.35rem;
+  color: #64748B;
+  font-size: 0.68rem;
+}
+
+.uex-maquettes-apercu {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.6rem;
+  padding: 0.6rem;
+  border-radius: 8px;
+  font-size: 0.74rem;
+}
+
+.uex-maquettes-apercu.is-valide {
+  border: 1px solid #BFE3D0;
+  background: #F0FAF4;
+  color: #0B6E4F;
+}
+
+.uex-maquettes-apercu.is-invalide {
+  border: 1px solid #F3C5C5;
+  background: #FFF4F4;
+  color: #9B1C1C;
+}
+
+.uex-maquettes-apercu ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.uex-maquette-affichee {
+  flex: 1 1 100%;
+  color: #475569;
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.uex-maquette-modal-fond {
+  position: fixed;
+  z-index: 1090;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(7, 27, 58, 0.48);
+}
+
+.uex-maquette-modal {
+  display: grid;
+  gap: 0.8rem;
+  width: min(100%, 560px);
+  max-height: min(90vh, 760px);
+  overflow: auto;
+  padding: 1.15rem;
+  border: 1px solid #DCE6F2;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(7, 27, 58, 0.28);
+}
+
+.uex-maquette-modal > header,
+.uex-maquette-modal > form > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.uex-maquette-modal h2 {
+  margin: 0;
+  color: #0F2747;
+  font-size: 1.05rem;
+}
+
+.uex-maquette-modal form {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.uex-maquette-modal form > label {
+  margin-top: 0.25rem;
+  color: #475569;
+  font-size: 0.77rem;
+  font-weight: 700;
+}
+
+.uex-maquette-modal input,
+.uex-maquette-modal select,
+.uex-maquette-modal textarea {
+  width: 100%;
+  min-height: 2.2rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0F172A;
+  font: inherit;
+}
+
+.uex-maquette-modal > form > footer {
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 800px) {
+  .uex-maquettes-zone {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .uex-maquettes-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .uex-maquettes-fichiers {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

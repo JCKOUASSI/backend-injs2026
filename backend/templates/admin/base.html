@@ -1,0 +1,657 @@
+{% load i18n static %}<!DOCTYPE html>
+{% get_current_language as LANGUAGE_CODE %}{% get_current_language_bidi as LANGUAGE_BIDI %}
+<html lang="{{ LANGUAGE_CODE|default:"fr" }}" dir="{{ LANGUAGE_BIDI|yesno:'rtl,ltr,auto' }}">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<title>{% block title %}{% endblock %}</title>
+
+<!-- Fonts & Icons — servis LOCALEMENT (static/admin/fonts) : l'admin ne doit
+     dépendre d'aucun réseau externe. Les mêmes fichiers sont déclarés en
+     @font-face dans static/admin/custom_admin.css ; ces <link> ne servent
+     qu'à amorcer le téléchargement au plus tôt. Voir static/admin/fonts/README.txt. -->
+<link rel="preload" as="font" type="font/woff2" crossorigin
+      href="{% static 'admin/fonts/inter-latin-wght.woff2' %}">
+<link rel="preload" as="font" type="font/woff2" crossorigin
+      href="{% static 'admin/fonts/material-symbols-outlined-subset.woff2' %}">
+
+<!-- Base Django Styles -->
+<link rel="stylesheet" href="{% block stylesheet %}{% static "admin/css/base.css" %}{% endblock %}">
+
+<!-- Hardened Neutralization of Django Dark Mode: Force Light Theme matching API Django-Tableau de bord.png -->
+{% block dark-mode-vars %}
+<style>
+:root {
+    color-scheme: light !important;
+    --body-bg: #f8fafc !important;
+    --body-fg: #1e293b !important;
+    --body-quiet-color: #64748b !important;
+    --body-loud-color: #0f172a !important;
+    --header-color: #ffffff !important;
+    --header-branding-color: #0b478a !important;
+    --header-bg: #ffffff !important;
+    --header-link-color: #0e58ab !important;
+    --breadcrumbs-fg: #64748b !important;
+    --breadcrumbs-link-fg: #0e58ab !important;
+    --breadcrumbs-bg: #ffffff !important;
+    --link-fg: #0e58ab !important;
+    --link-hover-color: #0b478a !important;
+    --hairline-color: rgba(15, 23, 42, 0.08) !important;
+    --border-color: rgba(15, 23, 42, 0.08) !important;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: light !important;
+        --body-bg: #f8fafc !important;
+        --body-fg: #1e293b !important;
+        --body-quiet-color: #64748b !important;
+        --body-loud-color: #0f172a !important;
+        --header-color: #ffffff !important;
+        --header-branding-color: #0b478a !important;
+        --header-bg: #ffffff !important;
+        --header-link-color: #0e58ab !important;
+        --breadcrumbs-fg: #64748b !important;
+        --breadcrumbs-link-fg: #0e58ab !important;
+        --breadcrumbs-bg: #ffffff !important;
+        --link-fg: #0e58ab !important;
+        --link-hover-color: #0b478a !important;
+        --hairline-color: rgba(15, 23, 42, 0.08) !important;
+        --border-color: rgba(15, 23, 42, 0.08) !important;
+    }
+    html, body, body.injs-admin {
+        background: #f8fafc !important;
+        color: #1e293b !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extrastyle %}{% endblock %}
+{% if LANGUAGE_BIDI %}<link rel="stylesheet" href="{% block stylesheet_rtl %}{% static "admin/css/rtl.css" %}{% endblock %}">{% endif %}
+{% block extrahead %}
+<link rel="icon" type="image/png" href="{% static 'img/logo-injs.png' %}">
+{% endblock %}
+
+{% block responsive %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static "admin/css/responsive.css" %}">
+    {% if LANGUAGE_BIDI %}<link rel="stylesheet" href="{% static "admin/css/responsive_rtl.css" %}">{% endif %}
+{% endblock %}
+
+<!-- Custom INJS Stylesheet loaded unconditionally with cache-buster -->
+<link rel="stylesheet" href="{% static 'admin/custom_admin.css' %}?v=20260916v4">
+
+<!-- Critical Inline CSS fallback guaranteeing exact design fidelity to API Django-Tableau de bord.png -->
+<style>
+/* Layout hardening */
+html, body {
+    background-color: #f8fafc !important;
+    color: #1e293b !important;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    margin: 0;
+    padding: 0;
+}
+.injs-layout {
+    display: flex !important;
+    min-height: 100vh !important;
+    background-color: #f8fafc !important;
+    position: relative !important;
+}
+.injs-sidebar {
+    width: 272px !important;
+    flex-shrink: 0 !important;
+    background: #ffffff !important;
+    border-right: 1px solid rgba(15, 23, 42, 0.08) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 20px 16px !important;
+    position: sticky !important;
+    top: 0 !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+}
+.injs-sidebar-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 24px !important;
+    padding: 0 4px !important;
+}
+.injs-sidebar-brand {
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+}
+.injs-sidebar-close {
+    display: none;
+    border: none !important;
+    background: transparent !important;
+    cursor: pointer !important;
+    color: #64748b !important;
+    padding: 6px !important;
+    border-radius: 8px !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+.injs-sidebar-close:hover {
+    background: #e8eff7 !important;
+    color: #0b478a !important;
+}
+.injs-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 990;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+body.injs-sidebar-open .injs-backdrop {
+    display: block;
+    opacity: 1;
+}
+
+.injs-main {
+    flex: 1 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background-color: #f8fafc !important;
+}
+.injs-topbar {
+    display: flex !important;
+    align-items: center !important;
+    gap: 16px !important;
+    padding: 16px 24px !important;
+    background: #ffffff !important;
+    border-bottom: 3px solid #0e58ab !important;
+    box-shadow: 0 2px 12px rgba(14, 88, 171, 0.08) !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 20 !important;
+    box-sizing: border-box !important;
+}
+.injs-brand-link {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    text-decoration: none !important;
+    color: #0b478a !important;
+    font-weight: 800 !important;
+    font-size: 1.15rem !important;
+}
+.injs-brand-icon-box {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    min-height: 52px !important;
+    max-width: 52px !important;
+    max-height: 52px !important;
+    border-radius: 14px !important;
+    background: #001a33 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px !important;
+    box-sizing: border-box !important;
+}
+.injs-brand-icon {
+    width: 44px !important;
+    height: 44px !important;
+    max-width: 44px !important;
+    max-height: 44px !important;
+    object-fit: contain !important;
+    display: block !important;
+}
+.injs-sidebar-list {
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0 4px !important;
+}
+.injs-sidebar-list li {
+    list-style: none !important;
+}
+.injs-sidebar-group-toggle {
+    list-style: none !important;
+}
+.injs-sidebar-group-toggle::-webkit-details-marker {
+    display: none !important;
+}
+.injs-sidebar-group-toggle::marker {
+    display: none !important;
+    content: '' !important;
+}
+.injs-sidebar-link {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 10px 12px !important;
+    margin-bottom: 2px !important;
+    border-radius: 12px !important;
+    color: #1e293b !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    font-size: 14px !important;
+}
+.injs-sidebar-link.is-active {
+    background: #0e58ab !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 14px rgba(14, 88, 171, 0.28) !important;
+}
+.injs-sidebar-link.is-active .injs-sidebar-icon {
+    color: #ffffff !important;
+}
+
+/* Search bar hardening - elimination of inner webkit search oval */
+.injs-search {
+    flex: 1 !important;
+    min-width: 140px !important;
+    max-width: 440px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    background: #f1f5f9 !important;
+    border: 1px solid rgba(15, 23, 42, 0.1) !important;
+    border-radius: 999px !important;
+    padding: 0 14px !important;
+    height: 40px !important;
+    box-sizing: border-box !important;
+    transition: all 0.2s ease !important;
+}
+.injs-search:focus-within {
+    border-color: #0e58ab !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(14, 88, 171, 0.12) !important;
+}
+.injs-search input,
+.injs-search input[type="search"] {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-size: 13px !important;
+    color: #1e293b !important;
+    line-height: normal !important;
+}
+.injs-search input::-webkit-search-decoration,
+.injs-search input::-webkit-search-cancel-button,
+.injs-search input::-webkit-search-results-button,
+.injs-search input::-webkit-search-results-decoration {
+    display: none !important;
+    -webkit-appearance: none !important;
+}
+.injs-search-icon {
+    color: #64748b !important;
+    font-size: 20px !important;
+    flex-shrink: 0 !important;
+}
+
+/* Hero title hardening */
+.dfrc-hero {
+    margin-bottom: 20px !important;
+}
+.dfrc-hero-title {
+    font-size: clamp(1.35rem, 3vw, 1.85rem) !important;
+    font-weight: 800 !important;
+    color: #1e293b !important;
+    margin: 0 0 6px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.25 !important;
+}
+.dfrc-hero-subtitle {
+    margin: 0 !important;
+    color: #64748b !important;
+    font-size: clamp(0.82rem, 1.8vw, 0.95rem) !important;
+    line-height: 1.45 !important;
+}
+
+/* Stat Cards hardening */
+.dfrc-stats-row {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+    margin-bottom: 24px !important;
+}
+.dfrc-stat-card {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 20px 22px !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(15, 23, 42, 0.08) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06) !important;
+    text-decoration: none !important;
+    box-sizing: border-box !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+.dfrc-stat-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 24px rgba(14, 88, 171, 0.12) !important;
+}
+.dfrc-stat-card--highlight {
+    background: linear-gradient(135deg, #116ed6 0%, #0b478a 100%) !important;
+    border-color: transparent !important;
+    color: #ffffff !important;
+}
+.dfrc-stat-card--highlight .dfrc-stat-label,
+.dfrc-stat-card--highlight .dfrc-stat-value,
+.dfrc-stat-card--highlight .dfrc-stat-detail {
+    color: #ffffff !important;
+}
+.dfrc-stat-card--highlight .dfrc-stat-icon {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+}
+
+/* Responsive queries */
+@media (max-width: 1100px) {
+    .dfrc-stats-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+}
+@media (max-width: 860px) {
+    .injs-topbar-link--site,
+    .injs-topbar-link--pwd {
+        display: none !important;
+    }
+    .injs-user-name {
+        display: none !important;
+    }
+}
+@media (max-width: 768px) {
+    .injs-menu-toggle {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+        width: 38px !important;
+        height: 38px !important;
+        border: 1px solid rgba(15, 23, 42, 0.1) !important;
+        background: #ffffff !important;
+        border-radius: 10px !important;
+        cursor: pointer !important;
+        color: #1e293b !important;
+    }
+    .injs-sidebar {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        z-index: 1000 !important;
+        transform: translateX(-100%) !important;
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 4px 0 24px rgba(15, 23, 42, 0.15) !important;
+    }
+    body.injs-sidebar-open .injs-sidebar {
+        transform: translateX(0) !important;
+    }
+    .injs-sidebar-close {
+        display: inline-flex !important;
+    }
+    .injs-topbar {
+        padding: 10px 14px !important;
+        gap: 8px !important;
+    }
+    .injs-search {
+        max-width: none !important;
+        flex: 1 !important;
+        height: 38px !important;
+        min-width: 120px !important;
+        padding: 0 12px !important;
+    }
+    .injs-search input {
+        font-size: 13px !important;
+    }
+    .injs-topbar-link {
+        width: 36px !important;
+        height: 36px !important;
+        border-radius: 10px !important;
+    }
+    .injs-topbar-link .material-symbols-outlined {
+        font-size: 18px !important;
+    }
+    .injs-user-avatar {
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 12px !important;
+    }
+    .injs-content {
+        padding: 14px 14px 28px !important;
+    }
+    .dfrc-hero-title {
+        font-size: 1.45rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        margin-bottom: 4px !important;
+    }
+    .dfrc-hero-subtitle {
+        font-size: 0.85rem !important;
+        line-height: 1.4 !important;
+    }
+    .dfrc-stats-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 10px !important;
+        margin-bottom: 16px !important;
+    }
+    .dfrc-stat-card {
+        padding: 12px 14px !important;
+        gap: 8px !important;
+        border-radius: 12px !important;
+    }
+    .dfrc-stat-card:first-child {
+        grid-column: span 2 !important;
+    }
+    .dfrc-stat-header {
+        margin-bottom: 0 !important;
+    }
+    .dfrc-stat-label {
+        font-size: 11px !important;
+    }
+    .dfrc-stat-value {
+        font-size: 1.5rem !important;
+    }
+    .dfrc-stat-icon {
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 8px !important;
+    }
+    .dfrc-stat-icon .material-symbols-outlined {
+        font-size: 18px !important;
+    }
+    .dfrc-stat-detail {
+        font-size: 11px !important;
+    }
+    .dfrc-charts-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+    .dfrc-quick-actions {
+        gap: 8px !important;
+    }
+    .dfrc-quick-action-btn {
+        padding: 8px 14px !important;
+        font-size: 12px !important;
+    }
+}
+@media (max-width: 420px) {
+    .injs-topbar {
+        padding: 8px 10px !important;
+        gap: 6px !important;
+    }
+    .injs-menu-toggle {
+        width: 34px !important;
+        height: 34px !important;
+    }
+    .injs-search {
+        height: 34px !important;
+        padding: 0 10px !important;
+        gap: 6px !important;
+    }
+    .injs-search-icon {
+        font-size: 18px !important;
+    }
+    .injs-search input {
+        font-size: 12px !important;
+    }
+    .injs-topbar-link {
+        width: 34px !important;
+        height: 34px !important;
+    }
+}
+</style>
+
+{% block blockbots %}<meta name="robots" content="NONE,NOARCHIVE">{% endblock %}
+</head>
+
+<body class="injs-admin injs-layout-active {% if is_popup %}popup {% endif %}{% block bodyclass %}{% endblock %}"
+  data-admin-utc-offset="{% now "Z" %}">
+<a href="#content-start" class="skip-to-content-link">{% translate 'Skip to main content' %}</a>
+
+{% if not is_popup and user.is_authenticated %}
+<div class="injs-layout">
+  <div class="injs-backdrop" id="injs-backdrop"></div>
+  <aside class="injs-sidebar" id="injs-sidebar">
+    <div class="injs-sidebar-header">
+      <div class="injs-sidebar-brand">
+        <a href="{% url 'admin:index' %}" class="injs-brand-link">
+          <span class="injs-brand-icon-box">
+            <img src="{% static 'img/logo-injs-blanc.svg' %}"
+               alt="INJS Abidjan" class="injs-brand-icon" width="44" height="44">
+          </span>
+          <span class="injs-brand-text">{{ site_header|default:"INJS LMD" }}</span>
+        </a>
+      </div>
+      <button type="button" class="injs-sidebar-close" id="injs-sidebar-close" aria-label="{% trans 'Fermer le menu' %}">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    {% if admin_sidebar_navigation %}
+      {% include "admin/includes/sidebar.html" %}
+    {% endif %}
+  </aside>
+
+  <div class="injs-main">
+    <header class="injs-topbar">
+      <button type="button" class="injs-menu-toggle" id="injs-menu-toggle" aria-label="{% trans 'Menu' %}">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+
+      <form class="injs-search" action="{% url 'admin:index' %}" method="get" role="search">
+        <span class="material-symbols-outlined injs-search-icon">search</span>
+        <input type="search" name="q" placeholder="{% trans 'Rechercher dans l’admin…' %}" aria-label="{% trans 'Rechercher' %}">
+      </form>
+
+      <div class="injs-topbar-actions">
+        {% if site_url %}
+          <a href="{{ site_url }}" class="injs-topbar-link injs-topbar-link--site" title="{% trans 'Dashboard web' %}">
+            <span class="material-symbols-outlined">open_in_new</span>
+          </a>
+        {% endif %}
+        {% if user.has_usable_password %}
+          <a href="{% url 'admin:password_change' %}" class="injs-topbar-link injs-topbar-link--pwd" title="{% trans 'Changer le mot de passe' %}">
+            <span class="material-symbols-outlined">lock</span>
+          </a>
+        {% endif %}
+        <form class="injs-logout-form" method="post" action="{% url 'admin:logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="injs-topbar-link" title="{% trans 'Déconnexion' %}">
+            <span class="material-symbols-outlined">logout</span>
+          </button>
+        </form>
+        <div class="injs-user-chip">
+          <span class="injs-user-avatar">{{ user.get_short_name|default:user.get_username|slice:":1"|upper }}</span>
+          <span class="injs-user-name">{% firstof user.get_short_name user.get_username %}</span>
+        </div>
+      </div>
+    </header>
+
+    {% block nav-breadcrumbs %}
+      <nav class="injs-breadcrumbs" aria-label="{% translate 'Breadcrumbs' %}">
+        {% block breadcrumbs %}
+          <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+          {% if title %}<span class="injs-breadcrumb-sep">›</span><span>{{ title }}</span>{% endif %}
+        {% endblock %}
+      </nav>
+    {% endblock %}
+{% else %}
+<div id="container">
+{% endif %}
+
+    <main id="content-start" class="{% if not is_popup and user.is_authenticated %}injs-content{% else %}content{% endif %}" tabindex="-1">
+      {% block messages %}
+        {% if messages %}
+          <ul class="messagelist">{% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|capfirst }}</li>
+          {% endfor %}</ul>
+        {% endif %}
+      {% endblock messages %}
+
+      <div id="content" class="{% block coltype %}colM{% endblock %}">
+        {% block pretitle %}{% endblock %}
+        {% block content_title %}{% if title %}<h1 class="injs-page-title">{{ title }}</h1>{% endif %}{% endblock %}
+        {% block content_subtitle %}{% if subtitle %}<h2 class="injs-page-subtitle">{{ subtitle }}</h2>{% endif %}{% endblock %}
+        {% block content %}
+          {% block object-tools %}{% endblock %}
+          {{ content }}
+        {% endblock %}
+        {% block sidebar %}{% endblock %}
+      </div>
+    </main>
+
+{% if not is_popup and user.is_authenticated %}
+  </div>
+</div>
+{% else %}
+</div>
+{% endif %}
+
+<footer id="footer">{% block footer %}{% endblock %}</footer>
+<script>
+(function () {
+  var toggle = document.getElementById('injs-menu-toggle');
+  var closeBtn = document.getElementById('injs-sidebar-close');
+  var backdrop = document.getElementById('injs-backdrop');
+
+  function openSidebar() {
+    document.body.classList.add('injs-sidebar-open');
+  }
+  function closeSidebar() {
+    document.body.classList.remove('injs-sidebar-open');
+  }
+
+  if (toggle) {
+    toggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (document.body.classList.contains('injs-sidebar-open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    });
+  }
+  if (closeBtn) {
+    closeBtn.addEventListener('click', closeSidebar);
+  }
+  if (backdrop) {
+    backdrop.addEventListener('click', closeSidebar);
+  }
+})();
+</script>
+</body>
+</html>

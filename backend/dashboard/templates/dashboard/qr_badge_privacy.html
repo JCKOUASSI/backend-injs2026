@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Politique de confidentialité — application QR Badge</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: linear-gradient(135deg, #1A68AC 0%, #2277C1 40%, #F5B100 100%); min-height: 100vh; padding: 1.5rem; }
+        .doc-card { max-width: 720px; margin: 0 auto; background: #fff; border-radius: 16px; padding: 2rem; box-shadow: 0 12px 40px rgba(0,0,0,.2); }
+        h1 { font-size: 1.35rem; color: #1A68AC; font-weight: 700; }
+        h2 { font-size: 1.05rem; margin-top: 1.25rem; color: #1e293b; font-weight: 600; }
+        p, li { color: #475569; font-size: 0.95rem; }
+    </style>
+</head>
+<body>
+    <div class="doc-card">
+        <h1>Politique de confidentialité — application mobile « QR Badge »</h1>
+        <p class="text-muted small mb-4">Document à destination des stores (Google Play) et des utilisateurs. Page publique, sans collecte de formulaire sur cette URL.</p>
+
+        <h2>Responsable du traitement</h2>
+        <p>Les données traitées par l’application relèvent du dispositif de formation et de gestion des présences de votre établissement (MFPMA / partenaires habilités). Pour toute demande d’information ou d’exercice de droits (accès, rectification, suppression dans les limites légales), contactez l’administration ou le secrétariat de votre centre de formation.</p>
+
+        <h2>Autorisation « Caméra » (android.permission.CAMERA)</h2>
+        <p>L’application demande l’accès à la <strong>caméra</strong> uniquement pour permettre le <strong>scan de codes QR</strong> affichés en salle de formation, afin d’enregistrer une entrée ou une sortie de présence de manière sécurisée. Les images ou flux vidéo ne sont pas enregistrés ni transmis : seules les informations issues du QR (identifiant de séance) et les données nécessaires au badgeage sont envoyées au serveur prévu par votre institution.</p>
+
+        <h2>Autorisation « Localisation »</h2>
+        <p>Lorsque la formation le prévoit (périmètre géographique configuré pour le site), l’application peut utiliser la <strong>position approximative</strong> pour vérifier la présence sur le lieu de formation. Ces données sont traitées dans le cadre du suivi de présence et ne servent pas à la publicité ni au profilage commercial.</p>
+
+        <h2>Données personnelles et hébergement</h2>
+        <p>Les données (identité professionnelle ou matricule, présences, journaux techniques nécessaires au service) sont traitées conformément aux règles de votre institution et au cadre applicable (dont le RGPD lorsque celui-ci s’applique). Elles sont échangées avec les serveurs configurés dans l’application (URL d’API définie par l’établissement).</p>
+
+        <h2>Durée de conservation</h2>
+        <p>La conservation des données de présence est fixée par les obligations légales et les règles internes de l’organisme responsable (archives pédagogiques, contrôle de financement de la formation, etc.).</p>
+
+        <h2>Modifications</h2>
+        <p>Cette page peut être mise à jour pour refléter l’évolution du service ou des exigences réglementaires. La date de dernière mise à jour peut être précisée par votre administration sur sa version officielle.</p>
+
+        {% if PUBLIC_QR_SCAN_ENABLED %}
+        <p class="mt-4 mb-0"><a href="{% url 'web-badge' %}" class="btn btn-outline-secondary btn-sm">Retour au badgeage web</a></p>
+        {% endif %}
+    </div>
+</body>
+</html>

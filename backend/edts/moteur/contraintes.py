@@ -1,0 +1,899 @@
+"""Lot L8 — Étapes J & K : contraintes fortes (bloquantes) et souples (pénalités).
+
+Deux registres strictement séparés :
+
+* **Contraintes dures C1→C10** — un placement qui les enfreint est *rejeté*.
+  Le moteur ne produit jamais une séance invalide.
+* **Contraintes souples (étape K)** — elles produisent une *pénalité* que le
+  moteur cherche à minimiser. Elles ne bloquent **jamais** un placement
+  (interdiction explicite de transformer une préférence en interdiction).
+
+Aucune contrainte n'est inventée : chacune est soit dérivée d'une règle métier
+documentée, soit explicitement listée comme « non applicable » si la donnée
+socle ne permet pas de l'exprimer. C'est le cas de C9 (périodes de
+l'année académique) : le modèle `AnneeAcademique` ne porte pas de découpage
+en périodes, donc C9 est vérifiée par les seules bornes de semaines de l'EDT.
+"""
+
+from dataclasses import dataclass, field
+from functools import lru_cache
+import unicodedata
+
+# ── Identifiants des contraintes ──────────────────────────────────────────────
+C1_CONFLIT_ENSEIGNANT = 'C1_CONFLIT_ENSEIGNANT'
+C2_CONFLIT_GROUPE = 'C2_CONFLIT_GROUPE'
+C3_CONFLIT_SALLE = 'C3_CONFLIT_SALLE'
+C4_CAPACITE = 'C4_CAPACITE'
+C5_DISPONIBILITE_ENSEIGNANT = 'C5_DISPONIBILITE_ENSEIGNANT'
+C6_DISPONIBILITE_SALLE = 'C6_DISPONIBILITE_SALLE'
+C7_COMPATIBILITE_SALLE = 'C7_COMPATIBILITE_SALLE'
+C8_COHERENCE_PEDAGOGIQUE = 'C8_COHERENCE_PEDAGOGIQUE'
+C9_CALENDRIER = 'C9_CALENDRIER'
+C10_VOLUME = 'C10_VOLUME'
+
+CONTRAINTES_DURES = (
+    C1_CONFLIT_ENSEIGNANT,
+    C2_CONFLIT_GROUPE,
+    C3_CONFLIT_SALLE,
+    C4_CAPACITE,
+    C5_DISPONIBILITE_ENSEIGNANT,
+    C6_DISPONIBILITE_SALLE,
+    C7_COMPATIBILITE_SALLE,
+    C8_COHERENCE_PEDAGOGIQUE,
+    C9_CALENDRIER,
+    C10_VOLUME,
+)
+
+# ── Types de salle compatibles par nature de séance (C7) ──────────────────────
+#: Salles génériques utilisables pour tout type d'enseignement. Une salle non
+#: qualifiée (`SALLE`) reste utilisable pour les cours non spécialisés. Elle
+#: n'est pas considérée comme adaptée à un TP sans vocation technique établie.
+SALLES_GENERIQUES = ('SALLE',)
+#: Par nature de séance, les types de salle spécialisés acceptés.
+SALLES_PAR_NATURE = {
+    'COURS': ('COURS', 'AMPHI'),
+    'TD': ('TD', 'COURS'),
+    # Sans correspondance explicite entre discipline et local, seuls les
+    # locaux déclarés TP sont automatiquement acceptés. Les laboratoires et
+    # salles informatiques restent réservés aux besoins qualifiés en conséquence.
+    'TP': ('TP',),
+    'AUTRE': ('REUNION', 'CONFERENCE', 'COURS'),
+}
+
+DISCIPLINES_TP_SPORTIVES = (
+    (('football', 'rugby'), frozenset({'TERRAIN'})),
+    (('handball', 'basketball'), frozenset({'PLATEAU_SPORTIF', 'GYMNASE'})),
+    (('volleyball',), frozenset({'PLATEAU_SPORTIF', 'GYMNASE', 'TERRAIN_SABLE'})),
+    (('gymnastique',), frozenset({'GYMNASE'})),
+    (('course', 'athletisme'), frozenset({'PISTE_ATHLETISME'})),
+    (('saut', 'lancer'), frozenset({'PISTE_ATHLETISME', 'AIRE_SAUTS_LANCERS'})),
+    (('judo', 'karate', 'taekwondo'), frozenset({'DOJO'})),
+    (('boxe',), frozenset({'SALLE_BOXE'})),
+    (('halterophilie',), frozenset({'SALLE_HALTEROPHILIE'})),
+    (('musculation',), frozenset({'SALLE_MUSCULATION'})),
+    (('preparation physique',), frozenset({'SALLE_PREPARATION_PHYSIQUE'})),
+    (('tennis',), frozenset({'COURT_TENNIS'})),
+    (('natation', 'aquatique'), frozenset({'PISCINE', 'BASSIN_APPRENTISSAGE'})),
+    (('fitness', 'parcours sportif'), frozenset({'PARCOURS_SPORTIF'})),
+)
+
+DISCIPLINES_TP_LABORATOIRE = (
+    'anatomie', 'physiologie', 'biomecanique', 'nutrition', 'analyse video',
+)
+
+MOTS_CLES_TP_INFORMATIQUE = (
+    'informatique', 'microsoft office', 'word', 'excel', 'powerpoint',
+    'bureautique', 'programmation', 'cybersecurite',
+)
+
+
+def _normaliser_libelle(texte):
+    texte = unicodedata.normalize('NFKD', texte or '')
+    return ''.join(
+        caractere for caractere in texte
+        if not unicodedata.combining(caractere)
+    ).lower()
+
+
+def _exigence_tp(intitule):
+    """Nature du local exigée seulement quand le titre identifie la discipline."""
+    titre = _normaliser_libelle(intitule)
+    if not titre:
+        return None
+    for mots_cles, codes in DISCIPLINES_TP_SPORTIVES:
+        if any(mot in titre for mot in mots_cles):
+            return 'SPORT', codes
+    for mot in DISCIPLINES_TP_LABORATOIRE:
+        if mot in titre:
+            return 'LABORATOIRE', mot
+    if any(mot in titre for mot in MOTS_CLES_TP_INFORMATIQUE):
+        return 'INFORMATIQUE', None
+    return None
+
+
+@dataclass(frozen=True)
+class Violation:
+    """Contrainte dure enfreinte sur un placement candidat."""
+
+    code_contrainte: str
+    message: str
+    ressource: str = ''
+
+    def as_dict(self):
+        return {
+            'contrainte': self.code_contrainte,
+            'message': self.message,
+            'ressource': self.ressource,
+        }
+
+    def __str__(self):
+        return f'{self.code_contrainte}: {self.message}'
+
+
+@dataclass
+class Penalite:
+    """Contrainte souple non respectée — n'empêche pas le placement."""
+
+    code: str
+    message: str
+    poids: int = 1
+
+    def as_dict(self):
+        return {'code': self.code, 'message': self.message, 'poids': self.poids}
+
+    def __str__(self):
+        return f'{self.code} (−{self.poids})'
+
+
+# ── Contraintes SOUPLES (étape K) — configurables, désactivées par défaut ────
+#
+# Les documents de référence (doc 2, §11 « K ») demandent d'éviter « plus de
+# 4 h consécutives », « les trous » et « plus de 8 h par jour », **sans fournir
+# de pondération officielle**. Décision prise et assumée ici :
+#
+#   * ces règles sont implémentées, mais DÉSACTIVÉES par défaut : sans valeur
+#     officielle, les activer d'office reviendrait à inventer une politique
+#     pédagogique et à modifier silencieusement les emplois du temps produits ;
+#   * elles s'activent explicitement, par réglage Django
+#     (``EDTS_CONTRAINTES_SOUPLES``) ou par paramètre de génération ;
+#   * elles ne sont JAMAIS bloquantes : elles produisent des ``Penalite`` dont
+#     le poids est visible, et le moteur peut toujours placer la séance ;
+#   * chaque borne et chaque poids sont explicites dans la politique effective,
+#     renvoyée par l'API (``/api/edts/lmd/constraints/``) pour que l'utilisateur
+#     sache exactement ce qui a été appliqué.
+
+#: Politique par défaut — tout est inactif sauf les seuils documentés.
+SOUPLES_DEFAUT = {
+    'actives': False,
+    'max_heures_consecutives': 4.0,
+    'max_heures_par_jour': 8.0,
+    #: Écart toléré entre deux séances pour les considérer comme consécutives
+    #: (une récréation de 15 min ne crée ni « trou » ni rupture de série).
+    'tolerance_minutes': 15,
+    'penaliser_trous': True,
+    #: Pause institutionnelle (déjeuner) qui ne compte pas comme un « trou ».
+    #: ``None`` = aucune exemption (comportement explicite, rien d'inventé) ;
+    #: sinon un couple de **minutes depuis minuit** ``(735, 810)``, forme
+    #: interne la plus simple à comparer. Les réglages et l'API s'expriment en
+    #: ``('12:15', '13:30')`` et sont convertis : ``pause_lisible()`` fait le
+    #: chemin inverse pour l'affichage. L'INJS n'ayant publié aucune pause
+    #: officielle, aucune valeur n'est imposée : elle se configure.
+    'pause_dejeuner': None,
+    'poids_trou': 1,
+    'poids_consecutif': 2,
+    'poids_surcharge': 3,
+}
+
+#: Codes des pénalités souples produites par le moteur. Déclarés ici une seule
+#: fois : l'API, le bilan annuel et les écrans les lisent au même endroit.
+CODES_SOUPLES = (
+    'TROU_HORAIRE',
+    'PLUS_DE_X_HEURES_CONSECUTIVES',
+    'SURCHARGE_JOURNALIERE',
+)
+
+#: Clés admises et type attendu (validation stricte : une faute de frappe dans
+#: un réglage ne doit pas être ignorée en silence).
+_CHAMPS_SOUPLES = {
+    'actives': bool,
+    'max_heures_consecutives': (int, float),
+    'max_heures_par_jour': (int, float),
+    'tolerance_minutes': (int, float),
+    'pause_dejeuner': tuple,
+    'penaliser_trous': bool,
+    'poids_trou': (int, float),
+    'poids_consecutif': (int, float),
+    'poids_surcharge': (int, float),
+}
+
+
+#: Origines possibles d'une politique effective, de la plus faible à la plus
+#: forte. Sert à expliquer à l'utilisateur *d'où* viennent les règles qu'il subit.
+ORIGINES = ('defaut', 'reglage_django', 'base', 'parametre')
+
+
+def _appliquer(politique, source, etiquette):
+    """Fusionne une couche de réglage dans ``politique`` (validation stricte)."""
+    if not source:
+        return
+    if not isinstance(source, dict):
+        raise ValueError(
+            f'{etiquette} doit être un dictionnaire '
+            f'(reçu : {type(source).__name__}).')
+    for cle, valeur in source.items():
+        if cle not in _CHAMPS_SOUPLES:
+            raise ValueError(
+                f'Réglage de contrainte souple inconnu : « {cle} » ({etiquette}). '
+                f'Clés admises : {", ".join(sorted(_CHAMPS_SOUPLES))}.')
+        attendu = _CHAMPS_SOUPLES[cle]
+        if cle == 'pause_dejeuner':
+            politique[cle] = _valider_pause(valeur)
+            continue
+        # bool est une sous-classe d'int : on teste strictement.
+        if attendu is bool and not isinstance(valeur, bool):
+            raise ValueError(f'« {cle} » doit être un booléen (reçu : {valeur!r}).')
+        if attendu is not bool and (
+                isinstance(valeur, bool)
+                or not isinstance(valeur, attendu)):
+            raise ValueError(f'« {cle} » doit être un nombre (reçu : {valeur!r}).')
+        if attendu is not bool and valeur < 0:
+            raise ValueError(f'« {cle} » ne peut pas être négatif (reçu : {valeur!r}).')
+        politique[cle] = valeur
+
+
+def _politique_base():
+    """Politique enregistrée dans l'admin Django, ou ``None``.
+
+    Lecture volontairement tolérante à l'absence de table (migration pas encore
+    appliquée, test unitaire sans base) : dans ce cas le moteur se rabat sur les
+    couches inférieures au lieu de planter. Toute autre erreur remonte.
+    """
+    try:
+        from edts.models import PolitiqueContraintesSouples
+    except Exception:  # pragma: no cover - import circulaire improbable
+        return None
+    from django.db import OperationalError, ProgrammingError
+
+    try:
+        ligne = PolitiqueContraintesSouples.charger()
+    except (OperationalError, ProgrammingError):
+        return None
+    return ligne
+
+
+def politique_effective(override=None):
+    """Politique + origine + trace de réglage, pour l'API et les diagnostics.
+
+    Ordre de priorité : ``SOUPLES_DEFAUT`` < réglage Django
+    ``EDTS_CONTRAINTES_SOUPLES`` < ligne de l'admin < ``override`` (paramètre
+    explicite d'une génération).
+
+    Pourquoi la ligne de l'admin passe avant le réglage Django : le réglage
+    décrit l'installation, la ligne décrit la décision opérationnelle de l'INJS.
+    La décision la plus récente et la plus visible doit gagner ; l'appelant qui
+    passe ``override`` garde le dernier mot, car il est explicite et local.
+    """
+    from django.conf import settings
+
+    politique = dict(SOUPLES_DEFAUT)
+    origine = 'defaut'
+    ligne = None
+
+    _appliquer(politique, getattr(settings, 'EDTS_CONTRAINTES_SOUPLES', None),
+               'EDTS_CONTRAINTES_SOUPLES')
+    if getattr(settings, 'EDTS_CONTRAINTES_SOUPLES', None):
+        origine = 'reglage_django'
+
+    ligne = _politique_base()
+    if ligne is not None:
+        _appliquer(politique, ligne.en_politique(), 'Politique enregistrée')
+        origine = 'base'
+
+    if override:
+        _appliquer(politique, override, 'Paramètre de génération')
+        origine = 'parametre'
+
+    return {
+        'politique': politique,
+        'origine': origine,
+        'reglage': ligne.resume() if ligne is not None else None,
+    }
+
+
+def politique_souples(override=None):
+    """Politique effective des contraintes souples (dict prêt pour le moteur).
+
+    Une clé inconnue ou une valeur de type invalide lève ``ValueError`` : un
+    réglage mal orthographié ne doit pas être ignoré sans bruit — ni dans le
+    réglage Django, ni dans la ligne enregistrée, ni dans un appel explicite.
+    """
+    return politique_effective(override)['politique']
+
+
+def pause_lisible(valeur):
+    """Minutes internes → ``['12:15', '13:30']`` (ou ``None``).
+
+    L'unité interne (minutes) n'a aucune raison de fuiter dans une API ou dans
+    un écran : personne ne lit « pause de 735 à 810 ».
+    """
+    if not valeur:
+        return None
+    return [f'{int(minutes) // 60:02d}:{int(minutes) % 60:02d}' for minutes in valeur]
+
+
+def politique_lisible(politique):
+    """Copie d'une politique où ``pause_dejeuner`` est exprimée en HH:MM."""
+    lisible = dict(politique)
+    lisible['pause_dejeuner'] = pause_lisible(politique.get('pause_dejeuner'))
+    return lisible
+
+
+def _minutes(heure):
+    """Minutes depuis minuit d'un ``time`` (ou d'un ``datetime``)."""
+    return heure.hour * 60 + heure.minute
+
+
+def _en_heures(minutes):
+    return round(minutes / 60.0, 2)
+
+
+def _minutes_depuis_texte(valeur):
+    """``'12:30'`` → 750 minutes. Format invalide ⇒ ValueError explicite."""
+    try:
+        heures, minutes = str(valeur).strip().split(':')
+        heures, minutes = int(heures), int(minutes)
+    except (ValueError, AttributeError):
+        raise ValueError(
+            f'Horaires attendus au format « HH:MM » (reçu : {valeur!r}).') from None
+    if not (0 <= heures <= 23 and 0 <= minutes <= 59):
+        raise ValueError(f'Horaire hors bornes : {valeur!r}.')
+    return heures * 60 + minutes
+
+
+def _minute_unique(valeur):
+    """Une borne de pause : ``'12:15'`` (réglage) ou ``735`` (interne)."""
+    if isinstance(valeur, bool):
+        raise ValueError(f'Horaire de pause invalide : {valeur!r}.')
+    if isinstance(valeur, int):
+        if not 0 <= valeur <= 24 * 60:
+            raise ValueError(f'Horaire de pause hors bornes : {valeur!r}.')
+        return valeur
+    return _minutes_depuis_texte(valeur)
+
+
+def _valider_pause(valeur):
+    """Valide ``pause_dejeuner`` : ``None`` ou un couple de deux bornes.
+
+    Deux écritures sont admises, parce qu'elles ont chacune leur raison d'être :
+    ``('12:15', '13:30')`` pour un réglage lisible (admin, settings) et
+    ``(735, 810)`` pour la forme interne déjà convertie. Toute autre valeur est
+    refusée explicitement.
+    """
+    if valeur is None:
+        return None
+    if not isinstance(valeur, (tuple, list)) or len(valeur) != 2:
+        raise ValueError(
+            'pause_dejeuner doit être None ou un couple ("HH:MM", "HH:MM") '
+            f'(reçu : {valeur!r}).')
+    debut = _minute_unique(valeur[0])
+    fin = _minute_unique(valeur[1])
+    if fin <= debut:
+        raise ValueError(
+            f'pause_dejeuner : la fin doit suivre le début (reçu : {valeur!r}).')
+    return (debut, fin)
+
+
+def plages_ressource(index, prefixe, ressource, jour):
+    """Plages ``(début, fin)`` déjà posées pour une ressource un jour donné.
+
+    Lit l'index d'occupations du solveur (``indexer_occupations``) : aucun accès
+    base, et le coût reste proportionnel aux séances du jour concerné.
+    """
+    if index is None or not ressource:
+        return []
+    return sorted(index.get((prefixe, ressource, jour), ()))
+
+
+def _series(plages, tolerance_minutes):
+    """Regroupe des plages en séries consécutives.
+
+    Deux plages appartiennent à la même série quand l'écart entre la fin de
+    l'une et le début de la suivante est **inférieur ou égal** à la tolérance.
+    Les chevauchements comptent comme contigus.
+    """
+    series = []
+    for debut, fin in sorted(plages, key=lambda p: (_minutes(p[0]), _minutes(p[1]))):
+        if series and _minutes(debut) - series[-1][1] <= tolerance_minutes:
+            series[-1][1] = max(series[-1][1], _minutes(fin))
+        else:
+            series.append([_minutes(debut), _minutes(fin)])
+    return series
+
+
+def _charge_serie(plages, debut_min, fin_min):
+    """Durée EFFECTIVE d'une série : somme des séances, pauses exclues.
+
+    Une série 07:30–09:30 + 09:45–11:45 vaut 4 h de cours (et non 4 h 15 de
+    temps passé) : c'est la charge pédagogique que la règle « pas plus de 4 h
+    consécutives » cherche à limiter.
+    """
+    return sum(
+        min(_minutes(fin), fin_min) - max(_minutes(debut), debut_min)
+        for debut, fin in plages
+        if _minutes(fin) > debut_min and _minutes(debut) < fin_min
+    )
+
+
+def _trous(plages, tolerance_minutes, pause=None):
+    """Trous d'une journée : écarts internes supérieurs à la tolérance.
+
+    ``plages`` est une liste ``(début, fin)`` triée de ``time``. Le temps libre
+    avant la première et après la dernière séance n'est pas un trou : c'est du
+    hors-présence, pas une attente entre deux cours.
+
+    ``pause`` (``(début, fin)`` en minutes, cf. ``pause_dejeuner``) est retirée
+    de chaque écart : une pause déjeuner institutionnelle n'est pas un trou
+    pédagogique. Sans pause configurée (``None``), l'écart est pris tel quel —
+    aucune exemption n'est supposée.
+    """
+    trous = []
+    for (debut_precedent, fin_precedente), (debut, _fin) in zip(plages, plages[1:]):
+        debut_min, fin_min = _minutes(fin_precedente), _minutes(debut)
+        ecart = fin_min - debut_min
+        if pause and ecart > 0:
+            chevauchement = max(0, min(fin_min, pause[1]) - max(debut_min, pause[0]))
+            ecart -= chevauchement
+        if ecart > tolerance_minutes:
+            trous.append(ecart)
+    return trous
+
+
+def penalites_souples(index, *, prefixe, ressource, jour,
+                      heure_debut, heure_fin, politique=None):
+    """Pénalités souples si l'on ajoute une séance à cette journée.
+
+    Retourne ``[]`` quand la politique est inactive — c'est le défaut, donc le
+    comportement du solveur reste strictement inchangé tant que personne n'a
+    explicitement demandé ces règles.
+
+    Les bornes sont évaluées **après** ajout de la séance candidate : c'est la
+    journée résultante qui est jugée, pas la journée actuelle.
+    """
+    politique = politique or politique_souples()
+    if not politique['actives'] or not ressource:
+        return []
+
+    plages = plages_ressource(index, prefixe, ressource, jour)
+    plages = sorted(
+        list(plages) + [(heure_debut, heure_fin)],
+        key=lambda p: (_minutes(p[0]), _minutes(p[1])),
+    )
+    tolerance = politique['tolerance_minutes']
+    penalites = []
+
+    pause = politique.get('pause_dejeuner')
+    trous = _trous(plages, tolerance, pause=pause)
+    if politique['penaliser_trous'] and trous:
+        penalites.append(Penalite(
+            'TROU_HORAIRE',
+            f'{len(trous)} trou(s) dans la journée '
+            f'(total {_en_heures(sum(trous))} h d’attente).',
+            poids=politique['poids_trou'] * min(len(trous), 3),
+        ))
+
+    series = _series(plages, tolerance)
+    plus_longue = max(
+        (_charge_serie(plages, debut, fin) for debut, fin in series), default=0)
+    seuil = int(round(politique['max_heures_consecutives'] * 60))
+    if plus_longue > seuil:
+        penalites.append(Penalite(
+            'PLUS_DE_X_HEURES_CONSECUTIVES',
+            f'{_en_heures(plus_longue)} h consécutives '
+            f'(maximum demandé : {politique["max_heures_consecutives"]} h).',
+            poids=politique['poids_consecutif'],
+        ))
+
+    total = sum(_minutes(fin) - _minutes(debut) for debut, fin in plages)
+    seuil_jour = int(round(politique['max_heures_par_jour'] * 60))
+    if total > seuil_jour:
+        penalites.append(Penalite(
+            'SURCHARGE_JOURNALIERE',
+            f'{_en_heures(total)} h dans la journée '
+            f'(maximum demandé : {politique["max_heures_par_jour"]} h).',
+            poids=politique['poids_surcharge'],
+        ))
+    return penalites
+
+
+def resume_souples(placements, politique=None):
+    """Bilan des contraintes souples sur un plan complet (lecture seule).
+
+    Sert au diagnostic : combien de séries trop longues, de trous et de
+    journées surchargées le plan contient, ressource par ressource.
+    """
+    politique = politique or politique_souples()
+    resume = {
+        # Version lisible : ce bilan part dans l'API et dans les écrans.
+        'politique': politique_lisible(politique),
+        'active': bool(politique['actives']),
+        'trous': 0,
+        'series_trop_longues': 0,
+        'journees_surchargees': 0,
+        'detail': [],
+    }
+    if not politique['actives']:
+        return resume
+
+    tolerance = politique['tolerance_minutes']
+    pause = politique.get('pause_dejeuner')
+    par_cle = {}
+    for place in placements:
+        jour = _valeur(place, 'jour')
+        groupe = _valeur(place, 'groupe_id')
+        if not groupe or not jour:
+            continue
+        par_cle.setdefault(('G', groupe, jour), []).append(
+            (_valeur(place, 'heure_debut'), _valeur(place, 'heure_fin')))
+
+    for (prefixe, ressource, jour), plages in sorted(par_cle.items()):
+        plages = sorted(plages, key=lambda p: (_minutes(p[0]), _minutes(p[1])))
+        trous = _trous(plages, tolerance, pause=pause)
+        series = _series(plages, tolerance)
+        plus_longue = max(
+            (_charge_serie(plages, debut, fin) for debut, fin in series), default=0)
+        total = sum(_minutes(fin) - _minutes(debut) for debut, fin in plages)
+        if trous:
+            resume['trous'] += len(trous)
+        if plus_longue > int(round(politique['max_heures_consecutives'] * 60)):
+            resume['series_trop_longues'] += 1
+        if total > int(round(politique['max_heures_par_jour'] * 60)):
+            resume['journees_surchargees'] += 1
+        if trous or plus_longue > int(round(politique['max_heures_consecutives'] * 60)) \
+                or total > int(round(politique['max_heures_par_jour'] * 60)):
+            resume['detail'].append({
+                'ressource': f'groupe {ressource}', 'jour': jour,
+                'trous': len(trous),
+                'heures_consecutives_max': _en_heures(plus_longue),
+                'heures_jour': _en_heures(total),
+            })
+    return resume
+
+
+# ── Compatibilité salle / nature de séance (C7) ──────────────────────────────
+
+@lru_cache(maxsize=None)
+def types_salle_compatibles(nature):
+    """Types de salle acceptés pour une nature de séance donnée (C7).
+
+    Une salle générique peut accueillir les cours non spécialisés, mais ne
+    suffit pas à démontrer l'aptitude technique requise pour un TP. Une salle typée par ailleurs (ex. ``TP``) est refusée pour un CM.
+    """
+    # Fonction pure des constantes du module : mémoïsée (lru_cache) car
+    # appelée pour chaque couple (salle, besoin) dans la boucle chaude
+    # du solveur. Ensemble figé : les appelants testent l'appartenance.
+    types = frozenset(SALLES_PAR_NATURE.get(nature, ()))
+    if nature != 'TP':
+        types |= frozenset(SALLES_GENERIQUES)
+    return types
+
+
+def compatible_salle(salle, nature, intitule=None):
+    """Vrai si la salle peut accueillir cette nature de séance."""
+    if salle is None:
+        return False
+    if nature != 'TP':
+        return salle.type_lieu in types_salle_compatibles(nature)
+
+    exigence = _exigence_tp(intitule)
+    if exigence is None:
+        return salle.type_lieu == 'TP'
+
+    type_requis, valeur = exigence
+    if type_requis == 'SPORT':
+        if salle.type_lieu not in ('SPORT', 'GYMNASE'):
+            return False
+        type_espace = salle.type_espace
+        return type_espace is not None and type_espace.code in valeur
+    if type_requis == 'LABORATOIRE':
+        return (
+            salle.type_lieu == 'LABORATOIRE'
+            and valeur in _normaliser_libelle(salle.nom)
+        )
+    return salle.type_lieu == type_requis
+
+
+def capacite_suffisante(salle, effectif):
+    """C4 — ``effectif <= capacité``.
+
+    Une capacité ``None`` signifie « non renseignée » et ne peut pas être
+    traitée comme une capacité suffisante : si l'effectif est connu, la
+    contrainte est bloquante. ``None`` d'effectif = effectif non contraint
+    (groupe sans capacité ou séance sans groupe) : la contrainte n'est pas
+    applicable.
+    """
+    if effectif is None:
+        return True
+    if salle is None or salle.capacite is None:
+        return False
+    return effectif <= salle.capacite
+
+
+# ── Disponibilités horaires (C5 / C6) ─────────────────────────────────────────
+
+def _chevauche(debut_a, fin_a, debut_b, fin_b):
+    return debut_a < fin_b and debut_b < fin_a
+
+
+def indexer_disponibilites(annee_id):
+    """Charge en **une requête** les disponibilités de l'année.
+
+    Pourquoi : les contrôles C5/C6 et la préférence enseignante étaient évalués
+    par une requête SQL *par candidat* (créneau × salle). Sur 3 500 étudiants,
+    cela produisait des dizaines de milliers de requêtes et une génération de
+    plusieurs minutes. L'index est construit une fois, puis consulté en mémoire.
+
+    L'index est volontairement simple : ``{clé: [(debut, fin), …]}`` où la clé
+    est ``(identifiant, jour)``. Le recouvrement horaire reste calculé en
+    Python (portable SQLite/PostgreSQL).
+    """
+    from edts.models import DisponibiliteHoraire
+
+    index = {'indisponibles': {}, 'preferences': {}}
+    lignes = DisponibiliteHoraire.objects.filter(
+        annee_academique_id=annee_id,
+    ).values('enseignant_id', 'salle_id', 'jour', 'heure_debut', 'heure_fin', 'statut')
+    for ligne in lignes.iterator():
+        cle_ressource = (
+            ('E', ligne['enseignant_id']) if ligne['enseignant_id']
+            else ('S', ligne['salle_id'])
+        )
+        cle = (cle_ressource, ligne['jour'])
+        cible = (
+            index['indisponibles'] if ligne['statut'] == 'INDISPONIBLE'
+            else index['preferences'] if ligne['statut'] == 'PREFERENCE'
+            else None
+        )
+        if cible is None:  # DISPONIBLE : ouverture explicite, aucune contrainte
+            continue
+        cible.setdefault(cle, []).append((ligne['heure_debut'], ligne['heure_fin']))
+    return index
+
+
+def _periode_indisponible(enseignant_id, salle_id, annee_id, jour, heure_debut, heure_fin,
+                          index=None):
+    """Contrôle fin : une indisponibilité couvre-t-elle *effectivement* la plage ?
+
+    Le filtrage SQL s'arrête au jour (index ``(enseignant, annee, statut)``) ;
+    le recouvrement horaire est évalué en Python, comme le fait déjà
+    ``edts.services.horaires_en_chevauchement`` — portable SQLite/PostgreSQL.
+
+    ``index`` (issu de :func:`indexer_disponibilites`) évite toute requête :
+    c'est le chemin utilisé par le moteur de génération.
+    """
+    from edts.models import DisponibiliteHoraire
+
+    if enseignant_id:
+        cle = (('E', enseignant_id), jour)
+    elif salle_id:
+        cle = (('S', salle_id), jour)
+    else:
+        return False
+
+    if index is not None:
+        periodes = index['indisponibles'].get(cle, ())
+        return any(
+            _chevauche(heure_debut, heure_fin, debut, fin) for debut, fin in periodes
+        )
+
+    qs = DisponibiliteHoraire.objects.filter(
+        annee_academique_id=annee_id, statut='INDISPONIBLE', jour=jour,
+    )
+    if enseignant_id:
+        qs = qs.filter(enseignant_id=enseignant_id)
+    else:
+        qs = qs.filter(salle_id=salle_id)
+    return any(
+        _chevauche(heure_debut, heure_fin, d.heure_debut, d.heure_fin)
+        for d in qs
+    )
+
+
+def indisponible_enseignant(enseignant_id, annee_id, jour, heure_debut, heure_fin,
+                            index=None):
+    """C5 — l'enseignant est-il déclaré indisponible sur ce créneau ?"""
+    if not enseignant_id:
+        return False
+    return _periode_indisponible(
+        enseignant_id, None, annee_id, jour, heure_debut, heure_fin, index=index,
+    )
+
+
+def indisponible_salle(salle_id, annee_id, jour, heure_debut, heure_fin, index=None):
+    """C6 — la salle est-elle déclarée indisponible sur ce créneau ?"""
+    if not salle_id:
+        return False
+    return _periode_indisponible(
+        None, salle_id, annee_id, jour, heure_debut, heure_fin, index=index,
+    )
+
+
+
+# ── Conflits sur ressource partagée (C1 / C2 / C3) ───────────────────────────
+
+def indexer_occupations(occupations):
+    """Index ``(ressource, jour) → [(début, fin), …]`` des séances placées.
+
+    Le solveur vérifiait chaque candidat contre **toutes** les occupations
+    déjà posées : coût linéaire par candidat, donc quadratique à l'échelle de
+    14 000 étudiants. L'index ramène la vérification aux seules séances du
+    même jour pour la ressource concernée.
+    """
+    index = {}
+    for place in occupations:
+        ajouter_occupation(index, place)
+    return index
+
+
+def _cles_ressource(place):
+    return [
+        (prefixe, ressource, _valeur(place, 'jour'))
+        for prefixe, ressource in (
+            ('E', _valeur(place, 'enseignant_id')),
+            ('G', _valeur(place, 'groupe_id')),
+            ('S', _valeur(place, 'salle_id')),
+        )
+        if ressource
+    ]
+
+
+def ajouter_occupation(index, place):
+    """Ajoute une occupation à l'index incrémental du solveur."""
+    plage = (_valeur(place, 'heure_debut'), _valeur(place, 'heure_fin'))
+    for cle in _cles_ressource(place):
+        index.setdefault(cle, []).append(plage)
+
+
+def retirer_occupation(index, place):
+    """Retire la dernière occupation ajoutée (retour arrière du solveur)."""
+    for cle in _cles_ressource(place):
+        liste = index.get(cle)
+        if liste:
+            liste.pop()
+
+
+def _conflits_depuis_index(index, *, enseignant_id, groupe_id, salle_id,
+                           jour, heure_debut, heure_fin):
+    conflits = []
+    for prefixe, ressource, code, message in (
+        ('E', enseignant_id, C1_CONFLIT_ENSEIGNANT, 'Enseignant déjà occupé sur ce créneau.'),
+        ('G', groupe_id, C2_CONFLIT_GROUPE, 'Groupe déjà occupé sur ce créneau.'),
+        ('S', salle_id, C3_CONFLIT_SALLE, 'Salle déjà occupée sur ce créneau.'),
+    ):
+        if not ressource:
+            continue
+        for debut, fin in index.get((prefixe, ressource, jour), ()):
+            if _chevauche(heure_debut, heure_fin, debut, fin):
+                conflits.append((code, message))
+                break
+    return conflits
+
+
+def conflit_ressource(occupations, *, enseignant_id=None, groupe_id=None, salle_id=None,
+                      jour=None, heure_debut=None, heure_fin=None, exclure=None,
+                      index=None):
+    """Renvoie la liste des occupations déjà placées en conflit.
+
+    ``occupations`` est l'état courant du solveur : une liste d'objets
+    ``Placement`` (ou de dicts à clés ``enseignant_id``/``groupe_id``/
+    ``salle_id``/``jour``/``heure_debut``/``heure_fin``). La vérification est
+    purement fonctionnelle — aucun accès base, donc testable sans fixture.
+
+    ``index`` (voir :func:`indexer_occupations`) évite le parcours complet de
+    la liste quand le solveur le fournit ; le résultat est identique.
+    """
+    if index is not None:
+        return _conflits_depuis_index(
+            index,
+            enseignant_id=enseignant_id, groupe_id=groupe_id, salle_id=salle_id,
+            jour=jour, heure_debut=heure_debut, heure_fin=heure_fin,
+        )
+    conflits = []
+    for place in occupations:
+        if exclure is not None and _identifiant(place) == exclure:
+            continue
+        if _valeur(place, 'jour') != jour:
+            continue
+        if not _chevauche(heure_debut, heure_fin,
+                          _valeur(place, 'heure_debut'),
+                          _valeur(place, 'heure_fin')):
+            continue
+        if enseignant_id and _valeur(place, 'enseignant_id') == enseignant_id:
+            conflits.append((C1_CONFLIT_ENSEIGNANT, 'Enseignant déjà occupé sur ce créneau.'))
+        if groupe_id and _valeur(place, 'groupe_id') == groupe_id:
+            conflits.append((C2_CONFLIT_GROUPE, 'Groupe déjà occupé sur ce créneau.'))
+        if salle_id and _valeur(place, 'salle_id') == salle_id:
+            conflits.append((C3_CONFLIT_SALLE, 'Salle déjà occupée sur ce créneau.'))
+    return conflits
+
+
+def _valeur(place, cle):
+    return place[cle] if isinstance(place, dict) else getattr(place, cle, None)
+
+
+def _identifiant(place):
+    return place.get('id') if isinstance(place, dict) else getattr(place, 'id', None)
+
+
+# ── Heuristique de difficulté (étape 20) ─────────────────────────────────────
+
+def difficulte(besoin, nb_groupes=1):
+    """Score de difficulté — plus il est élevé, plus la séance est traitée tôt.
+
+    L'ordre de résolution demandé est (étape 20) :
+
+    1. salles spécialisées        → un TP sans salle compatible est difficile ;
+    2. enseignants peu disponibles → peu d'options de placement ;
+    3. groupes contraints         → un groupe = pas de repli possible ;
+    4. séances multi-groupes      → partagées par plusieurs groupes ;
+    5. séances ordinaires         → score de base.
+
+    Le score est **déterministe** : aucune valeur aléatoire, afin que deux
+    exécutions sur les mêmes données produisent le même EDT.
+    """
+    score = 0
+    if besoin.nature == 'TP':
+        # Salle spécialisée : le plus contraignant.
+        score += 100
+    if besoin.groupe_id is None:
+        # Pas de groupe : plusieurs cours peuvent cohabiter, donc plus facile.
+        score -= 20
+    if besoin.effectif:
+        # Effectif connu = contrainte de capacité à vérifier.
+        score += 20
+    if besoin.enseignant_id is None:
+        # Sans enseignant, le moteur ne peut pas garantir C1/C5.
+        score += 30
+    score += besoin.nb_seances * 2
+    score += (100 - min(besoin.credits, 100)) // 10
+    return max(score, 0)
+
+
+def trier_par_difficulte(besoins):
+    """Trie les besoins du plus contraint au plus simple (ordre déterministe).
+
+    ``TeachingNeed`` est **immuable** (``frozen=True``) : la difficulté est donc
+    portée par le champ ``difficulte``, renseigné à la construction du besoin.
+    Ce tri ne fait que l'ordonner — il ne modifie rien.
+
+    Le tri est stable sur l'identifiant d'affectation pédagogique : deux
+    besoins de même difficulté restent dans un ordre stable d'une exécution à
+    l'autre, ce qui rend le moteur reproductible (exigence §20).
+    """
+    return sorted(
+        besoins,
+        key=lambda b: (-b.difficulte, b.affectation_pedagogique_id),
+    )
+
+def preference_enseignant(enseignant_id, annee_id, jour, heure_debut, heure_fin,
+                          index=None):
+    """Vrai si l'enseignant a exprimé une *préférence* sur ce créneau (étape K).
+
+    Préférence = contrainte SOUPLE : elle produit une pénalité, jamais un rejet.
+    ``index`` évite une requête par candidat dans le moteur.
+    """
+    from edts.models import DisponibiliteHoraire
+
+    if not enseignant_id or not annee_id:
+        return False
+    if index is not None:
+        periodes = index['preferences'].get((('E', enseignant_id), jour), ())
+        return any(
+            _chevauche(heure_debut, heure_fin, debut, fin) for debut, fin in periodes
+        )
+    return any(
+        _chevauche(heure_debut, heure_fin, d.heure_debut, d.heure_fin)
+        for d in DisponibiliteHoraire.objects.filter(
+            annee_academique_id=annee_id, enseignant_id=enseignant_id,
+            statut='PREFERENCE', jour=jour,
+        )
+    )

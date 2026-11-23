@@ -1,0 +1,171 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "INJS 1 · Bootstrap (préparer l'environnement)",
+      "detail": "Crée .venv, installe les dépendances Python/NPM et écrit l'overlay sandbox. À lancer une fois après chaque clonage.",
+      "type": "shell",
+      "command": "bash",
+      "args": ["arena/bootstrap.sh"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "INJS · API Django :8000 (sandbox SQLite)",
+      "detail": "API sur le port figé 8000, réglages arena.settings_sandbox (SQLite, SMTP local). Penser à appliquer les migrations au premier lancement.",
+      "type": "shell",
+      "command": "bash",
+      "args": ["arena/lancer-api.sh"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+    },
+    {
+      "label": "INJS · Site web :3000 (Vite)",
+      "detail": "Front React/Vite sur le port figé 3000, proxy /api /admin /static /media vers 127.0.0.1:8000.",
+      "type": "shell",
+      "command": "bash",
+      "args": ["arena/lancer-front.sh"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": { "regexp": "." },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^>\\s*vite|^VITE",
+          "endsPattern": "Local:"
+        }
+      },
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+    },
+    {
+      "label": "INJS · Migrations (sandbox)",
+      "detail": "Applique toutes les migrations sur la base SQLite sandbox (à jouer après le bootstrap et après chaque pull).",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "cd backend && PYTHONPATH=${workspaceFolder} .venv/bin/python manage.py migrate --settings=arena.settings_sandbox"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "INJS · API Django :8000 (config réelle, PostgreSQL)",
+      "detail": "API avec config.settings du projet (PostgreSQL attendu via l'environnement).",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": ["manage.py", "runserver", "0.0.0.0:8000"],
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+    },
+    {
+      "label": "INJS · Tests backend (1 695 tests)",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": ["manage.py", "test"],
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "INJS · Tests frontend (Vitest)",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "test:run"],
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "INJS · Lint frontend",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "lint"],
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "problemMatcher": ["$eslint-stylish"]
+    },
+    {
+      "label": "INJS · Build frontend",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "build"],
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "INJS · Hygiène du dépôt (P00-02/P00-05)",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": ["manage.py", "check_repo_hygiene"],
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "INJS · Smoke INJS-LMD (23 étapes)",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": ["manage.py", "smoke_test_injs"],
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "INJS · Sonde sandbox (feux verts)",
+      "type": "shell",
+      "command": "bash",
+      "args": ["arena/probe.sh"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "PR · État et vérifications",
+      "detail": "Affiche les PR de la branche courante et le statut des checks.",
+      "type": "shell",
+      "command": "gh",
+      "args": ["pr", "status", "--repo", "JCKOUASSI/backend-injs"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Déploiement · Sync dry-run vers injs-app",
+      "detail": "Déclenche sync-injs-app.yml en simulation (aucun push) : main -> Tobi-nw/injs-app. Lire le rapport avant d'armer.",
+      "type": "shell",
+      "command": "gh",
+      "args": [
+        "workflow", "run", "sync-injs-app.yml",
+        "--repo", "JCKOUASSI/backend-injs",
+        "-f", "dry_run=true",
+        "-f", "source_ref=main"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Déploiement · Sync push réel vers injs-app",
+      "detail": "ARME le push réel main -> Tobi-nw/injs-app @ main (puis Docker Hub -> VPS). À n'utiliser qu'après un dry-run vert.",
+      "type": "shell",
+      "command": "gh",
+      "args": [
+        "workflow", "run", "sync-injs-app.yml",
+        "--repo", "JCKOUASSI/backend-injs",
+        "-f", "dry_run=false",
+        "-f", "source_ref=main"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Déploiement · Suivre les exécutions du sync",
+      "type": "shell",
+      "command": "gh",
+      "args": [
+        "run", "list",
+        "--repo", "JCKOUASSI/backend-injs",
+        "--workflow=sync-injs-app.yml",
+        "--limit", "5"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

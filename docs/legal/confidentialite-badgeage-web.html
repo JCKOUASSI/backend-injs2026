@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Politique de confidentialité — badgeage web (navigateur)</title>
+  <meta name="description" content="Badgeage par navigateur : QR, matricule, géolocalisation optionnelle, mode hors ligne.">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenu">Aller au contenu</a>
+  <header class="site-header">
+    <div class="wrap">
+      <h1>Politique de confidentialité — badgeage web</h1>
+      <p><a href="index.html">← Tous les documents</a></p>
+    </div>
+  </header>
+  <main id="contenu" class="wrap">
+    <article class="card">
+      <span class="badge">Site web / PWA navigateur</span>
+      <h2>Description du service</h2>
+      <p>Le <strong>badgeage web</strong> permet à un participant ou un formateur d’enregistrer une entrée ou une sortie de présence en saisissant son <strong>matricule ou numéro de badge</strong> et en utilisant un <strong>code QR</strong> (saisie ou scan par la caméra du navigateur). Le service peut fonctionner en <strong>mode hors ligne</strong> : les demandes sont mises en file d’attente sur l’appareil puis synchronisées.</p>
+
+      <h2>Données collectées</h2>
+      <ul>
+        <li>Identifiant de séance (contenu du QR ou token associé) ;</li>
+        <li>Numéro saisi (matricule / badge) ;</li>
+        <li>Horodatage et état de la requête ;</li>
+        <li>Le cas échéant, <strong>latitude et longitude</strong> lorsque la formation impose une vérification de présence sur site (géolocalisation navigateur, soumise à votre consentement via le navigateur).</li>
+      </ul>
+
+      <h2>Caméra et géolocalisation</h2>
+      <p>La <strong>caméra</strong> n’est utilisée que pour la lecture du QR (API navigateur). La <strong>position</strong> n’est demandée que si les règles du site de formation l’exigent ; elle peut être refusée, ce qui peut empêcher le badgeage d’entrée selon la configuration.</p>
+
+      <h2>Cookies et stockage local</h2>
+      <p>Des cookies techniques ou le stockage local du navigateur peuvent être utilisés pour la session, le jeton CSRF ou la file d’attente hors ligne. Voir <a href="politique-cookies.html">Politique cookies &amp; traceurs</a>.</p>
+
+      <h2>Responsable du traitement</h2>
+      <p>[Nom de l’organisme] — contact : [email / URL].</p>
+
+      <h2>Droits</h2>
+      <p>Voir <a href="donnees-personnelles-droits.html">Données personnelles &amp; droits</a>.</p>
+    </article>
+  </main>
+  <footer class="site-footer">
+    <p><a href="index.html">Accueil documents</a> — <time datetime="2026-05-02">2 mai 2026</time></p>
+  </footer>
+</body>
+</html>

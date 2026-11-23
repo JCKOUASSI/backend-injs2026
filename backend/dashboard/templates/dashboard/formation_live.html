@@ -1,0 +1,304 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Suivi en direct — {{ formation.titre }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'web-dashboard' %}">Accueil</a></li>
+<li class="breadcrumb-item"><a href="{% url 'web-formations' %}">Formations</a></li>
+<li class="breadcrumb-item"><a href="{% url 'web-formation-detail' formation.id %}">{{ formation.titre|truncatechars:30 }}</a></li>
+<li class="breadcrumb-item active">Suivi en direct</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+    <div>
+        <h4 class="mb-1">
+            <i class="bi bi-broadcast text-success me-2"></i>{{ formation.titre }}
+        </h4>
+        <small class="text-muted">
+            {{ formation.lieu }} — {{ formation.date_debut|date:"d/m/Y" }} au {{ formation.date_fin|date:"d/m/Y" }}
+        </small>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-success" id="live-badge">
+            <i class="bi bi-circle-fill me-1" style="font-size:0.5rem;"></i> EN DIRECT
+        </span>
+        <span class="text-muted small" id="last-update">Mise à jour...</span>
+    </div>
+</div>
+
+<!-- Stats en direct -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-value" id="stat-attendus">{{ total_attendus }}</div>
+                    <div class="stat-label">Attendus</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-door-open-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-value" id="stat-en-salle">{{ en_salle|length }}</div>
+                    <div class="stat-label">En salle</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-value" id="stat-presents">{{ presents|length }}</div>
+                    <div class="stat-label">Sortis</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-danger bg-opacity-10 text-danger">
+                    <i class="bi bi-x-circle-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-value" id="stat-absents">{{ absents|length }}</div>
+                    <div class="stat-label">Absents</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Taux de présence -->
+<div class="card card-modern mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-semibold">Taux de présence</span>
+            <span class="fw-bold fs-5" id="taux-value">{{ taux_presence }}%</span>
+        </div>
+        <div class="progress" style="height: 12px; border-radius: 6px;">
+            <div class="progress-bar bg-success" role="progressbar"
+                 id="taux-bar" data-width="{{ taux_presence }}">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- En salle -->
+    <div class="col-lg-4">
+        <div class="card card-modern h-100">
+            <div class="card-header d-flex justify-content-between">
+                <span><i class="bi bi-door-open text-warning me-2"></i>En salle</span>
+                <span class="badge bg-warning text-dark" id="count-en-salle">{{ en_salle|length }}</span>
+            </div>
+            <div class="card-body p-0" id="list-en-salle">
+                {% for p in en_salle %}
+                <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                    <div>
+                        <strong>{{ p.nom }} {{ p.prenom }}</strong>
+                        {% if p.type_personne == 'formateur' %}<span class="badge bg-info text-white ms-1" style="font-size:.65rem">Enseignant</span>{% endif %}
+                        <br><small class="text-muted">{{ p.organisation }}</small>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="text-end">
+                            <small class="text-muted">Depuis {{ p.timestamp_entree|date:"H:i" }}</small>
+                            <br><span class="badge bg-warning text-dark">{{ p.duree_actuelle_minutes }} min cumulées</span>
+                            {% if p.nb_sessions > 1 %}
+                            <br><small class="text-muted">{{ p.nb_sessions }} sessions</small>
+                            {% endif %}
+                        </div>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger js-force-pointage"
+                            title="Forcer sortie"
+                            data-bs-toggle="modal"
+                            data-bs-target="#forcePointageModal"
+                            data-personne-id="{{ p.id }}"
+                            data-type-personne="{{ p.type_personne }}"
+                            data-action="SORTIE"
+                        >
+                            <i class="bi bi-box-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox"></i> Personne en salle
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sortis (présents terminés) -->
+    <div class="col-lg-4">
+        <div class="card card-modern h-100">
+            <div class="card-header d-flex justify-content-between">
+                <span><i class="bi bi-check-circle text-success me-2"></i>Sortis</span>
+                <span class="badge bg-success" id="count-presents">{{ presents|length }}</span>
+            </div>
+            <div class="card-body p-0" id="list-presents">
+                {% for p in presents %}
+                <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                    <div>
+                        <strong>{{ p.nom }} {{ p.prenom }}</strong>
+                        {% if p.type_personne == 'formateur' %}<span class="badge bg-info text-white ms-1" style="font-size:.65rem">Enseignant</span>{% endif %}
+                        <br><small class="text-muted">{{ p.organisation }}</small>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="text-end">
+                            <span class="badge bg-success">{{ p.duree_presence_minutes }} min</span>
+                            {% if p.nb_sessions > 1 %}
+                            <br><small class="text-muted">{{ p.nb_sessions }} sessions</small>
+                            {% endif %}
+                        </div>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-warning js-force-pointage"
+                            title="Forcer retour"
+                            data-bs-toggle="modal"
+                            data-bs-target="#forcePointageModal"
+                            data-personne-id="{{ p.id }}"
+                            data-type-personne="{{ p.type_personne }}"
+                            data-action="ENTREE"
+                        >
+                            <i class="bi bi-arrow-return-left"></i>
+                        </button>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox"></i> Aucune sortie
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Absents -->
+    <div class="col-lg-4">
+        <div class="card card-modern h-100">
+            <div class="card-header d-flex justify-content-between">
+                <span><i class="bi bi-x-circle text-danger me-2"></i>Absents</span>
+                <span class="badge bg-danger" id="count-absents">{{ absents|length }}</span>
+            </div>
+            <div class="card-body p-0" id="list-absents">
+                {% for p in absents %}
+                <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                    <div>
+                        <strong>{{ p.nom }} {{ p.prenom }}</strong>
+                        {% if p.type_personne == 'formateur' %}<span class="badge bg-info text-white ms-1" style="font-size:.65rem">Enseignant</span>{% endif %}
+                        <br><small class="text-muted">{{ p.organisation }}</small>
+                    </div>
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-success js-force-pointage"
+                        title="Forcer entrée"
+                        data-bs-toggle="modal"
+                        data-bs-target="#forcePointageModal"
+                        data-personne-id="{{ p.id }}"
+                        data-type-personne="{{ p.type_personne }}"
+                        data-action="ENTREE"
+                    >
+                        <i class="bi bi-box-arrow-in-right"></i>
+                    </button>
+                </div>
+                {% empty %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-emoji-smile"></i> Tout le monde est présent !
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal : Forcer un pointage (motif obligatoire) -->
+<div class="modal fade" id="forcePointageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'web-force-pointage' formation.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="personne_id" id="forcePersonneId">
+                <input type="hidden" name="type_personne" id="forceTypePersonne">
+                <input type="hidden" name="action" id="forceAction">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Forcer un badgeage</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label" for="forceMotif">Motif <span class="text-danger">*</span></label>
+                    <textarea
+                        class="form-control"
+                        name="motif"
+                        id="forceMotif"
+                        rows="3"
+                        maxlength="500"
+                        required
+                        placeholder="Ex: Badge perdu, panne lecteur, correction..."
+                    ></textarea>
+                    <small class="text-muted">Ce motif sera tracé dans le journal d’audit.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-dfrc">Confirmer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+  (function () {
+    const buttons = document.querySelectorAll('.js-force-pointage');
+    const personneId = document.getElementById('forcePersonneId');
+    const typePersonne = document.getElementById('forceTypePersonne');
+    const action = document.getElementById('forceAction');
+    const motif = document.getElementById('forceMotif');
+
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        personneId.value = btn.getAttribute('data-personne-id') || '';
+        typePersonne.value = btn.getAttribute('data-type-personne') || 'participant';
+        action.value = btn.getAttribute('data-action') || 'ENTREE';
+        motif.value = '';
+        setTimeout(() => motif.focus(), 150);
+      });
+    });
+  })();
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Apply progress bar width from data attribute
+var tauxBar = document.getElementById('taux-bar');
+if (tauxBar) {
+    tauxBar.style.width = tauxBar.dataset.width + '%';
+}
+
+// Auto-refresh every 10 seconds (polling — version présentation)
+setTimeout(function() {
+    location.reload();
+}, 10000);
+
+document.getElementById('last-update').textContent =
+    'Mis à jour à ' + new Date().toLocaleTimeString('fr-FR');
+</script>
+{% endblock %}

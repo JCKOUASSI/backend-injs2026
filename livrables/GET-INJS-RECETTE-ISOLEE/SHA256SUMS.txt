@@ -1,0 +1,2 @@
+417e2c415c4c195fea4c0dcc398367b123a6e7ebc4c462972c8b51ca216584eb  getinjs-v2-overlay-recette.tar.gz
+15ab3c7508ff1d382bc26fccbcb6fb2ae602d8691f1cbb060d87a583482560dc  manifest.json

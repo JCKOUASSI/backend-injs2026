@@ -1,0 +1,91 @@
+# Fiche Google Play — langue par défaut : Français (France) — fr-FR
+# Collez chaque bloc dans la Play Console (Présence sur Google Play → Fiches de la boutique).
+
+--------------------------------------------------------------------------------
+NOM DE L'APPLICATION (max 30 caractères)
+--------------------------------------------------------------------------------
+INJS Présences
+
+--------------------------------------------------------------------------------
+BRÈVE DESCRIPTION (max 80 caractères)
+--------------------------------------------------------------------------------
+Badgeage par QR : scan, géolocalisation et présence liés à l’INJS-LMD.
+
+--------------------------------------------------------------------------------
+DESCRIPTION COMPLÈTE (max 4000 caractères)
+--------------------------------------------------------------------------------
+INJS Présences est l’application mobile officielle de présence par QR connectée à la plateforme INJS-LMD de l’INJS Marcory. Elle permet aux participants, encadrants et équipes habilitées d’enregistrer une présence de manière contrôlée, en s’appuyant sur un scan de QR code et sur des informations de localisation lorsque la configuration l’exige.
+
+FONCTIONNALITÉS PRINCIPALES
+• Connexion sécurisée avec les identifiants fournis par votre organisation.
+• Scanner un QR code affiché sur site pour valider un pointage ou une étape de session.
+• Prise en compte de la géolocalisation lorsque le parcours pédagogique ou l’encadrement le prévoit, afin de renforcer la cohérence du badgeage avec le lieu de formation ou d’activité.
+• Suivi de session (heartbeat) côté application pour refléter au mieux la continuité de présence selon les règles définies par votre administration — le comportement exact peut dépendre des paramètres serveur et du rôle de l’utilisateur.
+• Consultation de l’historique des opérations utiles à votre profil.
+
+À QUI S’ADRESSE L’APPLICATION
+INJS Présences est destinée aux utilisateurs disposant d’un compte actif sur l’instance INJS-LMD de leur structure. Sans accès serveur et identifiants valides, l’application ne permet pas d’utiliser les services de badgeage.
+
+DONNÉES ET CONFIDENTIALITÉ
+L’application utilise la caméra pour lire les QR codes et peut utiliser la localisation fine ou approximative selon les autorisations accordées sur l’appareil et les exigences de votre parcours. Les traitements associés sont décrits dans la politique de confidentialité publiée par votre organisme (URL HTTPS à renseigner dans les paramètres de l’application ou fournie par votre administration).
+
+PRÉREQUIS
+• Connexion Internet.
+• Compte utilisateur INJS-LMD fourni par votre organisation.
+• Autorisations demandées à l’usage (caméra, localisation, notifications si nécessaire au suivi en arrière-plan selon votre version Android).
+
+INJS Présences complète le dispositif web (PWA) lorsque vous préférez une expérience native sur smartphone. Pour toute question d’inscription, de droits ou de support, contactez le secrétariat ou l’administrateur de l’INJS.
+
+--------------------------------------------------------------------------------
+VIDÉO PROMOTIONNELLE (facultatif)
+--------------------------------------------------------------------------------
+(Laissez vide ou ajoutez une URL YouTube publique / non répertoriée, sans limite d’âge ni annonces.)
+
+--------------------------------------------------------------------------------
+ASSETS GRAPHIQUES — fichiers générés (dossier play_store_assets/)
+--------------------------------------------------------------------------------
+Importer dans la Play Console les PNG suivants (conformes aux tailles indiquées) :
+
+• play_store_icon_512.png — icône haute résolution 512 × 512 px.
+• play_store_feature_graphic_1024x500.png — image de présentation 1024 × 500 px (texte FR intégré).
+• phone_01_connexion_1080x1920.png — capture Connexion.
+• phone_02_scanner_1080x1920.png — capture Scanner.
+• phone_03_accueil_1080x1920.png — capture Accueil.
+• phone_04_historique_1080x1920.png — capture Historique.
+
+Les visuels d’écran sont des maquettes marketing (aperçu stylisé) : remplacez-les par de vraies captures de l’app Android si vous devez coller exactement à l’UI publiée.
+
+Rappel Play : captures 9:16, ≤ 8 Mo chacune ; au moins 4 côtés ≥ 1080 px pour la promotion (respecté ici).
+
+• Tablettes 7" / 10" / Chromebook / Android XR : non fournis ; ajoutez-les dans la console si vous ciblez ces form factors.
+
+--------------------------------------------------------------------------------
+PLAY CONSOLE — DÉCLARATION « LOCALISATION EN ARRIÈRE-PLAN » (formulaire Google)
+--------------------------------------------------------------------------------
+Champs limités à 500 caractères chacun. Textes à coller tels quels (fr-FR).
+
+--- Quelle est la finalité principale de votre application ? ---
+INJS Présences permet le badgeage sécurisé des participants et encadrants lors des sessions de formation : connexion à la plateforme INJS-LMD, scan de QR codes sur site, et justificatif de présence renforcé par la localisation et un suivi périodique côté serveur lorsque la configuration l’exige.
+
+--- Accès aux données de localisation en arrière-plan (une seule fonctionnalité) ---
+Lorsqu’un pointage sécurisé est actif après un scan de QR, l’app envoie périodiquement un heartbeat au serveur INJS-LMD avec la position GPS pour attester une présence continue sur le lieu, même si l’utilisateur met l’app en arrière-plan. Android affiche une notification de service de localisation en premier plan ; l’utilisateur voit aussi les invites système et les messages si le GPS est désactivé.
+
+--- Instructions vidéo (YouTube, ≤ 30 s, obligatoire pour l’examen) ---
+Storyboard détaillé (plans, voix off, texte Play Console) :
+  → app_review/VIDEO_LOCALISATION_ARriere_PLAN.md
+
+Texte court à coller dans le champ « Instructions vidéo » :
+La vidéo montre : (1) les dialogues in-app « Autoriser la localisation » puis « Suivi en arrière-plan » affichés AVANT les invites système ; (2) l’acceptation des autorisations Android (position pendant l’utilisation, puis Toujours autoriser) ; (3) un badgeage QR avec validation géolocalisée ; (4) la notification persistante « Suivi de présence actif » pendant que l’app est en arrière-plan, illustrant l’envoi périodique de la position GPS au serveur pour le heartbeat de présence.
+
+Résumé du tournage :
+1. Reset des autorisations localisation → montrer les deux dialogues in-app puis les invites système.
+2. Connexion, scan QR, badgeage entrée, bandeau « Suivi de présence actif ».
+3. Notification persistante Android + app en arrière-plan ou écran verrouillé.
+
+Publier sur YouTube (publique ou non répertoriée), sans limite d’âge ni annonces, puis coller l’URL dans Play Console.
+
+--------------------------------------------------------------------------------
+NOTES INTERNES (ne pas coller dans la fiche)
+--------------------------------------------------------------------------------
+• Politique de confidentialité : URL HTTPS obligatoire si l’app déclare la caméra — voir le README du dépôt et le dossier docs/legal (page « application mobile INJS — Présences »).
+• Textes en terminologie INJS-LMD ; les noms de fichiers des pages légales et l’URL GitHub Pages héritée seront renommés avec le rebranding (LOT 12, DA-12).

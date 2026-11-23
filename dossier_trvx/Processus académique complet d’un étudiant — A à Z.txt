@@ -1,0 +1,1253 @@
+Pour INJS-LMD, le parcours étudiant est une chaîne métier continue, depuis la définition de l’offre de formation jusqu’à la diplomation, et non comme une succession d’écrans indépendants.
+
+La chaîne cible est :
+
+Offre de formation → Candidature → Admission → Inscription → Affectation pédagogique → Groupe → Maquette → Enseignements → Présences → Évaluations → Délibérations → Progression → Réinscription → Soutenance/stage si applicable → Diplôme
+
+⸻
+
+1. Processus académique complet d’un étudiant — A à Z
+
+Vue globale
+
+PARAMÉTRAGE INJS-LMD
+        │
+        ▼
+ANNÉE ACADÉMIQUE
+        │
+        ▼
+FORMATION
+        │
+        ▼
+PARCOURS / SPÉCIALITÉ
+        │
+        ▼
+NIVEAU / SEMESTRE
+        │
+        ▼
+MAQUETTE PÉDAGOGIQUE
+        │
+        ├── UE
+        │    └── ECUE
+        │
+        ▼
+OUVERTURE DE CAMPAGNE
+        │
+        ▼
+CANDIDATURE ÉTUDIANT
+        │
+        ▼
+INSTRUCTION DU DOSSIER
+        │
+        ▼
+ADMISSION
+        │
+        ▼
+INSCRIPTION ADMINISTRATIVE
+        │
+        ▼
+INSCRIPTION PÉDAGOGIQUE
+        │
+        ▼
+AFFECTATION FORMATION / PARCOURS / NIVEAU / GROUPE
+        │
+        ▼
+AFFECTATIONS PÉDAGOGIQUES
+        │
+        ▼
+EMPLOI DU TEMPS
+        │
+        ▼
+SÉANCES
+        │
+        ▼
+PRÉSENCES
+        │
+        ▼
+ÉVALUATIONS
+        │
+        ▼
+NOTES
+        │
+        ▼
+CALCUL SEMESTRIEL
+        │
+        ▼
+JURY
+        │
+        ├── AJOURNÉ → RATTRAPAGE → JURY
+        │
+        └── ADMIS
+             │
+             ▼
+       PROGRESSION
+             │
+             ▼
+       ANNÉE / SEMESTRE SUIVANT
+             │
+             ▼
+       DIPLÔMATION
+             │
+             ▼
+       ATTESTATION / DIPLÔME
+
+⸻
+
+2. Phase 0 — Configurer l’INJS-LMD avant tout étudiant
+
+C’est la phase la plus importante.
+
+Aucun étudiant ne devrait être admis dans un parcours qui n’est pas correctement paramétré.
+
+2.1 Année académique
+
+Créer :
+
+2026-2027
+
+Paramètres :
+
+Paramètre	Exemple
+Code	2026-2027
+Date début	01/10/2026
+Date fin	30/09/2027
+Statut	OUVERTE
+Année active	Oui
+
+⸻
+
+3. Phase 1 — Configurer l’offre de formation
+
+Pour INJS-LMD, les formations doivent être les formations INJS validées, et non les anciennes formations CPFAE/Sygepcpfae.
+
+Structure :
+
+Formation
+   │
+   └── Parcours / Spécialité
+          │
+          └── Niveau
+                 │
+                 └── Semestre
+
+Exemple :
+
+Éducation Motricité
+        │
+        └── Parcours Éducation Motricité
+               │
+               ├── L1
+               │   ├── S1
+               │   └── S2
+               │
+               ├── L2
+               │   ├── S3
+               │   └── S4
+               │
+               ├── L3
+               │   ├── S5
+               │   └── S6
+               │
+               ├── M1
+               │   ├── S7
+               │   └── S8
+               │
+               └── M2
+                   ├── S9
+                   └── S10
+
+⸻
+
+4. Phase 2 — Configurer les maquettes pédagogiques
+
+C’est la source de vérité académique.
+
+Pour chaque semestre :
+
+Maquette
+   │
+   ├── UE
+   │    ├── ECUE
+   │    ├── crédits
+   │    ├── coefficient
+   │    ├── volume CM
+   │    ├── volume TD
+   │    ├── volume TP
+   │    └── modalités d'évaluation
+   │
+   └── règles de validation
+
+Exemple L1-S1 :
+
+UE	ECUE	CM	TD	TP	ECTS
+UE01	Anatomie	20h	10h	0h	5
+UE02	Physiologie	20h	10h	0h	5
+UE03	Pédagogie	20h	20h	0h	6
+UE04	Pratique sportive	0h	0h	30h	6
+UE05	Psychologie	15h	15h	0h	4
+UE06	TIC	10h	10h	10h	4
+
+Total :
+
+30 ECTS
+
+Le système doit empêcher une maquette incohérente.
+
+⸻
+
+5. Phase 3 — Configurer les règles académiques
+
+Avant les candidatures, il faut définir :
+
+Admission
+
+* diplôme requis ;
+* niveau d’entrée ;
+* conditions d’âge si applicables ;
+* pièces obligatoires ;
+* critères de sélection ;
+* quotas éventuels ;
+* calendrier.
+
+Inscription
+
+* droits d’inscription ;
+* pièces ;
+* statut étudiant ;
+* année académique ;
+* formation ;
+* parcours ;
+* niveau ;
+* groupe.
+
+Validation
+
+Paramétrer notamment :
+
+ECTS par semestre       = 30
+ECTS par niveau         = 60
+Licence                 = S1 → S6
+Master                  = S7 → S10
+
+Et surtout les règles :
+
+* validation d’UE ;
+* compensation ;
+* moyenne semestrielle ;
+* moyenne annuelle ;
+* rattrapage ;
+* conservation des acquis ;
+* progression ;
+* redoublement ;
+* ajournement ;
+* admission conditionnelle si prévue.
+
+⸻
+
+6. Phase 4 — Configurer les utilisateurs et acteurs
+
+Avant de traiter les étudiants :
+
+INJS_ADMIN
+CHEF_INJS_ADMIN
+SCOLARITÉ
+RESPONSABLE_FORMATION
+RESPONSABLE_PARCOURS
+ENSEIGNANT
+ENCADRANT
+JURY
+DIRECTION
+
+Chaque rôle doit avoir un périmètre clair.
+
+Exemple :
+
+Acteur	Fonction
+Scolarité	dossiers, inscriptions
+Responsable formation	parcours et pédagogie
+Enseignant	séances, évaluations, notes
+Encadrant	stage/mémoire
+Jury	délibération
+Direction	validation institutionnelle
+INJS_ADMIN	administration
+
+⸻
+
+7. Phase 5 — Configurer les ressources pédagogiques
+
+Avant de générer les EDT :
+
+Enseignants
+
+Enseignant
+→ spécialités
+→ matières/ECUE
+→ affectations pédagogiques
+→ disponibilités
+
+Salles
+
+Salle
+→ capacité
+→ type
+→ équipement
+→ disponibilité
+
+Exemple :
+
+AMPHI-A
+capacité = 120
+SALLE-A101
+capacité = 40
+GYMNASE-01
+capacité = 100
+type = SPORT
+
+Groupes
+
+Exemple :
+
+EM-L1-S1-G1
+EM-L1-S1-G2
+EM-L1-S1-G3
+
+⸻
+
+8. Phase 6 — Candidature
+
+L’étudiant arrive dans le système comme candidat, pas encore comme étudiant inscrit.
+
+Exemple :
+
+Koffi Yao dépose une candidature pour Éducation Motricité.
+
+Dossier :
+
+Candidat
+├── identité
+├── contacts
+├── nationalité
+├── diplôme antérieur
+├── établissement précédent
+├── pièces justificatives
+├── choix de formation
+└── choix de parcours
+
+Statuts :
+
+BROUILLON
+→ SOUMISE
+→ À_INSTRUIRE
+→ INCOMPLÈTE
+→ RECEVABLE
+→ NON_RECEVABLE
+→ ADMISE
+→ REJETÉE
+
+⸻
+
+9. Phase 7 — Instruction du dossier
+
+La scolarité contrôle :
+
+* identité ;
+* diplôme ;
+* pièces ;
+* conformité ;
+* conditions d’accès.
+
+Exemple :
+
+Candidat : Koffi Yao
+Formation : Éducation Motricité
+Niveau demandé : L1
+Pièce identité       ✓
+Diplôme requis       ✓
+Photo                ✓
+Relevé                ✓
+Dossier complet      ✓
+
+Le dossier devient :
+
+RECEVABLE
+
+⸻
+
+10. Phase 8 — Admission
+
+La commission/jury d’admission traite les candidatures.
+
+Exemple :
+
+KOFFI YAO
+Décision : ADMIS
+Formation : Éducation Motricité
+Niveau : L1
+Année : 2026-2027
+
+Le système doit conserver :
+
+* décision ;
+* date ;
+* autorité ;
+* numéro de décision ;
+* éventuellement motif.
+
+⸻
+
+11. Phase 9 — Inscription administrative
+
+L’admission ne signifie pas encore inscription pédagogique.
+
+On transforme :
+
+Candidat
+   ↓
+Admis
+   ↓
+Étudiant
+
+Création du dossier étudiant :
+
+ETU-2026-000125
+
+Puis :
+
+Année : 2026-2027
+Formation : EM
+Parcours : EM
+Niveau : L1
+
+Statut :
+
+INSCRIT_ADMINISTRATIVEMENT
+
+⸻
+
+12. Phase 10 — Inscription pédagogique
+
+L’étudiant est maintenant rattaché à son parcours pédagogique.
+
+Étudiant
+ ↓
+Formation
+ ↓
+Parcours
+ ↓
+Niveau
+ ↓
+Semestre
+ ↓
+Groupe
+
+Exemple :
+
+Koffi Yao
+   ↓
+Éducation Motricité
+   ↓
+Parcours EM
+   ↓
+L1
+   ↓
+S1
+   ↓
+Groupe EM-L1-S1-G2
+
+⸻
+
+13. Phase 11 — Affectations pédagogiques
+
+C’est ici que le système relie :
+
+ECUE
++
+Enseignant
++
+Groupe
++
+Volume
+
+Exemple :
+
+Anatomie
+Groupe G2
+Dr Kouadio
+20h CM
+10h TD
+
+Cette relation devient la source du processus EDT.
+
+⸻
+
+14. Phase 12 — Génération de l’emploi du temps
+
+Le moteur récupère :
+
+Maquette
+→ ECUE
+→ volume
+→ groupe
+→ enseignant
+→ salle
+→ disponibilité
+→ créneaux
+
+Puis génère :
+
+Affectation pédagogique
+        ↓
+Besoin horaire
+        ↓
+Créneau
+        ↓
+Salle
+        ↓
+Séance planifiable
+        ↓
+EDT
+
+Exemple :
+
+Lundi 08:00–10:00
+Anatomie
+EM-L1-S1-G2
+Dr Kouadio
+AMPHI-A
+
+⸻
+
+15. Phase 13 — Séances
+
+L’EDT validé produit les séances opérationnelles.
+
+Une séance doit connaître :
+
+année
+formation
+parcours
+niveau
+semestre
+groupe
+UE
+ECUE
+enseignant
+salle
+date
+heure début
+heure fin
+
+Exemple :
+
+28/09/2026
+08:00–10:00
+Éducation Motricité
+L1
+S1
+G2
+Anatomie
+Dr Kouadio
+AMPHI-A
+
+⸻
+
+16. Phase 14 — Présence
+
+La séance devient le référentiel du badgeage.
+
+Séance
+ ↓
+QR
+ ↓
+Étudiant
+ ↓
+Géolocalisation
+ ↓
+Présence
+
+Exemple :
+
+Koffi Yao
+Séance Anatomie
+08:00–10:00
+Badgeage : 07:56
+Position : conforme
+Présence : PRÉSENT
+
+Cela évite de rechercher approximativement « quel cours » est concerné.
+
+⸻
+
+17. Phase 15 — Évaluations
+
+Le système doit ensuite gérer :
+
+Évaluation
+ ↓
+Épreuve
+ ↓
+Étudiants concernés
+ ↓
+Copies/résultats
+ ↓
+Notes
+
+Exemple :
+
+Anatomie
+CC1 : 14/20
+CC2 : 12/20
+Examen : 13/20
+
+Le moteur calcule selon les paramètres de l’UE/ECUE.
+
+⸻
+
+18. Phase 16 — Calcul des résultats
+
+Le système calcule successivement :
+
+Note ECUE
+   ↓
+Note UE
+   ↓
+Moyenne semestre
+   ↓
+ECTS acquis
+   ↓
+Résultat semestre
+
+Exemple :
+
+S1
+Moyenne : 12,84/20
+ECTS : 30/30
+Décision : VALIDÉ
+
+⸻
+
+19. Phase 17 — Jury
+
+Le jury ne doit pas simplement « modifier une moyenne ».
+
+Il doit produire une décision académique traçable.
+
+Exemple :
+
+Jury L1-S1
+28/02/2027
+Étudiant : Koffi Yao
+Moyenne : 12,84
+ECTS : 30
+Décision :
+SEMESTRE VALIDÉ
+
+Le système conserve :
+
+* composition du jury ;
+* date ;
+* procès-verbal ;
+* résultats ;
+* décision ;
+* observations ;
+* version des résultats.
+
+⸻
+
+20. Phase 18 — Progression
+
+Après S1 :
+
+S1 VALIDÉ
+      ↓
+S2 OUVERT
+
+Après S2 :
+
+S1 + S2
+      ↓
+L1
+      ↓
+60 ECTS
+      ↓
+L2
+
+Puis :
+
+L2 → L3 → M1 → M2
+
+La progression doit être pilotée par les règles académiques, pas par une simple modification manuelle du niveau.
+
+⸻
+
+21. Phase 19 — Rattrapage
+
+Exemple :
+
+Koffi obtient :
+
+S1 : 9,7/20
+ECTS acquis : 24
+
+Le système identifie :
+
+UE non validées
+→ ECUE concernés
+→ épreuves de rattrapage
+
+Puis :
+
+Rattrapage
+ ↓
+Nouvelle note
+ ↓
+Recalcul
+ ↓
+Nouveau résultat
+ ↓
+Jury
+
+Les anciennes notes doivent rester historisées.
+
+⸻
+
+22. Phase 20 — Passage au niveau suivant
+
+Si les conditions sont remplies :
+
+L1 VALIDÉ
+      ↓
+L2
+
+L’inscription suivante réutilise les acquis.
+
+Le système doit savoir :
+
+UE acquise
+UE non acquise
+ECUE acquis
+ECTS acquis
+ECTS restant
+
+⸻
+
+23. Phase 21 — Stage / mémoire / soutenance
+
+Selon le parcours :
+
+Stage
+ ↓
+Encadrant
+ ↓
+Convention
+ ↓
+Évaluation
+ ↓
+Rapport
+ ↓
+Soutenance
+ ↓
+Note
+
+ou :
+
+Mémoire
+ ↓
+Directeur
+ ↓
+Dépôt
+ ↓
+Jury
+ ↓
+Soutenance
+ ↓
+Validation
+
+⸻
+
+24. Phase 22 — Diplomation
+
+À la fin du parcours :
+
+S1 ✓
+S2 ✓
+S3 ✓
+S4 ✓
+S5 ✓
+S6 ✓
+S7 ✓
+S8 ✓
+S9 ✓
+S10 ✓
+
+Le système vérifie automatiquement :
+
+* niveaux validés ;
+* semestres validés ;
+* ECTS requis ;
+* UE obligatoires ;
+* stages ;
+* mémoire ;
+* soutenance ;
+* éventuelles dettes pédagogiques ;
+* décisions de jury.
+
+Puis :
+
+ÉLIGIBLE À LA DIPLOMATION
+
+⸻
+
+25. Phase 23 — Délivrance du diplôme
+
+Le système produit :
+
+Diplôme
+Attestation de réussite
+Relevé de notes
+Supplément au diplôme
+
+avec :
+
+numéro
+étudiant
+formation
+parcours
+niveau
+date
+jury
+année académique
+signatures/autorités
+QR de vérification
+
+Le diplôme devient ensuite archivé et vérifiable.
+
+⸻
+
+26. Les modules à configurer AVANT de lancer le premier étudiant
+
+Voici l’ordre que je recommande pour GET-INJS.
+
+PRIORITÉ P0 — socle institutionnel
+
+À faire avant toute campagne :
+
+1. Paramètres INJS
+2. Années académiques
+3. Formations
+4. Parcours / spécialités
+5. Niveaux
+6. Semestres
+7. Règles LMD
+8. Utilisateurs / rôles
+9. Référentiels
+
+⸻
+
+PRIORITÉ P1 — socle pédagogique
+
+Ensuite :
+
+10. Maquettes
+11. UE
+12. ECUE
+13. ECTS
+14. Coefficients
+15. Volumes CM/TD/TP
+16. Modalités d’évaluation
+17. Règles de validation
+18. Règles de compensation
+19. Règles de rattrapage
+20. Règles de progression
+
+⸻
+
+PRIORITÉ P2 — ressources humaines et physiques
+
+21. Enseignants
+22. Compétences / spécialités
+23. Salles
+24. Capacités
+25. Types de salles
+26. Équipements
+27. Disponibilités
+28. Groupes
+29. Affectations pédagogiques
+
+⸻
+
+PRIORITÉ P3 — admission
+
+30. Campagnes
+31. Formulaires de candidature
+32. Pièces
+33. Critères d’admission
+34. Workflow d’instruction
+35. Commissions
+36. Décisions d’admission
+
+⸻
+
+PRIORITÉ P4 — inscription
+
+37. Inscription administrative
+38. Inscription pédagogique
+39. Numéro étudiant
+40. Affectation formation
+41. Affectation parcours
+42. Affectation niveau
+43. Affectation groupe
+
+⸻
+
+PRIORITÉ P5 — enseignement
+
+44. Créneaux
+45. Disponibilités
+46. Génération EDT
+47. Validation EDT
+48. Publication EDT
+49. Séances
+50. Présences
+51. QR
+52. Géolocalisation
+
+⸻
+
+PRIORITÉ P6 — évaluations
+
+53. Types d’épreuves
+54. Sessions d’examen
+55. Copies/résultats
+56. Notes
+57. Calculs
+58. Rattrapages
+59. Délibérations
+60. PV
+
+⸻
+
+PRIORITÉ P7 — progression
+
+61. Acquisitions ECTS
+62. UE acquises
+63. ECUE acquis
+64. Passage
+65. Redoublement
+66. Dettes pédagogiques
+67. Réinscription
+
+⸻
+
+PRIORITÉ P8 — diplomation
+
+68. Stage
+69. Mémoire
+70. Soutenance
+71. Jury final
+72. Éligibilité diplôme
+73. Attestation
+74. Diplôme
+75. Relevé
+76. Supplément
+77. Archivage
+78. Vérification QR
+
+⸻
+
+27. Cas pratique complet : Koffi Yao — Éducation Motricité
+
+Prenons un étudiant fictif.
+
+Étape 1 — Candidature
+
+Koffi Yao
+Candidature 2026-2027
+Éducation Motricité
+L1
+
+Dossier complet.
+
+RECEVABLE
+
+Étape 2 — Admission
+
+Décision : ADMIS
+
+Étape 3 — Inscription
+
+ETU-2026-000125
+Formation : Éducation Motricité
+Parcours : EM
+Niveau : L1
+
+Étape 4 — Groupe
+
+EM-L1-S1-G2
+
+Étape 5 — Pédagogie
+
+Son programme S1 contient :
+
+UE01 Anatomie
+UE02 Physiologie
+UE03 Pédagogie
+UE04 Pratique sportive
+...
+
+Total :
+
+30 ECTS
+
+Étape 6 — EDT
+
+Le système génère :
+
+Lundi
+08h00–10h00
+Anatomie
+G2
+Dr Kouadio
+AMPHI-A
+
+Puis :
+
+Mardi
+10h00–12h00
+Physiologie
+G2
+Dr Yao
+SALLE A101
+
+Étape 7 — Présence
+
+Koffi badge son QR.
+
+Séance réelle
+→ QR
+→ étudiant
+→ présence
+
+Étape 8 — Évaluation
+
+Anatomie
+CC = 13
+Examen = 14
+Note finale = 13,6
+
+Étape 9 — Semestre
+
+Après tous les ECUE :
+
+Moyenne S1 = 12,84
+ECTS = 30
+
+Décision :
+
+S1 VALIDÉ
+
+Étape 10 — S2
+
+Koffi est inscrit en :
+
+L1-S2
+
+Puis même processus :
+
+Cours
+→ séances
+→ présences
+→ évaluations
+→ notes
+→ jury
+
+Étape 11 — Fin L1
+
+S1 = 30 ECTS
+S2 = 30 ECTS
+TOTAL = 60 ECTS
+
+Décision :
+
+L1 VALIDÉ
+
+Étape 12 — L2
+
+L2-S3
+L2-S4
+
+Même logique.
+
+Puis :
+
+L2 = 60 ECTS
+
+Étape 13 — L3
+
+S5
+S6
+
+Puis :
+
+L3 = 60 ECTS
+
+Koffi atteint :
+
+Licence
+180 ECTS
+
+Étape 14 — Master
+
+M1
+S7
+S8
+M2
+S9
+S10
+
+Avec stages/mémoire/soutenance selon le parcours.
+
+Étape 15 — Diplomation
+
+Le système vérifie automatiquement :
+
+✓ S1
+✓ S2
+✓ S3
+✓ S4
+✓ S5
+✓ S6
+✓ S7
+✓ S8
+✓ S9
+✓ S10
+✓ ECTS
+✓ UE obligatoires
+✓ Stage
+✓ Mémoire
+✓ Soutenance
+✓ Jury
+
+Puis :
+
+ÉTUDIANT → DIPLÔMÉ
+
+⸻
+
+28. Ce que GET-INJS doit finalement afficher
+
+Le dossier d’un étudiant devrait pouvoir présenter une timeline académique unique :
+
+KOFFI YAO
+ETU-2026-000125
+Éducation Motricité
+Parcours EM
+Année courante : M2-S10
+────────────────────────────
+CANDIDATURE
+✓ Déposée
+✓ Dossier recevable
+✓ Admis
+INSCRIPTION
+✓ Administrative
+✓ Pédagogique
+PARCOURS
+✓ L1 — 60 ECTS
+✓ L2 — 60 ECTS
+✓ L3 — 60 ECTS
+✓ M1 — 60 ECTS
+● M2 — en cours
+ENSEIGNEMENTS
+✓ EDT
+✓ Séances
+✓ Présences
+ÉVALUATIONS
+✓ Notes
+✓ UE
+✓ Semestres
+✓ Rattrapages
+DIPLOMATION
+○ Stage
+○ Mémoire
+○ Soutenance
+○ Jury final
+○ Diplôme
+
+⸻
+
+29. Architecture fonctionnelle finale GET-INJS
+
+Je structurerais donc le module autour de ces 12 domaines fonctionnels :
+
+GET-INJS
+│
+├── 01. Configuration LMD
+├── 02. Formations & Parcours
+├── 03. Maquettes pédagogiques
+├── 04. Candidatures & Admissions
+├── 05. Étudiants & Inscriptions
+├── 06. Groupes & Affectations
+├── 07. Enseignements & EDT
+├── 08. Séances & Présences
+├── 09. Évaluations & Notes
+├── 10. Jurys & Progression
+├── 11. Stages / Mémoires / Soutenances
+└── 12. Diplômes & Archives
+
+Avec une règle fondamentale :
+
+Le dossier étudiant est la continuité d’un même parcours académique ; il ne faut pas créer des silos indépendants entre candidature, inscription, pédagogie, EDT, notes et diplomation.
+
+Et la chaîne de données centrale devient :
+
+Candidat
+ ↓
+Admission
+ ↓
+Étudiant
+ ↓
+Inscription
+ ↓
+Formation
+ ↓
+Parcours
+ ↓
+Niveau
+ ↓
+Semestre
+ ↓
+Groupe
+ ↓
+Maquette
+ ↓
+UE
+ ↓
+ECUE
+ ↓
+Affectation pédagogique
+ ↓
+EDT
+ ↓
+Séance
+ ↓
+Présence
+ ↓
+Évaluation
+ ↓
+Note
+ ↓
+UE validée
+ ↓
+Semestre validé
+ ↓
+ECTS acquis
+ ↓
+Progression
+ ↓
+Stage / Mémoire / Soutenance
+ ↓
+Jury
+ ↓
+Diplôme
+
+C’est cette chaîne qui doit devenir le fil directeur de GET-INJS. Elle permet ensuite de contrôler automatiquement qu’un étudiant ne peut pas apparaître comme « diplômé » alors qu’une étape académique obligatoire est absente.

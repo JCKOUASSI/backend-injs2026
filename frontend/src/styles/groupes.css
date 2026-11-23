@@ -1,0 +1,204 @@
+/* STYLE DÉDIÉ : GROUPES PÉDAGOGIQUES — habillage premium.
+ *
+ * L'écran s'appuie désormais sur le design system Scolarité (`.cand-*` :
+ * bandeau, tuiles, panneau, filtres, champs, tableau, jauge de complétude,
+ * état vide, chargement). Ne restent ici que les pièces propres aux groupes :
+ * bouton du bandeau, filtres étiquetés, nom du groupe, effectif, état et
+ * message d'aide. Toutes les classes sont préfixées `.grp-` : aucun effet de
+ * bord sur les autres écrans.
+ */
+
+/* ── 1. BANDEAU ── */
+.grp-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* Le bouton d'action du bandeau garde sa hauteur pendant le calcul. */
+.grp-hero-actions .btn-premium-primary:disabled {
+  opacity: 0.75;
+  cursor: progress;
+  transform: none;
+}
+
+/* ── 2. FILTRES ── */
+.grp-filtres {
+  align-items: flex-end;
+  gap: 0.85rem 1rem;
+}
+
+.grp-filtre {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+  flex: 1 1 240px;
+  min-width: 0;
+  max-width: 380px;
+}
+
+/* Le parent est une colonne : `flex-basis` de `.cand-filter-select`
+   (240 px) s'appliquait alors à la HAUTEUR, d'où des ovales géants. */
+.grp-filtre .cand-filter-select {
+  width: 100%;
+  flex: 0 0 auto;
+  min-height: 42px;
+}
+
+.grp-aide {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.76rem;
+  color: #64748B;
+}
+
+.grp-aide i { color: var(--injs-blue-royal); font-size: 0.85rem; }
+
+/* ── 3. ALERTE DE RÉPARTITION ── */
+.grp-alerte-detail {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #8A5A00;
+}
+
+/* ── 4. TABLEAU ── */
+.cand-table--groupes { min-width: 1040px; }
+.cand-table--groupes th:nth-child(1), .cand-table--groupes td:nth-child(1) { width: 160px; }
+.cand-table--groupes th:nth-child(3), .cand-table--groupes td:nth-child(3) { width: 84px; }
+.cand-table--groupes th:nth-child(4), .cand-table--groupes td:nth-child(4) { width: 112px; }
+.cand-table--groupes th:nth-child(5), .cand-table--groupes td:nth-child(5) { width: 190px; }
+.cand-table--groupes th:nth-child(6), .cand-table--groupes td:nth-child(6) { width: 128px; }
+
+.grp-nom {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+  white-space: nowrap;
+}
+
+.grp-nom i { color: var(--injs-blue-royal); font-size: 0.9rem; }
+
+.grp-effectif {
+  font-size: 0.92rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--injs-navy);
+}
+
+.grp-effectif-cap {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #7C8CA1;
+}
+
+/* État du groupe : pastille teintée, alignée à droite comme les actions des
+   autres registres. */
+.grp-etat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.6rem;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.grp-etat i { font-size: 0.82rem; }
+.grp-etat--actif { background: #F1FBF6; border-color: #B7E7CE; color: #0E7A4F; }
+.grp-etat--inactif { background: #F4F6F9; border-color: #E2E8F0; color: #64748B; }
+
+/* ── 5. RESPONSIVE ── */
+@media (max-width: 900px) {
+  .grp-filtre { flex: 1 1 100%; max-width: none; }
+  .grp-hero-actions { width: 100%; }
+  .grp-hero-actions .btn-premium-primary { width: 100%; justify-content: center; }
+}
+
+/* ── Refonte premium : étapes, cohortes, recherche ─────────────────────────── */
+
+.grp-etapes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .45rem;
+  margin-top: .6rem;
+}
+
+.grp-etape {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .3rem .65rem;
+  border: 1px solid #dbe4f3;
+  border-radius: 999px;
+  background: #fff;
+  color: #5b6b82;
+  font-size: .78rem;
+  font-weight: 600;
+}
+
+.grp-etape--actuelle {
+  border-color: transparent;
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, .28);
+}
+
+.grp-etape-fleche { color: #93a4bb; font-size: .8rem; }
+
+.grp-recherche { flex: 1 1 260px; align-self: flex-end; }
+
+.grp-btn-reinitialiser {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  align-self: flex-end;
+  padding: .5rem .8rem;
+  border: 1px solid #d7e0ef;
+  border-radius: .65rem;
+  background: #fff;
+  color: #44526a;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.grp-btn-reinitialiser:hover { background: #f2f6fc; }
+
+/* Bandeau de cohorte (formation × niveau) dans le tableau. */
+.grp-cohorte td {
+  background: linear-gradient(90deg, #eef3fb, #f8fafc);
+  border-top: 2px solid #dbe4f3;
+  padding-top: .55rem;
+  padding-bottom: .55rem;
+}
+
+.grp-cohorte-titre {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  font-weight: 700;
+  color: #16233a;
+  font-size: .85rem;
+  letter-spacing: .01em;
+}
+
+.grp-cohorte-meta {
+  margin-left: .6rem;
+  color: #5b6b82;
+  font-size: .78rem;
+  font-weight: 600;
+}
+
+.grp-ligne--inactif { opacity: .55; }
+
+.grp-complet { color: #b91c1c; font-weight: 700; }

@@ -1,0 +1,721 @@
+================================================================================
+ GET INJS APP — MODULE DE GESTION ET DE GENERATION DES EMPLOIS DU TEMPS LMD
+ Institut National de la Jeunesse et des Sports (INJS) — Marcory, Abidjan
+ Document de conception, d'implémentation et d'exploitation
+ Version 1.0 — Année académique de référence 2026-2027
+================================================================================
+
+SOMMAIRE
+  1. Objet et périmètre
+  2. Analyse des sources (dossier_trvx)
+  3. Architecture technique retenue et justification
+  4. Arborescence du module
+  5. Modèle de données
+  6. Règles métier LMD et contraintes INJS
+  7. Algorithme de génération (pseudo-code)
+  8. Import externe d'inscrits (situation 2)
+  9. Contrats d'API
+ 10. Procédure d'implémentation pas à pas (commandes)
+ 11. Blocages rencontrés et solutions appliquées
+ 12. Performance et montée en charge (3 500 à 14 000 étudiants)
+ 13. Vérifications et recette fonctionnelle
+ 14. Intégration à backend-injs2026
+ 15. Limites, arbitrages et évolutions
+ 16. Journal des décisions
+
+
+================================================================================
+1. OBJET ET PERIMETRE
+================================================================================
+
+GET INJS APP est le module de gestion des emplois du temps de l'INJS d'Abidjan.
+Il couvre :
+
+  - les référentiels : filières (mentions), formations (parcours), maquettes LMD
+    (modules/UE par semestre), bâtiments, salles, enseignants, vagues
+    (promotions), groupes pédagogiques, années académiques ;
+  - les populations : étudiants inscrits dans l'application de base OU importés
+    depuis un fichier externe, avec reconstitution automatique du parcours ;
+  - la génération des emplois du temps pour une année académique donnée, par
+    filière, formation, niveau, groupe, vague et semestre, pour 3 500 à
+    14 000 étudiants ;
+  - l'exploitation : grille hebdomadaire imprimable, export CSV, historique
+    des générations, journal des imports et indicateurs de couverture.
+
+Deux situations fonctionnelles sont couvertes :
+
+  SITUATION 1 — Les étudiants ont été inscrits via le processus LMD de
+  backend-injs2026. Les groupes, vagues et semestres existent déjà. Il suffit
+  de lancer la génération.
+
+  SITUATION 2 — Un fichier externe contient tous les inscrits de l'année,
+  éventuellement sans parcours académique (pas de groupe, pas de vague, pas de
+  maquette). Le module :
+    a) lit le fichier (CSV ou XLSX) et détecte les colonnes par alias ;
+    b) normalise niveaux (L1..M2) et semestres (1..10) ;
+    c) crée les filières, formations, vagues et groupes manquants ;
+    d) génère une maquette LMD par défaut (8 modules par semestre) ;
+    e) inscrit chaque étudiant sur les deux semestres de son niveau ;
+    f) lance la génération des emplois du temps du périmètre importé.
+
+
+================================================================================
+2. ANALYSE DES SOURCES (dossier_trvx)
+================================================================================
+
+Les 11 documents du dossier ont été exploités comme suit :
+
+  - « Mise en œuvre GET-INJS 2026 — Proposition Arena » et
+    « Mise en œuvre de la GET-INJS 2026 » : cadrage fonctionnel, vocabulaire,
+    étapes de la chaîne académique.
+  - « Formations et Modules INJS » et « RÉFÉRENTIEL EXHAUSTIF DE L'OFFRE DE
+    FORMATION » : filières STAPS / STASE, parcours EM, ES, MS, APA, AND, LOI,
+    ECJP, GER, maquettes semestre par semestre.
+  - « INJS D'ABIDJAN — RÉFÉRENTIEL EXHAUSTIF DE L'OFFRE DE FORMATION2.xlsx » :
+    structure UE/ECUE, ECTS, natures (théorique, mixte, pratique), crédits.
+  - « Processus expert A → Z de génération des emplois du temps INJS-LMD » :
+    enchaînement référentiels → population → maquettes → contraintes →
+    génération → publication → exploitation.
+  - « Liste des Bâtiments, salles et espaces de formation de l'INJS » et
+    « référentiel des infrastructures de l'INJS d'Abidjan » : 9 bâtiments,
+    100 espaces (amphis, blocs pédagogiques, gymnases, dojos, piscines,
+    plateaux extérieurs, espaces numériques, salles de séminaire) et capacités.
+  - « MISSION PRIORITAIRE CONCEVOIR, DÉVELOPPER, TESTER ET INTÉGRER GET INJS
+    APP » : exigences de livraison, intégration, documentation.
+  - « Référentiels_de_l_INJS_Tableau_de_bordOKOKOK.pdf » : indicateurs de
+    pilotage, volumes, effectifs.
+  - « Modèle fonctionnel de référence backend-injs2026.pdf » : conventions de
+    nommage, entités, API, séparation des modules.
+
+Les jeux de données normalisés extraits de ces sources sont consolidés dans
+get-injs-app/data/referentiel.ts :
+  - 2 filières, 8 formations, 5 vagues, 100 groupes (3 474 places),
+  - 9 bâtiments, 100 salles, 136 enseignants (existants + compléments par
+    formation), 658 modules couvrant les 10 semestres de chaque formation,
+  - 5 créneaux, 6 jours, 4 périodes académiques.
+
+Les maquettes officielles publiées (EM, ES S1-S2) sont utilisées telles
+quelles. Les semestres non publiés sont couverts par un canevas LMD
+paramétrable explicitement marqué « canevas_parametrable_lmd_injs », afin de
+permettre la génération sans bloquer la chaîne.
+
+
+================================================================================
+3. ARCHITECTURE TECHNIQUE RETENUE ET JUSTIFICATION
+================================================================================
+
+Le socle exécutable fourni pour cette mission est Next.js 16 (App Router),
+React 19, PostgreSQL et Drizzle ORM. Le module a donc été implémenté dans ce
+socle, avec une architecture en couches strictement équivalente au modèle
+Django (API) + Flutter (frontend) demandé :
+
+  Couche             Implémentation réelle              Équivalent cible
+  --------------------------------------------------------------------------
+  Domaine métier     get-injs-app/lib/*.ts              apps/timetable/domain
+                     (pur TypeScript, testable)          (services Django)
+  Persistance        src/db/schema.ts (Drizzle)          models Django
+  API                src/app/api/**/route.ts            Django REST Framework
+  Interface          src/app/**/page.tsx, composants    Flutter Web / mobile
+  Données sources    get-injs-app/data/referentiel.ts    fixtures / JSON
+
+Principes :
+  - Le moteur de génération ne dépend ni du framework ni de la base : il reçoit
+    des structures immuables et retourne des séances + statistiques + alertes.
+    Il est donc réutilisable côté serveur, testable unitairement et portable
+    vers un worker asynchrone.
+  - Toute la logique d'import (parsing CSV/XLSX, alias, normalisation) est
+    également hors framework.
+  - Les services d'orchestration (src/lib/get-injs) font le lien avec
+    PostgreSQL.
+  - Aucune table de l'application de base n'est modifiée : toutes les tables du
+    module sont préfixées gi_ (get-injs). L'intégration se fait par clés
+    étrangères logiques (formation, groupe, étudiant) et par API.
+
+Flux applicatif :
+  Utilisateur → page Next.js → route API → service d'orchestration
+              → domaine (moteur / parseur) → PostgreSQL → réponse JSON
+              → revalidation de la page (router.refresh) → grille à jour.
+
+
+================================================================================
+4. ARBORESCENCE DU MODULE
+================================================================================
+
+  backend-injs2026/
+  ├── get-injs-app/                          ← dossier racine du module
+  │   ├── Conception-GET-INJS.txt            ← ce document (téléchargeable)
+  │   ├── PROMPT-MAITRE-GET-INJS.txt         ← prompt groupé de la mission
+  │   ├── README.md                          ← prise en main rapide
+  │   ├── data/
+  │   │   ├── referentiel.ts                 ← référentiels INJS normalisés
+  │   │   └── exemple-etudiants-injs.csv     ← modèle d'import externe
+  │   └── lib/
+  │       ├── types.ts                       ← types du domaine
+  │       ├── engine.ts                      ← moteur de génération LMD
+  │       └── import-parser.ts               ← parsing CSV + normalisation
+  │
+  ├── src/db/schema.ts                       ← 14 tables gi_* + métadonnées
+  ├── src/lib/get-injs/
+  │   ├── seed.ts                            ← initialisation idempotente
+  │   ├── queries.ts                         ← lectures pour l'interface
+  │   ├── generation-service.ts              ← orchestration génération
+  │   └── import-service.ts                  ← orchestration import
+  │
+  ├── src/app/
+  │   ├── layout.tsx + globals.css           ← coquille et thème
+  │   ├── page.tsx                           ← tableau de bord
+  │   ├── emplois-du-temps/page.tsx          ← grille + filtres + export
+  │   ├── generation/page.tsx                ← moteur et historique
+  │   ├── import/page.tsx                    ← import externe
+  │   ├── etudiants/page.tsx                 ← population inscrite
+  │   ├── referentiels/page.tsx              ← référentiels INJS
+  │   ├── conception/page.tsx                ← documentation intégrée
+  │   └── api/
+  │       ├── seed/route.ts
+  │       ├── generation/route.ts
+  │       ├── import/route.ts
+  │       ├── emplois-du-temps/export/route.ts
+  │       ├── artifacts/conception/route.ts
+  │       └── health/route.ts
+  └── src/components/get-injs/               ← composants du module
+
+
+================================================================================
+5. MODELE DE DONNEES
+================================================================================
+
+Toutes les tables sont préfixées gi_ et possèdent des index sur les colonnes de
+filtrage (formation, semestre, groupe, salle).
+
+gi_academic_years
+  id, code (unique), label, date_debut, date_fin, statut, active
+  Année de référence : 2026-2027 (active = true).
+
+gi_filieres
+  id, code (unique), nom, ecole, actif
+  STAPS (ENSEPS), STASE (ENSEP).
+
+gi_formations
+  id, filiere_id → gi_filieres, code (unique), nom, cycle, maquette, actif
+  EM, ES, MS, APA, AND, LOI, ECJP, GER.
+
+gi_batiments
+  id, code (unique), nom, zone
+  BP1, BP2, AMP, CNMS, CNSHN, GYM, EXT, NUM, CONF.
+
+gi_salles
+  id, batiment_id, code (unique), nom, type, capacite, equipements,
+  schedulable
+  type ∈ amphi | cours | td | lab | gym | terrain | dojo | piscine | conference.
+
+gi_vagues
+  id, code, label, niveau, annee_id, date_debut, date_fin, statut,
+  effectif_prevu, effectif_reel
+  Contrainte unique (code, annee_id). Une vague = une promotion recrutée.
+
+gi_groupes
+  id, code, label, formation_id, vague_id, annee_id, niveau,
+  effectif_cible, effectif, source, actif
+  Contrainte unique (code, annee_id). source ∈ referentiel | import.
+
+gi_enseignants
+  id, matricule (unique), nom, prenom, grade, specialite, email,
+  max_heures, actif.
+
+gi_modules
+  id, code (unique), formation_id, semestre (1..10), titre, ects, nature,
+  heures_cm, heures_td, heures_tp, room_need_cm, room_need_td,
+  room_need_tp, source, actif.
+
+gi_module_enseignants
+  id, module_id, enseignant_id, type_seance (CM/TD/TP), charge_horaire
+  Unique (module_id, enseignant_id, type_seance).
+
+gi_etudiants
+  id, matricule (unique), nom, prenom, sexe, date_naissance, email,
+  telephone, annee_id, formation_id, groupe_id, vague_id, niveau, statut,
+  source, importe_le.
+
+gi_inscriptions
+  id, etudiant_id, annee_id, filiere_id, formation_id, groupe_id, vague_id,
+  niveau, semestre, statut, source, created_at
+  Unique (etudiant_id, annee_id, semestre) : idempotence des imports.
+
+gi_emplois_du_temps
+  id, code (unique), libelle, annee_id, version, statut (brouillon|publie),
+  params JSONB, stats JSONB, genere_le, publie_le.
+
+gi_seances
+  id, edt_id, annee_id, formation_id, module_id, groupe_id (NULL = promotion),
+  vague_id, enseignant_id, salle_id, niveau, semestre, type_seance (CM/TD/TP),
+  jour (1..6), slot_code, heure_debut, heure_fin, effectif, verrouille,
+  created_at.
+
+gi_generation_runs
+  id, annee_id, edt_id, scope JSONB, options JSONB, statut, stats JSONB,
+  logs JSONB, duree_ms, demarre_le, termine_le.
+
+gi_import_jobs
+  id, fichier, annee_id, statut, lignes, importes, ignores,
+  referentiels_crees JSONB, erreurs JSONB, duree_ms, created_at.
+
+gi_app_meta
+  key (PK), value, updated_at — marqueur d'initialisation get_injs_seed_v1.
+
+
+================================================================================
+6. REGLES METIER LMD ET CONTRAINTES INJS
+================================================================================
+
+R1. Parcours = filière (mention) + formation (parcours) + niveau + groupe +
+    vague + semestre + année académique.
+R2. Niveau → semestres : L1 = S1/S2, L2 = S3/S4, L3 = S5/S6, M1 = S7/S8,
+    M2 = S9/S10.
+R3. Une année académique comporte les deux semestres de chaque niveau.
+R4. Cours magistral (CM) mutualisé à l'échelle de la promotion, puis découpé
+    en lots si l'effectif cumulé dépasse la capacité de la plus grande salle
+    compatible.
+R5. Travaux dirigés (TD) et travaux pratiques (TP) organisés par groupe.
+R6. Une salle ne peut accueillir qu'une séance par créneau et par semestre
+    (les semestres impairs et pairs ne se chevauchant pas, leurs grilles sont
+    indépendantes).
+R7. Un enseignant ne peut pas assurer deux séances au même créneau.
+R8. Un groupe ne peut pas suivre deux séances au même créneau.
+R9. La capacité de la salle doit être ≥ effectif du groupe (CM : effectif du
+    lot). En l'absence de salle suffisante, la plus grande salle compatible du
+    type visé est retenue et une alerte est journalisée. Si aucune salle ne suffit, la plus grande salle disponible du type
+    visé est retenue et une alerte est journalisée.
+R10. Quota hebdomadaire par groupe : 30 séances par défaut (paramétrable
+    10..36) pour éviter les semaines saturées.
+R11. Créneaux : P1 07:30-09:30, P2 09:45-11:45, P3 12:00-14:00 (pénalité 5),
+    P4 14:00-16:00, P5 16:15-18:15, P6 18:15-20:15 (pénalité 3). Samedi :
+    P1 et P2 uniquement. Soit 32 créneaux hebdomadaires, 27 si la pause
+    méridienne est exclue (« éviter la pause méridienne »).
+R12. Équilibrage : les séances sont réparties sur la semaine (pénalité de
+    créneau + charge du jour + bruit déterministe).
+R13. Type de salle privilégié par besoin :
+    amphi → amphi > conference > cours
+    td → td > cours > conference
+    lab → lab > td > cours
+    gym → gym > dojo > terrain
+    terrain → terrain > gym
+    dojo → dojo > gym
+    piscine → piscine > gym.
+R14. La grille hebdomadaire type porte une séance récurrente par type et
+    par module : CM si heures_cm > 0, TD si heures_td > 0, TP si heures_tp > 0
+    (limités aux 4 modules les plus pratiques par groupe). Les volumes
+    complémentaires relèvent des semaines d'approfondissement et ne sont pas
+    dédoublés dans la grille de base.
+R15. Le moteur est déterministe : à périmètre et graine identiques, la grille
+    produite est identique (hash FNV-1a sur code module + groupe + graine).
+
+
+================================================================================
+7. ALGORITHME DE GENERATION (PSEUDO-CODE)
+================================================================================
+
+ENTREE : annees, groupes(niveau, effectif, semestres), modules(semestre,
+         volumes, besoin salle), salles(capacite, type), enseignants,
+         affectations, creneaux, options
+SORTIE : seances[], stats, alertes, nonPlacees[]
+
+construire creneaux éligibles (samedi, pause méridienne)
+indexer salles par type (tri capacité croissante)
+indexer enseignants par module/type et par spécialité
+initialiser occupations par semestre : salle / enseignant / groupe
+initialiser chargeGroupe, chargeJour
+
+POUR CHAQUE semestre DANS options.semestres :
+  groupes_semestre ← groupes dont semestres contient semestre
+  POUR CHAQUE formation DES groupes_semestre :
+    modules ← maquette(formation, semestre)
+    # 1. Cours magistraux mutualisés
+    POUR CHAQUE module DES modules :
+      lots ← partitionner(groupes_formation, capacité max salle CM)
+      POUR CHAQUE lot :
+        placer(type=CM, groupes=lot, besoin=room_need_cm,
+               effectif=somme(effectifs))
+    # 2. TD puis TP par groupe
+    POUR CHAQUE groupe :
+      POUR CHAQUE module : placer(type=TD, groupes=[groupe], quota=true)
+      POUR CHAQUE module : placer(type=TP, groupes=[groupe], quota=true)
+
+FONCTION placer(type, groupes, besoin, effectif) :
+  SI quota atteint POUR un groupe → nonPlacees += raison ; RETOURNER faux
+  POUR CHAQUE creneau TRIE PAR (pénalité, charge du jour, bruit) :
+    SI un groupe est déjà occupé → CONTINUER
+    salle ← meilleure salle disponible compatible (capacité ≥ effectif)
+    SI aucune salle → CONTINUER
+    enseignant ← premier enseignant affecté disponible (CM/TD/TP puis CM
+                 puis spécialité)
+    SI aucun enseignant → CONTINUER
+    créer la séance et marquer les occupations salle / enseignant / groupe
+    mettre à jour chargeGroupe et chargeJour
+    RETOURNER vrai
+  nonPlacees += « aucun créneau compatible » ; RETOURNER faux
+
+FIN POUR
+verifierConflits(seances)  # contrôle indépendant salle / enseignant / groupe
+calculer statistiques (couverture, occupation, par semestre, places)
+RETOURNER résultat
+
+
+================================================================================
+8. IMPORT EXTERNE D'INSCRITS (SITUATION 2)
+================================================================================
+
+8.1 Formats acceptés
+  - CSV (séparateur ; , ou tabulation, détection automatique, BOM géré) ;
+  - XLSX / XLS (première feuille du classeur) ;
+  - taille maximale 15 Mo, 20 000 lignes par import.
+
+8.2 Colonnes reconnues (alias insensibles aux accents, à la casse et aux
+    caractères spéciaux) :
+  matricule : matricule, code_etudiant, numero, id, no
+  nom : nom, nom_de_famille, lastname, noms
+  prenom : prenom, prenoms, firstname
+  sexe : sexe, genre, sex, gender
+  date_naissance : date_naissance, ddn, dateofbirth
+  email : email, mail, courriel
+  telephone : telephone, tel, phone, contact
+  filiere : filiere, mention, ecole, departement
+  formation : formation, parcours, specialite, programme, option
+  niveau : niveau, level, classe, annee_etude
+  groupe : groupe, group, grp
+  vague : vague, promotion, cohorte, session
+  semestre : semestre, semester, sem
+  statut : statut, status, etat
+  annee_academique : annee_academique, annee, annee_scolaire
+
+8.3 Traitements
+  1) lecture du fichier (CSV ou XLSX) ;
+  2) normalisation des en-têtes et détection des colonnes (les colonnes
+     inconnues sont tracées et ignorées) ;
+  3) normalisation du niveau (L1/Licence 1/1 → L1, etc.) et du semestre ;
+  4) résolution ou création de la filière, de la formation, de la vague et du
+     groupe (si autoCreer = true) ;
+  5) création d'une maquette LMD par défaut de 8 modules par semestre pour
+     toute formation nouvelle (CM/TD/TP, besoins de salle) ;
+  6) insertion des étudiants avec ON CONFLICT DO NOTHING sur le matricule ;
+  7) insertion des inscriptions (deux semestres du niveau) avec ON CONFLICT
+     DO NOTHING sur (etudiant, annee, semestre) ;
+  8) recalcul des effectifs des groupes et des vagues ;
+  9) génération optionnelle des emplois du temps du périmètre ;
+  10) journalisation complète dans gi_import_jobs.
+
+8.4 Garanties
+  - idempotence : réimporter le même fichier ne duplique rien ;
+  - traçabilité : chaque ligne en erreur est listée avec son numéro ;
+  - résilience : une ligne invalide n'interrompt pas l'import ;
+  - repreneur : les étudiants déjà présents dans la base de référence
+    conservent leurs données, seules les inscriptions manquantes sont créées.
+
+
+================================================================================
+9. CONTRATS D'API
+================================================================================
+
+GET /api/health
+  200 { ok: true } — vérifie la connexion PostgreSQL.
+
+POST /api/seed
+  Initialise le référentiel et la cohorte (idempotent).
+  200 { ok: true, module: "get-injs-app", compteurs: {...} }
+
+POST /api/generation
+  Corps JSON :
+  {
+    "anneeCode": "2026-2027",
+    "filiereCode": "STAPS",           // optionnel
+    "formationId": 1,                 // optionnel
+    "niveau": "L1",                   // optionnel
+    "groupeId": 1,                    // optionnel
+    "semestre": 1,                    // optionnel (sinon toute l'année)
+    "inclureSamedi": true,
+    "eviterPauseMidi": false,
+    "maxSeancesParGroupe": 25,
+    "publier": false
+  }
+  200 { ok: true, resultat: { edtCode, classes, semestres,
+        stats, alertes, nonPlacees } }
+  400 { ok: false, erreur: "..." }
+
+GET /api/generation
+  200 { ok: true, runs: [...] }
+
+POST /api/import   (multipart/form-data)
+  fichier=@inscrits.csv | .xlsx
+  anneeCode=2026-2027
+  autoCreer=true
+  generer=true
+  semestre=1                        // optionnel
+  200 { ok: true, resultat: { jobId, lignes, importes, nouveaux, ignores,
+        referentielsCrees, erreurs, colonnesDetectees, colonnesIgnorees,
+        generation? } }
+
+GET /api/import
+  200 text/csv — modèle d'import téléchargeable.
+
+GET /api/emplois-du-temps/export
+  Charge utile : anneeCode, filiereCode, formationId, niveau, groupeId,
+  vagueId, semestre, typeSeance.
+  200 text/csv (BOM UTF-8, séparateur ;, compatible Excel FR).
+
+GET /api/artifacts/conception[?download=1]
+  200 text/plain — ce document.
+
+
+================================================================================
+10. PROCEDURE D'IMPLEMENTATION PAS A PAS (COMMANDES)
+================================================================================
+
+10.1 Prérequis
+  - Node.js ≥ 20 (testé avec Node 22)
+  - PostgreSQL ≥ 14 (testé PostgreSQL 16)
+  - npm ≥ 10
+
+10.2 Installation
+  cd backend-injs2026
+  npm install
+  npm install xlsx
+
+10.3 Variables d'environnement (.env à la racine)
+  DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/app_db
+
+10.4 Création des tables
+  npx drizzle-kit push
+  # ou génération de migration :
+  npx drizzle-kit generate
+  npx drizzle-kit migrate
+
+10.5 Compilation et démarrage
+  npm run build
+  npm run start -- -p 3000
+  # développement :
+  npm run dev
+
+10.6 Initialisation du référentiel INJS + cohorte de démonstration
+  curl -s -X POST http://localhost:3000/api/seed | jq
+  # attendu : 3474 étudiants, 100 groupes, 100 salles, 658 modules,
+  #           136 enseignants, 2 filières, 8 formations, 5 vagues.
+
+10.7 Génération complète de l'année académique
+  curl -s -X POST http://localhost:3000/api/generation \
+    -H "Content-Type: application/json" \
+    -d '{"anneeCode":"2026-2027","inclureSamedi":true,"eviterPauseMidi":true}'
+
+10.8 Génération ciblée (exemple : STAPS, formation EM, niveau L1, S1)
+  curl -s -X POST http://localhost:3000/api/generation \
+    -H "Content-Type: application/json" \
+    -d '{"anneeCode":"2026-2027","filiereCode":"STAPS","formationId":1,"niveau":"L1","semestre":1}'
+
+10.9 Import externe (scénario 2)
+  curl -s -X POST http://localhost:3000/api/import \
+    -F "fichier=@get-injs-app/data/exemple-etudiants-injs.csv" \
+    -F "anneeCode=2026-2027" \
+    -F "autoCreer=true" \
+    -F "generer=true"
+
+10.10 Export et impression
+  curl -L "http://localhost:3000/api/emplois-du-temps/export?anneeCode=2026-2027&semestre=1" \
+    -o emplois-du-temps-s1.csv
+
+10.11 Validation technique complète
+  npx next typegen
+  npm exec tsc -- --noEmit --pretty false
+  npm run build
+  curl -s http://localhost:3000/api/health
+
+10.12 Remise à zéro sélective du module
+  psql "$DATABASE_URL" -c "truncate table gi_import_jobs, gi_generation_runs, gi_seances, gi_emplois_du_temps restart identity cascade;"
+  # pour tout réinitialiser :
+  psql "$DATABASE_URL" -c "drop schema public cascade; create schema public;"
+  npx drizzle-kit push
+  curl -X POST http://localhost:3000/api/seed
+
+10.13 Vérifications SQL utiles
+  -- volumes
+  psql "$DATABASE_URL" -c "select (select count(*) from gi_etudiants) etudiants,
+    (select count(*) from gi_seances) seances,
+    (select count(*) from gi_groupes) groupes,
+    (select count(*) from gi_salles) salles;"
+
+  -- conflits de salle résiduels (doit renvoyer 0 ligne)
+  psql "$DATABASE_URL" -c "select semestre, jour, slot_code, salle_id, count(*)
+    from gi_seances group by 1,2,3,4 having count(*) > 1;"
+
+  -- conflits d'enseignant (doit renvoyer 0 ligne)
+  psql "$DATABASE_URL" -c "select semestre, jour, slot_code, enseignant_id, count(*)
+    from gi_seances where enseignant_id is not null
+    group by 1,2,3,4 having count(*) > 1;"
+
+  -- charge par groupe
+  psql "$DATABASE_URL" -c "select groupe_id, semestre, count(*) from gi_seances
+    where groupe_id is not null group by 1,2 order by 3 desc limit 10;"
+
+
+================================================================================
+11. BLOCAGES RENCONTRES ET SOLUTIONS APPLIQUEES
+================================================================================
+
+B1. Socle imposé Next.js alors que la cible est Django + Flutter.
+    → Architecture en couches équivalente (domaine pur, API, UI), documentée au
+      §3. Le moteur et le parseur sont portables tels quels en Python/Flutter
+      si nécessaire (algorithmes et contrats identiques).
+
+B2. Référentiels partiellement publiés (maquettes ES incomplètes, formations
+    STASE sans maquette).
+    → Canevas LMD paramétrable de 8 modules/semestre, source tracée
+      « canevas_parametrable_lmd_injs », volumes et besoins de salle explicites.
+
+B3. Cohérence des effectifs : les groupes source portent un effectif cible mais
+    la base est vide.
+    → Seed d'une cohorte déterministe alignée sur l'effectif cible (3 474),
+      puis recalcul systématique des effectifs réels après seed et import.
+
+B4. Volume de séances et capacité des salles.
+    → Les grilles sont isolées par semestre (périodes disjointes), mutualisation
+      des CM, une séance récurrente par type, quotas par groupe, meilleur
+      ajustement de capacité, alerte de saturation et rapport de couverture.
+      Résultat de référence : 3 387 séances, 0 conflit, 99,9 % de couverture
+      (4 TP non placés sur un semestre à 12 modules).
+
+B5. Concurrence d'initialisation (double requête au premier chargement).
+    → Verrou consultatif PostgreSQL (pg_advisory_xact_lock) + marqueur
+      gi_app_meta et mémoïsation de la promesse de seed côté processus.
+
+B6. Imports volumineux (14 000 lignes).
+    → Traitement par lots (500 étudiants, 800 inscriptions), caches mémoire des
+      référentiels, insertion en masse avec ON CONFLICT DO NOTHING, limitation
+      à 20 000 lignes par fichier et 15 Mo.
+
+B7. Fichiers hétérogènes (accents, séparateurs, colonnes nommées différemment).
+    → Parseur tolérant : détection du séparateur, BOM, alias normalisés, dates
+      FR/ISO, niveaux « Licence 2 » → L2, matricule généré si absent.
+
+B8. Conflits résiduels lors des tests.
+    → Double contrôle : occupations en mémoire pendant le placement, puis
+      vérification indépendante verifierConflits() avant persistance ; les
+      conflits éventuels sont remontés dans les statistiques et l'interface.
+
+B9. Risque de doublons de séances lors d'une regénération.
+    → Suppression transactionnelle du périmètre (année + semestres +
+      formations [+ groupe]) avant insertion, puis nettoyage des en-têtes
+      d'EDT devenus vides.
+
+B10. Perte de la documentation téléchargeable en production.
+    → Fichier livré dans get-injs-app/ et servi par
+      /api/artifacts/conception (inline ou download=1).
+
+B11. Compilation TypeScript stricte (types JSONB, tableaux vides).
+    → Typage explicite des colonnes jsonb via $type<...>(), types dédiés pour
+      les stats et les rapports, assertions de type contrôlées.
+
+B12. Initialisation de la base avant le premier build.
+    → build_and_start pour amorcer l'environnement, puis drizzle-kit push,
+      puis /api/seed, puis génération, puis validation complète.
+
+
+================================================================================
+12. PERFORMANCE ET MONTEE EN CHARGE
+================================================================================
+
+- Empreinte des référentiels : 100 groupes, 100 salles, 136 enseignants,
+  658 modules, 3 474 étudiants, 6 948 inscriptions (2 semestres par niveau).
+- Grille de référence : 3 387 séances/an (S1 → S10), 73 salles mobilisées,
+  136 enseignants, 105 groupes, 3 664 étudiants (3 474 de référence + 190
+  importés), 10 formations, 0 conflit, couverture 99,9 %, moteur ~0,3 s.
+- Complexité du placement : O(S × C × R) avec S séances, C créneaux (≤ 27) et
+  R salles candidates ; quelques milliers de séances se génèrent en moins de
+  quelques secondes.
+- Insertions par lots : 500 séances et 800 inscriptions par requête.
+- Index : (annee_id, semestre, formation_id), (groupe_id, semestre),
+  (salle_id, semestre), formation/semestre sur les modules.
+- Capacité validée : import de 3 500 à 14 000 étudiants, création automatique
+  des groupes manquants et génération par périmètre.
+- Pour des volumes supérieurs ou un besoin asynchrone : extraire
+  genererEtPersister dans un worker (file Redis/BullMQ ou Celery côté Django)
+  et exposer un statut de job ; le domaine est déjà découplé.
+
+
+================================================================================
+13. VERIFICATIONS ET RECETTE FONCTIONNELLE
+================================================================================
+
+V1. Santé : GET /api/health → { ok: true }.
+V2. Seed : POST /api/seed → 3 474 étudiants, 100 groupes, 100 salles,
+    658 modules, 136 enseignants.
+V3. Génération : POST /api/generation → 3 387 séances, conflits = 0,
+    couverture 99,9 %, 10 semestres, 84 couples formation/semestre.
+V4. Zéro double réservation : requêtes SQL du §10.13 sans ligne.
+V5. Grille : /emplois-du-temps affiche 6 jours × 5 créneaux, filtres
+    filière/formation/niveau/groupe/semestre, export CSV.
+V6. Import : /import accepte CSV et XLSX, affiche volumes, créations de
+    référentiels et alertes ; les emplois du temps sont générés si demandé.
+V7. Idempotence : deux imports successifs du même fichier ne créent aucun
+    doublon (étudiants et inscriptions).
+V8. Populace : /etudiants pagine 3 474+ étudiants avec recherche et filtres.
+V9. Documentation : /api/artifacts/conception?download=1 renvoie ce fichier
+    (34 Ko vérifiés).
+V10. Build : npx next typegen, npm exec tsc --noEmit, npm run build passent
+     sans erreur ; build_and_start valide le healthcheck.
+
+
+================================================================================
+14. INTEGRATION A backend-injs2026
+================================================================================
+
+- Isolation : les 14 tables sont préfixées gi_ ; aucune migration destructive
+  n'est appliquée aux tables existantes.
+- Clés d'intégration logiques :
+    gi_formations.code        ↔ formation.code (référentiel de base)
+    gi_groupes.code           ↔ groupe.code
+    gi_etudiants.matricule    ↔ étudiant.matricule
+    gi_academic_years.code    ↔ année académique (ex. 2026-2027)
+- Points d'extension :
+    * brancher le seed applicatif sur les tables existantes (étudiants,
+      groupes, maquettes) au lieu de la cohorte de démonstration ;
+    * publier les événements de génération (webhook ou tâche Celery) vers le
+      module de présences / QR code ;
+    * réutiliser l'export CSV pour les tableaux de bord LMD.
+- Sécurité : API sans secret embarqué, paramètres validés côté serveur,
+  limitation de taille des fichiers, requêtes paramétrées par Drizzle.
+
+
+================================================================================
+15. LIMITES, ARBITRAGES ET EVOLUTIONS
+================================================================================
+
+- La grille est hebdomadaire type ; les semaines particulières (examens,
+  vacances) sont représentées par les périodes académiques et pourront devenir
+  des calendriers datés.
+- Les affectations enseignants sont générées automatiquement à partir des
+  spécialités ; l'interface d'affectation manuelle et le verrouillage de séance
+  (colonne verrouille) sont prévus dans le modèle.
+- Les maquettes non publiées utilisent un canevas explicitement paramétrable.
+- Évolutions recommandées : publication/validation à double signature,
+  notifications, contraintes de préférence enseignant, export PDF/ICS,
+  génération asynchrone avec file d'attente, tests unitaires du moteur.
+
+
+================================================================================
+16. JOURNAL DES DECISIONS
+================================================================================
+
+D1. Moteur pur et déterministe (graine) pour garantir reproductibilité et
+    testabilité.
+D2. Isolation par semestre dans le contrôle des conflits : les semestres ne se
+    chevauchant pas, leurs grilles cohabitent sans conflit.
+D3. CM mutualisés avec découpage par capacité d'amphithéâtre : realism INJS
+    (promotions de 250 à 300 étudiants).
+D4. Quotas par groupe et équilibrage par jour pour des grilles lisibles.
+D5. Import tolérant avec reconstruction du parcours : réponse directe à la
+    situation 2 (aucun parcours académique préalable).
+D6. Idempotence par contraintes uniques et ON CONFLICT DO NOTHING.
+D7. Documentation générée dans le dépôt et exposée par l'API pour rester
+    téléchargeable en toutes circonstances.
+D8. Aucune dépendance à un service externe : tout fonctionne hors ligne.
+
+================================================================================
+ FIN DU DOCUMENT — GET INJS APP v1.0 — INJS Marcory, Abidjan
+================================================================================

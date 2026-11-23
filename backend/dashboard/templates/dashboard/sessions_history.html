@@ -1,0 +1,201 @@
+{% extends "dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block title %}Historique des séances — {{ formation.titre }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'web-dashboard' %}">Accueil</a></li>
+<li class="breadcrumb-item"><a href="{% url 'web-formations' %}">Formations</a></li>
+<li class="breadcrumb-item"><a href="{% url 'web-formation-detail' formation.id %}">{{ formation.titre }}</a></li>
+<li class="breadcrumb-item active">Historique des séances</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1"><i class="bi bi-clock-history me-2"></i>Historique des séances</h4>
+        <p class="text-muted mb-0">{{ formation.titre }}</p>
+    </div>
+    <a href="{% url 'web-formation-detail' formation.id %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Retour à la formation
+    </a>
+</div>
+
+<!-- Résumé statistiques -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card card-modern text-center">
+            <div class="card-body py-3">
+                <div class="fs-3 fw-bold">{{ all_sessions|length }}</div>
+                <small class="text-muted">Total séances</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card card-modern text-center border-success">
+            <div class="card-body py-3">
+                <div class="fs-3 fw-bold text-success">{{ nb_terminées }}</div>
+                <small class="text-muted">Terminées</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card card-modern text-center border-primary">
+            <div class="card-body py-3">
+                <div class="fs-3 fw-bold text-primary">{{ nb_en_cours }}</div>
+                <small class="text-muted">En cours</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card card-modern text-center border-info">
+            <div class="card-body py-3">
+                <div class="fs-3 fw-bold text-info">{{ nb_planifiées }}</div>
+                <small class="text-muted">Planifiées</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if total_duree %}
+<div class="alert alert-light border text-center mb-4">
+    <i class="bi bi-stopwatch me-1"></i>
+    Durée totale réalisée : <strong>{{ total_duree }} min</strong>
+    {% if formation.duree_prevue_heures %}
+    / {{ formation.duree_prevue_heures }}h prévues
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Tableau des séances -->
+<div class="card card-modern">
+    <div class="card-body p-0">
+        {% if all_sessions %}
+        <div class="table-responsive">
+            <table class="table table-modern table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:50px;">#</th>
+                        <th>Date</th>
+                        <th>Intitulé</th>
+                        <th>Horaire prévu</th>
+                        <th>Démarrée</th>
+                        <th>Terminée</th>
+                        <th>Durée réelle</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in all_sessions %}
+                    <tr class="{% if s.est_en_cours %}table-success{% elif s.est_planifiee %}table-light{% endif %}">
+                        <td>
+                            <span class="badge {% if s.est_en_cours %}bg-success{% elif s.est_planifiee %}bg-info{% else %}bg-secondary{% endif %}">
+                                {{ s.numero }}
+                            </span>
+                        </td>
+                        <td>
+                            <strong>{{ s.date_journee|date:"d/m/Y" }}</strong>
+                            {% if s.date_journee == today %}
+                            <br><small class="text-success fw-semibold">Aujourd'hui</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ s.intitule|default:"—" }}</td>
+                        <td>
+                            {% if s.heure_debut_prevue %}
+                                {{ s.heure_debut_prevue|time:"H:i" }}
+                                {% if s.heure_fin_prevue %} → {{ s.heure_fin_prevue|time:"H:i" }}{% endif %}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.demarree_le %}
+                                <small>{{ s.demarree_le|date:"d/m H:i" }}</small>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.terminee_le %}
+                                <small>{{ s.terminee_le|date:"d/m H:i" }}</small>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.duree_minutes %}
+                                <strong>{{ s.duree_minutes }} min</strong>
+                            {% elif s.est_en_cours %}
+                                <span class="text-success"><i class="bi bi-broadcast me-1"></i>En cours…</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.est_en_cours %}
+                                <span class="badge bg-success"><i class="bi bi-broadcast me-1"></i>En cours</span>
+                            {% elif s.est_terminee %}
+                                <span class="badge bg-secondary"><i class="bi bi-check-circle me-1"></i>Terminée</span>
+                            {% else %}
+                                <span class="badge bg-info"><i class="bi bi-calendar-event me-1"></i>Planifiée</span>
+                                {% if s.auto_demarrage %}
+                                <br><small class="text-muted"><i class="bi bi-lightning me-1"></i>Auto</small>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                {% if not s.est_planifiee %}
+                                <a href="{% url 'web-session-presences' formation.id s.id %}" class="btn btn-sm btn-outline-primary" title="Voir les présences">
+                                    <i class="bi bi-people"></i>
+                                </a>
+                                <a href="{% url 'export-pdf-session' s.id %}" class="btn btn-sm btn-outline-danger" title="Export PDF" target="_blank">
+                                    <i class="bi bi-file-pdf"></i>
+                                </a>
+                                <a href="{% url 'export-excel-session' s.id %}" class="btn btn-sm btn-outline-success" title="Export Excel" target="_blank">
+                                    <i class="bi bi-file-earmark-excel"></i>
+                                </a>
+                                {% endif %}
+                                {% if user|can_manage_sessions %}
+                                {% if s.est_planifiee %}
+                                <form method="post" action="{% url 'web-session-start' formation.id s.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Démarrer">
+                                        <i class="bi bi-play-fill"></i>
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'web-session-delete' formation.id s.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer"
+                                            onclick="return confirm('Supprimer cette séance ?')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                {% elif s.est_en_cours %}
+                                <form method="post" action="{% url 'web-session-stop' formation.id s.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Terminer">
+                                        <i class="bi bi-stop-fill"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-calendar-x" style="font-size:3rem;opacity:0.3;"></i>
+            <p class="mt-3 mb-0">Aucune séance enregistrée pour cette formation.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

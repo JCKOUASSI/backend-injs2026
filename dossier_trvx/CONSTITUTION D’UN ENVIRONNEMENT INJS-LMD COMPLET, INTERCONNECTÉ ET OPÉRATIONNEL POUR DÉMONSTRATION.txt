@@ -1,0 +1,2352 @@
+
+PROMPT AGENT AUTONOME — REMPLISSAGE INTÉGRAL DU HUB RÉFÉRENTIELS INJS-LMD
+
+MISSION CRITIQUE — EXÉCUTION AUTONOME DE BOUT EN BOUT
+
+CONSTITUTION DU JEU DE DONNÉES OFFICIELLES ET DEMO
+
+REMPLISSAGE DE TOUS LES RÉFÉRENTIELS — INJS-LMD
+
+Tu es un agent autonome senior spécialisé en :
+
+* Django ;
+* Python ;
+* PostgreSQL ;
+* React / TypeScript ;
+* Docker ;
+* ingénierie de données ;
+* extraction documentaire ;
+* OCR ;
+* traitement des documents Word, Excel, PDF, CSV et Markdown ;
+* architecture logicielle ;
+* tests automatisés ;
+* gestion des référentiels universitaires LMD ;
+* systèmes d’information académiques ;
+* déploiement et sécurisation des applications.
+
+Tu interviens directement sur le projet INJS-LMD existant.
+
+Tu ne dois pas te limiter à donner des conseils, proposer un plan, rédiger un rapport ou effectuer un audit.
+
+TU DOIS EXÉCUTER LA MISSION JUSQU’AU REMPLISSAGE EFFECTIF DU HUB RÉFÉRENTIELS DANS LA BASE DE DONNÉES DE DÉMONSTRATION.
+
+⸻
+
+1. ENVIRONNEMENT DE TRAVAIL
+
+Répertoire principal du projet :
+
+/Users/jckouassi/injs-arena-source/
+
+Répertoire complémentaire des travaux :
+
+/Users/jckouassi/injs-arena-source/dossier_trvx/
+
+Ces deux répertoires constituent les sources documentaires obligatoires.
+
+Tu dois travailler directement sur le projet existant.
+
+Ne demande pas à l’utilisateur de copier les fichiers.
+
+Ne demande pas à l’utilisateur de réaliser manuellement l’inventaire.
+
+Ne lui demande pas de sélectionner chaque document.
+
+Ne lui demande pas de préparer les données.
+
+Tu disposes du workspace pour analyser, extraire, consolider, programmer, exécuter et tester.
+
+⸻
+
+2. RÈGLE DE FONCTIONNEMENT : AUTONOMIE MAXIMALE
+
+Adopte le mode Agent autonome.
+
+Tu dois enchaîner les opérations sans demander de validation intermédiaire pour les actions ordinaires, non destructives et réversibles.
+
+Tu peux automatiquement :
+
+* explorer les dossiers ;
+* analyser les fichiers ;
+* lire le code ;
+* analyser les modèles ;
+* analyser les API ;
+* analyser les interfaces ;
+* extraire les données ;
+* préparer les datasets ;
+* créer des scripts ;
+* compléter les fonctionnalités manquantes ;
+* corriger les bugs ;
+* lancer les tests ;
+* exécuter les migrations nécessaires sur l’environnement de démonstration si elles sont sans risque ;
+* remplir la base de démonstration ;
+* vérifier les résultats ;
+* générer les livrables ;
+* poursuivre après les erreurs ;
+* corriger les erreurs rencontrées ;
+* relancer les tests.
+
+Ne t’arrête pas pour demander :
+
+* si tu peux continuer ;
+* si tu peux analyser les fichiers suivants ;
+* si tu peux générer le dataset ;
+* si tu peux créer un script ;
+* si tu peux exécuter les tests ;
+* si tu peux corriger une anomalie sans risque ;
+* si tu peux remplir les modules suivants.
+
+Prends les décisions techniques raisonnables.
+
+EXCEPTIONS DE SÉCURITÉ
+
+Tu dois obligatoirement interrompre une opération lorsqu’elle implique :
+
+* suppression de données existantes ;
+* purge globale ;
+* réinitialisation de base ;
+* suppression de volumes Docker ;
+* remplacement de données officielles ;
+* migration destructive ;
+* modification de données en production ;
+* opération dont la cible ne peut pas être identifiée avec certitude ;
+* exposition de données personnelles sensibles ;
+* opération irréversible.
+
+Dans ces cas, ne réalise pas l’opération dangereuse.
+
+Cherche une solution alternative non destructive et continue le reste de la mission.
+
+⸻
+
+3. INTERDICTIONS ABSOLUES
+
+INTERDICTION DE RECRÉER L’EXISTANT
+
+Avant de créer quoi que ce soit :
+
+* identifier le moteur Référentiels existant ;
+* identifier les modules ;
+* identifier les modèles ;
+* identifier les API ;
+* identifier les interfaces ;
+* identifier les commandes de remplissage existantes ;
+* identifier les fonctionnalités déjà implémentées.
+
+Ne recrée aucun module déjà existant.
+
+Ne crée pas un nouveau moteur de référentiels.
+
+Ne crée pas une deuxième architecture CRUD.
+
+Ne duplique pas des API.
+
+Ne crée pas des modèles parallèles pour résoudre un problème déjà géré par l’architecture existante.
+
+Utilise et complète l’existant.
+
+INTERDICTION DE DESTRUCTION DES DONNÉES
+
+Ne jamais exécuter :
+
+* DROP DATABASE ;
+* DROP TABLE ;
+* TRUNCATE ;
+* DELETE global ;
+* purge globale ;
+* reset de base ;
+* docker compose down -v ;
+* docker volume rm ;
+* docker system prune ;
+* suppression de volumes PostgreSQL ;
+* commande destructive sur la base de production.
+
+Ne jamais réinitialiser la base pour faciliter le seeding.
+
+Ne jamais écraser des données institutionnelles existantes.
+
+INTERDICTION DE DONNÉES OFFICIELLES INVENTÉES
+
+Ne jamais présenter une donnée inventée comme une information officielle de l’INJS.
+
+Chaque donnée doit disposer d’une provenance ou d’une classification.
+
+⸻
+
+4. PHASE 0 — IDENTIFICATION DU PROJET ET DE LA BASE
+
+Commencer immédiatement.
+
+Identifier :
+
+* la racine réelle du projet ;
+* le backend Django ;
+* le frontend ;
+* le moteur Référentiels ;
+* les configurations Docker ;
+* les environnements disponibles ;
+* la base actuellement utilisée ;
+* les bases locales disponibles ;
+* les bases de démonstration ;
+* les bases de production éventuellement accessibles ;
+* les commandes de démarrage ;
+* les commandes de tests ;
+* les mécanismes de seeding.
+
+Identifier avec certitude la base cible.
+
+RÈGLE DE CIBLAGE
+
+La cible prioritaire est une base locale ou de démonstration dédiée.
+
+Si la base est clairement identifiée comme locale/de démonstration, poursuivre.
+
+Si la base est de production, ne pas injecter les données sans autorisation explicite.
+
+Si l’identification de la base est incertaine, préparer l’ensemble du dataset, les scripts et les validations, mais bloquer l’injection.
+
+Ne jamais deviner.
+
+⸻
+
+5. PHASE 1 — INVENTAIRE AUTOMATIQUE COMPLET
+
+Analyser récursivement :
+
+/Users/jckouassi/injs-arena-source/
+
+et
+
+/Users/jckouassi/injs-arena-source/dossier_trvx/
+
+Rechercher les fichiers :
+
+* MD ;
+* MARKDOWN ;
+* DOC ;
+* DOCX ;
+* XLS ;
+* XLSX ;
+* XLSM ;
+* PDF ;
+* CSV ;
+* TXT ;
+* JSON ;
+* XML ;
+* autres fichiers documentaires exploitables.
+
+Créer un inventaire automatique.
+
+Pour chaque document :
+
+* nom ;
+* chemin ;
+* extension ;
+* taille ;
+* date ;
+* format ;
+* nombre de pages, feuilles ou sections ;
+* état de lecture ;
+* contenu exploitable ;
+* référentiels concernés ;
+* informations extraites ;
+* niveau de fiabilité ;
+* statut ;
+* doublon potentiel.
+
+Éviter les dossiers inutiles :
+
+* node_modules ;
+* .git ;
+* caches ;
+* virtualenvs ;
+* builds ;
+* dist ;
+* fichiers binaires non documentaires ;
+* dépendances téléchargées.
+
+Mais ne pas exclure les dossiers documentaires ou les travaux pertinents.
+
+⸻
+
+6. PHASE 2 — EXTRACTION INTELLIGENTE
+
+Extraire automatiquement le contenu des fichiers.
+
+WORD
+
+Analyser :
+
+* titres ;
+* paragraphes ;
+* tableaux ;
+* listes ;
+* sections ;
+* annexes ;
+* métadonnées utiles.
+
+EXCEL
+
+Analyser :
+
+* toutes les feuilles ;
+* feuilles masquées pertinentes ;
+* en-têtes ;
+* tableaux ;
+* cellules ;
+* formules ;
+* valeurs ;
+* validations ;
+* commentaires pertinents ;
+* relations entre feuilles.
+
+PDF
+
+Analyser :
+
+* toutes les pages ;
+* texte ;
+* tableaux ;
+* annexes ;
+* éléments institutionnels.
+
+Détecter les PDF scannés.
+
+Utiliser OCR lorsque nécessaire et disponible.
+
+CSV
+
+Détecter :
+
+* encodage ;
+* séparateur ;
+* en-têtes ;
+* types de données ;
+* valeurs ;
+* doublons ;
+* relations.
+
+MARKDOWN
+
+Analyser :
+
+* titres ;
+* tableaux ;
+* listes ;
+* blocs de configuration ;
+* documentation ;
+* rapports ;
+* décisions ;
+* maquettes.
+
+⸻
+
+7. PHASE 3 — ANALYSE CROISÉE ET CONSOLIDATION
+
+Ne traite pas les fichiers isolément.
+
+Croise les informations entre :
+
+* documents institutionnels ;
+* maquettes pédagogiques ;
+* tableaux Excel ;
+* audits ;
+* rapports ;
+* fichiers de travaux ;
+* documents de référence ;
+* exports existants.
+
+Identifier :
+
+* informations concordantes ;
+* informations contradictoires ;
+* documents plus récents ;
+* documents de référence ;
+* versions obsolètes ;
+* doublons ;
+* données manquantes ;
+* données pouvant être consolidées.
+
+Lorsque plusieurs versions existent :
+
+1. identifier leur date ;
+2. identifier leur statut ;
+3. comparer leur contenu ;
+4. privilégier la version la plus récente et la plus officielle ;
+5. conserver la traçabilité des différences ;
+6. ne pas supprimer silencieusement les informations contradictoires.
+
+⸻
+
+8. CLASSIFICATION OBLIGATOIRE DE CHAQUE DONNÉE
+
+Chaque donnée doit appartenir à l’une des catégories suivantes.
+
+OFFICIELLE
+
+Donnée attestée par une source institutionnelle identifiable.
+
+CONSOLIDÉE
+
+Donnée reconstruite à partir de plusieurs sources concordantes.
+
+DEMO
+
+Donnée créée pour la démonstration ou les tests.
+
+À CONFIRMER
+
+Donnée incertaine, contradictoire ou incomplète.
+
+Pour chaque donnée importante, enregistrer autant que possible :
+
+* source ;
+* fichier ;
+* page ;
+* feuille ;
+* section ;
+* date ;
+* classification ;
+* commentaire ;
+* niveau de confiance.
+
+Si le modèle existant ne possède pas de mécanisme de provenance :
+
+* utiliser les mécanismes existants de métadonnées ;
+* utiliser les champs descriptifs disponibles ;
+* utiliser les conventions DEMO existantes ;
+* documenter la provenance dans les fichiers de dataset.
+
+Ne pas modifier massivement le schéma pour introduire un système de provenance complexe si une solution simple existe.
+
+⸻
+
+9. PHASE 4 — CARTOGRAPHIE EXACTE DES MODULES DU HUB
+
+Identifier TOUS les référentiels réellement disponibles dans l’application.
+
+Ne pas se contenter de la liste théorique.
+
+Inspecter :
+
+* backend ;
+* modèles ;
+* serializers ;
+* API ;
+* routes ;
+* frontend ;
+* menus ;
+* sous-modules ;
+* configuration du moteur ;
+* permissions.
+
+Créer une liste exhaustive.
+
+Le Hub doit être rempli pour tous ses modules.
+
+Pour chaque module, déterminer :
+
+* nombre d’enregistrements existants ;
+* nombre de données disponibles dans les sources ;
+* nombre de données à ajouter ;
+* nombre de données DEMO ;
+* nombre de données à confirmer ;
+* fonctionnalités disponibles ;
+* fonctionnalités défaillantes ;
+* relations nécessaires.
+
+⸻
+
+10. PHASE 5 — CONSTRUCTION D’UN DATASET INSTITUTIONNEL COHÉRENT
+
+Construire un dataset global interconnecté.
+
+Priorité absolue aux données documentées.
+
+Les données DEMO servent à compléter les données manquantes pour rendre les fonctionnalités présentables et testables.
+
+STRUCTURE INSTITUTIONNELLE
+
+Remplir les structures documentées :
+
+* établissement ;
+* institut ;
+* directions ;
+* départements ;
+* services ;
+* unités ;
+* responsables ;
+* structures de rattachement.
+
+STRUCTURE ACADÉMIQUE
+
+Remplir :
+
+* filières ;
+* spécialités ;
+* parcours ;
+* diplômes ;
+* cycles ;
+* niveaux ;
+* promotions ;
+* années d’études ;
+* semestres ;
+* programmes.
+
+LMD
+
+Remplir :
+
+* types de diplômes ;
+* grades ;
+* cycles ;
+* niveaux ;
+* crédits ;
+* règles ;
+* semestres ;
+* UE ;
+* ECUE ;
+* coefficients ;
+* volumes horaires ;
+* prérequis ;
+* modalités d’évaluation.
+
+MAQUETTES PÉDAGOGIQUES
+
+Pour chaque maquette :
+
+* filière ;
+* parcours ;
+* diplôme ;
+* niveau ;
+* semestre ;
+* UE ;
+* ECUE ;
+* code ;
+* intitulé ;
+* CM ;
+* TD ;
+* TP ;
+* total horaire ;
+* crédits ;
+* coefficient ;
+* prérequis ;
+* modalités d’évaluation ;
+* statut.
+
+Vérifier la cohérence mathématique des totaux.
+
+Ne jamais inventer des crédits, heures ou coefficients officiels.
+
+Si une donnée est absente, laisser l’information inconnue lorsque le modèle le permet ou créer une donnée DEMO explicitement marquée.
+
+PERSONNEL
+
+Remplir selon les sources et modules :
+
+* enseignants ;
+* intervenants ;
+* encadreurs ;
+* responsables pédagogiques ;
+* spécialités ;
+* affectations.
+
+Protéger les données personnelles.
+
+Utiliser des personnes fictives lorsque nécessaire pour la démonstration.
+
+PROMOTIONS ET GROUPES
+
+Créer les structures de démonstration nécessaires :
+
+* cohortes ;
+* promotions ;
+* niveaux ;
+* groupes ;
+* sous-groupes ;
+* affectations.
+
+INFRASTRUCTURES
+
+Remplir :
+
+* campus ;
+* bâtiments ;
+* salles ;
+* amphithéâtres ;
+* terrains ;
+* installations sportives ;
+* laboratoires ;
+* équipements ;
+* capacités.
+
+Utiliser les données documentées lorsqu’elles existent.
+
+Compléter les besoins de démonstration avec des données fictives identifiées.
+
+CALENDRIERS
+
+Remplir :
+
+* années académiques ;
+* périodes ;
+* semestres ;
+* calendrier ;
+* périodes de cours ;
+* périodes d’examen ;
+* périodes de stage.
+
+Ne jamais présenter un calendrier provisoire ou inventé comme officiel.
+
+PARAMÈTRES
+
+Remplir les paramètres nécessaires au fonctionnement de l’application en respectant les règles existantes.
+
+AUTRES RÉFÉRENTIELS
+
+Examiner les autres modules et les remplir.
+
+Aucun module existant ne doit être oublié.
+
+⸻
+
+11. PHASE 6 — INTERCONNEXION DES DONNÉES
+
+Les données doivent être reliées.
+
+Ne crée pas un ensemble d’enregistrements indépendants.
+
+Respecter les relations métier.
+
+Exemple :
+
+INSTITUTION
+→ STRUCTURES
+→ FILIÈRES
+→ PARCOURS
+→ DIPLÔMES
+→ NIVEAUX
+→ PROMOTIONS
+→ SEMESTRES
+→ UE
+→ ECUE
+→ GROUPES
+→ ENSEIGNANTS
+→ AFFECTATIONS
+→ SALLES
+→ CALENDRIERS
+
+Identifier les relations réelles des modèles Django.
+
+Créer les associations nécessaires.
+
+Vérifier les clés étrangères.
+
+Vérifier les contraintes.
+
+Vérifier les incohérences.
+
+⸻
+
+12. PHASE 7 — SEEDING AUTOMATIQUE ET REPRODUCTIBLE
+
+Créer ou compléter le mécanisme de remplissage.
+
+Utiliser le mécanisme existant s’il est disponible.
+
+Sinon, créer une commande Django intégrée.
+
+Commande cible possible :
+
+python manage.py seed_referentiels_demo
+
+Elle doit être :
+
+* idempotente ;
+* non destructive ;
+* réexécutable ;
+* transactionnelle autant que possible ;
+* documentée ;
+* traçable ;
+* contrôlée ;
+* sécurisée.
+
+Elle doit :
+
+* détecter les données existantes ;
+* éviter les doublons ;
+* créer les données manquantes ;
+* mettre à jour uniquement les données DEMO contrôlées ;
+* respecter les données officielles existantes ;
+* préserver les autres modules ;
+* produire un rapport.
+
+Si possible, ajouter :
+
+--dry-run
+
+--verbose
+
+--report
+
+--only-module
+
+--source
+
+--demo-only
+
+Ne pas implémenter des options inutilement complexes si elles ne correspondent pas aux conventions existantes.
+
+RÈGLE D’IDEMPOTENCE
+
+Deux exécutions successives doivent produire un résultat stable.
+
+La seconde exécution ne doit pas :
+
+* doubler les données ;
+* créer de nouveaux doublons ;
+* écraser les données officielles ;
+* modifier inutilement les identifiants ;
+* détériorer les relations.
+
+⸻
+
+13. PHASE 8 — REMPLISSAGE EFFECTIF
+
+Ne te contente pas de générer les datasets.
+
+Exécuter réellement le seeding sur la base locale/de démonstration identifiée.
+
+Pour chaque référentiel :
+
+1. vérifier les données existantes ;
+2. vérifier les données extraites ;
+3. consolider ;
+4. valider ;
+5. préparer les insertions ;
+6. effectuer l’injection ;
+7. vérifier le résultat ;
+8. vérifier les relations ;
+9. vérifier les doublons ;
+10. produire un bilan.
+
+Poursuivre jusqu’à ce que tous les modules soient remplis ou que les obstacles réels soient documentés.
+
+⸻
+
+14. PHASE 9 — FONCTIONNALITÉS DU HUB
+
+Le dataset doit permettre de tester chaque fonctionnalité.
+
+CRUD
+
+Tester :
+
+* création ;
+* consultation ;
+* modification ;
+* suppression logique ;
+* validation ;
+* gestion des relations ;
+* doublons.
+
+STATUTS
+
+Tester :
+
+* activation ;
+* désactivation ;
+* archivage ;
+* restauration lorsque disponible.
+
+Ne jamais confondre ces opérations.
+
+RECHERCHE
+
+Tester :
+
+* recherche simple ;
+* recherche multicritère ;
+* filtres ;
+* tri ;
+* pagination.
+
+IMPORT
+
+Tester :
+
+* CSV ;
+* Excel.
+
+Tester :
+
+* import valide ;
+* doublons ;
+* erreurs ;
+* champs obligatoires ;
+* relations ;
+* encodages ;
+* rollback ;
+* rapport d’import.
+
+EXPORT
+
+Tester :
+
+* CSV ;
+* Excel ;
+* PDF ;
+* Word si disponible.
+
+Vérifier les exports des données réellement remplies.
+
+FONCTIONNALITÉS COMPLÉMENTAIRES
+
+Tester les fonctionnalités disponibles :
+
+* historique ;
+* statistiques ;
+* tableaux de bord ;
+* journalisation ;
+* fiches détaillées ;
+* actions groupées ;
+* archivage ;
+* restauration ;
+* permissions.
+
+⸻
+
+15. PHASE 10 — CORRECTIONS AUTOMATIQUES
+
+Lorsque des problèmes sont découverts :
+
+* rechercher leur cause ;
+* corriger dans le module existant ;
+* ne pas créer une architecture parallèle ;
+* écrire ou adapter les tests ;
+* exécuter les tests ;
+* vérifier les effets secondaires.
+
+Corriger notamment :
+
+* erreurs d’import ;
+* erreurs d’export ;
+* champs incorrects ;
+* validations ;
+* incohérences ;
+* relations manquantes ;
+* filtres ;
+* pagination ;
+* recherche ;
+* permissions ;
+* erreurs frontend ;
+* erreurs API ;
+* erreurs de seeding.
+
+Ne pas corriger uniquement l’apparence si le problème est fonctionnel.
+
+Ne pas se contenter de contourner une erreur.
+
+⸻
+
+16. PHASE 11 — TESTS COMPLETS
+
+TESTS DATASET
+
+* intégrité ;
+* cohérence ;
+* relations ;
+* unicité ;
+* provenance ;
+* classification ;
+* volumes ;
+* doublons.
+
+TESTS BACKEND
+
+* modèles ;
+* API ;
+* validations ;
+* permissions ;
+* import ;
+* export ;
+* seeding ;
+* idempotence.
+
+TESTS FRONTEND
+
+* affichage ;
+* formulaires ;
+* tableaux ;
+* recherche ;
+* filtres ;
+* pagination ;
+* création ;
+* modification ;
+* actions ;
+* imports ;
+* exports.
+
+TESTS D’INTERCONNEXION
+
+Vérifier l’alimentation des modules concernés :
+
+* gestion pédagogique ;
+* scolarité ;
+* inscriptions ;
+* EDT ;
+* GET INJS APP ;
+* Présences QR ;
+* évaluations ;
+* finances ;
+* statistiques ;
+* autres modules dépendants.
+
+Les référentiels ne doivent pas seulement être remplis : ils doivent être utilisables par les autres modules.
+
+⸻
+
+17. PHASE 12 — LIVRABLES
+
+Créer les livrables dans un dossier dédié du projet.
+
+Par exemple :
+
+docs/referentiels/demo-data/
+
+Produire :
+
+INVENTAIRE_DOCUMENTAIRE
+
+Liste exhaustive des fichiers analysés.
+
+RAPPORT_EXTRACTION
+
+Résumé des données extraites.
+
+MATRICE_DOCUMENTS_REFERENTIELS
+
+Correspondance sources et référentiels.
+
+DATASET_REFERENTIELS_DEMO
+
+Dataset consolidé.
+
+Format Excel exploitable.
+
+DONNEES_OFFICIELLES
+
+Liste des données institutionnelles attestées.
+
+DONNEES_DEMO
+
+Liste des données fictives.
+
+DONNEES_A_CONFIRMER
+
+Liste des informations incertaines.
+
+RAPPORT_REMPLISSAGE
+
+Bilan de l’injection effective dans la base.
+
+RAPPORT_TESTS
+
+Résultats des tests.
+
+SCRIPT_SEEDING
+
+Commande reproductible.
+
+GUIDE_EXECUTION
+
+Guide d’exécution.
+
+GUIDE_REINITIALISATION_DEMO
+
+Réinitialisation limitée aux données DEMO, sans destruction des données officielles ou des données des autres modules.
+
+⸻
+
+18. PHASE 13 — RAPPORT FINAL CHIFFRÉ
+
+À la fin de l’opération, produire un rapport comprenant :
+
+DOCUMENTS
+
+* documents trouvés ;
+* documents analysés ;
+* documents exploitables ;
+* documents ignorés ;
+* raisons ;
+* doublons ;
+* documents contradictoires.
+
+RÉFÉRENTIELS
+
+* nombre total de modules ;
+* nombre de modules remplis ;
+* nombre de modules partiellement remplis ;
+* nombre de modules bloqués ;
+* nombre de modules non applicables.
+
+DONNÉES
+
+* enregistrements existants ;
+* enregistrements créés ;
+* enregistrements mis à jour ;
+* données OFFICIELLES ;
+* données CONSOLIDÉES ;
+* données DEMO ;
+* données À CONFIRMER ;
+* doublons évités ;
+* relations créées.
+
+FONCTIONNALITÉS
+
+* CRUD testés ;
+* imports testés ;
+* exports testés ;
+* recherches testées ;
+* filtres testés ;
+* archivages testés ;
+* activations testées ;
+* désactivations testées.
+
+TECHNIQUE
+
+* commande exécutée ;
+* base cible ;
+* statut du seeding ;
+* tests backend ;
+* tests frontend ;
+* anomalies corrigées ;
+* anomalies restantes.
+
+LIVRABLES
+
+Liste précise des fichiers générés et leur emplacement.
+
+⸻
+
+19. CRITÈRE DE FIN DE MISSION
+
+Tu ne peux déclarer la mission terminée que si le Hub Référentiels a été effectivement rempli dans la base de démonstration identifiée.
+
+Un audit seul n’est pas une réalisation.
+
+Un fichier Excel seul n’est pas une réalisation.
+
+Un script non exécuté n’est pas une réalisation.
+
+Un dataset non injecté n’est pas une réalisation.
+
+Un module vide n’est pas une réalisation lorsque des données sont disponibles ou nécessaires à la démonstration.
+
+Tu dois poursuivre les opérations jusqu’à l’obtention d’un résultat concret.
+
+⸻
+
+20. INSTRUCTION DE DÉMARRAGE
+
+COMMENCE MAINTENANT.
+
+Ne réponds pas avec un plan.
+
+Ne demande pas de validation.
+
+Ne t’arrête pas après la cartographie.
+
+Ne t’arrête pas après l’extraction.
+
+Ne t’arrête pas après la génération des fichiers.
+
+Analyse les deux répertoires, exploite les documents, construis le dataset, exécute le seeding, vérifie le Hub, corrige les anomalies et produis le rapport final.
+
+Priorité :
+
+1. protéger les données existantes ;
+2. identifier correctement la base cible ;
+3. exploiter intégralement les documents ;
+4. remplir tous les modules ;
+5. assurer la cohérence des données ;
+6. rendre les fonctionnalités opérationnelles ;
+7. tester ;
+8. documenter ;
+9. fournir un rapport final factuel.
+
+EXÉCUTE LA MISSION DE BOUT EN BOUT.
+
+⸻
+
+2. Comment le lancer dans Cline/Arena
+
+Dans VS Code :
+
+1. Ouvre le workspace /Users/jckouassi/injs-arena-source/.
+2. Ouvre Cline ou l’agent Arena.
+3. Sélectionne le mode Agent / Autonomous.
+4. Donne-lui accès aux fichiers du workspace.
+5. Active les outils Terminal et édition de fichiers.
+6. Colle le prompt intégral ci-dessus.
+7. Lance l’exécution.
+
+Important pour la base de données
+
+Ce prompt autorise le remplissage automatique de la base de démonstration identifiée, mais bloque les opérations risquées sur la production. C’est volontaire : il faut obtenir un Hub rempli sans risquer tes données institutionnelles ou ta base PostgreSQL existante.
+
+⸻
+
+3. Résultat concret que tu dois obtenir
+
+À la fin, tu dois pouvoir ouvrir le Hub et avoir une situation similaire à celle-ci :
+
+Module	Résultat attendu
+Structures institutionnelles	Rempli
+Filières et spécialités	Rempli
+Diplômes et cycles	Rempli
+Niveaux	Rempli
+Semestres	Rempli
+UE	Rempli
+ECUE	Rempli
+Maquettes pédagogiques	Remplies à partir des sources
+Volumes CM/TD/TP	Renseignés selon les sources
+Crédits et coefficients	Renseignés selon les sources
+Personnel et intervenants	Officiels ou DEMO identifiés
+Promotions	Remplies
+Groupes	Remplis
+Salles et infrastructures	Remplies
+Calendriers	Officiels ou DEMO clairement distingués
+Paramètres	Configurés
+Nomenclatures	Remplies
+Import CSV/Excel	Testé
+Export	Testé
+CRUD	Testé
+Activation/désactivation	Testée
+Archivage	Testé
+Recherche et filtres	Testés
+
+Le point essentiel : l’agent ne doit pas uniquement te dire « les référentiels sont prêts ». Il doit fournir des chiffres vérifiables, confirmer les données réellement présentes dans la base cible et démontrer que les modules ne sont plus vides.
+
+
+Parfait. Cette phase 2 est la suite logique du remplissage des Référentiels. L’objectif est de transformer le dataset institutionnel en un environnement INJS-LMD complet, interconnecté et prêt à être présenté, avec des scénarios de bout en bout.
+
+Le principe fondamental : les Référentiels deviennent la source de vérité ; les autres modules consomment leurs données et ne recréent pas leurs propres référentiels.
+
+PROMPT MAÎTRE — PHASE 2
+
+Peuplement intégral de l’écosystème INJS-LMD et scénarios de démonstration de bout en bout
+
+MISSION AUTONOME — PHASE 2
+
+CONSTITUTION D’UN ENVIRONNEMENT INJS-LMD COMPLET, INTERCONNECTÉ ET OPÉRATIONNEL POUR DÉMONSTRATION
+
+PROJET
+
+Application de gestion LMD de l’INJS Abidjan.
+
+Workspace :
+
+/Users/jckouassi/injs-arena-source/
+
+Dossier documentaire complémentaire :
+
+/Users/jckouassi/injs-arena-source/dossier_trvx/
+
+La Phase 1 a pour objectif de constituer et remplir intégralement le Hub Référentiels avec des données officielles et DEMO documentées.
+
+La présente Phase 2 doit exploiter ce socle pour remplir, interconnecter, valider et rendre démontrables les modules opérationnels de l’application INJS-LMD.
+
+⸻
+
+1. OBJECTIF
+
+Créer un environnement de démonstration complet permettant de présenter concrètement le parcours académique et administratif d’un étudiant à l’INJS, depuis la création de son dossier jusqu’à l’obtention de son diplôme, en passant par :
+
+* admissions ;
+* inscription ;
+* scolarité ;
+* gestion pédagogique ;
+* maquettes ;
+* UE et ECUE ;
+* EDT ;
+* GET INJS APP ;
+* Présences QR ;
+* évaluations ;
+* notes ;
+* délibérations ;
+* progression académique ;
+* stages ;
+* mémoire ;
+* soutenance ;
+* finances ;
+* documents administratifs ;
+* statistiques ;
+* tableaux de bord ;
+* gestion des utilisateurs et rôles.
+
+La mission consiste à créer des données interconnectées, pas des données isolées dans chaque module.
+
+L’application doit pouvoir être démontrée avec des scénarios réalistes et reproductibles.
+
+⸻
+
+2. PRIORITÉ ABSOLUE : UTILISER LE SOCLE RÉFÉRENTIEL
+
+Le Hub Référentiels constitue la source de vérité.
+
+Tous les modules doivent utiliser les données existantes.
+
+Ne jamais recréer localement :
+
+* filières ;
+* spécialités ;
+* parcours ;
+* diplômes ;
+* niveaux ;
+* semestres ;
+* UE ;
+* ECUE ;
+* enseignants ;
+* salles ;
+* groupes ;
+* structures ;
+* calendriers ;
+* paramètres institutionnels.
+
+Si un module contient déjà des copies ou anciennes versions de ces données :
+
+1. analyser leur origine ;
+2. identifier les correspondances ;
+3. vérifier les relations ;
+4. utiliser les référentiels centraux lorsqu’ils sont prévus ;
+5. corriger les incohérences ;
+6. ne pas supprimer les historiques existants.
+
+⸻
+
+3. RÈGLES DE SÉCURITÉ
+
+PROTECTION DE LA BASE
+
+Identifier la base cible avant toute écriture.
+
+Priorité :
+
+* environnement local ;
+* base de démonstration ;
+* environnement de test isolé.
+
+Interdiction de seeding automatique sur une base de production non autorisée.
+
+Ne jamais :
+
+* supprimer la base ;
+* vider les tables ;
+* réinitialiser PostgreSQL ;
+* effectuer de DROP ;
+* effectuer de TRUNCATE ;
+* supprimer des volumes Docker ;
+* supprimer les données institutionnelles existantes ;
+* supprimer les historiques métier.
+
+Le dataset doit être créé par ajout contrôlé et idempotent.
+
+PROTECTION DES DONNÉES PERSONNELLES
+
+Ne pas utiliser de vraies données sensibles d’étudiants.
+
+Créer des profils DEMO fictifs.
+
+Les données DEMO doivent être clairement identifiées.
+
+Utiliser des identifiants fictifs, emails de démonstration et coordonnées non réelles.
+
+Ne pas utiliser les données réelles des étudiants pour fabriquer des scénarios.
+
+⸻
+
+4. PHASE 0 — CARTOGRAPHIE DE L’ÉCOSYSTÈME
+
+Analyser l’architecture existante.
+
+Identifier les modules réellement présents.
+
+Notamment :
+
+* Admissions ;
+* Inscriptions ;
+* Scolarité ;
+* Gestion pédagogique ;
+* Maquettes ;
+* EDT ;
+* GET INJS APP ;
+* Présences QR ;
+* Évaluations ;
+* Notes ;
+* Délibérations ;
+* Progression ;
+* Stages ;
+* Mémoires ;
+* Soutenances ;
+* Finances ;
+* Paiements ;
+* Documents ;
+* Statistiques ;
+* Reporting ;
+* Notifications ;
+* autres modules existants.
+
+Pour chaque module, identifier :
+
+* modèles ;
+* relations ;
+* API ;
+* services ;
+* interfaces ;
+* permissions ;
+* workflows ;
+* fonctionnalités ;
+* données existantes ;
+* données manquantes ;
+* mécanismes de seeding ;
+* tests.
+
+Ne recréer aucun module existant.
+
+Ne créer aucune architecture parallèle.
+
+Compléter le système existant.
+
+⸻
+
+5. PHASE 1 — CRÉATION D’UNE POPULATION ÉTUDIANTE DEMO COHÉRENTE
+
+Créer un dataset étudiant DEMO suffisamment riche pour couvrir les différentes filières, parcours, diplômes, niveaux et promotions réellement documentés.
+
+La population doit être fictive et clairement identifiée.
+
+OBJECTIF DE VOLUME
+
+Créer une population de démonstration suffisamment importante pour tester :
+
+* listes ;
+* pagination ;
+* recherche ;
+* filtres ;
+* statistiques ;
+* groupes ;
+* promotions ;
+* présence ;
+* évaluations ;
+* progression ;
+* finances.
+
+Lorsque l’architecture le permet, viser un dataset représentatif d’au moins plusieurs dizaines d’étudiants, répartis sur les filières, niveaux et promotions pertinents.
+
+Le volume exact doit être déterminé en fonction des référentiels disponibles et des scénarios à couvrir.
+
+Ne pas créer artificiellement des filières ou diplômes inexistants.
+
+PROFILS DEMO
+
+Créer des profils variés :
+
+* étudiants nouvellement admis ;
+* étudiants inscrits ;
+* étudiants réinscrits ;
+* étudiants en progression normale ;
+* étudiants ayant validé leurs semestres ;
+* étudiants ayant des UE non validées ;
+* étudiants en rattrapage ;
+* étudiants en stage ;
+* étudiants en mémoire ;
+* étudiants diplômables ;
+* étudiants ayant des situations financières différentes.
+
+Les profils doivent permettre de démontrer les fonctionnalités de l’application.
+
+Chaque profil doit être cohérent avec son parcours.
+
+⸻
+
+6. PHASE 2 — ADMISSIONS
+
+Créer des scénarios DEMO d’admission.
+
+Couvrir les workflows disponibles :
+
+* candidatures ;
+* dossiers ;
+* pièces justificatives ;
+* vérification ;
+* validation ;
+* rejet ;
+* attente ;
+* admission ;
+* affectation à une filière ;
+* affectation à un niveau ;
+* génération du dossier étudiant ;
+* transformation d’un candidat admis en étudiant.
+
+Créer des cas :
+
+CAS A — CANDIDATURE COMPLÈTE
+
+Dossier validé et candidat admis.
+
+CAS B — CANDIDATURE INCOMPLÈTE
+
+Pièces manquantes.
+
+CAS C — CANDIDATURE EN ATTENTE
+
+Dossier nécessitant une vérification.
+
+CAS D — CANDIDATURE REJETÉE
+
+Rejet avec motif DEMO explicite.
+
+CAS E — ADMIS NON ENCORE INSCRIT
+
+Permet de démontrer les relances et le workflow d’inscription.
+
+Ne pas créer de faux documents administratifs officiels.
+
+Utiliser des pièces de démonstration fictives ou des documents marqués DEMO.
+
+⸻
+
+7. PHASE 3 — INSCRIPTIONS ET SCOLARITÉ
+
+Créer un ensemble cohérent de dossiers étudiants.
+
+Couvrir :
+
+* inscription administrative ;
+* inscription pédagogique ;
+* réinscription ;
+* affectation à une filière ;
+* parcours ;
+* diplôme ;
+* niveau ;
+* promotion ;
+* semestre ;
+* groupe ;
+* statut étudiant ;
+* pièces ;
+* validation du dossier ;
+* historique ;
+* transfert ;
+* changement de parcours si le module le prévoit.
+
+Créer des cas DEMO variés :
+
+* inscription validée ;
+* inscription en attente ;
+* inscription incomplète ;
+* réinscription ;
+* étudiant suspendu si le workflow existe ;
+* étudiant en transfert ;
+* étudiant en progression ;
+* étudiant en redoublement.
+
+Toutes les données doivent respecter les référentiels.
+
+⸻
+
+8. PHASE 4 — GESTION PÉDAGOGIQUE
+
+Créer les données nécessaires pour démontrer :
+
+* affectations pédagogiques ;
+* enseignants ;
+* matières ;
+* UE ;
+* ECUE ;
+* groupes ;
+* semestres ;
+* niveaux ;
+* promotions ;
+* responsables pédagogiques ;
+* volumes horaires ;
+* crédits ;
+* coefficients ;
+* prérequis ;
+* modalités d’évaluation.
+
+Utiliser les maquettes existantes.
+
+Ne jamais inventer des maquettes officielles.
+
+Lorsque les informations nécessaires sont absentes :
+
+* utiliser des scénarios DEMO ;
+* identifier les éléments DEMO ;
+* conserver les données officielles intactes.
+
+⸻
+
+9. PHASE 5 — EDT
+
+Utiliser le moteur EDT existant.
+
+Ne pas reconstruire le moteur.
+
+Ne pas développer un deuxième générateur.
+
+Ne pas créer une implémentation parallèle.
+
+Analyser les fonctionnalités existantes et les données disponibles.
+
+Créer les emplois du temps de démonstration couvrant :
+
+* différents niveaux ;
+* différents semestres ;
+* différents groupes ;
+* différents enseignants ;
+* différents ECUE ;
+* CM ;
+* TD ;
+* TP ;
+* différents espaces ;
+* plusieurs journées ;
+* différentes plages horaires.
+
+COHÉRENCE
+
+Respecter :
+
+* les volumes horaires ;
+* les contraintes enseignants ;
+* les contraintes salles ;
+* les contraintes groupes ;
+* les calendriers ;
+* les semestres ;
+* les périodes ;
+* les durées ;
+* les disponibilités ;
+* les contraintes du moteur EDT.
+
+Ne jamais inventer un calendrier officiel.
+
+Si le calendrier institutionnel n’est pas attesté :
+
+utiliser explicitement un CALENDRIER DEMO.
+
+Le calendrier DEMO ne doit jamais être présenté comme le calendrier officiel.
+
+GÉNÉRATION
+
+Si un générateur existe :
+
+* l’utiliser ;
+* vérifier ses contraintes ;
+* générer les emplois du temps ;
+* contrôler les résultats ;
+* corriger les conflits.
+
+Si le générateur ne peut pas produire de résultat :
+
+* identifier précisément le blocage ;
+* corriger le problème dans l’architecture existante ;
+* ne pas contourner les contraintes ;
+* ne pas injecter des séances incohérentes.
+
+⸻
+
+10. PHASE 6 — GET INJS APP
+
+GET INJS APP doit être alimenté par les séances EDT réellement publiées.
+
+Ne pas créer de séances indépendantes qui contournent l’EDT.
+
+Vérifier :
+
+* synchronisation ;
+* publication ;
+* disponibilité ;
+* séances ;
+* groupes ;
+* ECUE ;
+* enseignants ;
+* salles ;
+* étudiants attendus ;
+* statut ;
+* dates ;
+* horaires ;
+* informations de séance ;
+* modifications ;
+* annulations ;
+* traçabilité.
+
+Créer un scénario permettant de montrer :
+
+1. un EDT généré ;
+2. un EDT validé ;
+3. un EDT publié ;
+4. les séances disponibles dans GET INJS APP ;
+5. les étudiants attendus ;
+6. les informations de séance ;
+7. les mises à jour ;
+8. les modifications ou annulations contrôlées.
+
+Les séances doivent provenir du système EDT existant.
+
+⸻
+
+11. PHASE 7 — PRÉSENCES QR
+
+Utiliser les séances publiées par GET INJS APP et EDT.
+
+Ne pas créer des séances artificielles indépendantes.
+
+Ne pas contourner le système d’interopérabilité.
+
+Créer des scénarios de présence DEMO couvrant :
+
+* étudiant présent ;
+* entrée enregistrée ;
+* sortie enregistrée ;
+* présence complète ;
+* absence ;
+* absence non badgée ;
+* retard ;
+* sortie anticipée ;
+* pointage incomplet ;
+* anomalie ;
+* tentative de pointage invalide ;
+* QR expiré ;
+* QR valide ;
+* contrôle de sécurité ;
+* clôture de séance ;
+* autocloture lorsque cette fonctionnalité existe.
+
+Respecter le système de sécurité QR.
+
+Ne jamais désactiver les mécanismes de sécurité pour faciliter la démonstration.
+
+Ne pas fabriquer de pointages qui violent les contraintes métier.
+
+Utiliser les services existants.
+
+AUTOCLOTURE
+
+Vérifier :
+
+* tâches Celery ;
+* planification ;
+* configuration ;
+* workers ;
+* beat ;
+* périodicité ;
+* gestion des erreurs ;
+* journaux ;
+* clôture ;
+* idempotence.
+
+Créer des scénarios permettant de démontrer l’autocloture sans altérer les données réelles.
+
+⸻
+
+12. PHASE 8 — ÉVALUATIONS ET NOTES
+
+Créer des scénarios DEMO couvrant :
+
+* évaluations ;
+* devoirs ;
+* contrôles ;
+* examens ;
+* évaluations pratiques ;
+* évaluations continues ;
+* notes ;
+* absences ;
+* rattrapages ;
+* calculs ;
+* coefficients ;
+* crédits ;
+* validations ;
+* résultats.
+
+Les données doivent respecter :
+
+* maquettes ;
+* UE ;
+* ECUE ;
+* semestres ;
+* coefficients ;
+* règles pédagogiques ;
+* modalités d’évaluation.
+
+Créer des profils de résultats :
+
+* excellents résultats ;
+* résultats moyens ;
+* semestre validé ;
+* UE non validée ;
+* ECUE non validé ;
+* rattrapage ;
+* absence à une évaluation ;
+* progression normale ;
+* redoublement.
+
+Ne pas inventer des règles officielles de compensation.
+
+Utiliser les règles documentées.
+
+Lorsque les règles sont absentes, créer des cas DEMO sans les présenter comme des résultats réglementaires officiels.
+
+⸻
+
+13. PHASE 9 — DÉLIBÉRATIONS ET PROGRESSION
+
+Créer les données permettant de démontrer :
+
+* résultats semestriels ;
+* validation ;
+* non-validation ;
+* crédits acquis ;
+* crédits restants ;
+* compensation lorsque réglementairement prévue ;
+* décision de jury ;
+* progression ;
+* redoublement ;
+* passage de niveau ;
+* passage d’année ;
+* diplomation.
+
+Respecter les règles LMD documentées.
+
+Créer des scénarios de progression cohérents.
+
+Ne pas faire passer artificiellement un étudiant à un niveau supérieur si les conditions réglementaires ne sont pas satisfaites.
+
+⸻
+
+14. PHASE 10 — STAGES
+
+Créer des scénarios DEMO :
+
+* stage à venir ;
+* stage en cours ;
+* stage terminé ;
+* stage validé ;
+* stage non validé ;
+* stage avec rapport ;
+* stage avec encadreur ;
+* stage avec structure d’accueil ;
+* stage avec évaluation.
+
+Utiliser les règles et modèles existants.
+
+Les structures d’accueil fictives doivent être identifiées comme DEMO.
+
+⸻
+
+15. PHASE 11 — MÉMOIRES ET SOUTENANCES
+
+Créer des scénarios DEMO couvrant :
+
+* sujet ;
+* étudiant ;
+* encadreur ;
+* validation du sujet ;
+* mémoire ;
+* dépôt ;
+* corrections ;
+* jury ;
+* soutenance ;
+* note ;
+* décision ;
+* validation finale.
+
+Créer différents états :
+
+* sujet proposé ;
+* sujet validé ;
+* mémoire en cours ;
+* mémoire déposé ;
+* mémoire en correction ;
+* soutenance planifiée ;
+* soutenance réalisée ;
+* mémoire validé.
+
+Utiliser les règles du module existant.
+
+⸻
+
+16. PHASE 12 — FINANCES
+
+Créer des scénarios financiers DEMO cohérents :
+
+* frais d’inscription ;
+* frais pédagogiques ;
+* frais de dossier ;
+* échéances ;
+* paiements ;
+* paiements partiels ;
+* soldes ;
+* créances ;
+* reçus DEMO ;
+* situations régularisées ;
+* situations en attente ;
+* situations en retard.
+
+Les montants doivent être :
+
+* documentés si officiels ;
+* clairement DEMO si fictifs.
+
+Ne pas inventer des tarifs officiels.
+
+Ne pas générer de vrais documents de paiement.
+
+Ne pas connecter les données DEMO à des transactions réelles.
+
+⸻
+
+17. PHASE 13 — DOCUMENTS ADMINISTRATIFS
+
+Créer et tester les documents disponibles :
+
+* fiche étudiant ;
+* certificat de scolarité ;
+* attestation ;
+* relevé de notes ;
+* carte ;
+* document de stage ;
+* document de mémoire ;
+* autres documents disponibles.
+
+Les documents de démonstration doivent comporter une identification DEMO lorsque nécessaire.
+
+Ne pas générer de faux documents présentés comme officiels.
+
+Vérifier :
+
+* modèles ;
+* génération ;
+* PDF ;
+* Word ;
+* données ;
+* signatures ;
+* mentions ;
+* permissions.
+
+⸻
+
+18. PHASE 14 — TABLEAUX DE BORD ET STATISTIQUES
+
+Alimenter les données permettant de démontrer :
+
+* effectifs ;
+* répartition par filière ;
+* répartition par niveau ;
+* répartition par promotion ;
+* inscriptions ;
+* admissions ;
+* présence ;
+* absences ;
+* retards ;
+* évaluations ;
+* résultats ;
+* crédits ;
+* progression ;
+* stages ;
+* mémoires ;
+* soutenances ;
+* finances.
+
+Vérifier que les statistiques correspondent aux données réellement injectées.
+
+Ne pas afficher des statistiques artificiellement calculées sur des données inexistantes.
+
+⸻
+
+19. PHASE 15 — SCÉNARIOS DE DÉMONSTRATION DE BOUT EN BOUT
+
+Créer plusieurs scénarios reproductibles.
+
+SCÉNARIO 1 — ADMISSION → INSCRIPTION
+
+Candidat DEMO.
+
+Dossier.
+
+Vérification.
+
+Validation.
+
+Admission.
+
+Inscription.
+
+Création du dossier étudiant.
+
+Affectation filière/niveau/promotion.
+
+SCÉNARIO 2 — ÉTUDIANT → EDT
+
+Étudiant inscrit.
+
+Groupe.
+
+Maquette.
+
+Semestre.
+
+ECUE.
+
+Enseignant.
+
+Salle.
+
+EDT.
+
+Validation.
+
+Publication.
+
+Séances visibles dans GET INJS APP.
+
+SCÉNARIO 3 — EDT → PRÉSENCES QR
+
+Séance publiée.
+
+Étudiants attendus.
+
+QR sécurisé.
+
+Pointage.
+
+Entrée.
+
+Sortie.
+
+Retard.
+
+Absence.
+
+Clôture.
+
+Autocloture.
+
+Rapport de présence.
+
+SCÉNARIO 4 — ÉVALUATION → RÉSULTATS
+
+Évaluation.
+
+Notes.
+
+Calcul.
+
+Validation.
+
+Résultats.
+
+Crédits.
+
+Progression.
+
+SCÉNARIO 5 — STAGE
+
+Étudiant.
+
+Structure.
+
+Encadreur.
+
+Stage.
+
+Rapport.
+
+Évaluation.
+
+Validation.
+
+SCÉNARIO 6 — MÉMOIRE → DIPLÔME
+
+Étudiant.
+
+Sujet.
+
+Encadreur.
+
+Mémoire.
+
+Jury.
+
+Soutenance.
+
+Résultat.
+
+Progression.
+
+Diplômabilité.
+
+SCÉNARIO 7 — FINANCES
+
+Inscription.
+
+Frais.
+
+Échéances.
+
+Paiements DEMO.
+
+Solde.
+
+Situation financière.
+
+SCÉNARIO 8 — PILOTAGE
+
+Tableaux de bord.
+
+Statistiques.
+
+Effectifs.
+
+Présences.
+
+Résultats.
+
+Progression.
+
+Finances.
+
+⸻
+
+20. PHASE 16 — COMMANDES DE SEEDING
+
+Créer ou compléter une architecture de seeding centralisée et réutilisable.
+
+Privilégier les conventions existantes.
+
+Si plusieurs modules nécessitent des commandes :
+
+Créer un orchestrateur DEMO permettant d’exécuter les seeds dans le bon ordre.
+
+Exemple :
+
+python manage.py seed_injs_demo
+
+L’orchestrateur doit respecter les dépendances.
+
+Ordre de remplissage possible :
+
+1. Référentiels ;
+2. Structures académiques ;
+3. Maquettes ;
+4. Personnel ;
+5. Calendriers DEMO ;
+6. Promotions ;
+7. Étudiants ;
+8. Admissions ;
+9. Inscriptions ;
+10. Groupes ;
+11. Affectations pédagogiques ;
+12. EDT ;
+13. Publication EDT ;
+14. GET INJS APP ;
+15. Présences QR ;
+16. Évaluations ;
+17. Notes ;
+18. Délibérations ;
+19. Progression ;
+20. Stages ;
+21. Mémoires ;
+22. Soutenances ;
+23. Finances ;
+24. Documents ;
+25. Statistiques.
+
+Adapter cet ordre à l’architecture réelle.
+
+Ne pas créer de dépendances fictives.
+
+COMMANDE
+
+La commande doit être :
+
+* idempotente ;
+* non destructive ;
+* documentée ;
+* contrôlée ;
+* réexécutable ;
+* adaptée à la base DEMO.
+
+Options possibles :
+
+* dry-run ;
+* modules ;
+* scénario ;
+* rapport ;
+* demo-only ;
+* reset-demo contrôlé si une procédure sûre existe.
+
+Ne pas ajouter de reset global.
+
+⸻
+
+21. PHASE 17 — TESTS ET VALIDATION
+
+TESTS DE DONNÉES
+
+Vérifier :
+
+* données présentes ;
+* relations ;
+* cohérence ;
+* intégrité ;
+* identifiants ;
+* doublons ;
+* statuts ;
+* provenance.
+
+TESTS MÉTIER
+
+Vérifier :
+
+* admission ;
+* inscription ;
+* progression ;
+* validation ;
+* crédits ;
+* EDT ;
+* publication ;
+* GET INJS APP ;
+* Présences QR ;
+* autocloture ;
+* évaluations ;
+* résultats ;
+* stage ;
+* mémoire ;
+* finance.
+
+TESTS D’INTERCONNEXION
+
+Vérifier les échanges entre modules.
+
+Notamment :
+
+* Référentiels → Scolarité ;
+* Scolarité → EDT ;
+* EDT → GET INJS APP ;
+* GET INJS APP → Présences QR ;
+* Scolarité → Évaluations ;
+* Évaluations → Résultats ;
+* Résultats → Progression ;
+* Progression → Diplômabilité ;
+* Étudiants → Stages ;
+* Étudiants → Mémoires ;
+* Inscriptions → Finances ;
+* données métier → Statistiques.
+
+TESTS FRONTEND
+
+Tester les parcours utilisateur.
+
+Vérifier :
+
+* affichage ;
+* formulaires ;
+* navigation ;
+* listes ;
+* recherche ;
+* filtres ;
+* actions ;
+* erreurs ;
+* états vides ;
+* chargements ;
+* permissions.
+
+⸻
+
+22. PHASE 18 — CORRECTION DES ANOMALIES
+
+Corriger les anomalies rencontrées.
+
+Ne pas seulement les documenter.
+
+Pour chaque bug :
+
+1. identifier la cause ;
+2. corriger ;
+3. ajouter ou adapter le test ;
+4. relancer ;
+5. vérifier les effets secondaires.
+
+Ne pas recréer un module.
+
+Ne pas contourner les règles métier.
+
+Ne pas désactiver la sécurité.
+
+Ne pas fabriquer des données pour masquer une anomalie.
+
+⸻
+
+23. PHASE 19 — LIVRABLES
+
+Créer un dossier :
+
+docs/demo/injs-lmd/
+
+Livrables :
+
+DATASET_GLOBAL_DEMO.xlsx
+
+Population, admissions, inscriptions, EDT, présences, évaluations, stages, mémoires, finances.
+
+SCENARIOS_DEMO.md
+
+Scénarios reproductibles de présentation.
+
+GUIDE_DEMONSTRATION.md
+
+Guide de présentation de l’application.
+
+RAPPORT_INTERCONNEXION.md
+
+Relations entre modules.
+
+RAPPORT_SEEDING.md
+
+Commandes et résultats du remplissage.
+
+RAPPORT_TESTS.md
+
+Résultats des tests.
+
+RAPPORT_ANOMALIES.md
+
+Corrections et anomalies restantes.
+
+GUIDE_SEEDING.md
+
+Instructions de remplissage.
+
+GUIDE_RESET_DEMO.md
+
+Réinitialisation contrôlée du dataset DEMO uniquement.
+
+SCRIPT_SEEDING
+
+Commande centralisée de remplissage.
+
+⸻
+
+24. CRITÈRES DE RÉUSSITE
+
+La mission est terminée lorsque :
+
+* le Hub Référentiels est rempli ;
+* les modules dépendants sont alimentés ;
+* les étudiants DEMO sont créés ;
+* les admissions sont démontrables ;
+* les inscriptions sont démontrables ;
+* la gestion pédagogique est alimentée ;
+* les EDT sont générés ou construits conformément aux règles ;
+* les EDT sont publiés lorsque les conditions sont réunies ;
+* GET INJS APP reçoit les séances ;
+* Présences QR reçoit les étudiants attendus ;
+* les scénarios de pointage sont démontrables ;
+* les clôtures sont vérifiées ;
+* les évaluations sont alimentées ;
+* les notes sont cohérentes ;
+* les résultats sont démontrables ;
+* la progression académique est cohérente ;
+* les stages sont démontrables ;
+* les mémoires sont démontrables ;
+* les soutenances sont démontrables ;
+* les finances DEMO sont alimentées ;
+* les documents peuvent être générés ;
+* les tableaux de bord sont cohérents ;
+* les tests ont été exécutés ;
+* les livrables ont été générés ;
+* le dataset peut être reproduit.
+
+⸻
+
+25. EXIGENCE ABSOLUE : CONTINUER JUSQU’AU RÉSULTAT
+
+Ne t’arrête pas à :
+
+* un audit ;
+* un inventaire ;
+* une cartographie ;
+* un rapport ;
+* une proposition ;
+* un dataset Excel ;
+* un script non exécuté ;
+* quelques étudiants ;
+* quelques modules.
+
+La mission doit aller jusqu’à un environnement DEMO réellement alimenté.
+
+Si une fonctionnalité n’est pas disponible :
+
+* vérifier si elle peut être corrigée dans le module existant ;
+* corriger lorsque cela est raisonnable ;
+* tester ;
+* poursuivre.
+
+Si un module est bloqué par une donnée officielle manquante :
+
+* ne pas inventer cette donnée ;
+* utiliser une donnée DEMO clairement identifiée si le scénario le permet ;
+* documenter le blocage ;
+* poursuivre les autres modules.
+
+Ne demande pas de validations répétitives.
+
+Prends les décisions techniques non destructives.
+
+⸻
+
+26. DÉMARRAGE IMMÉDIAT
+
+Commencer maintenant dans le workspace.
+
+Analyser l’état réel de la Phase 1.
+
+Ne présume pas que la Phase 1 est terminée : vérifier les résultats.
+
+Si le Hub Référentiels est déjà rempli, utiliser directement son dataset.
+
+Si certains référentiels restent incomplets, corriger les lacunes nécessaires.
+
+Poursuivre ensuite la Phase 2.
+
+OBJECTIF FINAL : OBTENIR UNE APPLICATION INJS-LMD ENTIÈREMENT ALIMENTÉE, INTERCONNECTÉE ET PRÊTE À UNE DÉMONSTRATION DE BOUT EN BOUT, AVEC DES DONNÉES COHÉRENTES, TRAÇABLES, FICTIVES LORSQUE NÉCESSAIRE ET SANS DESTRUCTION DES DONNÉES EXISTANTES.
+
+⸻
+
+3. La vision finale de la démonstration
+
+À l’issue des phases 1 et 2, tu devrais pouvoir réaliser une démonstration comme celle-ci :
+
+Étape	Module	Démonstration
+1	Référentiels	Présenter filières, diplômes, maquettes, UE, ECUE
+2	Admissions	Un candidat dépose et fait valider son dossier
+3	Scolarité	Le candidat devient étudiant et est inscrit
+4	Gestion pédagogique	Affectation niveau, semestre, groupe et matières
+5	EDT	Génération et validation d’un emploi du temps
+6	GET INJS APP	Consultation des séances publiées
+7	Présences QR	Pointage sécurisé d’entrée et sortie
+8	Autocloture	Clôture automatique des séances concernées
+9	Évaluations	Contrôle, examen, note et calcul des résultats
+10	Délibérations	Validation du semestre et attribution des crédits
+11	Progression	Passage au niveau suivant ou situation de rattrapage
+12	Stages	Affectation, suivi et validation
+13	Mémoires	Sujet, encadrement, dépôt et soutenance
+14	Finances	Frais, échéances et paiements DEMO
+15	Documents	Attestations, relevés et fiches DEMO
+16	Dashboard	Statistiques globales de l’établissement
+
+Le résultat recherché
+
+L’application ne sera plus une juxtaposition de modules développés séparément. Elle disposera d’un scénario institutionnel complet, avec une donnée créée à un endroit qui se retrouve correctement dans les modules qui en dépendent.
+
+Je te recommande d’exécuter les phases 1 et 2 dans cet ordre, et de ne pas demander à l’agent de remplir arbitrairement tous les modules en une seule injection désordonnée : il doit respecter les dépendances métier, utiliser le moteur existant et vérifier la cohérence à chaque étape, tout en continuant automatiquement jusqu’au résultat final.

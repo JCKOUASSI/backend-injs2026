@@ -1,0 +1,335 @@
+/**
+ * Tests de la page Inscriptions administratives (LOT 11) — liste, filtres et
+ * validation en cascade (l'écran enchaîne lui-même les transitions jusqu'à
+ * VALIDEE via CHEMIN_VALIDATION).
+ */
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { screen, act, within, fireEvent } from '@testing-library/react'
+
+vi.mock('@/services/api', async (importOriginal) => {
+  const actual = await importOriginal()
+  const mod = await import('@/test/utils/mockApi')
+  return { ...actual, default: mod.default, setSessionExpiredCallback: vi.fn() }
+})
+
+import apiMock, { apiController } from '@/test/utils/mockApi'
+import { renderWithProviders } from '@/test/utils/renderWithProviders'
+import { flushPromises } from '@/test/utils/async'
+import { makeUser } from '@/test/utils/factories'
+import Inscriptions from '@/pages/scolarite/Inscriptions'
+
+const listCalls = () =>
+  apiMock.get.mock.calls
+    .filter(([p]) => p.split('?')[0] === '/scolarite/inscriptions/')
+    .map(([, opts]) => opts?.params || {})
+const transitions = () =>
+  apiMock.post.mock.calls
+    .filter(([p]) => p.includes('/transition/'))
+    .map(([p, body]) => ({ path: p, body }))
+
+const setupRoutes = () => {
+  apiController.setRoute('/scolarite/annee-courante/', () => ({ annee: { id: 1, libelle: '2025-2026' } }))
+  apiController.setRoute('/formations/ref/formations/', () => [{ id: 10, intitule: 'L1 LSF' }])
+  apiController.setRoute('/scolarite/ref/niveaux/', () => [{ id: 2, code: 'N1' }])
+  apiController.setRoute('/scolarite/inscriptions/', () => [
+    {
+      id: 1, matricule: 'MAT-001', etudiant: 'Awa Koné', etudiant_id: 5,
+      ref_formation: 'L1 LSF', niveau: 'N1', type_inscription_libelle: 'Nouvelle',
+      statut: 'BROUILLON', statut_libelle: 'Brouillon',
+      annee_academique: '2025-2026',
+    },
+    {
+      id: 2, matricule: 'MAT-002', etudiant: 'Karim Diop', etudiant_id: 6,
+      ref_formation: 'L1 LSF', niveau: 'N1', type_inscription_libelle: 'Réinscription',
+      statut: 'VALIDEE', statut_libelle: 'Validée',
+      annee_academique: '2025-2026',
+    },
+  ])
+}
+
+const mount = () => {
+  const me = makeUser('ADMIN', { username: 'admin' })
+  apiController.setMe(me)
+  return renderWithProviders(<Inscriptions />, {
+    authUser: me,
+    routePattern: '*',
+    initialEntries: ['/scolarite/inscriptions'],
+  })
+}
+const settle = async (n = 5) => {
+  await act(async () => { await flushPromises(n) })
+}
+const rowOf = (matricule) => screen.getByText(matricule).closest('tr')
+
+beforeEach(() => {
+  apiController.reset()
+  window.localStorage.clear()
+  setupRoutes()
+})
+
+describe('pages/scolarite/Inscriptions — liste et filtres', () => {
+  it('affiche les inscriptions, l’année et le lien vers les admissions', async () => {
+    mount()
+    await settle()
+    expect(await screen.findByText('MAT-001')).toBeInTheDocument()
+    expect(screen.getByText('Karim Diop')).toBeInTheDocument()
+    const annees = await screen.getAllByText((text) => text.includes('2025-2026'))
+    expect(annees).toHaveLength(2)
+    annees.forEach((el) => expect(el).toBeInTheDocument())
+    expect(screen.getByRole('link', { name: /inscrire un admis/i })).toHaveAttribute(
+      'href',
+      '/scolarite/admissions',
+    )
+  })
+
+  it('passe les filtres (recherche, statut) au service', async () => {
+    mount()
+    await screen.findByText('MAT-001')
+
+    fireEvent.change(screen.getByPlaceholderText(/Rechercher un étudiant/i), { target: { value: 'Koné' } })
+    await settle()
+    expect(listCalls().at(-1)).toMatchObject({ q: 'Koné' })
+
+    fireEvent.change(screen.getByDisplayValue('Tous les statuts'), { target: { value: 'VALIDEE' } })
+    await settle()
+    expect(listCalls().at(-1)).toMatchObject({ q: 'Koné', statut: 'VALIDEE' })
+
+    // Les filtres formation/niveau ne sont pas actifs dans ce composant;
+    // on vérifie simplement que les recherche et statut fonctionnent.
+  })
+})
+
+describe('pages/scolarite/Inscriptions — retrait sécurisé', () => {
+  it('retire sans suppression optimiste et signale l’archivage renvoyé par le serveur', async () => {
+    const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    apiMock.delete.mockResolvedValueOnce({ data: { archive: true }, status: 200 })
+    mount()
+    await screen.findByText('MAT-001')
+    fireEvent.click(within(rowOf('MAT-001')).getByRole('button', { name: 'Supprimer' }))
+    await settle()
+    expect(confirmation).toHaveBeenCalled()
+    expect(apiMock.delete).toHaveBeenCalledWith('/scolarite/inscriptions/1/')
+    expect(await screen.findByText(/archivée sans modifier son statut/)).toBeInTheDocument()
+    expect(listCalls().length).toBeGreaterThan(1)
+    confirmation.mockRestore()
+  })
+
+  it('consulte puis réactive un dossier archivé sans proposer sa validation', async () => {
+    apiController.reset()
+    apiController.setRoute('/scolarite/inscriptions/', () => [{
+      id: 2, matricule: 'MAT-002', etudiant: 'Karim Diop', etudiant_id: 6,
+      ref_formation: 'L1 LSF', niveau: 'N1', type_inscription_libelle: 'Nouvelle',
+      statut: 'BROUILLON', statut_libelle: 'Brouillon', archive: true,
+      annee_academique: '2025-2026',
+    }])
+    setupRoutes()
+    mount()
+    await screen.findByText('MAT-002')
+    expect(within(rowOf('MAT-002')).getByRole('checkbox')).toBeInTheDocument()
+    expect(within(rowOf('MAT-002')).queryByRole('button', { name: 'Valider' })).not.toBeInTheDocument()
+    fireEvent.change(screen.getByRole('combobox', { name: 'Afficher les archives' }),
+      { target: { value: '1' } })
+    await settle()
+    expect(listCalls().at(-1)).toMatchObject({ archive: '1' })
+    fireEvent.click(screen.getByRole('button', { name: 'Réactiver MAT-002' }))
+    await settle()
+    expect(apiMock.post).toHaveBeenCalledWith('/scolarite/inscriptions/2/reactiver/', {})
+  })
+})
+
+describe('pages/scolarite/Inscriptions — actions groupées de retrait', () => {
+  it('confirme le retrait des lignes affichées, sans envoyer de requêtes individuelles', async () => {
+    apiController.setRoute('/scolarite/inscriptions/action-lot/', { resultats: [
+      { id: 1, resultat: 'supprime' }, { id: 2, resultat: 'archive' },
+    ] })
+    mount()
+    await screen.findByText('MAT-001')
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Sélectionner toutes les inscriptions affichées' }))
+    expect(screen.getByRole('button', { name: 'Valider la sélection (2)' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Supprimer ou archiver la sélection (2)' }))
+    expect(apiMock.post).not.toHaveBeenCalledWith('/scolarite/inscriptions/action-lot/',
+      { action: 'retirer', ids: [1, 2] })
+    expect(screen.getByText(/Seuls les brouillons isolés seront effacés/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer pour 2 inscription(s)' }))
+    await settle()
+    expect(apiMock.post).toHaveBeenCalledWith('/scolarite/inscriptions/action-lot/',
+      { action: 'retirer', ids: [1, 2] })
+    expect(apiMock.delete).not.toHaveBeenCalled()
+    expect(await screen.findByText(/1 supprimée\(s\), 1 archivée\(s\)/)).toBeInTheDocument()
+  })
+
+  it('sélectionne et réactive les archives en lot', async () => {
+    apiController.reset()
+    apiController.setRoute('/scolarite/inscriptions/', () => [{
+      id: 8, matricule: 'ARCH-008', etudiant: 'Archive Test', etudiant_id: 8,
+      statut: 'VALIDEE', statut_libelle: 'Validée', archive: true,
+    }])
+    setupRoutes()
+    apiController.setRoute('/scolarite/inscriptions/action-lot/', {
+      resultats: [{ id: 8, resultat: 'reactive' }],
+    })
+    mount()
+    await screen.findByText('ARCH-008')
+    fireEvent.change(screen.getByRole('combobox', { name: 'Afficher les archives' }),
+      { target: { value: '1' } })
+    await settle()
+    fireEvent.click(within(rowOf('ARCH-008')).getByRole('checkbox'))
+    fireEvent.click(screen.getByRole('button', { name: 'Réactiver la sélection (1)' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer pour 1 inscription(s)' }))
+    await settle()
+    expect(apiMock.post).toHaveBeenCalledWith('/scolarite/inscriptions/action-lot/',
+      { action: 'reactiver', ids: [8] })
+  })
+})
+
+describe('pages/scolarite/Inscriptions — validation groupée', () => {
+  it('coche seulement les inscriptions validables et attend la confirmation', async () => {
+    apiController.setRoute('/scolarite/inscriptions/valider-lot/', { validees: 1, ids: [1] })
+    mount()
+    await screen.findByText('MAT-001')
+    // Toutes les lignes sont sélectionnables pour le retrait, mais seules
+    // les validables peuvent être soumises au workflow de validation.
+    expect(within(rowOf('MAT-002')).getByRole('checkbox')).toBeInTheDocument()
+    const caseInscription = within(rowOf('MAT-001')).getByRole('checkbox', {
+      name: 'Sélectionner l’inscription MAT-001',
+    })
+    fireEvent.click(caseInscription)
+    const bouton = screen.getByRole('button', { name: 'Valider la sélection (1)' })
+    fireEvent.click(bouton)
+    expect(apiMock.post).not.toHaveBeenCalledWith('/scolarite/inscriptions/valider-lot/', { ids: [1] })
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
+    fireEvent.click(bouton)
+    fireEvent.click(screen.getByRole('button', { name: 'Valider 1 inscription(s)' }))
+    await settle()
+    expect(apiMock.post).toHaveBeenCalledWith('/scolarite/inscriptions/valider-lot/', { ids: [1] })
+    expect(within(rowOf('MAT-001')).getByRole('checkbox').checked).toBe(false)
+  })
+
+  it('efface la sélection au changement de filtre', async () => {
+    mount()
+    await screen.findByText('MAT-001')
+    fireEvent.click(screen.getByRole('button', { name: 'Cocher les validables affichées' }))
+    expect(screen.getByRole('button', { name: 'Valider la sélection (1)' }).disabled).toBe(false)
+    fireEvent.change(screen.getByPlaceholderText(/Rechercher un étudiant/i),
+      { target: { value: 'Awa' } })
+    await settle()
+    expect(screen.getByRole('button', { name: 'Valider la sélection (0)' }).disabled).toBe(true)
+  })
+})
+
+describe('pages/scolarite/Inscriptions — validation en cascade', () => {
+  it('valide un brouillon en enchaînant EN_ATTENTE → A_VALIDER → VALIDEE puis recharge', async () => {
+    mount()
+    await screen.findByText('MAT-001')
+
+    // Seul le brouillon présente le bouton Valider ; l'inscription validée non.
+    const rowBrouillon = rowOf('MAT-001')
+    fireEvent.click(within(rowBrouillon).getByRole('button', { name: 'Valider' }))
+    await settle(7)
+
+    expect(transitions()).toEqual([
+      { path: '/scolarite/inscriptions/1/transition/', body: { statut: 'EN_ATTENTE' } },
+      { path: '/scolarite/inscriptions/1/transition/', body: { statut: 'A_VALIDER' } },
+      { path: '/scolarite/inscriptions/1/transition/', body: { statut: 'VALIDEE' } },
+    ])
+    expect(await screen.findByText('Inscription validée')).toBeInTheDocument()
+    // La liste est rechargée après la cascade.
+    expect(listCalls().length).toBeGreaterThan(1)
+    // Une inscription déjà validée n'offre pas le bouton.
+    expect(
+      within(rowOf('MAT-002')).queryByRole('button', { name: 'Valider' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('s’arrête et notifie si une transition de la cascade est rejetée', async () => {
+    let n = 0
+    apiController.setRoute(/\/scolarite\/inscriptions\/\d+\/transition\//, () => {
+      n += 1
+      if (n >= 2) {
+        // eslint-disable-next-line no-throw-literal
+        throw { response: { data: { error: 'Étape bloquée.' } } }
+      }
+      return {}
+    })
+    mount()
+    await screen.findByText('MAT-001')
+    fireEvent.click(within(rowOf('MAT-001')).getByRole('button', { name: 'Valider' }))
+    await settle(7)
+
+    // La cascade s'interrompt après la 2e transition (la 3e n'est pas émise).
+    expect(transitions()).toHaveLength(2)
+    expect(await screen.findByText('Étape bloquée.')).toBeInTheDocument()
+  })
+})
+
+describe('pages/scolarite/Inscriptions — refonte premium', () => {
+  it('passe les filtres formation, niveau et type au service', async () => {
+    mount()
+    await screen.findByText('MAT-001')
+
+    fireEvent.change(screen.getByDisplayValue('Toutes les formations'), {
+      target: { value: '10' },
+    })
+    await settle()
+    expect(listCalls().at(-1)).toMatchObject({ ref_formation_id: '10' })
+
+    fireEvent.change(screen.getByDisplayValue('Tous les niveaux'), {
+      target: { value: '2' },
+    })
+    await settle()
+    expect(listCalls().at(-1)).toMatchObject({ ref_formation_id: '10', niveau_id: '2' })
+
+    fireEvent.change(screen.getByDisplayValue('Tous les types'), {
+      target: { value: 'REINSCRIPTION' },
+    })
+    await settle()
+    expect(listCalls().at(-1)).toMatchObject({ type_inscription: 'REINSCRIPTION' })
+  })
+
+  it('affiche les indicateurs issus des statistiques serveur', async () => {
+    apiController.setRoute('/scolarite/inscriptions/stats/', () => ({
+      total: 40,
+      inscrits: 30,
+      par_statut: { VALIDEE: 30, BROUILLON: 2, EN_ATTENTE: 3, A_VALIDER: 1, REJETEE: 3, ANNULEE: 1 },
+    }))
+    mount()
+    await screen.findByText('MAT-001')
+    await settle()
+    // Totaux de l'année (40 dossiers), pas seulement les 2 lignes chargées.
+    expect(screen.getByText('40')).toBeInTheDocument()
+    expect(screen.getByText('75 % des dossiers')).toBeInTheDocument()
+    expect(screen.getByText('+ 1 annulée')).toBeInTheDocument()
+  })
+
+  it('présente l’étudiant avec son matricule et ouvre le dossier', async () => {
+    mount()
+    await screen.findByText('MAT-001')
+    const ligne = rowOf('MAT-001')
+    expect(within(ligne).getByText('Awa Koné')).toBeInTheDocument()
+    expect(within(ligne).getByRole('button', { name: 'Dossier' })).toBeInTheDocument()
+  })
+})
+
+describe('pages/scolarite/Inscriptions — chargement explicite de 200 dossiers', () => {
+  it('demande page_size=200, lit l’enveloppe paginée et l’annonce dans l’écran', async () => {
+    apiController.reset()
+    // Route enveloppe déclarée AVANT setupRoutes (premier motif gagnant).
+    apiController.setRoute('/scolarite/inscriptions/', () => ({
+      count: 1, total_pages: 1, page: 1, page_size: 200,
+      results: [{
+        id: 9, matricule: 'MAT-200', etudiant: 'Test Deux Cents', etudiant_id: 12,
+        ref_formation: 'L1 LSF', niveau: 'N1', type_inscription_libelle: 'Nouvelle',
+        statut: 'BROUILLON', statut_libelle: 'Brouillon',
+        annee_academique: '2025-2026',
+      }],
+    }))
+    setupRoutes()
+    mount()
+    expect(await screen.findByText('MAT-200')).toBeInTheDocument()
+    const appel = apiMock.get.mock.calls.find(([p]) => p === '/scolarite/inscriptions/')
+    expect(appel).toBeTruthy()
+    expect(appel[1].params).toMatchObject({ page_size: 200 })
+    expect(screen.getByText(/Chargement explicite : 200 dossiers/)).toBeInTheDocument()
+    expect(screen.queryByText(/Affichage limité/)).not.toBeInTheDocument()
+  })
+})

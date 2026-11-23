@@ -1,0 +1,33 @@
+{
+  "outil": "Locust 2.47.0",
+  "cible": "API gunicorn, 3 workers, 0.0.0.0:8001",
+  "machine": "2 vCPU (bac à sable)",
+  "base": "PostgreSQL 16.2 locale — base injs_load",
+  "donnees": {
+    "origine": "script de génération synthetique (/tmp/seed_charge.py, hors dépôt)",
+    "maquettes": 12,
+    "ue": 300,
+    "ecue": 900,
+    "comptes": 3
+  },
+  "scenario": [
+    "GET /api/scolarite/maquettes/<id>/ues/ (x12)",
+    "GET /api/scolarite/maquettes/ (x4)",
+    "GET /api/scolarite/familles/ (x3)",
+    "GET /api/scolarite/annee-courante/ (x1)",
+    "PATCH /api/scolarite/ues/<id>/ sur une UE brouillon (x2)"
+  ],
+  "authentification": "jeton pré-obtenu (CHARGE_TOKEN) — les connexions par utilisateur virtuel ont été écartées après 29/50 réponses 429 dues au quota login 20/min par IP ; aucun quota n'a été modifié",
+  "paliers": [
+    { "utilisateurs": 10, "duree_s": 60, "requetes": 1880, "rps": 31.5, "mediane_ms": 16, "p95_ms": 57, "echecs_pct": 0 },
+    { "utilisateurs": 50, "duree_s": 60, "requetes": 6968, "rps": 116.4, "mediane_ms": 120, "p95_ms": 260, "echecs_pct": 0 },
+    { "utilisateurs": 100, "duree_s": 60, "requetes": 6504, "rps": 108.6, "mediane_ms": 610, "p95_ms": 910, "echecs_pct": 0 }
+  ],
+  "point_chaud": "GET /api/scolarite/maquettes/<id>/ues/ : 30,5 → 55,8 req/s, p95 ≤ 110 ms jusqu'à 50 utilisateurs",
+  "limite_identifiee": "saturation entre 50 et 100 utilisateurs (débit plafonné, médiane ×5) avec 3 workers sur 2 vCPU et PostgreSQL local",
+  "non_couvert": [
+    "charge au-delà de 100 utilisateurs",
+    "test d'endurance",
+    "base distante, cache, réseau réel"
+  ]
+}

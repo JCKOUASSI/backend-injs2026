@@ -1,0 +1,41 @@
+{
+  "commit_reference": "70d08dad1821caceb61b22fe22cf70e13155bf18",
+  "commit_source": "3f9554ffdb08cdb26d6e16a96af14c329a12c411",
+  "fichiers": {
+    "backend/edts/api.py": "f61c630e5157c67a35a5c6bcea65df31fd4b5b0e64fef55332f7fd4f076394b2",
+    "backend/edts/api_getinjs.py": "ca33446db35cc5fed1289f269d46840fbe7410bfafb48f5f3823347e10046897",
+    "backend/edts/api_interop.py": "bb4a7582e2cb4b21717f705329243de8b2ecfd38143a9846254a1058cb342dd0",
+    "backend/edts/api_lmd.py": "85663dc41f40feb0b0836eb214f0c6a4d1b8bafb9405b5808c33fe760b1b7263",
+    "backend/edts/api_v2_experimental.py": "d998d529d2f42d93e79aefaa6bdfa3a91ab50edfac37de0d14f5c300dc1e0060",
+    "backend/edts/management/commands/traiter_campagne_v2.py": "255643f10b03f9581e6a72744827c06c522d4a43d10013e47222c3f94f817823",
+    "backend/edts/migrations/0013_executionligne_periodeacademique_revisioncalendrier_and_more.py": "34e54eef7a8fd1e34d3ae2e38d06b8684e730a451bb99849dd3e44f6d539ad02",
+    "backend/edts/models.py": "4455026980022578b2e2f3182bb1102453b86f56334c946fed853a7a91267f4f",
+    "backend/edts/models_fondations.py": "d9fb542c7d3a78c492f8a9e48c0741c040405ae8cbb6e2e7ccfa16ea903e93d4",
+    "backend/edts/moteur/application_v2.py": "f87ac174d033faf0882ab1830dd5dc98664ee82533bca923bfca096da1eb7f49",
+    "backend/edts/moteur/calendrier_v2.py": "bd151e45bfc69aed0a8e3b8c82ba18ab45f7c86702d9625bbe76f15033ba72ca",
+    "backend/edts/moteur/campagnes_v2.py": "4c58fd9f14b8bf215e0e565ee4b4d438ae2456541407d6b5fad692c0da5d0fbc",
+    "backend/edts/moteur/interop_presences.py": "3666abd7e9115c283a7d2dff6d5b7415ce0aebbd9a7986107d7603e5351741e9",
+    "backend/edts/moteur/occupation_v2.py": "a8535972ee8fae079ac766f3c40e2666f1a39432d0e06e5b149d773d05590597",
+    "backend/edts/moteur/planification_v2.py": "066777467060a1e2407fa272f9a8543c979fec1c153ebcfc4220bb396ee35b1c",
+    "backend/edts/moteur/publication.py": "614cac71d1a7fc09e6e94b02422e9fc6814682cc42ce616c50bb76a06c695f30",
+    "backend/edts/moteur/qr_v2.py": "f2ca63113481738f94abb253d9c723925338c1c4977d243d4d66c0761258c65c",
+    "backend/edts/tests/test_api_v2_phase5.py": "3f2f26c0ff77e134944bbb986fe7db9fecaa434e9a27e17fa7fa89893e670b68",
+    "backend/edts/tests/test_fondations_v2.py": "48f4e1b51537da5dc224c027637d3e7299f4d1c14628168ff1f2039bccca633f",
+    "backend/edts/tests/test_moteur_v2_phase3.py": "3148a2fd2213349e6da4ac60e50957fc573121f7d4244d6945a644cf410c5881",
+    "backend/edts/tests/test_phase6_postgres_concurrency.py": "e6b677ee1bebf4c7fbc513972fc1e3b20b32c123b44f620a79d43f8ecec69540",
+    "backend/edts/tests/test_phase6_revalidation.py": "feb929b6e8df5fc5ff1575deeaedda4fa2d14dd9528efd2b1d8205d60935aed1",
+    "backend/edts/tests/test_qr_v2_phase4.py": "63c2950a01c7aee8dfcfe8986ebd7fbbfa0c376f18418a0b76911567817ca5ee",
+    "backend/edts/urls.py": "31eb4edde0461b28d07dd05d78ef732e5a82121559864856b03c7e92cb48af5e",
+    "backend/presences/seances_edt_services.py": "83e939d50899085a8a0794a2ec4c34ae2f62f0b7c4977b5d2160b4cff76d4e5e",
+    "frontend/src/App.jsx": "8191eaf204814ef471c86c63485754950435e7bc79ff35d71a21a950e07f7530",
+    "frontend/src/pages/getinjs/BenchV2.jsx": "77aa27418da839b10aaf10d21100516f301d3243dbb50a5642b389f3a135f4e5",
+    "frontend/src/pages/getinjs/BenchV2.test.jsx": "be734cb7c2956406ff186fdb07152813d675b224c63f0fc5f2eb195c288b597f"
+  },
+  "migrations_autorisees": [
+    "edts.0013"
+  ],
+  "migrations_exclues": [
+    "scolarite.0021"
+  ],
+  "nature": "OVERLAY_RECETTE_LOCALE_NON_DEPLOYABLE_SEUL"
+}

@@ -1,0 +1,218 @@
+{
+  "execute_le": "2026-10-31T17:29:49.615Z",
+  "site": "http://127.0.0.1:3100",
+  "bundle": "production (vite preview)",
+  "moteur": "Chromium headless (@sparticuz/chromium)",
+  "mobile": "émulation de viewport — aucun appareil physique",
+  "incidents_session": [
+    "session perdue à l’ouverture de /referentiels/ue-ecue — reconnexion",
+    "session perdue à l’ouverture de /referentiels/ue-ecue — reconnexion",
+    "session perdue à l’ouverture de /referentiels/niveaux — reconnexion",
+    "session perdue à l’ouverture de /referentiels/niveaux — reconnexion",
+    "session perdue à l’ouverture de / — reconnexion",
+    "session perdue à l’ouverture de / — reconnexion",
+    "session perdue à l’ouverture de /referentiels/ue-ecue — reconnexion"
+  ],
+  "verification": [
+    {
+      "nom": "connexion sur le bundle de production",
+      "ok": true,
+      "detail": "http://127.0.0.1:3100"
+    },
+    {
+      "nom": "liste des UE rendue par le bundle minifié",
+      "ok": true,
+      "detail": "18 lignes"
+    },
+    {
+      "nom": "panneau ECUE alimenté",
+      "ok": true,
+      "detail": "2 lignes"
+    },
+    {
+      "nom": "aucun contrôle interactif sans nom accessible",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "tous les champs du formulaire ont un libellé associé",
+      "ok": true,
+      "detail": "7 champs"
+    },
+    {
+      "nom": "une erreur API 500 est expliquée à l’utilisateur",
+      "ok": true,
+      "detail": "Erreur interne simulée par le test de validation."
+    },
+    {
+      "nom": "le formulaire reste ouvert (saisie non perdue)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "un échec de chargement affiche un message, pas une page vide",
+      "ok": true,
+      "detail": "Impossible de charger les maquettes : panne simulée"
+    },
+    {
+      "nom": "aucune erreur JavaScript inattendue (poste de travail)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "pas de débordement horizontal — /referentiels/ue-ecue @ 360px",
+      "ok": true,
+      "detail": "scrollWidth 360 / mise en page 360"
+    },
+    {
+      "nom": "pas de débordement horizontal — /referentiels/ue-ecue @ 390px",
+      "ok": true,
+      "detail": "scrollWidth 390 / mise en page 390"
+    },
+    {
+      "nom": "pas de débordement horizontal — /referentiels/ue-ecue @ 768px",
+      "ok": true,
+      "detail": "scrollWidth 768 / mise en page 768"
+    },
+    {
+      "nom": "pas de débordement horizontal — /referentiels/ue-ecue @ 1024px",
+      "ok": true,
+      "detail": "scrollWidth 1024 / mise en page 1024"
+    },
+    {
+      "nom": "pas de débordement horizontal — /referentiels/ue-ecue @ 1440px",
+      "ok": true,
+      "detail": "scrollWidth 1440 / mise en page 1440"
+    },
+    {
+      "nom": "pas de débordement horizontal — /referentiels/niveaux @ 360px",
+      "ok": true,
+      "detail": "scrollWidth 360 / mise en page 360"
+    },
+    {
+      "nom": "pas de débordement horizontal — /referentiels/niveaux @ 390px",
+      "ok": true,
+      "detail": "scrollWidth 390 / mise en page 390"
+    },
+    {
+      "nom": "pas de débordement horizontal — /referentiels/niveaux @ 768px",
+      "ok": true,
+      "detail": "scrollWidth 768 / mise en page 768"
+    },
+    {
+      "nom": "pas de débordement horizontal — /referentiels/niveaux @ 1024px",
+      "ok": true,
+      "detail": "scrollWidth 1024 / mise en page 1024"
+    },
+    {
+      "nom": "pas de débordement horizontal — /referentiels/niveaux @ 1440px",
+      "ok": true,
+      "detail": "scrollWidth 1440 / mise en page 1440"
+    },
+    {
+      "nom": "pas de débordement horizontal — / @ 360px",
+      "ok": true,
+      "detail": "scrollWidth 360 / mise en page 360"
+    },
+    {
+      "nom": "pas de débordement horizontal — / @ 390px",
+      "ok": true,
+      "detail": "scrollWidth 390 / mise en page 390"
+    },
+    {
+      "nom": "pas de débordement horizontal — / @ 768px",
+      "ok": true,
+      "detail": "scrollWidth 768 / mise en page 768"
+    },
+    {
+      "nom": "pas de débordement horizontal — / @ 1024px",
+      "ok": true,
+      "detail": "scrollWidth 1024 / mise en page 1024"
+    },
+    {
+      "nom": "pas de débordement horizontal — / @ 1440px",
+      "ok": true,
+      "detail": "scrollWidth 1440 / mise en page 1440"
+    },
+    {
+      "nom": "bureau : fil d’Ariane visible (≥1200 px)",
+      "ok": true,
+      "detail": "{\"iw\":1440,\"mq1200\":true,\"topBar\":true,\"navPresente\":true,\"pilulePresente\":true,\"url\":\"/referentiels/ue-ecue\"}"
+    },
+    {
+      "nom": "bureau : pilule d’année visible (≥768 px)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "mobile : pilule d’année masquée (<768 px)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "mobile : fil d’Ariane masqué (<1200 px)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "[iPhone 12] connexion réussie",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "[iPhone 12] aucun débordement horizontal",
+      "ok": true,
+      "detail": "scrollWidth 390 / mise en page 390"
+    },
+    {
+      "nom": "[iPhone 12] panneaux empilés verticalement",
+      "ok": true,
+      "detail": "722→1403 | 1419→1836"
+    },
+    {
+      "nom": "[iPhone 12] les UE restent listées",
+      "ok": true,
+      "detail": "18 lignes"
+    },
+    {
+      "nom": "[iPhone 12] formulaire contenu dans la largeur",
+      "ok": true,
+      "detail": "gauche 8, droite 382, viewport 390"
+    },
+    {
+      "nom": "[iPhone 12] aucune erreur JavaScript",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "[Android 360×800] connexion réussie",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "nom": "[Android 360×800] aucun débordement horizontal",
+      "ok": true,
+      "detail": "scrollWidth 360 / mise en page 360"
+    },
+    {
+      "nom": "[Android 360×800] panneaux empilés verticalement",
+      "ok": true,
+      "detail": "744→1398 | 1414→1847"
+    },
+    {
+      "nom": "[Android 360×800] les UE restent listées",
+      "ok": true,
+      "detail": "18 lignes"
+    },
+    {
+      "nom": "[Android 360×800] formulaire contenu dans la largeur",
+      "ok": true,
+      "detail": "gauche 8, droite 352, viewport 360"
+    },
+    {
+      "nom": "[Android 360×800] aucune erreur JavaScript",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

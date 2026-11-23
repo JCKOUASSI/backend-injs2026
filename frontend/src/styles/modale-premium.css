@@ -1,0 +1,462 @@
+/* ==========================================================================
+   MODALE PREMIUM — boîte de dialogue et formulaire
+   ==========================================================================
+
+   Contexte : le projet n'embarque PAS Bootstrap. Les formulaires écrits avec
+   `row g-3`, `col-md-6`, `form-select` ou `btn btn-primary` s'affichaient donc
+   avec les contrôles NATIFS du navigateur : champs de 19 px, libellés collés
+   au champ, boutons de 12 px collés à gauche, bouton de fermeture invisible.
+   C'est ce que montrait la fenêtre « Nouvelle inscription administrative ».
+
+   Ce fichier fournit un système autonome, réutilisable par toute fenêtre
+   modale de l'application. Tout est bâti sur les jetons du design system
+   (styles/designSystem.css) : aucune couleur ni taille n'est inventée hors
+   palette.
+
+   Structure attendue :
+     .mp-overlay
+       .mp-modal[role="dialog"]
+         .mp-entete  > .mp-entete-icone + .mp-entete-textes + .mp-fermer
+         .mp-corps   > .mp-grille > .mp-champ > .mp-etiquette + .mp-controle
+         .mp-pied    > .mp-bouton.mp-bouton--fantome / --principal
+   ========================================================================== */
+
+/* ── Voile ──────────────────────────────────────────────────────────────── */
+.mp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  overflow-y: auto;
+  background: rgba(6, 21, 45, 0.55);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  animation: mp-apparition 0.18s ease-out;
+}
+
+/* ── Fenêtre ────────────────────────────────────────────────────────────── */
+.mp-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(780px, 100%);
+  max-height: calc(100vh - 3rem);
+  margin: auto;
+  background: #FFFFFF;
+  border: 1px solid #E9ECF2;
+  border-radius: var(--injs-radius-lg);
+  box-shadow: var(--injs-shadow-float), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  overflow: hidden;
+  animation: mp-elevation 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── En-tête ────────────────────────────────────────────────────────────── */
+.mp-entete {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 1.3rem 1.5rem 1.15rem;
+  border-bottom: 1px solid #EDF1F6;
+  background: linear-gradient(180deg, #F7FAFF 0%, #FFFFFF 100%);
+}
+
+.mp-entete-icone {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 14px;
+  background: var(--injs-gradient-primary);
+  color: #FFFFFF;
+  font-size: 1.15rem;
+  box-shadow: 0 8px 18px -8px rgba(18, 103, 214, 0.7);
+}
+
+.mp-entete-textes { min-width: 0; }
+
+.mp-titre {
+  margin: 0;
+  font-size: 1.06rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--injs-navy);
+}
+
+.mp-sous-titre {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--injs-text-muted);
+}
+
+.mp-fermer {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  flex: 0 0 36px;
+  border: 1px solid #E2E8F0;
+  border-radius: 50%;
+  background: #FFFFFF;
+  color: #64748B;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.mp-fermer:hover {
+  background: var(--injs-danger-soft);
+  border-color: #F8C9CE;
+  color: var(--injs-danger);
+}
+
+.mp-fermer:focus-visible,
+.mp-bouton:focus-visible,
+.mp-controle:focus-visible {
+  outline: 2px solid var(--injs-blue-royal);
+  outline-offset: 2px;
+}
+
+/* ── Corps et grille de formulaire ──────────────────────────────────────── */
+.mp-corps {
+  padding: 1.4rem 1.5rem 1.5rem;
+  overflow-y: auto;
+}
+
+.mp-grille {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.05rem 1.25rem;
+}
+
+.mp-champ {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.mp-champ--pleine { grid-column: 1 / -1; }
+
+.mp-etiquette {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748B;
+}
+
+.mp-requis {
+  color: var(--injs-danger);
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.mp-aide {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: #94A3B8;
+}
+
+/* ── Contrôles ──────────────────────────────────────────────────────────── */
+.mp-controle {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.62rem 0.85rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #0F172A;
+  background: #FBFCFE;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.mp-controle::placeholder { color: #A9B6C7; }
+
+.mp-controle:hover:not(:focus):not(:disabled) { border-color: #CBD5E1; }
+
+.mp-controle:focus {
+  outline: none;
+  background: #FFFFFF;
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 4px rgba(18, 103, 214, 0.12);
+}
+
+.mp-controle:disabled {
+  background: #F1F5F9;
+  color: #94A3B8;
+  cursor: not-allowed;
+}
+
+/* L'état « invalide » n'est signalé qu'APRÈS une interaction réelle de
+   l'utilisateur (`:user-invalid`). Auparavant, tout champ obligatoire vide
+   s'affichait en rouge dès l'ouverture de la fenêtre : agressif, et faux —
+   l'utilisateur n'avait encore rien saisi. */
+.mp-controle:user-invalid {
+  border-color: #F3B4BB;
+  background: #FFFDFD;
+}
+
+.mp-controle:user-invalid:focus {
+  border-color: var(--injs-danger);
+  box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.12);
+}
+
+select.mp-controle {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.4rem;
+  cursor: pointer;
+  /* Chevron dessiné en SVG : l'aspect natif du <select> est supprimé, la
+     flèche reste identique sur tous les navigateurs. */
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2364748B' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M3.5 6l4.5 4.5L12.5 6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-color: #FBFCFE;
+}
+
+select.mp-controle:focus { background-color: #FFFFFF; }
+
+textarea.mp-controle {
+  min-height: 88px;
+  resize: vertical;
+}
+
+input.mp-controle[type='date'] { cursor: pointer; }
+
+input.mp-controle[type='date']::-webkit-calendar-picker-indicator {
+  opacity: 0.55;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+input.mp-controle[type='date']:hover::-webkit-calendar-picker-indicator { opacity: 1; }
+
+/* ── Bandeau d'identité (fiche en rappel) ───────────────────────────────── */
+.mp-identite {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid #E9ECF2;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #F8FAFD 0%, #FFFFFF 100%);
+}
+
+.mp-identite-avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--injs-navy) 0%, var(--injs-blue-royal) 100%);
+  color: #FFFFFF;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.mp-identite-nom {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--injs-navy);
+  line-height: 1.25;
+}
+
+.mp-identite-detail {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--injs-text-muted);
+}
+
+/* ── Fiche de consultation (paires libellé / valeur) ────────────────────── */
+.mp-fiche {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.95rem 1.25rem;
+}
+
+.mp-fiche-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px dashed #EDF1F6;
+}
+
+.mp-fiche-item--pleine { grid-column: 1 / -1; }
+
+.mp-fiche-cle {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748B;
+}
+
+.mp-fiche-valeur {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #0F172A;
+  overflow-wrap: anywhere;
+}
+
+.mp-fiche-valeur code {
+  font-size: 0.86rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  background: #F1F5F9;
+  color: var(--injs-navy);
+}
+
+/* ── Pied d'actions ─────────────────────────────────────────────────────── */
+.mp-pied {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #EDF1F6;
+  background: #F8FAFD;
+}
+
+.mp-bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-width: 124px;
+  height: 42px;
+  padding: 0 1.15rem;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+              background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.mp-bouton--fantome {
+  background: #FFFFFF;
+  border-color: #E2E8F0;
+  color: #475569;
+}
+
+.mp-bouton--fantome:hover {
+  background: #F5F9FF;
+  border-color: var(--injs-blue-royal);
+  color: var(--injs-blue-royal);
+}
+
+.mp-bouton--succes {
+  background: linear-gradient(135deg, #16A36A 0%, #0E8C59 100%);
+  color: #FFFFFF;
+  box-shadow: 0 10px 22px -10px rgba(22, 163, 106, 0.75);
+}
+
+.mp-bouton--succes:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px -10px rgba(22, 163, 106, 0.8);
+}
+
+.mp-bouton--danger {
+  background: #FFFFFF;
+  border-color: #F3C7CC;
+  color: var(--injs-danger);
+}
+
+.mp-bouton--danger:hover:not(:disabled) {
+  background: var(--injs-danger-soft);
+  border-color: var(--injs-danger);
+}
+
+.mp-bouton--principal {
+  background: var(--injs-gradient-primary);
+  color: #FFFFFF;
+  box-shadow: 0 10px 22px -10px rgba(18, 103, 214, 0.8);
+}
+
+.mp-bouton--principal:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px -10px rgba(18, 103, 214, 0.85);
+}
+
+/* Bouton désactivé : gris neutre assume l'inactivité. Un dégradé bleu passé
+   à 45 % d'opacité donnait un bleu pastel qui laissait croire à un bouton
+   actif mais mal rendu. */
+.mp-bouton:disabled {
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.mp-bouton--principal:disabled,
+.mp-bouton--succes:disabled {
+  background: #E7EDF6;
+  color: #94A3B8;
+}
+
+.mp-bouton--fantome:disabled,
+.mp-bouton--danger:disabled {
+  opacity: 0.55;
+}
+
+.mp-bouton .spinner-border {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+}
+
+/* ── Adaptations ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .mp-overlay { padding: 0.75rem; }
+
+  .mp-modal { max-height: calc(100vh - 1.5rem); }
+
+  .mp-entete { padding: 1.1rem 1.15rem 1rem; }
+
+  .mp-corps { padding: 1.15rem; }
+
+  .mp-grille { grid-template-columns: minmax(0, 1fr); }
+
+  /* Sur téléphone les actions passent l'une sous l'autre, l'action
+     principale restant en dernier (position la plus proche du pouce). */
+  .mp-pied {
+    flex-direction: column;
+    padding: 0.9rem 1.15rem;
+  }
+
+  .mp-bouton { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-overlay,
+  .mp-modal { animation: none; }
+  .mp-bouton:hover:not(:disabled) { transform: none; }
+}
+
+@keyframes mp-apparition {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes mp-elevation {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}

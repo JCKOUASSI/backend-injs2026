@@ -1,0 +1,826 @@
+Le document est prêt ci-dessous. Il constitue une première version technique structurée à partir du dossier INJS-EDT transmis en 17 parties, des analyses précédentes et des éléments identifiés dans le moteur EDT V2.
+
+J’ai volontairement distingué les éléments confirmés dans le code des éléments qui nécessitent encore une vérification. L’objectif est d’éviter de construire un tableau de bord reposant sur des données fictives ou des calculs inexacts.
+
+INJS-LMD 2026
+
+MATRICE TECHNIQUE DES INDICATEURS DU TABLEAU DE BORD EDT
+
+Version : 1.0
+Date : 19 novembre 2026
+Module : Emplois du Temps (EDT)
+Architecture : Django / PostgreSQL / React
+Périmètre : Moteur EDT V2
+Statut : Document de référence pour la conception et le développement.
+
+⸻
+
+1. OBJECTIFS
+
+La matrice technique doit permettre de construire un tableau de bord décisionnel capable de mesurer :
+
+* La qualité de la programmation des emplois du temps.
+* Le niveau de couverture des enseignements.
+* La répartition des heures programmées.
+* La réalisation effective des enseignements.
+* La charge pédagogique des enseignants.
+* L’utilisation des salles.
+* Les annulations et reports.
+* Les anomalies de programmation.
+* Le respect des volumes horaires prévus dans les maquettes pédagogiques.
+
+Le tableau de bord doit fournir une vision institutionnelle et permettre de descendre progressivement jusqu’à une séance particulière.
+
+1.1. Niveaux d’analyse
+
+Niveau	Périmètre
+Institutionnel	Ensemble de l’INJS
+Année académique	Année universitaire sélectionnée
+Formation	Formation concernée
+Parcours	Parcours pédagogique
+Niveau	Niveau d’études
+Semestre	Semestre académique
+Promotion	Promotion concernée
+Groupe	Groupe pédagogique
+UE	Unité d’enseignement
+ECUE	Élément constitutif d’une UE
+Enseignant	Enseignant ou formateur
+Salle	Salle utilisée
+Séance	Séance individuelle
+
+Règle fondamentale : tous les indicateurs doivent respecter les filtres hiérarchiques et les rattachements pédagogiques réels.
+
+⸻
+
+2. ARCHITECTURE DES DONNÉES
+
+2.1. Chaîne pédagogique de référence
+
+Le tableau de bord doit s’appuyer sur la chaîne suivante :
+
+ANNÉE ACADÉMIQUE
+       |
+       v
+FORMATION
+       |
+       v
+PARCOURS
+       |
+       v
+NIVEAU
+       |
+       v
+SEMESTRE
+       |
+       v
+PROMOTION
+       |
+       v
+GROUPE
+       |
+       v
+MAQUETTE PÉDAGOGIQUE
+       |
+       v
+UE
+       |
+       v
+ECUE
+       |
+       v
+AFFECTATION PÉDAGOGIQUE
+       |
+       v
+BESOIN HORAIRE
+       |
+       v
+ENSEIGNANT / FORMATEUR
+       |
+       v
+SÉANCE PLANIFIABLE
+       |
+       v
+CRÉNEAU EDT
+       |
+       +------ SALLE
+       |
+       +------ GROUPE
+       |
+       +------ ENSEIGNANT
+       |
+       v
+SÉANCE PUBLIÉE
+       |
+       v
+RÉALISATION EFFECTIVE
+       |
+       v
+PRÉSENCE / EXÉCUTION
+
+Cette chaîne doit être respectée dans les calculs.
+
+Un créneau associé à une formation ne doit pas automatiquement être considéré comme associé à une UE ou à un ECUE.
+
+2.2. Modèles et éléments techniques identifiés
+
+Élément	Identification	Utilisation
+TeachingNeed	Identifié	Besoin pédagogique et ECUE associé
+AffectationCreneau	Identifié	Créneau affecté dans l’EDT
+AffectationPedagogique	Identifié	Rattachement pédagogique
+ecue_id	Confirmé sur AffectationCreneau	Rattachement direct à l’ECUE
+emploi_du_temps	Champ identifié dans le registre analysé	Référence EDT
+creneau_template	Champ identifié	Modèle de créneau
+date_seance	Champ identifié	Date de séance
+cle_occurrence_v2	Champ identifié	Identification d’une occurrence
+minute_debut	Champ identifié	Début du créneau
+minute_fin	Champ identifié	Fin du créneau
+revision_calendrier	Champ identifié	Révision du calendrier
+formation_id	Champ identifié	Formation
+groupe	Champ identifié	Groupe pédagogique
+salle	Champ identifié	Salle
+formateur_id	Champ identifié	Formateur
+nature	Champ identifié	Nature de l’enseignement
+intitule	Champ identifié	Intitulé du cours
+actif	Champ identifié	État actif du créneau
+
+Les noms exacts des modèles Django correspondant aux autres entités doivent être confirmés dans les déclarations de models.py.
+
+Il ne faut pas créer de nouveaux modèles pour des données qui existent déjà.
+
+2.3. Point technique important : rattachement ECUE
+
+La migration suivante a été identifiée :
+
+edts.0012_affectationcreneau_ecue
+
+Elle introduit le rattachement direct de l’ECUE sur AffectationCreneau.
+
+Le contrat fonctionnel retenu est :
+
+def ecue_de_seance(seance):
+    """
+    Déterminer l'ECUE réel d'une séance.
+    """
+    # 1. Priorité au rattachement direct
+    if seance.ecue_id:
+        return seance.ecue
+    # 2. Solution de repli
+    if seance.affectation_pedagogique:
+        return seance.affectation_pedagogique.ecue
+    # 3. Aucun rattachement valide
+    return None
+
+Ce code représente le contrat fonctionnel attendu, pas nécessairement l’implémentation littérale déjà présente.
+
+Le système doit également :
+
+* Vérifier la cohérence entre UE et ECUE.
+* Vérifier la cohérence avec la formation.
+* Détecter les rattachements contradictoires.
+* Ne pas inventer un ECUE lorsque la relation est absente.
+
+⸻
+
+3. MATRICE DES INDICATEURS INSTITUTIONNELS
+
+Voici la première catégorie d’indicateurs à développer.
+
+ID	Indicateur	Définition	Formule
+INS-01	Nombre de formations	Formations concernées par l’EDT	COUNT(DISTINCT formation)
+INS-02	Nombre de groupes	Groupes pédagogiques concernés	COUNT(DISTINCT groupe)
+INS-03	Nombre d’enseignants	Enseignants affectés	COUNT(DISTINCT formateur)
+INS-04	Nombre de salles	Salles mobilisées	COUNT(DISTINCT salle)
+INS-05	Nombre de séances programmées	Occurrences programmées	COUNT(DISTINCT séance)
+INS-06	Volume horaire programmé	Durée cumulée des séances	SUM(durée)
+INS-07	Nombre de séances réalisées	Séances effectivement réalisées	COUNT(DISTINCT séance réalisée)
+INS-08	Nombre de séances annulées	Séances annulées	COUNT(DISTINCT séance annulée)
+INS-09	Nombre de séances reportées	Séances reportées	COUNT(DISTINCT séance reportée)
+INS-10	Taux global d’exécution	Part du volume prévu effectivement réalisé	Heures réalisées / Heures prévues × 100
+
+Règle de calcul
+
+Une séance programmée n’est pas nécessairement une séance réalisée.
+
+Le tableau de bord doit donc distinguer :
+
+1. Programmation.
+2. Publication.
+3. Réalisation.
+4. Annulation.
+5. Report.
+
+Il ne faut jamais assimiler une séance publiée à une séance exécutée.
+
+⸻
+
+4. MATRICE DES INDICATEURS PAR FORMATION
+
+ID	Indicateur	Formule
+FOR-01	Nombre de groupes	Nombre de groupes distincts
+FOR-02	Nombre d’enseignants	Enseignants distincts
+FOR-03	Nombre de séances	Séances programmées
+FOR-04	Volume prévu	Somme des durées programmées
+FOR-05	Volume réalisé	Somme des durées effectivement réalisées
+FOR-06	Volume restant	Volume prévu - Volume réalisé
+FOR-07	Taux d’exécution	Réalisé / Prévu × 100
+FOR-08	Taux d’annulation	Séances annulées / Séances prévues × 100
+FOR-09	Taux de report	Séances reportées / Séances prévues × 100
+FOR-10	Couverture pédagogique	ECUE disposant de séances / ECUE attendus × 100
+
+Visualisation recommandée
+
+Pour chaque formation :
+
+* Carte du volume horaire prévu.
+* Carte du volume horaire réalisé.
+* Jauge du taux d’exécution.
+* Graphique de répartition des heures.
+* Tableau des groupes.
+* Liste des enseignements non programmés.
+* Liste des enseignements en retard.
+
+⸻
+
+5. MATRICE DES INDICATEURS PAR UE ET ECUE
+
+Cette catégorie est particulièrement importante.
+
+Le tableau de bord doit permettre de savoir si chaque enseignement prévu dans la maquette pédagogique est effectivement programmé et réalisé.
+
+ID	Indicateur	Calcul
+PED-01	Nombre d’UE	Nombre d’UE distinctes
+PED-02	Nombre d’ECUE	Nombre d’ECUE distincts
+PED-03	ECUE programmés	ECUE associés à au moins une séance
+PED-04	ECUE non programmés	ECUE attendus sans séance
+PED-05	Volume prévu par ECUE	Somme des durées prévues
+PED-06	Volume réalisé par ECUE	Somme des durées réalisées
+PED-07	Volume restant par ECUE	Prévu - Réalisé
+PED-08	Taux d’exécution par ECUE	Réalisé / Prévu × 100
+PED-09	Nombre d’enseignants par ECUE	Enseignants distincts
+PED-10	Répartition CM/TD/TP	Volume par nature d’enseignement
+
+Exemple de présentation
+
+UE	ECUE	Prévu	Réalisé	Restant	Exécution
+UE 01	ECUE 01	30 h	20 h	10 h	66,67 %
+UE 01	ECUE 02	20 h	20 h	0 h	100 %
+UE 02	ECUE 01	40 h	15 h	25 h	37,50 %
+
+Les chiffres sont illustratifs et ne constituent pas des données réelles de l’INJS.
+
+Règles impératives
+
+* Ne pas calculer les heures prévues à partir des seuls créneaux.
+* Utiliser les volumes horaires de référence des maquettes pédagogiques.
+* Vérifier les correspondances UE/ECUE.
+* Ne pas comptabiliser deux fois une séance.
+* Distinguer les séances annulées des séances réalisées.
+* Ne pas considérer un ECUE sans rattachement valide comme un ECUE identifié.
+
+⸻
+
+6. MATRICE DES INDICATEURS PAR ENSEIGNANT
+
+ID	Indicateur	Formule
+ENS-01	Nombre de séances affectées	COUNT(DISTINCT séance)
+ENS-02	Volume horaire programmé	SUM(durée programmée)
+ENS-03	Volume horaire réalisé	SUM(durée réalisée)
+ENS-04	Volume horaire restant	Prévu - Réalisé
+ENS-05	Nombre de groupes enseignés	COUNT(DISTINCT groupe)
+ENS-06	Nombre d’ECUE enseignés	COUNT(DISTINCT ECUE)
+ENS-07	Nombre de séances annulées	COUNT(DISTINCT annulées)
+ENS-08	Nombre de séances reportées	COUNT(DISTINCT reportées)
+ENS-09	Taux d’exécution	Réalisé / Prévu × 100
+ENS-10	Charge hebdomadaire	Volume réalisé ou programmé par semaine
+
+Fonctionnalités associées
+
+Le responsable doit pouvoir consulter :
+
+* L’emploi du temps individuel.
+* La charge horaire hebdomadaire.
+* La charge horaire mensuelle.
+* Les enseignements par formation.
+* Les enseignements par UE et ECUE.
+* Les séances annulées.
+* Les séances reportées.
+* Les éventuels conflits d’affectation.
+
+Attention : le volume horaire affecté à un enseignant et le volume horaire effectivement réalisé doivent être deux indicateurs indépendants.
+
+⸻
+
+7. MATRICE DES INDICATEURS PAR GROUPE
+
+ID	Indicateur	Calcul
+GRP-01	Nombre de séances	Séances du groupe
+GRP-02	Volume programmé	Somme des durées
+GRP-03	Volume réalisé	Durées réellement réalisées
+GRP-04	Taux d’exécution	Réalisé / Prévu × 100
+GRP-05	Nombre d’ECUE couverts	ECUE programmés
+GRP-06	ECUE non couverts	ECUE attendus sans programmation
+GRP-07	Nombre d’enseignants	Enseignants distincts
+GRP-08	Séances annulées	Nombre de séances annulées
+GRP-09	Séances reportées	Nombre de séances reportées
+GRP-10	Occupation hebdomadaire	Heures programmées par semaine
+
+Le tableau de bord doit également permettre d’identifier les groupes présentant :
+
+* Des journées sans cours.
+* Des journées surchargées.
+* Des conflits de programmation.
+* Des créneaux non couverts.
+* Des enseignements non réalisés.
+
+⸻
+
+8. MATRICE DES INDICATEURS PAR SALLE
+
+ID	Indicateur	Calcul
+SAL-01	Nombre de séances	Séances affectées à la salle
+SAL-02	Heures d’occupation	Somme des durées
+SAL-03	Taux d’occupation	Heures occupées / Heures disponibles × 100
+SAL-04	Nombre de groupes accueillis	Groupes distincts
+SAL-05	Nombre d’enseignants	Enseignants distincts
+SAL-06	Conflits de salle	Chevauchements détectés
+SAL-07	Créneaux disponibles	Créneaux libres
+SAL-08	Utilisation par nature	Répartition CM/TD/TP
+
+Condition importante
+
+Le taux d’occupation nécessite de connaître les horaires d’ouverture et les capacités temporelles réelles de chaque salle.
+
+Il ne faut pas calculer un taux d’occupation sur une disponibilité théorique non validée.
+
+⸻
+
+9. MATRICE DES INDICATEURS DE PROGRAMMATION
+
+ID	Indicateur	Règle
+PRO-01	Créneaux programmés	Nombre de créneaux actifs
+PRO-02	Créneaux publiés	Créneaux effectivement publiés
+PRO-03	Créneaux non publiés	Créneaux non publiés
+PRO-04	Créneaux incomplets	Données obligatoires manquantes
+PRO-05	Conflits enseignants	Chevauchements pour un même enseignant
+PRO-06	Conflits groupes	Chevauchements pour un même groupe
+PRO-07	Conflits salles	Chevauchements pour une même salle
+PRO-08	Créneaux sans ECUE	Absence de rattachement pédagogique valide
+PRO-09	Créneaux sans enseignant	Absence de formateur
+PRO-10	Créneaux sans salle	Absence de salle
+PRO-11	Créneaux hors calendrier	Incompatibilité avec le calendrier académique
+PRO-12	Révisions EDT	Nombre de révisions enregistrées
+
+Les conflits doivent être calculés en tenant compte de la date, de l’heure et de l’occurrence réelle.
+
+Une simple comparaison des modèles de créneaux ne suffit pas.
+
+⸻
+
+10. MATRICE DES INDICATEURS DE RÉALISATION
+
+C’est la partie qui conditionne la fiabilité du tableau de bord.
+
+Le moteur EDT V2 connaît les séances programmées, mais les informations de réalisation doivent être recherchées dans les mécanismes effectifs d’exécution et de présence.
+
+La chaîne à vérifier est :
+
+TeachingNeed
+     |
+     v
+AffectationCreneau
+     |
+     v
+Séance
+     |
+     v
+API
+     |
+     v
+QR CODE
+     |
+     v
+Présence / Exécution
+
+Les fichiers précédemment identifiés comprennent notamment :
+
+* backend/edts/models.py
+* backend/edts/services.py
+* backend/edts/api.py
+* backend/edts/moteur/publication.py
+* backend/edts/moteur/application_v2.py
+* SeancesEnDirect.jsx
+
+Matrice
+
+ID	Indicateur	Source attendue
+EXE-01	Séances réalisées	Registre réel d’exécution
+EXE-02	Séances commencées	État d’exécution
+EXE-03	Séances terminées	État d’exécution
+EXE-04	Séances annulées	Registre d’annulation
+EXE-05	Séances reportées	Historique des reports
+EXE-06	Heures réellement réalisées	Durées validées d’exécution
+EXE-07	Retards	Horaires réels et théoriques
+EXE-08	Séances non exécutées	Programmées mais non réalisées
+EXE-09	Taux de réalisation	Réalisées / Prévues × 100
+EXE-10	Taux d’annulation	Annulées / Prévues × 100
+
+Statut technique : à confirmer dans les modèles d’exécution et de présence.
+
+La présence des étudiants ne doit pas être utilisée seule pour déterminer si un enseignant a effectivement réalisé son cours.
+
+Une séance peut être réalisée même si certains étudiants sont absents.
+
+Inversement, une présence QR ne prouve pas nécessairement que la totalité du volume horaire a été réalisée.
+
+⸻
+
+11. RÈGLES DE CALCUL TRANSVERSALES
+
+11.1. Calcul des durées
+
+Le moteur dispose des champs :
+
+minute_debut
+minute_fin
+
+La durée en minutes est :
+
+duree_minutes = minute_fin - minute_debut
+
+Conversion en heures :
+
+duree_heures = duree_minutes / 60
+
+Il faut rejeter les durées nulles ou négatives.
+
+11.2. Taux d’exécution
+
+Formule :
+
+Taux = \frac{Volume\ réalisé}{Volume\ prévu} \times 100
+
+Exemple :
+
+* Volume prévu : 120 heures.
+* Volume réalisé : 90 heures.
+
+Résultat :
+
+Taux = \frac{90}{120}\times100=75\%
+
+Si le volume prévu est nul, le taux doit être déclaré non calculable.
+
+Il ne faut pas afficher automatiquement 100 %.
+
+11.3. Volume restant
+
+Volume\ restant = Volume\ prévu - Volume\ réalisé
+
+Une valeur négative doit être signalée comme anomalie ou dépassement, et non masquée.
+
+11.4. Prévention des doublons
+
+La combinaison des éléments suivants doit être examinée pour identifier une occurrence :
+
+* date_seance
+* cle_occurrence_v2
+* emploi_du_temps
+* Identifiant du créneau.
+* Révision du calendrier.
+
+Le calcul ne doit pas additionner deux occurrences représentant la même séance.
+
+⸻
+
+12. MATRICE DES SOURCES ET DES SERVICES
+
+Domaine	Source technique	État
+Besoins pédagogiques	TeachingNeed	Identifié
+Créneaux EDT	AffectationCreneau	Identifié
+Affectation pédagogique	AffectationPedagogique	Identifié
+ECUE	Relation directe ecue_id	Confirmée
+Publication EDT	moteur/publication.py	Identifié
+Génération EDT V2	moteur/application_v2.py	Identifié
+API EDT	api.py	Identifié
+Services EDT	services.py	Identifié
+Séances en direct	SeancesEnDirect.jsx	Identifié
+Exécution effective	Modèle à identifier	À vérifier
+Annulations	Modèle/service à identifier	À vérifier
+Reports	Modèle/service à identifier	À vérifier
+Présences	Application concernée à examiner	À vérifier
+Historique d’exécution	Source à identifier	À vérifier
+
+Principe d’architecture
+
+Il est préférable de créer une couche de services de lecture et d’agrégation des indicateurs plutôt que de multiplier les calculs directement dans les composants React.
+
+Architecture cible :
+
+BACKEND DJANGO
+      |
+      v
+SERVICES EDT
+      |
+      v
+SERVICES INDICATEURS
+      |
+      +------ Indicateurs institutionnels
+      |
+      +------ Indicateurs formations
+      |
+      +------ Indicateurs pédagogiques
+      |
+      +------ Indicateurs enseignants
+      |
+      +------ Indicateurs groupes
+      |
+      +------ Indicateurs salles
+      |
+      +------ Indicateurs réalisation
+      |
+      v
+API TABLEAU DE BORD
+      |
+      v
+FRONTEND REACT
+      |
+      v
+TABLEAU DE BORD EDT
+
+Les agrégations doivent être réalisées côté serveur.
+
+⸻
+
+13. MATRICE DES API À PRÉVOIR
+
+Les routes ci-dessous sont des propositions d’architecture. Elles ne sont pas présentées comme des routes déjà existantes.
+
+API cible	Fonction
+GET /api/edts/dashboard/overview/	Synthèse institutionnelle
+GET /api/edts/dashboard/formations/	Indicateurs par formation
+GET /api/edts/dashboard/pedagogie/	UE et ECUE
+GET /api/edts/dashboard/enseignants/	Charges des enseignants
+GET /api/edts/dashboard/groupes/	Situation des groupes
+GET /api/edts/dashboard/salles/	Occupation des salles
+GET /api/edts/dashboard/execution/	Réalisation des enseignements
+GET /api/edts/dashboard/anomalies/	Anomalies et incohérences
+GET /api/edts/dashboard/evolution/	Évolution temporelle
+GET /api/edts/dashboard/export/	Export des données
+
+Filtres communs
+
+Les API doivent pouvoir recevoir, selon leur pertinence :
+
+annee_academique
+formation_id
+parcours_id
+niveau_id
+semestre_id
+promotion_id
+groupe_id
+ue_id
+ecue_id
+enseignant_id
+salle_id
+date_debut
+date_fin
+nature
+statut
+
+Les filtres doivent être validés côté serveur.
+
+L’utilisateur ne doit jamais pouvoir consulter des données dépassant son périmètre d’autorisation.
+
+⸻
+
+14. MATRICE DES PERMISSIONS
+
+Profil	Accès
+Direction générale	Synthèse institutionnelle
+Direction des études	Ensemble des indicateurs EDT autorisés
+Responsable de formation	Indicateurs de sa formation
+Responsable pédagogique	Groupes, UE et ECUE autorisés
+Enseignant	Ses propres séances et charges
+Administrateur	Gestion technique et accès selon habilitations
+
+Les permissions doivent être contrôlées dans les API Django.
+
+Masquer un bouton dans React ne constitue pas une protection suffisante.
+
+⸻
+
+15. MATRICE DES ANOMALIES
+
+Le tableau de bord doit comporter un espace consacré aux anomalies.
+
+ID	Anomalie	Niveau
+ANO-01	Séance sans formation	Critique
+ANO-02	Séance sans groupe	Critique
+ANO-03	Séance sans enseignant	Majeur
+ANO-04	Séance sans salle	Majeur
+ANO-05	Séance sans ECUE	À analyser
+ANO-06	ECUE incompatible avec UE	Critique
+ANO-07	ECUE incompatible avec formation	Critique
+ANO-08	Chevauchement enseignant	Critique
+ANO-09	Chevauchement groupe	Critique
+ANO-10	Chevauchement salle	Critique
+ANO-11	Durée négative ou nulle	Critique
+ANO-12	Volume réalisé supérieur au volume prévu	À analyser
+ANO-13	Séance publiée sans rattachement valide	Majeur
+ANO-14	Séance réalisée sans programmation identifiable	Majeur
+ANO-15	Occurrence dupliquée	Critique
+
+Chaque anomalie doit comporter :
+
+* Un identifiant.
+* Une date de détection.
+* Une catégorie.
+* Un niveau de gravité.
+* L’objet concerné.
+* Une description.
+* Une indication de résolution.
+* Un historique de traitement.
+
+⸻
+
+16. MATRICE DES TESTS D’ACCEPTATION
+
+ID	Test	Résultat attendu
+TEST-01	Charger le tableau de bord institutionnel	Indicateurs cohérents
+TEST-02	Filtrer une formation	Uniquement ses données
+TEST-03	Filtrer un groupe	Données du groupe
+TEST-04	Filtrer un ECUE	Séances correctement rattachées
+TEST-05	Séance avec ECUE direct	ECUE direct prioritaire
+TEST-06	Séance sans ECUE direct mais avec affectation pédagogique	ECUE de repli
+TEST-07	Relations ECUE contradictoires	Anomalie détectée
+TEST-08	Séance annulée	Exclue du volume réalisé
+TEST-09	Séance reportée	Comptabilisation sans doublon
+TEST-10	Séance réalisée partiellement	Durée réelle retenue
+TEST-11	Enseignant avec plusieurs groupes	Agrégation correcte
+TEST-12	Groupe avec plusieurs ECUE	Agrégation correcte
+TEST-13	Deux séances simultanées dans une salle	Conflit détecté
+TEST-14	Volume prévu nul	Taux non calculable
+TEST-15	Export Excel	Données conformes aux filtres
+TEST-16	Utilisateur non autorisé	Accès refusé
+TEST-17	Modification d’une révision EDT	Historique préservé
+TEST-18	Séance dupliquée	Double comptabilisation évitée
+
+⸻
+
+17. STRUCTURE DU TABLEAU DE BORD
+
+Je recommande une interface organisée en huit espaces.
+
+Espace	Contenu
+1. Vue générale	Synthèse institutionnelle
+2. Formations	Analyse par formation
+3. Pédagogie	UE, ECUE et volumes horaires
+4. Enseignants	Charges et réalisations
+5. Groupes	Couverture des enseignements
+6. Salles	Occupation et disponibilités
+7. Exécution	Réalisation, annulations et reports
+8. Anomalies	Contrôle et qualité des données
+
+Présentation de la vue générale
+
+La première page devra présenter les cartes suivantes :
+
+1. Formations concernées.
+2. Groupes concernés.
+3. Enseignants mobilisés.
+4. Salles utilisées.
+5. Séances programmées.
+6. Volume horaire programmé.
+7. Volume horaire réalisé.
+8. Taux global d’exécution.
+
+En dessous :
+
+* Évolution des séances par semaine.
+* Répartition par formation.
+* Répartition CM/TD/TP.
+* Taux d’exécution par formation.
+* Principales anomalies.
+* Dernières séances annulées ou reportées.
+
+Les graphiques doivent être interactifs et permettre d’accéder aux données détaillées.
+
+⸻
+
+18. PRIORISATION DU DÉVELOPPEMENT
+
+Je recommande de ne pas développer tous les indicateurs simultanément.
+
+Lot	Travaux	Priorité
+LOT 1	Audit des modèles et relations réelles	P0
+LOT 2	Identification des sources de réalisation	P0
+LOT 3	Normalisation des calculs et occurrences	P0
+LOT 4	Services d’agrégation	P1
+LOT 5	API du tableau de bord	P1
+LOT 6	Vue institutionnelle	P1
+LOT 7	Vues formation, groupe, UE et ECUE	P1
+LOT 8	Vues enseignants et salles	P2
+LOT 9	Suivi de réalisation	P0
+LOT 10	Gestion des anomalies	P2
+LOT 11	Exports PDF, Excel et CSV	P2
+LOT 12	Optimisation et tests de charge	P2
+
+⸻
+
+19. POINTS TECHNIQUES QUI RESTENT À VERROUILLER
+
+Voici les points les plus importants avant de commencer l’implémentation.
+
+Point	Question technique	Importance
+PT-01	Quel modèle représente la séance réellement exécutée ?	Critique
+PT-02	Où sont enregistrées les heures réellement réalisées ?	Critique
+PT-03	Comment sont enregistrées les annulations ?	Critique
+PT-04	Comment sont enregistrés les reports ?	Critique
+PT-05	Comment relier une occurrence EDT à une exécution ?	Critique
+PT-06	Quelle est la source officielle des volumes horaires des maquettes ?	Critique
+PT-07	Les ECUE sont-ils correctement propagés à toutes les séances ?	Critique
+PT-08	Quel est le modèle de publication et de révision ?	Majeur
+PT-09	Comment identifier les séances dupliquées ?	Majeur
+PT-10	Quels sont les profils et permissions déjà opérationnels ?	Majeur
+
+Observation particulière sur les ECUE
+
+La migration edts.0012_affectationcreneau_ecue constitue une avancée importante.
+
+Cependant, la présence de ecue_id dans le modèle ne garantit pas que toutes les séances historiques ou importées possèdent un rattachement correct.
+
+Il faudra contrôler les données réellement présentes avant d’activer les indicateurs de couverture pédagogique.
+
+⸻
+
+20. DÉCISION ARCHITECTURALE
+
+Je recommande de retenir les décisions suivantes pour le développement du tableau de bord.
+
+Décision 1 — Une source de vérité unique
+
+Les indicateurs doivent être calculés à partir des données Django et PostgreSQL existantes.
+
+Décision 2 — Séparation programmation/réalisation
+
+L’EDT représente une programmation. L’exécution représente une réalisation. Les deux ne doivent jamais être confondues.
+
+Décision 3 — Respect de la hiérarchie pédagogique
+
+Le rattachement Formation → UE → ECUE doit être fiable.
+
+Décision 4 — Calcul centralisé
+
+Les calculs doivent être regroupés dans des services Django réutilisables.
+
+Décision 5 — Sécurité côté backend
+
+Chaque API doit appliquer les autorisations correspondant au profil utilisateur.
+
+Décision 6 — Historique préservé
+
+Aucune modification destructive des données historiques.
+
+Décision 7 — Transparence des données
+
+Tout indicateur non calculable doit être signalé comme tel. Il ne faut pas remplacer une donnée manquante par une valeur arbitraire.
+
+⸻
+
+21. CONCLUSION ET VALIDATION
+
+La matrice définit le socle technique du futur tableau de bord décisionnel EDT de l’INJS-LMD 2026.
+
+Elle couvre les indicateurs institutionnels, pédagogiques, organisationnels et opérationnels.
+
+Elle permet également de distinguer les données déjà identifiées dans le moteur EDT V2 de celles qui nécessitent encore un audit ciblé.
+
+Ordre d’exécution recommandé
+
+Je propose de commencer immédiatement par trois vérifications :
+
+1. Audit du modèle de séance et du registre d’exécution : identifier définitivement comment une séance passe de programmée à réalisée.
+2. Audit des volumes horaires des maquettes : identifier les sources officielles des heures prévues par UE et ECUE.
+3. Audit des rattachements pédagogiques : contrôler la propagation Formation → UE → ECUE → Séance.
+
+Ces trois vérifications conditionnent la fiabilité de presque tous les indicateurs.
+
+⸻
+
+STATUT DU DOCUMENT
+
+Élément	Statut
+Architecture fonctionnelle	Définie
+Catégories d’indicateurs	Définies
+Formules principales	Définies
+Champs EDT identifiés	Partiellement confirmés
+Rattachement ECUE	Migration identifiée
+Sources de réalisation	À vérifier
+API du tableau de bord	Proposées
+Permissions	À confronter à l’existant
+Tests d’acceptation	Définis
+Développement	Non commencé sur la base de ce document
+
+Conclusion : ce document est une spécification technique de référence, et non une certification que toutes les sources de données ont déjà été vérifiées dans le code.
+
+La prochaine étape logique est l’audit ciblé des fichiers models.py, services.py et api.py, ainsi que des modèles de présence et d’exécution, pour transformer cette matrice en spécification technique entièrement adossée à l’implémentation réelle.

@@ -1,0 +1,144 @@
+La prochaine étape est l’AUDIT TECHNIQUE APPROFONDI DES SOURCES DE DONNÉES EDT (LOT 1 – P0).
+
+C’est une étape indispensable avant de développer le tableau de bord. Nous devons identifier précisément où se trouvent les données et comment elles sont reliées.
+
+PHASE 2 — Cartographie technique des modèles et relations EDT
+
+1. Constats déjà établis
+
+Les précédentes analyses ont notamment relevé :
+
+Élément	Résultat
+Inscriptions	3 510
+Formations	17
+ECUE identifiés	7
+Affectations pédagogiques historiques	16
+Créneaux sans ECUE	16
+Tables EDT V2 examinées	4
+Tables EDT V2 alimentées	0
+
+Les quatre tables examinées comprennent notamment ExecutionLigne, PeriodeAcademique, RevisionCalendrier et VerrouJour.
+
+Ces résultats justifient de vérifier prioritairement le fonctionnement réel du dispositif d’exécution des séances.
+
+2. Les sept objets à examiner
+
+N°	Objet	Vérification
+1	Formation	Relations et rattachements
+2	UE	Maquettes et volumes horaires
+3	ECUE	Volumes CM, TD et TP
+4	AffectationPedagogique	Affectations des enseignants
+5	TeachingNeed	Besoins pédagogiques
+6	AffectationCreneau	Programmation EDT V2
+7	ExecutionLigne	Réalisation effective
+
+Nous examinerons également les modèles de présence et les services API associés.
+
+3. Première opération : audit technique en lecture seule
+
+Sur ton Mac, ouvre Terminal et exécute ce bloc.
+
+Il utilise le projet local de référence :
+
+/Users/jckouassi/Sites/audits-injs/backend-injs2026
+
+Il ne modifie aucun fichier et n’effectue aucune migration.
+
+cd /Users/jckouassi/Sites/audits-injs/backend-injs2026 || exit 1
+source backend/.venv312/bin/activate || exit 1
+python backend/manage.py shell <<'PY'
+from django.apps import apps
+from django.db import connection
+TARGET_APPS = {
+    "edts",
+    "presences",
+    "formations",
+    "scolarite",
+}
+print("\n" + "=" * 90)
+print("AUDIT TECHNIQUE EDT — CARTOGRAPHIE DES MODÈLES")
+print("=" * 90)
+for model in sorted(
+    apps.get_models(),
+    key=lambda m: (m._meta.app_label, m.__name__)
+):
+    if model._meta.app_label not in TARGET_APPS:
+        continue
+    print(f"\n\nMODEL: {model._meta.label}")
+    print(f"TABLE: {model._meta.db_table}")
+    for field in model._meta.get_fields():
+        if not getattr(field, "concrete", False):
+            continue
+        relation = ""
+        if field.is_relation:
+            relation = (
+                f" -> {field.related_model._meta.label}"
+                if field.related_model else ""
+            )
+        print(
+            f"  {field.name:<35} "
+            f"{field.get_internal_type():<20}"
+            f"{relation}"
+        )
+print("\n" + "=" * 90)
+print("AUDIT DES VOLUMES DES TABLES EDT")
+print("=" * 90)
+tables = [
+    "edts_executionligne",
+    "edts_periodeacademique",
+    "edts_revisioncalendrier",
+    "edts_verroujour",
+]
+existing = set(connection.introspection.table_names())
+with connection.cursor() as cursor:
+    for table in tables:
+        if table not in existing:
+            print(f"{table}: TABLE ABSENTE")
+            continue
+        cursor.execute(f'SELECT COUNT(*) FROM "{table}"')
+        count = cursor.fetchone()[0]
+        print(f"{table}: {count} enregistrements")
+print("\n" + "=" * 90)
+print("FIN DE L'AUDIT — AUCUNE MODIFICATION EFFECTUÉE")
+print("=" * 90)
+PY
+
+4. Livrable attendu
+
+À partir du résultat, je construirai :
+
+Document 1 — Dictionnaire technique des données EDT
+
+* Modèles Django réels.
+* Champs et types.
+* Relations ForeignKey.
+* Relations ManyToMany.
+* Tables PostgreSQL.
+* Volumétrie réelle.
+
+Document 2 — Cartographie des flux pédagogiques
+
+* Formation → UE → ECUE.
+* ECUE → Affectation pédagogique.
+* Affectation pédagogique → Créneau EDT.
+* Créneau EDT → Séance.
+* Séance → Exécution.
+* Séance → Présence.
+
+Document 3 — Rapport des lacunes
+
+* Données manquantes.
+* Relations non renseignées.
+* Tables non alimentées.
+* Sources de réalisation absentes ou incomplètes.
+* Corrections prioritaires.
+
+5. Étape suivante après cet audit
+
+Nous pourrons construire les services Django de calcul des indicateurs, en réutilisant les modèles et les services existants.
+
+Important : aucune modification du code, aucune migration et aucune intervention sur le VPS à ce stade.
+
+⸻
+
+Action attendue : exécute le bloc et transmets-moi son résultat. Je poursuivrai directement avec la cartographie détaillée, sans te demander de renvoyer les 17 parties déjà communiquées.

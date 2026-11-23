@@ -1,0 +1,89 @@
+erDiagram
+  edts_affectationcreneau {
+    bigint id PK
+  }
+  edts_campagnegeneration {
+    bigint id PK
+  }
+  edts_creneautemplate {
+    bigint id PK
+  }
+  edts_emploidutemps {
+    bigint id PK
+  }
+  edts_executioncampagne {
+    bigint id PK
+  }
+  edts_inscriptionimportee {
+    bigint id PK
+  }
+  formations_refformation {
+    bigint id PK
+  }
+  formations_refsalle {
+    bigint id PK
+  }
+  scolarite_affectationpedagogique {
+    bigint id PK
+  }
+  scolarite_anneeacademique {
+    bigint id PK
+  }
+  scolarite_ecue {
+    bigint id PK
+  }
+  scolarite_groupe {
+    bigint id PK
+  }
+  scolarite_maquette {
+    bigint id PK
+  }
+  scolarite_niveau {
+    bigint id PK
+  }
+  scolarite_parcours {
+    bigint id PK
+  }
+  scolarite_semestre {
+    bigint id PK
+  }
+  scolarite_ue {
+    bigint id PK
+  }
+  edts_emploidutemps ||--o{ edts_affectationcreneau : emploi_du_temps_id
+  edts_creneautemplate ||--o{ edts_affectationcreneau : creneau_template_id
+  formations_refsalle o|--o{ edts_affectationcreneau : salle_id
+  formations_refformation o|--o{ edts_affectationcreneau : formation_id
+  scolarite_groupe o|--o{ edts_affectationcreneau : groupe_id
+  scolarite_ecue o|--o{ edts_affectationcreneau : ecue_id
+  scolarite_affectationpedagogique o|--o{ edts_affectationcreneau : affectation_pedagogique_id
+  scolarite_anneeacademique ||--o{ edts_campagnegeneration : annee_academique_id
+  scolarite_anneeacademique ||--o{ edts_emploidutemps : annee_academique_id
+  edts_campagnegeneration ||--o{ edts_executioncampagne : campagne_id
+  scolarite_anneeacademique ||--o{ edts_inscriptionimportee : annee_academique_id
+  formations_refformation ||--o{ edts_inscriptionimportee : ref_formation_id
+  scolarite_parcours o|--o{ edts_inscriptionimportee : parcours_id
+  scolarite_niveau ||--o{ edts_inscriptionimportee : niveau_id
+  scolarite_semestre o|--o{ edts_inscriptionimportee : semestre_id
+  scolarite_groupe o|--o{ edts_inscriptionimportee : groupe_id
+  scolarite_anneeacademique ||--o{ scolarite_affectationpedagogique : annee_academique_id
+  formations_refformation ||--o{ scolarite_affectationpedagogique : ref_formation_id
+  scolarite_parcours o|--o{ scolarite_affectationpedagogique : parcours_id
+  scolarite_niveau ||--o{ scolarite_affectationpedagogique : niveau_id
+  scolarite_semestre ||--o{ scolarite_affectationpedagogique : semestre_id
+  scolarite_ue o|--o{ scolarite_affectationpedagogique : ue_id
+  scolarite_ecue o|--o{ scolarite_affectationpedagogique : ecue_id
+  scolarite_groupe o|--o{ scolarite_affectationpedagogique : groupe_id
+  scolarite_ue ||--o{ scolarite_ecue : ue_id
+  scolarite_anneeacademique ||--o{ scolarite_groupe : annee_academique_id
+  formations_refformation ||--o{ scolarite_groupe : ref_formation_id
+  scolarite_parcours o|--o{ scolarite_groupe : parcours_id
+  scolarite_niveau ||--o{ scolarite_groupe : niveau_id
+  scolarite_anneeacademique ||--o{ scolarite_maquette : annee_academique_id
+  formations_refformation ||--o{ scolarite_maquette : ref_formation_id
+  scolarite_parcours o|--o{ scolarite_maquette : parcours_id
+  scolarite_niveau ||--o{ scolarite_maquette : niveau_id
+  formations_refformation ||--o{ scolarite_parcours : ref_formation_id
+  scolarite_niveau ||--o{ scolarite_semestre : niveau_id
+  scolarite_maquette ||--o{ scolarite_ue : maquette_id
+  scolarite_semestre ||--o{ scolarite_ue : semestre_id

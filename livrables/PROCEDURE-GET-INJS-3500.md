@@ -1,0 +1,23 @@
+# GET INJS APP — 3 500 inscrits ivoiriens fictifs, import et EDT
+
+## Fichier
+
+`get-injs-3500-ivoiriens-16-formations.csv` : CSV UTF-8 BOM à séparateur `;`, 3 500 lignes hors en-tête, matricules uniques `FICTGET-00001`…, noms et prénoms ivoiriens fictifs, sexes `Féminin`/`Masculin`, dates de naissance inventées entre 1998 et 2008, codes F01–F08, huit filières, seize cycles **Licence/Master observés dans la base locale**, niveaux L1–L3 et M1–M2, semestres S1–S10 cohérents avec le niveau, 160 groupes synthétiques de ≤35 inscrits, trois vagues observées localement et statut `INSCRIT`. Les niveaux doctoraux D1–D3 ne sont pas représentés : le référentiel local examiné ne contient aucun cycle Doctorat INJS correspondant. Les groupes créés `GETDEMO-*` couvrent tout le jeu de démonstration, **pas tous les groupes existants de la production**, qui n'ont pas été inventoriés.
+
+La colonne `formation` précède `filiere` : l'importeur reconnaît les deux comme alias de `formation` et utilise la première ; la colonne `filiere` est fournie à titre descriptif (signalée comme ignorée dans le rapport). La colonne `filiere_code` est effectivement interprétée. **État communiqué le 18 novembre à 15:53 UTC :** le correctif multipart et la résolution Licence/Master sont actifs derrière la passerelle `injs-getfix-gateway-1` ; les quatre routes publiques testées répondent et le HTML public correspond à celui du candidat `18092`. La **persistance dans la configuration NPM** n'a pas été vérifiée : le fichier Nginx généré peut être régénéré au redémarrage. Ne pas considérer cette recette HTTP comme preuve d'un import réel ou d'une génération EDT sur la production.
+
+SHA-256 : `ac0a546f5386d7a58c82a0c80fef802bdc01527bdec59b8a4be2adf4107bc204`. Reproduction depuis ce dépôt : `python3 scripts/generer-inscrits-getinjs-fictifs.py livrables/get-injs-3500-ivoiriens-16-formations.csv`.
+
+## Procédure après confirmation du correctif sur l'instance et choix de l'année
+
+1. **Décider explicitement** de l'instance cible (préférer une démo isolée) et de l'année académique ; ne pas injecter des étudiants fictifs dans l'année de production réelle sans accord explicite. Sauvegarder la base cible et confirmer que le correctif de résolution formation+code est réellement déployé.
+2. Connectez-vous avec un rôle de planification GET INJS APP. Vérifiez sur **cette** instance les 16 cycles, les cinq niveaux et S1–S10. Menu **GET INJS APP → Générer les emplois du temps** (`/edt/generation-annuelle`), choisissez l'année, sélectionnez le CSV puis cliquez **Analyser sans importer**. Vérifiez 3 500 lignes valides, 0 rejet, et que les cohortes MASTER sont associées à leurs cycles MASTER (pas seulement les compteurs).
+3. Si conforme : cliquez **Importer** dans cet écran. Le service écrit des `InscriptionImportee` et crée les groupes/vagues inexistants si la reconstruction est permise ; il ne crée pas de dossiers `Etudiant` ni d'inscriptions administratives. Contrôlez le rapport (`creees`, `mises_a_jour`, `rejetées`) et la synthèse des cohortes. L'import est idempotent sur (année, matricule).
+4. **Préparez les EDT** : maquettes actives S1/S2, UE/ECUE et volumes, calendrier institutionnel et semaines officielles, canevas/créneaux, salles de capacité adaptée, enseignants/affectations si requis. Le CSV ne crée aucun de ces référentiels ; 160 groupes représentent une charge importante et peuvent être impossibles à placer sans ressources suffisantes.
+5. Dans `/edt/generation-annuelle`, sélectionnez d'abord un périmètre restreint des nouveaux groupes, **prévisualisez sans persister**, corrigez les blocages. Pour l'année entière, fournissez au moins deux semaines officielles ; ne lancez pas un remplacement global sur une année contenant des EDT réels sans accord. Ne publiez pas directement. Suivez la campagne dans `/edt/campagnes`, vérifiez le bilan réel, les séances placées, les conflits, puis faites valider et publier par un rôle habilité.
+
+Ne pas utiliser l'option « Générer les EDT après import » cochée par défaut dans `/edt/import-etudiants` : ce chemin crée une campagne avec `semaines: [1]` et `remplacer: true`. Préférer l'analyse et l'import dans `/edt/generation-annuelle` puis une génération contrôlée.
+
+## Vérifications réellement réalisées
+
+Génération et comptages : 3 500 matricules distincts ; 8 filières, 16 formations, cinq niveaux, dix semestres, trois vagues, 160 groupes (max 35). Analyse locale sans écriture sur le référentiel de développement : 3 500 valides, zéro rejet ; 24 tests du moteur d'import réussis, dont résolution de cycles Licence/Master partageant le même code. **Aucun import sur le site public ni génération d'emploi du temps n'a été exécuté.**

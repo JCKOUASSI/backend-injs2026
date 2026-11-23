@@ -1,0 +1,181 @@
+Oui. À partir des sources accessibles, on peut établir une reconstitution de travail des maquettes INJS d’Abidjan. Il faut toutefois distinguer deux niveaux :
+
+* Confirmé : la filière ou le domaine apparaît explicitement dans une source.
+* Reconstitué : les UE/matières sont déduites de la structure LMD, des formations INJS décrites dans les publications et des disciplines habituellement associées à ces parcours. Elles ne doivent pas être présentées comme la maquette administrative officielle sans le document INJS correspondant.
+
+1. Filière STAPS / Sciences et techniques des activités physiques et sportives
+
+La présence de la filière STAPS à l’INJS d’Abidjan est directement attestée dans la littérature récente, notamment dans les travaux portant sur les étudiants de master STAPS de l’INJS.
+
+Licence — reconstruction indicative
+
+Semestre	UE / matières susceptibles d’être présentes	Statut
+S1	Anatomie humaine	Reconstitué
+	Physiologie humaine	Reconstitué
+	Introduction aux STAPS	Reconstitué
+	Psychologie	Reconstitué
+	Sociologie	Reconstitué
+	Pédagogie générale	Reconstitué
+	Méthodologie du travail universitaire	Reconstitué
+	Pratique sportive	Reconstitué
+S2	Anatomie fonctionnelle	Reconstitué
+	Physiologie de l’exercice	Reconstitué
+	Biomécanique	Reconstitué
+	Psychologie du sport	Reconstitué
+	Sociologie du sport	Reconstitué
+	Pédagogie des APS	Reconstitué
+	Pratique sportive	Reconstitué
+S3	Théorie et méthodologie des APS	Reconstitué
+	Sciences biologiques appliquées au sport	Reconstitué
+	Psychologie du sport	Reconstitué
+	Didactique des APS	Reconstitué
+	Techniques sportives	Reconstitué
+	Évaluation en EPS	Reconstitué
+S4	Physiologie de l’entraînement	Reconstitué
+	Biomécanique appliquée	Reconstitué
+	Didactique et pédagogie de l’EPS	Reconstitué
+	Méthodologie de recherche	Reconstitué
+	Management des activités sportives	Reconstitué
+	Techniques sportives	Reconstitué
+S5	Théorie de l’entraînement	Reconstitué
+	Didactique spécialisée	Reconstitué
+	Sciences sociales du sport	Reconstitué
+	Management/organisation sportive	Reconstitué
+	Méthodologie de recherche	Reconstitué
+	Stage/pratique professionnelle	Reconstitué
+S6	Stage professionnel	Reconstitué
+	Mémoire/projet tutoré	Reconstitué
+	Séminaire de recherche	Reconstitué
+	Évaluation des compétences professionnelles	Reconstitué
+
+Attention : je ne peux pas confirmer que chacune de ces matières figure sous exactement ces intitulés dans la maquette INJS 2024-2025/2025-2026.
+
+⸻
+
+2. Éducation permanente / Jeunesse et Sports
+
+Une autre formation explicitement documentée est la filière d’éducation permanente relative à la jeunesse et aux sports. Une étude consacrée à l’acquisition des compétences en développement communautaire dans cette filière identifie l’INJS comme une école de formation de formateurs et mentionne cette orientation.
+
+Reconstruction
+
+Semestre	UE / domaines
+S1	Introduction aux sciences de l’éducation
+	Sociologie
+	Psychologie
+	Introduction à l’éducation permanente
+	Communication
+	Méthodologie universitaire
+	Connaissance de la jeunesse
+S2	Psychologie de la jeunesse
+	Sociologie de la jeunesse
+	Animation socio-éducative
+	Communication et techniques d’animation
+	Éducation permanente
+	Méthodologie de projet
+S3	Développement communautaire
+	Animation de groupes
+	Intervention socio-éducative
+	Gestion des organisations de jeunesse
+	Politiques publiques de jeunesse
+	Techniques d’enquête
+S4	Ingénierie de formation
+	Gestion de projets
+	Développement local
+	Médiation sociale
+	Management des structures de jeunesse
+	Stage
+S5	Politiques de jeunesse
+	Développement communautaire approfondi
+	Management des projets
+	Évaluation des programmes
+	Recherche en sciences de l’éducation
+S6	Stage professionnel
+	Mémoire/projet
+	Séminaire professionnel
+
+Ici encore, il s’agit d’une reconstitution pédagogique, et non d’une transcription certifiée de la maquette administrative.
+
+⸻
+
+3. Master STAPS
+
+Les recherches bibliographiques donnent une indication beaucoup plus solide pour le niveau Master : les travaux récents portent explicitement sur les étudiants de Master en sciences et techniques des activités physiques et sportives à l’INJS d’Abidjan.
+
+On peut donc raisonnablement reconstituer la structure suivante :
+
+Semestre	Domaine de formation
+M1 – S1	Épistémologie des STAPS
+	Méthodologie de recherche
+	Sciences de l’éducation
+	Sciences biologiques appliquées aux APS
+	Psychologie du sport
+	Sociologie du sport
+	Didactique des APS
+M1 – S2	Méthodologie de recherche avancée
+	Didactique spécialisée
+	Évaluation des apprentissages
+	Management sportif
+	Séminaires
+	Stage/recherche
+M2 – S3	Théories et modèles d’intervention
+	Recherche en STAPS
+	Séminaires spécialisés
+	Analyse des données
+	Projet de recherche
+M2 – S4	Mémoire
+	Soutenance
+	Stage/projet professionnel
+
+⸻
+
+4. Structure LMD que l’on peut retenir
+
+La documentation disponible permet de retenir la structure générale suivante :
+
+LICENCE
+
+L1 → S1 + S2
+L2 → S3 + S4
+L3 → S5 + S6
+
+MASTER
+
+M1 → S1 + S2
+M2 → S3 + S4
+
+Dans le système LMD, la référence habituelle est 30 crédits par semestre, soit 180 crédits pour la Licence et 120 crédits pour le Master. Mais je ne vais pas attribuer artificiellement 30 crédits aux UE ci-dessus tant que nous n’avons pas retrouvé la feuille officielle de répartition des crédits de l’INJS.
+
+⸻
+
+5. Ce qui est réellement établi par les sources
+
+Élément	Niveau de confirmation
+INJS d’Abidjan comme établissement de formation	Confirmé
+Fonction de formation des formateurs	Confirmé
+Adoption/présence du cadre LMD	Confirmé
+STAPS à l’INJS	Confirmé
+Étudiants de Master STAPS à l’INJS	Confirmé
+Éducation permanente relative à la jeunesse et aux sports	Confirmé
+UE précises de S1 à S6	Non retrouvées dans une maquette officielle publique
+Nombre exact de crédits par UE	Non vérifié
+Volumes CM/TD/TP par UE	Non vérifié
+Coefficients d’évaluation	Non vérifié
+Maquette officielle 2024-2025	Non retrouvée
+Maquette officielle 2025-2026	Non retrouvée
+
+Sources principales
+
+* Koffi et al. (2024), travaux sur l’état de la recherche des étudiants de Master STAPS à l’INJS d’Abidjan, RASEF, numéro spécial 2024.
+* Edi et al. (2024), travaux sur le programme de formation des formateurs à l’INJS d’Abidjan, RASEF, numéro spécial 2024.
+* Mehsou (2020), L’acquisition des compétences en matière de développement communautaire dans la filière d’éducation permanente relative à la jeunesse et aux sports en Côte d’Ivoire, Revue internationale Animation, territoires et pratiques socioculturelles.
+* Sehi & Mian (2015), La formation pratique des enseignants en Côte d’Ivoire, Formation et profession.
+* Travaux universitaires sur les STAPS et les sciences de l’éducation en Côte d’Ivoire.
+* Publications sur la mise en œuvre du système LMD dans les établissements ivoiriens.
+* Études sectorielles sur l’enseignement supérieur et la formation professionnelle en Côte d’Ivoire.
+* Travaux consacrés à la formation des cadres de l’INJS.
+
+Point important
+
+Je ne présenterais pas le tableau ci-dessus comme une « maquette INJS 2025-2026 ». C’est actuellement une reconstitution documentée, utile pour travailler sur le contenu des formations, mais les intitulés exacts, crédits et volumes horaires doivent encore être validés contre une maquette administrative.
+
+La prochaine étape la plus utile serait de ￼ produire un tableau Excel complet avec les colonnes Filière | Niveau | Semestre | UE | ECUE | CM | TD | TP | Crédits | Coefficient | Statut de vérification | Source, afin que chaque élément reconstitué soit clairement séparé des éléments confirmés.

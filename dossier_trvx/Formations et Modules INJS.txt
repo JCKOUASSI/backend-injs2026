@@ -1,0 +1,467 @@
+Formations et Modules INJS
+
+Oui. J’ai vérifié la structure officielle actuelle du cursus universitaire de l’INJS. L’INJS présente actuellement 8 filières universitaires, réparties entre l’ENSEPS et l’ENSEP, avec une Licence professionnelle en 3 ans et un Master en 5 ans.  
+
+Il faut cependant distinguer Formation → Parcours → UE (modules) → ECUE. Pour ton application INJS-LMD, je te recommande de considérer l’UE comme le module pédagogique principal, et les ECUE comme ses matières/composantes.
+
+1. Les 8 formations universitaires de l’INJS
+
+École	Code	Formation / Parcours
+ENSEPS	EM	Éducation et Motricité
+ENSEPS	ES	Entraînement Sportif
+ENSEPS	MS	Management du Sport
+ENSEPS	APA	Activités Physiques Adaptées
+ENSEP	AND	Andragogie
+ENSEP	LOI	Loisir
+ENSEP	ECJP	Entrepreneuriat Jeunesse et Conduite de Projets
+ENSEP	GER	Gérontologie
+
+Les quatre premières sont explicitement rattachées aux STAPS, tandis que les quatre autres relèvent de l’Éducation Permanente.  
+
+⸻
+
+A. ENSEPS — Sciences et Techniques des Activités Physiques et Sportives
+
+2. Éducation et Motricité — EM
+
+Licence
+
+Les UE/modules officiels comprennent notamment :
+
+Semestre 1
+
+1. Sciences de la Vie et de la Santé
+2. Sciences Humaines et Sociales
+3. Sciences de l’Intervention
+4. Initiation aux fondamentaux du Football
+5. Initiation aux fondamentaux du Handball
+6. Initiation aux fondamentaux de la Gymnastique
+7. Initiation aux fondamentaux de l’Athlétisme
+8. Spécialisation théorique et pratique dans une APS
+9. Techniques de communication écrite et orale
+
+Semestre 2
+
+1. Sciences de la Vie et de la Santé
+2. Sciences Humaines et Sociales 1
+3. Initiation aux fondamentaux du Rugby
+4. Initiation aux fondamentaux du Basketball
+5. Initiation aux fondamentaux de la Gymnastique II
+6. Initiation aux fondamentaux de l’Athlétisme II
+7. Spécialisation théorique et pratique dans une APS
+8. Initiation à l’environnement des TIC
+9. Techniques de communication écrite et orale
+
+Semestre 3
+
+1. Sciences de la Vie et de la Santé
+2. Sciences Humaines et Sociales appliquées aux APS
+3. Connaissances institutionnelles du sport
+4. Initiation aux fondamentaux du Volleyball
+5. Initiation aux sports de combat de préhension
+6. Initiation aux sports de combat de percussion
+7. Initiation aux sports d’entretien et santé
+8. Matérialisation des plateaux de pratique des APS et performance
+9. Spécialisation théorique et pratique dans une APS
+10. Pré-professionnalisation
+
+Semestre 4
+
+1. Connaissances institutionnelles des systèmes éducatifs
+2. Intervention en APS
+3. Aspects pédagogiques du Football
+4. Aspects pédagogiques du Handball
+5. Aspects pédagogiques des sports d’expression corporelle
+6. Aspects pédagogiques de l’Athlétisme
+7. Spécialisation théorique et pratique dans une APS
+8. Pré-professionnalisation
+9. Méthodologie et outils
+10. Techniques d’expression écrite et orale
+
+Semestre 5
+
+1. Intervention en APS
+2. Aspects pédagogiques du Handball
+3. Aspects pédagogiques du Basketball
+4. Aspects pédagogiques du Rugby
+5. Aspects pédagogiques du Volleyball
+6. Aspects pédagogiques de l’Athlétisme
+7. Spécialisation théorique et pratique dans une APS
+8. Aspects pédagogiques du Football
+9. Méthodologie
+10. Life Skills
+
+Semestre 6
+
+1. Intervention en APS : Interaction
+2. Intervention en APS : Mesure et évaluation
+3. Aspects pédagogiques du Volleyball
+4. Aspects pédagogiques de la Gymnastique
+5. Aspects pédagogiques de l’Athlétisme
+6. Aspects pédagogiques du Basketball
+7. Aspects pédagogiques du Rugby
+8. Spécialisation théorique et pratique dans une APS
+9. Traumatologie du sport
+10. Pré-professionnalisation
+
+Ces éléments correspondent à la maquette publiée par l’INJS.  
+
+Master
+
+M1
+
+1. Connaissances institutionnelles de l’éducation et du sport
+2. Connaissances psychosociologiques des APS
+3. Intervention en mesure et évaluation de l’EPS
+4. Didactique de l’EPS
+5. Didactique des sports d’expression corporelle
+6. Didactique des sports collectifs de petit terrain
+7. Méthodologie
+8. Formation à la recherche
+9. Technique d’expression écrite et orale
+10. Administration publique et déontologie
+
+Puis :
+
+M2
+
+1. Connaissances psychologiques des APS
+2. Intervention en EPS
+3. Didactique des sports collectifs de renvoi
+4. Didactique des sports athlétiques
+5. Didactique des sports collectifs de grand terrain
+6. Professionnalisation
+7. Méthodologie de la recherche
+8. Formation à la recherche
+9. Technique d’expression écrite et orale
+10. Administration publique et déontologie
+11. Stage / professionnalisation
+12. Séminaire de recherche
+13. Mémoire
+
+La maquette officielle confirme notamment les enseignements de didactique, recherche, professionnalisation et mémoire.  
+
+⸻
+
+3. Entraînement Sportif — ES
+
+Licence
+
+Les principaux modules sont :
+
+1. Sciences de la Vie et de la Santé
+2. Sciences Humaines et Sociales
+3. Sciences de l’Intervention
+4. Initiation aux fondamentaux du Football
+5. Initiation aux fondamentaux du Handball
+6. Initiation aux fondamentaux de la Gymnastique
+7. Initiation aux fondamentaux de l’Athlétisme
+8. Spécialisation théorique et pratique dans une APS
+9. Techniques de communication écrite et orale
+10. Sciences Humaines et Sociales 1
+11. Initiation aux fondamentaux du Rugby
+12. Initiation aux fondamentaux du Basketball
+13. Initiation aux fondamentaux de la Gymnastique II
+14. Initiation aux fondamentaux de l’Athlétisme II
+15. Initiation à l’environnement des TIC
+16. Sciences de la Vie et de la Santé — nutrition/biomécanique
+17. Connaissances institutionnelles du sport
+18. Initiation aux fondamentaux du Volleyball
+19. Sports de combat de préhension
+20. Sports de combat de percussion
+21. Sports d’entretien et santé
+22. Matérialisation des plateaux de pratique des APS
+23. Facteurs biologiques de la performance
+24. Facteurs psychosociologiques de la performance
+25. Développement des qualités physiques
+26. Formation au métier d’entraîneur 1
+27. Pratique des APS et entraînement
+28. Pré-professionnalisation
+29. Technologie de l’information et de la communication
+30. Méthodologie de la recherche
+31. Management des fédérations sportives
+32. Droit et sport de haut niveau
+33. Formation au métier d’entraîneur 2
+34. Entraînement et performance sportive
+35. Brevet national de secourisme
+36. Life Skills
+37. Nutrition du sportif
+38. Management de la compétition
+39. Formation au métier d’entraîneur 3
+40. Réathlétisation des athlètes
+41. Formation à la recherche scientifique
+
+La maquette officielle confirme en particulier les modules de facteurs de performance, entraînement, métier d’entraîneur, nutrition, management de compétition et réathlétisation.  
+
+Master
+
+Principaux modules :
+
+* Sciences humaines et performance sportive
+* Optimisation de la performance
+* Construction et mise en œuvre du projet de performance
+* Formation à l’entraînement
+* Spécialisation théorique et pratique dans une APS
+* Méthodologie de la recherche
+* Formation à la recherche
+* Adaptation à l’exercice
+* Secourisme
+* Formation professionnelle
+* Stage professionnel
+* Mémoire
+
+⸻
+
+4. Management du Sport — MS
+
+Licence
+
+Modules spécifiques :
+
+1. Connaissances institutionnelles du sport
+2. Connaissances juridiques des entreprises sportives
+3. Économie et marketing du sport
+4. Management et gestion du sport
+5. Gestion et entretien des infrastructures sportives
+6. Connaissances sociologiques et managériales du sport
+7. Droit du sport
+8. Management et marketing stratégique
+9. Stratégie de communication
+10. Finance et comptabilité du sport
+11. Pratique de l’événementiel sportif
+12. Gestion de l’environnement sportif
+13. Marketing et économie du sport
+14. Pratique de l’entrepreneuriat et de l’événementiel sportif
+15. Gestion administrative du sport
+16. Fonction publique
+17. Spécialisation théorique et pratique dans une APS
+18. Pré-professionnalisation
+19. Formation à la recherche scientifique
+20. Méthodologie de la recherche
+21. Technologie de l’information et de la communication
+22. Techniques d’expression écrite et orale
+
+La maquette officielle détaille notamment la comptabilité, le marketing, le management RH, le droit sportif, l’événementiel, la gestion des infrastructures et l’entrepreneuriat sportif.  
+
+Master
+
+Modules :
+
+* Aspects fondamentaux de la gestion
+* Analyse stratégique
+* Gestion publique
+* Finances publiques
+* Professionnalisation
+* Spécialisation théorique et pratique dans une APS
+* Théorie de la méthodologie de la recherche
+* Formation à la recherche
+* Technique d’expression écrite et orale
+* Stage professionnel
+* Mémoire
+
+⸻
+
+5. Activités Physiques Adaptées — APA
+
+C’est la formation pour laquelle la maquette officielle est particulièrement détaillée.
+
+Licence
+
+S1–S3
+
+* Sciences de la Vie et de la Santé
+* Sciences Humaines et Sociales
+* Sciences de l’Intervention
+* Initiation aux fondamentaux du Football
+* Initiation aux fondamentaux du Handball
+* Initiation aux fondamentaux de la Gymnastique
+* Initiation aux fondamentaux de l’Athlétisme
+* Rugby
+* Basketball
+* Gymnastique II
+* Athlétisme II
+* Sciences Humaines et Sociales appliquées aux APS
+* Connaissances institutionnelles du sport
+* Volleyball
+* Sports de combat de préhension
+* Sports de combat de percussion
+* Sports d’entretien et santé
+* Matérialisation des plateaux de pratique des APS
+* Spécialisation APS
+* Pré-professionnalisation
+* TIC
+* Techniques de communication
+
+S4–S6
+
+* Connaissances historiques, sociologiques et institutionnelles du handicap
+* Biologie des populations spéciales
+* Rééducation fonctionnelle
+* Intervention en milieu spécial
+* Prise en charge du handicap
+* Sciences de la Vie et de la Santé et handicap
+* Protocole de prise en charge par l’APA et déontologie
+* Diagnostic des incapacités et prise en charge des populations spéciales
+* Prévention de la santé et traitement des pathologies par les APA
+* Brevet national de secourisme
+* Méthodologie et outils
+* Life Skills
+* Entrepreneuriat
+* Relaxation et massage des populations spéciales
+* Sciences de l’intervention en APAS
+* Prise en charge des populations spéciales 3
+* Sciences et métiers de la prévention par les APS
+* Prévention de la santé par le fitness
+* Traumatologie du sport
+* Formation à la recherche scientifique
+* Pré-professionnalisation
+
+Master APA
+
+Modules :
+
+* Sciences de la Vie et de la Santé et APA
+* Approche pratique du vieillissement
+* Évaluation de la condition physique des populations spéciales
+* Formation professionnelle
+* Intervention en APA
+* Spécialisation théorique et pratique dans une APS
+* Méthodologie de la recherche
+* Formation à la recherche
+* Biomécanique et conditionnement musculaire
+* Nutrition et APA
+* Professionnalisation
+* Formation administrative
+* Stage professionnel
+* Séminaires de recherche
+* Statistiques descriptives et inférentielles
+* Mémoire
+* Formation professionnelle en enseignement de l’EPS
+
+⸻
+
+B. ENSEP — Sciences et Techniques de l’Animation Socio-Éducative
+
+L’offre universitaire officielle actuelle comporte quatre parcours :
+
+6. Andragogie — AND
+
+Formation orientée vers l’éducation et la formation des adultes.
+
+7. Loisir — LOI
+
+Formation orientée vers l’animation, les loisirs, les activités récréatives et le développement des publics.
+
+8. Entrepreneuriat Jeunesse et Conduite de Projets — ECJP
+
+Formation orientée vers :
+
+* entrepreneuriat ;
+* jeunesse ;
+* développement communautaire ;
+* conception de projets ;
+* gestion de projets ;
+* accompagnement des jeunes ;
+* innovation ;
+* insertion professionnelle.
+
+9. Gérontologie — GER
+
+Formation orientée vers :
+
+* vieillissement ;
+* personnes âgées ;
+* accompagnement ;
+* animation ;
+* maintien de l’autonomie ;
+* développement des activités adaptées ;
+* intervention socio-éducative auprès des seniors.
+
+L’INJS confirme officiellement ces quatre filières ENSEP aux côtés des quatre filières ENSEPS.  
+
+Point important : contrairement aux quatre maquettes ENSEPS que le site actuel expose très clairement en détail, je n’ai pas trouvé dans les pages publiques actuelles de l’INJS les maquettes détaillées UE/ECUE des quatre parcours ENSEP. Je préfère donc ne pas inventer leurs modules. L’INJS indique bien leur existence, mais les pages publiques consultables ne fournissent pas actuellement le même niveau de détail que pour EM, ES, MS et APA.  
+
+⸻
+
+Structure que je te recommande pour ton application INJS-LMD
+
+Pour ton projet, je ne mettrais surtout pas simplement :
+
+Formation → Modules
+
+Je construirais plutôt :
+
+ÉCOLE
+│
+├── ENSEPS
+│   │
+│   ├── Mention STAPS
+│   │
+│   ├── Éducation et Motricité (EM)
+│   ├── Entraînement Sportif (ES)
+│   ├── Management du Sport (MS)
+│   └── Activités Physiques Adaptées (APA)
+│
+└── ENSEP
+    │
+    ├── Mention STASE
+    │
+    ├── Andragogie (AND)
+    ├── Loisir (LOI)
+    ├── Entrepreneuriat Jeunesse et Conduite de Projets (ECJP)
+    └── Gérontologie (GER)
+
+Puis :
+
+FORMATION
+    ↓
+PARCOURS
+    ↓
+NIVEAU
+    ↓
+SEMESTRE
+    ↓
+UE / MODULE
+    ↓
+ECUE
+    ↓
+VOLUME HORAIRE
+    ↓
+CM / TD / TP / STAGE
+    ↓
+CRÉDITS ECTS
+
+C’est beaucoup plus cohérent avec ton modèle LMD et avec ce que nous avons déjà prévu pour ton application.
+
+⚠️ Important pour ta base de données
+
+Il ne faut également pas créer un seul module “Football”, par exemple, puis l’associer indistinctement à toutes les formations. La même UE peut avoir des contenus différents selon le parcours et le semestre.
+
+Par exemple :
+
+Éducation et Motricité
+└── S1
+    └── Initiation aux fondamentaux du Football
+        └── ECUE : Football : Fondamentaux
+
+alors que dans une autre formation :
+
+Entraînement Sportif
+└── S4
+    └── Pratique des APS et entraînement
+        └── ECUE : Méthodologie de l'entraînement sportif 1
+
+C’est exactement le type de distinction qu’il faudra préserver dans INJS-LMD.
+
+Sources officielles :  ⁠Cursus universitaire INJS ·  ⁠Maquette Éducation et Motricité ·  ⁠Maquette Entraînement Sportif ·  ⁠Maquette Management du Sport ·  ⁠Maquette Activités Physiques Adaptées 
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,544 @@
+/* ==========================================================================
+   ENSEIGNANTS (Formateurs.jsx — vue standard) — spécificités Variante A.
+   Se combine au kit shared `premiumCommun.css` (`.px-*`). Préfixe `.ens-*`.
+   ========================================================================== */
+
+/* ── Recherche : le champ occupe la largeur utile, le bouton reste à droite. */
+.ens-toolbar .px-toolbar-body {
+  align-items: flex-end;
+}
+
+/* Conteneur de la branche standard : empilement hero → recherche → table. */
+.ens-page {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Panneau de résultats : découpe nette du tableau sous le filet. */
+.ens-panel {
+  overflow: hidden;
+}
+
+/* ── Tableau : largeur minimale + calibrage des colonnes ── */
+.ens-table {
+  min-width: 1080px;
+}
+
+.ens-table thead th:nth-child(1) { width: 92px; }     /* Numéro        */
+.ens-table thead th:nth-child(2) { width: 230px; }    /* Enseignant    */
+.ens-table thead th:nth-child(3) { width: 205px; }    /* Grade         */
+.ens-table thead th:nth-child(4) { min-width: 170px; } /* Spécialité   */
+.ens-table thead th:nth-child(5) { width: 225px; }    /* Contact       */
+.ens-table thead th:nth-child(6) { width: 245px; }    /* Enseignements */
+.ens-table thead th:last-child { width: 205px; }
+
+/* ── Cellules ── */
+/* Nom en navy 700 (le <strong> du rendu). */
+.table.ens-table tbody td strong {
+  color: var(--injs-navy);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* N° de badge : chip monospace (le `badge-bg-info` du rendu, compound pour
+   priment sur le badge global). */
+.badge-bg-info.ens-num {
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* Nombre de modules : pastille neutre à zéro, pastille bleue sinon. */
+.ens-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  padding: 0.18rem 0.55rem;
+  border-radius: 9999px;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  color: #64748B;
+  font-size: 0.76rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.ens-count.ens-count--on {
+  background: var(--injs-blue-pale);
+  border-color: var(--injs-border-strong);
+  color: var(--injs-blue-royal);
+}
+
+/* Colonnes optionnelles (pièce d'identité, RIB) en petit texte. */
+.table.ens-table tbody td.small {
+  font-size: 0.78rem;
+  color: #64748B;
+}
+
+/* ==========================================================================
+   PANORAMA PREMIUM (tâche 33) : KPI de couverture, identité, grades et
+   charge réelle (ECUE/heures) — variante « enseignants » uniquement.
+   ========================================================================== */
+.ens-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.ens-kpi {
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+  padding: 1.05rem 1.15rem;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F7FAFD 100%);
+  border: 1px solid #DFEAF4;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(28, 71, 137, 0.05);
+  min-width: 0;
+}
+
+.ens-kpi-icon {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 1.3rem;
+  border-radius: 14px;
+}
+
+.ens-kpi-icon.is-blue { color: #1D4ED8; background: #EAF1FE; }
+.ens-kpi-icon.is-green { color: #0E7A4F; background: #EAF7F0; }
+.ens-kpi-icon.is-amber { color: #B8860B; background: #FFF5DE; }
+.ens-kpi-icon.is-slate { color: #475569; background: #EEF2F7; }
+
+.ens-kpi-texte { display: flex; flex-direction: column; gap: 0.08rem; min-width: 0; }
+
+.ens-kpi-value {
+  font-size: 1.42rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--injs-navy);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ens-kpi-label { font-size: 0.76rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #5B7DA8; }
+.ens-kpi-sub { font-size: 0.72rem; font-weight: 600; color: #8C9AAD; line-height: 1.3; }
+
+/* ── Identité (avatar initiales + nom) ── */
+.ens-identite { display: inline-flex; align-items: center; gap: 0.65rem; min-width: 0; }
+
+.ens-avatar {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, var(--injs-blue-royal), var(--injs-navy));
+  border-radius: 50%;
+}
+
+.ens-identite-texte { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+.ens-nom { font-weight: 800; color: var(--injs-navy); letter-spacing: 0.01em; }
+.ens-prenom { font-weight: 600; color: #334155; }
+.ens-fonction { font-size: 0.72rem; font-weight: 700; color: #B8860B; }
+
+/* ── Grade académique + statut ── */
+.ens-grade {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.ens-grade.is-indigo { color: #4338CA; background: #EEF0FF; border-color: #CFD5FB; }
+.ens-grade.is-blue { color: #1D4ED8; background: #EEF4FF; border-color: #C7D9FB; }
+.ens-grade.is-cyan { color: #0E7490; background: #ECFAFD; border-color: #B6E4EF; }
+.ens-grade.is-green { color: #0E7A4F; background: #F1FBF6; border-color: #B7E7CE; }
+.ens-grade.is-amber { color: #8A5A00; background: #FFF8E8; border-color: #F5DFAE; }
+.ens-grade.is-slate { color: #475569; background: #F1F5F9; border-color: #DCE3EC; }
+
+.ens-statut { display: block; margin-top: 0.28rem; font-size: 0.72rem; font-weight: 600; color: #8C9AAD; }
+
+/* ── Contact empilé ── */
+.ens-contact { display: flex; flex-direction: column; gap: 0.1rem; font-size: 0.8rem; color: #334155; min-width: 0; }
+.ens-contact span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ens-contact-tel { font-size: 0.74rem; color: #8C9AAD; font-variant-numeric: tabular-nums; }
+
+/* ── Charge réelle (ECUE · heures · formations) ── */
+.ens-charge { display: flex; flex-direction: column; gap: 0.12rem; min-width: 0; }
+.ens-charge strong { font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+
+.ens-charge-formations {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 230px;
+}
+
+.ens-charge-vide { font-size: 0.78rem; font-weight: 600; color: #B3C0D1; font-style: italic; }
+
+@media (max-width: 1100px) {
+  .ens-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .ens-kpi-row { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ── Modale premium de création / édition ─────────────────────────────── */
+.formateur-edit-overlay {
+  z-index: 1060;
+  padding: clamp(0.75rem, 3vw, 2rem);
+}
+
+.modal-content.formateur-edit-modal {
+  width: min(940px, calc(100vw - 2rem));
+  max-height: min(92vh, 960px);
+  border: 1px solid #DCE6F1 !important;
+  border-radius: 22px !important;
+  box-shadow: 0 28px 80px rgba(7, 27, 58, 0.32) !important;
+}
+
+.formateur-edit-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  color: #FFFFFF;
+  background:
+    radial-gradient(ellipse at 82% 0%, rgba(101, 160, 224, 0.25), transparent 42%),
+    linear-gradient(118deg, #082443 0%, #123D68 62%, #1B4C7B 100%);
+}
+
+.formateur-edit-header-icon {
+  display: grid;
+  flex: 0 0 50px;
+  width: 50px;
+  height: 50px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 16px;
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.13);
+  font-size: 1.3rem;
+}
+
+.formateur-edit-heading {
+  min-width: 0;
+  flex: 1;
+}
+
+.formateur-edit-eyebrow {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: rgba(235, 244, 255, 0.72);
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.formateur-edit-heading h2 {
+  margin: 0;
+  color: #FFFFFF;
+  font-size: clamp(1.15rem, 2vw, 1.4rem);
+  font-weight: 750;
+  letter-spacing: -0.025em;
+}
+
+.formateur-edit-heading p {
+  margin: 0.28rem 0 0;
+  color: rgba(238, 246, 255, 0.78);
+  font-size: 0.8rem;
+}
+
+.formateur-edit-close {
+  display: grid;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 12px;
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: background 150ms ease, transform 150ms ease;
+}
+
+.formateur-edit-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.formateur-edit-close:focus-visible,
+.formateur-edit-btn:focus-visible {
+  outline: 3px solid #72B7F4;
+  outline-offset: 3px;
+}
+
+.formateur-edit-form {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.modal-body.formateur-edit-body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.15rem 1.4rem;
+  overflow-y: auto;
+  background: #F6F8FB;
+}
+
+.formateur-edit-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #E1E8F0;
+  border-radius: 16px;
+  background: linear-gradient(150deg, #FFFFFF 0%, #FBFCFE 100%);
+  box-shadow: 0 3px 12px rgba(15, 35, 65, 0.035);
+}
+
+.formateur-edit-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid #EDF1F5;
+}
+
+.formateur-edit-section-icon {
+  display: grid;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid #DCE9F6;
+  border-radius: 11px;
+  color: #2A6A9E;
+  background: #EFF6FC;
+  font-size: 0.95rem;
+}
+
+.formateur-edit-section-heading h3 {
+  margin: 0;
+  color: #193A59;
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.formateur-edit-section-heading p {
+  margin: 0.14rem 0 0;
+  color: #77869A;
+  font-size: 0.73rem;
+}
+
+.formateur-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem 1rem;
+}
+
+.formateur-edit-modal .formateur-edit-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.28rem;
+  margin: 0;
+}
+
+.formateur-edit-modal .form-label {
+  margin: 0;
+  color: #52657B;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.formateur-edit-modal .form-label small {
+  color: #8794A5;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.formateur-edit-modal .form-control {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 10px !important;
+  color: #1D3047;
+  font-size: 0.86rem;
+}
+
+.formateur-edit-modal textarea.form-control {
+  min-height: 104px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.formateur-edit-modal .form-control:focus {
+  border-color: #3F82B8 !important;
+  box-shadow: 0 0 0 3px rgba(47, 117, 181, 0.13) !important;
+}
+
+.formateur-edit-modal .alert {
+  margin: 0;
+  border-radius: 12px;
+}
+
+.modal-footer.formateur-edit-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  padding: 0.9rem 1.4rem;
+  border-top: 1px solid #E5EAF0;
+  background: #FFFFFF;
+}
+
+.btn.formateur-edit-btn {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.48rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 750;
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.btn.formateur-edit-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.btn.formateur-edit-btn:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.btn.formateur-edit-btn--secondary {
+  border-color: #DCE4ED;
+  color: #4B5D72;
+  background: #FFFFFF;
+}
+
+.btn.formateur-edit-btn--secondary:hover {
+  border-color: #BCCADA;
+  color: #243B54;
+  background: #F7F9FC;
+  box-shadow: 0 4px 12px rgba(28, 52, 77, 0.08);
+}
+
+.btn.btn-dfrc.formateur-edit-btn--primary {
+  border: 1px solid #1D4F7D;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #153C61, #2874B2);
+  box-shadow: 0 5px 13px rgba(21, 60, 97, 0.2);
+}
+
+.btn.btn-dfrc.formateur-edit-btn--primary:not(:disabled):hover {
+  border-color: #123553;
+  background: linear-gradient(135deg, #0E3152, #1D6199);
+  box-shadow: 0 7px 17px rgba(21, 60, 97, 0.27);
+}
+
+.formateur-edit-spinner {
+  width: 0.95rem;
+  height: 0.95rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: formateur-edit-spin 700ms linear infinite;
+}
+
+@keyframes formateur-edit-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .formateur-edit-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-content.formateur-edit-modal {
+    width: 100%;
+    max-height: 94vh;
+    border-radius: 20px 20px 0 0 !important;
+  }
+
+  .formateur-edit-header {
+    padding: 1rem 1.1rem;
+  }
+
+  .modal-body.formateur-edit-body {
+    padding: 0.85rem;
+  }
+
+  .formateur-edit-section {
+    padding: 0.85rem;
+  }
+
+  .modal-footer.formateur-edit-footer {
+    padding: 0.8rem 1rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .formateur-edit-header-icon {
+    flex-basis: 42px;
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+  }
+
+  .formateur-edit-heading p {
+    font-size: 0.73rem;
+  }
+
+  .formateur-edit-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .modal-footer.formateur-edit-footer {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .formateur-edit-close,
+  .btn.formateur-edit-btn {
+    transition: none;
+  }
+
+  .formateur-edit-spinner {
+    animation-duration: 1.5s;
+  }
+}

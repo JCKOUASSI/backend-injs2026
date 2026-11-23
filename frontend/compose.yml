@@ -1,0 +1,12 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VERSION: ${VERSION:-dev}
+    image: qr-badge-frontend:${VERSION:-dev}
+    ports:
+      - "80:80"
+    restart: unless-stopped

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquette — Tableau de bord Présences QR · Design « Nuit INJS Premium »</title>
+<style>
+  /* ═══════════ DESIGN « NUIT INJS PREMIUM » ═══════════
+     Mood : nuit académique profonde + lumière azur, touche dorée INJS.
+     Cartes « verre dépoli » sur le bandeau, contenu clair et aéré,
+     ombres douces teintées bleu nuit, coins très arrondis (20px),
+     micro-barres et anneaux de progression, chiffres en grand corps. */
+  :root{
+    --nuit:#061831; --nuit-2:#0A2A5C; --royal:#1267D6; --azur:#38BDF8;
+    --or:#F5B544; --vert:#1D9E62; --vermillon:#D45A4E; --encre:#132A44;
+    --pale:#5B7186; --fond:#F2F7FD; --ligne:#DCE8F5;
+    --ombre:0 18px 40px -18px rgba(6,24,49,.28);
+    --ombre-douce:0 8px 24px -12px rgba(6,24,49,.18);
+    --r:20px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--fond);color:var(--encre);
+       font-family:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;}
+  .page{max-width:1360px;margin:0 auto;padding:0 26px 60px}
+  .note{background:#FFF7E0;border:1px solid #F0D488;color:#7A5B00;border-radius:12px;
+        padding:10px 14px;font-size:13px;margin:14px 0}
+  /* ── Bandeau nuit ─────────────────────────────── */
+  .hero{position:relative;overflow:hidden;border-radius:0 0 28px 28px;color:#fff;
+        background:
+          radial-gradient(900px 420px at 85% -10%, rgba(56,189,248,.35), transparent 60%),
+          radial-gradient(700px 380px at 8% 110%, rgba(245,181,68,.20), transparent 55%),
+          linear-gradient(120deg,var(--nuit) 0%,var(--nuit-2) 58%,#14509E 100%);
+        padding:34px 40px 92px;margin:0 -26px}
+  .hero::after{content:"";position:absolute;inset:0;opacity:.14;pointer-events:none;
+        background-image:radial-gradient(rgba(255,255,255,.5) 1px, transparent 1px);
+        background-size:26px 26px}
+  .hero-top{position:relative;z-index:1;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start}
+  .badge{display:inline-flex;gap:8px;align-items:center;background:rgba(168,212,248,.16);
+         border:1px solid rgba(168,212,248,.45);color:#A8D4F8;border-radius:999px;
+         padding:5px 12px;font-size:11px;letter-spacing:.14em;font-weight:700}
+  .hero h1{font-size:34px;line-height:1.05;margin:16px 0 10px;font-weight:800;letter-spacing:-.01em;max-width:20ch}
+  .hero h1 .or{color:var(--or)}
+  .hero p{color:#CFE6FA;max-width:64ch;margin:0;font-size:15.5px;line-height:1.55}
+  .hero-actions{display:flex;gap:10px;align-items:center}
+  .btn{border-radius:12px;padding:11px 16px;font-weight:700;font-size:14px;text-decoration:none;display:inline-flex;gap:8px;align-items:center}
+  .btn-or{background:var(--or);color:#3A2A00;box-shadow:0 10px 22px -10px rgba(245,181,68,.8)}
+  .btn-verre{background:rgba(255,255,255,.10);color:#fff;border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(6px)}
+  .hero-chiffres{position:relative;z-index:1;display:flex;gap:44px;flex-wrap:wrap;margin-top:30px;align-items:end}
+  .hchiffre .v{font-size:38px;font-weight:800;line-height:1}
+  .hchiffre .l{color:#A8D4F8;font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-top:7px}
+  /* ── Plaquettes verre, à cheval sur le bandeau ── */
+  .plaqs{position:relative;z-index:2;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:-64px}
+  .plaq{background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.7);
+        border-radius:var(--r);padding:18px;box-shadow:var(--ombre)}
+  .plaq .haut{display:flex;justify-content:space-between;align-items:center}
+  .plaq .ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .plaq .v{font-size:30px;font-weight:800;color:var(--nuit-2);margin-top:10px;line-height:1}
+  .plaq .l{font-weight:700;margin-top:4px}
+  .plaq .s{color:var(--pale);font-size:13px;margin-top:2px}
+  .mini-barre{height:7px;background:#E3EDF7;border-radius:99px;margin-top:12px;overflow:hidden}
+  .mini-barre i{display:block;height:100%;border-radius:99px}
+  /* ── Panneaux ─────────────────────────────────── */
+  .grille{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;margin-top:16px}
+  .panel{background:#fff;border:1px solid var(--ligne);border-radius:var(--r);box-shadow:var(--ombre-douce);overflow:hidden}
+  .panel-tete{display:flex;justify-content:space-between;align-items:center;gap:12px;
+              padding:16px 20px;border-bottom:1px solid var(--ligne)}
+  .surtitre{color:var(--royal);font-size:11px;letter-spacing:.14em;font-weight:800;text-transform:uppercase}
+  .panel-tete h2{margin:3px 0 0;font-size:18px;color:var(--nuit-2)}
+  .lien{color:var(--royal);font-weight:700;font-size:13px;text-decoration:none}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{color:var(--pale);font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-align:left;padding:12px 20px 8px}
+  td{padding:11px 20px;border-top:1px solid #EDF3FA;vertical-align:middle}
+  tr:hover td{background:#F7FBFF}
+  .code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:var(--pale)}
+  .puce{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700}
+  .puce.vert{background:#E2F4EA;color:#14663C}.puce.bleu{background:#EAF5FF;color:#0B4FA8}
+  .puce.rouge{background:#FBE7E3;color:#9C2B2E}.puce.gris{background:#EDF1F6;color:#5B7186}
+  .barre{height:8px;background:#E3EDF7;border-radius:99px;overflow:hidden}
+  .barre i{display:block;height:100%;background:linear-gradient(90deg,var(--royal),var(--azur));border-radius:99px}
+  .legende{color:var(--pale);font-size:13px;border-left:3px solid var(--or);padding:2px 0 2px 12px;margin:16px 20px 20px}
+  /* Anomalies + répartition */
+  .anomalie{display:flex;gap:12px;padding:13px 20px;border-top:1px solid #EDF3FA;align-items:flex-start}
+  .anomalie:first-of-type{border-top:0}
+  .point{width:9px;height:9px;border-radius:50%;margin-top:6px;flex-shrink:0}
+  .rep{padding:16px 20px 20px}
+  .rep-ligne{margin-bottom:16px}
+  .rep-ligne .t{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+  .anneau{display:flex;align-items:center;gap:14px}
+  footer{color:var(--pale);font-size:12.5px;margin-top:26px}
+  @media (max-width:1000px){.plaqs{grid-template-columns:repeat(2,1fr)}.grille{grid-template-columns:1fr}}
+  @media (max-width:560px){.plaqs{grid-template-columns:1fr}.hero{padding:26px 20px 84px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="note">🧪 <strong>Maquette visuelle</strong> — design « Nuit INJS Premium ». Données de démonstration (INJS d'Abidjan, Marcory) ; en production, chaque chiffre vient de la supervision serveur du jour, comme aujourd'hui.</div>
+
+  <!-- Bandeau -->
+  <section class="hero">
+    <div class="hero-top">
+      <div>
+        <span class="badge">● PRÉSENCES QR · GÉOLOCALISATION — INJS D'ABIDJAN, Marcory</span>
+        <h1>Présences QR code<br>et <span class="or">géolocalisation</span></h1>
+        <p>Étudiants, enseignants et encadrants. Session QR temporaire, badgeage manuel motivé,
+           heartbeat continu et contrôle de périmètre calculé côté serveur — le tout rattaché
+           à la séance LMD publiée.</p>
+      </div>
+      <div class="hero-actions">
+        <a class="btn btn-verre" href="#">↻ Actualiser</a>
+        <a class="btn btn-or" href="#">▣ Ouvrir le poste de badgeage</a>
+      </div>
+    </div>
+    <div class="hero-chiffres">
+      <div class="hchiffre"><div class="v">87&nbsp;%</div><div class="l">Taux de présence du jour</div></div>
+      <div class="hchiffre"><div class="v">412/474</div><div class="l">Étudiants présents / attendus</div></div>
+      <div class="hchiffre"><div class="v">6</div><div class="l">Sessions QR ouvertes</div></div>
+      <div class="hchiffre"><div class="v">128</div><div class="l">En Salle/Espace maintenant</div></div>
+    </div>
+  </section>
+
+  <!-- Plaquettes verre -->
+  <section class="plaqs">
+    <article class="plaq">
+      <div class="haut"><span class="ico" style="background:#EAF5FF">🎓</span><span class="puce vert">● En cours</span></div>
+      <div class="v">18</div><div class="l">Cours du jour</div>
+      <div class="s">6 en cours · 9 terminés · 3 à venir</div>
+      <div class="mini-barre"><i style="width:50%;background:var(--royal)"></i></div>
+    </article>
+    <article class="plaq">
+      <div class="haut"><span class="ico" style="background:#FFF3D6">⏱️</span><span class="puce bleu">61 %</span></div>
+      <div class="v">22h / 36h</div><div class="l">Volume horaire</div>
+      <div class="s">Effectué / prévu sur la journée</div>
+      <div class="mini-barre"><i style="width:61%;background:var(--or)"></i></div>
+    </article>
+    <article class="plaq">
+      <div class="haut"><span class="ico" style="background:#E2F4EA">📡</span><span class="puce vert">Live</span></div>
+      <div class="v">1 204</div><div class="l">Pointages du jour</div>
+      <div class="s">dont 312 signaux heartbeat · 14 manuels motivés</div>
+      <div class="mini-barre"><i style="width:78%;background:var(--vert)"></i></div>
+    </article>
+    <article class="plaq">
+      <div class="haut"><span class="ico" style="background:#FBE7E3">⚠️</span><span class="puce rouge">À traiter</span></div>
+      <div class="v" style="color:var(--vermillon)">3</div><div class="l">Anomalies à contrôler</div>
+      <div class="s">GPS, QR, effectifs indéterminés</div>
+      <div class="mini-barre"><i style="width:12%;background:var(--vermillon)"></i></div>
+    </article>
+  </section>
+
+  <div class="grille">
+    <!-- Séances du jour -->
+    <section class="panel">
+      <div class="panel-tete">
+        <div><div class="surtitre">Mercredi 4 novembre 2026</div><h2>Séances du jour</h2></div>
+        <a class="lien" href="#">Registre complet des séances →</a>
+      </div>
+      <table>
+        <thead><tr><th>Horaire</th><th>ECUE / UE</th><th>Groupe</th><th>Enseignant</th><th>Présents</th><th>Statut</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="code">08:00 — 10:00</td>
+            <td><strong>PHY101 · Physique appliquée</strong><div class="code">UE-PHY1 · Licence 1 · Semestre 1 · Cours</div></td>
+            <td class="code">L1-G1</td><td>Awa Traoré</td>
+            <td><strong style="color:var(--vert)">46</strong><span style="color:var(--pale)">/52</span></td>
+            <td><span class="puce vert">En cours</span> <span class="puce bleu">QR</span></td>
+          </tr>
+          <tr>
+            <td class="code">08:00 — 11:00</td>
+            <td><strong>ANA204 · Anatomie fonctionnelle</strong><div class="code">UE-ANA2 · Licence 2 · Semestre 3 · TD</div></td>
+            <td class="code">L2-G2</td><td>Kouadio N'Guessan</td>
+            <td><strong style="color:var(--vert)">38</strong><span style="color:var(--pale)">/40</span></td>
+            <td><span class="puce vert">En cours</span> <span class="puce bleu">QR</span></td>
+          </tr>
+          <tr>
+            <td class="code">10:15 — 12:15</td>
+            <td><strong>PED110 · Pédagogie des APS</strong><div class="code">UE-PED1 · Licence 1 · Semestre 1 · Cours</div></td>
+            <td class="code">L1-G3</td><td>Fatoumata Coulibaly</td>
+            <td><strong>—</strong></td>
+            <td><span class="puce bleu">À venir</span></td>
+          </tr>
+          <tr>
+            <td class="code">07:30 — 09:30</td>
+            <td><strong>BIO102 · Biologie cellulaire</strong><div class="code">UE-BIO1 · Licence 1 · Semestre 1 · Cours</div></td>
+            <td class="code">L1-G2</td><td>Marc Diallo</td>
+            <td><strong style="color:var(--vert)">49</strong><span style="color:var(--pale)">/50</span></td>
+            <td><span class="puce gris">Terminée</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="legende">Une présence est toujours rattachée à une séance LMD publiée par GET INJS APP :
+        jamais à un module hors référentiel, jamais à un créneau reconstitué.</p>
+    </section>
+
+    <!-- Colonne contrôle -->
+    <div>
+      <section class="panel">
+        <div class="panel-tete">
+          <div><div class="surtitre">Contrôle</div><h2>Anomalies détectées</h2></div>
+          <span class="puce rouge">3</span>
+        </div>
+        <div class="anomalie"><span class="point" style="background:var(--vermillon)"></span>
+          <div><strong>Chimie organique</strong><div class="code">sans groupe · 10:00</div>
+          <span class="puce rouge">SANS GROUPE</span></div></div>
+        <div class="anomalie"><span class="point" style="background:var(--or)"></span>
+          <div><strong>Physique appliquée</strong><div class="code">L1-G1 · 08:00</div>
+          <span class="puce rouge">HORS PÉRIMÈTRE × 2</span></div></div>
+        <div class="anomalie"><span class="point" style="background:var(--or)"></span>
+          <div><strong>Anatomie fonctionnelle</strong><div class="code">L2-G2 · 08:00</div>
+          <span class="puce bleu">GPS IMPRÉCIS × 1</span></div></div>
+      </section>
+
+      <section class="panel" style="margin-top:16px">
+        <div class="panel-tete">
+          <div><div class="surtitre">Répartition</div><h2>Par type de participant</h2></div>
+        </div>
+        <div class="rep">
+          <div class="rep-ligne"><div class="t"><strong>Étudiants</strong><span class="code">412/474 badgés</span></div>
+            <div class="barre"><i style="width:87%"></i></div></div>
+          <div class="rep-ligne"><div class="t"><strong>Enseignants</strong><span class="code">14/16 badgés</span></div>
+            <div class="barre"><i style="width:88%;background:linear-gradient(90deg,#0A2A5C,#1267D6)"></i></div></div>
+          <div class="rep-ligne" style="margin-bottom:0"><div class="t"><strong>Encadrants</strong><span class="code">5/6 badgés</span></div>
+            <div class="barre"><i style="width:83%;background:linear-gradient(90deg,#8A5A00,#F5B544)"></i></div></div>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top:16px">
+        <div class="panel-tete">
+          <div><div class="surtitre">Qualité opérationnelle</div><h2>Retard moyen</h2></div>
+        </div>
+        <div class="rep anneau">
+          <svg width="86" height="86" viewBox="0 0 86 86" aria-hidden="true">
+            <circle cx="43" cy="43" r="36" fill="none" stroke="#E3EDF7" stroke-width="9"/>
+            <circle cx="43" cy="43" r="36" fill="none" stroke="#F5B544" stroke-width="9" stroke-linecap="round"
+                    stroke-dasharray="226" stroke-dashoffset="150" transform="rotate(-90 43 43)"/>
+            <text x="43" y="48" text-anchor="middle" font-size="17" font-weight="800" fill="#0A2A5C">6,5</text>
+          </svg>
+          <div><strong>6,5 min</strong> de retard moyen d'entrée<br>
+          <span style="color:var(--pale);font-size:13px">23 entrées en retard · début prévu → premier pointage, journée de référence.</span></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <footer>Maquette de design — « Nuit INJS Premium » · Bandeau nuit académique, plaquettes verre dépoli, accent doré, contenu clair.
+    À valider avant implémentation dans le Hub Présences QR (React + styles du dépôt).</footer>
+</div>
+</body>
+</html>

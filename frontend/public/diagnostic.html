@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Diagnostic — INJS-LMD</title>
+    <style>
+      :root { color-scheme: light; }
+      body {
+        margin: 0; padding: 24px; background: #f4f6fb; color: #1f2a44;
+        font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      h1 { font-size: 1.35rem; margin: 0 0 4px; }
+      .sous { color: #5b6478; font-size: .9rem; margin-bottom: 20px; }
+      .carte {
+        background: #fff; border: 1px solid #e1e6f0; border-radius: 12px;
+        padding: 16px 18px; margin-bottom: 16px; max-width: 900px;
+      }
+      table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+      th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid #eef1f7; vertical-align: top; }
+      th { color: #5b6478; font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+      .ok { color: #17724b; font-weight: 700; }
+      .ko { color: #a11f1f; font-weight: 700; }
+      .attente { color: #8a6d1f; font-weight: 700; }
+      pre { margin: 6px 0 0; padding: 10px; background: #0f172a; color: #e8eefc;
+            border-radius: 8px; font-size: .78rem; overflow: auto; max-height: 220px; }
+      .bandeau-ok { background: #e8f7ef; border-color: #b9e4cd; }
+      .bandeau-ko { background: #fdecec; border-color: #f3b4b4; }
+      button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid #283a87;
+               background: #283a87; color: #fff; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <h1>Diagnostic de l’application INJS-LMD</h1>
+    <p class="sous">
+      Cette page ne dépend d’aucun script de l’application : si elle s’affiche,
+      le navigateur atteint bien le serveur. Les contrôles ci-dessous disent
+      ensuite ce qui fonctionne et ce qui ne fonctionne pas.
+    </p>
+
+    <div class="carte" id="verdict" aria-live="polite">
+      <strong>Contrôles en cours…</strong>
+    </div>
+
+    <div class="carte">
+      <table>
+        <caption style="caption-side: top; text-align: left; color: #5b6478; font-size: .85rem; padding-bottom: 8px;">
+          Contrôles effectués par le navigateur
+        </caption>
+        <thead>
+          <tr><th scope="col">Contrôle</th><th scope="col">Résultat</th><th scope="col">Détail</th></tr>
+        </thead>
+        <tbody id="lignes"></tbody>
+      </table>
+    </div>
+
+    <div class="carte">
+      <table>
+        <caption style="caption-side: top; text-align: left; color: #5b6478; font-size: .85rem; padding-bottom: 8px;">
+          Environnement
+        </caption>
+        <tbody id="env"></tbody>
+      </table>
+    </div>
+
+    <div class="carte" id="carte-erreurs" style="display:none">
+      <strong>Erreurs JavaScript observées</strong>
+      <pre id="erreurs"></pre>
+    </div>
+
+    <p><button type="button" onclick="location.reload()">Relancer les contrôles</button></p>
+
+    <script>
+      (function () {
+        var lignes = document.getElementById('lignes');
+        var verdict = document.getElementById('verdict');
+        var erreurs = [];
+        var echecs = 0;
+
+        window.addEventListener('error', function (e) {
+          erreurs.push('error: ' + (e.message || e.type) + ' — ' + (e.filename || ''));
+          afficherErreurs();
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          erreurs.push('promesse rejetée : ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+          afficherErreurs();
+        });
+
+        function afficherErreurs() {
+          document.getElementById('carte-erreurs').style.display = 'block';
+          document.getElementById('erreurs').textContent = erreurs.join('\n');
+        }
+
+        function ligne(nom, etat, detail) {
+          var tr = document.createElement('tr');
+          var td1 = document.createElement('td'); td1.textContent = nom;
+          var td2 = document.createElement('td');
+          td2.className = etat.classe;
+          td2.textContent = etat.texte;
+          var td3 = document.createElement('td'); td3.textContent = detail;
+          tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+          lignes.appendChild(tr);
+        }
+
+        var OK = { classe: 'ok', texte: 'OK' };
+        var KO = { classe: 'ko', texte: 'ÉCHEC' };
+
+        function controler(nom, url, attendu) {
+          return fetch(url, { cache: 'no-store' })
+            .then(function (r) {
+              var type = r.headers.get('content-type') || '';
+              var bon = r.ok && (!attendu || type.indexOf(attendu) === 0);
+              ligne(nom, bon ? OK : KO, r.status + ' · ' + type);
+              if (!bon) echecs++;
+              return r;
+            })
+            .catch(function (e) {
+              ligne(nom, KO, 'réseau : ' + e.message);
+              echecs++;
+            });
+        }
+
+        function environnement() {
+          var env = document.getElementById('env');
+          var infos = [
+            ['URL', location.href],
+            ['dans une iframe ?', String(window.self !== window.top)],
+            ['cookies autorisés ?', String(navigator.cookieEnabled)],
+            ['stockage local', testStockage()],
+            ['user-agent', navigator.userAgent],
+          ];
+          infos.forEach(function (paire) {
+            var tr = document.createElement('tr');
+            var td1 = document.createElement('td'); td1.textContent = paire[0];
+            var td2 = document.createElement('td'); td2.textContent = paire[1];
+            tr.appendChild(td1); tr.appendChild(td2);
+            env.appendChild(tr);
+          });
+        }
+
+        function testStockage() {
+          try {
+            window.localStorage.setItem('__diag', '1');
+            window.localStorage.removeItem('__diag');
+            return 'disponible';
+          } catch (e) {
+            return 'BLOQUÉ (' + e.name + ') — la session ne peut pas être conservée';
+          }
+        }
+
+        environnement();
+
+        var enCours = [
+          controler('Page d’accueil HTML', '/', 'text/html'),
+          controler('Module d’entrée de l’application', '/src/main.jsx', 'text/javascript'),
+          controler('Client de développement Vite', '/@vite/client', 'text/javascript'),
+          controler('API (santé) via le proxy', '/api/health/', 'application/json'),
+        ];
+
+        Promise.all(enCours).then(function () {
+          setTimeout(function () {
+            verdict.className = 'carte ' + (echecs === 0 ? 'bandeau-ok' : 'bandeau-ko');
+            verdict.innerHTML = echecs === 0
+              ? '<strong>Tous les contrôles sont au vert.</strong> Le navigateur atteint le serveur et charge les modules : le problème se situe dans l’application elle-même — ouvrez la console (F12) et lisez l’erreur affichée.'
+              : '<strong>' + echecs + ' contrôle(s) en échec.</strong> La page ne peut pas fonctionner : le détail ci-dessus indique lequel.';
+          }, 300);
+        });
+      })();
+    </script>
+  </body>
+</html>

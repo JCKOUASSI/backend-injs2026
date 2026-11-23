@@ -1,0 +1,273 @@
+{
+  "source": "Base backend-injs2026 (référentiels scolarite/formations) — export du 2026-11-04, la base reste la source de vérité",
+  "comptages": {
+    "formations": 16,
+    "niveaux": [
+      {
+        "code": "L1",
+        "libelle": "Licence 1"
+      },
+      {
+        "code": "L2",
+        "libelle": "Licence 2"
+      },
+      {
+        "code": "L3",
+        "libelle": "Licence 3"
+      },
+      {
+        "code": "M1",
+        "libelle": "Master 1"
+      },
+      {
+        "code": "M2",
+        "libelle": "Master 2"
+      },
+      {
+        "code": "D1",
+        "libelle": "Doctorat 1"
+      },
+      {
+        "code": "D2",
+        "libelle": "Doctorat 2"
+      },
+      {
+        "code": "D3",
+        "libelle": "Doctorat 3"
+      }
+    ],
+    "semestres_par_niveau": {
+      "L1": [
+        1,
+        2
+      ],
+      "L2": [
+        3,
+        4
+      ],
+      "L3": [
+        5,
+        6
+      ],
+      "M1": [
+        7,
+        8
+      ],
+      "M2": [
+        9,
+        10
+      ],
+      "D1": [
+        11,
+        12
+      ],
+      "D2": [
+        13,
+        14
+      ],
+      "D3": [
+        15,
+        16
+      ]
+    },
+    "groupes": 138,
+    "salles": 166,
+    "enseignants_formateurs": 101,
+    "maquettes": {
+      "ACTIVE": 40,
+      "BROUILLON": 40
+    },
+    "ue": 1062,
+    "ecue": 1558,
+    "etudiants_dossiers": 3727,
+    "creneaux_types": 24
+  },
+  "formations": [
+    {
+      "id": 2,
+      "intitule": "ACTIVITÉS PHYSIQUES ADAPTÉES — LICENCE"
+    },
+    {
+      "id": 6,
+      "intitule": "ACTIVITÉS PHYSIQUES ADAPTÉES — MASTER"
+    },
+    {
+      "id": 9,
+      "intitule": "ANDRAGOGIE — LICENCE"
+    },
+    {
+      "id": 10,
+      "intitule": "ANDRAGOGIE — MASTER"
+    },
+    {
+      "id": 3,
+      "intitule": "ENTRAÎNEMENT SPORTIF — LICENCE"
+    },
+    {
+      "id": 7,
+      "intitule": "ENTRAÎNEMENT SPORTIF — MASTER"
+    },
+    {
+      "id": 13,
+      "intitule": "ENTREPRENEURIAT JEUNESSE ET CONDUITE DE PROJETS — LICENCE"
+    },
+    {
+      "id": 14,
+      "intitule": "ENTREPRENEURIAT JEUNESSE ET CONDUITE DE PROJETS — MASTER"
+    },
+    {
+      "id": 15,
+      "intitule": "GÉRONTOLOGIE — LICENCE"
+    },
+    {
+      "id": 16,
+      "intitule": "GÉRONTOLOGIE — MASTER"
+    },
+    {
+      "id": 11,
+      "intitule": "LOISIR — LICENCE"
+    },
+    {
+      "id": 12,
+      "intitule": "LOISIR — MASTER"
+    },
+    {
+      "id": 4,
+      "intitule": "MANAGEMENT DU SPORT — LICENCE"
+    },
+    {
+      "id": 8,
+      "intitule": "MANAGEMENT DU SPORT — MASTER"
+    },
+    {
+      "id": 1,
+      "intitule": "ÉDUCATION ET MOTRICITÉ — LICENCE"
+    },
+    {
+      "id": 5,
+      "intitule": "ÉDUCATION ET MOTRICITÉ — MASTER"
+    }
+  ],
+  "creneaux_types": [
+    {
+      "jour": "JEUDI",
+      "heure_debut": "07:30",
+      "heure_fin": "09:30"
+    },
+    {
+      "jour": "JEUDI",
+      "heure_debut": "09:45",
+      "heure_fin": "11:45"
+    },
+    {
+      "jour": "JEUDI",
+      "heure_debut": "13:30",
+      "heure_fin": "15:30"
+    },
+    {
+      "jour": "JEUDI",
+      "heure_debut": "15:45",
+      "heure_fin": "17:45"
+    },
+    {
+      "jour": "LUNDI",
+      "heure_debut": "07:30",
+      "heure_fin": "09:30"
+    },
+    {
+      "jour": "LUNDI",
+      "heure_debut": "09:45",
+      "heure_fin": "11:45"
+    },
+    {
+      "jour": "LUNDI",
+      "heure_debut": "13:30",
+      "heure_fin": "15:30"
+    },
+    {
+      "jour": "LUNDI",
+      "heure_debut": "15:45",
+      "heure_fin": "17:45"
+    },
+    {
+      "jour": "MARDI",
+      "heure_debut": "07:30",
+      "heure_fin": "09:30"
+    },
+    {
+      "jour": "MARDI",
+      "heure_debut": "09:45",
+      "heure_fin": "11:45"
+    },
+    {
+      "jour": "MARDI",
+      "heure_debut": "13:30",
+      "heure_fin": "15:30"
+    },
+    {
+      "jour": "MARDI",
+      "heure_debut": "15:45",
+      "heure_fin": "17:45"
+    },
+    {
+      "jour": "MERCREDI",
+      "heure_debut": "07:30",
+      "heure_fin": "09:30"
+    },
+    {
+      "jour": "MERCREDI",
+      "heure_debut": "09:45",
+      "heure_fin": "11:45"
+    },
+    {
+      "jour": "MERCREDI",
+      "heure_debut": "13:30",
+      "heure_fin": "15:30"
+    },
+    {
+      "jour": "MERCREDI",
+      "heure_debut": "15:45",
+      "heure_fin": "17:45"
+    },
+    {
+      "jour": "SAMEDI",
+      "heure_debut": "07:30",
+      "heure_fin": "09:30"
+    },
+    {
+      "jour": "SAMEDI",
+      "heure_debut": "09:45",
+      "heure_fin": "11:45"
+    },
+    {
+      "jour": "SAMEDI",
+      "heure_debut": "13:30",
+      "heure_fin": "15:30"
+    },
+    {
+      "jour": "SAMEDI",
+      "heure_debut": "15:45",
+      "heure_fin": "17:45"
+    },
+    {
+      "jour": "VENDREDI",
+      "heure_debut": "07:30",
+      "heure_fin": "09:30"
+    },
+    {
+      "jour": "VENDREDI",
+      "heure_debut": "09:45",
+      "heure_fin": "11:45"
+    },
+    {
+      "jour": "VENDREDI",
+      "heure_debut": "13:30",
+      "heure_fin": "15:30"
+    },
+    {
+      "jour": "VENDREDI",
+      "heure_debut": "15:45",
+      "heure_fin": "17:45"
+    }
+  ]
+}

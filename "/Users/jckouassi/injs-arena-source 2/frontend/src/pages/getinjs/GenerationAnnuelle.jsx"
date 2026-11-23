@@ -1,0 +1,14 @@
+}, [bilan, groupes])
+
+  const couvertureBilan = useMemo(() => {
+    if (!bilan?.totaux) return null
+    const attendues = bilan.totaux.seances_attendues ?? 0
+    const placees = bilan.totaux.seances_placees ?? 0
+    return attendues ? Math.round(placees / attendues * 100) : null
+  }, [bilan])
+
+  const groupesNonPlanifies = useMemo(() => {
+    return groupes.filter((g) => (g.seances_non_placees || 0) > 0)
+  }, [groupes])
+
+  const filieresRef = useMemo(

@@ -1,0 +1,283 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{% if formation %}Modifier{% else %}Créer{% endif %} une formation{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'web-dashboard' %}">Accueil</a></li>
+<li class="breadcrumb-item"><a href="{% url 'web-formations' %}">Formations</a></li>
+<li class="breadcrumb-item active">{% if formation %}Modifier{% else %}Créer{% endif %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card card-modern">
+            <div class="card-header">
+                <i class="bi bi-{% if formation %}pencil{% else %}plus-circle{% endif %} me-2"></i>
+                {% if formation %}Modifier la formation{% else %}Nouvelle formation{% endif %}
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row g-3">
+
+                        <!-- Formation (cycle) -->
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Formation (cycle) <span class="text-danger">*</span></label>
+                            {% if ref_formations %}
+                            <select name="formation" class="form-select" required>
+                                <option value="">-- Choisir --</option>
+                                {% for r in ref_formations %}
+                                <option value="{{ r.intitule }}" {% if formation.formation == r.intitule %}selected{% endif %}>{{ r.intitule }}</option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                            <input type="text" name="formation" class="form-control" required
+                                   value="{{ formation.formation|default:'' }}" placeholder="Ex: FORMATION EN ADMINISTRATION DE BASE">
+                            {% endif %}
+                        </div>
+
+                        <!-- Module -->
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Module (cours)</label>
+                            {% if ref_modules %}
+                            <select name="module" class="form-select" id="id_module">
+                                <option value="">-- Choisir --</option>
+                                {% for m in ref_modules %}
+                                <option value="{{ m.intitule }}" data-vh="{{ m.volume_horaire|default:'' }}"
+                                    {% if formation.module == m.intitule %}selected{% endif %}>{{ m.intitule }}</option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                            <input type="text" name="module" class="form-control"
+                                   value="{{ formation.module|default:'' }}">
+                            {% endif %}
+                        </div>
+
+                        <!-- Catégorie / Grade -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Catégorie</label>
+                            {% if ref_categories %}
+                            <select name="categorie" class="form-select" id="id_categorie">
+                                <option value="">-- Choisir --</option>
+                                {% for c in ref_categories %}
+                                <option value="{{ c.code }}" data-id="{{ c.id }}"
+                                    {% if formation.categorie == c.code %}selected{% endif %}>
+                                    {{ c.code }}{% if c.libelle %} – {{ c.libelle }}{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                            <input type="text" name="categorie" class="form-control" placeholder="A, B, C…"
+                                   value="{{ formation.categorie|default:'' }}">
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Grade</label>
+                            {% if ref_grades %}
+                            <select name="grade" class="form-select" id="id_grade">
+                                <option value="">-- Choisir --</option>
+                                {% for g in ref_grades %}
+                                <option value="{{ g.code }}" data-cat="{{ g.categorie_id }}"
+                                    {% if formation.grade == g.code %}selected{% endif %}>
+                                    {{ g.code }}{% if g.libelle %} – {{ g.libelle }}{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                            <input type="text" name="grade" class="form-control" placeholder="A4, A3…"
+                                   value="{{ formation.grade|default:'' }}">
+                            {% endif %}
+                        </div>
+
+                        <!-- Site / Bâtiment / Salle -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Site</label>
+                            {% if ref_sites %}
+                            <select name="site" class="form-select" id="id_site">
+                                <option value="">-- Choisir --</option>
+                                {% for s in ref_sites %}
+                                <option value="{{ s.nom }}" data-id="{{ s.id }}"
+                                    {% if formation.site == s.nom %}selected{% endif %}>{{ s.nom }}</option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                            <input type="text" name="site" class="form-control"
+                                   value="{{ formation.site|default:'' }}">
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Bâtiment</label>
+                            {% if ref_batiments %}
+                            <select name="batiment" class="form-select" id="id_batiment">
+                                <option value="">-- Choisir --</option>
+                                {% for b in ref_batiments %}
+                                <option value="{{ b.nom }}" data-site="{{ b.site_id }}" data-id="{{ b.id }}"
+                                    {% if formation.batiment == b.nom %}selected{% endif %}>{{ b.nom }}</option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                            <input type="text" name="batiment" class="form-control"
+                                   value="{{ formation.batiment|default:'' }}">
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Salle</label>
+                            {% if ref_salles %}
+                            <select name="salle" class="form-select" id="id_salle">
+                                <option value="">-- Choisir --</option>
+                                {% for s in ref_salles %}
+                                <option value="{{ s.nom }}" data-site="{{ s.site_id }}" data-bat="{{ s.batiment_id }}"
+                                    {% if formation.salle == s.nom %}selected{% endif %}>{{ s.nom }}</option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                            <input type="text" name="salle" class="form-control"
+                                   value="{{ formation.salle|default:'' }}">
+                            {% endif %}
+                        </div>
+
+                        <!-- Dates -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Date de début <span class="text-danger">*</span></label>
+                            <input type="datetime-local" name="date_debut" class="form-control"
+                                   value="{{ date_debut_str|default:'' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Date de fin <span class="text-danger">*</span></label>
+                            <input type="datetime-local" name="date_fin" class="form-control"
+                                   value="{{ date_fin_str|default:'' }}" required>
+                        </div>
+
+                        <!-- Durée / Statut -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Durée prévue (heures)</label>
+                            <input type="number" name="duree_prevue_heures" id="id_duree" class="form-control"
+                                   value="{{ formation.duree_prevue_heures|default:'0' }}" step="0.5" min="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Statut</label>
+                            <select name="statut" class="form-select">
+                                <option value="PLANIFIEE" {% if formation.statut == 'PLANIFIEE' %}selected{% endif %}>Planifiée</option>
+                                <option value="EN_COURS" {% if formation.statut == 'EN_COURS' %}selected{% endif %}>En cours</option>
+                                <option value="SUSPENDUE" {% if formation.statut == 'SUSPENDUE' %}selected{% endif %}>Suspendue</option>
+                                <option value="TERMINEE" {% if formation.statut == 'TERMINEE' %}selected{% endif %}>Terminée</option>
+                            </select>
+                        </div>
+
+                        <!-- Superviseur / Formateurs -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Superviseur</label>
+                            <select name="superviseur_id" class="form-select">
+                                <option value="">— Aucun —</option>
+                                {% for s in superviseurs %}
+                                <option value="{{ s.id }}" {% if formation.superviseur_id == s.id %}selected{% endif %}>
+                                    {{ s.get_full_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Enseignants</label>
+                            <select name="enseignant_ids" class="form-select form-select-sm" multiple size="3">
+                                {% for f in all_formateurs %}
+                                <option value="{{ f.id }}"
+                                    {% if f.id in selected_formateur_ids %}selected{% endif %}>
+                                    {{ f.numerobadge }} — {{ f.nom }} {{ f.prenom }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Ctrl/Cmd + clic pour multi-sélection</small>
+                        </div>
+
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'web-formations' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Retour
+                        </a>
+                        <button type="submit" class="btn btn-dfrc">
+                            <i class="bi bi-check-lg me-1"></i>
+                            {% if formation %}Enregistrer{% else %}Créer{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Filtrage dynamique bâtiment → selon site
+// Filtrage dynamique salle → selon site + bâtiment
+// Filtrage dynamique grade → selon catégorie
+// Auto-remplissage durée → selon module
+
+(function () {
+    const siteEl = document.getElementById('id_site');
+    const batEl = document.getElementById('id_batiment');
+    const salleEl = document.getElementById('id_salle');
+    const catEl = document.getElementById('id_categorie');
+    const gradeEl = document.getElementById('id_grade');
+    const moduleEl = document.getElementById('id_module');
+    const dureeEl = document.getElementById('id_duree');
+
+    function filterOptions(selectEl, predicate) {
+        if (!selectEl) return;
+        const current = selectEl.value;
+        Array.from(selectEl.options).forEach(opt => {
+            if (!opt.value) return; // garder l'option vide
+            opt.hidden = !predicate(opt);
+        });
+        // si la valeur courante est maintenant cachée, reset
+        const currentOpt = selectEl.querySelector(`option[value="${current}"]`);
+        if (currentOpt && currentOpt.hidden) selectEl.value = '';
+    }
+
+    function getSiteId() {
+        if (!siteEl) return null;
+        const sel = siteEl.options[siteEl.selectedIndex];
+        return sel ? sel.dataset.id : null;
+    }
+
+    function getBatId() {
+        if (!batEl) return null;
+        const sel = batEl.options[batEl.selectedIndex];
+        return sel ? sel.dataset.id : null;
+    }
+
+    function getCatId() {
+        if (!catEl) return null;
+        const sel = catEl.options[catEl.selectedIndex];
+        return sel ? sel.dataset.id : null;
+    }
+
+    function applyFilters() {
+        const siteId = getSiteId();
+        const batId = getBatId();
+        filterOptions(batEl, opt => !siteId || opt.dataset.site === siteId);
+        filterOptions(salleEl, opt =>
+            (!siteId || opt.dataset.site === siteId) &&
+            (!batId || opt.dataset.bat === batId || !opt.dataset.bat)
+        );
+    }
+
+    function applyGradeFilter() {
+        const catId = getCatId();
+        filterOptions(gradeEl, opt => !catId || opt.dataset.cat === catId);
+    }
+
+    if (siteEl) siteEl.addEventListener('change', () => { if (batEl) batEl.value = ''; if (salleEl) salleEl.value = ''; applyFilters(); });
+    if (batEl) batEl.addEventListener('change', applyFilters);
+    if (catEl) catEl.addEventListener('change', () => { if (gradeEl) gradeEl.value = ''; applyGradeFilter(); });
+    if (moduleEl) moduleEl.addEventListener('change', () => {
+        const sel = moduleEl.options[moduleEl.selectedIndex];
+        if (dureeEl && sel && sel.dataset.vh) dureeEl.value = sel.dataset.vh;
+    });
+
+    // Appliquer au chargement
+    applyFilters();
+    applyGradeFilter();
+})();
+</script>
+{% endblock %}

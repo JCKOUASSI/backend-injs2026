@@ -1,0 +1,133 @@
+{% extends "dashboard/base.html" %}
+{% load dashboard_tags %}
+
+{% block title %}Formations{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'web-dashboard' %}">Accueil</a></li>
+<li class="breadcrumb-item active">Formations</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-mortarboard me-2"></i>Formations</h4>
+    {% if user|can_create_formation %}
+    <a href="{% url 'web-formation-create' %}" class="btn btn-dfrc">
+        <i class="bi bi-plus-lg me-1"></i> Nouvelle formation
+    </a>
+    {% endif %}
+</div>
+
+<!-- Filtres -->
+<div class="card card-modern mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-md-3">
+                <input type="text" name="q" class="form-control form-control-sm"
+                       placeholder="Rechercher par titre ou lieu..."
+                       value="{{ request.GET.q|default:'' }}">
+            </div>
+            <div class="col-auto">
+                <select name="statut" class="form-select form-select-sm">
+                    <option value="">Tous les statuts</option>
+                    <option value="PLANIFIEE" {% if request.GET.statut == 'PLANIFIEE' %}selected{% endif %}>Planifiée</option>
+                    <option value="EN_COURS" {% if request.GET.statut == 'EN_COURS' %}selected{% endif %}>En cours</option>
+                    <option value="TERMINEE" {% if request.GET.statut == 'TERMINEE' %}selected{% endif %}>Terminée</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-outline-primary">Filtrer</button>
+                <a href="{% url 'web-formations' %}" class="btn btn-sm btn-outline-secondary">Réinitialiser</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card card-modern">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th>Formation</th>
+                    <th>Lieu</th>
+                    <th>Dates</th>
+                    <th>Superviseur</th>
+                    <th>Participants</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in formations %}
+                <tr>
+                    <td>
+                        <a href="{% url 'web-formation-detail' f.id %}" class="text-decoration-none fw-semibold">
+                            {{ f.titre }}
+                        </a>
+                    </td>
+                    <td>{{ f.lieu|default:"-" }}</td>
+                    <td>
+                        <small>{{ f.date_debut|date:"d/m/Y" }}<br>{{ f.date_fin|date:"d/m/Y" }}</small>
+                    </td>
+                    <td>
+                        {% if f.superviseur %}
+                            <i class="bi bi-person-check text-success me-1"></i>{{ f.superviseur.get_full_name }}
+                        {% else %}
+                            <span class="text-muted"><i class="bi bi-person-dash me-1"></i>Non assigné</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary">{{ f.nb_attendus }}</span> attendus
+                    </td>
+                    <td>
+                        {% if f.statut == 'PLANIFIEE' %}
+                            <span class="badge badge-statut badge-planifiee">Planifiée</span>
+                        {% elif f.statut == 'EN_COURS' %}
+                            <span class="badge badge-statut badge-en-cours">En cours</span>
+                        {% elif f.statut == 'SUSPENDUE' %}
+                            <span class="badge badge-statut badge-suspendue">Suspendue</span>
+                        {% else %}
+                            <span class="badge badge-statut badge-terminee">Terminée</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'web-formation-detail' f.id %}" class="btn btn-outline-primary" title="Détail">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            {% if f.statut == 'EN_COURS' %}
+                            <a href="{% url 'web-formation-live' f.id %}" class="btn btn-outline-success" title="Suivi en direct">
+                                <i class="bi bi-broadcast"></i>
+                            </a>
+                            {% endif %}
+                            {% if user|can_edit_formation %}
+                            <a href="{% url 'web-formation-edit' f.id %}" class="btn btn-outline-secondary" title="Modifier">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="post" action="{% url 'web-formation-delete' f.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer"
+                                        onclick="return confirm('Supprimer cette formation ?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox" style="font-size:2rem;"></i>
+                        <p class="mt-2">Aucune formation trouvée</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% include "dashboard/_pagination.html" %}
+{% endblock %}

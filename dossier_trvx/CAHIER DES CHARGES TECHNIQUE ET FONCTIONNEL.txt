@@ -1,0 +1,450 @@
+Tu as raison. Je précise ce qui s’est passé : j’ai créé une tâche programmée pour le 20 novembre à 9 h, mais cela n’a pas généré immédiatement le cahier des charges.
+
+Je vais donc te fournir le document maintenant, sans attendre l’exécution programmée.
+
+CAHIER DES CHARGES TECHNIQUE ET FONCTIONNEL
+
+Tableau de bord décisionnel du module EDT — INJS-LMD 2026
+
+CAHIER DES CHARGES
+
+Tableau de bord décisionnel des emplois du temps (EDT)
+
+Application de gestion LMD de l’INJS Abidjan
+
+Version : 1.0
+Projet : INJS-LMD 2026
+Module : Emplois du Temps
+Composante : Pilotage académique et statistiques décisionnelles
+
+⸻
+
+1. CONTEXTE ET JUSTIFICATION
+
+Le module EDT de l’application INJS-LMD assure la planification et la gestion des emplois du temps des formations, groupes pédagogiques, enseignants et salles.
+
+L’évolution proposée consiste à développer un tableau de bord décisionnel permettant à la Direction des études et aux responsables pédagogiques de suivre non seulement les enseignements programmés, mais également leur exécution effective.
+
+Le tableau de bord devra exploiter les informations issues des modules :
+
+* Emplois du Temps ;
+* Formations et maquettes pédagogiques ;
+* Référentiels ;
+* Ressources humaines ;
+* Scolarité ;
+* Présences ;
+* Évaluations.
+
+Le tableau de bord ne doit pas constituer une source indépendante de données pédagogiques. Il doit exploiter les données officielles des modules concernés.
+
+2. OBJECTIFS
+
+2.1 Objectif général
+
+Mettre à disposition de l’INJS un système centralisé de pilotage des enseignements programmés et réalisés.
+
+2.2 Objectifs spécifiques
+
+1. Suivre les enseignements par formation.
+2. Mesurer les volumes horaires programmés et réalisés.
+3. Suivre l’exécution des UE et ECUE.
+4. Contrôler les activités pédagogiques des enseignants.
+5. Mesurer l’occupation des salles.
+6. Identifier les enseignements non programmés.
+7. Détecter les anomalies pédagogiques.
+8. Produire des rapports statistiques.
+9. Faciliter les décisions de la Direction des études.
+
+3. PROFILS UTILISATEURS
+
+Profil	Autorisations
+Administrateur général	Accès global
+Direction générale	Consultation des indicateurs institutionnels
+Direction des études	Pilotage académique global
+Responsable de formation	Consultation de sa formation
+Responsable pédagogique	Suivi des UE et ECUE autorisés
+Enseignant	Consultation de ses enseignements
+Gestionnaire EDT	Consultation et suivi des programmations
+
+Les permissions devront être contrôlées côté backend.
+
+Aucun filtrage exclusivement frontend ne devra être considéré comme une protection suffisante.
+
+4. ARCHITECTURE DU TABLEAU DE BORD
+
+Le tableau de bord comprendra six espaces.
+
+1. Vue générale institutionnelle.
+2. Pilotage par formation.
+3. Pilotage par enseignant.
+4. Pilotage par UE et ECUE.
+5. Gestion et occupation des salles.
+6. Suivi des anomalies et rapports.
+
+5. TABLEAU DE BORD GÉNÉRAL
+
+5.1 Indicateurs principaux
+
+Indicateur	Description
+Formations actives	Formations concernées
+Groupes pédagogiques	Nombre de groupes
+UE	Nombre d’UE concernées
+ECUE	Nombre d’ECUE concernés
+Séances programmées	Séances planifiées
+Séances réalisées	Séances effectivement assurées
+Séances annulées	Séances annulées
+Séances reportées	Séances déplacées
+Heures programmées	Volume horaire planifié
+Heures réalisées	Volume horaire effectivement assuré
+Taux d’exécution	Pourcentage de réalisation
+Anomalies EDT	Anomalies détectées
+
+5.2 Filtres
+
+Prévoir les filtres suivants :
+
+* Année académique.
+* Semestre.
+* Formation.
+* Niveau d’études.
+* Groupe.
+* Enseignant.
+* UE.
+* ECUE.
+* Période.
+
+Les filtres devront être combinables.
+
+6. PILOTAGE PAR FORMATION
+
+Chaque formation disposera d’une vue analytique.
+
+Informations à afficher :
+
+* Code et intitulé de formation.
+* Niveau.
+* Année académique.
+* Responsable pédagogique.
+* Nombre de groupes.
+* Nombre d’UE.
+* Nombre d’ECUE.
+* Enseignements programmés.
+* Enseignements réalisés.
+* Heures prévues.
+* Heures réalisées.
+* Taux d’exécution.
+
+Une navigation complémentaire permettra d’accéder aux détails des UE et ECUE.
+
+7. PILOTAGE PAR UE ET ECUE
+
+Ce volet constitue une fonctionnalité prioritaire.
+
+Pour chaque ECUE, afficher :
+
+Donnée	Description
+Code ECUE	Identifiant officiel
+Intitulé	Intitulé pédagogique
+UE	UE de rattachement
+Formation	Formation concernée
+Semestre	Semestre pédagogique
+Enseignant	Enseignant responsable ou intervenant
+Volume prévu	Volume de la maquette
+Volume programmé	Volume inscrit dans l’EDT
+Volume réalisé	Volume effectivement assuré
+Volume restant	Écart entre prévu et réalisé
+Taux d’exécution	Pourcentage réalisé
+
+Le système devra distinguer les volumes horaires issus de la maquette des volumes horaires effectivement programmés et réalisés.
+
+Aucun volume ne devra être déduit arbitrairement du nombre de séances.
+
+8. PILOTAGE PAR ENSEIGNANT
+
+Indicateurs :
+
+* Nombre d’ECUE enseignés.
+* Nombre de groupes concernés.
+* Nombre de séances programmées.
+* Nombre de séances réalisées.
+* Heures programmées.
+* Heures réalisées.
+* Séances annulées.
+* Séances reportées.
+* Charge horaire restante.
+
+Les données seront consultables par semestre et année académique.
+
+9. PILOTAGE DES SALLES
+
+Indicateurs :
+
+* Nombre de salles disponibles.
+* Nombre de séances affectées.
+* Taux d’occupation.
+* Capacité des salles.
+* Salles sous-utilisées.
+* Salles surchargées.
+* Conflits d’affectation.
+
+Le calcul du taux d’occupation devra tenir compte des plages horaires réellement disponibles.
+
+10. SUIVI DE L’EXÉCUTION PÉDAGOGIQUE
+
+Le système devra distinguer les états suivants :
+
+État	Signification
+PROGRAMMÉE	Séance planifiée
+RÉALISÉE	Enseignement effectivement assuré
+ANNULÉE	Séance annulée
+REPORTÉE	Séance déplacée
+NON RENSEIGNÉE	Exécution non encore documentée
+
+La publication d’un emploi du temps ne signifie pas que l’enseignement a été réalisé.
+
+La présence d’un enseignant ou d’étudiants ne devra pas, à elle seule, être assimilée automatiquement à la réalisation complète du volume horaire.
+
+10.1 Formules
+
+Taux d’exécution :
+
+(Volume horaire réalisé / Volume horaire prévu) × 100.
+
+Volume restant :
+
+Volume horaire prévu - Volume horaire réalisé.
+
+Les résultats négatifs ou supérieurs à 100 % devront être signalés pour vérification, sans être automatiquement corrigés.
+
+11. GESTION DES ANOMALIES
+
+Créer un espace spécifique présentant :
+
+* Séances sans ECUE.
+* Séances sans UE identifiable.
+* Séances sans rattachement pédagogique.
+* Incohérences Formation/UE/ECUE.
+* Conflits enseignants.
+* Conflits de salles.
+* Dépassements de volumes horaires.
+* Enseignements non programmés.
+* Séances dont l’exécution n’est pas renseignée.
+
+Chaque anomalie devra comporter :
+
+* Identifiant.
+* Nature.
+* Formation.
+* Groupe.
+* Enseignant concerné.
+* Séance concernée.
+* Date de détection.
+* Niveau de gravité.
+* État de traitement.
+
+Le tableau de bord ne devra pas corriger automatiquement les anomalies historiques.
+
+12. ARCHITECTURE TECHNIQUE
+
+Le développement devra s’intégrer à l’architecture Django/React existante.
+
+Backend
+
+Prévoir une organisation fonctionnelle autour de :
+
+backend/statistiques_edt/
+
+Cette proposition devra être confrontée à l’organisation actuelle des applications statistiques avant création.
+
+Composantes envisagées :
+
+* Services de calcul des indicateurs.
+* Services de consolidation.
+* Services de détection des anomalies.
+* API statistiques.
+* Sérialiseurs.
+* Permissions.
+* Tests automatisés.
+
+Frontend
+
+Prévoir une interface dédiée au tableau de bord EDT.
+
+Composantes :
+
+* Vue générale.
+* Cartes statistiques.
+* Graphiques.
+* Tableaux détaillés.
+* Filtres.
+* Exports.
+* Détails des anomalies.
+
+L’architecture réelle du frontend devra être respectée. Il ne faudra pas créer une seconde architecture parallèle.
+
+13. API À PRÉVOIR
+
+Les routes suivantes constituent des propositions fonctionnelles, et non des endpoints dont l’existence est déjà confirmée.
+
+Endpoint proposé	Fonction
+/api/edt/statistiques/globales/	Vue institutionnelle
+/api/edt/statistiques/formations/	Statistiques par formation
+/api/edt/statistiques/enseignants/	Statistiques par enseignant
+/api/edt/statistiques/ecue/	Suivi des ECUE
+/api/edt/statistiques/salles/	Occupation des salles
+/api/edt/statistiques/execution/	Exécution pédagogique
+/api/edt/statistiques/anomalies/	Anomalies
+/api/edt/statistiques/exports/	Exports
+
+Chaque API devra prendre en charge les filtres autorisés et les permissions du profil connecté.
+
+14. EXPORTS ET RAPPORTS
+
+Prévoir :
+
+* PDF.
+* Excel.
+* CSV UTF-8 avec BOM.
+
+Rapports attendus :
+
+1. Rapport institutionnel.
+2. Rapport par formation.
+3. Rapport par enseignant.
+4. Rapport par UE et ECUE.
+5. Rapport d’exécution pédagogique.
+6. Rapport d’occupation des salles.
+7. Rapport des anomalies.
+
+Chaque rapport devra préciser la période et les filtres utilisés.
+
+15. SÉCURITÉ ET TRAÇABILITÉ
+
+Garantir :
+
+* L’authentification obligatoire.
+* Les permissions par profil.
+* Le cloisonnement des données.
+* La journalisation des opérations sensibles.
+* La protection des API.
+* La traçabilité des exports.
+* La conservation des historiques.
+
+16. PERFORMANCES
+
+Les statistiques devront être calculées efficacement.
+
+Étudier :
+
+* L’optimisation des requêtes ORM.
+* Les index nécessaires.
+* Les agrégations SQL.
+* La pagination.
+* La mise en cache des indicateurs.
+* L’actualisation des statistiques après publication ou modification.
+
+Les résultats mis en cache devront être invalidés lorsqu’une opération modifie les données concernées.
+
+17. TESTS ET CRITÈRES D’ACCEPTATION
+
+Test	Résultat attendu
+Vue institutionnelle	Indicateurs cohérents
+Vue formation	Données correctement filtrées
+Vue enseignant	Charge horaire exacte
+Vue ECUE	Rattachement pédagogique exact
+Calcul des volumes	Formules vérifiées
+Calcul du taux	Résultat correct
+Séances annulées	Non comptabilisées comme réalisées
+Séances reportées	Pas de double comptabilisation
+Permissions	Accès correctement limité
+Export PDF	Document exploitable
+Export Excel	Données cohérentes
+Export CSV	Encodage correct
+Performances	Temps de réponse acceptable
+
+18. PLAN DE RÉALISATION
+
+LOT 1 — Audit technique
+
+* Examiner les modèles existants.
+* Identifier les sources de données.
+* Vérifier les relations UE/ECUE.
+* Identifier les données de réalisation des séances.
+* Identifier les permissions existantes.
+
+LOT 2 — Définition des indicateurs
+
+* Formaliser les formules.
+* Définir les règles de calcul.
+* Définir les filtres.
+* Valider les indicateurs avec la Direction des études.
+
+LOT 3 — Backend
+
+* Développer les services statistiques.
+* Développer les API.
+* Ajouter les contrôles de cohérence.
+* Écrire les tests.
+
+LOT 4 — Frontend
+
+* Construire le tableau de bord général.
+* Développer les vues spécialisées.
+* Ajouter les graphiques.
+* Ajouter les filtres.
+
+LOT 5 — Exports
+
+* PDF.
+* Excel.
+* CSV.
+
+LOT 6 — Recette
+
+* Tests fonctionnels.
+* Tests de sécurité.
+* Tests de performance.
+* Validation des résultats.
+
+LOT 7 — Déploiement
+
+* Préparation des images.
+* Vérification des migrations éventuelles.
+* Déploiement contrôlé.
+* Recette sur Ophir.
+
+19. PRINCIPES NON NÉGOCIABLES
+
+1. Ne pas créer de doublons de données pédagogiques.
+2. Ne pas modifier les maquettes pédagogiques depuis le tableau de bord.
+3. Ne pas confondre programmation et réalisation.
+4. Ne pas déduire arbitrairement un ECUE.
+5. Préserver les données historiques.
+6. Ne réaliser aucune migration destructive.
+7. Respecter les permissions existantes.
+8. Ne pas compromettre le fonctionnement du moteur EDT V2.
+9. Ne pas modifier PostgreSQL sans nécessité démontrée.
+10. Vérifier les interactions avec Scolarité et Présences.
+
+20. LIVRABLE FINAL
+
+Le développement devra aboutir à un tableau de bord décisionnel intégré à INJS-LMD permettant à la Direction des études de répondre rapidement aux questions suivantes :
+
+* Quels enseignements sont programmés ?
+* Quels enseignements ont réellement été assurés ?
+* Quels ECUE présentent un retard ?
+* Quels enseignants ont encore des heures à effectuer ?
+* Quelles formations accusent un retard d’exécution ?
+* Quelles salles sont sous-utilisées ?
+* Quels enseignements ne sont pas encore programmés ?
+* Quelles anomalies nécessitent une intervention ?
+
+FINALITÉ : disposer d’un outil fiable de pilotage académique, fondé sur les données réelles de l’INJS et permettant de suivre l’exécution des enseignements tout au long de l’année universitaire.
+
+Prochaine étape recommandée
+
+Avant de coder, il faut réaliser le LOT 1 : audit technique des modèles et des données existantes.
+
+C’est indispensable pour transformer ce cahier des charges fonctionnel en spécifications techniques exactes, sans inventer de champs ou de relations dans Django.
+
+La tâche programmée reste distincte de ce document que je viens de te remettre.

@@ -1,0 +1,592 @@
+/* STYLE DÉDIÉ : FORMATIONS LMD — référentiel officiel.
+ *
+ * La page s'appuie sur le design system Scolarité (`.cand-*` : bandeau,
+ * tuiles KPI, panneaux, champs, état vide, chargement, alertes). Ne restent
+ * ici que les pièces propres au référentiel : pastilles du bandeau, filtre,
+ * fiche de filière, carte de cycle, blocs (parcours / niveaux / maquettes),
+ * lignes d'UE et puces de métadonnées.
+ *
+ * Toutes les classes sont préfixées `.flmd-` : aucun effet de bord ailleurs.
+ */
+
+.flmd-page { min-width: 0; }
+
+/* ── 1. BANDEAU ── */
+.flmd-hero-pastilles {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.flmd-pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.75rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.2;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.flmd-pastille i { font-size: 0.85rem; }
+
+.flmd-pastille--primary {
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border-color: #BFDCF5;
+}
+
+.flmd-pastille--neutre {
+  color: #475569;
+  background: #F1F5F9;
+  border-color: #E2E8F0;
+}
+
+/* L'étiquette du bandeau porte une icône : `cand-hero-badge` la laisse en
+   ligne simple, ce qui suffit ici. */
+.flmd-page .cand-hero-badge i { font-size: 0.78rem; }
+
+/* Sous-valeur d'une tuile KPI (« N UE au total »). */
+.flmd-kpi-sub {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #8C9AAD;
+}
+
+/* ── 2. FILTRE ── */
+.flmd-filtre {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem 1.4rem;
+  flex-wrap: wrap;
+}
+
+.flmd-champ-recherche { flex: 0 1 360px; max-width: 360px; }
+
+.flmd-recherche { max-width: none; width: 100%; flex: 1 1 auto; }
+
+.flmd-recherche .cand-input { padding-right: 2.4rem; }
+
+/* Le navigateur ajoute sa propre croix aux champs `search` : elle faisait
+   doublon avec le bouton d'effacement de la page. */
+.flmd-recherche input[type='search']::-webkit-search-cancel-button,
+.flmd-recherche input[type='search']::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Croix d'effacement posée dans le champ de recherche. */
+.flmd-effacer {
+  position: absolute;
+  right: 0.45rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  font-size: 0.7rem;
+  color: #64748B;
+  background: #EEF2F7;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.flmd-effacer:hover { background: #E2E8F0; color: var(--injs-navy); }
+.flmd-effacer:focus-visible { outline: 2px solid var(--injs-blue-royal); outline-offset: 2px; }
+
+.flmd-aide {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  flex: 1 1 320px;
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: #64748B;
+}
+
+.flmd-aide i { color: var(--injs-blue-royal); font-size: 0.85rem; margin-top: 0.15rem; }
+
+/* ── 3. FICHE D'UNE FILIÈRE ── */
+.flmd-filiere-head {
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+
+.flmd-filiere-identite {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.flmd-filiere-code {
+  display: inline-grid;
+  place-items: center;
+  min-width: 46px;
+  height: 34px;
+  padding: 0 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--injs-blue-royal);
+  background: #EEF4FF;
+  border: 1px solid #C7D9FB;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.flmd-filiere-texte { min-width: 0; }
+
+.flmd-filiere-sub {
+  margin: 0.28rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #64748B;
+}
+
+.flmd-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.flmd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.35;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.flmd-chip i { font-size: 0.78rem; }
+
+.flmd-chip--sigle {
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border-color: #BFDCF5;
+  letter-spacing: 0.04em;
+}
+
+.flmd-chip--neutre { color: #475569; background: #F1F5F9; border-color: #E2E8F0; }
+
+.flmd-chip--attention {
+  color: #8A5A00;
+  background: #FFF8E8;
+  border-color: #F5DFAE;
+}
+
+.flmd-chip--type { color: #475569; background: #F1F5F9; border-color: #E2E8F0; font-weight: 700; }
+
+/* ── 4. CARTES DE CYCLE ── */
+.flmd-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.flmd-cycle {
+  padding: 1rem 1.1rem 1.15rem;
+  background: #FBFCFE;
+  border: 1px solid #E9ECF2;
+  border-radius: 14px;
+}
+
+.flmd-cycle-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px dashed #E4EAF1;
+}
+
+.flmd-cycle-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+}
+
+/* L'intitulé reste à côté de la pastille d'icône : sans conteneur propre, il
+   passait seul à la ligne suivante dès qu'il était long. */
+.flmd-cycle-intitule { flex: 1 1 160px; min-width: 0; }
+
+.flmd-cycle-puce {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  font-size: 0.82rem;
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border: 1px solid #D7E8F8;
+  border-radius: 9px;
+}
+
+.flmd-cycle-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+/* ── 5. PUCES DE MÉTADONNÉES ── */
+.flmd-puce {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.71rem;
+  font-weight: 600;
+  color: #475569;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+
+.flmd-puce i { font-size: 0.75rem; color: #94A3B8; }
+
+.flmd-puce--ects {
+  color: #0E7A4F;
+  background: #F1FBF6;
+  border-color: #B7E7CE;
+  font-weight: 700;
+}
+
+.flmd-puce--ects i { color: #16A34A; }
+
+.flmd-puce--ghost {
+  color: #64748B;
+  background: #F8FAFC;
+  border-style: dashed;
+}
+
+.flmd-puces {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+/* Statut d'une maquette : les classes `text-bg-*` restent présentes pour la
+   traçabilité, l'apparence vient d'ici (Bootstrap n'est pas embarqué). */
+.flmd-statut {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #475569;
+  background: #F1F5F9;
+  border: 1px solid #DCE3EC;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.flmd-statut--active { color: #0E7A4F; background: #F1FBF6; border-color: #B7E7CE; }
+
+/* ── 6. BLOCS (parcours, niveaux, maquettes) ── */
+.flmd-blocs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 0.9rem;
+  margin-top: 0.9rem;
+}
+
+.flmd-bloc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.85rem 0.9rem;
+  background: #FFFFFF;
+  border: 1px solid #EDF1F6;
+  border-radius: 12px;
+}
+
+.flmd-bloc--large { grid-column: auto; }
+
+.flmd-bloc-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748B;
+}
+
+.flmd-bloc-title i { color: var(--injs-blue-royal); font-size: 0.82rem; }
+
+/* Parcours */
+.flmd-parcours {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flmd-parcours-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1F2937;
+  background: #F8FAFC;
+  border: 1px solid #EDF1F6;
+  border-radius: 8px;
+}
+
+.flmd-parcours-code {
+  padding: 0.1rem 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border: 1px solid #D7E8F8;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+/* Niveaux & semestres */
+.flmd-niveaux {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.flmd-niveau {
+  padding: 0.5rem 0.6rem;
+  background: #F8FAFC;
+  border: 1px solid #EDF1F6;
+  border-radius: 9px;
+}
+
+.flmd-niveau-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.flmd-niveau-code {
+  padding: 0.05rem 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+  background: #FFFFFF;
+  border: 1px solid #DCE3EC;
+  border-radius: 5px;
+}
+
+.flmd-niveau-libelle {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.flmd-niveau-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.3rem;
+}
+
+.flmd-niveau-semestres {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748B;
+}
+
+/* Maquettes · UE · ECUE */
+.flmd-maquettes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flmd-maquette {
+  padding: 0.6rem 0.7rem;
+  background: #F8FAFC;
+  border: 1px solid #EDF1F6;
+  border-radius: 10px;
+}
+
+.flmd-maquette-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  flex-wrap: wrap;
+}
+
+.flmd-maquette-lib {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+}
+
+.flmd-ues {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flmd-ue {
+  padding: 0.4rem 0.5rem;
+  background: #FFFFFF;
+  border: 1px solid #EDF1F6;
+  border-radius: 8px;
+}
+
+.flmd-ue-ligne {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.flmd-ue-code {
+  padding: 0.05rem 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--injs-blue-royal);
+  background: var(--injs-blue-pale);
+  border: 1px solid #D7E8F8;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+.flmd-ue-intitule {
+  flex: 1 1 160px;
+  min-width: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.flmd-ue-credits {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #0E7A4F;
+  white-space: nowrap;
+}
+
+.flmd-ecues {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+  padding-left: 0.1rem;
+}
+
+.flmd-ecues-label {
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #94A3B8;
+}
+
+/* ── 7. ÉTATS VIDES ── */
+.flmd-vide {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #8C9AAD;
+}
+
+.flmd-vide i { font-size: 0.82rem; margin-top: 0.12rem; color: #B6C2D1; }
+
+.flmd-vide--serre { margin-top: 0.45rem; }
+
+.flmd-vide--centre {
+  align-items: center;
+  justify-content: center;
+  padding: 1.4rem 1rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.flmd-vide--centre i { font-size: 1.1rem; margin-top: 0; }
+
+/* ── 8. RESPONSIVE ── */
+@media (max-width: 1180px) {
+  .flmd-blocs { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .flmd-bloc--large { grid-column: 1 / -1; }
+}
+
+@media (max-width: 760px) {
+  .flmd-hero-pastilles { width: 100%; }
+  .flmd-champ-recherche { flex: 1 1 100%; max-width: none; }
+  .flmd-blocs { grid-template-columns: minmax(0, 1fr); }
+  .flmd-filiere-head { flex-direction: column; align-items: stretch; }
+  .flmd-cycle-head { flex-direction: column; align-items: stretch; }
+  /* En colonne, le titre se réduisait à la largeur de son contenu : l'icône
+     occupait alors une ligne à elle seule. */
+  .flmd-cycle-title { width: 100%; }
+}
+
+@media (max-width: 560px) {
+  .flmd-cycle { padding: 0.75rem 0.7rem 0.85rem; }
+  .flmd-cycle-head { gap: 0.5rem; padding-bottom: 0.7rem; }
+  .flmd-blocs { gap: 0.6rem; margin-top: 0.7rem; }
+
+  .flmd-page .cand-hero-badge {
+    white-space: normal;
+    font-size: 0.64rem;
+    letter-spacing: 0.04em;
+    line-height: 1.45;
+  }
+
+  /* En mobile, le bandeau s'empile : l'icône doit s'aligner sur la première
+     ligne de texte et non se centrer sur un bloc de plusieurs lignes. */
+  .flmd-page .cand-hero-identite { align-items: flex-start; }
+  .flmd-page .cand-hero-title { font-size: 1.28rem; }
+
+  .flmd-filiere-identite { align-items: flex-start; }
+  .flmd-cycle { padding: 0.8rem 0.75rem 0.9rem; }
+  .flmd-bloc { padding: 0.7rem 0.65rem; }
+  .flmd-maquette-head { flex-direction: column; align-items: flex-start; }
+}

@@ -1,0 +1,1665 @@
+"""API des référentiels LMD et de la maquette pédagogique.
+
+Suit les conventions du projet : vues fonctions ``@api_view``, routes ``path()``
+explicites, filtrage manuel via ``request.query_params``.
+"""
+
+import csv
+import hashlib
+import io
+import re
+import tempfile
+from datetime import datetime
+from pathlib import Path
+from xml.sax.saxutils import escape
+from zipfile import BadZipFile
+
+from django.core.exceptions import ValidationError
+from django.core.management import call_command
+from django.core.management.base import CommandError
+from django.db import models
+from django.db.models import Count, Sum
+from django.db import IntegrityError, transaction
+from django.db.models.deletion import ProtectedError
+from django.http import HttpResponse
+from django.utils import timezone
+
+try:
+    import openpyxl
+except ImportError:
+    openpyxl = None
+
+try:
+    from docx import Document
+except ImportError:
+    Document = None
+
+try:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet
+except ImportError:
+    SimpleDocTemplate = Table = TableStyle = Paragraph = Spacer = A4 = mm = colors = getSampleStyleSheet = None
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import SAFE_METHODS, BasePermission, IsAuthenticated
+from rest_framework.response import Response
+
+from authentication.permissions import IsDFRC, IsSecretariatOrDFRC
+
+from .models import (
+    AnneeAcademique,
+    ECUE,
+    FamilleModule,
+    Groupe,
+    Maquette,
+    MaquetteJournal,
+    Niveau,
+    Parcours,
+    RegimeEtudes,
+    Semestre,
+    StatutEtudiant,
+    TypeFormation,
+    UE,
+)
+from formations.models import RefFormation, RefModule, RefSalle
+
+# Champs exposés et acceptés en écriture pour chaque référentiel simple.
+REFERENTIEL_FIELDS = {
+    'annees': (AnneeAcademique, ['id', 'libelle', 'date_debut', 'date_fin', 'courante', 'actif']),
+    'types-formation': (TypeFormation, ['id', 'code', 'libelle', 'actif']),
+    'niveaux': (Niveau, ['id', 'code', 'libelle', 'cycle', 'ordre', 'credits_requis', 'actif']),
+    'semestres': (Semestre, ['id', 'niveau_id', 'numero', 'libelle', 'actif']),
+    'regimes': (RegimeEtudes, ['id', 'code', 'libelle', 'actif']),
+    'statuts-etudiant': (StatutEtudiant, ['id', 'code', 'libelle', 'bloque_inscription', 'actif']),
+    'parcours': (Parcours, ['id', 'ref_formation_id', 'type_formation_id', 'code', 'intitule', 'actif']),
+    'groupes': (Groupe, [
+        'id', 'annee_academique_id', 'ref_formation_id', 'parcours_id', 'niveau_id',
+        'vague_id', 'site_id', 'nom', 'capacite_max', 'actif',
+    ]),
+    'formations': (RefFormation, ['id', 'code', 'intitule', 'type_diplome', 'domaine', 'mention', 'actif']),
+    'salles': (RefSalle, ['id', 'site_id', 'nom', 'capacite', 'type_lieu', 'actif']),
+}
+
+# Filtres exacts autorisés par référentiel, pour éviter toute injection de lookup.
+REFERENTIEL_FILTERS = {
+    'semestres': ['niveau_id', 'actif'],
+    'parcours': ['ref_formation_id', 'type_formation_id', 'actif'],
+    'groupes': [
+        'annee_academique_id', 'ref_formation_id', 'parcours_id', 'niveau_id',
+        'vague_id', 'site_id', 'actif',
+    ],
+    'annees': ['courante', 'actif'],
+    'niveaux': ['cycle', 'actif'],
+    'types-formation': ['actif'],
+    'regimes': ['actif'],
+    'statuts-etudiant': ['actif'],
+    'formations': ['actif'],
+    'salles': ['actif'],
+}
+
+_BOOLEAN_TRUE = {'1', 'true', 'True', 'oui'}
+_BOOLEAN_FALSE = {'0', 'false', 'False', 'non'}
+
+
+def _coerce(value):
+    """Convertit les valeurs de query string en type Python exploitable par l'ORM."""
+    if value in _BOOLEAN_TRUE:
+        return True
+    if value in _BOOLEAN_FALSE:
+        return False
+    return value
+
+
+def _apply_filters(queryset, ressource, query_params):
+    for champ in REFERENTIEL_FILTERS.get(ressource, []):
+        if champ in query_params:
+            queryset = queryset.filter(**{champ: _coerce(query_params[champ])})
+    return queryset
+
+
+def _payload_for_write(fields, data):
+    """Construit le dictionnaire d'attributs à écrire, en ignorant les champs absents."""
+    valeurs = {}
+    for champ in fields:
+        if champ == 'id' or champ not in data:
+            continue
+        valeur = data[champ]
+        valeurs[champ] = None if valeur == '' and champ.endswith('_id') else valeur
+    return valeurs
+
+
+def _valider(obj):
+    """Valide l'objet et renvoie une réponse 400 exploitable par formatApiErrors côté frontend."""
+    try:
+        obj.full_clean()
+    except ValidationError as erreur:
+        return Response(erreur.message_dict, status=400)
+    return None
+
+
+def _dependances_destructrices(obj):
+    """Lignes qu'une suppression emporterait ou rendrait orphelines.
+
+    Un référentiel est un socle : supprimer un niveau ne doit pas effacer ses
+    semestres, un ``CASCADE`` silencieux pris pour un simple rangement. On
+    refuse donc la suppression dès qu'une ligne vivante pointe vers l'objet,
+    quelle que soit la politique du modèle (``PROTECT`` comme ``CASCADE``) : le
+    refus est explicite, chiffré et actionnable, jamais un effacement de masse.
+
+    Seul ``SET_NULL`` est toléré : la ligne dépendante survit, simplement
+    détachée — la donnée métier n'est pas détruite.
+    """
+    dependances = []
+    for relation in obj._meta.related_objects:
+        if relation.on_delete is models.SET_NULL:
+            continue
+        nombre = relation.related_model.objects.filter(
+            **{relation.field.name: obj},
+        ).count()
+        if nombre:
+            libelle = str(relation.related_model._meta.verbose_name_plural)
+            dependances.append((libelle, nombre))
+    return dependances
+
+
+def _referentiel_list(request, ressource):
+    model, fields = REFERENTIEL_FIELDS[ressource]
+    if request.method == 'GET':
+        queryset = _apply_filters(model.objects.all(), ressource, request.query_params)
+        return Response(list(queryset.values(*fields)))
+    obj = model(**_payload_for_write(fields, request.data))
+    erreur = _valider(obj)
+    if erreur is not None:
+        return erreur
+    obj.save()
+    return Response(model.objects.filter(pk=obj.pk).values(*fields).first(), status=201)
+
+
+def _referentiel_detail(request, ressource, pk):
+    model, fields = REFERENTIEL_FIELDS[ressource]
+    obj = model.objects.filter(pk=pk).first()
+    if obj is None:
+        return Response({'error': 'Introuvable'}, status=404)
+    if request.method == 'DELETE':
+        dependances = _dependances_destructrices(obj)
+        if dependances:
+            return Response(
+                {
+                    'error': "Suppression impossible : cet élément est référencé ailleurs.",
+                    'detail': (
+                        'La suppression détruirait aussi '
+                        + ', '.join(f"{n} {libelle}" for libelle, n in dependances)
+                        + '. Retirez ou réaffectez ces éléments d’abord.'
+                    ),
+                    'dependances': [
+                        {'ressource': libelle, 'nombre': n} for libelle, n in dependances
+                    ],
+                },
+                status=409,
+            )
+        try:
+            obj.delete()
+        except ProtectedError:
+            return Response(
+                {'error': "Suppression impossible : cet élément est référencé ailleurs."},
+                status=409,
+            )
+        return Response(status=204)
+    for champ, valeur in _payload_for_write(fields, request.data).items():
+        setattr(obj, champ, valeur)
+    erreur = _valider(obj)
+    if erreur is not None:
+        return erreur
+    obj.save()
+    return Response(model.objects.filter(pk=obj.pk).values(*fields).first())
+
+
+class LectureScolariteEcritureDFRC(BasePermission):
+    """Lecture ouverte au personnel de scolarité, écriture réservée à l'administration.
+
+    Les écrans de candidature et d'inscription ont besoin de lire niveaux,
+    semestres et groupes ; les modifier reste un acte de paramétrage.
+    """
+
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return IsSecretariatOrDFRC().has_permission(request, view)
+        return IsDFRC().has_permission(request, view)
+
+
+
+
+# ── Contrats OpenAPI (référentiels et maquettes de formation) ────────
+
+
+class ErreurScolariteSerializer(serializers.Serializer):
+    """Erreurs du module : {'error': message} (+ compléments éventuels)."""
+
+    error = serializers.CharField()
+    problemes = serializers.JSONField(required=False)
+    statut = serializers.CharField(required=False)
+
+
+class FamilleModuleReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    code = serializers.CharField()
+    libelle = serializers.CharField()
+
+
+class EcueReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    code = serializers.CharField()
+    intitule = serializers.CharField()
+    credits = serializers.IntegerField()
+    coefficient = serializers.DecimalField(max_digits=5, decimal_places=2)
+    volume_cm = serializers.DecimalField(max_digits=6, decimal_places=2)
+    volume_td = serializers.DecimalField(max_digits=6, decimal_places=2)
+    volume_tp = serializers.DecimalField(max_digits=6, decimal_places=2)
+    volume_total = serializers.DecimalField(max_digits=6, decimal_places=2)
+    ref_module_id = serializers.IntegerField(allow_null=True)
+    ordre = serializers.IntegerField()
+    archive = serializers.BooleanField()
+    statut = serializers.CharField()
+
+
+class EcueAvecUeSerializer(EcueReponseSerializer):
+    ue_id = serializers.IntegerField()
+    ue_code = serializers.CharField()
+
+
+class SemestreResumeSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    numero = serializers.IntegerField()
+    libelle = serializers.CharField()
+
+
+class UeReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    code = serializers.CharField()
+    intitule = serializers.CharField()
+    credits = serializers.IntegerField()
+    caractere = serializers.CharField()
+    statut = serializers.CharField()
+    ordre = serializers.IntegerField()
+    famille = serializers.CharField(allow_null=True)
+    famille_code = serializers.CharField(allow_null=True)
+    semestre = SemestreResumeSerializer()
+    ecues = EcueReponseSerializer(many=True)
+
+
+class MaquetteReponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    libelle = serializers.CharField()
+    annee_academique_id = serializers.IntegerField()
+    ref_formation_id = serializers.IntegerField()
+    parcours_id = serializers.IntegerField(allow_null=True)
+    niveau_id = serializers.IntegerField()
+    version = serializers.IntegerField()
+    statut = serializers.CharField()
+    validee_par = serializers.IntegerField(allow_null=True)
+    validee_le = serializers.DateTimeField(allow_null=True)
+    activee_par = serializers.IntegerField(allow_null=True)
+    activee_le = serializers.DateTimeField(allow_null=True)
+    commentaire_validation = serializers.CharField()
+    credits_total = serializers.IntegerField()
+    volume_horaire_total = serializers.CharField()
+    problemes_coherence = serializers.JSONField()
+    completude = serializers.JSONField()
+
+
+class MaquetteCreationSerializer(serializers.Serializer):
+    annee_academique_id = serializers.IntegerField()
+    ref_formation_id = serializers.IntegerField()
+    niveau_id = serializers.IntegerField()
+    parcours_id = serializers.IntegerField(required=False)
+
+
+class ValidationLotMaquettesSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    validees = serializers.JSONField()
+    echecs = serializers.JSONField()
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 201: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: ErreurScolariteSerializer})
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated, LectureScolariteEcritureDFRC])
+def referentiel_list(request, ressource):
+    if ressource not in REFERENTIEL_FIELDS:
+        return Response({'error': 'Référentiel inconnu'}, status=404)
+    return _referentiel_list(request, ressource)
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 204: None, 400: OpenApiTypes.OBJECT, 404: ErreurScolariteSerializer, 409: ErreurScolariteSerializer})
+@api_view(['PUT', 'PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated, IsDFRC])
+def referentiel_detail(request, ressource, pk):
+    if ressource not in REFERENTIEL_FIELDS:
+        return Response({'error': 'Référentiel inconnu'}, status=404)
+    return _referentiel_detail(request, ressource, pk)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def annee_courante(request):
+    """Année académique courante, utilisée comme valeur par défaut par le frontend."""
+    annee = AnneeAcademique.courante_ou_none()
+    if annee is None:
+        return Response({'annee': None, 'id': None, 'libelle': None})
+    data = {
+        'id': annee.id,
+        'libelle': annee.libelle,
+        'date_debut': annee.date_debut,
+        'date_fin': annee.date_fin,
+    }
+    return Response({
+        **data,
+        'annee': data,
+    })
+
+
+def _serialize_ecue(ecue):
+    return {
+        'id': ecue.id,
+        'code': ecue.code,
+        'intitule': ecue.intitule,
+        'credits': ecue.credits,
+        'coefficient': ecue.coefficient,
+        'volume_cm': ecue.volume_cm,
+        'volume_td': ecue.volume_td,
+        'volume_tp': ecue.volume_tp,
+        'volume_total': ecue.volume_total,
+        'ref_module_id': ecue.ref_module_id,
+        'ordre': ecue.ordre,
+        'archive': ecue.archive,
+        'statut': ecue.statut,
+    }
+
+
+def _serialize_ue(ue):
+    return {
+        'id': ue.id,
+        'code': ue.code,
+        'intitule': ue.intitule,
+        'credits': ue.credits,
+        'caractere': ue.caractere,
+        'statut': ue.statut,
+        'ordre': ue.ordre,
+        'famille': ue.famille.libelle if ue.famille_id else None,
+        'famille_code': ue.famille.code if ue.famille_id else None,
+        'semestre': {
+            'id': ue.semestre_id,
+            'numero': ue.semestre.numero,
+            'libelle': ue.semestre.libelle,
+        },
+        'ecues': [_serialize_ecue(ecue) for ecue in ue.ecues.all()],
+    }
+
+
+@extend_schema(responses={200: FamilleModuleReponseSerializer(many=True)})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def famille_list(request):
+    """Familles de modules du référentiel officiel (lecture seule).
+
+    Utilisées par le formulaire d'UE : la famille est un axe d'analyse des
+    crédits, elle ne s'invente pas. L'écriture reste hors API — les familles
+    viennent de la source officielle (`configurer_referentiel_injs`).
+    """
+    return Response([
+        {'id': famille.id, 'code': famille.code, 'libelle': famille.libelle}
+        for famille in FamilleModule.objects.order_by('libelle')
+    ])
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurScolariteSerializer})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def maquette_list(request):
+    """Liste des maquettes, avec le nombre d'UE et le total de crédits.
+
+    Même portée que le contenu : qui peut lire ou écrire les UE/ECUE d'une
+    maquette doit pouvoir la lister, sinon l'écran de gestion reste vide pour
+    un secrétariat pourtant autorisé à y créer des unités. Aucun droit n'est
+    élargi au-delà de ce que ``IsSecretariatOrDFRC`` accorde déjà aux endpoints
+    de contenu (``/maquettes/<id>/ues/``, ``/ues/<id>/``…) : c'est une lecture
+    du contenant alignée sur celle du contenu.
+    """
+    queryset = Maquette.objects.select_related(
+        'annee_academique', 'ref_formation', 'parcours', 'niveau',
+    ).annotate(
+        nb_ue=Count('unites_enseignement', distinct=True),
+        total_credits=Sum('unites_enseignement__credits'),
+    )
+    # Un paramètre vide (« ?ref_formation_id= ») ne doit pas produire un 500 :
+    # on l'ignore, et une valeur non entière est refusée explicitement en 400.
+    numeriques = ('annee_academique_id', 'ref_formation_id', 'parcours_id', 'niveau_id')
+    for champ in numeriques:
+        valeur = (request.query_params.get(champ) or '').strip()
+        if not valeur:
+            continue
+        if not valeur.isdigit():
+            return Response(
+                {'error': f'{champ} doit être un identifiant numérique.'}, status=400,
+            )
+        queryset = queryset.filter(**{champ: int(valeur)})
+    statut = (request.query_params.get('statut') or '').strip()
+    if statut:
+        queryset = queryset.filter(statut=statut)
+    return Response([
+        {
+            'id': maquette.id,
+            'libelle': str(maquette),
+            'libelle_personnalise': maquette.libelle,
+            'annee_academique_id': maquette.annee_academique_id,
+            'annee_academique': maquette.annee_academique.libelle,
+            'ref_formation_id': maquette.ref_formation_id,
+            'ref_formation': maquette.ref_formation.intitule,
+            'parcours_id': maquette.parcours_id,
+            'parcours': maquette.parcours.intitule if maquette.parcours else None,
+            'niveau_id': maquette.niveau_id,
+            'niveau': maquette.niveau.code,
+            'version': maquette.version,
+            'statut': maquette.statut,
+            'commentaire_validation': maquette.commentaire_validation,
+            'nb_ue': maquette.nb_ue,
+            'total_credits': maquette.total_credits or 0,
+        }
+        for maquette in queryset
+    ])
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: ErreurScolariteSerializer})
+@api_view(['GET', 'DELETE'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def maquette_detail(request, pk):
+    """Détail d'une maquette : UE groupées par semestre, avec leurs ECUE.
+
+    DELETE : supprime un brouillon sans UE/ECUE ni session d'évaluation/jury.
+    Le journal de suppression est conservé sans sa relation à la maquette.
+    """
+    maquette = Maquette.objects.select_related(
+        'annee_academique', 'ref_formation', 'parcours', 'niveau',
+    ).filter(pk=pk).first()
+    if maquette is None:
+        return Response({'error': 'Introuvable'}, status=404)
+
+    if request.method == 'DELETE':
+        # Seul le statut BROUILLON peut être supprimé
+        if maquette.statut != Maquette.Statut.BROUILLON:
+            return Response({
+                'error': f'Suppression impossible : maquette {maquette.statut.lower()}. '
+                         'Seules les maquettes en brouillon peuvent être supprimées.'
+            }, status=409)
+        dependances = {
+            'UE': UE.objects.filter(maquette=maquette).count(),
+            'ECUE': ECUE.objects.filter(ue__maquette=maquette).count(),
+            'évaluations': maquette.sessions_evaluation.count(),
+            'jurys': maquette.sessions_jury.count(),
+        }
+        dependances = {nom: nombre for nom, nombre in dependances.items() if nombre}
+        if dependances:
+            detail = ', '.join(f'{nombre} {nom}' for nom, nombre in dependances.items())
+            return Response({
+                'error': f'Suppression impossible : {detail} dépendent de cette maquette.',
+                'dependances': dependances,
+            }, status=409)
+        try:
+            with transaction.atomic():
+                _journaliser_maquette(
+                    maquette,
+                    MaquetteJournal.Action.SUPPRESSION,
+                    request.user,
+                    {'maquette_id': maquette.id, 'libelle': str(maquette)},
+                )
+                maquette.delete()
+        except ProtectedError:
+            return Response({
+                'error': 'Suppression impossible : une autre donnée métier référence cette maquette.',
+            }, status=409)
+        return Response({'detail': 'Maquette supprimée.'}, status=204)
+
+    unites = (
+        UE.objects.filter(maquette=maquette)
+        .select_related('semestre', 'famille')
+        .prefetch_related('ecues')
+    )
+    return Response({
+        'id': maquette.id,
+        'libelle': str(maquette),
+        'libelle_personnalise': maquette.libelle,
+        'annee_academique': maquette.annee_academique.libelle,
+        'annee_academique_id': maquette.annee_academique_id,
+        'ref_formation': maquette.ref_formation.intitule,
+        'ref_formation_id': maquette.ref_formation_id,
+        'parcours': maquette.parcours.intitule if maquette.parcours else None,
+        'parcours_id': maquette.parcours_id,
+        'niveau': maquette.niveau.code,
+        'niveau_id': maquette.niveau_id,
+        'version': maquette.version,
+        'statut': maquette.statut,
+        'commentaire_validation': maquette.commentaire_validation,
+        # Complétude : crédits réellement documentés par semestre. Permet à
+        # l'interface de signaler une maquette incomplète (ex. MS S8 absent du
+        # référentiel) sans que l'absence soit confondue avec une erreur.
+        'completude': maquette.controler_completude(),
+        'unites_enseignement': [_serialize_ue(ue) for ue in unites],
+    })
+
+
+@extend_schema(responses={200: EcueAvecUeSerializer(many=True), 404: ErreurScolariteSerializer})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsDFRC])
+def maquette_ecues_semestre(request, pk, semestre_id):
+    """ECUE d'un semestre donné d'une maquette.
+
+    Sert de source à la génération automatique des inscriptions pédagogiques (lot 5).
+    """
+    if not Maquette.objects.filter(pk=pk).exists():
+        return Response({'error': 'Maquette introuvable'}, status=404)
+    if not Semestre.objects.filter(pk=semestre_id).exists():
+        return Response({'error': 'Semestre introuvable'}, status=404)
+    ecues = (
+        ECUE.objects.filter(ue__maquette_id=pk, ue__semestre_id=semestre_id)
+        .select_related('ue')
+        .order_by('ue__ordre', 'ordre')
+    )
+    return Response([
+        {**_serialize_ecue(ecue), 'ue_id': ecue.ue_id, 'ue_code': ecue.ue.code}
+        for ecue in ecues
+    ])
+
+
+# ── Lot L1 — écriture et workflow des maquettes (garde-fou R4) ────────────────
+
+
+def _journaliser_maquette(maquette, action, utilisateur, detail=None):
+    MaquetteJournal.objects.create(
+        maquette=maquette, action=action, utilisateur=utilisateur, detail=detail,
+    )
+
+
+def _serializer_maquette(maquette):
+    return {
+        'id': maquette.id,
+        'libelle': str(maquette),
+        'annee_academique_id': maquette.annee_academique_id,
+        'ref_formation_id': maquette.ref_formation_id,
+        'parcours_id': maquette.parcours_id,
+        'niveau_id': maquette.niveau_id,
+        'version': maquette.version,
+        'statut': maquette.statut,
+        'validee_par': maquette.validee_par_id,
+        'validee_le': maquette.validee_le,
+        'activee_par': maquette.activee_par_id,
+        'activee_le': maquette.activee_le,
+        'commentaire_validation': maquette.commentaire_validation,
+        'credits_total': maquette.credits_total,
+        'volume_horaire_total': str(maquette.volume_horaire_total),
+        'problemes_coherence': maquette.verifier_coherence(),
+        'completude': maquette.controler_completude(),
+    }
+
+
+def _get_maquette(pk):
+    return Maquette.objects.filter(pk=pk).first()
+
+
+@extend_schema(request=MaquetteCreationSerializer, responses={201: MaquetteReponseSerializer, 400: OpenApiTypes.OBJECT})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def maquette_create(request):
+    """Création d'une maquette BROUILLON (v1, ou version suivante si existante)."""
+    annee_id = request.data.get('annee_academique_id')
+    formation_id = request.data.get('ref_formation_id')
+    niveau_id = request.data.get('niveau_id')
+    if not (annee_id and formation_id and niveau_id):
+        return Response(
+            {'error': 'annee_academique_id, ref_formation_id et niveau_id sont requis.'},
+            status=400,
+        )
+    filtre = {
+        'annee_academique_id': annee_id,
+        'ref_formation_id': formation_id,
+        'parcours_id': request.data.get('parcours_id'),
+        'niveau_id': niveau_id,
+    }
+    derniere = (
+        Maquette.objects.filter(**filtre)
+        .order_by('-version').values_list('version', flat=True).first() or 0
+    )
+    maquette = Maquette(
+        **filtre, version=derniere + 1, libelle=request.data.get('libelle', ''),
+    )
+    try:
+        maquette.full_clean(exclude=['libelle'])
+        maquette.save()
+    except ValidationError as exc:
+        return Response(exc.message_dict if hasattr(exc, 'message_dict') else {'error': exc.messages}, status=400)
+    _journaliser_maquette(maquette, MaquetteJournal.Action.CREATION, request.user)
+    return Response(_serializer_maquette(maquette), status=201)
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: MaquetteReponseSerializer, 400: OpenApiTypes.OBJECT, 404: ErreurScolariteSerializer})
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def maquette_update(request, pk):
+    """Édition des champs de tête — maquette BROUILLON uniquement (R4)."""
+    maquette = _get_maquette(pk)
+    if maquette is None:
+        return Response({'error': 'Introuvable'}, status=404)
+    if maquette.statut != Maquette.Statut.BROUILLON:
+        return Response(
+            {'error': f'Maquette {maquette.statut.lower()} immuable : créez une nouvelle version (clonage).'},
+            status=400,
+        )
+    for champ in ('libelle', 'commentaire_validation', 'parcours_id'):
+        if champ in request.data:
+            setattr(maquette, champ, request.data[champ])
+    try:
+        maquette.full_clean(exclude=['libelle'])
+        maquette.save()
+    except ValidationError as exc:
+        return Response(exc.message_dict if hasattr(exc, 'message_dict') else {'error': exc.messages}, status=400)
+    _journaliser_maquette(maquette, MaquetteJournal.Action.MODIFICATION, request.user)
+    return Response(_serializer_maquette(maquette))
+
+
+@extend_schema(request=None, responses={200: MaquetteReponseSerializer, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def maquette_valider(request, pk):
+    """BROUILLON → VALIDEE : exige une maquette complète et cohérente."""
+    maquette = _get_maquette(pk)
+    if maquette is None:
+        return Response({'error': 'Introuvable'}, status=404)
+    if maquette.statut != Maquette.Statut.BROUILLON:
+        return Response({'error': f'Validation impossible : statut {maquette.statut}.'}, status=400)
+    problemes = maquette.verifier_coherence()
+    if problemes:
+        return Response({'error': 'Maquette incomplète ou incohérente.', 'problemes': problemes}, status=400)
+    maquette.statut = Maquette.Statut.VALIDEE
+    maquette.validee_par = request.user
+    maquette.validee_le = timezone.now()
+    maquette.commentaire_validation = request.data.get('commentaire', '')
+    maquette.save()
+    _journaliser_maquette(
+        maquette, MaquetteJournal.Action.VALIDATION, request.user,
+        {'commentaire': maquette.commentaire_validation},
+    )
+    return Response(_serializer_maquette(maquette))
+
+
+class _EchecValidationLot(Exception):
+    """Interne : force le rollback d'une maquette du lot (avec ses problèmes)."""
+
+    def __init__(self, problemes):
+        super().__init__('Maquette incohérente')
+        self.problemes = problemes
+
+
+@extend_schema(request=None, responses={200: ValidationLotMaquettesSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def maquette_valider_toutes(request):
+    """Validation en lot : BROUILLON → VALIDEE pour les maquettes cohérentes.
+
+    Chaque maquette est traitée dans sa propre transaction : ventilation
+    technique des crédits UE vers les ECUE (``repartir_credits_ecue``) puis
+    contrôle de cohérence. Une maquette encore incohérente est annulée
+    (rollback de la ventilation) et rapportée dans ``echecs`` sans bloquer
+    les autres. Filtre optionnel : ``annee_academique_id``.
+    """
+    brouillons = Maquette.objects.filter(statut=Maquette.Statut.BROUILLON)
+    annee_id = request.data.get('annee_academique_id')
+    if annee_id:
+        brouillons = brouillons.filter(annee_academique_id=annee_id)
+    validees, echecs = [], []
+    for maquette in brouillons:
+        try:
+            with transaction.atomic():
+                ventilees = maquette.repartir_credits_ecue()
+                problemes = maquette.verifier_coherence()
+                if problemes:
+                    raise _EchecValidationLot(problemes)
+                maquette.statut = Maquette.Statut.VALIDEE
+                maquette.validee_par = request.user
+                maquette.validee_le = timezone.now()
+                maquette.save()
+                _journaliser_maquette(
+                    maquette, MaquetteJournal.Action.VALIDATION, request.user,
+                    {'lot': True, 'ecue_ventilees': ventilees},
+                )
+            validees.append(maquette.id)
+        except _EchecValidationLot as exc:
+            echecs.append({'id': maquette.id, 'problemes': exc.problemes})
+    detail = f'{len(validees)} maquette(s) validée(s)'
+    if echecs:
+        detail += f', {len(echecs)} en échec'
+    return Response({'detail': detail + '.', 'validees': validees, 'echecs': echecs})
+
+
+@extend_schema(request=None, responses={200: MaquetteReponseSerializer, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsDFRC])
+def maquette_activer(request, pk):
+    """VALIDEE → ACTIVE — réservé DFRC ; la cohérence est revérifiée."""
+    maquette = _get_maquette(pk)
+    if maquette is None:
+        return Response({'error': 'Introuvable'}, status=404)
+    if maquette.statut != Maquette.Statut.VALIDEE:
+        return Response({'error': f'Activation impossible : statut {maquette.statut} (attendu VALIDEE).'}, status=400)
+    problemes = maquette.verifier_coherence()
+    if problemes:
+        return Response({'error': 'Maquette incohérente.', 'problemes': problemes}, status=400)
+    maquette.statut = Maquette.Statut.ACTIVE
+    maquette.activee_par = request.user
+    maquette.activee_le = timezone.now()
+    maquette.save()
+    _journaliser_maquette(maquette, MaquetteJournal.Action.ACTIVATION, request.user)
+    return Response(_serializer_maquette(maquette))
+
+
+@extend_schema(request=None, responses={200: MaquetteReponseSerializer, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def maquette_archiver(request, pk):
+    """ACTIVE → ARCHIVEE : la version reste consultable, plus modifiable."""
+    maquette = _get_maquette(pk)
+    if maquette is None:
+        return Response({'error': 'Introuvable'}, status=404)
+    if maquette.statut != Maquette.Statut.ACTIVE:
+        return Response({'error': f'Archivage impossible : statut {maquette.statut} (attendu ACTIVE).'}, status=400)
+    maquette.statut = Maquette.Statut.ARCHIVEE
+    maquette.save()
+    _journaliser_maquette(maquette, MaquetteJournal.Action.ARCHIVAGE, request.user)
+    return Response(_serializer_maquette(maquette))
+
+
+@extend_schema(request=None, responses={201: MaquetteReponseSerializer, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def maquette_cloner(request, pk):
+    """Crée une nouvelle version BROUILLON copiée de la maquette (R4)."""
+    maquette = _get_maquette(pk)
+    if maquette is None:
+        return Response({'error': 'Introuvable'}, status=404)
+    if maquette.statut == Maquette.Statut.BROUILLON:
+        return Response({'error': 'Un clonage se fait depuis une version aboutie (VALIDEE/ACTIVE/ARCHIVEE).'}, status=400)
+    clone = maquette.cloner(request.user)
+    return Response(_serializer_maquette(clone), status=201)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 404: ErreurScolariteSerializer})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsDFRC])
+def maquette_journal(request, pk):
+    """Historique des validations et changements d'état (règle métier)."""
+    maquette = _get_maquette(pk)
+    if maquette is None:
+        return Response({'error': 'Introuvable'}, status=404)
+    return Response([
+        {
+            'action': entree.action,
+            'utilisateur': entree.utilisateur.username if entree.utilisateur else None,
+            'horodatage': entree.horodatage,
+            'detail': entree.detail,
+        }
+        for entree in maquette.journal.select_related('utilisateur')
+    ])
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: UeReponseSerializer(many=True), 201: UeReponseSerializer, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def maquette_ue_create(request, pk):
+    """UE d'une maquette : lecture (GET) et ajout (POST, BROUILLON uniquement).
+
+    Le GET alimente l'écran « UE / ECUE » du frontend, qui interroge
+    ``/api/scolarite/maquettes/<id>/ues/``. Cette lecture manquait : la route
+    n'acceptait que POST et renvoyait 405 à l'interface.
+    """
+    maquette = _get_maquette(pk)
+    if maquette is None:
+        return Response({'error': 'Introuvable'}, status=404)
+
+    if request.method == 'GET':
+        unites = (
+            UE.objects.filter(maquette=maquette)
+            .select_related('semestre', 'famille')
+            .prefetch_related('ecues')
+        )
+        if request.query_params.get('semestre_id', '').strip().isdigit():
+            unites = unites.filter(semestre_id=int(request.query_params['semestre_id']))
+        return Response([_serialize_ue(ue) for ue in unites])
+    if maquette.statut != Maquette.Statut.BROUILLON:
+        return Response({'error': f'Maquette {maquette.statut.lower()} immuable.'}, status=400)
+    semestre_id = request.data.get('semestre_id')
+    code = (request.data.get('code') or '').strip()
+    if not (semestre_id and code):
+        return Response({'error': 'semestre_id et code sont requis.'}, status=400)
+    if not Semestre.objects.filter(pk=semestre_id).exists():
+        return Response({'error': 'Semestre introuvable'}, status=400)
+    famille = None
+    if request.data.get('famille_id'):
+        famille = FamilleModule.objects.filter(pk=request.data['famille_id']).first()
+        if famille is None:
+            return Response({'error': 'Famille de modules introuvable.'}, status=400)
+    try:
+        ue = UE.objects.create(
+            maquette=maquette,
+            semestre_id=semestre_id,
+            code=code,
+            intitule=(request.data.get('intitule') or '').strip(),
+            credits=int(request.data.get('credits', 0) or 0),
+            caractere=request.data.get('caractere', UE.Caractere.OBLIGATOIRE),
+            ordre=int(request.data.get('ordre', maquette.unites_enseignement.count() + 1) or 1),
+            famille=famille,
+            # Une UE naît toujours en brouillon : l'activation est un acte
+            # explicite, jamais un effet de bord de la création.
+            statut=UE.Statut.BROUILLON,
+        )
+    except ValidationError as exc:
+        return Response({'error': exc.messages}, status=400)
+    except IntegrityError:
+        # Contrainte d'unicité (code d'UE insensible à la casse dans la
+        # maquette) : sans ce filet, la base répondrait 500 là où l'utilisateur
+        # attend une explication.
+        return Response(
+            {'error': f"Le code « {code} » existe déjà dans cette maquette."}, status=400,
+        )
+    _journaliser_maquette(maquette, MaquetteJournal.Action.MODIFICATION, request.user,
+                          {'ajout_ue': ue.code})
+    return Response(_serialize_ue(ue), status=201)
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: UeReponseSerializer, 204: None, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
+@api_view(['PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def ue_detail(request, pk):
+    """Édition / suppression d'une UE — maquette BROUILLON uniquement."""
+    ue = UE.objects.filter(pk=pk).first()
+    if ue is None:
+        return Response({'error': 'Introuvable'}, status=404)
+    try:
+        if request.method == 'DELETE':
+            code = ue.code
+            maquette = ue.maquette
+            ue.delete()
+            _journaliser_maquette(maquette, MaquetteJournal.Action.MODIFICATION,
+                                  request.user, {'suppression_ue': code})
+            return Response(status=204)
+        if ue.statut != UE.Statut.BROUILLON:
+            return Response({
+                'error': (
+                    f"L'UE est {ue.get_statut_display().lower()} : repassez-la en "
+                    "brouillon pour la modifier."
+                ),
+                'statut': ue.statut,
+            }, status=409)
+        for champ in ('intitule', 'credits', 'caractere', 'ordre', 'semestre_id'):
+            if champ in request.data:
+                setattr(ue, champ, request.data[champ])
+        if 'famille_id' in request.data:
+            ue.famille_id = request.data['famille_id'] or None
+        if 'code' in request.data and (request.data['code'] or '').strip():
+            ue.code = request.data['code'].strip()
+        ue.save()
+    except IntegrityError:
+        return Response(
+            {'error': "Ce code d'UE existe déjà dans la maquette."}, status=400,
+        )
+    except ValidationError as exc:
+        return Response({'error': exc.messages}, status=400)
+    _journaliser_maquette(ue.maquette, MaquetteJournal.Action.MODIFICATION, request.user,
+                          {'modification_ue': ue.code})
+    ue.refresh_from_db()
+    return Response(_serialize_ue(ue))
+
+
+# Transitions autorisées du cycle de vie d'une UE ou d'une ECUE.
+# Raison d'être : sans matrice explicite, n'importe quel statut pourrait être
+# posé par un appel direct, y compris « Activé » sur une ECUE dont l'UE est
+# encore un brouillon — une incohérence pédagogique silencieuse.
+TRANSITIONS_STATUT = {
+    'BROUILLON': {'ACTIVE'},
+    'ACTIVE': {'DESACTIVEE'},
+    'DESACTIVEE': {'ACTIVE', 'BROUILLON'},
+}
+
+
+def _changer_statut(element, statut_demande, request, journal_detail):
+    """Applique une transition de statut contrôlée et journalise le changement.
+
+    Retourne ``(payload, code_http)`` : le succès renvoie l'élément sérialisé,
+    le refus explique pourquoi — jamais un 200 muet.
+    """
+    statut_demande = (statut_demande or '').strip().upper()
+    if statut_demande not in dict(element.Statut.choices):
+        return {
+            'error': 'Statut inconnu.',
+            'statuts_possibles': [c[0] for c in element.Statut.choices],
+        }, 400
+    if statut_demande == element.statut:
+        return {'error': f"L'élément est déjà {element.get_statut_display().lower()}."}, 400
+    autorises = TRANSITIONS_STATUT.get(element.statut, set())
+    if statut_demande not in autorises:
+        return {
+            'error': (
+                f"Transition {element.statut} → {statut_demande} refusée. "
+                f"Depuis « {element.get_statut_display()} », les seules issues sont : "
+                + ', '.join(sorted(autorises)) + '.'
+            ),
+            'transitions_autorisees': sorted(autorises),
+        }, 409
+
+    desactivees = []
+    try:
+        if statut_demande == 'ACTIVE' and isinstance(element, ECUE):
+            # Une ECUE ne s'active pas dans une UE encore en brouillon : le
+            # contenu d'une UE non publiée ne peut pas être publié.
+            if element.ue.statut != UE.Statut.ACTIVE:
+                return {
+                    'error': (
+                        f"L'UE {element.ue.code} est "
+                        f"{element.ue.get_statut_display().lower()} : activez d'abord l'UE."
+                    ),
+                }, 409
+        if statut_demande == 'DESACTIVEE' and isinstance(element, UE):
+            # Désactiver une UE retire aussi ses ECUE actives : les laisser
+            # actives sous une UE retirée produirait un référentiel incohérent.
+            desactivees = list(
+                element.ecues.filter(statut=ECUE.Statut.ACTIVE).values_list('code', flat=True)
+            )
+            if desactivees:
+                element.ecues.filter(statut=ECUE.Statut.ACTIVE).update(
+                    statut=ECUE.Statut.DESACTIVEE,
+                )
+        element.statut = statut_demande
+        element.save()
+    except ValidationError as exc:
+        return {'error': exc.messages}, 400
+
+    maquette = element.maquette if isinstance(element, UE) else element.ue.maquette
+    journal = {**journal_detail, 'statut': statut_demande}
+    if desactivees:
+        journal['ecues_desactivees'] = desactivees
+    _journaliser_maquette(maquette, MaquetteJournal.Action.MODIFICATION, request.user, journal)
+
+    element.refresh_from_db()
+    payload = _serialize_ue(element) if isinstance(element, UE) else _serialize_ecue(element)
+    if desactivees:
+        # La réponse dit ce que la cascade a changé : aucune conséquence muette.
+        payload['ecues_desactivees'] = desactivees
+    return payload, 200
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def ue_statut(request, pk):
+    """Change le statut d'une UE : brouillon → activé → désactivé (réversible)."""
+    ue = UE.objects.select_related('maquette').filter(pk=pk).first()
+    if ue is None:
+        return Response({'error': 'Introuvable'}, status=404)
+    if ue.maquette.statut != Maquette.Statut.BROUILLON:
+        return Response({'error': f'Maquette {ue.maquette.statut.lower()} immuable.'}, status=400)
+    payload, code = _changer_statut(
+        ue, request.data.get('statut'), request, {'changement_statut_ue': ue.code},
+    )
+    return Response(payload, status=code)
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def ecue_statut(request, pk):
+    """Change le statut d'une ECUE, sous réserve de cohérence avec son UE."""
+    ecue = ECUE.objects.select_related('ue__maquette').filter(pk=pk).first()
+    if ecue is None:
+        return Response({'error': 'Introuvable'}, status=404)
+    if ecue.ue.maquette.statut != Maquette.Statut.BROUILLON:
+        return Response(
+            {'error': f'Maquette {ecue.ue.maquette.statut.lower()} immuable.'}, status=400,
+        )
+    payload, code = _changer_statut(
+        ecue, request.data.get('statut'), request, {'changement_statut_ecue': ecue.code},
+    )
+    return Response(payload, status=code)
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: EcueReponseSerializer, 400: ErreurScolariteSerializer, 404: ErreurScolariteSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def ue_ecue_create(request, pk):
+    """Ajout d'une ECUE sous une UE — maquette BROUILLON uniquement."""
+    ue = UE.objects.select_related('maquette').filter(pk=pk).first()
+    if ue is None:
+        return Response({'error': 'Introuvable'}, status=404)
+    if ue.maquette.statut != Maquette.Statut.BROUILLON:
+        return Response({'error': f'Maquette {ue.maquette.statut.lower()} immuable.'}, status=400)
+    code = (request.data.get('code') or '').strip()
+    if not code:
+        return Response({'error': 'code requis.'}, status=400)
+    ref_module = None
+    if request.data.get('ref_module_id'):
+        ref_module = RefModule.objects.filter(pk=request.data['ref_module_id']).first()
+        if ref_module is None:
+            return Response({'error': 'RefModule introuvable'}, status=400)
+    try:
+        ecue = ECUE.objects.create(
+            ue=ue,
+            code=code,
+            intitule=(request.data.get('intitule') or '').strip(),
+            credits=int(request.data.get('credits', 0) or 0),
+            coefficient=request.data.get('coefficient', 1),
+            volume_cm=request.data.get('volume_cm', 0),
+            volume_td=request.data.get('volume_td', 0),
+            volume_tp=request.data.get('volume_tp', 0),
+            ref_module=ref_module,
+            ordre=int(request.data.get('ordre', ue.ecues.count() + 1) or 1),
+            statut=ECUE.Statut.BROUILLON,
+        )
+    except ValidationError as exc:
+        return Response({'error': exc.messages}, status=400)
+    except IntegrityError:
+        return Response(
+            {'error': f"Le code « {code} » existe déjà sous cette UE."}, status=400,
+        )
+    _journaliser_maquette(ue.maquette, MaquetteJournal.Action.MODIFICATION, request.user,
+                          {'ajout_ecue': ecue.code, 'ue': ue.code})
+    return Response(_serialize_ecue(ecue), status=201)
+
+
+# ── Export / Import de maquettes ──────────────────────────────────────────
+
+def _maquettes_queryset(request):
+    queryset = Maquette.objects.select_related(
+        'annee_academique', 'ref_formation', 'parcours', 'niveau',
+    ).annotate(
+        nb_ue=Count('unites_enseignement', distinct=True),
+        total_credits=Sum('unites_enseignement__credits'),
+    ).prefetch_related(
+        'unites_enseignement__semestre',
+        'unites_enseignement__famille',
+        'unites_enseignement__ecues__ref_module',
+    )
+    for champ in ('annee_academique_id', 'ref_formation_id', 'niveau_id', 'statut'):
+        valeur = (request.query_params.get(champ) or '').strip()
+        if valeur:
+            if champ != 'statut' and not valeur.isdigit():
+                raise ValueError(f'{champ} doit être un identifiant numérique.')
+            queryset = queryset.filter(**{champ: valeur})
+    ids_param = request.query_params.get('ids')
+    if ids_param is not None:
+        ids_bruts = ids_param.strip()
+        ids = [identifiant.strip() for identifiant in ids_bruts.split(',')]
+        if not ids_bruts or any(not identifiant.isdigit() for identifiant in ids):
+            raise ValueError('Le paramètre ids doit contenir des identifiants numériques séparés par des virgules.')
+        queryset = queryset.filter(pk__in={int(identifiant) for identifiant in ids})
+    return queryset.order_by('-version', 'ref_formation__code', 'niveau__code')
+
+
+def _construire_lignes_maquettes(maquettes):
+    lignes = []
+    for m in maquettes:
+        lignes.append({
+            'id': m.id,
+            'libelle': str(m),
+            'annee_academique_id': m.annee_academique_id,
+            'annee_academique': m.annee_academique.libelle,
+            'ref_formation_id': m.ref_formation_id,
+            'ref_formation_code': m.ref_formation.code,
+            'ref_formation_intitule': m.ref_formation.intitule,
+            'parcours_id': m.parcours_id or '',
+            'parcours': m.parcours.intitule if m.parcours else '',
+            'niveau_id': m.niveau_id,
+            'niveau_code': m.niveau.code,
+            'version': m.version,
+            'statut': m.statut,
+            'nb_ue': m.nb_ue or 0,
+            'credits_total': m.total_credits or 0,
+            'volume_horaire_total': str(m.volume_horaire_total),
+            'date_creation': m.created_at.isoformat() if m.created_at else '',
+        })
+    return lignes
+
+
+def _construire_lignes_import_maquettes(maquettes):
+    """Construit le format plat accepté par `import_maquette` (une ligne/ECUE)."""
+    lignes = []
+    for maquette in maquettes:
+        ues = list(maquette.unites_enseignement.all())
+        if not ues:
+            lignes.append({
+                'ANNEE': maquette.annee_academique.libelle,
+                'FORMATION': maquette.ref_formation.intitule,
+                'PARCOURS': maquette.parcours.code if maquette.parcours else '',
+                'NIVEAU': maquette.niveau.code,
+                'SEMESTRE': '',
+                'UE_CODE': '',
+                'UE_INTITULE': '',
+                'UE_CREDITS': '',
+                'UE_CARACTERE': '',
+                'ECUE_CODE': '',
+                'ECUE_INTITULE': '',
+                'ECUE_CREDITS': '',
+                'COEFFICIENT': '',
+                'CM': '',
+                'TD': '',
+                'TP': '',
+                'MODULE': '',
+            })
+        for ue in ues:
+            ecues = list(ue.ecues.all())
+            lignes_ecues = ecues or [None]
+            for ecue in lignes_ecues:
+                lignes.append({
+                    'ANNEE': maquette.annee_academique.libelle,
+                    'FORMATION': maquette.ref_formation.intitule,
+                    'PARCOURS': maquette.parcours.code if maquette.parcours else '',
+                    'NIVEAU': maquette.niveau.code,
+                    'SEMESTRE': ue.semestre.libelle,
+                    'UE_CODE': ue.code,
+                    'UE_INTITULE': ue.intitule,
+                    'UE_CREDITS': ue.credits,
+                    'UE_CARACTERE': ue.caractere,
+                    'ECUE_CODE': ecue.code if ecue else '',
+                    'ECUE_INTITULE': ecue.intitule if ecue else '',
+                    'ECUE_CREDITS': ecue.credits if ecue else '',
+                    'COEFFICIENT': ecue.coefficient if ecue else '',
+                    'CM': ecue.volume_cm if ecue else '',
+                    'TD': ecue.volume_td if ecue else '',
+                    'TP': ecue.volume_tp if ecue else '',
+                    'MODULE': ecue.ref_module.intitule if ecue and ecue.ref_module_id else '',
+                })
+    return lignes
+
+
+def _maquettes_export_selection(request):
+    try:
+        return _maquettes_queryset(request), None
+    except ValueError as exc:
+        return None, Response({'error': str(exc)}, status=400)
+
+
+def _valeur_csv_sure(valeur):
+    if isinstance(valeur, str) and valeur.lstrip(' \t\r\n')[:1] in ('=', '+', '-', '@'):
+        return f"'{valeur}"
+    return valeur
+
+
+def _ajouter_contenu_maquettes_doc(document, maquettes, paragraph, table, style):
+    """Ajoute les UE/ECUE détaillées à un document Word ou PDF."""
+    for maquette in maquettes:
+        paragraph(
+            f'{maquette.ref_formation.intitule} — {maquette.niveau.code} — '
+            f'{maquette.annee_academique.libelle} (v{maquette.version})',
+            style='Heading2',
+        )
+        for ue in maquette.unites_enseignement.all():
+            paragraph(
+                f'{ue.semestre.libelle} · {ue.code} — {ue.intitule} · {ue.credits} ECTS',
+                style='Heading3',
+            )
+            lignes = [['Code ECUE', 'Intitulé', 'ECTS', 'Coeff.', 'CM', 'TD', 'TP']]
+            lignes.extend([
+                [
+                    ecue.code, ecue.intitule, str(ecue.credits), str(ecue.coefficient),
+                    str(ecue.volume_cm), str(ecue.volume_td), str(ecue.volume_tp),
+                ]
+                for ecue in ue.ecues.all()
+            ])
+            table(lignes)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurScolariteSerializer})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def maquette_export_csv(request):
+    """Exporte la liste des maquettes au format CSV."""
+    maquettes, erreur = _maquettes_export_selection(request)
+    if erreur:
+        return erreur
+    detaille = request.query_params.get('detaille') == '1'
+    lignes = (
+        _construire_lignes_import_maquettes(maquettes)
+        if detaille else _construire_lignes_maquettes(maquettes)
+    )
+
+    if not lignes:
+        return Response({'error': 'Aucune maquette à exporter.'}, status=400)
+
+    buffer = io.StringIO()
+    writer = csv.DictWriter(
+        buffer,
+        fieldnames=list(lignes[0].keys()),
+        delimiter=';',
+        extrasaction='ignore',
+    )
+    writer.writeheader()
+    writer.writerows([
+        {cle: _valeur_csv_sure(valeur) for cle, valeur in ligne.items()}
+        for ligne in lignes
+    ])
+
+    response = HttpResponse(
+        '\ufeff' + buffer.getvalue(),
+        content_type='text/csv; charset=utf-8',
+    )
+    response['Content-Disposition'] = (
+        f'attachment; filename="maquettes_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    )
+    return response
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurScolariteSerializer})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def maquette_export_excel(request):
+    """Exporte la liste des maquettes au format Excel (.xlsx)."""
+    if openpyxl is None:
+        return Response({'error': 'openpyxl non installé sur le serveur.'}, status=500)
+
+    maquettes, erreur = _maquettes_export_selection(request)
+    if erreur:
+        return erreur
+    lignes = _construire_lignes_maquettes(maquettes)
+
+    if not lignes:
+        return Response({'error': 'Aucune maquette à exporter.'}, status=400)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Maquettes'
+
+    def remplir_feuille(feuille, lignes_feuille):
+        if not lignes_feuille:
+            return
+        en_tetes = list(lignes_feuille[0].keys())
+        for col_idx, en_tete in enumerate(en_tetes, 1):
+            cell = feuille.cell(row=1, column=col_idx, value=en_tete)
+            cell.font = openpyxl.styles.Font(bold=True)
+            feuille.column_dimensions[cell.column_letter].width = min(max(len(en_tete) + 3, 14), 40)
+        feuille.freeze_panes = 'A2'
+        feuille.auto_filter.ref = feuille.dimensions
+        for row_idx, ligne in enumerate(lignes_feuille, 2):
+            for col_idx, cle in enumerate(en_tetes, 1):
+                valeur = ligne[cle]
+                cell = feuille.cell(row=row_idx, column=col_idx, value=_valeur_csv_sure(valeur))
+                if isinstance(valeur, str) and valeur.lstrip(' \t\r\n')[:1] in ('=', '+', '-', '@'):
+                    cell.number_format = '@'
+
+    if request.query_params.get('detaille') == '1':
+        lignes_detaillees = _construire_lignes_import_maquettes(maquettes)
+        ws.title = 'Import détaillé'
+        remplir_feuille(ws, lignes_detaillees)
+        resume_ws = wb.create_sheet('Synthèse')
+        remplir_feuille(resume_ws, lignes)
+        wb.active = 0
+    else:
+        remplir_feuille(ws, lignes)
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = (
+        f'attachment; filename="maquettes_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+    )
+    return response
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurScolariteSerializer})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def maquette_export_pdf(request):
+    if SimpleDocTemplate is None:
+        return Response({'error': 'reportlab non installé.'}, status=500)
+    maquettes, erreur = _maquettes_export_selection(request)
+    if erreur:
+        return erreur
+    lignes = _construire_lignes_maquettes(maquettes)
+    if not lignes:
+        return Response({'error': 'Aucune maquette à exporter.'}, status=400)
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=12 * mm, leftMargin=12 * mm)
+    styles = getSampleStyleSheet()
+    elements = []
+    elements.append(Paragraph('Liste des maquettes UE/ECUE', styles['Title']))
+    elements.append(Spacer(1, 10))
+    en_tetes = ['Formation', 'Niveau', 'Année', 'Version', 'Statut', 'UE', 'ECTS']
+    donnees = [en_tetes]
+    donnees.extend([
+        [
+            l['ref_formation_intitule'], l['niveau_code'], l['annee_academique'],
+            str(l['version']), l['statut'], str(l['nb_ue']), str(l['credits_total']),
+        ]
+        for l in lignes
+    ])
+    table = Table(donnees, repeatRows=1, colWidths=[60 * mm, 22 * mm, 25 * mm, 15 * mm, 22 * mm, 15 * mm, 15 * mm])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#163D73')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 7),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F4F7FB')),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
+    ]))
+    elements.append(table)
+    if request.query_params.get('detaille') == '1':
+        def paragraph(texte, style='Normal'):
+            elements.append(Paragraph(escape(texte), styles[style]))
+
+        def table_details(donnees_detaillees):
+            table_detail = Table(donnees_detaillees, repeatRows=1, colWidths=[25*mm, 75*mm, 14*mm, 18*mm, 14*mm, 14*mm, 14*mm])
+            table_detail.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E6EEF8')),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 7),
+                ('GRID', (0, 0), (-1, -1), 0.4, colors.HexColor('#CBD5E1')),
+            ]))
+            elements.extend([table_detail, Spacer(1, 6)])
+        _ajouter_contenu_maquettes_doc(elements, maquettes, paragraph, table_details, styles)
+    doc.build(elements)
+    buffer.seek(0)
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = (
+        f'attachment; filename="maquettes_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf"'
+    )
+    return response
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 400: ErreurScolariteSerializer})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def maquette_export_word(request):
+    if Document is None:
+        return Response({'error': 'python-docx non installé.'}, status=500)
+    maquettes, erreur = _maquettes_export_selection(request)
+    if erreur:
+        return erreur
+    lignes = _construire_lignes_maquettes(maquettes)
+    if not lignes:
+        return Response({'error': 'Aucune maquette à exporter.'}, status=400)
+    document = Document()
+    document.add_heading('Liste des maquettes UE/ECUE', 0)
+    table = document.add_table(rows=1, cols=7)
+    table.style = 'Light Grid Accent 1'
+    en_tetes = ['Formation', 'Niveau', 'Année', 'Version', 'Statut', 'UE', 'ECTS']
+    for i, en_tete in enumerate(en_tetes):
+        table.rows[0].cells[i].text = en_tete
+    for ligne in lignes:
+        row = table.add_row()
+        valeurs = [
+            ligne['ref_formation_intitule'], ligne['niveau_code'],
+            ligne['annee_academique'], str(ligne['version']), ligne['statut'],
+            str(ligne['nb_ue']), str(ligne['credits_total']),
+        ]
+        for i, valeur in enumerate(valeurs):
+            row.cells[i].text = str(valeur)
+    if request.query_params.get('detaille') == '1':
+        for maquette in maquettes:
+            document.add_heading(
+                f'{maquette.ref_formation.intitule} — {maquette.niveau.code} — '
+                f'{maquette.annee_academique.libelle} (v{maquette.version})',
+                level=2,
+            )
+            for ue in maquette.unites_enseignement.all():
+                document.add_heading(
+                    f'{ue.semestre.libelle} · {ue.code} — {ue.intitule} · {ue.credits} ECTS',
+                    level=3,
+                )
+                details = document.add_table(rows=1, cols=7)
+                details.style = 'Light Shading Accent 1'
+                for cell, titre in zip(
+                    details.rows[0].cells,
+                    ['Code ECUE', 'Intitulé', 'ECTS', 'Coeff.', 'CM', 'TD', 'TP'],
+                ):
+                    cell.text = titre
+                for ecue in ue.ecues.all():
+                    cellules = details.add_row().cells
+                    for cell, valeur in zip(
+                        cellules,
+                        [
+                            ecue.code, ecue.intitule, ecue.credits, ecue.coefficient,
+                            ecue.volume_cm, ecue.volume_td, ecue.volume_tp,
+                        ],
+                    ):
+                        cell.text = str(valeur)
+    buffer = io.BytesIO()
+    document.save(buffer)
+    buffer.seek(0)
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    )
+    response['Content-Disposition'] = f'attachment; filename="maquettes_{datetime.now():%Y%m%d_%H%M%S}.docx"'
+    return response
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: OpenApiTypes.OBJECT, 400: ErreurScolariteSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def maquette_import_csv(request):
+    return _maquette_importer_fichier(request, 'csv')
+
+
+@extend_schema(request=OpenApiTypes.OBJECT, responses={201: OpenApiTypes.OBJECT, 400: ErreurScolariteSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def maquette_import_excel(request):
+    if openpyxl is None:
+        return Response({'error': 'openpyxl non installé.'}, status=500)
+    return _maquette_importer_fichier(request, 'xlsx')
+
+
+TAILLE_MAX_IMPORT_MAQUETTE = 10 * 1024 * 1024
+
+
+def _maquette_importer_fichier(request, format_attendu):
+    fichier = request.FILES.get('fichier')
+    if not fichier:
+        return Response({'error': 'Aucun fichier fourni.'}, status=400)
+    if Path(fichier.name).suffix.lower() != f'.{format_attendu}':
+        return Response(
+            {'error': f'Format de fichier invalide : un fichier .{format_attendu} est attendu.'},
+            status=400,
+        )
+    if fichier.size > TAILLE_MAX_IMPORT_MAQUETTE:
+        return Response({'error': 'Le fichier dépasse la limite de 10 Mo.'}, status=400)
+    contenu = fichier.read()
+    empreinte = hashlib.sha256(contenu).hexdigest()
+    etape = request.data.get('etape', 'previsualiser')
+    empreinte_confirmee = request.data.get('empreinte')
+    if etape not in ('previsualiser', 'confirmer'):
+        return Response({'error': 'Étape d’import inconnue.'}, status=400)
+    if etape == 'confirmer' and empreinte_confirmee != empreinte:
+        return Response(
+            {'error': 'Le fichier a changé depuis sa prévisualisation. Relancez l’analyse.'},
+            status=409,
+        )
+
+    with tempfile.TemporaryDirectory(prefix='maquette-import-') as dossier:
+        chemin = Path(dossier) / f'import.{format_attendu}'
+        chemin.write_bytes(contenu)
+        try:
+            from scolarite.management.commands.import_maquette import lire_lignes
+
+            lignes = lire_lignes(chemin)
+        except (CommandError, OSError, UnicodeDecodeError, ValueError, csv.Error, BadZipFile) as exc:
+            return Response({'error': f'Fichier invalide : {exc}'}, status=400)
+        if not lignes:
+            return Response({'error': 'Le fichier ne contient aucune donnée exploitable.'}, status=400)
+        if len(lignes) > 50_000:
+            return Response({'error': 'Le fichier dépasse la limite de 50 000 lignes.'}, status=400)
+
+        sorties = io.StringIO()
+        try:
+            call_command('import_maquette', str(chemin), dry_run=True, stdout=sorties)
+        except CommandError as exc:
+            erreurs = [ligne for ligne in str(exc).splitlines() if ligne.strip()]
+            if etape == 'previsualiser':
+                return Response({
+                    'valide': False,
+                    'empreinte': empreinte,
+                    'lignes': len(lignes),
+                    'erreurs': erreurs,
+                    'avertissements': [],
+                })
+            return Response({'error': 'Import annulé : le fichier contient des erreurs.', 'erreurs': erreurs}, status=400)
+
+        resume = sorties.getvalue()
+        compteurs = re.search(r'(\d+) UE et (\d+) ECUE créés', resume)
+        ues = int(compteurs.group(1)) if compteurs else 0
+        ecues = int(compteurs.group(2)) if compteurs else 0
+        cle_maquettes = {
+            (
+                str(ligne.get('ANNEE') or '').strip(),
+                str(ligne.get('FORMATION') or '').strip(),
+                str(ligne.get('PARCOURS') or '').strip(),
+                str(ligne.get('NIVEAU') or '').strip(),
+            )
+            for ligne in lignes
+        }
+        apercu = {
+            'valide': True,
+            'empreinte': empreinte,
+            'lignes': len(lignes),
+            'maquettes': len(cle_maquettes),
+            'ues': ues,
+            'ecues': ecues,
+            'exemples': [
+                {
+                    'formation': str(ligne.get('FORMATION') or ''),
+                    'niveau': str(ligne.get('NIVEAU') or ''),
+                    'semestre': str(ligne.get('SEMESTRE') or ''),
+                    'ue': str(ligne.get('UE_CODE') or ''),
+                    'ecue': str(ligne.get('ECUE_CODE') or ''),
+                }
+                for ligne in lignes[:10]
+            ],
+            'avertissements': [
+                'Les maquettes importées sont créées en brouillon. Leur validation et leur activation restent des étapes séparées.',
+                *[
+                    ligne.strip()[4:] for ligne in resume.splitlines()
+                    if ligne.strip().startswith('- ')
+                ],
+            ],
+        }
+        if etape == 'previsualiser':
+            deja_importe = MaquetteJournal.objects.filter(
+                detail__empreinte_import=empreinte,
+            ).exists()
+            return Response({**apercu, 'deja_importe': deja_importe})
+
+        if MaquetteJournal.objects.filter(detail__empreinte_import=empreinte).exists():
+            return Response({
+                'detail': 'Ce fichier a déjà été importé ; aucune donnée n’a été créée.',
+                'crees': 0,
+                'ues_crees': 0,
+                'ecues_crees': 0,
+                'ignorees': len(cle_maquettes),
+                'erreurs': [],
+                'avertissements': ['Import idempotent : empreinte déjà traitée.'],
+            })
+
+        dernier_id = Maquette.objects.order_by('-pk').values_list('pk', flat=True).first() or 0
+        try:
+            with transaction.atomic():
+                call_command('import_maquette', str(chemin), stdout=io.StringIO())
+                identites = list(cle_maquettes)
+                creees = Maquette.objects.filter(pk__gt=dernier_id)
+                filtres = models.Q()
+                for annee, formation, parcours, niveau in identites:
+                    filtres |= models.Q(
+                        annee_academique__libelle=annee,
+                        ref_formation__intitule__iexact=formation,
+                        niveau__code__iexact=niveau,
+                        **(
+                            {'parcours__code__iexact': parcours}
+                            if parcours else {'parcours__isnull': True}
+                        ),
+                    )
+                creees = list(creees.filter(filtres).select_related(
+                    'annee_academique', 'ref_formation', 'niveau',
+                ))
+                for maquette in creees:
+                    _journaliser_maquette(
+                        maquette,
+                        MaquetteJournal.Action.CREATION,
+                        request.user,
+                        {
+                            'source': 'import_interface',
+                            'fichier': Path(fichier.name).name,
+                            'empreinte_import': empreinte,
+                        },
+                    )
+        except (CommandError, IntegrityError, ValidationError) as exc:
+            return Response({'error': f'Import annulé : {exc}'}, status=400)
+
+        return Response({
+            'detail': f'{len(creees)} maquette(s), {ues} UE et {ecues} ECUE importé(s) en brouillon.',
+            'crees': len(creees),
+            'ues_crees': ues,
+            'ecues_crees': ecues,
+            'ignorees': 0,
+            'erreurs': [],
+            'avertissements': apercu['avertissements'],
+        }, status=201)
+@permission_classes([IsAuthenticated, IsSecretariatOrDFRC])
+def ecue_detail(request, pk):
+    """Édition / suppression / archivage d'une ECUE — maquette BROUILLON uniquement.
+
+    DELETE ?mode=archive : archivage soft (l'ECUE archivée ne peut plus entrer
+    dans une nouvelle maquette — contrôle de cohérence et clonage).
+    """
+    ecue = ECUE.objects.select_related('ue__maquette').filter(pk=pk).first()
+    if ecue is None:
+        return Response({'error': 'Introuvable'}, status=404)
+    try:
+        if request.method == 'DELETE':
+            if request.query_params.get('mode') == 'archive':
+                ecue.archive = True
+                ecue.save()
+                return Response({'detail': 'ECUE archivée.', 'archive': True})
+            ecue.delete()
+            return Response(status=204)
+        if ecue.statut != ECUE.Statut.BROUILLON and 'archive' not in request.data:
+            return Response({
+                'error': (
+                    f"L'ECUE est {ecue.get_statut_display().lower()} : repassez-la "
+                    "en brouillon pour la modifier."
+                ),
+                'statut': ecue.statut,
+            }, status=409)
+        for champ in ('intitule', 'credits', 'coefficient', 'volume_cm', 'volume_td', 'volume_tp', 'ordre'):
+            if champ in request.data:
+                setattr(ecue, champ, request.data[champ])
+        if 'code' in request.data and (request.data['code'] or '').strip():
+            ecue.code = request.data['code'].strip()
+        if 'archive' in request.data:
+            ecue.archive = bool(request.data['archive'])
+        if 'ref_module_id' in request.data:
+            ecue.ref_module_id = request.data['ref_module_id'] or None
+        ecue.save()
+    except IntegrityError:
+        return Response(
+            {'error': "Ce code d'ECUE existe déjà sous cette UE."}, status=400,
+        )
+    except ValidationError as exc:
+        return Response({'error': exc.messages}, status=400)
+    _journaliser_maquette(ecue.ue.maquette, MaquetteJournal.Action.MODIFICATION,
+                          request.user, {'modification_ecue': ecue.code})
+    ecue.refresh_from_db()
+    return Response(_serialize_ecue(ecue))

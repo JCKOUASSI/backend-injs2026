@@ -397,6 +397,16 @@ export default function GenerationAnnuelle() {
       const perimetre = construirePerimetre()
       if (!confirmationPerimetreLarge(perimetre)) return
       if (!alerteSemainesPeu(perimetre, semainesListe().length)) return
+      // B16 : garde-fou affichage alerte couverture critique (périmètre large + semaines faibles)
+      if (mode === 'manuel' && dernierApercu) {
+        const nbGroupes = dernierApercu.length
+        const nbSemaines = semainesListe().length
+        if (nbGroupes > 20 && nbSemaines <= 4) {
+          const message = `⚠️ Couverture critique estimée : ${nbGroupes} groupe(s) avec ${nbSemaines} semaine(s) → couverture < 30%. ` +
+            `Réduisez le périmètre ou augmentez le nombre de semaines planifiées.`
+          showToast(message, 'warning')
+        }
+      }
       if (dernierApercu !== signatureApercu()) {
         showToast('Prévisualisez d’abord ce périmètre exact ; la sélection ou les contraintes ont changé.', 'error')
         return
@@ -502,7 +512,9 @@ export default function GenerationAnnuelle() {
           await api.post(`/edts/campagnes/${campagne.id}/publier/`, {})
           showToast('Emplois du temps validés puis publiés.', 'success')
         } catch (err) {
-          showToast('EDT valide mais publication echec. Consultez l’historique.', 'warning')
+          // B17 : si valider a réussi mais publier a échoué, l'EDT est déjà validé
+          // on avertit clairement plutôt que de laisser un état silencieux
+          showToast(`Erreur à l'étape « publication » : l'EDT est validé mais non publié. Vérifiez l’historique.`, 'warning')
           throw err
         }
       }

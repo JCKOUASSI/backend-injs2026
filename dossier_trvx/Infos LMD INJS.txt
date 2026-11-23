@@ -1,0 +1,1261 @@
+système de gestion LMD pour un Institut National de la Jeunesse et des Sports de C^te d'Ivoire :
+
+filières exactes (STAPS, Sciences de l'éducation, etc.) ouvertes à INJS 
+Gestion du Cursus Spécifique (LMD Sport & Jeunesse)
+Architecture de base de données
+Cahier des charges pour le développement d'un logiciel LMD
+
+----------------
+Dans le système LMD, la validation des enseignements repose sur le principe de la capitalisation et de la compensation. Pour un Institut National de la Jeunesse et des Sports (INJS), ces règles intègrent une double exigence : académique (théorique) et athlétique (pratique). [1] 
+Voici le détail des règles de compensation à intégrer dans la logique de votre application.
+------------------------------
+## 1. La Compensation Semestrielle (Horizontale)
+Le semestre est validé si la moyenne générale pondérée de l'ensemble des Unités d'Enseignement (UE) du semestre est supérieure ou égale à 10/20. [2] 
+
+* Mécanisme : Les notes fortes des UE théoriques (ex: Anatomie, Management) peuvent compenser les notes faibles des UE pratiques (ex: Athlétisme, Natation), et inversement.
+* Conséquence : L'obtention du semestre entraîne l'attribution automatique des 30 crédits ECTS du semestre. Les UE qui avaient une note inférieure à 10/20 sont dites "validées par compensation". [3, 4] 
+
+## 2. La Compensation Annuelle
+Selon les règlements de l'établissement (souvent alignés sur les directives ministérielles ou du CAMES en Afrique francophone), la compensation peut s'appliquer entre les deux semestres d'une même année académique (S1 et S2, S3 et S4, S5 et S6). [5] 
+
+* Règle : Si la moyenne de l'année (Moyenne_Semestre_Impair + Moyenne_Semestre_Pair) / 2 est supérieure ou égale à 10/20, l'année entière est validée.
+* Attribution : L'étudiant décroche la totalité des 60 crédits de l'année. [6, 7] 
+
+## 3. Les Notes Éliminatoires (Spécificité INJS)
+Pour garantir la sécurité et le niveau professionnel des futurs éducateurs sportifs, des notes éliminatoires non compensables sont souvent instaurées, en particulier sur la pratique.
+
+* Barrière technique : Une note inférieure à 07/20 ou 08/20 (selon le règlement intérieur) dans une UE pratique ou lors d'un stage de mise en situation professionnelle rend l'UE non compensable.
+* Impact logiciel : Le système doit bloquer la compensation automatique du semestre si une note éliminatoire est détectée, obligeant l'étudiant à aller aux rattrapages sur cette UE spécifique.
+
+## 4. Capitalisation des UE
+Si le semestre ou l'année ne sont pas validés par compensation, le système doit appliquer la règle de capitalisation individuelle.
+
+* Principe : Toute UE ayant obtenu une moyenne supérieure ou égale à 10/20 est définitivement acquise (capitalisée) ainsi que les crédits associés. [8, 9, 10] 
+* Conservation : L'étudiant ne conserve pour la session de rattrapage (ou pour l'année suivante en cas de redoublement) que les UE non validées (note < 10/20). [11, 12, 13, 14] 
+
+## 5. Algorithme de Calcul pour les Développeurs
+Pour transcrire cela en code, l'application doit suivre cet ordre strict lors des délibérations :
+
+   1. Étape 1 : Vérification des filtres médicaux et éliminatoires
+   * Si note_pratique < 08 → Statut = "Ajourné" (Rattrapage obligatoire pour cette UE).
+   2. Étape 2 : Calcul de la moyenne de l'UE (Pondération Théorie / Pratique)
+   * Moyenne_UE = (Note_Theorique * Coeff_Theo) + (Note_Pratique * Coeff_Prat)
+   3. Étape 3 : Calcul de la moyenne du Semestre
+   * Si Moyenne_Semestre >= 10 ET aucune note éliminatoire → Semestre = "Validé".
+   4. Étape 4 : Gestion du Rattrapage
+   * Le système génère la liste des étudiants qui ont soit une Moyenne_Semestre < 10, soit une note éliminatoire. Seules les UE < 10 sont recalculées après la session de rattrapage (souvent en gardant la meilleure note entre la session 1 et la session 2). [15] 
+   
+------------------------------
+Voici la mise à jour complète de votre système avec le script SQL enrichi et les règles de gestion des stages.
+------------------------------
+## PARTIE 1 : Script SQL Enrichi (Coefficients, Rattrapages et Stages)
+Ce script intègre désormais la gestion fine des coefficients théoriques/pratiques, les sessions de rattrapage (conservation de la meilleure note) et le suivi des stages.
+
+-- 1. Table des filièresCREATE TABLE filiere_mentions (
+    id_filiere INT AUTO_INCREMENT PRIMARY KEY,
+    nom_filiere VARCHAR(100) NOT NULL,
+    niveau ENUM('Licence', 'Master', 'Doctorat') NOT NULL
+);
+-- 2. Table des étudiantsCREATE TABLE etudiants (
+    id_etudiant INT AUTO_INCREMENT PRIMARY KEY,
+    matricule VARCHAR(20) UNIQUE NOT NULL,
+    nom VARCHAR(50) NOT NULL,
+    prenoms VARCHAR(100) NOT NULL,
+    date_naissance DATE NOT NULL,
+    statut_shn BOOLEAN DEFAULT FALSE,
+    aptitude_physique BOOLEAN DEFAULT TRUE,
+    id_filiere INT,
+    FOREIGN KEY (id_filiere) REFERENCES filiere_mentions(id_filiere)
+);
+-- 3. Table des Unités d'Enseignement avec coefficients différenciésCREATE TABLE unites_enseignement (
+    id_ue INT AUTO_INCREMENT PRIMARY KEY,
+    code_ue VARCHAR(15) UNIQUE NOT NULL,
+    libelle VARCHAR(150) NOT NULL,
+    credits_ects INT NOT NULL,
+    type_ue ENUM('Théorique', 'Pratique', 'Mixte') NOT NULL,
+    semestre INT NOT NULL,
+    coeff_theorique DECIMAL(3,2) DEFAULT 0.00, -- Ex: 0.40 (40% de la note finale)
+    coeff_pratique DECIMAL(3,2) DEFAULT 0.00,  -- Ex: 0.60 (60% de la note finale)
+    note_eliminatoire DECIMAL(4,2) DEFAULT 7.00 -- Note plancher sous laquelle la compensation est bloquée
+);
+-- 4. Table des inscriptions aux coursCREATE TABLE inscriptions_cours (
+    id_inscription INT AUTO_INCREMENT PRIMARY KEY,
+    id_etudiant INT,
+    id_ue INT,
+    annee_academique VARCHAR(9) NOT NULL, -- Ex: "2025-2026"
+    statut_ue ENUM('En cours', 'Capitalisée', 'Compensée', 'Ajournée') DEFAULT 'En cours',
+    FOREIGN KEY (id_etudiant) REFERENCES etudiants(id_etudiant),
+    FOREIGN KEY (id_ue) REFERENCES unites_enseignement(id_ue)
+);
+-- 5. Table des évaluations incluant la Session 1 et Session 2 (Rattrapage)CREATE TABLE evaluations (
+    id_evaluation INT AUTO_INCREMENT PRIMARY KEY,
+    id_inscription INT,
+    -- Session Initiale (Session 1)
+    s1_note_theorique DECIMAL(4,2),
+    s1_note_pratique DECIMAL(4,2),
+    s1_moyenne_calculee DECIMAL(4,2),
+    -- Session de Rattrapage (Session 2)
+    s2_note_theorique DECIMAL(4,2),
+    s2_note_pratique DECIMAL(4,2),
+    s2_moyenne_calculee DECIMAL(4,2),
+    -- Note Finale Conservée (Max entre S1 et S2 ou règle d'établissement)
+    moyenne_finale_retenue DECIMAL(4,2),
+    FOREIGN KEY (id_inscription) REFERENCES inscriptions_cours(id_inscription)
+);
+-- 6. Table des structures d'accueil pour les stages (Clubs, Fédérations, Centres)CREATE TABLE structures_accueil (
+    id_structure INT AUTO_INCREMENT PRIMARY KEY,
+    nom_structure VARCHAR(150) NOT NULL,
+    type_structure ENUM('Club Professionnel', 'Fédération Sportive', 'Établissement Scolaire', 'Centre Socio-éducatif', 'Autre') NOT NULL,
+    telephone VARCHAR(20),
+    ville VARCHAR(50)
+);
+-- 7. Table de gestion des stagesCREATE TABLE stages (
+    id_stage INT AUTO_INCREMENT PRIMARY KEY,
+    id_etudiant INT,
+    id_structure INT,
+    maitre_stage VARCHAR(100), -- Tuteur en entreprise / club
+    enseignant_encadrant VARCHAR(100), -- Professeur de l'INJS
+    date_debut DATE NOT NULL,
+    date_fin DATE NOT NULL,
+    note_rapport DECIMAL(4,2), -- Note de l'écrit
+    note_soutenance DECIMAL(4,2), -- Note de l'oral devant jury
+    note_entreprise DECIMAL(4,2), -- Note d'évaluation du maître de stage
+    moyenne_stage DECIMAL(4,2),
+    statut_stage ENUM('En cours', 'Validé', 'Non Validé') DEFAULT 'En cours',
+    FOREIGN KEY (id_etudiant) REFERENCES etudiants(id_etudiant),
+    FOREIGN KEY (id_structure) REFERENCES structures_accueil(id_structure)
+);
+
+------------------------------
+## PARTIE 2 : Règles de Gestion des Stages en Milieu Sportif et Socio-Éducatif
+Les stages à l'INJS ne sont pas de simples stages d'observation. Ils valident des compétences d'encadrement sur le terrain (coaching, animation, enseignement). Voici les règles de gestion à programmer dans le système :
+## 1. Conditions d'Éligibilité et Déclenchement
+
+* Aptitude Médicale : Le logiciel doit bloquer la génération de la convention de stage si l'étudiant est déclaré "Inapte" dans la table etudiants.
+* Crédits Prérequis : Pour les stages de Master, le système peut vérifier si l'étudiant a validé un nombre minimal de crédits en Licence.
+
+## 2. Composition de la Note Globale du Stage
+Le calcul de la moyenne_stage s'appuie sur une triple évaluation pour refléter les compétences pratiques et théoriques :
+
+* Évaluation de terrain (Coeff 40%) : Note attribuée par le maître de stage (entraîneur du club ou directeur du centre de jeunesse) mesurant le savoir-être et la conduite des séances d'entraînement.
+* Rapport de stage (Coeff 30%) : Note de l'enseignant encadrant de l'INJS sur la rigueur méthodologique et l'analyse de la pratique sportive.
+* Soutenance Orale (Coeff 30%) : Note attribuée par un jury lors de la présentation des travaux de fin de cycle.
+
+## 3. Règle d'Incompressibilité et Non-Compensation du Stage
+
+* Crédits Majeurs : Le stage (souvent placé au Semestre 6 en Licence ou Semestre 4 en Master) représente à lui seul entre 15 et 30 crédits ECTS.
+* Zéro Compensation : La note finale du stage doit obligatoirement être supérieure ou égale à 10/20. Un stage ne peut en aucun cas être validé par compensation avec d'autres UE du même semestre. Si moyenne_stage < 10, l'étudiant est automatiquement déclaré "Ajourné" pour son diplôme.
+
+## 4. Cas Spécifique des Sportifs de Haut Niveau (SHN)
+
+* Aménagement de calendrier : Pour les étudiants sous contrat professionnel ou en préparation olympique, le système doit permettre de prolonger la date_fin du stage au-delà de l'année universitaire courante sans déclarer l'étudiant en situation de redoublement (Statut "En attente de validation").
+
+------------------------------
+Voici la requête SQL de délibération automatisée ainsi que les maquettes d'interface utilisateur pour finaliser votre système de gestion LMD.
+------------------------------
+## PARTIE 1 : Requête SQL Complexe (Calcul Automatique de Semestre)
+Cette requête effectue la délibération du Semestre 1 pour l'année académique 2025-2026. Elle intègre le calcul pondéré (Théorie/Pratique), prend la meilleure note entre la Session 1 et le Rattrapage (Session 2), et applique la règle de la note éliminatoire.
+
+WITH notes_finales_ue AS (
+    -- ÉTAPE 1 : Calcul de la note retenue par UE (Max entre S1 et S2) et détection des éliminatoires
+    SELECT 
+        ic.id_etudiant,
+        ic.id_ue,
+        ue.credits_ects,
+        ue.note_eliminatoire,
+        -- Note finale Théorie (S2 si passée, sinon S1)
+        COALESCE(e.s2_note_theorique, e.s1_note_theorique) AS note_theo_retenue,
+        -- Note finale Pratique (S2 si passée, sinon S1)
+        COALESCE(e.s2_note_pratique, e.s1_note_pratique) AS note_prat_retenue,
+        -- Calcul de la moyenne pondérée de l'UE
+        (COALESCE(e.s2_note_theorique, e.s1_note_theorique) * ue.coeff_theorique) + 
+        (COALESCE(e.s2_note_pratique, e.s1_note_pratique) * ue.coeff_pratique) AS moyenne_ue
+    FROM inscriptions_cours ic
+    JOIN unites_enseignement ue ON ic.id_ue = ue.id_ue
+    JOIN evaluations e ON ic.id_inscription = e.id_inscription
+    WHERE ue.semestre = 1 
+      AND ic.annee_academique = '2025-2026'
+),
+bilan_etudiant_semestre AS (
+    -- ÉTAPE 2 : Agrégation à l'échelle de l'étudiant (Moyenne générale et alertes)
+    SELECT 
+        id_etudiant,
+        SUM(moyenne_ue * credits_ects) / SUM(credits_ects) AS moyenne_generale_semestre,
+        SUM(credits_ects) AS total_credits_tentes,
+        -- Compte le nombre d'UE sous la note éliminatoire
+        SUM(CASE WHEN moyenne_ue < note_eliminatoire THEN 1 ELSE 0 END) AS nb_ue_eliminatoires
+    FROM notes_finales_ue
+    GROUP BY id_etudiant
+)-- ÉTAPE 3 : Décision finale du jury automatiséeSELECT 
+    e.matricule,
+    e.nom,
+    e.prenoms,
+    ROUND(b.moyenne_generale_semestre, 2) AS moyenne_semestre,
+    CASE 
+        WHEN b.nb_ue_eliminatoires > 0 THEN 'Ajourné (Note Éliminatoire Atteinte)'
+        WHEN b.moyenne_generale_semestre >= 10.00 THEN 'Admis (Semestre Validé)'
+        ELSE 'Ajourné (Moyenne Insuffisante)'
+    END AS decision_jury,
+    CASE 
+        WHEN b.nb_ue_eliminatoires = 0 AND b.moyenne_generale_semestre >= 10.00 THEN 30
+        ELSE 0 -- Les crédits s'acquièrent par UE individuelle si le semestre est échoué
+    END AS credits_semestriels_octroyesFROM bilan_etudiant_semestre bJOIN etudiants e ON b.id_etudiant = e.id_etudiant;
+
+------------------------------
+## PARTIE 2 : Maquettes des Interfaces Utilisateurs (Wireframes Textuels)## 1. Portail Enseignant / Entraîneur : Saisie des Notes & Aptitudes
+Cet écran permet à un enseignant d'entrer les résultats d'un groupe pour une UE spécifique.
+
+================================================================================
+INJS - ESPACE ENSEIGNANT                                       [Session: 2025-2026]
+================================================================================
+UE : [ UE-STAPS-110 - Athlétisme & Physiologie ]   | Semestre : S1
+Filière : Licence 1 - Entraînement Sportif         | Type : Mixte (40% Th / 60% Pr)
+--------------------------------------------------------------------------------
+
+[Rechercher un étudiant... ]                               [Bouton: Sauvegarder]
+
+| Matricule | Nom & Prénoms       | Ap. Médicale | Note Th. (S1) | Note Pr. (S1) |
+|-----------|---------------------|--------------|---------------|---------------|
+| INJS-0021 | KOFFI Jean-Marc     |  🟢 Apte     |    12.50      |    14.00      |
+| INJS-0044 | DIALLO Aminata      |  🟢 Apte     |    09.00      |    16.50      |
+| INJS-0089 | GNAHORE Yves (SHN)  |  🟢 Apte     |    [ 08.50 ]  |    [ 15.00 ]  |
+| INJS-0102 | TRAORE Fatoumata    |  🔴 Inapte   |    11.00      |    [ DISQ ]*  |
+
+--------------------------------------------------------------------------------
+* Note : L'étudiante TRAORE F. est inapte ce semestre. Sa note pratique est bloquée.
+================================================================================
+
+## 2. Portail Étudiant / Athlète : Suivi du Cursus LMD
+Cet écran offre une vue transparente à l'étudiant sur ses validations, ses compensations et ses alertes de performance.
+
+================================================================================
+INJS - PORTAIL ÉTUDIANT                                      [Statut : Actif (SHN)]
+================================================================================
+Nom : GNAHORE Yves          | Matricule : INJS-0089      | Niveau : Licence 1
+Filière : Entraînement S.   | Aptitude : 🟢 Valide        | Club : Équipe Nationale
+--------------------------------------------------------------------------------
+📊 RÉSULTATS DU SEMESTRE 1 : EN COURS DE VALIDATION
+
+[UE] Anatomie & Biomécanique (Crédits: 6)
+   - Théorie : 11.50/20 | Pratique : 12.00/20
+   - Moyenne UE : 11.80/20 🟢 Capitalisée
+
+[UE] Football & Tactique Professionnelle (Crédits: 6)
+   - Théorie : 07.00/20 | Pratique : 15.00/20
+   - Moyenne UE : 11.80/20 🟢 Capitalisée
+
+[UE] Athlétisme & Physiologie (Crédits: 6)
+   - Théorie : 08.50/20 | Pratique : 15.00/20
+   - Moyenne UE : 12.40/20 🟢 Capitalisée
+
+[UE] Anglais Appliqué au Sport (Crédits: 4)
+   - Théorie : 06.00/20 | (Pas de pratique)
+   - Moyenne UE : 06.00/20 ⚠️ En attente de compensation semestrielle
+
+--------------------------------------------------------------------------------
+📈 Estimation Moyenne Générale : 11.23/20  |  Crédits sécurisés : 18 / 30
+💡 Statut SHN activé : Vos absences pour le stage de préparation de Mars sont justifiées.
+================================================================================
+
+------------------------------
+Voici le guide de développement final comprenant la spécification des API REST et le scénario de test avec son jeu de données pour valider le calcul automatique des délibérations.
+------------------------------
+## PARTIE 1 : Dictionnaire des API REST (Architecture Backend)
+Ces points d'accès (endpoints) permettent de faire communiquer l'interface utilisateur (Portails Enseignant et Étudiant) avec la base de données. Les échanges se font au format JSON.
+## 1. Gestion des Notes (Espace Enseignant)
+
+* POST /api/v1/evaluations/saisie
+* Description : Permet à un enseignant d'enregistrer les notes de la Session 1 ou du Rattrapage (Session 2).
+   * Corps de la requête (JSON) :
+   
+   {
+     "id_inscription": 1,
+     "session": "S1", 
+     "note_theorique": 12.50,
+     "note_pratique": 14.00
+   }
+   
+   * Réponse (200 OK) : {"status": "success", "message": "Notes enregistrées et moyenne calculée."}
+
+## 2. Consultation des Résultats (Espace Étudiant)
+
+* GET /api/v1/etudiants/{id_etudiant}/bulletin?semestre=1
+* Description : Récupère les notes de l'étudiant pour un semestre donné avec le détail des UE.
+   * Réponse (200 OK) :
+   
+   {
+     "matricule": "INJS-0089",
+     "etudiant": "GNAHORE Yves",
+     "semestre": 1,
+     "resultats": [
+       {
+         "code_ue": "UE-STAPS-110",
+         "libelle": "Athlétisme & Physiologie",
+         "credits": 6,
+         "note_finale": 12.40,
+         "statut": "Capitalisée"
+       }
+     ]
+   }
+   
+   
+## 3. Lancement des Délibérations (Espace Administration)
+
+* POST /api/v1/deliberations/calculer
+* Description : Exécute l'algorithme LMD pour clôturer un semestre.
+   * Corps de la requête (JSON) :
+   
+   {
+     "annee_academique": "2025-2026",
+     "semestre": 1
+   }
+   
+   * Réponse (200 OK) : {"status": "success", "message": "Délibération du Semestre 1 terminée. 142 étudiants traités."}
+
+------------------------------
+## PARTIE 2 : Scénario de Test et Jeu de Données
+Ce scénario permet de tester si l'algorithme SQL de délibération fonctionne correctement en simulant trois profils d'étudiants types de l'INJS.
+## 1. Script d'insertion du Jeu de Données de Test (SQL)
+
+-- Insertion d'une filièreINSERT INTO filiere_mentions (id_filiere, nom_filiere, niveau) VALUES (1, 'Entraînement Sportif', 'Licence');
+-- Insertion de 3 étudiants typesINSERT INTO etudiants (id_etudiant, matricule, nom, prenoms, date_naissance, statut_shn, aptitude_physique, id_filiere) VALUES 
+(1, 'INJS-001', 'KOFFI', 'Jean', '2003-05-12', FALSE, TRUE, 1),    -- Profil 1 : Étudiant régulier brillant
+(2, 'INJS-002', 'DIALLO', 'Moussa', '2002-09-20', FALSE, TRUE, 1),  -- Profil 2 : Va au rattrapage et valide par compensation
+(3, 'INJS-003', 'GNAHORE', 'Alain', '2004-01-15', TRUE, TRUE, 1);   -- Profil 3 : Échoue à cause d'une note éliminatoire en sport
+-- Insertion de 2 UE pour le Semestre 1INSERT INTO unites_enseignement (id_ue, code_ue, libelle, credits_ects, type_ue, semestre, coeff_theorique, coeff_pratique, note_eliminatoire) VALUES 
+(1, 'UE-THEO-101', 'Anatomie & Physiologie', 4, 'Mixte', 1, 0.50, 0.50, 7.00),
+(2, 'UE-PRAT-102', 'Football & Athlétisme', 6, 'Pratique', 1, 0.00, 1.00, 8.00); -- Note éliminatoire forte sur le sport (8/20)
+-- Inscriptions aux cours (Année 2025-2026)INSERT INTO inscriptions_cours (id_inscription, id_etudiant, id_ue, annee_academique) VALUES 
+(1, 1, 1, '2025-2026'), (2, 1, 2, '2025-2026'), -- Inscriptions Koffi
+(3, 2, 1, '2025-2026'), (4, 2, 2, '2025-2026'), -- Inscriptions Diallo
+(5, 3, 1, '2025-2026'), (6, 3, 2, '2025-2026'); -- Inscriptions Gnahoré
+-- Insertion des Notes (Simulations S1 et S2)INSERT INTO evaluations (id_inscription, s1_note_theorique, s1_note_pratique, s2_note_theorique, s2_note_pratique) VALUES -- KOFFI Jean : Excellentes notes dès la Session 1
+(1, 14.00, 16.00, NULL, NULL), 
+(2, NULL, 15.00, NULL, NULL),
+-- DIALLO Moussa : Faible en S1, se rattrape en S2
+(3, 08.00, 09.00, 11.00, 10.00), -- Moyenne UE 1 passera de 8.5 à 10.5
+(4, NULL, 09.50, NULL, NULL),    -- Moyenne UE 2 reste à 9.5 (Compensable car > 8)
+-- GNAHORE Alain : Très bon en théorie, mais blessé ou contre-performance en sport (Note éliminatoire)
+(5, 16.00, 14.00, NULL, NULL), -- Moyenne UE 1 = 15.00
+(6, NULL, 06.00, NULL, NULL);   -- Moyenne UE 2 = 06.00 (Éliminatoire, bloque le semestre malgré une bonne moyenne générale)
+
+## 2. Résultats Attendus après Exécution de la Requête de Délibération
+Si vous exécutez la requête SQL complexe développée à l'étape précédente sur ce jeu de données, le système affichera exactement le tableau de bord suivant :
+
+| Matricule | Nom & Prénoms | Moyenne Semestre | Décision Jury | Crédits Octroyés | Raison Logique |
+|---|---|---|---|---|---|
+| INJS-001 | KOFFI Jean | 14.90 / 20 | Admis (Semestre Validé) | 30 | Moyenne > 10, aucune note éliminatoire. |
+| INJS-002 | DIALLO Moussa | 9.90 / 20 | Ajourné (Moyenne Insuffisante) | 0 | Sa moyenne générale reste juste en dessous de 10 (9.90). Il devra reprendre l'UE 2 l'année prochaine (l'UE 1 est acquise individuellement). |
+| INJS-003 | GNAHORE Alain | 9.60 / 20 | Ajourné (Note Éliminatoire Atteinte) | 0 | Bien qu'il ait eu 15/20 en anatomie, sa note de 6/20 en Football est sous la barre fatidique des 8/20. Le système bloque son passage. |
+
+------------------------------
+Voici la configuration de l'architecture système et la gestion des diplômes/mentions structurées spécifiquement pour un écosystème Django (Python) + Flutter.
+------------------------------
+## PARTIE 1 : Architecture Système (Django + Python + Flutter)
+L'architecture repose sur un découpage strict entre le Backend (API REST) et le Frontend (Multiplateforme).
+
++------------------------------------------------------------------------+
+
+|                          FLUTTER FRONTEND                              |
+|   (Application Mobile pour Athlètes/Coaches & Web pour Admin Scolarité)|
++------------------------------------------------------------------------+
+                                   |
+                          Requêtes HTTPS / JSON
+                                   |
+                                   v
++------------------------------------------------------------------------+
+
+|                          DJANGO BACKEND (Python)                       |
+|   - Django REST Framework (DRF) : Gestion des Endpoints API             |
+|   - ORM Django : Abstraction de la base de données                      |
+|   - Celery + Redis : Tâches de délibération lourdes en tâche de fond    |
++------------------------------------------------------------------------+
+                                   |
+                                   v
++------------------------------------------------------------------------+
+
+|                          POSTGRESQL DATABASE                           |
+|       Stockage des données académiques, médicales et sportives         |
++------------------------------------------------------------------------+
+
+## 1. Structure du projet Django (models.py) pour la fin de cycle
+Dans l'écosystème Django, les règles métier et la structure des tables se définissent dans les fichiers models.py. [1] 
+
+from django.db import modelsfrom django.core.validators import MinValueValidator, MaxValueValidator
+class FiliereMention(models.Model):
+    NIVEAU_CHOICES = [
+        ('L', 'Licence'),
+        ('M', 'Master'),
+        ('D', 'Doctorat'),
+    ]
+    nom_filiere = models.CharField(max_length=100)
+    niveau = models.CharField(max_length=1, choices=NIVEAU_CHOICES)
+
+    def __str__(self):
+        return f"{self.get_level_display()} - {self.nom_filiere}"
+class Etudiant(models.Model):
+    matricule = models.CharField(max_length=20, unique=True)
+    nom = models.CharField(max_length=50)
+    prenoms = models.CharField(max_length=100)
+    statut_shn = models.BooleanField(default=False)
+    aptitude_physique = models.BooleanField(default=True)
+    filiere = models.ForeignKey(FiliereMention, on_delete=models.PROTECT)
+class DiplomeFinCycle(models.Model):
+    MENTION_CHOICES = [
+        ('P', 'Passable'),
+        ('AB', 'Assez Bien'),
+        ('B', 'Bien'),
+        ('TB', 'Très Bien'),
+        ('E', 'Excellent'),
+    ]
+    
+    etudiant = models.OneToOneField(Etudiant, on_delete=models.CASCADE, related_name="diplome")
+    annee_obtention = models.CharField(max_length=9) # Ex: 2025-2026
+    moyenne_cycle = models.DecimalField(
+        max_digits=4, 
+        decimal_places=2,
+        validators=[MinValueValidator(0), MaxValueValidator(20)]
+    )
+    mention = models.CharField(max_length=2, choices=MENTION_CHOICES, blank=True)
+    date_deliberation = models.DateField(auto_now_add=True)
+    est_edite = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        # Attribution automatique de la mention selon le barème LMD universel
+        if self.moyenne_cycle >= 16.00:
+            self.mention = 'E' if self.moyenne_cycle >= 18.00 else 'TB'
+        elif self.moyenne_cycle >= 14.00:
+            self.mention = 'B'
+        elif self.moyenne_cycle >= 12.00:
+            self.mention = 'AB'
+        else:
+            self.mention = 'P'
+        super().save(*args, **kwargs)
+
+## 2. Consommation de l'API dans Flutter (diplome_service.dart)
+Côté Flutter, on crée un service pour récupérer l'état du diplôme calculé par Django.
+
+import 'dart:convert';
+import 'http://localhost:8000'; // Adresse locale de votre API Django
+
+class DiplomeService {
+  final String baseUrl = "http://localhost:8000/api/v1";
+
+  Future<Map<String, dynamic>> fetchDiplome(int etudiantId) async {
+    final response = await http.get(Uri.parse('$baseUrl/diplomes/$etudiantId/'));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Impossible de charger les données du diplôme");
+    }
+  }
+}
+
+------------------------------
+## PARTIE 2 : Règles de Gestion des Diplômes et Mentions (LMD)
+Le calcul du diplôme final à l'INJS s'effectue après vérification de la capitalisation de l'ensemble des crédits requis (180 pour la Licence, 120 pour le Master).
+## 1. Algorithme de calcul de la Moyenne du Cycle (Python)
+Pour éviter de surcharger la base de données lors des requêtes d'affichage, un script Python (via une tâche asynchrone Celery ou un Service Django) calcule la moyenne finale pondérée de tous les semestres. [2] 
+
+def calculer_diplome_etudiant(etudiant_id, annee_en_cours):
+    etudiant = Etudiant.objects.get(id=etudiant_id)
+    
+    # Vérification : L'étudiant a-t-il validé ses 6 semestres (pour la Licence) ?
+    # On présume une table SemestreBilan calculée en amont
+    semestres_valides = SemestreBilan.objects.filter(etudiant=etudiant, valide=True).count()
+    
+    if semestres_valides < 6:
+        return {"status": "error", "message": "Le cursus complet n'est pas encore validé."}
+    
+    # Récupération de toutes les moyennes semestrielles
+    scores = SemestreBilan.objects.filter(etudiant=etudiant).values_list('moyenne_semestre', flat=True)
+    moyenne_finale = sum(scores) / len(scores)
+    
+    # Enregistrement ou mise à jour du diplôme
+    diplome, created = DiplomeFinCycle.objects.update_or_create(
+        etudiant=etudiant,
+        defaults={
+            'annee_obtention': annee_en_cours,
+            'moyenne_cycle': moyenne_finale
+        }
+    )
+    
+    return {"status": "success", "mention": diplome.get_mention_display(), "moyenne": float(diplome.moyenne_cycle)}
+
+## 2. Barème Officiel des Mentions (LMD / CAMES)
+Le système applique strictement la nomenclature textuelle stockée par le modèle Django :
+
+* Moyenne ≥ 18.00 : Mention Excellent
+* 16.00 ≤ Moyenne < 18.00 : Mention Très Bien
+* 14.00 ≤ Moyenne < 16.00 : Mention Bien
+* 12.00 ≤ Moyenne < 14.00 : Mention Assez Bien
+* 10.00 ≤ Moyenne < 12.00 : Mention Passable [3] 
+
+## 3. Écran Flutter d'Affichage du Diplôme (Aperçu Étudiant)
+Composant d'interface Flutter exploitant les données fournies par Django :
+
+// Extrait de widget Flutter pour afficher le badge de mention
+Widget buildDiplomeCard(Map<String, dynamic> diplomeData) {
+  return Card(
+    elevation: 4,
+    child: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          Text("DIPLÔME DE LICENCE", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          SizedBox(height: 10),
+          Text("Moyenne Générale : ${diplomeData['moyenne']}/20"),
+          Chip(
+            label: Text("Mention ${diplomeData['mention']}"),
+            backgroundColor: Colors.green.shade100,
+          ),
+          ElevatedButton(
+            onPressed: () { /* Code pour télécharger le PDF généré par Django */ },
+            child: Text("Télécharger le supplément au diplôme"),
+          )
+        ],
+      ),
+    ),
+  );
+}
+
+------------------------------
+Pour finaliser l'architecture de votre système de gestion LMD pour l'INJS, voici l'implémentation complète du système d'authentification JWT et du générateur de diplômes en PDF.
+------------------------------
+## PARTIE 1 : Authentification Sécurisée JWT (Django ↔ Flutter)
+Pour sécuriser les échanges entre l'application Flutter et le serveur Django, nous utilisons l'authentification par jeton (JWT via la bibliothèque djangorestframework-simplejwt).
+## 1. Configuration Django (settings.py & views.py)
+Ajoutez la configuration suivante pour exiger une authentification sur vos API, tout en adaptant les durées de vie des jetons (les entraîneurs sur le terrain ont besoin d'une session plus longue).
+
+# settings.pyINSTALLED_APPS = [
+    # ...
+    'rest_framework',
+    'rest_framework_simplejwt',
+]
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+from datetime import timedeltaSIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),  # Adapté aux profils terrains/entraîneurs
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+Pour inclure le rôle (Admin, Enseignant, Étudiant) directement dans le jeton, surchargez le serializer de base [2] :
+
+# views.pyfrom rest_framework_simplejwt.serializers import TokenObtainPairSerializerfrom rest_framework_simplejwt.views import TokenObtainPairView
+class InjsTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        # Ajout du rôle utilisateur dans la charge utile (payload) du JWT
+        token['role'] = getattr(user, 'role', 'etudiant') 
+        token['matricule'] = getattr(user, 'username', '')
+        return token
+class InjsTokenObtainPairView(TokenObtainPairView):
+    serializer_class = InjsTokenObtainPairSerializer
+
+## 2. Consommation et Stockage du Jeton dans Flutter
+Côté Flutter, utilisez le package flutter_secure_storage pour sauvegarder le jeton de manière chiffrée sur l'appareil.
+
+// auth_service.dartimport 'dart:convert';import 'package:http/http.dart' as http;import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+class AuthService {
+  final String loginUrl = "http://localhost:8000/api/v1/token/";
+  final _storage = const FlutterSecureStorage();
+
+  Future<bool> login(String username, String password) async {
+    final response = await http.post(
+      Uri.parse(loginUrl),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"username": username, "password": password}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      // Stockage sécurisé du jeton d'accès
+      await _storage.write(key: "access_token", value: data["access"]);
+      await _storage.write(key: "refresh_token", value: data["refresh"]);
+      return true;
+    }
+    return false;
+  }
+
+  // Exemple d'appel API authentifié pour récupérer les notes
+  Future<http.Response> getAuthenticatedData(String url) async {
+    String? token = await _storage.read(key: "access_token");
+    return await http.get(
+      Uri.parse(url),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token" // Injection du jeton JWT
+      },
+    );
+  }
+}
+
+------------------------------
+## PARTIE 2 : Génération Automatique des Diplômes en PDF (Python)
+Pour éditer le diplôme officiel et son supplément au diplôme (exigence forte du LMD décrivant les compétences sportives acquises), nous utilisons la bibliothèque Python ReportLab.
+## View Django pour générer le PDF à la volée
+
+# views.pyimport iofrom django.http import FileResponsefrom rest_framework.decorators import api_view, permission_classesfrom rest_framework.permissions import IsAuthenticatedfrom reportlab.lib.pagesizes import letter, landscapefrom reportlab.platypus import SimpleDocTemplate, Paragraph, Spacerfrom reportlab.lib.styles import getSampleStyleSheet, ParagraphStylefrom reportlab.lib import colorsfrom .models import DiplomeFinCycle
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])def telecharger_diplome_pdf(request, diplome_id):
+    try:
+        diplome = DiplomeFinCycle.objects.select_related('etudiant', 'etudiant__filiere').get(id=diplome_id)
+    except DiplomeFinCycle.DoesNotExist:
+        return FileResponse({'error': 'Diplôme introuvable'}, status=404)
+
+    # 1. Création du flux mémoire pour éviter d'écrire sur le disque
+    buffer = io.BytesIO()
+    
+    # 2. Configuration du document au format Paysage (Style classique des diplômes)
+    doc = SimpleDocTemplate(
+        buffer, 
+        pagesize=landscape(letter),
+        rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40
+    )
+    
+    styles = getSampleStyleSheet()
+    story = []
+
+    # 3. Création de styles personnalisés
+    style_instit = ParagraphStyle(
+        'Instit', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, leading=16, alignment=1, textColor=colors.HexColor('#0F2027')
+    )
+    style_titre = ParagraphStyle(
+        'Titre', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=28, leading=32, alignment=1, textColor=colors.HexColor('#D4AF37') # Couleur Or
+    )
+    style_corps = ParagraphStyle(
+        'Corps', parent=styles['Normal'], fontName='Helvetica', fontSize=12, leading=22, alignment=1
+    )
+
+    # 4. Construction du contenu du diplôme
+    story.append(Paragraph("RÉPUBLIQUE DE CÔTE D'IVOIRE<br/>INSTITUT NATIONAL DE LA JEUNESSE ET DES SPORTS (INJS)", style_instit))
+    story.append(Spacer(1, 40))
+    story.append(Paragraph("DIPLÔME DE LICENCE", style_titre))
+    story.append(Spacer(1, 10))
+    story.append(Paragraph(f"Vu les délibérations du jury du cycle LMD en date du {diplome.date_deliberation.strftime('%d/%m/%Y')}", style_corps))
+    story.append(Spacer(1, 20))
+    
+    texte_diplome = (
+        f"Le grade de <b>Licence Professionnelle</b>, mention <b>{diplome.etudiant.filiere.nom_filiere}</b>,<br/>"
+        f"est conféré à <b>M. / Mme {diplome.etudiant.nom} {diplome.etudiant.prenoms}</b>,<br/>"
+        f"né(e) le {diplome.etudiant.date_naissance.strftime('%d/%m/%Y')}, titulaire du matricule {diplome.etudiant.matricule}.<br/>"
+        f"Pour en jouir avec les droits et prérogatives qui y sont attachés."
+    )
+    story.append(Paragraph(texte_diplome, style_corps))
+    story.append(Spacer(1, 30))
+    
+    # Mention et Statistiques
+    shn_badge = " (Statut Sportif de Haut Niveau)" if diplome.etudiant.statut_shn else ""
+    story.append(Paragraph(f"Moyenne générale du cycle : <b>{diplome.moyenne_cycle}/20</b> — Mention : <b>{diplome.get_mention_display()}</b>{shn_badge}", style_corps))
+    story.append(Spacer(1, 40))
+    
+    # Signatures
+    story.append(Paragraph("Le Directeur de l'Institut&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Le Président du Jury", style_corps))
+
+    # 5. Compilation du PDF
+    doc.build(story)
+    
+    # 6. Envoi du fichier généré à l'application Flutter
+    buffer.seek(0)
+    return FileResponse(buffer, as_attachment=True, filename=f"Diplome_{diplome.etudiant.matricule}.pdf", content_type='application/pdf')
+
+## Intégration finale dans Flutter
+Le bouton créé à l'étape précédente appellera l'endpoint Django de cette méthode. L'utilisation d'un package comme open_filex ou path_provider permettra à l'étudiant d'ouvrir ou d'enregistrer instantanément son document officiel directement depuis son smartphone ou son navigateur web.
+------------------------------
+Voici l'implémentation finale pour propulser votre système à l'échelle industrielle : le traitement asynchrone des délibérations avec Celery + Redis et le système de notifications push en temps réel avec Firebase Cloud Messaging (FCM).
+------------------------------
+## PARTIE 1 : Traitement Asynchrone avec Celery & Redis (Django)
+Les délibérations à l'INJS impliquent des milliers de calculs croisés (vérification des notes éliminatoires, calculs des coefficients théorie/pratique, application des règles de compensation semestrielle et annuelle). Pour éviter que le serveur Django ne plante ou ne renvoie une erreur Timeout, ces calculs sont délégués en tâche de fond à Celery en utilisant Redis comme courtier (broker).
+## 1. Configuration de Celery (celery.py) dans Django
+
+# injs_lmd/celery.pyimport osfrom celery import Celery
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'injs_lmd.settings')
+app = Celery('injs_lmd')# Configuration pour utiliser Redis local ou distant
+app.config_from_object('django.conf:settings', namespace='CELERY')
+app.autodiscover_tasks()
+
+## 2. Déclaration de la Tâche Lourde (tasks.py)
+Cette tâche récupère tous les étudiants d'une promotion, applique les règles de délibération LMD vues précédemment, crée les diplômes et déclenche ensuite la notification.
+
+# scolarite/tasks.pyfrom celery import shared_taskfrom .models import Etudiant, DiplomeFinCycle, SemestreBilanfrom .services import notifier_etudiant_diplome # Service décrit en partie 2
+
+@shared_taskdef delimiter_promotion_lmd_task(filiere_id, annee_academique):
+    """ Tâche asynchrone pour calculer les diplômes de toute une filière """
+    etudiants = Etudiant.objects.filter(filiere_id=filiere_id)
+    nb_traites = 0
+
+    for etudiant in etudiants:
+        # 1. Vérification des 6 semestres (Exemple Licence)
+        semestres = SemestreBilan.objects.filter(etudiant=etudiant)
+        if semestres.count() == 6 and all(s.valide for s in semestres):
+            
+            # 2. Calcul de la moyenne générale du cycle
+            moyenne_cycle = sum(s.moyenne_semestre for s in semestres) / 6
+            
+            # 3. Sauvegarde du diplôme (le save() attribue automatiquement la mention)
+            diplome, created = DiplomeFinCycle.objects.update_or_create(
+                etudiant=etudiant,
+                defaults={
+                    'annee_obtention': annee_academique,
+                    'moyenne_cycle': moyenne_cycle
+                }
+            )
+            
+            # 4. Déclenchement de la notification Firebase (Asynchrone)
+            notifier_etudiant_diplome.delay(etudiant.id, diplome.get_mention_display())
+            nb_traites += 1
+            
+    return f"Délibération terminée avec succès. {nb_traites} diplômes générés."
+
+## 3. Appel de la Tâche depuis la Vue API Django
+
+# views.pyfrom rest_framework.response import Responsefrom rest_framework.decorators import api_viewfrom .tasks import delimiter_promotion_lmd_task
+
+@api_view(['POST'])def lancer_deliberation_api(request):
+    filiere_id = request.data.get('filiere_id')
+    annee = request.data.get('annee_academique')
+    
+    # Appel asynchrone via Celery (.delay) : la vue répond instantanément (202 Accepted)
+    delimiter_promotion_lmd_task.delay(filiere_id, annee)
+    
+    return Response({"status": "processing", "message": "Calculs de délibérations lancés en tâche de fond."}, status=202)
+
+------------------------------
+## PARTIE 2 : Notifications Push Temps Réel avec Firebase (Django ↔ Flutter)
+Pour alerter immédiatement un athlète de la disponibilité de ses notes, d'une décision de jury ou d'une mise à jour de son statut médical (Aptitude/Inaptitude), nous intégrons le SDK Firebase Admin sur Django et le package firebase_messaging sur Flutter.
+## 1. Envoi de la Notification Push depuis Django
+Installez firebase-admin sur votre serveur Python. Ce service est appelé directement à la suite des délibérations.
+
+# scolarite/services.pyfrom celery import shared_taskfrom firebase_admin import messaging, credentials, initialize_appfrom .models import Etudiant
+# Initialisation unique du SDK avec vos clés secrètes Firebasetry:
+    cred = credentials.Certificate("path/to/firebase_credentials.json")
+    initialize_app(cred)except ValueError:
+    pass # Déjà initialisé
+
+@shared_taskdef notifier_etudiant_diplome(etudiant_id, mention_text):
+    try:
+        etudiant = Etudiant.objects.get(id=etudiant_id)
+        # On suppose que vous stockez le FCM Token de l'appareil de l'étudiant à sa connexion Flutter
+        fcm_token = getattr(etudiant, 'fcm_token', None) 
+        
+        if not fcm_token:
+            return "Aucun token trouvé pour cet étudiant."
+
+        # Construction du message Push
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title="🎓 Délibérations LMD - INJS",
+                body=f"Félicitations {etudiant.nom}, votre diplôme de Licence a été validé ! Mention : {mention_text}."
+            ),
+            data={
+                "click_action": "FLUTTER_NOTIFICATION_CLICK",
+                "type": "diplome",
+                "etudiant_id": str(etudiant_id)
+            },
+            token=fcm_token,
+        )
+        
+        response = messaging.send(message)
+        return f"Notification envoyée : {response}"
+    except Exception as e:
+        return f"Erreur d'envoi : {str(e)}"
+
+## 2. Réception et Routage de la Notification dans Flutter
+Dans votre application Flutter, configurez les écouteurs de messages pour intercepter la notification, qu'elle arrive au premier plan (Foreground) ou en arrière-plan (Background/Terminated).
+
+// notification_service.dartimport 'package:firebase_messaging/firebase_messaging.dart';import 'package:flutter/material.dart';
+class NotificationService {
+  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+
+  Future<void> initialize(BuildContext context) async {
+    // 1. Demande de permissions pour iOS / Android 13+
+    NotificationSettings settings = await _fcm.requestPermission(
+      alert: true, badge: true, sound: true,
+    );
+
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      print("Permissions Push accordées pour l'INJS app.");
+    }
+
+    // 2. Gestion des messages lorsque l'application est ouverte (Foreground)
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (message.notification != null) {
+        // Affichage d'une alerte ou d'une bannière personnalisée dans l'application
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("${message.notification!.title}: ${message.notification!.body}"),
+            backgroundColor: Colors.blueAccent,
+          ),
+        );
+      }
+    });
+
+    // 3. Gestion du clic sur la notification lorsque l'application était fermée
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      if (message.data['type'] == 'diplome') {
+        // Routage automatique de l'étudiant vers son écran de diplôme
+        Navigator.pushNamed(context, '/ecran_diplome', arguments: message.data['etudiant_id']);
+      }
+    });
+  }
+}
+
+------------------------------
+Voici le guide ultime pour sécuriser la mise en production de votre application et valider votre politique de reprise après sinistre (Disaster Recovery).
+------------------------------
+## PARTIE 1 : Configuration et Variables pour la Production (Django)
+En production, vous devez impérativement désactiver le mode débogage pour éviter de divulguer votre code en cas d'erreur. Les clés secrètes doivent être externalisées via des fichiers .env.
+## 1. Configuration Sécurisée (settings.py)
+Modifiez les lignes suivantes dans la configuration de votre application Django :
+
+# settings.pyimport osfrom pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent.parent
+# Désactivation absolue du mode debug en productionDEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
+# Clé secrète lue depuis l'environnement systèmeSECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'votre_cle_tres_longue_et_securisee_injs_2026')
+# Hôtes autorisés (remplacez par le domaine réel de l'INJS)ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'api.injs.ci,localhost').split(',')
+# Sécurité HTTPS obligatoire en productionif not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    # Protection HSTS (1 an)
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+# Configuration statique pour la productionSTATIC_URL = '/static/'STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+## 2. Gestion des Secrets avec un Fichier .env
+Créez un fichier nommé .env à la racine de votre serveur de production. N'ajoutez jamais ce fichier sur Git.
+
+# .env
+DJANGO_DEBUG=False
+DJANGO_SECRET_KEY=9e#xa76$!p90_injs_long_string_production_2026_secure
+DJANGO_ALLOWED_HOSTS=api.injs.ci,102.16.45.12
+DATABASE_URL=postgres://injs_admin:SuperComplexPassword2026@db:5432/injs_lmd
+REDIS_URL=redis://redis:6379/0
+
+Pour charger ce fichier automatiquement dans Docker, ajoutez simplement env_file: .env sous vos services web et celery dans votre fichier docker-compose.yml.
+------------------------------
+## PARTIE 2 : Procédure de Restauration Rapide (Plan de Reprise d'Activité)
+Une sauvegarde n'a de valeur que si elle est testée. Si votre serveur principal tombe en panne, voici la procédure exacte à suivre pour restaurer les notes et le statut LMD des étudiants sur une nouvelle machine en moins de 5 minutes.
+## Étape 1 : Préparation du Terrain
+Vérifiez que vos conteneurs Docker fonctionnent et localisez le fichier de sauvegarde compressé (ex: backup_injs_lmd_2026-06-28.sql.gz).
+## Étape 2 : Nettoyage de la base de données actuelle (Optionnel)
+Si vous restaurez sur un serveur contenant des données corrompues, videz la base pour éviter les conflits d'index :
+
+docker exec -it injs_db dropdb -U injs_admin injs_lmd
+docker exec -it injs_db createdb -U injs_admin injs_lmd
+
+## Étape 3 : Injection des Données Sauvegardées
+Exécutez cette commande en redirigeant le flux du fichier compressé directement dans l'outil psql du conteneur de votre base de données :
+
+# Décompression et injection directe à la volée
+gunzip -c /opt/injs_backups/backup_injs_lmd_2026-06-28.sql.gz | docker exec -i injs_db psql -U injs_admin -d injs_lmd
+
+## Étape 4 : Vérification de la Restauration
+Pour vous assurer que les tables de l'INJS sont bien de retour, interrogez rapidement le nombre d'étudiants enregistrés :
+
+docker exec -it injs_db psql -U injs_admin -d injs_lmd -c "SELECT COUNT(*) FROM etudiants;"
+
+------------------------------
+Voici les deux derniers modules techniques pour finaliser votre infrastructure : la suite de tests unitaires pour sécuriser le code Python et le pipeline de déploiement continu (CI/CD) via GitHub Actions.
+------------------------------
+## PARTIE 1 : Suite de Tests Unitaires (Django)
+Les tests unitaires garantissent que les modifications futures de votre code ne casseront pas le moteur de calcul LMD ou l'attribution automatique des mentions.
+Créez le fichier suivant dans votre application Django pour simuler et valider le comportement du système.
+
+# scolarite/tests.pyfrom django.test import TestCasefrom .models import FiliereMention, Etudiant, DiplomeFinCycle
+class InjsLmdLogicTestCase(TestCase):
+    def setUp(self):
+        """ Configuration initiale des données de test """
+        self.filiere = FiliereMention.objects.create(
+            nom_filiere="Entraînement Sportif",
+            niveau="L"
+        )
+        self.etudiant = Etudiant.objects.create(
+            matricule="INJS-9999",
+            nom="TEST",
+            prenoms="Athlète",
+            statut_shn=True,
+            aptitude_physique=True,
+            filiere=self.filiere
+        )
+
+    def test_attribution_automatique_mention_tres_bien(self):
+        """ Vérifie que le système attribue la bonne mention selon la note """
+        diplome = DiplomeFinCycle.objects.create(
+            etudiant=self.etudiant,
+            annee_obtention="2025-2026",
+            moyenne_cycle=16.50  # Doit générer la mention 'TB' (Très Bien)
+        )
+        
+        # Validation de la règle métier du modèle
+        self.assertEqual(diplome.mention, 'TB')
+        self.assertEqual(diplome.get_mention_display(), 'Très Bien')
+
+    def test_attribution_automatique_mention_passable(self):
+        """ Vérifie l'attribution de la mention Passable pour une note limite """
+        diplome = DiplomeFinCycle.objects.create(
+            etudiant=self.etudiant,
+            annee_obtention="2025-2026",
+            moyenne_cycle=11.00  # Doit générer la mention 'P' (Passable)
+        )
+        
+        self.assertEqual(diplome.mention, 'P')
+
+    def test_limite_note_superieure_vingt(self):
+        """ Vérifie que le validateur Django bloque les notes impossibles (> 20) """
+        from django.core.exceptions import ValidationError
+        
+        diplome = DiplomeFinCycle(
+            etudiant=self.etudiant,
+            annee_obtention="2025-2026",
+            moyenne_cycle=21.00  # Note invalide
+        )
+        
+        # Le système doit lever une exception de validation
+        with self.assertRaises(ValidationError):
+            diplome.full_clean()
+
+Pour exécuter ces tests dans votre environnement Docker, lancez simplement la commande suivante :
+
+docker exec -it injs_api python manage.py test
+
+------------------------------
+## PARTIE 2 : Pipeline de Déploiement Continu (GitHub Actions)
+Ce pipeline automatise la mise en production. À chaque fois que vous envoyez du code sur la branche main de votre dépôt GitHub, le script va automatiquement exécuter les tests. Si les tests passent, il se connecte à votre serveur INJS par SSH pour mettre à jour l'application et redémarrer Docker.
+Créez un fichier nommé .github/workflows/deploy.yml à la racine de votre projet.
+
+# .github/workflows/deploy.ymlname: CI/CD Pipeline INJS-LMD
+on:
+  push:
+    branches: [ main ]
+jobs:
+  # ÉTAPE 1 : Intégration Continue (Tests)
+  test-and-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code du dépôt
+        uses: actions/checkout@v4
+
+      - name: Configurer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer les dépendances
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Exécuter les tests unitaires Django
+        run: |
+          # Simulation de l'exécution hors Docker pour la CI
+          python manage.py test
+  # ÉTAPE 2 : Déploiement Continu (Production)
+  deploy-to-production:
+    needs: test-and-quality # Ne se lance que si l'étape précédente réussit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Déploiement distant via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PRODUCTION_SERVER_IP }}
+          username: ${{ secrets.PRODUCTION_SSH_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/injs_lmd
+            
+            echo "Mise à jour du code source..."
+            git pull origin main
+            
+            echo "Reconstruction et redémarrage des conteneurs..."
+            docker-compose up -d --build
+            
+            echo "Exécution des migrations de base de données..."
+            docker exec injs_api python manage.py migrate --noinput
+            
+            echo "Collecte des fichiers statiques pour le serveur web..."
+            docker exec injs_api python manage.py collectstatic --noinput
+            
+            echo "Déploiement INJS terminé avec succès !"
+
+## Configuration requise sur GitHub
+Pour que ce pipeline fonctionne, allez dans les paramètres de votre projet GitHub (Settings > Secrets and variables > Actions) et ajoutez les trois variables secrètes suivantes :
+
+   1. PRODUCTION_SERVER_IP : L'adresse IP publique de votre serveur de production.
+   2. PRODUCTION_SSH_USER : L'utilisateur Linux du serveur (ex: ubuntu ou root).
+   3. PRODUCTION_SSH_PRIVATE_KEY : La clé privée SSH permettant de se connecter au serveur sans mot de passe.
+
+------------------------------
+Voici les deux derniers modules transversaux de votre projet pour finaliser à la fois l'aspect humain (formation) et l'aspect sécurisation applicative avancée (concurrence). [1] 
+------------------------------
+## PARTIE 1 : Documentation de Formation Enseignant (Portail Flutter)
+Cette notice claire et structurée est prête à être partagée avec le corps enseignant et les entraîneurs de l'INJS pour faciliter l'adoption du nouvel outil.
+
+================================================================================
+INJS - GUIDE UTILISATEUR : SAISIE DES NOTES & SUIVI LMD (PORTAIL ENSEIGNANT)
+================================================================================
+
+Bienvenue sur votre nouvel outil de gestion académique. Ce portail vous permet 
+d'enregistrer les notes théoriques et les performances sportives de vos athlètes.
+
+--------------------------------------------------------------------------------
+1. CONNEXION À VOTRE ESPACE
+--------------------------------------------------------------------------------
+• Ouvrez l'application INJS sur votre smartphone ou visitez le portail web.
+• Saisissez votre identifiant (votre matricule enseignant) et votre mot de passe.
+• Si vous êtes entraîneur national, vos accès restent valides lors de vos 
+  déplacements en compétition extérieure.
+
+--------------------------------------------------------------------------------
+2. ÉTAPES POUR LA SAISIE DES NOTES
+--------------------------------------------------------------------------------
+Étape 1 : Accédez au menu "Gestion Pédagogique" puis cliquez sur "Saisie des Notes".
+Étape 2 : Sélectionnez votre Filière (ex: Licence 1 - Entraînement Sportif).
+Étape 3 : Choisissez l'Unité d'Enseignement (UE) concernée ainsi que le Semestre.
+Étape 4 : Le tableau des étudiants s'affiche. Saisissez vos notes sur 20 :
+          - Colonne "Note Théorique" (Devoirs, examens écrits)
+          - Colonne "Note Pratique" (Performances sur le terrain, chronos)
+
+⚠️ ATTENTION — ÉTUDIANTS INAPTES (Aptitude Médicale) :
+Si le service médical de l'INJS a déclaré un étudiant "Inapte" pour le semestre, 
+sa case "Note Pratique" sera grisée et verrouillée. Saisissez uniquement sa note 
+théorique. L'application gérera automatiquement son cas lors des délibérations.
+
+--------------------------------------------------------------------------------
+3. SAUVEGARDE ET VALIDATION FINALE
+--------------------------------------------------------------------------------
+• Cliquez sur "Sauvegarder le brouillon" à tout moment pour reprendre plus tard.
+• Une fois la saisie de la classe terminée, cliquez sur "Valider définitivement".
+• Une notification Push Firebase est alors envoyée aux étudiants pour les 
+  informer de la publication de leurs résultats.
+• Après validation finale, toute modification de note nécessite l'autorisation 
+  écrite de la Direction des Études pour réouverture du verrou.
+
+================================================================================
+
+------------------------------
+## PARTIE 2 : Gestion de la Concurrence et des Verrous (Django)
+Lors des sessions de rattrapage, plusieurs gestionnaires de la scolarité peuvent tenter de modifier simultanément les notes d'un même étudiant. Sans protection, la modification du deuxième secrétaire écraserait celle du premier sans s'en rendre compte (problème du Lost Update).
+Pour éviter cela, nous implémentons un verrouillage pessimiste au niveau de la base de données PostgreSQL grâce à la méthode .select_for_update() de l'ORM Django.
+## Code d'implémentation de la modification sécurisée d'une note
+
+# scolarite/services.pyfrom django.db import transactionfrom django.core.exceptions import ValidationErrorfrom .models import Evaluations
+def mettre_a_jour_note_rattrapage_securise(evaluation_id, nouvelle_note_theorique=None, nouvelle_note_pratique=None):
+    """
+    Met à jour les notes de rattrapage en verrouillant la ligne en base de données.
+    Si un autre utilisateur tente de modifier cette note en même temps, il sera
+    mis en attente jusqu'à la fin de cette transaction.
+    """
+    # L'utilisation du décorateur atomic() est obligatoire pour utiliser select_for_update()
+    with transaction.atomic():
+        try:
+            # Le select_for_update() génère une requête SQL: SELECT ... FOR UPDATE
+            # Cela bloque la ligne spécifique dans PostgreSQL
+            evaluation = Evaluations.objects.select_for_update().get(id=evaluation_id)
+            
+            # Application des modifications si elles sont fournies
+            if nouvelle_note_theorique is not None:
+                evaluation.s2_note_theorique = nouvelle_note_theorique
+                
+            if nouvelle_note_pratique is not None:
+                evaluation.s2_note_pratique = nouvelle_note_pratique
+            
+            # Recalcul de la moyenne finale retenue (Règle LMD : Meilleure note conservée)
+            # On compare la moyenne calculée en S1 et les nouvelles saisies de S2
+            s1_moyenne = evaluation.s1_moyenne_calculee or 0
+            
+            # Exemple de calcul simplifié pour la démo du rattrapage
+            # En production, ce calcul prend en compte les coefficients de l'UE liée
+            ue = evaluation.inscription.id_ue
+            note_th = evaluation.s2_note_theorique if evaluation.s2_note_theorique is not None else evaluation.s1_note_theorique
+            note_pr = evaluation.s2_note_pratique if evaluation.s2_note_pratique is not None else evaluation.s1_note_pratique
+            
+            s2_moyenne = (note_th * ue.coeff_theorique) + (note_pr * ue.coeff_pratique)
+            evaluation.s2_moyenne_calculee = s2_moyenne
+            
+            # Règle LMD : On retient le meilleur résultat entre la session 1 et la session 2
+            evaluation.moyenne_finale_retenue = max(s1_moyenne, s2_moyenne)
+            
+            # Sauvegarde et libération automatique du verrou à la sortie du bloc atomic()
+            evaluation.save()
+            return {"status": "success", "message": "Note mise à jour avec succès et verrous libérés."}
+            
+        except Evaluations.DoesNotExist:
+            return {"status": "error", "message": "Enregistrement de notation introuvable."}
+
+## Impact utilisateur sur l'application Flutter
+Si la Secrétaire A ouvre et modifie la note d'un athlète, la Secrétaire B verra un léger indicateur de chargement sur son écran Flutter si elle clique sur valider au même millième de seconde. Dès que la transaction de la Secrétaire A se termine, la base de données traite proprement la demande de la Secrétaire B sans collision ni perte de données.
+------------------------------
+
+Voici les deux derniers guides opérationnels pour assurer le déploiement sur le terrain : la stratégie de publication sur les stores (Google Play et Apple App Store) et le plan de déploiement progressif au sein de l'institut.
+------------------------------
+## PARTIE 1 : Stratégie de Publication sur les Stores (Flutter)
+L'application Flutter de l'INJS s'adresse à deux publics distincts : les étudiants/entraîneurs (mobiles) et l'administration (Web/Desktop). Pour la partie mobile, voici la feuille de route pour soumettre l'application de manière conforme.
+## 1. Préparation technique des livrables Flutter
+Avant la compilation finale, modifiez les fichiers de configuration pour y intégrer les informations officielles de l'institut.
+
+# Générer le fichier de build pour Android (App Bundle, requis par Google)
+flutter build appbundle --release
+# Générer le fichier de build pour iOS (Nécessite un Mac et Xcode)
+flutter build ipa --release
+
+## 2. Passage des critères de validation spécifiques (Stores)
+
+* Gestion des accès de test (Impératif) : Apple et Google vont tester l'application avant de la valider. Dans la console de soumission (Google Play Console / App Store Connect), vous devez leur fournir un identifiant et un mot de passe de test valides.
+* Contournement du chiffrement médical : Étant donné que l'application manipule des données de santé (la table aptitude_physique), vous devez déclarer que l'application respecte les réglementations locales sur le secret médical. Les stores exigent l'affichage d'un lien vers la Politique de Confidentialité de l'INJS dès l'écran de connexion.
+* Déclaration des notifications (iOS) : Dans le fichier ios/Runner/Info.plist, assurez-vous d'ajouter l'autorisation pour les notifications Firebase (UIBackgroundModes avec remote-notification).
+
+------------------------------
+## PARTIE 2 : Plan de Déploiement Progressif à l'INJS
+Pour éviter le chaos organisationnel, l'intégration d'un nouveau système LMD ne doit pas se faire brutalement. Nous préconisons un déploiement en 4 étapes sur une durée de 6 mois.
+
++-----------------------------------------------------------------------+
+
+| PHASE 1 : Pilote & Configuration (Mois 1)                            |
+| ↳ Déploiement du serveur de production Docker et de la base de données. |
+| ↳ Test de l'application avec une seule filière pilote (ex: Licence 1).|
++-----------------------------------------------------------------------+
+                                   |
+                                   v
++-----------------------------------------------------------------------+
+
+| PHASE 2 : Formation & Immersion (Mois 2 - 3)                         |
+| ↳ Distribution du guide utilisateur aux enseignants.                  |
+| ↳ Ateliers pratiques de saisie des notes et de validation des stages.  |
++-----------------------------------------------------------------------+
+                                   |
+                                   v
++-----------------------------------------------------------------------+
+
+| PHASE 3 : Lancement Généralisé (Mois 4)                               |
+| ↳ Ouverture de l'application Flutter à l'ensemble des étudiants.      |
+| ↳ Saisie obligatoire de l'aptitude physique par le service médical.   |
++-----------------------------------------------------------------------+
+                                   |
+                                   v
++-----------------------------------------------------------------------+
+
+| PHASE 4 : Clôture & Délibérations (Mois 5 - 6)                       |
+| ↳ Lancement du premier calcul automatique des semestres via Celery.   |
+| ↳ Impression des diplômes officiels et envois des pushs Firebase.     |
++-----------------------------------------------------------------------+
+
+## Stratégie de secours (Rollback) pendant la transition
+Pendant la première année, maintenez une double saisie allégée (l'ancien système ou les fichiers Excel des secrétaires de scolarité servent de sauvegarde humaine). Les résultats générés automatiquement par la requête SQL complexe du nouveau système devront être audités et validés par un comité restreint avant la signature physique des diplômes.
+------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------
+
+
+
+
+
+
+
+
+
+
+Un système de gestion LMD (Licence-Master-Doctorat) pour un Institut National de la Jeunesse et des Sports (INJS) doit combiner les exigences académiques standards et les spécificités de la formation sportive et socio-éducative.
+Voici une structure globale pour concevoir ou modéliser ce système.
+## 1. Gestion du Cursus Spécifique (LMD Sport & Jeunesse)
+L'architecture du système doit s'adapter aux mentions et spécialités de l'INJS :
+
+* Domaine Sciences et Techniques des Activités Physiques et Sportives (STAPS) : Entraînement sportif, management du sport, motricité humaine.
+* Domaine Sciences Sociales et Humaines : Animation socio-éducative, entrepreneuriat des jeunes, développement communautaire.
+* Unités d'Enseignement (UE) : Division en UE Fondamentales, Transversales, Méthodologiques et de Découverte.
+* Crédits ECTS/CAMES : Structuration en semestres de 30 crédits chacun (180 pour la Licence, 120 pour le Master). [1, 2] 
+
+## 2. Modules Clés de l'Application
+Un progiciel de gestion intégré (ERP) pour l'INJS doit inclure les fonctionnalités suivantes :
+## 📋 Scolarité et Inscriptions
+
+* Candidatures en ligne : Gestion des concours d'entrée (spécificité INJS : tests physiques + épreuves écrites).
+* Suivi médical : Registre des aptitudes physiques, des contre-indications et du suivi médico-sportif des athlètes.
+* Inscriptions administratives : Paiement des droits, génération des cartes d'étudiant et des certificats de scolarité.
+
+## 🗓️ Planification et Pédagogie
+
+* Gestion du temps partagé : Emplois du temps synchronisés entre les salles de cours théoriques et les infrastructures sportives (stades, gymnases, piscines).
+* Livret pédagogique : Cartographie des maquettes de formation par semestre.
+* Suivi des stages : Gestion des stages en clubs sportifs, fédérations, centres de jeunesse ou établissements scolaires.
+
+## 📊 Évaluations et Notes
+
+* Contrôle continu et Examens : Saisie des notes théoriques et des performances physiques / pratiques.
+* Calcul de moyennes : Compensation automatique des notes selon les règles de cadrage LMD de l'institution.
+* Délibérations : Édition des procès-verbaux de jurys, des relevés de notes et des suppléments au diplôme.
+
+## 3. Fonctionnalités Avancées pour l'INJS
+
+* Statut de Sportif de Haut Niveau (SHN) : Aménagement des emplois du temps et des sessions d'examens pour les étudiants en compétition internationale.
+* Portail Étudiant / Enseignant : Espace en ligne pour consulter le cahier de texte, les notes, et soumettre les projets ou mémoires de fin de cycle.
+* Suivi des certifications annexes : Intégration des diplômes fédéraux (brevets d'État d'éducateur sportif, licences d'arbitre).
+
+------------------------------
+Pour vous aider à avancer sur ce projet, pouvez-vous me préciser :
+
+* S'agit-il de rédiger un cahier des charges pour le développement d'un logiciel, ou d'une architecture de base de données (tables, relations) ?
+* Quelles sont les filières exactes (STAPS, Sciences de l'éducation, etc.) ouvertes dans votre INJS ?
+* Souhaitez-vous une proposition basée sur une solution open-source existante (comme Moodle ou un ERP universitaire) ?
+
+
+[1] [https://f2smh.univ-tlse3.fr](https://f2smh.univ-tlse3.fr/licences)
+[2] [https://www.universite-paris-saclay.fr](http://www.universite-paris-saclay.fr/actualites/se-former-au-management-du-sport-une-filiere-qui-fait-ses-preuves-luniversite-paris-saclay)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

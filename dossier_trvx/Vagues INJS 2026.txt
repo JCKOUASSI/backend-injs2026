@@ -1,0 +1,52 @@
+Au sein de l’INJS (Institut National de la Jeunesse et des Sports), une « Vague » désigne généralement un groupe d’étudiants ou de stagiaires recrutés/admis au même moment et suivant une même période de formation.
+
+Exemple concret
+
+Supposons que l’INJS organise une formation de Professeurs d’EPS :
+
+Vague	Année d’admission	Période	Effectif
+Vague 1	2026	2026–2028	80
+Vague 2	2027	2027–2029	100
+Vague 3	2028	2028–2030	90
+
+La Vague 1 regroupe donc les étudiants admis dans cette session et qui constituent une même promotion de formation.
+
+Dans ton système LMD INJS
+
+Je te conseille de modéliser Vague comme un référentiel permettant d’identifier une session/promotion de recrutement ou de formation.
+
+Une Vague pourrait comporter notamment :
+
+* Code : VAG-2026-01
+* Libellé : Vague 1 - 2026
+* Année académique : 2026-2027
+* Date de début
+* Date de fin
+* Formation
+* Catégorie
+* Grade
+* Site
+* Effectif prévu
+* Effectif réel
+* Statut : Prévisionnelle / Ouverte / En cours / Terminée / Clôturée
+
+⚠️ Différence importante
+
+Il ne faut pas confondre :
+
+Formation → ce que l’étudiant étudie
+Catégorie → le niveau/corps auquel il appartient
+Grade → le grade obtenu ou préparé
+Vague → le groupe/session de recrutement ou de formation auquel il appartient
+
+Par exemple :
+
+Formation : Professeur d’EPS
+Catégorie : A
+Grade : Professeur d’EPS
+Vague : Vague 2026-1
+Étudiant : Jean Kouassi
+
+Dans ton module Référentiels de backend-injs-main, la Vague peut donc devenir un référentiel central servant à regrouper les étudiants, organiser les formations, générer les EDT, gérer les présences, les évaluations et suivre les promotions.
+
+Si tu veux, ￼ je peux aussi te définir précisément la structure relationnelle Vague ↔ Formation ↔ Catégorie ↔ Grade ↔ Étudiant ↔ Année académique adaptée à ton système LMD INJS.

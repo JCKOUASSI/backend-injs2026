@@ -1,0 +1,100 @@
+Opération concrète n° 1 — Établir la matrice de référence des indicateurs EDT
+
+Je commence par formaliser une première version exploitable de la matrice, en distinguant les indicateurs techniquement identifiables de ceux dont le calcul dépend encore de données ou de relations à vérifier.
+
+1. État de référence de la base auditée
+
+L’inventaire a été réalisé en lecture seule sur la base de test injs_lmd_test_7989dd5, dans le conteneur injs-db-test.
+
+Élément	Constat
+Tables inventoriées	222
+Lignes d’inventaire des colonnes	2 313
+Tables EDT identifiées	Oui
+Données EDT	Tables signalées à 0 ligne dans la première partie
+Transaction	READ ONLY, terminée par ROLLBACK
+Modifications de la base	Aucune
+
+Conséquence : nous pouvons définir les indicateurs et leurs formules, mais nous ne pouvons pas encore produire des statistiques opérationnelles réelles à partir de cette base vide.
+
+2. Matrice technique initiale
+
+Légende :
+
+* A : calculable dès que les données sont disponibles.
+* C : calculable sous réserve de vérifications complémentaires.
+* N : non calculable avec les seules sources actuellement identifiées.
+
+A. Planification des enseignements
+
+Code	Indicateur	Sources identifiées	Formule ou méthode	Statut
+EDT-001	Nombre d’emplois du temps	edts_emploidutemps	Nombre d’emplois du temps distincts	A
+EDT-002	Nombre de créneaux affectés	edts_affectationcreneau	Comptage des affectations	A
+EDT-003	Nombre de créneaux à venir	edts_affectationcreneau	Comptage des créneaux dont la date est future	C
+EDT-004	Nombre de créneaux terminés	edts_affectationcreneau	Comptage des créneaux terminés	C
+EDT-005	Nombre de conflits détectés	edts_conflitcreneau	Comptage des conflits selon leur statut	C
+EDT-006	Disponibilités des enseignants	edts_disponibilitehoraire	Comptage des disponibilités par enseignant	C
+EDT-007	Volume horaire programmé	Affectations et séances EDT	Somme des durées des créneaux valides	C
+
+B. Exécution des séances
+
+Code	Indicateur	Sources identifiées	Formule ou méthode	Statut
+EDT-008	Nombre de séances publiées	gi_seance_registre	Comptage des registres publiés	A
+EDT-009	Nombre de séances annulées	gi_seance_registre	Comptage des registres annulés	A
+EDT-010	Nombre de séances avec historique	gi_seance_historique	Comptage des événements par séance	A
+EDT-011	Nombre de séances avec instantané	gi_seance_instantane	Comptage des instantanés disponibles	A
+EDT-012	Taux de réalisation	EDT + présences	Séances réalisées / séances programmées × 100	C
+EDT-013	Volume horaire effectivement réalisé	EDT + présences	Somme des durées validées de réalisation	C
+
+C. Ressources humaines et occupation des salles
+
+Code	Indicateur	Sources identifiées	Formule ou méthode	Statut
+EDT-014	Nombre d’enseignants mobilisés	Affectations pédagogiques et séances	Nombre d’enseignants distincts	C
+EDT-015	Volume horaire par enseignant	Affectations pédagogiques et séances	Somme des durées par enseignant	C
+EDT-016	Nombre d’indisponibilités	scolarite_indisponibiliteenseignant	Comptage des indisponibilités	A
+EDT-017	Nombre de salles utilisées	Sources EDT et référentiels de salles	Nombre de salles distinctes	C
+EDT-018	Taux d’occupation des salles	EDT + référentiels des salles	Durée d’occupation / durée disponible × 100	C
+
+D. Présences et suivi pédagogique
+
+Code	Indicateur	Sources identifiées	Formule ou méthode	Statut
+EDT-019	Nombre de pointages	presences_pointage	Comptage des pointages	A
+EDT-020	Taux de présence	presences_pointage	Heures de présence / heures prévues × 100	C
+EDT-021	Nombre d’absences	presences_pointage	Comptage des absences selon les statuts	C
+EDT-022	Nombre de rattrapages	presences_rattrapage	Comptage des rattrapages	A
+EDT-023	Moyenne pédagogique	suiviEvaluation_moyennemodule	Moyenne selon les règles pédagogiques	A
+EDT-024	Décisions pédagogiques	suiviEvaluation_decisionpedagogique	Répartition par décision et mention	A
+
+Les indicateurs marqués A sont calculables à partir des structures identifiées, mais nécessitent toujours des données et des règles de filtrage validées. Les indicateurs C nécessitent notamment de confirmer les jointures, les statuts et les règles de gestion.
+
+⸻
+
+3. Règles de calcul à figer avant développement
+
+Quelques règles sont indispensables pour éviter les statistiques trompeuses :
+
+1. Une séance annulée ne doit pas être comptabilisée comme une séance réalisée.
+2. Une séance reportée doit être distinguée de sa séance de remplacement.
+3. Une séance publiée n’est pas nécessairement une séance exécutée.
+4. Un pointage ne prouve pas, à lui seul, que l’intégralité de la séance a été réalisée.
+5. Les volumes horaires doivent être calculés à partir des heures de début et de fin, en évitant les doubles comptages.
+6. Les taux de présence doivent être calculés sur une population et une période cohérentes.
+7. Les statistiques doivent pouvoir être filtrées par année académique, formation, niveau, parcours, semestre, groupe, ECUE, enseignant et salle, lorsque les données le permettent.
+
+4. Décision technique : architecture du futur tableau de bord
+
+Je recommande de séparer les traitements en trois niveaux :
+
+Niveau	Responsabilité
+Données sources	Tables Django existantes : EDT, scolarité, présences, RH et référentiels
+Couche de calcul	Services Python dédiés aux indicateurs et agrégations
+Restitution	API statistiques, cartes KPI, graphiques, tableaux et filtres
+
+Il faudra éviter de disperser les formules de calcul dans les composants React ou Vue du frontend. Les règles doivent être centralisées côté backend pour garantir la cohérence entre les écrans et les rapports.
+
+5. Prochaine opération technique
+
+La prochaine opération est de vérifier les clés étrangères réelles entre les tables EDT, scolarité, présences et référentiels, puis de construire les requêtes SQL de chaque indicateur.
+
+C’est cette vérification qui permettra de transformer la matrice initiale en matrice technique validée, sans supposer des relations à partir des seuls noms de colonnes.
+
+Livrable visé : Matrice_Technique_Indicateurs_EDT_V1, avec les jointures confirmées, les formules SQL, les filtres, les règles de gestion et les niveaux de fiabilité.

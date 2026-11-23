@@ -1,0 +1,418 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block content %}
+<div id="content-main" class="dfrc-rattrapage-page">
+  <h1>{{ title }}</h1>
+
+  {% if participants %}
+  <section class="module">
+    <h2>{% trans "Étudiants sélectionnés dans la liste admin" %} ({{ participants|length }})</h2>
+    <p class="help">{% trans "Les absents cochés par défaut incluent ceux de cette sélection. Vous pouvez aussi cocher d'autres absents du module." %}</p>
+    <div class="results">
+      <table id="result_list">
+        <thead>
+          <tr>
+            <th>{% trans "Matricule" %}</th>
+            <th>{% trans "Nom" %}</th>
+            <th>{% trans "Groupe" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in participants %}
+          <tr>
+            <td>{{ p.matricule }}</td>
+            <td>{{ p.nom }} {{ p.prenom }}</td>
+            <td>{{ p.groupe|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="module">
+    <h2>{% trans "1. Module et filtres" %}</h2>
+    <form method="get" action="{{ rattrapage_url }}" class="dfrc-rattrapage-filters">
+      <input type="hidden" name="ids" value="{{ participant_ids }}">
+      {% if preset_session_id %}<input type="hidden" name="session" value="{{ preset_session_id }}">{% endif %}
+      <div class="dfrc-rattrapage-filters-row">
+        <label>
+          {% trans "Module" %}
+          <select name="module" onchange="this.form.submit()">
+            <option value="">{% trans "— Sélectionner —" %}</option>
+            {% for m in module_choices %}
+            <option value="{{ m.id }}" {% if m.selected %}selected{% endif %}>{{ m.label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        {% if module %}
+        <label>
+          {% trans "Date" %}
+          <select name="date_journee" onchange="this.form.submit()">
+            <option value="">{% trans "Toutes les dates" %}</option>
+            {% for d in available_dates %}
+            <option value="{{ d|date:'Y-m-d' }}" {% if filter_date == d|date:'Y-m-d' %}selected{% endif %}>
+              {{ d|date:"DATE_FORMAT" }}
+            </option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          {% trans "Statut séance" %}
+          <select name="statut" onchange="this.form.submit()">
+            <option value="">{% trans "Tous" %}</option>
+            <option value="terminee" {% if filter_statut == "terminee" %}selected{% endif %}>{% trans "Terminée" %}</option>
+            <option value="en_cours" {% if filter_statut == "en_cours" %}selected{% endif %}>{% trans "En cours" %}</option>
+            <option value="planifiee" {% if filter_statut == "planifiee" %}selected{% endif %}>{% trans "Planifiée" %}</option>
+          </select>
+        </label>
+        {% endif %}
+      </div>
+    </form>
+  </section>
+
+  {% if module and participants_hint %}
+  <section class="module">
+    {% if participants_source == 'none' %}
+    <p class="errornote">{{ participants_hint }}</p>
+    {% if module_admin_url %}
+    <p><a href="{{ module_admin_url }}" class="button">{% trans "Ouvrir la fiche module (inscrire les étudiants)" %}</a></p>
+    {% endif %}
+    {% else %}
+    <p class="help">{{ participants_hint }}</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if module and form %}
+  <form method="post" class="module" id="dfrc-rattrapage-form">
+    {% csrf_token %}
+    <input type="hidden" name="participant_ids" value="{{ participant_ids }}">
+    <input type="hidden" name="module" value="{{ module.pk }}">
+    <input type="hidden" name="filter_date" value="{{ filter_date }}">
+    <input type="hidden" name="filter_statut" value="{{ filter_statut }}">
+    {% if preset_session_id %}<input type="hidden" name="preset_session" value="{{ preset_session_id }}">{% endif %}
+
+    <section class="module">
+      <h2>{% trans "2. Choisir la séance" %} — {{ module.intitule|default:module }} ({{ module.groupe|default:"—" }})</h2>
+      {% if session_rows %}
+      <div class="results">
+        <table id="dfrc-sessions-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>{% trans "Date" %}</th>
+              <th>{% trans "N°" %}</th>
+              <th>{% trans "Intitulé" %}</th>
+              <th>{% trans "Horaires" %}</th>
+              <th>{% trans "Statut" %}</th>
+              <th>{% trans "Présents" %}</th>
+              <th>{% trans "Absents" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in session_rows %}
+            <tr class="dfrc-session-row dfrc-statut-{{ row.statut_key }}"
+                data-session-id="{{ row.session_id }}">
+              <td>
+                <input type="radio" name="session" value="{{ row.session_id }}" id="session_{{ row.session_id }}"
+                  class="dfrc-session-radio"
+                  {% if form.session.value|stringformat:"s" == row.session_id|stringformat:"s" %}checked{% elif preset_session_id == row.session_id %}checked{% endif %}>
+              </td>
+              <td><label for="session_{{ row.session_id }}"><strong>{{ row.date_display }}</strong></label></td>
+              <td>{{ row.numero }}</td>
+              <td>{{ row.intitule }}</td>
+              <td>{{ row.horaires }}</td>
+              <td>{{ row.statut }}</td>
+              <td><span class="dfrc-badge-ok">{{ row.nb_present }}/{{ row.nb_module_total }}</span></td>
+              <td><span class="dfrc-badge-warn">{{ row.nb_absent }}/{{ row.nb_module_total }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="warning">{% trans "Aucune séance pour ce module avec les filtres actuels." %}</p>
+      {% endif %}
+      {% if form.session.errors %}
+      <ul class="errorlist">{% for e in form.session.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% if form.badge_participants.errors %}
+      <ul class="errorlist">{% for e in form.badge_participants.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+      {% endif %}
+    </section>
+
+    <section class="module" id="dfrc-attendance-section">
+      <h2>{% trans "3. Présents / absents — cocher les étudiants à badger" %}</h2>
+      <p class="help" id="dfrc-attendance-help">
+        {% trans "Sélectionnez une séance ci-dessus pour afficher la liste des étudiants du module." %}
+      </p>
+
+      {% for row in session_rows %}
+      <div class="dfrc-session-attendance" id="attendance-session-{{ row.session_id }}"
+           data-session-id="{{ row.session_id }}" hidden>
+        <div class="dfrc-attendance-toolbar">
+          <strong>{{ row.date_display }} — {{ row.intitule }} ({{ row.horaires }})</strong>
+          <span class="dfrc-toolbar-actions">
+            <button type="button" class="button dfrc-check-all-absent">{% trans "Cocher tous les absents" %}</button>
+            <button type="button" class="button dfrc-uncheck-all-absent">{% trans "Tout décocher" %}</button>
+          </span>
+        </div>
+        <div class="dfrc-attendance-grid">
+          <div class="dfrc-attendance-col dfrc-attendance-present">
+            <h3>{% trans "Présents" %} ({{ row.nb_present }})</h3>
+            {% if row.present %}
+            <table class="dfrc-attendance-table">
+              <thead>
+                <tr>
+                  <th>{% trans "Matricule" %}</th>
+                  <th>{% trans "Nom" %}</th>
+                  <th>{% trans "Entrée" %}</th>
+                  <th>{% trans "Sortie" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in row.present %}
+                <tr>
+                  <td>{{ p.matricule }}</td>
+                  <td>{{ p.nom }}</td>
+                  <td>{{ p.entree|default:"—" }}</td>
+                  <td>{{ p.sortie|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <p class="dfrc-attendance-empty">{% trans "Aucun étudiant badgé." %}</p>
+            {% endif %}
+          </div>
+          <div class="dfrc-attendance-col dfrc-attendance-absent">
+            <h3>{% trans "Absents — à badger" %} ({{ row.nb_absent }})</h3>
+            {% if row.absent %}
+            <table class="dfrc-attendance-table">
+              <thead>
+                <tr>
+                  <th>{% trans "Badger" %}</th>
+                  <th>{% trans "Matricule" %}</th>
+                  <th>{% trans "Nom" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in row.absent %}
+                <tr>
+                  <td>
+                    <input type="checkbox" name="badge_participants" value="{{ p.id }}"
+                      class="dfrc-absent-checkbox"
+                      {% if p.pre_checked %}checked{% endif %}>
+                  </td>
+                  <td>{{ p.matricule }}</td>
+                  <td>{{ p.nom }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+                    {% else %}
+                    <p class="dfrc-attendance-empty">
+                      {% if row.nb_module_total == 0 %}
+                      {% trans "Aucun étudiant attendu sur ce module (inscriptions vides)." %}
+                      {% else %}
+                      {% trans "Tous les étudiants du module sont déjà badgés sur cette séance." %}
+                      {% endif %}
+                    </p>
+                    {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </section>
+
+    <section class="module">
+      <h2>{% trans "4. Paramètres du badgeage" %}</h2>
+      <fieldset class="module aligned">
+        {% for field in form %}
+          {% if field.name != "module" and field.name != "session" and field.name != "badge_participants" %}
+          <div class="form-row{% if field.errors %} errors{% endif %}">
+            {{ field.errors }}
+            <div>
+              {% if field.field.widget.input_type == "checkbox" %}
+              <label>{{ field }} {{ field.label }}</label>
+              {% else %}
+              <label for="{{ field.id_for_label }}">{{ field.label }} :</label>
+              {{ field }}
+              {% endif %}
+              {% if field.help_text %}
+              <p class="help">{{ field.help_text }}</p>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </fieldset>
+    </section>
+
+    <div class="submit-row">
+      <input type="submit" value="{% trans 'Forcer les badgeages des absents cochés' %}" class="default">
+      <a href="{% url opts|admin_urlname:'changelist' %}" class="button cancel-link">{% trans "Annuler" %}</a>
+    </div>
+  </form>
+  {% elif not module %}
+  <p class="help">{% trans "Sélectionnez un module pour afficher les séances et les étudiants présents / absents." %}</p>
+  {% endif %}
+</div>
+
+<style>
+  .dfrc-rattrapage-filters-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 1.5rem;
+    align-items: end;
+  }
+  .dfrc-rattrapage-filters-row label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-weight: 600;
+  }
+  #dfrc-sessions-table tbody tr.dfrc-session-row {
+    cursor: pointer;
+  }
+  #dfrc-sessions-table tbody tr.dfrc-session-row:hover,
+  #dfrc-sessions-table tbody tr.dfrc-session-selected {
+    background: rgba(59, 130, 246, 0.12);
+  }
+  .dfrc-session-attendance {
+    border: 2px solid #3b82f6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    background: #fff;
+  }
+  .dfrc-session-attendance[hidden] {
+    display: none !important;
+  }
+  .dfrc-attendance-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .dfrc-toolbar-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .dfrc-attendance-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  @media (max-width: 960px) {
+    .dfrc-attendance-grid { grid-template-columns: 1fr; }
+  }
+  .dfrc-attendance-col h3 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+  }
+  .dfrc-attendance-present h3 { color: #0b478a; }
+  .dfrc-attendance-absent h3 { color: #b47f09; }
+  .dfrc-attendance-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  .dfrc-attendance-table th,
+  .dfrc-attendance-table td {
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+  }
+  .dfrc-attendance-empty {
+    color: #64748b;
+    font-style: italic;
+  }
+  .dfrc-badge-ok { color: #0b478a; font-weight: 700; }
+  .dfrc-badge-warn { color: #b47f09; font-weight: 700; }
+  #dfrc-attendance-help.dfrc-hidden { display: none; }
+</style>
+
+<script>
+(function () {
+  var help = document.getElementById('dfrc-attendance-help');
+  var panels = document.querySelectorAll('.dfrc-session-attendance');
+  var rows = document.querySelectorAll('.dfrc-session-row');
+  var radios = document.querySelectorAll('.dfrc-session-radio');
+
+  function disableHiddenCheckboxes() {
+    panels.forEach(function (panel) {
+      var hidden = panel.hasAttribute('hidden');
+      panel.querySelectorAll('.dfrc-absent-checkbox').forEach(function (cb) {
+        cb.disabled = hidden;
+      });
+    });
+  }
+
+  function showAttendance(sessionId) {
+    panels.forEach(function (panel) {
+      var show = panel.dataset.sessionId === String(sessionId);
+      if (show) {
+        panel.removeAttribute('hidden');
+      } else {
+        panel.setAttribute('hidden', '');
+      }
+    });
+    rows.forEach(function (row) {
+      row.classList.toggle('dfrc-session-selected', row.dataset.sessionId === String(sessionId));
+    });
+    if (help) help.classList.add('dfrc-hidden');
+    disableHiddenCheckboxes();
+  }
+
+  function selectSession(sessionId) {
+    var radio = document.getElementById('session_' + sessionId);
+    if (radio) radio.checked = true;
+    showAttendance(sessionId);
+  }
+
+  radios.forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      if (radio.checked) showAttendance(radio.value);
+    });
+  });
+
+  rows.forEach(function (row) {
+    row.addEventListener('click', function (e) {
+      if (e.target.type === 'radio' || e.target.type === 'checkbox') return;
+      selectSession(row.dataset.sessionId);
+    });
+  });
+
+  document.querySelectorAll('.dfrc-check-all-absent').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var panel = btn.closest('.dfrc-session-attendance');
+      if (!panel) return;
+      panel.querySelectorAll('.dfrc-absent-checkbox').forEach(function (cb) { cb.checked = true; });
+    });
+  });
+
+  document.querySelectorAll('.dfrc-uncheck-all-absent').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var panel = btn.closest('.dfrc-session-attendance');
+      if (!panel) return;
+      panel.querySelectorAll('.dfrc-absent-checkbox').forEach(function (cb) { cb.checked = false; });
+    });
+  });
+
+  var checked = document.querySelector('.dfrc-session-radio:checked');
+  if (checked) {
+    showAttendance(checked.value);
+  } else {
+    disableHiddenCheckboxes();
+  }
+})();
+</script>
+{% endblock %}

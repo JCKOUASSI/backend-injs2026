@@ -1,0 +1,1387 @@
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import api from '../../services/api'
+import { downloadFile } from '../../utils/downloadFile'
+import { useToast } from '../../context/ToastContext'
+import '../../styles/candidatures.css'
+import '../../styles/referentiels.css'
+
+/**
+ * Écran de gestion d'un référentiel du registre.
+ *
+ * Le composant est générique : le slug d'URL désigne l'entrée du registre
+ * backend, qui fournit ses champs métier, ses clés étrangères et sa
+ * description. Aucun formulaire n'est écrit en dur par référentiel, et les
+ * sélecteurs dépendants (école → mention, école → filière) sont pilotés par la
+ * relation réelle entre les données.
+ */
+
+const LIBELLES_CHAMPS = {
+  code: 'Code',
+  libelle: 'Libellé',
+  description: 'Description',
+  actif: 'Actif',
+  source_document: 'Source documentaire',
+  source: 'Source du cycle',
+  fiabilite: 'Fiabilité',
+  nom_complet: 'Dénomination complète',
+  ordre: "Ordre d'affichage",
+  abrege: 'Abréviation',
+  est_stage: 'Correspond à un stage',
+  est_ouvert: 'Autorise les candidatures',
+  ecole: 'École',
+  mention: 'Mention',
+  type_cursus: 'Nature de cursus',
+  code_dossier: 'Code dossier',
+  etat_ventilation: 'État de ventilation',
+  cycle: 'Cycle',
+  credits_requis: 'Crédits ECTS requis',
+  numero: 'Numéro global',
+  niveau: 'Niveau',
+  ref_formation: 'Cycle de formation',
+  type_formation: 'Type de formation',
+  type_lieu: 'Type de lieu',
+  capacite: 'Capacité',
+  equipements: 'Équipements',
+  indisponible_du: 'Indisponible du',
+  indisponible_au: 'Indisponible au',
+  geofence_latitude: 'Latitude (géorepérage)',
+  geofence_longitude: 'Longitude (géorepérage)',
+  geofence_rayon_m: 'Rayon de géorepérage (m)',
+  site: 'Site',
+  batiment: 'Bâtiment',
+  type_espace: "Type d'espace sportif",
+  formation: 'Formation (cycle)',
+  statut: 'Statut',
+  periode_debut: 'Début de période',
+  periode_fin: 'Fin de période',
+  effectif_prevu: 'Effectif prévu',
+  effectif_reel: 'Effectif réel',
+  date_debut: 'Date de début',
+  date_fin: 'Date de fin',
+  courante: 'Année courante',
+  cloturee: 'Clôturée',
+  date_cloture: 'Date de clôture',
+  type_diplome: 'Type de diplôme',
+  domaine: 'Domaine',
+  duree_annees: 'Durée (années)',
+  nb_semestres: 'Nombre de semestres',
+  nb_credites: 'Crédits ECTS',
+  perimetre: 'Périmètre',
+  filiere_code: 'Code filière',
+  filiere: 'Filière',
+  semestre: 'Semestre',
+  heures_cm: 'Heures CM', heures_td: 'Heures TD', heures_tp: 'Heures TP',
+  heures_stage: 'Heures stage', heures_total: 'Total heures',
+}
+
+/** Ordre de lecture imposé aux tables importées, du plus signifiant au détail. */
+const ORDRE_LECTURE_SEULE = [
+  'filiere_code', 'semestre', 'libelle', 'formation_intitule', 'ordre',
+  'etat_ventilation', 'intitule_module', 'heures_cm', 'heures_td', 'heures_tp',
+  'heures_stage', 'heures_total', 'source_document', 'fiabilite',
+]
+
+/** Libellés humains des codes techniques servis par l'API d'import. */
+const VALEURS_TECHNIQUES = {
+  A_VENTILER: 'À ventiler',
+  VENTILE: 'Ventilé',
+  HORS_MAQUETTE: 'Hors maquette',
+}
+
+/** Met en forme une valeur brute d'API sans jamais en inventer une. */
+function formaterValeur(valeur) {
+  if (valeur === null || valeur === undefined || valeur === '') return null
+  if (typeof valeur === 'boolean') return valeur
+  const texte = String(valeur)
+  if (VALEURS_TECHNIQUES[texte]) return VALEURS_TECHNIQUES[texte]
+  if (/^-?\d+\.\d{2}$/.test(texte)) return texte.replace(/\.00$/, '')
+  return texte
+}
+
+const FIABILITES = [
+  { value: 'OFFICIEL', label: 'Officiel (attesté par la source)' },
+  { value: 'MODELISE', label: 'Modélisé (proposition de la source)' },
+  { value: 'CADRAGE', label: 'Cadrage fonctionnel (à valider)' },
+  { value: 'A_RENSEIGNER', label: 'À renseigner' },
+]
+
+const LIBELLE_FIABILITE = {
+  OFFICIEL: 'Officiel',
+  MODELISE: 'Modélisé',
+  CADRAGE: 'Cadrage',
+  A_RENSEIGNER: 'À renseigner',
+}
+
+/** Un champ de type clé étrangère dépend-il d'un autre champ du formulaire ? */
+const DEPENDANCES = {
+  mention: 'ecole',
+  batiment: 'site',
+}
+
+const CHAMPS_BOOLEENS = ['actif', 'est_stage', 'est_ouvert', 'courante', 'cloturee']
+
+const LIBELLE_TECHNIQUE = {
+  formation_intitule: 'Cycle de rattachement',
+  filiere_code: 'Filière',
+  semestre: 'Semestre',
+  ordre: 'Ordre',
+  etat_ventilation: 'État de ventilation',
+  intitule_module: 'Module',
+  heures_cm: 'Heures CM',
+  heures_td: 'Heures TD',
+  heures_tp: 'Heures TP',
+  heures_stage: 'Heures stage',
+  heures_total: 'Total',
+  fiabilite: 'Fiabilité',
+  source_document: 'Source documentaire',
+}
+
+/**
+ * DRF pagine par défaut : on normalise `{count, results}` et le tableau nu
+ * pour que l'écran fonctionne quel que soit le réglage du serveur.
+ */
+function listeRecue(donnees) {
+  if (Array.isArray(donnees)) return donnees
+  if (donnees && Array.isArray(donnees.results)) return donnees.results
+  return []
+}
+
+function valeurInitiale(champ, entree) {
+  if (CHAMPS_BOOLEENS.includes(champ)) {
+    if (entree?.id) return Boolean(entree[champ])
+    return champ === 'actif'
+  }
+  if (entree?.id) return entree[champ] ?? ''
+  return ''
+}
+
+export default function ReferentielGenerique() {
+  const { slug } = useParams()
+  const toast = useToast()
+
+  const [entree, setEntree] = useState(null)
+  const [lignes, setLignes] = useState([])
+  const [options, setOptions] = useState({})
+  const [chargement, setChargement] = useState(true)
+  const [rafraichissement, setRafraichissement] = useState(false)
+  const [erreur, setErreur] = useState('')
+  const [recherche, setRecherche] = useState('')
+  const [filtreActif, setFiltreActif] = useState('actifs')
+  const [modal, setModal] = useState(null)
+  const [form, setForm] = useState({})
+  const [erreursForm, setErreursForm] = useState({})
+  const [envoi, setEnvoi] = useState(false)
+  const [echange, setEchange] = useState(false)
+  const [detail, setDetail] = useState(null)
+  const [suppression, setSuppression] = useState(null)
+  const [selection, setSelection] = useState([])
+  const [actionLot, setActionLot] = useState(null)
+  const [lectureSeule, setLectureSeule] = useState(false)
+  // Affichage : la liste historique reste le défaut ; la vue « cartes » et
+  // la pagination évitent les écrans de centaines de lignes (166 salles).
+  const [vue, setVue] = useState(() => {
+    try { return localStorage.getItem(`ref-vue-${slug}`) || 'liste' } catch { return 'liste' }
+  })
+  const [page, setPage] = useState(1)
+  const [filtresSelecteurs, setFiltresSelecteurs] = useState({})
+
+  // Capacités réelles du modèle, annoncées par le registre backend : les
+  // référentiels hors socle (scolarité LMD) n'ont ni provenance ni
+  // archivage, et le semestre n'a pas de colonne code distincte.
+  const provenanceSuivie = entree ? entree.provenance_suivie !== false : true
+  const archivageSupporte = entree ? entree.archivage_supporte !== false : true
+  const aUnCode = entree ? entree.a_un_code !== false : true
+  const champsChoix = entree?.champs_choix || {}
+  const champsNumeriques = entree?.champs_numeriques || []
+  const champsDates = entree?.champs_dates || []
+  const cheminGestion = entree?.route_gestion || `/referentiels/${slug}/`
+  // Certains modèles tracent leur provenance sans porter de description
+  // (sites, bâtiments, salles, vagues) : ne pas afficher un champ mort.
+  const aUneDescription = entree ? entree.a_une_description !== false : true
+
+  const afficherCellule = (ligne, cle) => {
+    const choix = champsChoix[cle]
+    if (choix && ligne[cle] !== null && ligne[cle] !== undefined) {
+      const retenue = choix.find((o) => o.value === String(ligne[cle]))
+      if (retenue) return retenue.label
+    }
+    return formaterValeur(ligne[cle]) ?? '—'
+  }
+
+  const chargerCatalogue = useCallback(async () => {
+    const res = await api.get('/referentiels/tableau-de-bord/')
+    const toutes = (res.data.categories || []).flatMap((c) => c.entrees)
+    return toutes.find((e) => e.slug === slug) || null
+  }, [slug])
+
+  /**
+   * Charge (ou recharge) le référentiel.
+   *
+   * `silencieux` sert aux rechargements consécutifs à une écriture : le tableau
+   * reste affiché et seule une pastille « Actualisation… » signale l'attente,
+   * au lieu de remplacer tout l'écran par un chargement.
+   */
+  const charger = useCallback(async ({ silencieux = false } = {}) => {
+    if (silencieux) setRafraichissement(true)
+    else setChargement(true)
+    setErreur('')
+    try {
+      // 1. La carte du référentiel vient du registre backend : elle dit si la
+      //    table est modifiable et quelle route API la sert réellement.
+      const courante = await chargerCatalogue()
+      if (!courante) {
+        setErreur("Ce référentiel n'existe pas ou n'est pas éditable depuis cet écran.")
+        setEntree(null)
+        return
+      }
+      setEntree(courante)
+      const modifiable = Boolean(courante.editable)
+      setLectureSeule(!modifiable)
+
+      if (!modifiable) {
+        // 2a. Référentiel historisé ou importé : lecture de sa propre route.
+        const source = courante.route_api || `/referentiels/${slug}/`
+        const donnees = await api.get(source, { params: { page_size: 1000 } })
+        setLignes(listeRecue(donnees.data))
+        setOptions({})
+        return
+      }
+
+      // 2b. Référentiel modifiable : la route générique et les options des
+      //     sélecteurs (dont le chemin est fourni par le registre).
+      const routes = courante.selecteurs_routes || {}
+      // L'entrée vient d'être reçue, mais setEntree n'a pas encore mis à jour
+      // l'état React. Ne pas utiliser `cheminGestion` issu de l'ancien rendu :
+      // pour les cycles/modules/volumes, sa valeur initiale est une route 404.
+      // Cette 404 pouvait arriver après le rechargement et laisser une erreur
+      // affichée alors que les vraies API répondent toutes 200.
+      const routeGestion = courante.route_gestion || `/referentiels/${slug}/`
+      const [liste, ...paires] = await Promise.all([
+        api.get(routeGestion, { params: { archives: 1, page_size: 1000 } }),
+        ...(courante.selecteurs || []).map(async (fk) => {
+          const route = routes[fk]?.route
+          if (!route) return [fk, []]
+          const res = await api.get(route, { params: { page_size: 1000 } })
+          return [fk, listeRecue(res.data)]
+        }),
+      ])
+      setLignes(listeRecue(liste.data))
+      setSelection([])
+      setOptions(Object.fromEntries(paires))
+    } catch (e) {
+      setErreur(
+        e.response?.data?.detail
+        || 'Chargement du référentiel impossible.',
+      )
+    } finally {
+      setChargement(false)
+      setRafraichissement(false)
+    }
+  }, [slug, chargerCatalogue])
+
+  useEffect(() => {
+    charger()
+  }, [charger])
+
+  const lignesFiltrees = useMemo(() => {
+    const q = recherche.trim().toLowerCase()
+    return lignes
+      .filter((l) => {
+        // Les tables importées ne portent ni « actif » ni « archive » : le
+        // filtre d'état ne s'y applique pas et n'est pas affiché.
+        if (lectureSeule) return true
+        if (filtreActif === 'actifs') return l.actif && !l.archive
+        if (filtreActif === 'inactifs') return !l.actif && !l.archive
+        if (filtreActif === 'archives') return l.archive
+        return true
+      })
+      .filter((l) => {
+        if (!q) return true
+        const valeurs = [l.code, l.libelle, l.description]
+        ;(entree?.selecteurs || []).forEach((fk) => valeurs.push(l[`${fk}_libelle`]))
+        return valeurs.filter(Boolean).some((v) => String(v).toLowerCase().includes(q))
+      })
+      .filter((l) => Object.entries(filtresSelecteurs).every(
+        ([fk, valeur]) => !valeur || String(l[fk] ?? '') === valeur,
+      ))
+  }, [lignes, recherche, filtreActif, entree, lectureSeule, filtresSelecteurs])
+
+  // Valeurs distinctes de chaque sélecteur (pour les filtres rapides) :
+  // un sélecteur à valeur unique (ex. un seul site) n'affiche pas de filtre.
+  const valeursSelecteurs = useMemo(() => {
+    const parFk = {}
+    ;(entree?.selecteurs || []).forEach((fk) => {
+      const vues = new Map()
+      lignes.forEach((l) => {
+        if (l[fk] !== null && l[fk] !== undefined && l[`${fk}_libelle`]) {
+          vues.set(String(l[fk]), l[`${fk}_libelle`])
+        }
+      })
+      if (vues.size >= 2) {
+        parFk[fk] = [...vues.entries()]
+          .map(([valeur, libelle]) => ({ valeur, libelle }))
+          .sort((a, b) => a.libelle.localeCompare(b.libelle))
+      }
+    })
+    return parFk
+  }, [entree, lignes])
+
+  const PAR_PAGE = 24
+  const nbPages = Math.max(1, Math.ceil(lignesFiltrees.length / PAR_PAGE))
+  const pageSure = Math.min(page, nbPages)
+  const lignesPage = lignesFiltrees.slice((pageSure - 1) * PAR_PAGE, pageSure * PAR_PAGE)
+
+  // Une sélection ne traverse jamais un changement de filtre, de page ou de
+  // référentiel : le périmètre d'un lot reste visible et vérifiable.
+  useEffect(() => { setPage(1) }, [recherche, filtreActif, filtresSelecteurs, vue, slug])
+  useEffect(() => { setSelection([]); setActionLot(null) },
+    [recherche, filtreActif, filtresSelecteurs, vue, pageSure, slug])
+
+  const basculerSelection = (id) => setSelection((ids) => ids.includes(id)
+    ? ids.filter((n) => n !== id) : [...ids, id])
+  const basculerPage = () => setSelection((ids) => (
+    lignesPage.every((ligne) => ids.includes(ligne.id))
+      ? [] : lignesPage.map((ligne) => ligne.id)
+  ))
+  const selectionArchivee = selection.some((id) =>
+    lignesPage.find((ligne) => ligne.id === id)?.archive)
+
+  const confirmerActionLot = async () => {
+    if (!actionLot || selection.length === 0) return
+    setEnvoi(true)
+    try {
+      const res = await api.post(`${cheminGestion}lot/`, {
+        ids: selection, action: actionLot,
+      })
+      const bilans = res.data?.resultats || []
+      const compte = (resultat) => bilans.filter((ligne) => ligne.resultat === resultat).length
+      toast.success?.(`${bilans.length} valeur(s) traitée(s) : ${compte('supprime')} supprimée(s), `
+        + `${compte('archive')} archivée(s), ${compte('active')} activée(s), `
+        + `${compte('desactive')} désactivée(s).`)
+      setSelection([])
+      setActionLot(null)
+      await charger({ silencieux: true })
+    } catch (err) {
+      toast.error?.(err.response?.data?.detail || 'Action groupée annulée : aucune modification appliquée.')
+    } finally {
+      setEnvoi(false)
+    }
+  }
+  useEffect(() => {
+    try { localStorage.setItem(`ref-vue-${slug}`, vue) } catch { /* stockage indisponible */ }
+  }, [vue, slug])
+
+  const changerVue = (nouvelle) => setVue(nouvelle)
+
+
+  const ouvrirCreation = () => {
+    const base = { fiabilite: 'A_RENSEIGNER', actif: true }
+    ;(entree?.champs || []).forEach((champ) => {
+      base[champ] = valeurInitiale(champ, null)
+    })
+    ;(entree?.selecteurs || []).forEach((fk) => {
+      base[fk] = ''
+    })
+    setForm(base)
+    setErreursForm({})
+    setModal({ mode: 'creation' })
+  }
+
+  const ouvrirEdition = (ligne) => {
+    const base = {
+      code: ligne.code,
+      libelle: ligne.libelle,
+      description: ligne.description || '',
+      actif: ligne.actif,
+      source_document: ligne.source_document || '',
+      fiabilite: ligne.fiabilite || 'A_RENSEIGNER',
+    }
+    ;(entree?.champs || []).forEach((champ) => {
+      base[champ] = valeurInitiale(champ, ligne)
+    })
+    ;(entree?.selecteurs || []).forEach((fk) => {
+      base[fk] = ligne[fk] ?? ''
+    })
+    setForm(base)
+    setErreursForm({})
+    setModal({ mode: 'edition', ligne })
+  }
+
+  const fermerModal = () => {
+    if (envoi) return
+    setModal(null)
+    setErreursForm({})
+  }
+
+  const enregistrer = async (evenement) => {
+    evenement.preventDefault()
+    const erreurs = {}
+    if (!String(form.libelle || '').trim()) erreurs.libelle = 'Le libellé est obligatoire.'
+    if (aUnCode && modal.mode === 'creation' && !String(form.code || '').trim()) {
+      erreurs.code = 'Le code métier est obligatoire.'
+    }
+    if (Object.keys(erreurs).length) {
+      setErreursForm(erreurs)
+      return
+    }
+    setEnvoi(true)
+    setErreursForm({})
+    const corps = { ...form }
+    if (!aUnCode) delete corps.code
+    if (!provenanceSuivie) {
+      delete corps.fiabilite
+      delete corps.source_document
+    }
+    if (!aUneDescription) delete corps.description
+    champsDates.forEach((champ) => {
+      if (corps[champ] === '') corps[champ] = null
+    })
+    ;(entree?.selecteurs || []).forEach((fk) => {
+      corps[fk] = corps[fk] === '' ? null : Number(corps[fk])
+    })
+    Object.keys(champsChoix).forEach((champ) => {
+      if (corps[champ] === '') delete corps[champ]
+    })
+    champsNumeriques.forEach((champ) => {
+      if (corps[champ] === '' || corps[champ] === null || corps[champ] === undefined) {
+        delete corps[champ]
+      } else {
+        corps[champ] = Number(corps[champ])
+      }
+    })
+    if (corps.ordre !== undefined && corps.ordre !== '') corps.ordre = Number(corps.ordre)
+    try {
+      if (modal.mode === 'creation') {
+        await api.post(cheminGestion, corps)
+        toast.success?.('Référentiel enregistré.')
+      } else {
+        delete corps.code
+        await api.patch(`${cheminGestion}${modal.ligne.id}/`, corps)
+        toast.success?.('Référentiel mis à jour.')
+      }
+      setModal(null)
+      await charger({ silencieux: true })
+    } catch (e) {
+      const data = e.response?.data
+      if (data && typeof data === 'object') {
+        const champs = Object.entries(data)
+          .filter(([cle]) => cle !== 'detail')
+          .map(([, valeur]) => (Array.isArray(valeur) ? valeur.join(' ') : String(valeur)))
+        if (champs.length) {
+          setErreursForm({ general: champs.join(' ') })
+        } else {
+          setErreursForm({ general: data.detail || 'Enregistrement impossible.' })
+        }
+      } else {
+        setErreursForm({ general: 'Enregistrement impossible.' })
+      }
+    } finally {
+      setEnvoi(false)
+    }
+  }
+
+  const basculerStatut = async (ligne) => {
+    try {
+      await api.patch(`${cheminGestion}${ligne.id}/`, { actif: !ligne.actif })
+      await charger({ silencieux: true })
+    } catch {
+      toast.error?.('Changement de statut impossible.')
+    }
+  }
+
+  // L'API arbitre la suppression : 204 si la valeur n'est référencée nulle
+  // part, 200 + archive si elle est liée à un dossier. Ne jamais le deviner
+  // dans le navigateur : des relations peuvent être invisibles dans la liste.
+  const confirmerSuppression = async () => {
+    if (!suppression) return
+    setEnvoi(true)
+    try {
+      if (suppression.action === 'archiver') {
+        await api.post(`${cheminGestion}${suppression.id}/archiver/`, {})
+        toast.success?.(`« ${suppression.libelle} » archivé — réactivable depuis le filtre « Archivés ».`)
+      } else {
+        const res = await api.delete(`${cheminGestion}${suppression.id}/`)
+        toast.success?.(res.data?.archive
+          ? `« ${suppression.libelle} » est utilisé : archivé sans effacer ses liens.`
+          : res.data?.desactive
+            ? `« ${suppression.libelle} » est utilisé : désactivé sans effacer ses liens.`
+            : `« ${suppression.libelle} » supprimé définitivement.`)
+      }
+      setSuppression(null)
+      await charger({ silencieux: true })
+    } catch (err) {
+      toast.error?.(err.response?.data?.detail || 'Suppression impossible.')
+    } finally {
+      setEnvoi(false)
+    }
+  }
+
+  const reactiver = async (ligne) => {
+    try {
+      await api.post(`${cheminGestion}${ligne.id}/reactiver/`, {})
+      await charger({ silencieux: true })
+    } catch {
+      toast.error?.('Réactivation impossible.')
+    }
+  }
+
+  const exporter = async (format) => {
+    setEchange(true)
+    try {
+      const params = new URLSearchParams({ export: format })
+      if (filtreActif === 'archives') { params.set('archives', '1'); params.set('archive', '1') }
+      if (filtreActif === 'inactifs') params.set('actif', '0')
+      if (filtreActif === 'tous') params.set('archives', '1')
+      const { blob, fileName } = await api.getBlob(`${cheminGestion}export/?${params}`)
+      downloadFile(blob, fileName || `${slug}.${format}`)
+      toast.success?.(`Export ${format.toUpperCase()} téléchargé.`)
+    } catch (e) {
+      toast.error?.(e.response?.data?.detail || e.message || 'Export impossible.')
+    } finally {
+      setEchange(false)
+    }
+  }
+
+  const importer = async (event) => {
+    const fichier = event.target.files?.[0]
+    if (!fichier) return
+    event.target.value = ''
+    setEchange(true)
+    try {
+      const corps = new FormData()
+      corps.append('fichier', fichier)
+      const res = await api.post(`${cheminGestion}import/`, corps)
+      toast.success?.(`Import terminé : ${res.data.crees} créé(s), ${res.data.modifies} modifié(s).`)
+      await charger({ silencieux: true })
+    } catch (e) {
+      toast.error?.(e.response?.data?.detail || 'Import impossible : vérifiez les colonnes du fichier.')
+    } finally {
+      setEchange(false)
+    }
+  }
+
+  const colonnes = useMemo(() => {
+    if (!entree) return []
+    if (lectureSeule) {
+      const premiere = lignes[0] || {}
+      const disponibles = Object.keys(premiere).filter(
+        (cle) => !['id', 'formation', 'cree_le', 'modifie_le', 'annee_academique'].includes(cle),
+      )
+      // Une colonne constante n'apprend rien : la source documentaire unique
+      // est déjà rappelée par le bandeau de provenance.
+      const constantes = new Set(
+        disponibles.filter((cle) => (
+          cle === 'source_document'
+          && new Set(lignes.map((l) => l[cle])).size <= 1
+        )),
+      )
+      const ordonnees = [
+        ...ORDRE_LECTURE_SEULE.filter((cle) => disponibles.includes(cle) && !constantes.has(cle)),
+        ...disponibles.filter((cle) => !ORDRE_LECTURE_SEULE.includes(cle) && !constantes.has(cle)),
+      ]
+      return ordonnees.map((cle) => ({
+        cle,
+        libelle: LIBELLE_TECHNIQUE[cle] || LIBELLES_CHAMPS[cle] || cle,
+      }))
+    }
+    return [
+      { cle: 'code', libelle: 'Code' },
+      { cle: 'libelle', libelle: 'Libellé' },
+      ...(entree.champs || [])
+        .filter((c) => c !== 'actif' && c !== 'description' && c !== 'source_document')
+        .map((c) => ({ cle: c, libelle: LIBELLES_CHAMPS[c] || c })),
+      ...(entree.selecteurs || []).map((fk) => ({ cle: `${fk}_libelle`, libelle: LIBELLES_CHAMPS[fk] || fk })),
+      ...(provenanceSuivie ? [{ cle: 'fiabilite', libelle: 'Fiabilité' }] : []),
+    ]
+  }, [entree, lectureSeule, lignes, provenanceSuivie])
+
+  const optionsPour = (fk) => {
+    const dependDe = DEPENDANCES[fk]
+    const liste = (options[fk] || []).filter((o) => !o.archive || String(o.id) === String(form[fk]))
+    if (dependDe && form[dependDe]) {
+      return liste.filter((o) => String(o[dependDe]) === String(form[dependDe]))
+    }
+    return liste
+  }
+
+  // Actions d'une ligne, partagées par la vue liste et la vue cartes.
+  // « Visualiser » est toujours disponible (y compris en lecture seule) ;
+  // les actions d'écriture suivent le caractère modifiable du référentiel.
+  const rendreActions = (ligne) => (
+    <div className="cand-actions">
+      <button
+        type="button"
+        className="ref-action"
+        onClick={() => setDetail(ligne)}
+        title="Visualiser"
+        aria-label={`Visualiser ${ligne.libelle}`}
+      >
+        <i className="bi bi-eye" aria-hidden="true"></i>
+      </button>
+      {!lectureSeule && (
+        <>
+          <button
+            type="button"
+            className="ref-action"
+            onClick={() => ouvrirEdition(ligne)}
+            title="Modifier"
+            aria-label={`Modifier ${ligne.libelle}`}
+          >
+            <i className="bi bi-pencil" aria-hidden="true"></i>
+          </button>
+          {!ligne.archive && (
+            <button
+              type="button"
+              className={`ref-action ref-action--statut${ligne.actif ? ' is-actif' : ''}`}
+              onClick={() => basculerStatut(ligne)}
+              title={ligne.actif ? 'Désactiver' : 'Activer'}
+              aria-label={`${ligne.actif ? 'Désactiver' : 'Activer'} ${ligne.libelle}`}
+            >
+              <i className={`bi ${ligne.actif ? 'bi-toggle-on' : 'bi-toggle-off'}`} aria-hidden="true"></i>
+            </button>
+          )}
+          {archivageSupporte && entree.route_gestion && !ligne.archive && (
+            <button type="button" className="ref-action" title="Archiver"
+              aria-label={`Archiver ${ligne.libelle}`}
+              onClick={() => setSuppression({ ...ligne, action: 'archiver' })}>
+              <i className="bi bi-archive" aria-hidden="true"></i>
+            </button>
+          )}
+          {archivageSupporte && ligne.archive ? (
+            <button
+              type="button"
+              className="ref-action ref-action--reactiver"
+              onClick={() => reactiver(ligne)}
+              title="Réactiver"
+              aria-label={`Réactiver ${ligne.libelle}`}
+            >
+              <i className="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+            </button>
+          ) : (archivageSupporte || ligne.actif) ? (
+            <button
+              type="button"
+              className="ref-action ref-action--supprimer"
+              onClick={() => setSuppression(ligne)}
+              title="Supprimer"
+              aria-label={`Supprimer ${ligne.libelle}`}
+            >
+              <i className="bi bi-trash3" aria-hidden="true"></i>
+            </button>
+          ) : null}
+        </>
+      )}
+    </div>
+  )
+
+  if (chargement) {
+    return (
+      <div className="cand-page ref-page">
+        <section className="cand-panel" aria-live="polite">
+          <div className="cand-chargement">
+            <span className="spinner-border" role="status" aria-hidden="true"></span>
+            Chargement du référentiel…
+          </div>
+        </section>
+      </div>
+    )
+  }
+
+  if (erreur || !entree) {
+    return (
+      <div className="cand-page ref-page">
+        <div className="cand-alerte" role="alert">
+          <i className="bi bi-exclamation-octagon" aria-hidden="true"></i>
+          <span>{erreur || 'Référentiel introuvable.'}</span>
+        </div>
+        <Link className="cand-btn-fantome" to="/referentiels">
+          Retour au catalogue
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="cand-page ref-page">
+      <header className="cand-hero">
+        <div className="cand-hero-identite">
+          <span className="cand-hero-icone" aria-hidden="true">
+            <i className={`bi ${entree.icone}`}></i>
+          </span>
+          <div className="cand-hero-text">
+            <span className="cand-hero-badge">
+              <Link to="/referentiels" className="ref-fil">
+                <i className="bi bi-chevron-left" aria-hidden="true"></i>
+                Référentiels
+              </Link>
+            </span>
+            <h1 className="cand-hero-title">{entree.libelle}</h1>
+            <p className="cand-hero-sub">{entree.description}</p>
+          </div>
+        </div>
+        <div className="ref-hero-pastilles">
+          <span className="ref-pastille ref-pastille--primary">
+            <i className="bi bi-collection" aria-hidden="true"></i>
+            {lignes.length} valeur{lignes.length > 1 ? 's' : ''}
+          </span>
+        </div>
+      </header>
+
+      <section className="cand-panel">
+        <header className="cand-panel-head">
+          <h2 className="cand-panel-title">
+            <i className="bi bi-table" aria-hidden="true"></i>
+            {entree.libelle}
+          </h2>
+          <div className="ref-panel-actions">
+            {rafraichissement && (
+              <span className="ref-pastille ref-pastille--neutre" role="status" aria-live="polite">
+                <i className="bi bi-arrow-repeat" aria-hidden="true"></i>
+                Actualisation…
+              </span>
+            )}
+            <span className="cand-count-pill">
+              {lignesFiltrees.length} / {lignes.length}
+            </span>
+            {entree.route_gestion && (
+              <div className="ref-echanges" aria-label="Importer et exporter ce référentiel">
+                <label className="cand-btn-fantome ref-import" aria-disabled={echange}>
+                  <i className="bi bi-upload" aria-hidden="true"></i> Importer CSV / Excel
+                  <input type="file" accept=".csv,.xlsx" aria-label="Importer un fichier CSV ou Excel"
+                    disabled={echange} onChange={importer} />
+                </label>
+                {[
+                  ['docx', 'Word'], ['xlsx', 'Excel'], ['csv', 'CSV'], ['pdf', 'PDF'],
+                ].map(([format, libelle]) => (
+                  <button key={format} type="button" className={`ref-export ref-export--${format}`}
+                    disabled={echange} onClick={() => exporter(format)}
+                    aria-label={`Exporter ${entree.libelle} en ${libelle}`}>
+                    <i className={`bi bi-file-earmark-${format === 'xlsx' ? 'excel' : format === 'docx' ? 'word' : format}`} aria-hidden="true"></i>
+                    {libelle}
+                  </button>
+                ))}
+              </div>
+            )}
+            {lectureSeule ? (
+              <span className="ref-pastille ref-pastille--neutre">
+                <i className="bi bi-lock" aria-hidden="true"></i>
+                Lecture seule
+              </span>
+            ) : (
+              <button type="button" className="cand-btn-principal" onClick={ouvrirCreation}>
+                <i className="bi bi-plus-lg" aria-hidden="true"></i>
+                Ajouter
+              </button>
+            )}
+          </div>
+        </header>
+        <div className="cand-panel-body">
+          {lectureSeule && (
+            <p className="ref-note-texte ref-note-bandeau">
+              <i className="bi bi-shield-lock" aria-hidden="true"></i>
+              <span>
+                Données issues de l’import documentaire
+                {entree.source ? ` — ${entree.source}` : ''}. Elles ne sont pas
+                modifiables ici : une correction passe par la source puis par un
+                nouvel import, afin de préserver la traçabilité.
+              </span>
+            </p>
+          )}
+          {entree.route_gestion && (
+            <p className="ref-note-texte">
+              Pour importer, utilisez l’export CSV ou Excel comme modèle : une ligne sans identifiant
+              crée une valeur, une ligne avec « id » la met à jour. Les rattachements « formation »
+              ou « filiere » utilisent l’identifiant du référentiel correspondant. L’import est annulé
+              en entier si une ligne comporte une erreur. « Supprimer » efface une valeur isolée ;
+              une valeur liée à d’autres données est archivée ou désactivée sans effacer ses liens.
+            </p>
+          )}
+          <div className="ref-filtres">
+            <div className="cand-champ ref-champ-recherche">
+              <label className="cand-etiquette" htmlFor="ref-recherche-liste">
+                Rechercher
+              </label>
+              <div className="cand-search">
+                <i className="bi bi-search" aria-hidden="true"></i>
+                <input
+                  id="ref-recherche-liste"
+                  type="search"
+                  className="cand-input"
+                  placeholder="Code, libellé…"
+                  value={recherche}
+                  onChange={(e) => setRecherche(e.target.value)}
+                />
+              </div>
+            </div>
+            {!lectureSeule && (
+            <div className="cand-champ ref-champ-etat">
+              <label className="cand-etiquette" htmlFor="ref-filtre-etat">Afficher</label>
+              <select
+                id="ref-filtre-etat"
+                className="cand-saisie"
+                value={filtreActif}
+                onChange={(e) => setFiltreActif(e.target.value)}
+              >
+                <option value="actifs">Actifs</option>
+                <option value="inactifs">Inactifs</option>
+                {archivageSupporte && <option value="archives">Archivés</option>}
+                <option value="tous">Tous</option>
+              </select>
+            </div>
+            )}
+            {Object.entries(valeursSelecteurs).map(([fk, valeurs]) => (
+              <div className="cand-champ ref-champ-selecteur" key={fk}>
+                <label className="cand-etiquette" htmlFor={`ref-filtre-${fk}`}>
+                  {LIBELLES_CHAMPS[fk] || fk}
+                </label>
+                <select
+                  id={`ref-filtre-${fk}`}
+                  className="cand-saisie"
+                  value={filtresSelecteurs[fk] || ''}
+                  onChange={(e) => setFiltresSelecteurs((f) => ({ ...f, [fk]: e.target.value }))}
+                >
+                  <option value="">Tous</option>
+                  {valeurs.map((v) => (
+                    <option key={v.valeur} value={v.valeur}>{v.libelle}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+            <div className="cand-champ ref-champ-vue">
+              <span className="cand-etiquette" id="ref-vue-libelle">Présentation</span>
+              <div className="ref-vue-toggle" role="group" aria-labelledby="ref-vue-libelle">
+                <button
+                  type="button"
+                  className={`ref-vue-btn${vue === 'liste' ? ' is-active' : ''}`}
+                  aria-pressed={vue === 'liste'}
+                  onClick={() => changerVue('liste')}
+                >
+                  <i className="bi bi-list-ul" aria-hidden="true"></i>
+                  Liste
+                </button>
+                <button
+                  type="button"
+                  className={`ref-vue-btn${vue === 'cartes' ? ' is-active' : ''}`}
+                  aria-pressed={vue === 'cartes'}
+                  onClick={() => changerVue('cartes')}
+                >
+                  <i className="bi bi-grid-3x3-gap" aria-hidden="true"></i>
+                  Cartes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {!lectureSeule && lignesPage.length > 0 && (
+          <div className="ref-actions-lot" role="group" aria-label="Actions sur les valeurs cochées">
+            <span role="status">{selection.length} sélectionnée(s) sur cette page</span>
+            <button type="button" className="cand-btn-fantome" onClick={basculerPage}>
+              {selection.length === lignesPage.length ? 'Tout décocher' : 'Cocher la page'}
+            </button>
+            {[
+              ['activer', 'Activer'], ['desactiver', 'Désactiver'],
+              ['archiver', 'Archiver'], ['supprimer', 'Supprimer'],
+            ].map(([action, libelle]) => (
+              <button key={action} type="button" className="cand-btn-fantome"
+                disabled={!selection.length || envoi
+                  || (action === 'archiver' && (!archivageSupporte || selectionArchivee))
+                  || (action === 'activer' && selectionArchivee)}
+                onClick={() => setActionLot(action)}>
+                {libelle} la sélection
+              </button>
+            ))}
+          </div>
+        )}
+
+        {lignesFiltrees.length === 0 ? (
+          <div className="cand-vide">
+            <span className="cand-vide-icone" aria-hidden="true">
+              <i className="bi bi-inbox"></i>
+            </span>
+            <p className="cand-vide-titre">Aucune valeur</p>
+            <p className="cand-vide-texte">
+              {lignes.length === 0
+                ? (lectureSeule
+                  ? 'Aucune donnée importée pour ce référentiel : exécutez la commande d’import des référentiels INJS.'
+                  : 'Ce référentiel est vide : ajoutez une première valeur ou lancez l’import des documents officiels.')
+                : 'Aucune valeur ne correspond au filtre courant.'}
+            </p>
+          </div>
+        ) : vue === 'cartes' ? (
+          <div className="ref-cartes" role="list" aria-label={`Présentation en cartes — ${entree.libelle}`}>
+            {lignesPage.map((ligne) => (
+              <article className={`ref-carte${ligne.archive ? ' is-archive' : ''}`} key={ligne.id} role="listitem">
+                <header className="ref-carte-entete">
+                  {!lectureSeule && (
+                    <label className="ref-selection-ligne">
+                      <input type="checkbox" checked={selection.includes(ligne.id)}
+                        onChange={() => basculerSelection(ligne.id)}
+                        aria-label={`Sélectionner ${ligne.libelle}`} />
+                    </label>
+                  )}
+                  {aUnCode && ligne.code
+                    ? <span className="ref-carte-code">{ligne.code}</span>
+                    : <span></span>}
+                  {provenanceSuivie && (
+                    <span className={`ref-fiab ref-fiab--${String(ligne.fiabilite).toLowerCase()}`}>
+                      {LIBELLE_FIABILITE[ligne.fiabilite] || '—'}
+                    </span>
+                  )}
+                </header>
+                <h3 className="ref-carte-titre">{ligne.libelle}</h3>
+                <dl className="ref-carte-champs">
+                  {colonnes
+                    .filter((c) => !['code', 'libelle', 'fiabilite'].includes(c.cle))
+                    .map((c) => (
+                      <div className="ref-carte-champ" key={c.cle}>
+                        <dt>{c.libelle}</dt>
+                        <dd
+                          className={c.cle === 'equipements' ? 'ref-carte-equipements' : undefined}
+                          title={typeof ligne[c.cle] === 'string' ? ligne[c.cle] : undefined}
+                        >
+                          {c.cle === 'capacite' && ligne[c.cle] !== null && ligne[c.cle] !== undefined ? (
+                            <span className="ref-carte-capacite">
+                              <i className="bi bi-people" aria-hidden="true"></i>
+                              {afficherCellule(ligne, c.cle)} places
+                            </span>
+                          ) : typeof ligne[c.cle] === 'boolean' ? (
+                            ligne[c.cle] ? 'Oui' : '—'
+                          ) : (
+                            afficherCellule(ligne, c.cle)
+                          )}
+                        </dd>
+                      </div>
+                    ))}
+                </dl>
+                <footer className="ref-carte-pied">{rendreActions(ligne)}</footer>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="cand-table-wrap">
+            <table className={`cand-table ref-table${lectureSeule ? ' ref-table--lecture' : ''}`}>
+              <thead>
+                <tr>
+                  {!lectureSeule && (
+                    <th scope="col" className="ref-col-selection">
+                      <input type="checkbox" aria-label="Sélectionner toutes les valeurs de cette page"
+                        checked={lignesPage.length > 0 && selection.length === lignesPage.length}
+                        onChange={basculerPage} />
+                    </th>
+                  )}
+                  {colonnes.map((c) => (
+                    <th key={c.cle} scope="col" data-colonne={c.cle}>{c.libelle}</th>
+                  ))}
+                  <th scope="col" className="cand-th-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lignesPage.map((ligne) => (
+                  <tr key={ligne.id} className={ligne.archive ? 'is-archive' : ''}>
+                    {!lectureSeule && (
+                      <td className="ref-col-selection">
+                        <input type="checkbox" aria-label={`Sélectionner ${ligne.libelle}`}
+                          checked={selection.includes(ligne.id)}
+                          onChange={() => basculerSelection(ligne.id)} />
+                      </td>
+                    )}
+                    {colonnes.map((c) => (
+                      <td
+                        key={c.cle}
+                        data-colonne={c.cle}
+                        title={typeof ligne[c.cle] === 'string' ? ligne[c.cle] : undefined}
+                      >
+                        {c.cle === 'fiabilite' ? (
+                          <span className={`ref-fiab ref-fiab--${String(ligne.fiabilite).toLowerCase()}`}>
+                            {LIBELLE_FIABILITE[ligne.fiabilite] || '—'}
+                          </span>
+                        ) : typeof ligne[c.cle] === 'boolean' ? (
+                          ligne[c.cle] ? <i className="bi bi-check2" aria-label="Oui"></i> : '—'
+                        ) : (
+                          afficherCellule(ligne, c.cle)
+                        )}
+                      </td>
+                    ))}
+                    <td className="cand-td-actions">
+                      {rendreActions(ligne)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {lignesFiltrees.length > PAR_PAGE && (
+          <nav className="ref-pagination" aria-label="Pagination du référentiel">
+            <span className="ref-pagination-info">
+              Éléments {(pageSure - 1) * PAR_PAGE + 1} à{' '}
+              {Math.min(pageSure * PAR_PAGE, lignesFiltrees.length)} sur {lignesFiltrees.length}
+            </span>
+            <div className="ref-pagination-boutons">
+              <button
+                type="button"
+                className="ref-pagination-btn"
+                disabled={pageSure <= 1}
+                onClick={() => setPage((n) => Math.max(1, n - 1))}
+              >
+                Précédent
+              </button>
+              <span className="ref-pagination-page">Page {pageSure} sur {nbPages}</span>
+              <button
+                type="button"
+                className="ref-pagination-btn"
+                disabled={pageSure >= nbPages}
+                onClick={() => setPage((n) => Math.min(nbPages, n + 1))}
+              >
+                Suivant
+              </button>
+            </div>
+          </nav>
+        )}
+      </section>
+
+      {modal && (
+        <div className="ref-modale-voile" role="presentation" onClick={fermerModal}>
+          <div
+            className="ref-modale"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ref-modale-titre"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="ref-modale-head">
+              <h2 className="ref-modale-titre" id="ref-modale-titre">
+                {modal.mode === 'creation' ? 'Nouvelle valeur' : 'Modifier la valeur'}
+                <span>{entree.libelle}</span>
+              </h2>
+              <button
+                type="button"
+                className="ref-modale-fermer"
+                onClick={fermerModal}
+                aria-label="Fermer"
+              >
+                <i className="bi bi-x-lg" aria-hidden="true"></i>
+              </button>
+            </header>
+            <form onSubmit={enregistrer} className="ref-form">
+              <div className="cand-grille-form">
+                {aUnCode && (
+                <div className="cand-champ">
+                  <label className="cand-etiquette" htmlFor="ref-code">
+                    Code métier <span className="ref-requis" aria-hidden="true">*</span>
+                  </label>
+                  <input
+                    id="ref-code"
+                    className="cand-saisie"
+                    value={form.code || ''}
+                    onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+                    readOnly={modal.mode === 'edition'}
+                    required
+                    aria-required="true"
+                  />
+                  <span className="ref-aide">Fourni à la création, immuable ensuite.</span>
+                  {erreursForm.code && <span className="ref-erreur">{erreursForm.code}</span>}
+                </div>
+                )}
+                <div className="cand-champ">
+                  <label className="cand-etiquette" htmlFor="ref-libelle">
+                    Libellé officiel <span className="ref-requis" aria-hidden="true">*</span>
+                  </label>
+                  <input
+                    id="ref-libelle"
+                    className="cand-saisie"
+                    value={form.libelle || ''}
+                    onChange={(e) => setForm({ ...form, libelle: e.target.value })}
+                    required
+                    aria-required="true"
+                  />
+                  {erreursForm.libelle && <span className="ref-erreur">{erreursForm.libelle}</span>}
+                </div>
+
+                {(entree.champs || []).map((champ) => (
+                  <div className="cand-champ" key={champ}>
+                    <label className="cand-etiquette" htmlFor={`ref-${champ}`}>
+                      {LIBELLES_CHAMPS[champ] || champ}
+                    </label>
+                    {CHAMPS_BOOLEENS.includes(champ) ? (
+                      <label className="ref-case" htmlFor={`ref-${champ}`}>
+                        <input
+                          id={`ref-${champ}`}
+                          type="checkbox"
+                          checked={Boolean(form[champ])}
+                          onChange={(e) => setForm({ ...form, [champ]: e.target.checked })}
+                        />
+                        Oui
+                      </label>
+                    ) : champsChoix[champ] ? (
+                      <select
+                        id={`ref-${champ}`}
+                        className="cand-saisie"
+                        value={form[champ] ?? ''}
+                        onChange={(e) => setForm({ ...form, [champ]: e.target.value })}
+                      >
+                        <option value="">— Choisir —</option>
+                        {champsChoix[champ].map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        id={`ref-${champ}`}
+                        type={champsDates.includes(champ)
+                          ? 'date'
+                          : (champsNumeriques.includes(champ) || champ === 'ordre' ? 'number' : 'text')}
+                        step="any"
+                        className="cand-saisie"
+                        value={form[champ] ?? ''}
+                        onChange={(e) => setForm({ ...form, [champ]: e.target.value })}
+                      />
+                    )}
+                  </div>
+                ))}
+
+                {(entree.selecteurs || []).map((fk) => (
+                  <div className="cand-champ" key={fk}>
+                    <label className="cand-etiquette" htmlFor={`ref-${fk}`}>
+                      {LIBELLES_CHAMPS[fk] || fk}
+                    </label>
+                    <select
+                      id={`ref-${fk}`}
+                      className="cand-saisie"
+                      value={form[fk] ?? ''}
+                      onChange={(e) => setForm({ ...form, [fk]: e.target.value })}
+                    >
+                      <option value="">— Aucun —</option>
+                      {optionsPour(fk).map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.libelle || option.intitule || option.nom || `#${option.id}`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+
+                {provenanceSuivie && (
+                <>
+                <div className="cand-champ">
+                  <label className="cand-etiquette" htmlFor="ref-fiabilite">Fiabilité</label>
+                  <select
+                    id="ref-fiabilite"
+                    className="cand-saisie"
+                    value={form.fiabilite || 'A_RENSEIGNER'}
+                    onChange={(e) => setForm({ ...form, fiabilite: e.target.value })}
+                  >
+                    {FIABILITES.map((f) => (
+                      <option key={f.value} value={f.value}>{f.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="cand-champ ref-champ-large">
+                  <label className="cand-etiquette" htmlFor="ref-source">Source documentaire</label>
+                  <input
+                    id="ref-source"
+                    className="cand-saisie"
+                    value={form.source_document || ''}
+                    onChange={(e) => setForm({ ...form, source_document: e.target.value })}
+                    placeholder="Document officiel attestant la valeur"
+                  />
+                </div>
+                </>
+                )}
+                {aUneDescription && (
+                <div className="cand-champ ref-champ-large">
+                  <label className="cand-etiquette" htmlFor="ref-description">Description</label>
+                  <textarea
+                    id="ref-description"
+                    className="cand-saisie"
+                    rows={2}
+                    value={form.description || ''}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  />
+                </div>
+                )}
+              </div>
+
+              {erreursForm.general && (
+                <p className="ref-erreur ref-erreur--general" role="alert">
+                  <i className="bi bi-exclamation-circle" aria-hidden="true"></i>
+                  {erreursForm.general}
+                </p>
+              )}
+
+              <footer className="ref-modale-pied">
+                <label className="ref-case" htmlFor="ref-actif">
+                  <input
+                    id="ref-actif"
+                    type="checkbox"
+                    checked={Boolean(form.actif)}
+                    onChange={(e) => setForm({ ...form, actif: e.target.checked })}
+                  />
+                  Valeur active
+                </label>
+                <div className="ref-modale-boutons">
+                  <button type="button" className="cand-btn-fantome" onClick={fermerModal}>
+                    Annuler
+                  </button>
+                  <button type="submit" className="cand-btn-principal" disabled={envoi}>
+                    {envoi ? 'Enregistrement…' : 'Enregistrer'}
+                  </button>
+                </div>
+              </footer>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {actionLot && (
+        <div className="ref-modale-voile" role="presentation">
+          <div className="ref-modale ref-modale--etroite" role="alertdialog" aria-modal="true"
+            aria-labelledby="ref-lot-titre">
+            <header className="ref-modale-head">
+              <h2 className="ref-modale-titre" id="ref-lot-titre">Confirmer l’action groupée ?</h2>
+            </header>
+            <div className="ref-modale-corps">
+              <p>{actionLot} {selection.length} valeur(s) cochée(s) sur cette page de « {entree.libelle} » ?</p>
+              {actionLot === 'supprimer' && <p>
+                Les valeurs isolées seront supprimées définitivement ; celles déjà utilisées
+                seront archivées ou désactivées sans effacer leurs liens.
+              </p>}
+              <p>Si une valeur ne peut pas être traitée, le lot entier est annulé.</p>
+            </div>
+            <footer className="ref-modale-pied">
+              <div className="ref-modale-boutons">
+                <button type="button" className="cand-btn-fantome" disabled={envoi}
+                  onClick={() => setActionLot(null)}>Annuler</button>
+                <button type="button" className="ref-btn-danger" disabled={envoi}
+                  onClick={confirmerActionLot}>
+                  {envoi ? 'Traitement…' : `Confirmer ${actionLot}`}
+                </button>
+              </div>
+            </footer>
+          </div>
+        </div>
+      )}
+
+      {suppression && (
+        <div className="ref-modale-voile" role="presentation">
+          <div className="ref-modale ref-modale--etroite" role="alertdialog" aria-modal="true">
+            <header className="ref-modale-head">
+              <h2 className="ref-modale-titre">{suppression.action === 'archiver' ? 'Archiver cette valeur ?' : 'Supprimer cette valeur ?'}</h2>
+            </header>
+            <div className="ref-modale-corps">
+              <p>
+                <strong>{suppression.libelle}</strong>{' '}
+                {suppression.action === 'archiver' ? (
+                  <>sera <strong>archivée</strong> et pourra être réactivée depuis le filtre « Archivés ».</>
+                ) : (
+                  <>sera <strong>supprimée définitivement</strong> si elle n’est utilisée nulle part.
+                    Si elle est liée à d’autres données, elle sera archivée sans effacer ces liens
+                    {archivageSupporte ? ' et pourra être réactivée.' : ' si ce modèle le permet.'}</>
+                )}
+              </p>
+              <p className="ref-suppression-note">
+                L’opération est contrôlée par le serveur et journalisée. Confirmez uniquement
+                si vous souhaitez retirer cette valeur des opérations courantes.
+              </p>
+            </div>
+            <footer className="ref-modale-pied">
+              <div className="ref-modale-boutons">
+                <button type="button" className="cand-btn-fantome" onClick={() => setSuppression(null)}>
+                  Annuler
+                </button>
+                <button type="button" className="ref-btn-danger" onClick={confirmerSuppression} disabled={envoi}>
+                  {envoi ? 'Traitement…' : suppression.action === 'archiver' ? 'Archiver' : 'Supprimer'}
+                </button>
+              </div>
+            </footer>
+          </div>
+        </div>
+      )}
+
+      {detail && (
+        <div className="ref-modale-voile" role="presentation" onClick={() => setDetail(null)}>
+          <div
+            className="ref-modale"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ref-detail-titre"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="ref-modale-head">
+              <h2 className="ref-modale-titre" id="ref-detail-titre">
+                {detail.libelle}
+                <span>{entree.libelle}</span>
+              </h2>
+              <button
+                type="button"
+                className="ref-modale-fermer"
+                onClick={() => setDetail(null)}
+                aria-label="Fermer"
+              >
+                <i className="bi bi-x-lg" aria-hidden="true"></i>
+              </button>
+            </header>
+            <div className="ref-modale-corps">
+              <div className="ref-detail-badges">
+                {aUnCode && detail.code && <span className="ref-carte-code">{detail.code}</span>}
+                {provenanceSuivie && (
+                  <span className={`ref-fiab ref-fiab--${String(detail.fiabilite).toLowerCase()}`}>
+                    {LIBELLE_FIABILITE[detail.fiabilite] || '—'}
+                  </span>
+                )}
+                <span className={`ref-fiab ${detail.archive ? 'ref-fiab--a_renseigner' : detail.actif ? 'ref-fiab--officiel' : 'ref-fiab--cadrage'}`}>
+                  {detail.archive ? 'Archivé' : detail.actif ? 'Actif' : 'Inactif'}
+                </span>
+              </div>
+              <dl className="ref-detail-grille">
+                {colonnes
+                  .filter((c) => !['code', 'libelle', 'fiabilite'].includes(c.cle))
+                  .map((c) => (
+                    <div className="ref-detail-champ" key={c.cle}>
+                      <dt>{c.libelle}</dt>
+                      <dd>
+                        {typeof detail[c.cle] === 'boolean'
+                          ? (detail[c.cle] ? 'Oui' : 'Non')
+                          : afficherCellule(detail, c.cle)}
+                      </dd>
+                    </div>
+                  ))}
+                {provenanceSuivie && detail.source_document && (
+                  <div className="ref-detail-champ">
+                    <dt>Source documentaire</dt>
+                    <dd>{detail.source_document}</dd>
+                  </div>
+                )}
+                {aUneDescription && detail.description && (
+                  <div className="ref-detail-champ">
+                    <dt>Description</dt>
+                    <dd>{detail.description}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+            <footer className="ref-modale-pied">
+              <div className="ref-modale-boutons">
+                <button type="button" className="cand-btn-fantome" onClick={() => setDetail(null)}>
+                  Fermer
+                </button>
+                {!lectureSeule && (
+                  <button
+                    type="button"
+                    className="cand-btn-principal"
+                    onClick={() => { setDetail(null); ouvrirEdition(detail) }}
+                  >
+                    <i className="bi bi-pencil" aria-hidden="true"></i>
+                    Modifier
+                  </button>
+                )}
+              </div>
+            </footer>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

@@ -1,0 +1,739 @@
+/* ==========================================================================
+   STYLE DÉDIÉ : ÉCRAN EMPLOIS DU TEMPS (GET-INJS) INJS-LMD 2026
+   Inspiré du design de référence « Tableau de bord LMD 2026 »
+   (frontend/src/styles/dashboardEngine.css) : bandeau blanc verre dépoli,
+   plaquette GET-INJS, barre de filtres aérée (labels capitales, champs en
+   pilule), panneaux à en-tête teinté, pastilles de compteur, liste avec
+   état actif en dégradé bleu, tableaux aérés.
+   Tout est préfixé `.edt-*` et scopé sous `.edt-page` : aucun effet de bord
+   sur les autres écrans. Aucune modification de logique métier : uniquement
+   le rendu visuel.
+   ========================================================================== */
+
+/* ── 1. BANDEAU D'ACCUEIL (rappel de .dashboard-greeting-row) ── */
+.edt-page .edt-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding: 1.15rem 1.5rem;
+  margin-bottom: 1.25rem;
+  background: #FFFFFF;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #E9ECF2;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px -5px rgba(7, 27, 58, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.9);
+}
+
+.edt-page .edt-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+/* Plaquette « fil d'Ariane métier » (valeurs de .gen-plaquette / .par-hero-badge). */
+.edt-page .edt-hero-badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal);
+  border: 1px solid var(--injs-border-strong);
+}
+
+.edt-page .edt-hero-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.edt-page .edt-hero-title i {
+  color: var(--injs-blue-royal);
+  font-size: 1.3rem;
+}
+
+.edt-page .edt-hero-title-sub {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #94A3B8;
+  letter-spacing: 0;
+}
+
+.edt-page .edt-hero-intro {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #475569;
+  margin: 0;
+  max-width: 78ch;
+}
+
+.edt-page .edt-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+/* ── 2. BARRE DE FILTRES (rappel de .gen-toolbar) ── */
+.edt-page .edt-toolbar {
+  margin-bottom: 1.25rem;
+}
+
+.edt-page .edt-toolbar .card-body {
+  padding: 1.1rem 1.4rem;
+}
+
+.edt-page .edt-toolbar .form-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+  margin-bottom: 0.4rem;
+}
+
+.edt-page .edt-toolbar .form-select,
+.edt-page .edt-toolbar .form-control {
+  border-radius: 9999px;
+  border: 1px solid #E2E8F0;
+  background-color: #F8FAFC;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #0F172A;
+  padding: 0.5rem 1.1rem;
+}
+
+.edt-page .edt-toolbar .form-select:focus,
+.edt-page .edt-toolbar .form-control:focus {
+  background-color: #FFFFFF;
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
+}
+
+/* ── 3. PANNEAUX (rappel de .gen-panel) ── */
+.edt-page .edt-panel {
+  overflow: hidden;
+}
+
+.edt-page .card-header.edt-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.4rem;
+  border-bottom: 1px solid #EDF1F6;
+  background: rgba(240, 246, 252, 0.55);
+  box-shadow: none;
+}
+
+.edt-page .edt-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--injs-navy);
+  margin: 0;
+}
+
+.edt-page .edt-panel-title i {
+  color: var(--injs-blue-royal);
+}
+
+.edt-page .edt-panel-title.is-danger {
+  color: #B91C1C;
+}
+
+.edt-page .edt-panel-title.is-danger i {
+  color: #EF4444;
+}
+
+.edt-page .edt-count-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  background: var(--injs-blue-pale);
+  color: var(--injs-blue-royal);
+  border: 1px solid var(--injs-border-strong);
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.edt-page .edt-count-pill.is-danger {
+  background: #FEF2F2;
+  color: #DC2626;
+  border-color: #FECACA;
+}
+
+/* ── 4. LISTE DES EMPLOIS DU TEMPS ──
+   Bootstrap n'est pas installé dans ce projet : les utilitaires utilisés par
+   la liste (`.d-flex`, `.justify-content-between`, `.align-items-center`,
+   `.text-truncate`, `.text-muted`, `.d-block`) n'ont aucun effet. Constaté sur
+   capture réelle : le titre et la ligne secondaire se collaient
+   (« … DEMO-G4DEMO-2026-2027 ») et le badge de statut n'était pas aligné à
+   droite. On rétablit ici, sous `.edt-page` uniquement, ce que la liste exige. */
+.edt-page .edt-list .edt-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid #F1F5F9;
+  border-radius: 0;
+  padding: 0.85rem 1.25rem;
+  background: #FFFFFF;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Le bloc titre/secondaire peut se réduire : sans `min-width: 0` un enfant
+   flex refuse de rétrécir et l'ellipse de `.text-truncate` ne s'applique pas. */
+.edt-page .edt-list .edt-item > span:first-child {
+  min-width: 0;
+}
+
+.edt-page .edt-list .edt-item .text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edt-page .edt-list .edt-item .d-block {
+  display: block;
+}
+
+.edt-page .edt-list .edt-item .text-muted {
+  color: var(--injs-text-muted, #64748B);
+}
+
+/* Sur la ligne sélectionnée (fond bleu), le gris de la ligne secondaire
+   devient illisible : on l'éclaircit au lieu de le laisser tel quel. */
+.edt-page .edt-list .edt-item.active .text-muted {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.edt-page .edt-list .edt-item:hover {
+  background: #F7FAFF;
+}
+
+.edt-page .edt-list .edt-item:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(18, 103, 214, 0.35);
+  outline: none;
+}
+
+.edt-page .edt-list .edt-item.active {
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(18, 103, 214, 0.3);
+}
+
+.edt-page .edt-list .edt-item.active .fw-semibold {
+  color: #FFFFFF;
+}
+
+.edt-page .edt-list .edt-item.active .badge {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+/* ── 5. ÉTATS VIDES ── */
+.edt-page .edt-empty {
+  padding: 1.75rem 1rem;
+}
+
+.edt-page .edt-empty i {
+  color: #94A3B8;
+}
+
+.edt-page .edt-empty-panel .card-body {
+  border: 1.5px dashed #D8E2EE;
+  border-radius: 14px;
+  margin: 1rem;
+  background: rgba(240, 246, 252, 0.45);
+}
+
+.edt-page .edt-empty-panel i {
+  color: var(--injs-blue-royal);
+}
+
+/* ── 6. EN-TÊTE DE DÉTAIL DE L'EDT SÉLECTIONNÉ ── */
+.edt-page .edt-detail .card-body {
+  padding: 1.15rem 1.4rem;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAFCFF 100%);
+  border-bottom: 1px solid #EDF1F6;
+}
+
+.edt-page .edt-detail-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--injs-navy);
+  letter-spacing: -0.01em;
+}
+
+.edt-page .edt-detail-meta {
+  font-size: 0.82rem;
+  color: #64748B;
+}
+
+.edt-page .edt-detail .card-footer {
+  background: rgba(240, 246, 252, 0.55);
+  border-top: 1px solid #EDF1F6;
+}
+
+/* ── 7. TABLEAUX AÉRÉS (rappel de .gen-table) ── */
+.edt-page .edt-table {
+  margin: 0;
+}
+
+.edt-page .edt-panel .edt-table thead th {
+  background: #F4F8FC;
+  border-bottom: 1px solid #E6EDF5;
+  color: #64748B;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.7rem 0.9rem;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.edt-page .edt-panel .edt-table tbody td {
+  padding: 0.75rem 0.9rem;
+  vertical-align: middle;
+  font-size: 0.88rem;
+  color: #1E293B;
+}
+
+.edt-page .edt-panel .edt-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.edt-page .edt-panel .edt-table tbody tr:hover {
+  background: #F7FAFF;
+}
+
+.edt-page .edt-panel .edt-table .badge {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* Cellules de la grille hebdomadaire. */
+.edt-page .edt-cell {
+  background: #F8FAFC;
+  border: 1px solid #E6EDF5 !important;
+  border-radius: 10px !important;
+}
+
+.edt-page .edt-panel .edt-table tbody td.table-danger {
+  background: #FEF2F2;
+}
+
+/* ── 8. FORMULAIRE DE CRÉATION (Écran « Nouvel EDT ») ── */
+.edt-page .edt-intro-note {
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1.1rem;
+  background: #F0F6FC;
+  border: 1px solid var(--injs-blue-pale);
+  border-left: 3px solid var(--injs-blue-royal);
+  border-radius: 12px;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.edt-page .edt-form > .card-body {
+  padding: 1.15rem 1.4rem 1.4rem;
+}
+
+.edt-page .edt-form .form-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+  margin-bottom: 0.35rem;
+}
+
+.edt-page .edt-form .form-control,
+.edt-page .edt-form .form-select {
+  border-radius: 10px;
+  border-color: #E2E8F0;
+  background-color: #F8FAFC;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #0F172A;
+}
+
+.edt-page .edt-form .form-control:focus,
+.edt-page .edt-form .form-select:focus {
+  background-color: #FFFFFF;
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
+}
+
+.edt-page .edt-form .form-text {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748B;
+}
+
+.edt-page .edt-form .card-footer {
+  background: rgba(240, 246, 252, 0.55);
+  border-top: 1px solid #EDF1F6;
+  padding: 1rem 1.4rem;
+}
+
+.edt-page .edt-form .btn {
+  border-radius: 9999px;
+  font-weight: 700;
+  padding: 0.5rem 1.25rem;
+}
+
+.edt-page .edt-form .btn-primary {
+  background: linear-gradient(135deg, var(--injs-blue-royal) 0%, var(--injs-blue-royal) 100%);
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(18, 103, 214, 0.3);
+}
+
+/* ── 9. ÉCRAN PRÉSENCES DE SÉANCE (/edt/presences) ── */
+.edt-page .edt-date-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+}
+
+/* La classe utilitaire `.input` de cet écran n’avait aucune définition CSS :
+   on lui donne ici le même habillage que les champs des autres écrans INJS. */
+.edt-page .input {
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+  background-color: #F8FAFC;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #0F172A;
+  padding: 0.5rem 0.9rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.edt-page .input:focus {
+  outline: none;
+  background-color: #FFFFFF;
+  border-color: var(--injs-blue-royal);
+  box-shadow: 0 0 0 3px rgba(18, 103, 214, 0.12);
+}
+
+.edt-page .label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+  margin-bottom: 0.35rem;
+}
+
+/* ── 10. RESPONSIVE ── */
+@media (max-width: 768px) {
+  .edt-page .edt-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .edt-page .edt-hero-actions {
+    width: 100%;
+  }
+
+  .edt-page .edt-hero-actions .btn {
+    flex: 1 1 auto;
+  }
+}
+
+/* ── Exploitation (maquette validée) : en-tête, filtres, chips, grille ───── */
+.edt-page .edt-exploit-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+
+.edt-page .edt-exploit-sur {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--injs-blue-royal);
+}
+
+.edt-page .edt-exploit-titre {
+  margin: 0.15rem 0 0.3rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--injs-navy);
+}
+
+.edt-page .edt-exploit-sous {
+  margin: 0;
+  max-width: 640px;
+  font-size: 0.88rem;
+  color: #54677e;
+  line-height: 1.55;
+}
+
+.edt-page .edt-exploit-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.edt-page .edt-filtres {
+  border: 1px solid #dbe7f5;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px -14px rgba(10, 42, 92, 0.25);
+}
+
+.edt-page .edt-filtre-label {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #54677e;
+  margin-bottom: 0.25rem;
+}
+
+.edt-page .edt-reinit {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--injs-blue-royal);
+  text-decoration: none;
+}
+
+.edt-page .edt-chips-ligne {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin-top: 0.9rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #e8f0fa;
+}
+
+.edt-page .edt-chips-label {
+  flex: none;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #54677e;
+  padding-top: 0.35rem;
+}
+
+.edt-page .edt-chips {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 240px;
+}
+
+.edt-page .edt-chip {
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid #bcd3f0;
+  background: #ffffff;
+  color: var(--injs-navy);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.edt-page .edt-chip:hover { background: var(--injs-blue-pale); }
+
+.edt-page .edt-chip.active {
+  background: linear-gradient(92deg, var(--injs-navy, #0a2a5c), var(--injs-blue-royal));
+  border-color: var(--injs-navy, #0a2a5c);
+  color: #ffffff;
+  box-shadow: 0 8px 16px -8px rgba(10, 42, 92, 0.6);
+}
+
+.edt-page .edt-resume {
+  display: inline-flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.edt-page .edt-resume-item {
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  background: var(--injs-blue-pale);
+  border: 1px solid var(--injs-border-strong);
+  color: var(--injs-blue-royal);
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* Grille hebdomadaire */
+.edt-page .edt-legende {
+  display: inline-flex;
+  gap: 0.9rem;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.72rem;
+  color: #54677e;
+}
+
+.edt-page .edt-legende-item { display: inline-flex; gap: 0.35rem; align-items: center; }
+
+.edt-page .edt-nat {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  background: var(--injs-blue-royal);
+  white-space: nowrap;
+}
+
+.edt-page .edt-nat.nat-cm { background: #0a2a5c; }
+.edt-page .edt-nat.nat-td { background: #14509e; }
+.edt-page .edt-nat.nat-tp { background: #6db3f2; color: #08213f; }
+.edt-page .edt-nat.nat-eval { background: #7c3aed; }
+.edt-page .edt-nat.nat-autre { background: #64748b; }
+
+.edt-page .edt-grille-table th {
+  background: #eef4fb;
+  color: var(--injs-navy);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border-bottom: 2px solid #6db3f2;
+  padding: 0.55rem 0.6rem;
+}
+
+.edt-page .edt-grille-table td {
+  border: 1px solid #e3edf9;
+  padding: 0.45rem;
+  min-width: 150px;
+  vertical-align: top;
+}
+
+.edt-page .edt-grille-creneau-td {
+  min-width: 86px !important;
+  background: #f7fbff;
+}
+
+.edt-page .edt-grille-creneau-code {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #54677e;
+}
+
+.edt-page .edt-grille-creneau-heure {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--injs-navy);
+  white-space: nowrap;
+}
+
+.edt-page .edt-cellule-conflit { background: #fdf1f1; }
+
+.edt-page .edt-seance {
+  background: linear-gradient(180deg, #fbfdff, #f0f6fd);
+  border: 1px solid #d3e4f7;
+  border-left: 3px solid var(--injs-blue-royal);
+  border-radius: 9px;
+  padding: 0.45rem 0.55rem;
+  margin-bottom: 0.4rem;
+}
+
+.edt-page .edt-seance-haut {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.edt-page .edt-seance-code {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--injs-blue-royal);
+  letter-spacing: 0.02em;
+}
+
+.edt-page .edt-seance-titre {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--injs-navy);
+  line-height: 1.35;
+  margin-top: 0.2rem;
+}
+
+.edt-page .edt-seance-meta { font-size: 0.7rem; color: #5f7295; }
+
+.edt-page .edt-seance-actions { display: flex; gap: 0.25rem; margin-top: 0.3rem; }
+
+.edt-page .edt-detail-sous {
+  margin: 0;
+  padding: 0.55rem 1rem 0;
+  font-size: 0.78rem;
+  color: #76879e;
+}
+
+.edt-page .edt-pied {
+  margin: 0.5rem 0 0;
+  text-align: center;
+  font-size: 0.72rem;
+  color: #8fa1b8;
+}
+
+@media print {
+  .edt-page .edt-no-print { display: none !important; }
+  .edt-page .edt-grille-card { box-shadow: none !important; border: 0 !important; }
+}

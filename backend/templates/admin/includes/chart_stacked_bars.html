@@ -1,0 +1,39 @@
+{% load i18n %}
+{% if rows %}
+<div class="dfrc-chart-stacked">
+    {% for row in rows %}
+    <div class="dfrc-chart-stacked-row">
+        <div class="dfrc-chart-stacked-head">
+            <span class="dfrc-chart-stacked-label">{{ row.label }}</span>
+            <span class="dfrc-chart-stacked-meta" title="{{ row.detail }}">{{ row.display }}</span>
+        </div>
+        <div class="dfrc-chart-stacked-track" title="{{ row.detail }}">
+            {% if row.first_pct %}
+            <div
+                class="dfrc-chart-stacked-seg dfrc-chart-stacked-seg--present"
+                style="width: {{ row.first_pct_width }}%"
+            ></div>
+            {% endif %}
+            {% if row.second_pct %}
+            <div
+                class="dfrc-chart-stacked-seg dfrc-chart-stacked-seg--absent"
+                style="width: {{ row.second_pct_width }}%"
+            ></div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    <div class="dfrc-chart-stacked-legend">
+        <span class="dfrc-chart-stacked-legend-item">
+            <span class="dfrc-chart-legend-dot dfrc-chart-stacked-seg--present"></span>
+            {% trans "Présents" %}
+        </span>
+        <span class="dfrc-chart-stacked-legend-item">
+            <span class="dfrc-chart-legend-dot dfrc-chart-stacked-seg--absent"></span>
+            {% trans "Absents" %}
+        </span>
+    </div>
+</div>
+{% else %}
+<p class="dfrc-chart-empty">{% trans "Aucune donnée sur la période." %}</p>
+{% endif %}

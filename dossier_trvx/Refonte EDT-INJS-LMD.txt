@@ -1,0 +1,280 @@
+CPFAE/Sygepcpfae doit être sorti de la logique de conception de l’INJS-LMD. Le rapport ne doit pas chercher à reproduire un « point journalier CPFAE » ni à rattacher les séances INJS à un ancien Module CPFAE.
+
+J’ai vérifié les éléments publics disponibles : l’INJS de Côte d’Ivoire est bien implanté à Marcory et sa mission couvre la formation initiale et continue dans les domaines du sport, de la jeunesse et des loisirs. Les sources publiques montrent également plusieurs cycles/formations, notamment les formations de Professeurs de Collège et différentes options/spécialités.  
+
+Le bon modèle métier pour INJS-LMD
+
+Il faut raisonner à partir de cette chaîne :
+
+Année académique → Formation → Parcours/Spécialité → Promotion → Groupe → Maquette pédagogique → UE → ECUE → Enseignant → Séance → Salle → Présence
+
+et non :
+
+RefFormation CPFAE → Module CPFAE → point journalier CPFAE
+
+1. Référentiels / Scolarité
+
+La Scolarité définit notamment :
+
+* année académique ;
+* cycles et niveaux ;
+* formations ;
+* mentions/parcours/spécialités ;
+* promotions ;
+* étudiants ;
+* groupes ;
+* inscriptions pédagogiques.
+
+La formation doit donc être l’élément qui donne le contexte académique de l’étudiant.
+
+2. Formations & pédagogie
+
+La maquette pédagogique décrit ce qui doit être enseigné :
+
+Formation → semestre/période → UE → ECUE → crédits → volume horaire → enseignant(s).
+
+L’ECUE est particulièrement important : c’est lui qui représente l’objet pédagogique réellement enseigné.
+
+3. Enseignants / intervenants
+
+Un enseignant n’est pas simplement « affecté à un module ».
+
+Il doit pouvoir être associé à :
+
+* une formation ;
+* une UE/ECUE ;
+* une période ;
+* un groupe ;
+* éventuellement une activité pratique ou sportive ;
+* une séance planifiée.
+
+Cela permet de savoir qui devait assurer quoi, pour quel groupe et quand.
+
+4. Groupes
+
+Le groupe devient une vraie unité d’exécution pédagogique.
+
+Exemple :
+
+Licence / Formation X
+→ Niveau L1
+→ Promotion 2026
+→ Groupe A
+
+La même formation peut donc avoir plusieurs groupes ayant des séances différentes.
+
+5. EDT
+
+L’EDT n’est pas simplement un calendrier.
+
+Une séance EDT doit être une instance planifiée de l’enseignement :
+
+ECUE + Groupe + Enseignant + Date + Heure début/fin + Salle + activité
+
+avec éventuellement :
+
+* séance normale ;
+* TP ;
+* activité pratique/sportive ;
+* rattrapage ;
+* séance déplacée ;
+* séance annulée ;
+* séance exceptionnelle.
+
+C’est cette séance qui devient la référence pour le badgeage.
+
+6. Présence QR Code
+
+C’est ici que tous les modules convergent.
+
+Pour une séance donnée :
+
+SEANCE
+ ├── Formation
+ ├── Niveau
+ ├── Groupe
+ ├── UE
+ ├── ECUE
+ ├── Enseignant
+ ├── Salle
+ ├── Date/heure
+ └── Zone de badgeage
+
+Puis :
+
+SEANCE
+      ↓
+OUVERTURE DU BADGEAGE
+      ↓
+QR étudiant
+      ↓
+Identification étudiant
+      ↓
+Vérification inscription/groupe
+      ↓
+Vérification séance
+      ↓
+Vérification temporelle
+      ↓
+Vérification géographique
+      ↓
+PRESENCE
+
+Le système doit donc pouvoir répondre sans ambiguïté :
+
+Quel étudiant était attendu à quelle séance, avec quel groupe, quel enseignant, dans quelle salle et à quel moment ?
+
+7. Badgeage automatique
+
+Le QR ne doit pas créer une présence « dans le vide ».
+
+Il doit être rattaché à la séance active.
+
+Par exemple :
+
+Etudiant
+   ↓
+Groupe
+   ↓
+Séance active
+   ↓
+ECUE
+   ↓
+Enseignant
+   ↓
+Salle / zone
+   ↓
+Badge QR
+   ↓
+Présence enregistrée
+
+La présence peut alors porter :
+
+* étudiant ;
+* séance ;
+* date/heure ;
+* type de badgeage ;
+* position GPS ;
+* distance de la zone autorisée ;
+* appareil ;
+* QR/token utilisé ;
+* résultat de validation.
+
+8. Badgeage manuel / forcé
+
+Le manuel ne doit pas contourner la séance.
+
+Il doit corriger une situation réelle :
+
+étudiant présent mais badgeage QR impossible.
+
+Donc :
+
+Séance
+  ↓
+Étudiant attendu
+  ↓
+Présence manuelle
+  ↓
+Motif obligatoire
+  ↓
+Agent/enseignant ayant effectué la correction
+  ↓
+Traçabilité
+
+Cela permet ensuite de distinguer :
+
+* présence QR normale ;
+* présence QR refusée ;
+* présence manuelle justifiée ;
+* absence ;
+* anomalie de badgeage.
+
+9. Géolocalisation
+
+La géolocalisation doit être attachée au contexte de séance, pas au concept CPFAE.
+
+Elle peut servir à vérifier :
+
+« L’étudiant qui tente de badger est-il réellement dans la zone autorisée pour cette séance ? »
+
+Il faut cependant conserver l’arbitrage métier déjà identifié :
+
+zone obligatoire avec refus hors zone ou zone utilisée comme alerte.
+
+Il ne faut pas inventer cette règle.
+
+⸻
+
+Ce que cela change dans l’audit
+
+Le point A-13 doit être reformulé.
+
+Il ne faut plus demander :
+
+« Comment rattacher une séance EDT CPFAE à un Module du socle ? »
+
+mais :
+
+« Quelle est la relation canonique entre une séance EDT INJS-LMD et la structure pédagogique INJS (Formation → Parcours/Spécialité → Groupe → UE → ECUE), afin que la séance constitue la référence commune pour l’exécution des enseignements et la gestion des présences QR ? »
+
+C’est une question beaucoup plus fondamentale.
+
+Architecture fonctionnelle cible
+
+                    RÉFÉRENTIELS
+                         │
+                         ▼
+                    SCOLARITÉ
+                         │
+             ┌───────────┴───────────┐
+             ▼                       ▼
+       FORMATIONS              ÉTUDIANTS
+             │                       │
+             ▼                       ▼
+       MAQUETTES                  GROUPES
+             │                       │
+        ┌────┴────┐                  │
+        ▼         ▼                  │
+       UE       ECUE ◄───────────────┘
+        │         │
+        └────┬────┘
+             ▼
+        ENSEIGNANTS
+             │
+             ▼
+            EDT
+             │
+             ▼
+           SÉANCE
+        ┌────┼───────────┐
+        ▼    ▼           ▼
+     GROUPE ECUE      ENSEIGNANT
+        │
+        ▼
+   SALLE / ZONE
+        │
+        ▼
+   BADGEAGE QR
+    ┌────┴─────┐
+    ▼          ▼
+AUTOMATIQUE   MANUEL
+    │          │
+    └────┬─────┘
+         ▼
+      PRÉSENCE
+         │
+         ▼
+ STATISTIQUES / SUIVI
+
+Conséquence importante
+
+Le vrai objet pivot n’est donc pas Module.
+
+C’est Séance, elle-même construite à partir de la structure pédagogique INJS.
+
+Ainsi, les modules Scolarité, Formations, Étudiants, Enseignants, EDT, Présences QR, Géolocalisation et Statistiques travaillent sur le même événement métier.
+
+Et c’est précisément cette architecture qu’il faut maintenant confronter au dépôt backend-injs : modèles existants → relations → API → frontend → workflows QR → données de test → tests E2E.
+
+Je recommande donc de corriger le rapport d’audit avant de lancer le Lot 1, afin que les prochaines corrections ne soient plus contaminées par l’héritage CPFAE/Sygepcpfae.  

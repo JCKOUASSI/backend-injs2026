@@ -1,0 +1,243 @@
+
+
+
+
+Oui. Pour l’INJS, je te conseille de modéliser les volumes horaires au niveau “Formation → Catégorie → Module”, avec une distinction entre heures de cours magistraux (CM), travaux dirigés (TD), travaux pratiques (TP), stages/pratiques professionnelles et évaluations.
+
+Important : les volumes ci-dessous constituent une proposition de référentiel exploitable dans ton application INJS, et non une reproduction certifiée d’une maquette officielle INJS 2026. Ils sont conçus pour être cohérents avec une gestion LMD et avec les besoins de planification des EDT.
+
+1. Éducation et Motricité — Licence
+
+Module	CM	TD	TP	Stage	Total
+Anatomie et physiologie	20	10	15	—	45 h
+Biomécanique	15	10	15	—	40 h
+Psychologie du développement	20	10	—	—	30 h
+Psychologie du sport	15	10	—	—	25 h
+Sociologie du sport	15	10	—	—	25 h
+Pédagogie générale	20	15	—	—	35 h
+Didactique de l’EPS	20	20	20	—	60 h
+Athlétisme	10	10	30	—	50 h
+Gymnastique	10	10	30	—	50 h
+Sports collectifs	10	15	35	—	60 h
+Sports de combat	10	10	30	—	50 h
+Natation	10	10	30	—	50 h
+Méthodologie de l’entraînement	15	15	20	—	50 h
+Évaluation des apprentissages	15	15	10	—	40 h
+TIC appliquées à l’EPS	10	10	15	—	35 h
+Stage pédagogique	—	—	—	100	100 h
+
+Volume indicatif Licence : ~725 h
+
+⸻
+
+2. Éducation et Motricité — Master
+
+Module	CM	TD	TP	Stage	Total
+Sciences avancées de la motricité	20	15	15	—	50 h
+Physiologie avancée de l’exercice	20	10	20	—	50 h
+Biomécanique avancée	15	10	20	—	45 h
+Psychologie de la performance	15	15	10	—	40 h
+Didactique approfondie de l’EPS	20	20	20	—	60 h
+Ingénierie de formation	15	20	10	—	45 h
+Méthodologie de recherche	20	20	10	—	50 h
+Statistiques appliquées	15	20	15	—	50 h
+Management des organisations sportives	20	15	—	—	35 h
+Technologies numériques appliquées au sport	10	15	20	—	45 h
+Séminaire professionnel	10	20	10	—	40 h
+Stage / mémoire	—	—	—	150	150 h
+
+Volume indicatif Master : ~660 h
+
+⸻
+
+3. Activités Physiques Adaptées — Licence
+
+Module	CM	TD	TP	Stage	Total
+Anatomie fonctionnelle	20	10	15	—	45 h
+Physiologie de l’exercice	20	10	20	—	50 h
+Psychologie	20	15	—	—	35 h
+Handicap et inclusion	20	15	10	—	45 h
+Pathologies et limitations fonctionnelles	25	15	15	—	55 h
+Évaluation motrice	15	15	25	—	55 h
+Rééducation par l’activité physique	15	15	30	—	60 h
+Sport adapté	10	15	35	—	60 h
+Psychomotricité	15	10	25	—	50 h
+Ergonomie	15	10	15	—	40 h
+Méthodologie de recherche	15	15	10	—	40 h
+Stage pratique	—	—	—	120	120 h
+
+Volume indicatif Licence : ~655 h
+
+⸻
+
+4. Activités Physiques Adaptées — Master
+
+Module	CM	TD	TP	Stage	Total
+Physiologie clinique de l’exercice	25	15	20	—	60 h
+Évaluation fonctionnelle avancée	20	15	25	—	60 h
+Activité physique et maladies chroniques	25	15	20	—	60 h
+Réadaptation fonctionnelle	20	15	30	—	65 h
+Sport et handicap	20	15	25	—	60 h
+Prescription d’activité physique	20	20	25	—	65 h
+Méthodologie de recherche	20	20	15	—	55 h
+Biostatistiques	15	20	15	—	50 h
+Management des programmes APA	20	15	—	—	35 h
+Séminaires spécialisés	15	20	15	—	50 h
+Stage / mémoire	—	—	—	150	150 h
+
+Volume indicatif Master : ~710 h
+
+⸻
+
+5. Professorat de Lycée — EPS
+
+Cette formation peut être structurée davantage autour de la formation professionnelle à l’enseignement.
+
+Module	Volume
+Sciences de l’éducation	40 h
+Psychologie de l’apprenant	35 h
+Pédagogie générale	40 h
+Didactique de l’EPS	70 h
+Méthodologie de l’enseignement de l’EPS	60 h
+Anatomie et physiologie	50 h
+Biomécanique	40 h
+Théorie de l’entraînement	50 h
+Athlétisme	50 h
+Gymnastique	50 h
+Sports collectifs	60 h
+Sports de combat	40 h
+Natation	40 h
+Évaluation et notation en EPS	40 h
+Législation scolaire	25 h
+TIC et enseignement	30 h
+Stage pédagogique	200 h
+
+Volume indicatif : ~920 h
+
+⸻
+
+6. Professorat de Lycée — Sport
+
+Module	Volume
+Anatomie fonctionnelle	40 h
+Physiologie de l’exercice	50 h
+Biomécanique	40 h
+Psychologie du sport	35 h
+Théorie de l’entraînement	60 h
+Planification de l’entraînement	50 h
+Préparation physique	60 h
+Évaluation de la performance	50 h
+Management sportif	40 h
+Athlétisme	50 h
+Sports collectifs	60 h
+Sports individuels	50 h
+Sports de combat	40 h
+Natation	40 h
+Secourisme et sécurité	30 h
+Stage professionnel	200 h
+
+Volume indicatif : ~895 h
+
+⸻
+
+7. Professorat de Collège — EPS
+
+Module	Volume
+Pédagogie générale	40 h
+Psychologie de l’enfant et de l’adolescent	40 h
+Didactique de l’EPS	60 h
+Méthodologie de l’enseignement	50 h
+Anatomie	35 h
+Physiologie	40 h
+Athlétisme	45 h
+Gymnastique	45 h
+Sports collectifs	55 h
+Sports de combat	35 h
+Natation	40 h
+Jeux et activités physiques	40 h
+Évaluation des élèves	35 h
+Gestion de classe	30 h
+TIC éducatives	25 h
+Stage pédagogique	150 h
+
+Volume indicatif : ~725 h
+
+⸻
+
+8. Maître(sse) d’Éducation Physique et Sportive
+
+Pour cette catégorie, je recommande une formation davantage professionnelle et pratique, avec moins de théorie que les formations de professorat.
+
+Module	CM	TD	TP	Stage	Total
+Bases d’anatomie	15	10	10	—	35 h
+Bases de physiologie	15	10	15	—	40 h
+Psychologie de l’enfant	20	15	—	—	35 h
+Pédagogie	20	20	10	—	50 h
+Initiation à la didactique EPS	15	15	15	—	45 h
+Athlétisme	5	10	30	—	45 h
+Gymnastique	5	10	30	—	45 h
+Sports collectifs	5	15	35	—	55 h
+Sports de combat	5	10	25	—	40 h
+Natation	5	10	25	—	40 h
+Jeux et activités récréatives	5	10	30	—	45 h
+Sécurité et secourisme	10	10	15	—	35 h
+Encadrement et animation sportive	15	15	20	—	50 h
+Stage pratique	—	—	—	120	120 h
+
+Volume indicatif : ~700 h
+
+⸻
+
+Structure que je recommande pour ton application INJS
+
+Pour ton module Référentiels → Formations / Modules / Catégories, il serait préférable de ne pas enregistrer uniquement “700 h”.
+
+Il faut pouvoir enregistrer :
+
+Formation
+→ Éducation et Motricité — Licence
+
+Catégorie
+→ Étudiant LMD
+
+Module
+→ Anatomie et physiologie
+
+Type d’enseignement
+→ CM / TD / TP / Stage
+
+Volume horaire
+→ 45 h
+
+Répartition
+→ CM = 20 h
+→ TD = 10 h
+→ TP = 15 h
+
+Puis le système calcule automatiquement :
+
+Volume module = CM + TD + TP + Stage
+
+et :
+
+Volume formation = Σ volumes de tous les modules
+
+Cela permettra ensuite à ton module EDT de savoir automatiquement qu’un module de 45 h peut être planifié, par exemple, en séances de 2 h, 3 h ou 4 h, sans dépasser son volume prévu.
+
+Synthèse des volumes proposés
+
+N°	Formation	Volume indicatif
+1	Éducation et Motricité — Licence	725 h
+2	Éducation et Motricité — Master	660 h
+3	Activités Physiques Adaptées — Licence	655 h
+4	Activités Physiques Adaptées — Master	710 h
+5	Professorat de Lycée — EPS	920 h
+6	Professorat de Lycée — Sport	895 h
+7	Professorat de Collège — EPS	725 h
+8	Maître(sse) d’Éducation Physique et Sportive	700 h
+
+Attention : ces chiffres sont des volumes de modélisation/proposition. Pour ton application INJS, je recommande de les considérer comme des valeurs paramétrables plutôt que comme des valeurs réglementaires figées.
+
+
+
+

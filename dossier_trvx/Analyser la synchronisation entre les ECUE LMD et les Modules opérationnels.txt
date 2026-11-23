@@ -1,0 +1,47 @@
+1. ARCHITECTURE ACTUELLE
+- ECUE appartient à une UE/maquette et porte code, intitulé, crédits, coefficient, volumes CM/TD/TP, ordre et un ref_module facultatif.
+- La formation de l’ECUE est indirecte : ECUE → UE → Maquette → RefFormation.
+- RefModule est le référentiel canonique d’un enseignement ; son intitulé est normalisé et unique sans tenir compte de la casse.
+- RefModule est lié en ManyToMany à RefFormation et peut être utilisé par plusieurs Modules opérationnels.
+- Module appartient à une Formation opérationnelle et possède un ref_module facultatif.
+- InscriptionPedagogique relie une InscriptionAdministrative à une ECUE et peut référencer un ModuleParticipant.
+- ModuleParticipant relie le Participant de l’étudiant à un Module opérationnel.
+- La passerelle reçoit explicitement une Formation opérationnelle, recherche ses Modules par ref_module, puis crée les ModuleParticipant manquants.
+
+2. CE QUI FONCTIONNE
+- Le mapping ECUE → RefModule et Module → RefModule évite un rapprochement fragile fondé uniquement sur les intitulés.
+- La contrainte unique de RefModule empêche deux référentiels portant le même intitulé normalisé.
+- ModuleParticipant est unique par couple module/participant ; get_or_create rend la création idempotente.
+- Seules les inscriptions administratives validées peuvent être synchronisées.
+- Les inscriptions pédagogiques abandonnées sont exclues des synchronisations suivantes.
+- Une ligne nouvellement créée par la passerelle reçoit correctement son module_participant.
+- La synchronisation est additive et ne modifie ni Module, ni présences, ni notes, ni finance.
+
+3. PROBLÈMES IDENTIFIÉS
+- ECUE.ref_module est nullable : le mapping n’est pas suffisamment contraint pour garantir la synchronisation.
+- Aucun contrôle ne vérifie que ref_module appartient à la RefFormation de la maquette.
+- RefModule peut correspondre à plusieurs Modules dans une même Formation opérationnelle ; le dictionnaire modules_par_ref n’en conserve qu’un arbitrairement.
+- Aucun lien direct ni contrôle ne relie RefFormation à Formation ; la correspondance dépend entièrement de la Formation fournie par l’appelant.
+- Si ModuleParticipant existe déjà, analyser classe la ligne comme existante mais synchroniser ne renseigne pas InscriptionPedagogique.module_participant.
+- ECUE ne possède aucun champ actif : le cas « désactivé » n’est pas représentable.
+
+4. RISQUES DE DOUBLONS
+- Aucun doublon exact ModuleParticipant n’est possible grâce à unique_together(module, participant).
+- Plusieurs Modules distincts peuvent partager le même RefModule dans une même Formation, notamment selon grade, groupe ou vague.
+- Plusieurs ECUE peuvent pointer vers le même RefModule ; elles peuvent légitimement partager un ModuleParticipant, sans contrainte explicite documentant ce cas.
+- Le Module choisi en cas de plusieurs correspondances dépend de l’ordre de requête et peut varier après évolution des données.
+
+5. RISQUES DE DÉSYNCHRONISATION
+- Créer une ECUE ou une InscriptionPedagogique ne déclenche aucune synchronisation automatique.
+- Modifier ECUE.ref_module ne retire ni ne remplace l’ancien ModuleParticipant déjà lié.
+- Supprimer une ECUE est bloqué si une InscriptionPedagogique la référence ; sinon aucune désinscription opérationnelle n’est effectuée.
+- Passer une InscriptionPedagogique à ABANDONNEE empêche les futurs traitements mais conserve ModuleParticipant et le lien existant.
+- Supprimer une InscriptionPedagogique laisse le ModuleParticipant opérationnel en place.
+
+6. CORRECTIONS RECOMMANDÉES
+- backend/scolarite/passerelle_services.py — détecter plusieurs Modules pour un même ref_module et retourner une ambiguïté au lieu d’en choisir un ; impact : synchronisation déterministe, non destructive.
+- backend/scolarite/passerelle_services.py — valider que la Formation fournie correspond à inscription.ref_formation selon une règle explicite ; impact : empêche les inscriptions dans une mauvaise formation.
+- backend/scolarite/passerelle_services.py — pour une correspondance déjà existante, rattacher aussi module_participant à l’InscriptionPedagogique ; impact : répare les liens manquants sans créer de doublon.
+- backend/scolarite/models.py — ajouter une validation métier ECUE.ref_module ∈ Maquette.ref_formation.modules ; impact : mapping fiable, sans suppression de données.
+- backend/scolarite/models.py — conserver ref_module nullable pour les brouillons mais l’exiger avant activation/utilisation de la maquette ; impact : compatibilité maintenue.
+- backend/scolarite/passerelle_services.py — signaler explicitement les liens devenus obsolètes après modification, abandon ou suppression ; impact : audit fiable sans désinscription automatique.

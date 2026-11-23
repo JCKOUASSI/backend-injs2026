@@ -1,0 +1,110 @@
+name: Validation chaîne de déploiement
+
+# ============================================================================
+# Garde-fou de la chaîne de déploiement INJS-LMD.
+#
+# Exécute, à chaque modification des fichiers de déploiement, les deux
+# scripts de contrôle du dépôt :
+#   * scripts/valider-deploiement-injs.sh — contrôles STATIQUES (YAML,
+#     syntaxe bash de chaque bloc run: et de chaque script distant embarqué,
+#     chaînage entre les workflows, permissions, absence de commande
+#     destructive, refus de latest/stable, SSH strict, anti-injection,
+#     cohérence avec compose/Dockerfile/.env.example/deploy.sh) ;
+#   * scripts/tester-deploiement-injs.sh — tests FONCTIONNELS qui EXÉCUTENT
+#     la logique réelle du workflow (détermination du mode, validation du
+#     tag, comparaison des instantanés de protection, lecture du .env,
+#     sélection du digest amd64, génération du rapport) et les portes de
+#     sécurité de deploy/production/deploy.sh (garde-fou destructif, refus
+#     des tags mutables, analyse du plan de migrations).
+#
+# Aucun de ces deux scripts ne contacte le VPS, Docker Hub ni aucun service
+# externe : ils ne déploient rien et peuvent tourner sur chaque pull request.
+#
+# Permissions minimales : lecture seule du dépôt.
+#
+# ---------------------------------------------------------------------------
+# POURQUOI `pull_request` N'A PAS DE FILTRE `paths`
+# ---------------------------------------------------------------------------
+# Le job ci-dessous est déclaré comme contrôle OBLIGATOIRE sur `main`.
+# Un filtre `paths` sur `pull_request` est INCOMPATIBLE avec ce statut :
+# une PR qui ne touche aucun des chemins filtrés ne déclenche aucun run, donc
+# ne publie aucun statut. Le contrôle requis reste alors en
+# « Expected — Waiting for status to be reported » et, avec
+# « Do not allow bypassing the above settings » activé, la PR devient
+# DÉFINITIVEMENT INFUSIBLE.
+#
+# Le filtre a donc été retiré pour `pull_request` : le contrôle s'exécute et
+# publie son statut sur CHAQUE pull request, quel que soit le fichier modifié.
+# Coût : quelques minutes par PR. Bénéfice : le statut obligatoire est toujours
+# satisfiable, et la chaîne de déploiement est revalidée même sur une PR qui ne
+# la touche pas (elle peut l'impacter indirectement : `backend/config/urls.py`,
+# `Dockerfile`, `frontend/`).
+#
+# Le filtre est CONSERVÉ sur `push` vers `main` (voir plus bas) : après fusion,
+# la validation ne se rejoue que si la chaîne a effectivement changé. Cela ne
+# conditionne aucune fusion, la porte étant évaluée sur la tête de PR.
+#
+# Ne pas réintroduire de filtre `paths` sur `pull_request` tant que ce job est
+# un contrôle requis.
+# ============================================================================
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/deploy-injs-lmd.yml"
+      - "deploy/production/**"
+      - "scripts/valider-deploiement-injs.sh"
+      - "scripts/tester-deploiement-injs.sh"
+  workflow_dispatch:
+
+concurrency:
+  group: validation-deploiement-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  valider:
+    name: Contrôles statiques et tests fonctionnels
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Actions épinglées par SHA complet, comme dans les autres workflows.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12"
+
+      - name: Installer PyYAML et yamllint
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip >/dev/null
+          python -m pip install pyyaml yamllint
+          python -c 'import yaml, yamllint; print("PyYAML", yaml.__version__)'
+          jq --version
+
+      - name: Contrôles statiques de la chaîne
+        run: ./scripts/valider-deploiement-injs.sh
+
+      - name: Tests fonctionnels (sans VPS, sans Docker Hub, sans déploiement)
+        run: ./scripts/tester-deploiement-injs.sh
+
+      - name: Tests du transfert local Mac → VPS (Docker simulé)
+        run: bash ./scripts/tester-deploiement-local.sh
+
+      - name: Synthèse
+        if: always()
+        run: |
+          {
+            echo "## Validation de la chaîne de déploiement INJS-LMD"
+            echo ""
+            echo "Les trois scripts de contrôle ont été exécutés sur cette révision."
+            echo "Aucun déploiement, aucune connexion SSH, aucun appel au registre :"
+            echo "ces contrôles sont purement locaux au runner."
+            echo ""
+            echo "Voir le journal du job pour le détail contrôle par contrôle."
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,170 @@
+PHASE 13 — AUDIT TECHNIQUE DES MODÈLES ET DES DONNÉES EXISTANTES
+
+Nous commençons maintenant le premier lot opérationnel du cahier des charges du tableau de bord décisionnel EDT.
+
+Objectif : identifier les véritables sources de données Django et PostgreSQL avant de développer les statistiques.
+
+L’audit s’appuie sur les 17 parties transmises le 19 novembre 2026 et les résultats des migrations communiqués.
+
+1. État des données déjà identifié
+
+Les résultats de la base examinée sont les suivants :
+
+Indicateur	Résultat
+Inscriptions	3 510
+Formations	17
+ECUE recensés	7
+Affectations EDT historiques	16
+Créneaux sans ECUE renseigné	16
+Tables EDT V2 nouvellement créées	4
+Tables EDT V2 alimentées	0
+
+Les tables suivantes ont notamment été identifiées comme vides :
+
+* edts_executionligne
+* periodeacademique
+* revisioncalendrier
+* verroujour
+
+Ces résultats constituent un point de départ important.
+
+Première conclusion : nous ne disposons pas encore d’une base suffisamment renseignée pour calculer de manière fiable tous les indicateurs d’exécution pédagogique.
+
+2. Audit des modèles Django
+
+Voici la cartographie technique à établir.
+
+Domaine	Modèles ou données	Vérification
+Formations	Formation	Identifiants et rattachements
+Maquettes	UE	Relations pédagogiques
+Maquettes	ECUE	Volumes horaires et UE
+Pédagogie	AffectationPedagogique	Enseignants et ECUE
+EDT	TeachingNeed	Besoins à programmer
+EDT	AffectationCreneau	Créneaux générés
+EDT	Séance	Séances exploitables
+Présences	Modèles de présence	Réalisation effective
+Exécution	ExecutionLigne	Suivi des réalisations
+Calendrier	PeriodeAcademique	Périodes de référence
+
+Il faudra relever les noms exacts des champs, leurs types, leurs contraintes et leurs relations.
+
+3. Premier problème critique : le rattachement UE/ECUE
+
+La migration edts.0012_affectationcreneau_ecue a introduit un rattachement direct entre un créneau et un ECUE.
+
+C’est une évolution importante.
+
+Nous devons cependant vérifier deux mécanismes :
+
+Mécanisme A :
+
+AffectationCreneau
+       |
+       v
+      ECUE
+
+Mécanisme B :
+
+Séance
+   |
+   v
+Affectation pédagogique
+   |
+   v
+  ECUE
+
+Le tableau de bord devra pouvoir exploiter le rattachement direct et le rattachement historique, tout en détectant les éventuelles contradictions.
+
+4. Deuxième problème critique : la mesure des enseignements réalisés
+
+C’est probablement le point le plus important du futur tableau de bord.
+
+Il faut distinguer trois sources :
+
+Source	Information recherchée
+Maquette pédagogique	Volume horaire prévu
+EDT	Volume horaire programmé
+Présences et exécution	Volume horaire réellement réalisé
+
+La table edts_executionligne étant signalée comme vide, nous devons déterminer si les données de réalisation sont déjà disponibles dans les modèles de présence ou si un mécanisme complémentaire sera nécessaire.
+
+Il serait incorrect de calculer le taux d’exécution uniquement à partir des séances publiées.
+
+5. Troisième problème : les API existantes
+
+Les éléments transmis identifient notamment :
+
+* edts/api.py
+* edts/api_interop.py
+
+Nous devons établir quelles API permettent déjà de récupérer :
+
+* Les formations.
+* Les UE et ECUE.
+* Les enseignants.
+* Les groupes.
+* Les séances.
+* Les créneaux.
+* Les présences.
+* Les volumes horaires.
+
+Les nouvelles API statistiques devront réutiliser les services existants chaque fois que possible.
+
+Il faut éviter de créer des mécanismes de calcul concurrents.
+
+6. Matrice des anomalies et des travaux
+
+Référence	Sujet	État
+AUD-001	Rattachement direct ECUE	Migration identifiée
+AUD-002	Rattachement pédagogique historique	À consolider
+AUD-003	Séances sans ECUE	Anomalie constatée
+AUD-004	Volumes horaires des maquettes	À cartographier
+AUD-005	Volumes horaires programmés	À cartographier
+AUD-006	Volumes horaires réalisés	Source à identifier
+AUD-007	Historique des exécutions	Tables identifiées, vides
+AUD-008	Permissions statistiques	À cartographier
+AUD-009	API statistiques existantes	À inventorier
+AUD-010	Occupation des salles	Sources à identifier
+
+7. Décision d’architecture
+
+Je recommande de ne pas créer immédiatement une nouvelle application Django.
+
+Il faut d’abord déterminer si les applications existantes statistiques, edts, formations et presences possèdent déjà les services nécessaires.
+
+Le tableau de bord devra être une couche de consultation et d’analyse, sans dupliquer les données pédagogiques.
+
+8. Résultat attendu du LOT 1
+
+À la fin de cet audit, nous devons disposer de cinq documents techniques :
+
+1. Cartographie complète des modèles Django.
+2. Dictionnaire des champs et relations.
+3. Cartographie des sources de données statistiques.
+4. Inventaire des API et permissions.
+5. Matrice des anomalies et corrections nécessaires.
+
+Aucune modification de code ou de base de données pendant cet audit.
+
+⸻
+
+PHASE 14 — CONCEPTION DU MODÈLE DE DONNÉES STATISTIQUES
+
+Après l’audit, nous passerons à la conception du modèle statistique.
+
+Cette phase devra notamment définir :
+
+* Les dimensions Formation, Année académique, Semestre, UE et ECUE.
+* Les indicateurs de programmation.
+* Les indicateurs de réalisation.
+* Les indicateurs de charge des enseignants.
+* Les indicateurs d’occupation des salles.
+* Les mécanismes d’actualisation des statistiques.
+
+Le modèle devra permettre de produire des statistiques cohérentes sans altérer les données opérationnelles.
+
+Prochaine livraison
+
+La prochaine étape concrète sera la cartographie détaillée des modèles Django et des relations PostgreSQL, avec les noms réels des champs, les clés étrangères et les sources de chaque indicateur.
+
+Je peux également préparer la matrice technique de correspondance entre les modèles existants et les  indicateurs du tableau de bord.

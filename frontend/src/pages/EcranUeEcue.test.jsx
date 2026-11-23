@@ -1,0 +1,749 @@
+/**
+ * Écran UE / ECUE — CRUD et cycle de vie.
+ *
+ * Ces tests portent sur ce que l'écran promet à l'utilisateur : on peut créer,
+ * modifier et supprimer une UE et un ECUE ; les seuls statuts proposés sont
+ * Brouillon, Activé et Désactivé ; une maquette validée gèle l'écran ; un rôle
+ * sans droit d'écriture ne voit aucun bouton qui échouerait côté serveur.
+ *
+ * Le serveur reste seul juge : quand il refuse, l'écran affiche son refus sans
+ * maquiller l'état.
+ */
+import {
+  describe, it, expect, beforeEach, afterEach, vi,
+} from 'vitest'
+import {
+  render, screen, fireEvent, waitFor, cleanup, within,
+} from '@testing-library/react'
+
+vi.mock('@/services/api', async (importOriginal) => {
+  const actual = await importOriginal()
+  const mod = await import('@/test/utils/mockApi')
+  return { ...actual, default: mod.default, setSessionExpiredCallback: vi.fn() }
+})
+vi.mock('@/utils/downloadFile', () => ({ downloadFile: vi.fn() }))
+
+import { apiController } from '@/test/utils/mockApi'
+import { AllProviders } from '@/test/utils/renderWithProviders'
+import { downloadFile } from '@/utils/downloadFile'
+import EcranUeEcue from './EcranUeEcue'
+
+const MAQUETTE_BROUILLON = {
+  id: 1,
+  ref_formation: 'Éducation et motricité',
+  niveau: 'L1',
+  libelle: 'Éducation et motricité — L1',
+  statut: 'BROUILLON',
+  niveau_id: 1,
+  annee_academique: '2026-2027',
+  version: 1,
+}
+
+const MAQUETTE_VALIDEE = {
+  id: 2,
+  ref_formation: 'Éducation et motricité',
+  niveau: 'L1',
+  libelle: 'Éducation et motricité — L1 (validée)',
+  statut: 'VALIDEE',
+  niveau_id: 1,
+  annee_academique: '2025-2026',
+  version: 1,
+}
+
+const UE = {
+  id: 10,
+  code: 'EM-S1-UE01',
+  intitule: 'Sciences de la vie et de la santé',
+  credits: 6,
+  ordre: 1,
+  statut: 'BROUILLON',
+  caractere: 'OBLIGATOIRE',
+  famille_code: 'SB',
+  semestre: { id: 1, libelle: 'S1' },
+  ecues: [
+    {
+      id: 100,
+      code: 'EM-S1-UE01-EC01',
+      intitule: 'Anatomie descriptive',
+      credits: 0,
+      coefficient: 1,
+      volume_cm: 0,
+      volume_td: 0,
+      volume_tp: 0,
+      ordre: 1,
+      statut: 'BROUILLON',
+    },
+  ],
+}
+
+const ADMIN = { id: 1, username: 'admin', role: 'ADMIN' }
+const ENSEIGNANT = { id: 2, username: 'prof', role: 'ENSEIGNANT' }
+
+function monter({ utilisateur = ADMIN, ues = [UE], maquettes = [MAQUETTE_BROUILLON] } = {}) {
+  apiController.setMe({ ...utilisateur, is_active: true })
+  apiController.setRoute('/scolarite/maquettes/', maquettes)
+  apiController.setRoute('/scolarite/annee-courante/', {
+    annee: { id: 9, libelle: '2026-2027' },
+  })
+  apiController.setRoute('/scolarite/ref/annees/', [{ id: 9, libelle: '2026-2027' }])
+  apiController.setRoute('/scolarite/ref/formations/', [{ id: 3, intitule: 'Éducation et motricité' }])
+  apiController.setRoute('/scolarite/ref/niveaux/', [{ id: 1, code: 'L1' }])
+  apiController.setRoute('/scolarite/familles/', [{ id: 7, code: 'SB', libelle: 'Sciences biomédicales' }])
+  apiController.setRoute('/scolarite/ref/semestres/', [{ id: 1, libelle: 'S1' }, { id: 2, libelle: 'S2' }])
+  apiController.setRoute(/^\/scolarite\/maquettes\/\d+\/ues\/$/, () => ues)
+  return render(<EcranUeEcue />, {
+    wrapper: ({ children }) => <AllProviders authUser={utilisateur}>{children}</AllProviders>,
+  })
+}
+
+const attendreEcran = () => screen.findByTestId('ligne-ue-10')
+
+beforeEach(() => {
+  window.localStorage.clear()
+})
+
+afterEach(() => {
+  cleanup()
+  apiController.reset()
+  vi.restoreAllMocks()
+})
+
+describe('affichage et lecture', () => {
+  it('affiche la maquette, ses UE et les ECUE de l’UE sélectionnée', async () => {
+    monter()
+    expect(await attendreEcran()).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Maquettes' })).toBeInTheDocument()
+    expect(screen.getByText('Sciences de la vie et de la santé')).toBeInTheDocument()
+    // Le panneau ECUE suit la sélection par défaut (première UE).
+    expect(await screen.findByTestId('ligne-ecue-100')).toBeInTheDocument()
+    expect(screen.getByTestId('etat-maquette')).toHaveTextContent('Brouillon — contenu modifiable')
+  })
+
+  it('sélectionne le brouillon de l’année courante avant une maquette historique', async () => {
+    const historique = {
+      ...MAQUETTE_BROUILLON,
+      id: 7,
+      annee_academique: '2024-2025',
+    }
+    const courante = { ...MAQUETTE_BROUILLON, id: 8 }
+    monter({ maquettes: [historique, courante] })
+    await attendreEcran()
+    expect(screen.getByTestId('maquette-selection-8')).toBeChecked()
+    expect(screen.getByTestId('maquette-affichee')).toHaveTextContent('2026-2027')
+  })
+
+  it('préfère une maquette officielle au brouillon de démonstration par défaut', async () => {
+    const demo = {
+      ...MAQUETTE_BROUILLON,
+      id: 7,
+      libelle: 'Maquette [Exemple] — Éducation et motricité',
+    }
+    const officielle = { ...MAQUETTE_BROUILLON, id: 8, statut: 'ACTIVE' }
+    monter({ maquettes: [demo, officielle] })
+    await attendreEcran()
+    expect(screen.getByTestId('maquette-selection-8')).toBeChecked()
+    expect(screen.getByTestId('maquette-affichee')).toHaveTextContent('Éducation et motricité')
+  })
+
+  it('sélectionne toutes les maquettes ou un sous-ensemble à visualiser', async () => {
+    const seconde = { ...MAQUETTE_BROUILLON, id: 3, niveau: 'L2', version: 2 }
+    monter({ maquettes: [MAQUETTE_BROUILLON, seconde] })
+    await attendreEcran()
+
+    fireEvent.click(screen.getByTestId('tout-cocher-maquettes'))
+    expect(screen.getByTestId('tout-cocher-maquettes')).toBeChecked()
+    expect(screen.getByTestId('compte-selection-maquettes')).toHaveTextContent('2/2')
+    expect(screen.getByTestId('visualiser-maquette')).toBeDisabled()
+
+    fireEvent.click(screen.getByTestId('maquette-selection-1'))
+    expect(screen.getByTestId('compte-selection-maquettes')).toHaveTextContent('1/2')
+    fireEvent.click(screen.getByTestId('visualiser-maquette'))
+    expect(screen.getByTestId('maquette-affichee')).toHaveTextContent('L2')
+  })
+
+  it('identifie clairement les maquettes de démonstration', async () => {
+    const demo = {
+      ...MAQUETTE_BROUILLON,
+      libelle: 'Maquette [Exemple] — Éducation et motricité',
+    }
+    monter({ maquettes: [demo] })
+    await attendreEcran()
+    expect(screen.getByRole('checkbox', { name: /démonstration/i })).toBeInTheDocument()
+    expect(screen.getByTestId('badge-maquette-demo')).toHaveTextContent('non officielles')
+  })
+
+  it('ne propose que les trois statuts du référentiel', async () => {
+    monter()
+    await attendreEcran()
+    // Une UE brouillon ne peut aller que vers « Activé ».
+    const boutons = screen.getAllByTestId(/^ue-statut-/)
+    expect(boutons).toHaveLength(1)
+    expect(boutons[0]).toHaveAttribute('data-testid', 'ue-statut-ACTIVE-10')
+    expect(within(boutons[0]).queryByText(/Désactiv/)).toBeNull()
+  })
+
+  it('filtre les UE par code ou intitulé', async () => {
+    monter()
+    await attendreEcran()
+    fireEvent.change(screen.getByTestId('recherche-ue'), { target: { value: 'introuvable' } })
+    await waitFor(() => expect(screen.queryByTestId('ligne-ue-10')).toBeNull())
+    fireEvent.change(screen.getByTestId('recherche-ue'), { target: { value: 'EM-S1' } })
+    await waitFor(() => expect(screen.getByTestId('ligne-ue-10')).toBeInTheDocument())
+  })
+
+  it('affiche « — » plutôt que 0 pour un crédit d’ECUE non publié', async () => {
+    monter()
+    await attendreEcran()
+    const carte = await screen.findByTestId('ligne-ecue-100')
+    // Carte ECUE : ni les crédits ni les volumes non publiés ne deviennent 0.
+    expect(within(carte).getByText('— ECTS')).toBeInTheDocument()
+    expect(carte.querySelector('.uex-volumes-vide')).toHaveTextContent('—')
+  })
+
+  it('affiche la synthèse premium de la maquette et les barres de volumes', async () => {
+    const ueAvecVolumes = {
+      ...UE,
+      ecues: [{ ...UE.ecues[0], credits: 3, volume_cm: 12, volume_td: 8, volume_tp: 6 }],
+    }
+    const { container } = monter({ ues: [ueAvecVolumes] })
+    await attendreEcran()
+    // Synthèse calculée : barre de contexte, 4 indicateurs, volumes agrégés.
+    expect(container.querySelector('.uex-toolbar')).not.toBeNull()
+    expect(container.querySelectorAll('.uex-kpi')).toHaveLength(4)
+    expect(screen.getByText('26 h')).toBeInTheDocument()
+    const carte = await screen.findByTestId('ligne-ecue-100')
+    expect(carte.querySelector('.uex-volumes-barre')).not.toBeNull()
+    expect(within(carte).getByText(/CM 12 · TD 8 · TP 6/)).toBeInTheDocument()
+    expect(within(carte).getByText('3 ECTS')).toBeInTheDocument()
+    expect(screen.getByTestId('volumes-a-confirmer')).toHaveTextContent('provenance des volumes affichés reste à confirmer')
+  })
+})
+
+describe('gestion de la liste des maquettes', () => {
+  it('crée une maquette depuis le bouton de la liste', async () => {
+    monter()
+    await attendreEcran()
+    apiController.setRoute('/scolarite/maquettes/creer/', { id: 5, version: 2 })
+    fireEvent.click(screen.getByTestId('creer-maquette'))
+
+    const dialog = await screen.findByTestId('formulaire-maquette')
+    await screen.findByRole('option', { name: '2026-2027' })
+    fireEvent.change(screen.getByTestId('annee-maquette'), { target: { value: '9' } })
+    fireEvent.change(screen.getByTestId('formation-maquette'), { target: { value: '3' } })
+    fireEvent.change(screen.getByTestId('niveau-maquette'), { target: { value: '1' } })
+    fireEvent.change(screen.getByTestId('libelle-maquette'), { target: { value: 'Parcours renforcé' } })
+    fireEvent.submit(dialog.querySelector('form'))
+
+    await waitFor(() => expect(
+      apiController.findCall('post', '/scolarite/maquettes/creer/'),
+    ).toBeTruthy())
+    expect(apiController.lastBody('post')).toMatchObject({
+      annee_academique_id: 9,
+      ref_formation_id: 3,
+      niveau_id: 1,
+      libelle: 'Parcours renforcé',
+    })
+  })
+
+  it('modifie la maquette brouillon sélectionnée', async () => {
+    monter()
+    await attendreEcran()
+    fireEvent.click(screen.getByTestId('modifier-maquette'))
+    const dialog = await screen.findByTestId('formulaire-maquette')
+    fireEvent.change(screen.getByTestId('libelle-maquette'), { target: { value: 'Libellé modifié' } })
+    fireEvent.change(screen.getByTestId('commentaire-maquette'), { target: { value: 'Correction' } })
+    fireEvent.submit(dialog.querySelector('form'))
+
+    await waitFor(() => expect(
+      apiController.findCall('patch', '/scolarite/maquettes/1/modifier/'),
+    ).toBeTruthy())
+    expect(apiController.lastBody('patch')).toEqual({
+      libelle: 'Libellé modifié',
+      commentaire_validation: 'Correction',
+    })
+  })
+
+  it('supprime une maquette brouillon vide après confirmation', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    monter({ maquettes: [{ ...MAQUETTE_BROUILLON, nb_ue: 0 }] })
+    await attendreEcran()
+    expect(screen.getByTestId('supprimer-maquette')).toBeEnabled()
+    fireEvent.click(screen.getByTestId('supprimer-maquette'))
+    await waitFor(() => expect(apiController.findCall('delete', '/scolarite/maquettes/1/')).toBeTruthy())
+  })
+
+  it('exporte la sélection et importe un fichier après prévisualisation', async () => {
+    monter()
+    await attendreEcran()
+    apiController.api.getBlob.mockResolvedValueOnce({
+      blob: new Blob(['export']),
+      fileName: 'maquettes.csv',
+    })
+    fireEvent.click(screen.getByTestId('export-maquettes-csv'))
+    await waitFor(() => expect(apiController.api.getBlob).toHaveBeenCalledWith(
+      '/scolarite/maquettes/export/csv/?ids=1',
+    ))
+    expect(downloadFile).toHaveBeenCalled()
+
+    let appelsImport = 0
+    apiController.setRoute('/scolarite/maquettes/import/csv/', () => {
+      appelsImport += 1
+      return appelsImport === 1
+        ? { valide: true, empreinte: 'empreinte-test', maquettes: 1, ues: 1, ecues: 1 }
+        : { detail: 'Import confirmé.' }
+    })
+    const fichier = new File(['csv'], 'maquettes.csv', { type: 'text/csv' })
+    fireEvent.change(screen.getByTestId('fichier-import-maquettes'), {
+      target: { files: [fichier] },
+    })
+    fireEvent.click(screen.getByTestId('previsualiser-import-maquettes'))
+    expect(await screen.findByTestId('apercu-import-maquettes')).toHaveTextContent('Aperçu valide')
+    fireEvent.click(screen.getByTestId('confirmer-import-maquettes'))
+
+    await waitFor(() => {
+      const appels = apiController.api.post.mock.calls.filter(
+        ([path]) => path === '/scolarite/maquettes/import/csv/',
+      )
+      expect(appels).toHaveLength(2)
+    })
+    expect(await screen.findByText('Import confirmé.')).toBeInTheDocument()
+  })
+})
+
+describe('lecture impossible ou vide', () => {
+  it('affiche le refus du serveur au lieu d’un écran vide', async () => {
+    apiController.setMe({ ...ADMIN, is_active: true })
+    apiController.setRoute('/scolarite/maquettes/', () => Promise.reject({
+      response: {
+        status: 403,
+        data: { detail: "Vous n'avez pas la permission d'effectuer cette action." },
+      },
+    }))
+    render(<EcranUeEcue />, {
+      wrapper: ({ children }) => <AllProviders authUser={ADMIN}>{children}</AllProviders>,
+    })
+    const alerte = await screen.findByTestId('erreur-maquettes')
+    expect(alerte).toHaveTextContent("Vous n'avez pas la permission d'effectuer cette action.")
+    // Rien n'est proposé puisque rien n'est lisible : pas de bouton mort.
+    expect(screen.queryByTestId('nouvelle-ue')).toBeNull()
+  })
+
+  it('explique l’absence de maquette plutôt que de rester muet', async () => {
+    monter({ maquettes: [] })
+    expect(await screen.findByTestId('aucune-maquette')).toHaveTextContent(/Aucune maquette/)
+  })
+})
+
+describe('création', () => {
+  it('crée une UE et envoie un corps typé à l’API', async () => {
+    monter()
+    await attendreEcran()
+    fireEvent.click(screen.getByTestId('nouvelle-ue'))
+    const formulaire = await screen.findByTestId('formulaire-element')
+    fireEvent.change(screen.getByTestId('element-code'), { target: { value: 'EM-S1-UE99' } })
+    fireEvent.change(screen.getByTestId('element-intitule'), { target: { value: 'Nouvelle UE' } })
+    fireEvent.change(screen.getByTestId('element-credits'), { target: { value: '4' } })
+    fireEvent.submit(formulaire)
+
+    await waitFor(() => expect(apiController.findCall('post', '/scolarite/maquettes/1/ues/')).toBeTruthy())
+    expect(apiController.lastBody('post')).toMatchObject({
+      code: 'EM-S1-UE99',
+      intitule: 'Nouvelle UE',
+      credits: 4,
+      semestre_id: 1,
+    })
+    // Le formulaire se referme, le message de confirmation s'affiche.
+    await waitFor(() => expect(screen.queryByTestId('formulaire-element')).toBeNull())
+    expect(await screen.findByText('Élément créé.')).toBeInTheDocument()
+  })
+
+  it('refuse la soumission sans code ni intitulé, sans appeler l’API', async () => {
+    monter()
+    await attendreEcran()
+    fireEvent.click(screen.getByTestId('nouvelle-ue'))
+    const formulaire = await screen.findByTestId('formulaire-element')
+    fireEvent.change(screen.getByTestId('element-code'), { target: { value: '   ' } })
+    fireEvent.submit(formulaire)
+    expect(await screen.findByTestId('element-erreur')).toHaveTextContent('Le code est obligatoire')
+    expect(apiController.findCall('post', '/scolarite/maquettes/1/ues/')).toBeFalsy()
+  })
+
+  it('affiche le refus du serveur dans le formulaire, sans perdre la saisie', async () => {
+    monter()
+    await attendreEcran()
+    // Le serveur refuse : on simule le rejet HTTP 400 tel qu'axios le renvoie.
+    apiController.api.post.mockRejectedValueOnce({
+      response: {
+        status: 400,
+        data: { error: 'Le code « EM-S1-UE01 » existe déjà dans cette maquette.' },
+      },
+    })
+    fireEvent.click(screen.getByTestId('nouvelle-ue'))
+    const formulaire = await screen.findByTestId('formulaire-element')
+    fireEvent.change(screen.getByTestId('element-code'), { target: { value: 'EM-S1-UE01' } })
+    fireEvent.change(screen.getByTestId('element-intitule'), { target: { value: 'Doublon' } })
+    fireEvent.submit(formulaire)
+
+    expect(await screen.findByTestId('element-erreur'))
+      .toHaveTextContent('existe déjà dans cette maquette')
+    // La saisie est conservée : rien n'est perdu à cause d'un refus.
+    expect(screen.getByTestId('element-intitule')).toHaveValue('Doublon')
+  })
+})
+
+describe('sélection d’une UE', () => {
+  it('ouvre les ECUE de l’UE choisie au clavier, via un bouton nommé', async () => {
+    monter({
+      ues: [
+        UE,
+        {
+          ...UE,
+          id: 11,
+          code: 'EM-S1-UE02',
+          intitule: 'Sciences humaines',
+          ecues: [{ ...UE.ecues[0], id: 200, code: 'EM-S1-UE02-EC01', intitule: 'Psychologie' }],
+        },
+      ],
+    })
+    await attendreEcran()
+    // Par défaut, la première UE est ouverte.
+    expect(await screen.findByTestId('ligne-ecue-100')).toBeInTheDocument()
+    const choix = screen.getByRole('button', { name: /Afficher les ECUE de l’UE EM-S1-UE02/ })
+    expect(choix).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(choix)
+    expect(await screen.findByTestId('ligne-ecue-200')).toBeInTheDocument()
+    expect(screen.queryByTestId('ligne-ecue-100')).toBeNull()
+  })
+})
+
+describe('ECUE : création, modification, suppression', () => {
+  it('crée un ECUE sous l’UE sélectionnée', async () => {
+    monter()
+    await attendreEcran()
+    fireEvent.click(screen.getByTestId('nouvel-ecue'))
+    const formulaire = await screen.findByTestId('formulaire-element')
+    fireEvent.change(screen.getByTestId('element-code'), { target: { value: 'EM-S1-UE01-EC02' } })
+    fireEvent.change(screen.getByTestId('element-intitule'), { target: { value: 'Physiologie' } })
+    fireEvent.change(screen.getByTestId('element-volume_cm'), { target: { value: '18' } })
+    fireEvent.submit(formulaire)
+
+    await waitFor(() => expect(
+      apiController.findCall('post', '/scolarite/ues/10/ecues/'),
+    ).toBeTruthy())
+    expect(apiController.lastBody('post')).toMatchObject({
+      code: 'EM-S1-UE01-EC02',
+      intitule: 'Physiologie',
+      volume_cm: 18,
+    })
+  })
+
+  it('modifie un ECUE en brouillon par PATCH', async () => {
+    monter()
+    await attendreEcran()
+    await screen.findByTestId('ligne-ecue-100')
+    fireEvent.click(screen.getByTestId('modifier-ecue-100'))
+    await screen.findByTestId('formulaire-element')
+    fireEvent.change(screen.getByTestId('element-intitule'), { target: { value: 'Anatomie (corrigé)' } })
+    fireEvent.submit(screen.getByTestId('formulaire-element'))
+
+    await waitFor(() => expect(apiController.findCall('patch', '/scolarite/ecues/100/')).toBeTruthy())
+    expect(apiController.lastBody('patch')).toMatchObject({ intitule: 'Anatomie (corrigé)' })
+  })
+
+  it('supprime un ECUE après confirmation', async () => {
+    monter()
+    await attendreEcran()
+    await screen.findByTestId('ligne-ecue-100')
+    fireEvent.click(screen.getByTestId('supprimer-ecue-100'))
+    const boite = await screen.findByRole('dialog')
+    fireEvent.click(within(boite).getByText('Supprimer'))
+    await waitFor(() => expect(
+      apiController.findCall('delete', '/scolarite/ecues/100/'),
+    ).toBeTruthy())
+  })
+
+  it('change le statut d’un ECUE via son endpoint dédié', async () => {
+    monter()
+    await attendreEcran()
+    await screen.findByTestId('ligne-ecue-100')
+    apiController.setRoute('/scolarite/ecues/100/statut/', { id: 100, statut: 'ACTIVE' })
+    fireEvent.click(screen.getByTestId('ecue-statut-ACTIVE-100'))
+    await waitFor(() => expect(
+      apiController.findCall('post', '/scolarite/ecues/100/statut/'),
+    ).toBeTruthy())
+    expect(apiController.lastBody('post')).toEqual({ statut: 'ACTIVE' })
+  })
+})
+
+describe('modification et statuts', () => {
+  it('modifie une UE en brouillon par PATCH', async () => {
+    monter()
+    await attendreEcran()
+    fireEvent.click(screen.getByTestId('modifier-ue-10'))
+    await screen.findByTestId('formulaire-element')
+    fireEvent.change(screen.getByTestId('element-intitule'), { target: { value: 'Intitulé corrigé' } })
+    fireEvent.submit(screen.getByTestId('formulaire-element'))
+
+    await waitFor(() => expect(apiController.findCall('patch', '/scolarite/ues/10/')).toBeTruthy())
+    expect(apiController.lastBody('patch')).toMatchObject({ intitule: 'Intitulé corrigé' })
+    expect(await screen.findByText('Modification enregistrée.')).toBeInTheDocument()
+  })
+
+  it('active une UE puis propose sa désactivation', async () => {
+    monter()
+    await attendreEcran()
+    apiController.setRoute('/scolarite/ues/10/statut/', { id: 10, statut: 'ACTIVE' })
+    fireEvent.click(screen.getByTestId('ue-statut-ACTIVE-10'))
+    await waitFor(() => expect(
+      apiController.findCall('post', '/scolarite/ues/10/statut/'),
+    ).toBeTruthy())
+    expect(apiController.lastBody('post')).toEqual({ statut: 'ACTIVE' })
+    expect(await screen.findByText('Statut modifié.')).toBeInTheDocument()
+  })
+
+  it('annonce les ECUE désactivées en cascade par le serveur', async () => {
+    monter()
+    await attendreEcran()
+    apiController.setRoute('/scolarite/ues/10/statut/', {
+      id: 10,
+      statut: 'DESACTIVEE',
+      ecues_desactivees: [{ id: 100, code: 'EM-S1-UE01-EC01' }],
+    })
+    fireEvent.click(screen.getByTestId('ue-statut-ACTIVE-10'))
+    expect(await screen.findByText(/L’ECUE active a été désactivée avec l’UE\./))
+      .toBeInTheDocument()
+  })
+
+  it('affiche le refus de transition renvoyé par le serveur', async () => {
+    monter()
+    await attendreEcran()
+    apiController.api.post.mockRejectedValueOnce({
+      response: { status: 409, data: { error: 'Transition ACTIVE → BROUILLON interdite.' } },
+    })
+    fireEvent.click(screen.getByTestId('ue-statut-ACTIVE-10'))
+    expect(await screen.findByText('Transition ACTIVE → BROUILLON interdite.'))
+      .toBeInTheDocument()
+  })
+
+  it('n’affiche aucune action d’écriture sur une maquette validée', async () => {
+    monter({ maquettes: [MAQUETTE_VALIDEE] })
+    expect(await screen.findByTestId('maquette-verrouillee')).toBeInTheDocument()
+    expect(screen.queryByTestId('nouvelle-ue')).toBeNull()
+    expect(screen.queryByTestId('nouvel-ecue')).toBeNull()
+    expect(screen.queryByTestId('modifier-ue-10')).toBeNull()
+    expect(screen.queryByTestId(/^ue-statut-/)).toBeNull()
+  })
+})
+
+describe('suppression', () => {
+  it('supprime une UE après confirmation explicite', async () => {
+    monter({ ues: [{ ...UE, ecues: [] }] })
+    await attendreEcran()
+    fireEvent.click(screen.getByTestId('supprimer-ue-10'))
+    const boite = await screen.findByRole('dialog')
+    fireEvent.click(within(boite).getByText('Supprimer'))
+    await waitFor(() => expect(apiController.findCall('delete', '/scolarite/ues/10/')).toBeTruthy())
+    expect(await screen.findByText('Élément supprimé.')).toBeInTheDocument()
+  })
+
+  it('ne supprime rien si l’utilisateur annule', async () => {
+    monter({ ues: [{ ...UE, ecues: [] }] })
+    await attendreEcran()
+    fireEvent.click(screen.getByTestId('supprimer-ue-10'))
+    const boite = await screen.findByRole('dialog')
+    fireEvent.click(within(boite).getByText('Annuler'))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(apiController.findCall('delete', '/scolarite/ues/10/')).toBeFalsy()
+  })
+
+  it('relaie le refus de suppression du serveur (UE portant des ECUE)', async () => {
+    monter()
+    await attendreEcran()
+    apiController.api.delete.mockRejectedValueOnce({
+      response: { data: { error: 'Suppression refusée : cette UE porte 1 ECUE.' } },
+    })
+    fireEvent.click(screen.getByTestId('supprimer-ue-10'))
+    const boite = await screen.findByRole('dialog')
+    fireEvent.click(within(boite).getByText('Supprimer'))
+    expect(await screen.findByText('Suppression refusée : cette UE porte 1 ECUE.'))
+      .toBeInTheDocument()
+  })
+})
+
+describe('rôles', () => {
+  it('un rôle sans droit d’écriture consulte sans bouton de gestion', async () => {
+    monter({ utilisateur: ENSEIGNANT })
+    expect(await attendreEcran()).toBeInTheDocument()
+    expect(screen.queryByTestId('nouvelle-ue')).toBeNull()
+    expect(screen.queryByTestId('nouvel-ecue')).toBeNull()
+    expect(screen.queryByTestId('modifier-ue-10')).toBeNull()
+    expect(screen.queryByTestId('supprimer-ue-10')).toBeNull()
+    expect(screen.queryByTestId(/^ue-statut-/)).toBeNull()
+    // La consultation reste complète : les ECUE sont visibles.
+    expect(await screen.findByTestId('ligne-ecue-100')).toBeInTheDocument()
+  })
+})
+
+describe('clonage d’une maquette gelée (demande 03/11)', () => {
+  it('clone la maquette validée et bascule sur la version brouillon éditable', async () => {
+    const clone = { ...MAQUETTE_VALIDEE, id: 3, statut: 'BROUILLON' }
+    // Liste mutable passée dès le montage : le refetch après clonage la
+    // relit et y découvre le clone (le mock conserve la première route).
+    const liste = [MAQUETTE_VALIDEE]
+    monter({ maquettes: liste })
+    apiController.setRoute('/scolarite/maquettes/2/cloner/', () => {
+      liste.push(clone)
+      return clone
+    })
+    expect(await screen.findByTestId('maquette-verrouillee')).toBeInTheDocument()
+    expect(screen.queryByTestId('nouvelle-ue')).toBeNull()
+
+    fireEvent.click(screen.getByTestId('cloner-maquette'))
+    await waitFor(() => {
+      expect(apiController.findCall('post', '/scolarite/maquettes/2/cloner/')).toBeTruthy()
+    })
+    // Le clone est sélectionné : les actions d'écriture deviennent visibles.
+    expect(await screen.findByTestId('nouvelle-ue')).toBeInTheDocument()
+    expect(await screen.findByText(/Version brouillon créée par clonage/)).toBeInTheDocument()
+  })
+
+  it('un rôle sans droit d’écriture ne voit pas le bouton de clonage', async () => {
+    monter({ utilisateur: ENSEIGNANT, maquettes: [MAQUETTE_VALIDEE] })
+    expect(await screen.findByTestId('maquette-verrouillee')).toBeInTheDocument()
+    expect(screen.queryByTestId('cloner-maquette')).toBeNull()
+  })
+})
+
+describe('sélection multiple des UE (demande 03/11)', () => {
+  const UE2 = { ...UE, id: 11, code: 'EM-S1-UE02', intitule: 'Sciences humaines et sociales', ecues: [] }
+  const UE3 = { ...UE, id: 12, code: 'EM-S1-UE03', intitule: 'Sciences de l’intervention', ecues: [] }
+
+  it('coche individuelle, partielle puis activation en masse', async () => {
+    monter({ ues: [UE, UE2, UE3] })
+    await attendreEcran()
+    // Aucune barre tant que rien n'est coché.
+    expect(screen.queryByTestId('barre-actions-ue')).toBeNull()
+
+    fireEvent.click(screen.getByTestId('cocher-ue-10'))
+    fireEvent.click(screen.getByTestId('cocher-ue-11'))
+    expect(await screen.findByTestId('barre-actions-ue')).toBeInTheDocument()
+    expect(screen.getByText('2 UE sélectionnées')).toBeInTheDocument()
+    // Sélection partielle : la case « tout cocher » est indéterminée.
+    expect(screen.getByTestId('tout-cocher-ue').indeterminate).toBe(true)
+
+    apiController.setRoute('/scolarite/ues/10/statut/', { id: 10, statut: 'ACTIVE' })
+    apiController.setRoute('/scolarite/ues/11/statut/', { id: 11, statut: 'ACTIVE' })
+    fireEvent.click(screen.getByTestId('masse-ue-activer'))
+    await waitFor(() => {
+      expect(apiController.findCall('post', '/scolarite/ues/10/statut/')).toBeTruthy()
+      expect(apiController.findCall('post', '/scolarite/ues/11/statut/')).toBeTruthy()
+    })
+    expect(apiController.findCall('post', '/scolarite/ues/12/statut/')).toBeFalsy()
+    expect(await screen.findByText(/Activation groupée : 2 UE traitées\./)).toBeInTheDocument()
+  })
+
+  it('tout cocher sélectionne les UE affichées, tout désélectionner vide', async () => {
+    monter({ ues: [UE, UE2, UE3] })
+    await attendreEcran()
+    fireEvent.click(screen.getByTestId('tout-cocher-ue'))
+    expect(await screen.findByText('3 UE sélectionnées')).toBeInTheDocument()
+    expect(screen.getByTestId('tout-cocher-ue').checked).toBe(true)
+    fireEvent.click(screen.getByTestId('masse-ue-effacer'))
+    await waitFor(() => expect(screen.queryByTestId('barre-actions-ue')).toBeNull())
+  })
+
+  it('suppression en masse après confirmation explicite', async () => {
+    monter({ ues: [UE2, UE3] })
+    await screen.findByTestId('ligne-ue-11')
+    fireEvent.click(screen.getByTestId('tout-cocher-ue'))
+    fireEvent.click(await screen.findByTestId('masse-ue-supprimer'))
+    const boite = await screen.findByRole('dialog')
+    expect(within(boite).getByText(/Supprimer les 2 UE sélectionnées/)).toBeInTheDocument()
+    fireEvent.click(within(boite).getByText('Supprimer la sélection'))
+    await waitFor(() => {
+      expect(apiController.findCall('delete', '/scolarite/ues/11/')).toBeTruthy()
+      expect(apiController.findCall('delete', '/scolarite/ues/12/')).toBeTruthy()
+    })
+    expect(await screen.findByText(/Suppression groupée : 2 UE traitées\./)).toBeInTheDocument()
+  })
+})
+
+describe('sélection multiple des ECUE (demande 03/11)', () => {
+  it('coche un ECUE et le désactive en masse (ignoré si transition non autorisée)', async () => {
+    monter()
+    await attendreEcran()
+    expect(await screen.findByTestId('ligne-ecue-100')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('cocher-ecue-100'))
+    expect(await screen.findByText('1 ECUE sélectionnée')).toBeInTheDocument()
+    // ECUE en brouillon : « Désactiver » n'est pas une transition autorisée.
+    fireEvent.click(screen.getByTestId('masse-ecue-desactiver'))
+    expect(await screen.findByText(/1 ignorée \(transition non autorisée\)/)).toBeInTheDocument()
+    expect(apiController.findCall('post', '/scolarite/ecues/100/statut/')).toBeFalsy()
+  })
+})
+
+describe('visibilité sur maquette gelée (demande 03/11 — retour utilisateur)', () => {
+  it('montre les cases verrouillées et le bouton d’édition, puis tout s’active après clonage', async () => {
+    const clone = { ...MAQUETTE_VALIDEE, id: 3, statut: 'BROUILLON' }
+    const liste = [MAQUETTE_VALIDEE]
+    monter({ maquettes: liste })
+    apiController.setRoute('/scolarite/maquettes/2/cloner/', () => {
+      liste.push(clone)
+      return clone
+    })
+    expect(await screen.findByTestId('maquette-verrouillee')).toBeInTheDocument()
+    await attendreEcran()
+    // Les cases à cocher sont VUES (mais verrouillées) et le bouton
+    // « Passer en mode édition » est présent dans la barre d'outils.
+    const caseUe = screen.getByTestId('cocher-ue-10')
+    expect(caseUe).toBeInTheDocument()
+    expect(caseUe.disabled).toBe(true)
+    expect(screen.getByTestId('tout-cocher-ue').disabled).toBe(true)
+    expect(screen.getByTestId('cloner-maquette-barre')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('cloner-maquette-barre'))
+    // Après clonage, les UE se rechargent de façon asynchrone : le bouton
+    // « Nouvelle UE » est déjà présent avant le retour de la liste.
+    await waitFor(() => expect(screen.getByTestId('cocher-ue-10')).toBeEnabled())
+    fireEvent.click(screen.getByTestId('cocher-ue-10'))
+    expect(await screen.findByTestId('barre-actions-ue')).toBeInTheDocument()
+  })
+
+  it('un gestionnaire ouvre l’écran directement sur la copie brouillon', async () => {
+    const copie = { ...MAQUETTE_VALIDEE, id: 3, version: 2, statut: 'BROUILLON' }
+    monter({ maquettes: [MAQUETTE_VALIDEE, copie] })
+    // La maquette présélectionnée est la copie de travail (id 3).
+    expect(await screen.findByTestId('nouvelle-ue')).toBeInTheDocument()
+    expect(screen.getByTestId('maquette-selection-3')).toBeChecked()
+    expect(screen.getByTestId('maquette-affichee')).toHaveTextContent('v2')
+  })
+})
+
+describe('visualisation d’une maquette gelée', () => {
+  it('visualise la version officielle choisie sans remplacer la sélection par son brouillon', async () => {
+    const officielle = { ...MAQUETTE_VALIDEE, id: 2, statut: 'ACTIVE', version: 1 }
+    const copie = { ...MAQUETTE_VALIDEE, id: 3, statut: 'BROUILLON', version: 2 }
+    monter({ maquettes: [officielle, copie] })
+    await attendreEcran()
+    expect(screen.getByTestId('maquette-selection-3')).toBeChecked()
+    fireEvent.click(screen.getByTestId('maquette-selection-3'))
+    fireEvent.click(screen.getByTestId('maquette-selection-2'))
+    fireEvent.click(screen.getByTestId('visualiser-maquette'))
+    expect(screen.getByTestId('maquette-affichee')).toHaveTextContent('v1')
+    expect(await screen.findByTestId('maquette-verrouillee')).toBeInTheDocument()
+    expect(screen.queryByText(/copie brouillon/)).not.toBeInTheDocument()
+  })
+
+  it('un rôle en lecture seule peut visualiser une maquette sélectionnée sans actions d’écriture', async () => {
+    const officielle = { ...MAQUETTE_VALIDEE, id: 2, statut: 'ACTIVE', version: 1 }
+    const copie = { ...MAQUETTE_VALIDEE, id: 3, statut: 'BROUILLON', version: 2 }
+    monter({ utilisateur: ENSEIGNANT, maquettes: [officielle, copie] })
+    await attendreEcran()
+    fireEvent.click(screen.getByTestId('maquette-selection-3'))
+    fireEvent.click(screen.getByTestId('maquette-selection-2'))
+    fireEvent.click(screen.getByTestId('visualiser-maquette'))
+    expect(screen.getByTestId('maquette-affichee')).toHaveTextContent('v1')
+    expect(screen.queryByTestId('nouvelle-ue')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('cocher-ue-10')).not.toBeInTheDocument()
+  })
+})

@@ -1,0 +1,131 @@
+/* Garde-fous d'affichage : erreur fatale au rendu et erreur globale.
+   Objectif unique — ne jamais laisser une page blanche sans explication. */
+
+.erreur-fatale {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: #f4f6fb;
+}
+
+.erreur-fatale-carte {
+  width: 100%;
+  max-width: 46rem;
+  background: #fff;
+  border: 1px solid #e1e6f0;
+  border-radius: 14px;
+  padding: 1.4rem 1.6rem;
+  box-shadow: 0 10px 30px rgba(20, 32, 64, 0.08);
+  color: #1f2a44;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.erreur-fatale-carte h1 {
+  margin: 0 0 0.6rem;
+  font-size: 1.25rem;
+  color: #8a1f1f;
+}
+
+.erreur-fatale-carte p {
+  margin: 0 0 0.75rem;
+  font-size: 0.93rem;
+  line-height: 1.55;
+}
+
+.erreur-fatale-message {
+  padding: 0.7rem 0.9rem;
+  background: #fdecec;
+  border: 1px solid #f3b4b4;
+  border-radius: 10px;
+  color: #8a1f1f;
+  word-break: break-word;
+}
+
+.erreur-fatale-carte details {
+  margin-bottom: 0.9rem;
+}
+
+.erreur-fatale-carte summary {
+  cursor: pointer;
+  font-size: 0.86rem;
+  color: #5b6478;
+}
+
+.erreur-fatale-carte pre {
+  margin: 0.5rem 0 0;
+  padding: 0.7rem;
+  max-height: 14rem;
+  overflow: auto;
+  background: #0f172a;
+  color: #e8eefc;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.erreur-fatale-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.erreur-fatale-actions button {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #283a87;
+  background: #283a87;
+  color: #fff;
+  cursor: pointer;
+}
+
+.erreur-fatale-actions button + button {
+  background: #fff;
+  color: #283a87;
+}
+
+.erreur-fatale-actions button:focus-visible {
+  outline: 3px solid #7f8fd6;
+  outline-offset: 2px;
+}
+
+/* Bandeau des erreurs asynchrones (hors rendu React). */
+.bandeau-erreur-globale {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  z-index: 11000;
+  max-width: min(46rem, calc(100vw - 2rem));
+  padding: 0.65rem 2.4rem 0.65rem 0.9rem;
+  background: #8a1f1f;
+  color: #fff;
+  border-radius: 10px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.bandeau-erreur-globale button {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.4rem;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.2rem 0.35rem;
+}
+
+@media (forced-colors: active) {
+  .erreur-fatale-carte,
+  .bandeau-erreur-globale {
+    border: 1px solid CanvasText;
+  }
+}

@@ -1,0 +1,313 @@
+================================================================================
+ PROMPT MAITRE GROUPE — A TRANSMETTRE A L'AGENT DE BUILD (ARENA / AGENT MODE)
+ Mission : implémenter GET INJS APP dans backend-injs2026, de bout en bout,
+ sans bug, sans détour, avec validation finale verte.
+================================================================================
+
+CONTEXTE ET SOURCES
+-------------------
+Tu interviens sur le dépôt backend-injs2026 (application LMD de l'INJS d'Abidjan,
+Marcory — Côte d'Ivoire). Les sources de vérité sont les 11 fichiers du dossier
+"dossier_trvx" :
+  - Mise en oeuvre GET-INJS 2026 - Proposition Arena.txt
+  - Mise en oeuvre de la GET-INJS 2026.txt
+  - Formations et Modules INJS.txt
+  - Processus expert A → Z de génération des emplois du temps INJS-LMD.txt
+  - Liste des Bâtiments, salles et espaces de formation de l'INJS.txt
+  - INJS D'ABIDJAN — RÉFÉRENTIEL EXHAUSTIF DE L'OFFRE DE FORMATION2.xlsx
+  - RÉFÉRENTIEL EXHAUSTIF DE L'OFFRE DE FORMATION.docx
+  - référentiel des infrastructures de l'INJS d'Abidjan.docx
+  - MISSION PRIORITAIRE CONCEVOIR, DÉVELOPPER, TESTER ET INTÉGRER GET INJS APP.txt
+  - Referentiels_de_l_INJS_Tableau_de_bordOKOKOK.pdf
+  - Modèle fonctionnel de référence backend-injs2026.pdf
+ et du sous-dossier "develop-get-injs-timetable-module"
+
+OBJECTIF
+--------
+Livrer un module "GET INJS APP" (gestion + génération des emplois du temps LMD)
+intégré à backend-injs2026 et capable de :
+  1) générer tous les emplois du temps d'une année académique par filière,
+     formation, niveau, groupe, vague et semestre, pour >= 3 500 étudiants
+     inscrits via le parcours académique de l'application ;
+  2) importer un fichier externe (CSV/XLSX) de 3 500 à 14 000 inscrits et
+     générer malgré tout tous les emplois du temps, même si le parcours LMD
+     n'a jamais été créé (pas de groupe, pas de vague, pas de maquette) ;
+  3) livrer un document "Conception-GET-INJS.txt" téléchargeable contenant tout
+     le processus et toutes les commandes d'implémentation ;
+  4) isoler les fichiers du module dans un dossier "get-injs-app" à la racine ;
+  5) garantir que l'application backend dans son ensemble reste verte, propre et
+     fonctionnelle (healthcheck, typecheck, build, aucune régression).
+
+CONTRAINTES TECHNIQUES
+----------------------
+- Socle réel déclaré par le prompt : Next.js App Router + React + PostgreSQL +
+  Drizzle ORM. NOTE D'EXÉCUTION (2026-11-04) : le socle réel du dépôt est
+  Django (API REST) + React + base SQLite de démonstration/PostgreSQL ; le
+  module est donc implémenté dans l'app Django `edts` avec une architecture
+  en couches équivalente (domaine pur dans backend/edts/moteur, API dans
+  backend/edts/api_*, interface React dans frontend/src/pages). Voir
+  get-injs-app/README.md pour la correspondance complète des livrables.
+- Ne modifie AUCUNE table existante : préfixe toutes les tables du module par
+  gi_ et crée des index sur (année, semestre, formation), (groupe), (salle).
+- Aucun secret en dur. Types JSONB explicitement typés. TypeScript strict sans
+  aucun "any" implicite.
+- Toute nouvelle dépendance passe par l'outil d'installation (pas d'édition
+  manuelle de package.json). xlsx est autorisé pour la lecture des classeurs.
+- Le moteur de génération est pur, déterministe (graine), testable et ne
+  dépend ni du framework ni de la base.
+
+LIVRABLES ATTENDUS
+------------------
+A. Référentiels normalisés dans get-injs-app/data/referentiel.ts :
+   filières (STAPS, STASE), 8 formations (EM, ES, MS, APA, AND, LOI, ECJP, GER),
+   5 vagues, 100 groupes (~3 474 places), 9 bâtiments, 100 salles, enseignants,
+   maquettes couvrant S1 à S10 pour chaque formation, créneaux et jours.
+   Les maquettes officielles publiées sont conservées ; les maquettes manquantes
+   utilisent un canevas LMD paramétrable explicitement tracé.
+B. Tables gi_ : années, filières, formations, bâtiments, salles, vagues,
+   groupes, enseignants, modules, module_enseignants, étudiants, inscriptions,
+   emplois_du_temps, séances, generation_runs, import_jobs, app_meta.
+C. Domaine get-injs-app/lib : types.ts, engine.ts, import-parser.ts.
+D. API : seed, generation (POST/GET), import (POST/GET modèle), export CSV,
+   artifacts/conception, health.
+E. Interface : tableau de bord, emplois du temps (grille 6 jours × 5/6 créneaux,
+   filtres, export, impression), génération (formulaire + résultats + historique),
+   import (fichier + options + rapport), étudiants (recherche + pagination),
+   référentiels (filières/formations/maquettes/salles/enseignants/groupes/vagues),
+   conception (documentation + téléchargement).
+F. get-injs-app/Conception-GET-INJS.txt, README.md, modèle CSV d'import,
+   et ce prompt maître.
+
+REGLES METIER A IMPLEMENTER
+---------------------------
+R1 Parcours = filière + formation + niveau + groupe + vague + semestre + année.
+R2 Niveau → semestres : L1 [1,2], L2 [3,4], L3 [5,6], M1 [7,8], M2 [9,10].
+R3 CM mutualisé par promotion, découpé en lots selon la capacité de la plus
+   grande salle compatible ; TD et TP par groupe.
+R4 Une salle, un enseignant et un groupe ne peuvent être réservés deux fois au
+   même créneau ; le contrôle est isolé par semestre (périodes disjointes).
+R5 Capacité de salle >= effectif ; meilleur ajustement ; types préférés par
+   besoin (amphi, cours, td, lab, gym, terrain, dojo, piscine).
+R6 Une séance récurrente par type et par module dans la grille hebdomadaire ;
+   TP limités aux 4 modules les plus pratiques par groupe.
+R7 Quota par groupe : 30 séances/semaine (paramétrable 10 à 36), équilibrage
+   par jour, pénalités de créneaux, option samedi et option pause méridienne.
+R8 Vérification indépendante des conflits après placement, statistiques de
+   couverture et liste des séances non placées avec la raison.
+R9 Régénération idempotente : suppression transactionnelle du périmètre avant
+   insertion, puis nettoyage des en-têtes d'emplois du temps vides.
+
+IMPORT EXTERNE (SITUATION 2)
+----------------------------
+- Formats CSV (séparateur détecté, BOM géré) et XLSX/XLS (première feuille).
+- Alias de colonnes insensibles aux accents/casse : matricule, nom, prénom,
+  sexe, date de naissance, email, téléphone, filière/mention, formation/filière
+  de formation, niveau/niveau d'étude (L1, Licence 2, Master 1, 1..5), groupe,
+  vague/promotion, semestre, statut, année académique.
+- Normalisation : niveaux et semestres, dates FR/ISO, matricule généré si absent.
+- Si autoCreer : créer filière, formation, vague, groupe et maquette par défaut
+  (8 modules par semestre, CM/TD/TP, besoins de salle) puis affecter
+  automatiquement des enseignants disponibles.
+- Inscription unique par (étudiant, année, semestre) ; étudiant unique par
+  matricule ; ON CONFLICT DO NOTHING partout ; recalcul des effectifs.
+- Génération optionnelle après import ; journalisation complète (lignes,
+  importés, ignorés, référentiels créés, erreurs, durée).
+- Limites : 15 Mo, 20 000 lignes, traitement par lots (500 étudiants,
+  800 inscriptions), caches mémoire des référentiels.
+
+SEQUENCE D'EXECUTION ATTENDUE
+-----------------------------
+ 1. Lire le dossier_trvx et extraire les référentiels réels (ne rien inventer
+    lorsque la donnée existe).
+ 2. Créer get-injs-app/{data,lib}, le référentiel normalisé et le domaine.
+ 3. Écrire le schéma Drizzle gi_ puis npx drizzle-kit push --force.
+ 4. Écrire le seed idempotent (verrou consultatif PostgreSQL + marqueur).
+ 5. Écrire le moteur, les services, les routes API.
+ 6. Écrire les pages et composants, avec une identité visuelle universitaire
+    (vert profond, ocre, crème, typographie serif pour les titres).
+ 7. Implémenter l'import CSV/XLSX et la création automatique du parcours.
+ 8. Rédiger Conception-GET-INJS.txt (processus + toutes les commandes).
+ 9. Exécuter et corriger : npx drizzle-kit push, /api/seed,
+    /api/generation, import CSV, import XLSX, export CSV.
+10. Valider : npx next typegen, tsc --noEmit, npm run build, healthcheck,
+    requêtes SQL de conflits (doivent renvoyer 0).
+
+CRITERES D'ACCEPTATION (MESURABLES)
+-----------------------------------
+- >= 3 474 étudiants initialisés, 100 groupes, 100 salles, 136 enseignants,
+  658 modules, 2 filières, 8 formations, 5 vagues.
+- Génération annuelle (S1 à S10) : >= 3 300 séances, 0 conflit salle,
+  0 conflit enseignant, 0 conflit groupe, couverture >= 99 %,
+  durée du moteur < 1 s, persistance < 5 s.
+- Import externe : XLSX de 70 lignes avec en-têtes libres -> 70 importés,
+  formation et groupes créés, génération 100 % couverte.
+- Ré-import du même fichier : 0 nouvel étudiant, 0 doublon d'inscription.
+- Toutes les pages répondent 200 ; /api/health répond { ok: true }.
+- /api/artifacts/conception?download=1 renvoie Conception-GET-INJS.txt.
+- npx next typegen, tsc --noEmit et npm run build passent sans erreur.
+
+BLOCAGES CONNUS ET PARADES (A APPLIQUER DIRECTEMENT)
+----------------------------------------------------
+1. Maquettes incomplètes -> canevas LMD paramétrable, source tracée.
+2. Effectifs vides -> cohorte déterministe alignée sur les effectifs cibles,
+   puis recalcul des effectifs réels.
+3. Semestres qui se chevauchent -> clés d'occupation et quotas incluant le
+   semestre (sinon les sessions paires sont rejetées à tort).
+4. Volumes horaires doublés -> une séance récurrente par type, pas de
+   dédoublement automatique.
+5. Lots CM dimensionnés sur la mauvaise salle -> capacité cible = capacité
+   maximale parmi les salles candidates.
+6. Formations importées sans enseignants -> affectation automatique + fallback
+   global avec équilibrage des charges.
+7. Double seed concurrent -> verrou consultatif transactionnel + marqueur.
+8. Ré-import -> contraintes uniques + ON CONFLICT DO NOTHING.
+9. Fichiers mal formés -> alias, normalisation, rejet ligne par ligne sans
+   interrompre l'import, erreurs horodatées.
+10. Documentation non téléchargeable -> fichier dans get-injs-app + route API
+    de service (inline et attachment).
+11. Tableaux vides typés -> types explicites (jsonb $type, Promise.resolve([])
+    correctement typé).
+12. Base non initialisée au build -> build_and_start, puis push, seed, tests.
+
+TON DE TRAVAIL
+--------------
+Autonome, sans question bloquante : prends la meilleure décision documentée,
+implémente, teste, corrige et termine uniquement lorsque les critères
+d'acceptation sont satisfaits et que build + healthcheck sont verts. Rends
+compte de manière concise : fichiers livrés, commandes exécutées, résultats
+mesurés, limites restantes.
+
+------------------------------------------------------
+
+EXTENSION ARCHITECTURALE OBLIGATOIRE
+
+Préparation de GET INJS APP à l'intégration du futur module de gestion des
+présences QR Code, manuelles et géolocalisées
+
+1. CONTEXTE ET OBJECTIF STRATÉGIQUE — GET INJS APP doit constituer la source
+de référence des séances pédagogiques officiellement planifiées, validées et
+publiées. Le futur module de gestion des présences exploitera ces séances sans
+reconstruire ses propres référentiels. Chaîne cible :
+RÉFÉRENTIELS LMD → EMPLOIS DU TEMPS → SÉANCES PÉDAGOGIQUES → PRÉSENCES QR CODE
+/ MANUELLES → GÉOLOCALISATION → STATISTIQUES ET CONTRÔLE ACADÉMIQUE.
+
+2. RÈGLE ARCHITECTURALE FONDAMENTALE — Une séance pédagogique officiellement
+publiée dans GET INJS APP constitue la référence métier à laquelle devront
+être rattachés tous les futurs enregistrements de présence. Chaque séance
+doit posséder un identifiant technique unique, permanent et exploitable,
+indépendant de sa date, de son horaire, de sa salle ou de son enseignant.
+Une modification de programmation conserve l'identité de la séance ; une
+annulation suivie d'une reprogrammation conserve la traçabilité de
+l'annulation et établit explicitement le lien entre les deux séances.
+
+3. DONNÉES OBLIGATOIRES PAR SÉANCE — Contexte académique (année, filière,
+formation, parcours, cycle/niveau, semestre, promotion, groupe, UE, ECUE,
+maquette) ; encadrement (enseignant responsable, associés, affectations
+pédagogiques) ; programmation (date, début, fin, durée, fuseau, salle, type
+de séance) ; informations opérationnelles (identifiant unique, statuts de
+programmation/validation/publication, date de publication, historique,
+auteurs, motifs, version). Relations et clés étrangères privilégiées, aucun
+champ redondant.
+
+4. CYCLE DE VIE — BROUILLON, SIMULATION, EN_ATTENTE_VALIDATION, VALIDEE,
+PUBLIEE, MODIFIEE, ANNULEE, TERMINEE. Règles : une simulation n'est jamais
+officielle ; une séance non validée ne peut pas ouvrir une session
+officielle de présence ; une séance publiée est exploitable par le module
+de présence ; une séance annulée n'accepte plus de pointage ; toute
+modification d'une séance publiée est historisée et communiquée ; une
+séance associée à des pointages ne se supprime jamais physiquement ; la
+clôture préserve l'historique. Transitions autorisées explicites.
+
+5. ÉTUDIANTS ATTENDUS — retrouvés depuis l'inscription administrative
+validée, l'inscription pédagogique effective lorsqu'elle est requise,
+l'année, la formation/parcours, la promotion, le groupe et le statut
+académique à la date de la séance. Distinction stricte entre admission,
+inscription administrative, inscription pédagogique, parcours et décision
+de jury. Liste jamais figée dans la séance ; instantané historique
+possible à l'ouverture d'une session de présence.
+
+6. QR CODE (préparation) — ouverture d'une session de présence associée à
+une séance, QR dynamique à jetons temporaires signés, non prédictibles et
+renouvelables, jamais de secret dans un QR statique permanent ; le backend
+reste l'autorité de validation. (À concevoir, pas à développer maintenant.)
+
+7. POINTAGE MANUEL (préparation) — pointage par enseignant ou agent
+habilité, correction, régularisation, retard, motif, justificatif,
+validation par un responsable ; chaque intervention tracée (utilisateur,
+date/heure, ancienne et nouvelle valeur, motif, validateur). Traçabilité
+non destructive.
+
+8. GÉOLOCALISATION (préparation) — salles associables à latitude,
+longitude, rayon de tolérance, zone autorisée, type d'espace, statut de
+configuration ; lieux variés (amphithéâtres, cours, installations
+sportives, terrains, extérieurs, sites pédagogiques) ; configuration
+centralisée et réutilisable. La géolocalisation n'est pas une preuve
+absolue de présence : combinaison QR + géolocalisation + contrôle serveur
++ intervention humaine. Une coordonnée GPS n'est pas une donnée
+pédagogique permanente.
+
+9. STATISTIQUES — les données GET doivent permettre au futur module de
+calculer séances programmées/publiées/réalisées/annulées, volumes prévus
+et réalisés, ventilations par filière, formation, promotion, groupe,
+UE/ECUE, enseignant, salle ; et de rapprocher les futures statistiques de
+présence (taux par étudiant/groupe/filière/formation/UE/ECUE, volumes
+suivis, absences justifiées ou non). Aucune statistique de présence
+artificielle dans GET sans données de pointage fiables.
+
+10. API ET INTEROPÉRABILITÉ — ressources : séances publiées, détail complet
+d'une séance, étudiants théoriquement attendus, enseignants affectés,
+salles et configurations géographiques, modifications et annulations,
+historique des publications. Conventions REST du projet, RBAC, validation
+backend, pagination, filtrage, journalisation, gestion d'erreurs,
+documentation. Événements possibles : SEANCE_PUBLIEE, SEANCE_MODIFIEE,
+SEANCE_ANNULEE, SEANCE_REPROGRAMMEE, SEANCE_CLOTUREE. Aucune dépendance
+circulaire entre applications Django.
+
+11. SÉCURITÉ, RBAC ET TRAÇABILITÉ — permissions distinctes : consulter,
+créer, modifier, simuler, générer, valider, publier, annuler une séance,
+consulter les étudiants attendus. Les permissions de pointage ne sont pas
+attribuées automatiquement aux planificateurs. Catalogue de rôles existant.
+Opérations sensibles traçables.
+
+12. CONTRAINTES DE DÉVELOPPEMENT — ne pas développer maintenant : le module
+complet de gestion des présences, le scanner QR Code, le moteur de
+pointage, les traitements de géolocalisation des étudiants ; ne pas créer
+de fausses données de présence ; ne pas dupliquer les référentiels LMD ;
+ne pas créer de seconde gestion des étudiants/enseignants/salles/groupes ;
+ne pas modifier les règles métier de la scolarité ; pas de dépendance
+circulaire ; pas de migration destructive ; pas de réinitialisation des
+bases ; aucune référence à SYGEP-CPFAE ou CPFAE. Préparation proportionnée.
+
+13. TESTS ET CRITÈRES D'ACCEPTATION — unicité et stabilité de
+l'identifiant de séance ; rattachement aux bons référentiels LMD ;
+simulation jamais officielle ; session de présence impossible pour une
+séance non publiée ; identité conservée après modification ordinaire ;
+traçabilité des modifications ; suppression physique impossible avec des
+pointages historiques ; identification des étudiants théoriquement
+attendus ; prise en compte des changements de groupe/d'inscription selon
+leur date d'effet ; disponibilité des informations géographiques des
+salles configurées ; cohérence des permissions métier ; absence de
+dépendance circulaire GET ↔ Présences. Tests réellement exécutés.
+
+14. LIVRABLES ARCHITECTURAUX OBLIGATOIRES — (1) schéma des entités et
+relations des séances ; (2) diagramme du cycle de vie d'une séance ;
+(3) contrat API des futures interactions avec le module de présence ;
+(4) dictionnaire des données utiles au futur pointage ; (5) modèle de
+rattachement des étudiants aux séances ; (6) modèle de configuration
+géographique des salles ; (7) matrice des permissions ; (8) tests
+automatisés d'interopérabilité ; (9) documentation d'intégration pour le
+futur développeur du module de présence ; (10) rapport distinguant
+l'implémenté, le préparé et le restant à traiter.
+   → Livrés dans get-injs-app/INTEGRATION-PRESENCES.md (+ section dédiée
+     de Conception-GET-INJS.txt).
+
+15. DIRECTIVE FINALE — concevoir GET INJS APP comme le premier maillon
+d'un système intégré de gestion académique et pédagogique de l'INJS
+Abidjan. Construire maintenant les fondations nécessaires, sans développer
+prématurément le module suivant. Réutiliser les modèles existants de
+scolarite, formations, admissions, edts ; le futur module Présences-QR
+devra se connecter à GET sans refonte structurelle majeure.
+
+================================================================================
+ FIN DU PROMPT MAITRE — GET INJS APP
+================================================================================

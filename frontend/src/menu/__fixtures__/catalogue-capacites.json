@@ -1,0 +1,60 @@
+{
+ "genere_le": "2026-09-15",
+ "source": "backend/authentication/capabilities.py · CAPACITES_DESCRIPTEURS",
+ "regenerer": "python3 arena/genere-catalogues-menu.py",
+ "nombre_modules": 13,
+ "nombre_actions": 25,
+ "capacites": {
+  "web": [
+   "acceder",
+   "operationnel"
+  ],
+  "utilisateurs": [
+   "gerer",
+   "voir"
+  ],
+  "participants": [
+   "creer",
+   "gerer",
+   "lister"
+  ],
+  "modules": [
+   "archiver"
+  ],
+  "presences": [
+   "agir",
+   "superviser",
+   "voir"
+  ],
+  "finance": [
+   "exporter",
+   "parametrer",
+   "voir"
+  ],
+  "statistiques": [
+   "voir",
+   "voir_globales"
+  ],
+  "evaluations": [
+   "consulter",
+   "gerer_questionnaires"
+  ],
+  "notes": [
+   "gerer",
+   "valider_decisions"
+  ],
+  "scolarite": [
+   "agir",
+   "voir"
+  ],
+  "exports": [
+   "liste_classe"
+  ],
+  "dashboard": [
+   "filtrer_secretariat"
+  ],
+  "habilitations_admin": [
+   "gerer"
+  ]
+ }
+}
