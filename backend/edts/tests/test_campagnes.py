@@ -63,6 +63,153 @@ class BaseCampagneTest(TestCase):
         )
 
 
+class SimulationsApiTests(BaseCampagneTest):
+    def setUp(self):
+        super().setUp()
+        self.groupe = self.f.creer_groupe()
+        self.client_api = APIClient()
+        self.client_api.force_authenticate(user=self.admin)
+
+    def payload(self, groupe_id=None):
+        return {
+            'annee_academique_id': self.annee.pk,
+            'semaines': [1],
+            'perimetre': {
+                'formations': [self.formation.pk], 'niveaux': [self.f.niveau.pk],
+                'groupes': [groupe_id or self.groupe.pk], 'semestres': [1],
+            },
+            'parametres': {
+                'persister': True, 'remplacer': True, 'publier_direct': True,
+                'autoriser_plan_partiel': True,
+            },
+        }
+
+    def test_simulation_reelle_reutilise_campagne_et_ne_persiste_pas(self):
+        from edts.moteur.campagnes import demarrer_campagne, marquer_pret
+
+        from edts.models import AffectationCreneau
+
+        before = EmploiDuTemps.objects.count()
+        before_seances = AffectationCreneau.objects.count()
+        response = self.client_api.post('/api/edts/simulations/', self.payload(), format='json')
+        self.assertEqual(response.status_code, 201, response.data)
+        campagne_id = response.data['id']
+        campagne = CampagneGeneration.objects.get(pk=campagne_id)
+        self.assertTrue(campagne.parametres['simulation'])
+        self.assertFalse(campagne.parametres['persister'])
+        self.assertFalse(campagne.parametres['publier_direct'])
+        self.assertFalse(campagne.parametres['autoriser_plan_partiel'])
+        marquer_pret(campagne_id, user=self.admin)
+        # Même si les paramètres persistés sont altérés, le moteur impose
+        # persister=False au moment de l'exécution d'une simulation.
+        campagne.parametres['persister'] = True
+        campagne.save(update_fields=['parametres'])
+        demarrer_campagne(campagne_id, user=self.admin, asynchrone=False)
+        self.assertEqual(EmploiDuTemps.objects.count(), before)
+        self.assertEqual(AffectationCreneau.objects.count(), before_seances)
+        campagne.refresh_from_db()
+        self.assertEqual(campagne.bilan['groupes'][0]['groupe_id'], self.groupe.pk)
+        self.assertIn(campagne.statut, (CampagneGeneration.Statut.TERMINE,
+                                        CampagneGeneration.Statut.TERMINE_AVEC_ANOMALIES,
+                                        CampagneGeneration.Statut.ECHEC))
+
+    def test_simulation_valide_et_conserve_le_perimetre_batiments_salles(self):
+        from formations.models import RefBatiment, RefSalle, RefSite
+
+        site = RefSite.objects.create(nom='Site simulation locaux')
+        batiment = RefBatiment.objects.create(site=site, nom='Bâtiment simulation')
+        salle = RefSalle.objects.create(
+            site=site, batiment=batiment, nom='Gymnase simulation',
+            type_lieu=RefSalle.TypeLieu.GYMNASE, capacite=120,
+        )
+        payload = self.payload()
+        payload['perimetre']['batiments'] = [batiment.pk]
+        payload['perimetre']['salles'] = [salle.pk]
+        response = self.client_api.post('/api/edts/simulations/', payload, format='json')
+        self.assertEqual(response.status_code, 201, response.data)
+        campagne = CampagneGeneration.objects.get(pk=response.data['id'])
+        self.assertEqual(campagne.perimetre['batiments'], [batiment.pk])
+        self.assertEqual(campagne.perimetre['salles'], [salle.pk])
+
+        payload['perimetre']['salles'] = [salle.pk + 99999]
+        refus = self.client_api.post('/api/edts/simulations/', payload, format='json')
+        self.assertEqual(refus.status_code, 400)
+
+    def test_selection_de_locaux_est_transmise_au_moteur_de_generation(self):
+        from unittest.mock import patch
+
+        from edts.moteur.campagnes import demarrer_campagne, marquer_pret
+
+        salle = self.f.creer_salle(nom='Salle ciblée')
+        payload = self.payload()
+        payload['perimetre']['batiments'] = [self.f.batiment.pk]
+        payload['perimetre']['salles'] = [salle.pk]
+        response = self.client_api.post('/api/edts/simulations/', payload, format='json')
+        self.assertEqual(response.status_code, 201, response.data)
+        campagne_id = response.data['id']
+        marquer_pret(campagne_id, user=self.admin)
+        bilan_vide = {'status_global': 'IMPOSSIBLE', 'groupes': [], 'totaux': {}}
+        with patch('edts.moteur.annee.generer_annee', return_value=bilan_vide) as generer:
+            demarrer_campagne(campagne_id, user=self.admin, asynchrone=False)
+        self.assertEqual(generer.call_args.kwargs['batiment_ids'], [self.f.batiment.pk])
+        self.assertEqual(generer.call_args.kwargs['salle_ids'], [salle.pk])
+
+    def test_ressources_de_simulation_exposent_les_lieux_actifs(self):
+        from formations.models import RefBatiment, RefSalle, RefSite
+
+        site = RefSite.objects.create(nom='Site ressources simulation')
+        batiment = RefBatiment.objects.create(site=site, nom='Bâtiment ressources')
+        salle = RefSalle.objects.create(site=site, batiment=batiment, nom='Espace test')
+        response = self.client_api.get('/api/edts/simulations/ressources/')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertIn({'id': batiment.pk, 'nom': batiment.nom}, response.data['batiments'])
+        self.assertTrue(any(row['id'] == salle.pk and row['batiment_id'] == batiment.pk
+                            for row in response.data['salles']))
+
+    def test_historique_filtre_simulations_sans_melanger_les_generations(self):
+        simulation = self.client_api.post(
+            '/api/edts/simulations/', self.payload(), format='json',
+        )
+        self.assertEqual(simulation.status_code, 201, simulation.data)
+        self.campagne(libelle='GENERATION-ORDINAIRE')
+        response = self.client_api.get('/api/edts/campagnes/', {
+            'annee': self.annee.pk, 'simulation': 'true',
+        })
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual([row['id'] for row in response.data['results']], [simulation.data['id']])
+
+    def test_perimetre_hors_annee_refuse(self):
+        from scolarite.models import Groupe
+        autre = Groupe.objects.create(
+            annee_academique=self.annee, ref_formation=self.formation,
+            parcours=self.f.parcours, niveau=self.f.niveau, nom='GROUPE-AUTRE', actif=False,
+        )
+        response = self.client_api.post('/api/edts/simulations/', self.payload(autre.pk), format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(CampagneGeneration.objects.filter(parametres__simulation=True).exists())
+
+    def test_semestre_sans_correspondance_avec_niveau_du_groupe_refuse(self):
+        payload = self.payload()
+        payload['perimetre']['semestres'] = [2]
+        response = self.client_api.post('/api/edts/simulations/', payload, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(CampagneGeneration.objects.filter(parametres__simulation=True).exists())
+
+    def test_acceptation_humaine_tracee_et_campagne_ordinaire_rejetee(self):
+        simulation = CampagneGeneration.objects.create(
+            annee_academique=self.annee, libelle='SIM-REVUE',
+            statut=CampagneGeneration.Statut.TERMINE,
+            parametres={'simulation': True},
+        )
+        response = self.client_api.post(f'/api/edts/simulations/{simulation.pk}/accepter/', {}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        simulation.refresh_from_db()
+        self.assertEqual(simulation.parametres['simulation_acceptee']['par'], self.admin.username)
+        normal = self.campagne(libelle='GENERATION-NORMALE')
+        refus = self.client_api.post(f'/api/edts/simulations/{normal.pk}/accepter/', {}, format='json')
+        self.assertEqual(refus.status_code, 409)
+
+
 class ExecutionOrphelineTests(BaseCampagneTest):
     """Une exécution dont le fil est mort ne doit pas rester « en cours »."""
 
@@ -184,11 +331,28 @@ class CycleDeVieCampagneTests(BaseCampagneTest):
             calendrier_previsionnel_confirme=True,
             calendrier_dates_confirmees=[dates['date_debut'], dates['date_fin']],
             publier_direct=True, max_seances_par_groupe_semaine=30,
+            autoriser_plan_partiel=True,
         )
         self.assertEqual(campagne.semaines, dates['impairs'] + dates['pairs'])
+        self.assertTrue(campagne.parametres['autoriser_plan_partiel'])
         self.assertFalse(campagne.parametres['publier_direct'])
         self.assertIsNone(campagne.parametres['max_seances_par_groupe_semaine'])
         self.assertEqual(campagne.parametres['calendrier_previsionnel'], dates)
+
+    def test_consentement_partiel_manuel_est_transmis_au_moteur(self):
+        from unittest.mock import patch
+
+        campagne = self.campagne(
+            libelle='Campagne partielle consentie',
+            mode_generation='manuel',
+            autoriser_plan_partiel=True,
+            persister=True,
+        )
+        C.marquer_pret(campagne.pk, user=self.admin)
+        bilan_partiel = {'status_global': 'PARTIELLE', 'groupes': [], 'totaux': {}}
+        with patch('edts.moteur.annee.generer_annee', return_value=bilan_partiel) as generer:
+            C.demarrer_campagne(campagne.pk, user=self.admin, asynchrone=False)
+        self.assertIs(generer.call_args.kwargs['autoriser_plan_partiel'], True)
 
     def test_calendrier_perime_refuse(self):
         with self.assertRaises(C.TransitionRefusee) as ctx:
@@ -391,13 +555,47 @@ class CampagnesApiTests(BaseCampagneTest):
             'annee_academique_id': self.annee.pk,
             'libelle': 'API campagne',
             'semaines': [2, 3],
-            'parametres': {'persister': True},
+            'parametres': {
+                'persister': True,
+                'mode_generation': 'manuel',
+                'autoriser_plan_partiel': True,
+            },
         }, format='json')
         self.assertEqual(reponse.status_code, 201, reponse.data)
+        self.assertTrue(reponse.data['parametres']['autoriser_plan_partiel'])
         pk = reponse.data['id']
         detail = self.client.get(f'/api/edts/campagnes/{pk}/')
         self.assertEqual(detail.status_code, 200)
         self.assertEqual(detail.data['semaines'], [2, 3])
+
+    def test_creation_valide_et_conserve_les_filtres_de_locaux(self):
+        from formations.models import RefBatiment, RefSalle
+
+        batiment = RefBatiment.objects.create(
+            site=self.f.site, nom='Bâtiment de campagne manuelle',
+        )
+        salle = RefSalle.objects.create(
+            site=self.f.site, batiment=batiment, nom='Salle de campagne manuelle',
+        )
+        response = self.client.post('/api/edts/campagnes/', {
+            'annee_academique_id': self.annee.pk,
+            'libelle': 'API campagne avec locaux',
+            'semaines': [1, 2],
+            'perimetre': {'batiments': [batiment.pk], 'salles': [salle.pk]},
+            'parametres': {'mode_generation': 'manuel'},
+        }, format='json')
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.data['perimetre']['batiments'], [batiment.pk])
+        self.assertEqual(response.data['perimetre']['salles'], [salle.pk])
+
+        response_invalide = self.client.post('/api/edts/campagnes/', {
+            'annee_academique_id': self.annee.pk,
+            'libelle': 'API campagne invalide',
+            'semaines': [1],
+            'perimetre': {'batiments': [batiment.pk], 'salles': [salle.pk + 99999]},
+            'parametres': {'mode_generation': 'manuel'},
+        }, format='json')
+        self.assertEqual(response_invalide.status_code, 400)
 
     def test_creation_sans_libelle_refusee(self):
         reponse = self.client.post('/api/edts/campagnes/', {

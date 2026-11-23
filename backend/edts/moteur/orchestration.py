@@ -172,7 +172,8 @@ def _resoudre_edt_cible(annee_academique_id, ref_formation_id, semaines, *, cree
 
 
 
-def _persister_si_possible(cible, resultat, *, remplacer):
+def _persister_si_possible(cible, resultat, *, remplacer,
+                           autoriser_volume_incomplet=False):
     """Matérialise le plan d'un EDT dans son EDT cible — transaction par EDT.
 
     Refus explicites, **jamais d'écriture partielle** pour l'EDT concerné :
@@ -181,7 +182,9 @@ def _persister_si_possible(cible, resultat, *, remplacer):
     * ``EDT_STATUT_NON_MODIFIABLE`` — statut n'ouvrant pas l'écriture
       (VALIDE, PUBLIE…) : l'EDT existant n'est jamais modifié ;
     * ``PLAN_VIDE``             — aucun placement : rien à écrire ;
-    * ``VALIDATION_BLOQUANTE``  — le validateur C1→C10 refuse le plan.
+    * ``VALIDATION_BLOQUANTE``  — le validateur C1→C10 refuse le plan;
+      C10 peut être explicitement levée uniquement pour conserver en brouillon
+      les placements partiels consentis (jamais pour valider ou publier).
 
     Un refus n'efface pas les persistance des autres EDT de l'opération, mais
     il dégrade le statut global (jamais d'opération présentée comme réussie
@@ -199,7 +202,11 @@ def _persister_si_possible(cible, resultat, *, remplacer):
     if not resultat.placements:
         return {'effectuee': False, 'motif_refus': 'PLAN_VIDE'}
 
-    rapport = V.validate_schedule(resultat.placements, resultat.non_places)
+    rapport = V.validate_schedule(
+        resultat.placements,
+        resultat.non_places,
+        autoriser_volume_incomplet=autoriser_volume_incomplet,
+    )
     if not rapport.valide:
         return {'effectuee': False, 'motif_refus': 'VALIDATION_BLOQUANTE',
                 'violations': [v.as_dict() for v in rapport.violations],

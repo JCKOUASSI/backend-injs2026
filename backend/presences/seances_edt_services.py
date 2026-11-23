@@ -1135,7 +1135,26 @@ def emarger_unitaire(request, affectation, date, participant_id, *,
 @transaction.atomic
 def auto_clore(request, affectation, date):
     """Clôture de séance : ouvertures sans sortie → sortie = fin (+ tolérance) ;
-    inscrits sans aucun badge → ligne « absent non badgé »."""
+    inscrits sans aucun badge → ligne « absent non badgé ».
+
+    Le verrou de la séance sérialise les reprises concurrentes de cette tâche.
+    Une nouvelle exécution sans effet métier ne duplique pas l'événement de
+    clôture ; si de nouveaux pointages/absences doivent être traités, ils sont
+    toujours appliqués et journalisés.
+    """
+    from edts.models import AffectationCreneau
+
+    # Respecter l'ordre de verrouillage du scan (QR puis présence) pour éviter
+    # un cycle QR ↔ Pointage si clôture et badgeage se chevauchent.
+    qr_revoques = QRToken.objects.filter(seance_edt=affectation, actif=True).update(actif=False)
+    affectation = (AffectationCreneau.objects.select_for_update()
+                   .select_related('creneau_template', 'emploi_du_temps')
+                   .get(pk=affectation.pk))
+    cloture_deja_journalisee = AuditLog.objects.filter(
+        action=AuditLog.Action.CLOSE_SESSION,
+        cible_type='seance_edt', cible_numero=str(affectation.pk),
+        extra__canal='EDT_LMD', extra__date=date.isoformat(),
+    ).exists()
     fin = horodatages(affectation, date)[1]
     cloture = fin + timedelta(minutes=_parametre(CLE_TOLERANCE_CLOTURE))
     ouverts = Pointage.objects.filter(
@@ -1180,7 +1199,6 @@ def auto_clore(request, affectation, date):
             groupe_lmd_id=affectation.groupe_id,
         )
         nb_absents += 1
-    QRToken.objects.filter(seance_edt=affectation, actif=True).update(actif=False)
     # Alerte d'absence ciblée (rapport de refonte, écart n°2) : les absents de
     # cette séance ne déclenchent plus seulement l'agrégat manuel global —
     # chaque franchissement de seuil notifie immédiatement la chaîne
@@ -1192,16 +1210,18 @@ def auto_clore(request, affectation, date):
             affectation, date, absents_du_jour,
             utilisateur=request.user if request and request.user.is_authenticated else None,
         )
-    AuditLog.objects.create(
-        action=AuditLog.Action.CLOSE_SESSION,
-        acteur=request.user if request and request.user.is_authenticated else None,
-        acteur_label=(request.user.get_full_name() or request.user.username)
-        if request and request.user.is_authenticated else 'Système',
-        cible_type='seance_edt', cible_numero=str(affectation.pk),
-        cible_nom=affectation.intitule or str(affectation.creneau_template),
-        extra={'canal': 'EDT_LMD', 'date': date.isoformat(),
-               'pointages_clotures': nb_clotures, 'absents_marques': nb_absents,
-               'alertes_absence': nb_alertes},
-    )
+    if (nb_clotures or nb_absents or nb_alertes or qr_revoques
+            or not cloture_deja_journalisee):
+        AuditLog.objects.create(
+            action=AuditLog.Action.CLOSE_SESSION,
+            acteur=request.user if request and request.user.is_authenticated else None,
+            acteur_label=(request.user.get_full_name() or request.user.username)
+            if request and getattr(request, 'user', None) and request.user.is_authenticated else 'Système',
+            cible_type='seance_edt', cible_numero=str(affectation.pk),
+            cible_nom=affectation.intitule or str(affectation.creneau_template),
+            extra={'canal': 'EDT_LMD', 'date': date.isoformat(),
+                   'pointages_clotures': nb_clotures, 'absents_marques': nb_absents,
+                   'alertes_absence': nb_alertes, 'qr_revoques': qr_revoques},
+        )
     return {'pointages_clotures': nb_clotures, 'absents_marques': nb_absents,
-            'alertes_absence': nb_alertes}
+            'alertes_absence': nb_alertes, 'qr_revoques': qr_revoques}

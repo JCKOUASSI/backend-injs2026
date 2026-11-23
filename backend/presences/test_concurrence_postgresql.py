@@ -12,7 +12,9 @@ from django.db import close_old_connections, connection
 from django.test import TransactionTestCase
 from rest_framework.test import APIClient
 
-from presences.models import Pointage
+from presences.models import AuditLog, Pointage
+from parametres.models import Parametre
+from presences.seances_edt_services import CLE_NOTIFIER_CLOTURE
 from .test_seances_edt_mobile import MobileSeanceEdtMixin
 
 
@@ -150,3 +152,35 @@ class ConcurrenceScanPostgres(MobileSeanceEdtMixin, TransactionTestCase):
         self.assertEqual(lignes.count(), 3)
         self.assertEqual(set(lignes.values_list('participant_id', flat=True)),
                          {participant.pk for participant in self.participants})
+
+    def test_clotures_simultanees_sans_doublon_d_absence_ni_audit(self):
+        from presences import seances_edt_services as service
+
+        Parametre.objects.create(
+            cle=CLE_NOTIFIER_CLOTURE, libelle='Notifier à la clôture (test)',
+            categorie='presences', type='integer', valeur='0', valeur_defaut='1',
+        )
+        depart = Barrier(2)
+
+        def cloturer():
+            close_old_connections()
+            try:
+                depart.wait(timeout=10)
+                from edts.models import AffectationCreneau
+                affectation = AffectationCreneau.objects.get(pk=self.affectation.pk)
+                return service.auto_clore(None, affectation, self.date_seance)
+            finally:
+                connection.close()
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            resultats = [future.result(timeout=30) for future in
+                         [pool.submit(cloturer), pool.submit(cloturer)]]
+
+        self.assertEqual(Pointage.objects.filter(
+            seance_edt=self.affectation,
+            statut=Pointage.Statut.ABSENT_NON_BADGE,
+        ).count(), len(self.participants), resultats)
+        self.assertEqual(AuditLog.objects.filter(
+            action=AuditLog.Action.CLOSE_SESSION,
+            cible_type='seance_edt', cible_numero=str(self.affectation.pk),
+        ).count(), 1, resultats)

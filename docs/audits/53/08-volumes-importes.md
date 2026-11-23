@@ -40,7 +40,7 @@ Exécution réelle de `python manage.py importer_referentiels_injs` (base de dé
 | Référentiel | Total | Fiabilité |
 |---|---:|---|
 | Site (INJS Marcory) | **1** | OFFICIEL |
-| Bâtiments | **16** | MODELISE |
+| Bâtiments | **16** | OFFICIEL (validation déclarée le 23/11/2026) |
 | Espaces (salles) | **166** | MODELISE |
 
 Les 19 bâtiments et 173 salles présents en base incluent 3 bâtiments et 7 salles créés antérieurement, hors import documentaire (écart tracé par l'anomalie **A-53-05**).

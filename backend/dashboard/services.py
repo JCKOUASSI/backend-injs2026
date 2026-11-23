@@ -52,6 +52,16 @@ def libelle_annee_courante():
     return annee.libelle if annee else None
 
 
+def _effectif_inscrits_annee(annee_id):
+    """Effectif de l'année, consolidé entre inscriptions et imports GET-INJS."""
+    if annee_id:
+        from edts.moteur.import_inscrits import effectif_population_consolidee
+        return effectif_population_consolidee(annee_id)['effectif_combine']
+    return InscriptionAdministrative.objects.filter(
+        statut=InscriptionAdministrative.Statut.VALIDEE,
+    ).count()
+
+
 def get_direction_overview():
     """Tableau de bord de direction / pilotage général INJS."""
     annee = get_current_academic_year()
@@ -61,7 +71,7 @@ def get_direction_overview():
     inscriptions_qs = InscriptionAdministrative.objects.filter(statut=InscriptionAdministrative.Statut.VALIDEE)
     if annee_id:
         inscriptions_qs = inscriptions_qs.filter(annee_academique_id=annee_id)
-    nb_inscrits = inscriptions_qs.count()
+    nb_inscrits = _effectif_inscrits_annee(annee_id)
 
     # Candidats et admissions
     candidatures_qs = Candidature.objects.all()
@@ -200,10 +210,7 @@ def get_direction_overview():
                 'nom': 'Inscrits',
                 'couleur': '#1267D6',
                 'donnees': [
-                    InscriptionAdministrative.objects.filter(
-                        annee_academique_id=a.id,
-                        statut=InscriptionAdministrative.Statut.VALIDEE,
-                    ).count()
+                    _effectif_inscrits_annee(a.id)
                     for a in annees
                 ],
             },

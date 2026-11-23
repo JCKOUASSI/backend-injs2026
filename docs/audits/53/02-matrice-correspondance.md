@@ -25,7 +25,7 @@ Chaque ligne répond à trois questions : **quelle source** atteste la donnée, 
 | Donnée | Valeurs documentées | Source | Référentiel | Fiabilité |
 |---|---|---|---|---|
 | Site | INJS Marcory | F2 | `formations.RefSite` | OFFICIEL |
-| Bâtiments | 16 bâtiments | F2 | `formations.RefBatiment` | MODELISE |
+| Bâtiments | 16 bâtiments | F2 + validation déclarée le 23/11/2026 | `formations.RefBatiment` | OFFICIEL |
 | Espaces | 166 espaces (amphis, salles, labos, gymnases, terrains) | F2 | `formations.RefSalle` | MODELISE |
 | Types d'espace sportif | Amphi, gymnase, salle informatique, salle de réunion, salle de TD, terrain extérieur | F2 (vocabulaire des espaces) | `referentiels.RefTypeEspaceSportif` | A_RENSEIGNER (créés avant la refonte, à raccrocher à F2) |
 

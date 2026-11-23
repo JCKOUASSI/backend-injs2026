@@ -207,11 +207,14 @@ def _couverture(placements, non_places=()):
     }
 
 
-def validate_schedule(placements, non_places=()):
+def validate_schedule(placements, non_places=(), *, autoriser_volume_incomplet=False):
     """Valide un plan d'EDT (étape P) — ne modifie rien, ne lève jamais.
 
     Le plan peut provenir de ``generate_schedule`` **ou** d'une modification
     manuelle : dans les deux cas, la même validation s'applique (étape T).
+    Le contournement de C10 est réservé à l'enregistrement en brouillon d'un
+    plan partiel après consentement explicite; les conflits et autres règles
+    bloquantes restent vérifiés et la publication continue d'exiger le complet.
     """
     violations, warnings = [], []
     verifier_conflits(placements, violations, warnings)
@@ -219,7 +222,7 @@ def validate_schedule(placements, non_places=()):
     verifier_enseignants(placements, violations, warnings)
 
     couverture = _couverture(placements, non_places)
-    if couverture['heures_non_couvertes'] > 0:
+    if couverture['heures_non_couvertes'] > 0 and not autoriser_volume_incomplet:
         violations.append(C.Violation(
             C.C10_VOLUME,
             f'Volume non couvert : {couverture["heures_non_couvertes"]} h '

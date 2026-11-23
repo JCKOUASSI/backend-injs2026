@@ -190,6 +190,14 @@ def creer_campagne(*, annee_academique_id, libelle, user=None,
 
     semaines = sorted({int(s) for s in (semaines or [1]) if str(s).isdigit()}) or [1]
     parametres = dict(parametres or {})
+    # Seul un accord JSON booléen explicite permet l'écriture d'un brouillon
+    # partiel. En mode automatique, l'accord sur le calendrier provisoire est
+    # recueilli avant le lancement; les simulations restent exclues.
+    parametres['autoriser_plan_partiel'] = (
+        parametres.get('autoriser_plan_partiel') is True
+        and parametres.get('mode_generation') in {'manuel', 'automatique'}
+        and not parametres.get('simulation')
+    )
     if parametres.get('mode_generation') == 'automatique':
         if not parametres.get('calendrier_previsionnel_confirme'):
             raise TransitionRefusee('CALENDRIER_NON_CONFIRME', {
@@ -394,7 +402,10 @@ def executer_campagne(campagne_id, execution_id):
             bilan = generer_annee(
                 campagne.annee_academique_id,
                 semaines=campagne.semaines or [1],
-                persister=bool(parametres.get('persister', True)),
+                # Une simulation reste strictement non persistante même si
+                # des paramètres historiques ou modifiés demandent l'inverse.
+                persister=(bool(parametres.get('persister', True))
+                           and not bool(parametres.get('simulation'))),
                 remplacer=bool(parametres.get('remplacer', True)),
                 inclure_maquette=bool(parametres.get('inclure_maquette', True)),
                 # Le périmètre « formations » borne la génération : sans cela,
@@ -414,6 +425,15 @@ def executer_campagne(campagne_id, execution_id):
                     parametres.get('eviter_pause_meridienne', False)),
                 max_seances_par_groupe_semaine=(
                     parametres.get('max_seances_par_groupe_semaine') or None),
+                # Ressources sélectionnées dans la simulation : elles bornent
+                # réellement les salles candidates du moteur, pas seulement l'UI.
+                salle_ids=perimetre.get('salles') or None,
+                batiment_ids=perimetre.get('batiments') or None,
+                autoriser_plan_partiel=(
+                    parametres.get('autoriser_plan_partiel') is True
+                    and not bool(parametres.get('simulation'))
+                    and parametres.get('mode_generation') in {'manuel', 'automatique'}
+                ),
             )
         duree_ms = int((time.monotonic() - debut) * 1000)
         anomalies = extraire_anomalies(bilan)
@@ -565,6 +585,10 @@ def valider_campagne(campagne_id, *, user=None):
     from edts.moteur.validation import valider_emploi_du_temps
 
     campagne = _charger(campagne_id)
+    if (campagne.parametres or {}).get('simulation'):
+        raise TransitionRefusee('SIMULATION_NON_PUBLIABLE', {
+            'explication': 'Une simulation est non persistante et ne peut pas valider ni publier des EDT. Transférez son périmètre vers Génération pour créer une campagne distincte.',
+        })
     bilan = campagne.bilan or {}
     # La validation des seuls EDT persistés ne qualifie pas les groupes du
     # périmètre restés sans plan : une campagne partielle ne peut jamais
@@ -635,6 +659,10 @@ def publier_campagne(campagne_id, *, user=None, motif=''):
     from edts.moteur.publication import publier_emploi_du_temps
 
     campagne = _charger(campagne_id)
+    if (campagne.parametres or {}).get('simulation'):
+        raise TransitionRefusee('SIMULATION_NON_PUBLIABLE', {
+            'explication': 'Une simulation ne peut jamais être publiée.',
+        })
     _exiger(campagne, (S.VALIDE,))
 
     edt_ids = [

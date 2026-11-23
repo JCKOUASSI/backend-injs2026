@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import api from '../../services/api'
 import { useToast } from '../../context/ToastContext'
 import { formatApiErrors } from '../../utils/apiErrors'
@@ -138,6 +138,9 @@ function formatDuree(ms) {
 
 export default function GenerationAnnuelle() {
   const { showToast } = useToast()
+  const [searchParams] = useSearchParams()
+  const simulationTransferee = searchParams.get('simulation_id')
+  const simulationChargee = useRef('')
   const [annees, setAnnees] = useState([])
   const [anneeId, setAnneeId] = useState('')
   const [fichier, setFichier] = useState(null)
@@ -146,7 +149,7 @@ export default function GenerationAnnuelle() {
   const [bilan, setBilan] = useState(null)
   const [erreurGeneration, setErreurGeneration] = useState('')
   const [enCours, setEnCours] = useState('')
-  const [semaines, setSemaines] = useState('1')
+  const [semaines, setSemaines] = useState('')
   const [telechargement, setTelechargement] = useState(false)
   const inputFichier = useRef(null)
 
@@ -154,6 +157,12 @@ export default function GenerationAnnuelle() {
   const [formationsRef, setFormationsRef] = useState([])
   const [niveauxRef, setNiveauxRef] = useState([])
   const [groupesRef, setGroupesRef] = useState([])
+  const [batimentsRef, setBatimentsRef] = useState([])
+  const [sallesRef, setSallesRef] = useState([])
+  const [lieuxIndisponibles, setLieuxIndisponibles] = useState(false)
+  const [lieuxChargement, setLieuxChargement] = useState(true)
+  const [batimentsSel, setBatimentsSel] = useState([])
+  const [sallesSel, setSallesSel] = useState([])
   const [filieresSel, setFilieresSel] = useState([])
   const [formationsSel, setFormationsSel] = useState([])
   const [niveauxSel, setNiveauxSel] = useState([])
@@ -176,11 +185,47 @@ export default function GenerationAnnuelle() {
       bascule: new Date(debut + impairs * 7 * 86400000).toISOString().slice(0, 10) }
   }, [anneeSelectionnee])
 
-  const [maxSeances, setMaxSeances] = useState('30')
+  const [maxSeances, setMaxSeances] = useState('')
 
-  useEffect(() => { setDernierApercu(null) }, [
+  useEffect(() => {
+    if (!simulationTransferee || simulationChargee.current === simulationTransferee) return
+    simulationChargee.current = simulationTransferee
+    let actif = true
+    api.get(`/edts/campagnes/${simulationTransferee}/`).then(({ data }) => {
+      if (!actif) return
+      const params = data?.parametres || {}
+      const p = data?.perimetre || {}
+      if (!params.simulation || !params.simulation_acceptee) {
+        setErreurGeneration('Cette simulation n’a pas été acceptée par un utilisateur habilité. Aucun périmètre n’a été transféré.')
+        return
+      }
+      setAnneeId(String(data.annee_academique_id))
+      setFormationsSel((p.formations || []).map(Number))
+      setNiveauxSel((p.niveaux || []).map(Number))
+      setGroupesSel((p.groupes || []).map(Number))
+      setSemestresSel((p.semestres || []).map(Number))
+      setBatimentsSel((p.batiments || []).map(Number))
+      setSallesSel((p.salles || []).map(Number))
+      setSemaines((data.semaines || []).join(','))
+      setInclureSamedi(params.inclure_samedi !== false)
+      setEviterPause(Boolean(params.eviter_pause_meridienne))
+      setMaxSeances(String(params.max_seances_par_groupe_semaine || ''))
+      setModeGeneration('manuel')
+      setDernierApercu(null)
+      setBilan(null)
+      showToast('Périmètre et contraintes transférés. Prévisualisez à nouveau avant toute génération.', 'success')
+    }).catch((err) => {
+      if (actif) setErreurGeneration(formatApiErrors(err?.response?.data) || 'Impossible de récupérer le périmètre de simulation.')
+    })
+    return () => { actif = false }
+  }, [simulationTransferee, showToast])
+
+  useEffect(() => {
+    setDernierApercu(null)
+    setBilan(null)
+  }, [
     anneeId, filieresSel, formationsSel, niveauxSel, groupesSel, semestresSel,
-    semaines, inclureSamedi, eviterPause, maxSeances,
+    batimentsSel, sallesSel, semaines, inclureSamedi, eviterPause, maxSeances,
   ])
 
   // Historique des générations et emplois du temps versionnés (réels).
@@ -196,18 +241,19 @@ export default function GenerationAnnuelle() {
         const liste = Array.isArray(data) ? data : (data?.results || [])
         setAnnees(liste)
         const courante = liste.find((a) => a.courante) || liste[0]
-        if (courante) setAnneeId(String(courante.id))
+        if (courante && !simulationTransferee) setAnneeId(String(courante.id))
       })
       .catch(() => showToast('Impossible de charger les années académiques.', 'error'))
     return () => { actif = false }
-  }, [showToast])
+  }, [showToast, simulationTransferee])
 
   useEffect(() => {
     let actif = true
     Promise.all([
       api.get('/formations/ref/formations/').catch(() => null),
       api.get('/scolarite/ref/niveaux/').catch(() => null),
-    ]).then(([formationsRes, niveauxRes]) => {
+      api.get('/edts/simulations/ressources/').catch(() => null),
+    ]).then(([formationsRes, niveauxRes, lieuxRes]) => {
       if (!actif) return
       if (formationsRes) {
         setFormationsRef(Array.isArray(formationsRes.data)
@@ -216,6 +262,15 @@ export default function GenerationAnnuelle() {
       if (niveauxRes) {
         setNiveauxRef(Array.isArray(niveauxRes.data)
           ? niveauxRes.data : (niveauxRes.data?.results ?? []))
+      }
+      if (lieuxRes) {
+        setBatimentsRef(lieuxRes.data?.batiments || [])
+        setSallesRef(lieuxRes.data?.salles || [])
+        setLieuxIndisponibles(false)
+        setLieuxChargement(false)
+      } else {
+        setLieuxIndisponibles(true)
+        setLieuxChargement(false)
       }
     })
     return () => { actif = false }
@@ -309,19 +364,16 @@ export default function GenerationAnnuelle() {
     }
   }
 
-  const semainesListe = () => {
-    const valeurs = semaines
-      .split(',')
-      .map((s) => s.trim())
-      .filter((s) => /^\d+$/.test(s))
-      .map(Number)
-    return valeurs.length > 0 ? valeurs : [1]
-  }
+  const semainesListe = () => [...new Set(semaines.split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map(Number))].sort((a, b) => a - b)
 
-  const semainesSaisieInvalide = () =>
-    semaines.split(',').map((s) => s.trim()).some(
-      (s) => s.length > 0 && !/^\d+$/.test(s)
-    )
+  const semainesSaisieInvalide = () => {
+    const valeurs = semaines.split(',').map((s) => s.trim())
+    if (valeurs.every((s) => !s)) return false
+    return valeurs.some((s) => !/^\d+$/.test(s) || Number(s) < 1 || Number(s) > 53)
+  }
 
   const basculer = (setter, id) => setter((ids) => ids.includes(id)
     ? ids.filter((valeur) => valeur !== id) : [...ids, id])
@@ -335,6 +387,8 @@ export default function GenerationAnnuelle() {
       niveaux: niveauxSel,
       groupes: groupesSel,
       semestres: semestresSel,
+      ...(batimentsSel.length ? { batiments: batimentsSel } : {}),
+      ...(sallesSel.length ? { salles: sallesSel } : {}),
     }
   }
 
@@ -389,9 +443,13 @@ export default function GenerationAnnuelle() {
 
   const lancerGeneration = async (mode) => {
     if (!anneeId) return showToast('Choisissez une année académique.', 'error')
+    let autoriserPlanPartiel = false
     if (mode === 'manuel') {
       if (semainesSaisieInvalide()) {
-        return showToast('Saisissez uniquement des numéros de semaines (ex. 1,2,3).', 'error')
+        return showToast('Saisissez des numéros de semaines entiers de 1 à 53, séparés par des virgules.', 'error')
+      }
+      if (!semainesListe().length) {
+        return showToast('Indiquez les numéros officiels des semaines à planifier; un nombre seul désigne une seule semaine.', 'error')
       }
       if (!perimetreManuelValide(groupesOptions)) return
       const perimetre = construirePerimetre()
@@ -399,7 +457,7 @@ export default function GenerationAnnuelle() {
       if (!alerteSemainesPeu(perimetre, semainesListe().length)) return
       // B16 : garde-fou affichage alerte couverture critique (périmètre large + semaines faibles)
       if (mode === 'manuel' && dernierApercu) {
-        const nbGroupes = dernierApercu.length
+        const nbGroupes = bilan?.totaux?.nb_groupes ?? bilan?.groupes?.length ?? 0
         const nbSemaines = semainesListe().length
         if (nbGroupes > 20 && nbSemaines <= 4) {
           const message = `⚠️ Couverture critique estimée : ${nbGroupes} groupe(s) avec ${nbSemaines} semaine(s) → couverture < 30%. ` +
@@ -411,16 +469,22 @@ export default function GenerationAnnuelle() {
         showToast('Prévisualisez d’abord ce périmètre exact ; la sélection ou les contraintes ont changé.', 'error')
         return
       }
-      // P0-3 : si la prévisualisation montre une couverture très faible, confirmer.
+      // Toute persistance partielle exige un consentement explicite. Le
+      // moteur pourra alors enregistrer uniquement les séances conformes en
+      // brouillon; elles ne pourront pas être validées/publiées incomplètes.
       if (bilan?.status_global === 'PARTIELLE' && dernierApercu === signatureApercu()) {
         const totaux = bilan.totaux || {}
         const placees = totaux.seances_placees ?? 0
         const attendues = totaux.seances_attendues ?? 0
         const couverture = attendues ? Math.round(placees / attendues * 100) : 0
-        if (couverture < 50 && !window.confirm(
-          `La prévisualisation n’atteint que ${couverture} % de couverture (${placees}/${attendues} séances). ` +
-          'Lancer la génération quand même ?'
+        const avertissement = couverture < 50
+          ? `Couverture très faible : ${couverture} % (${placees}/${attendues} séances). `
+          : `La prévisualisation est partielle : ${couverture} % (${placees}/${attendues} séances). `
+        if (!window.confirm(
+          `${avertissement}Si vous continuez, les séances placées seront enregistrées en brouillon; ` +
+          'les séances manquantes resteront signalées et cet EDT ne pourra pas être validé ou publié. Continuer ?'
         )) return
+        autoriserPlanPartiel = true
       }
     } else if (!calendrierPropose) {
       const message = 'Dates de l’année absentes ou incompatibles avec une proposition (4 à 53 semaines).'
@@ -433,8 +497,11 @@ export default function GenerationAnnuelle() {
       + `semaines 1 à ${calendrierPropose.impairs} (semestres impairs), `
       + `${calendrierPropose.impairs + 1} à ${calendrierPropose.total} (semestres pairs).\n`
       + `Bascule estimée : ${calendrierPropose.bascule}. Confirmer ce découpage ? `
-      + 'Les EDT resteront en brouillon ; aucune publication automatique.',
+      + 'Les séances placées seront enregistrées en brouillon, même si la couverture est partielle; aucune publication automatique.',
     )) return
+    // La confirmation du calendrier provisoire autorise aussi l'écriture des
+    // seuls placements valides si le calcul annuel reste partiel.
+    autoriserPlanPartiel = true
     setEnCours('generation')
     setBilan(null)
     setErreurGeneration('')
@@ -459,7 +526,8 @@ export default function GenerationAnnuelle() {
           inclure_samedi: inclureSamedi,
           eviter_pause_meridienne: eviterPause,
           max_seances_par_groupe_semaine: mode === 'automatique' ? null : (maxSeances ? Number(maxSeances) : null),
-          publier_direct: mode === 'manuel' && publierDirect,
+          autoriser_plan_partiel: autoriserPlanPartiel,
+          publier_direct: mode === 'manuel' && publierDirect && !autoriserPlanPartiel,
         },
       })
       etape = 'préparation des données'
@@ -506,7 +574,7 @@ export default function GenerationAnnuelle() {
         + `${resultat.totaux?.seances_persistees ?? resultat.totaux?.seances_placees ?? 0} séance(s) enregistrée(s).`,
         bilanCampagne.status_global === 'COMPLETE' ? 'success' : 'warning',
       )
-      if (mode === 'manuel' && publierDirect) {
+      if (mode === 'manuel' && publierDirect && !autoriserPlanPartiel) {
         try {
           await api.post(`/edts/campagnes/${campagne.id}/valider/`, {})
           await api.post(`/edts/campagnes/${campagne.id}/publier/`, {})
@@ -583,7 +651,10 @@ export default function GenerationAnnuelle() {
   const previsualiser = async () => {
     if (!anneeId) return showToast('Choisissez une année académique.', 'error')
     if (semainesSaisieInvalide()) {
-      return showToast('Saisissez uniquement des numéros de semaines (ex. 1,2,3).', 'error')
+      return showToast('Saisissez des numéros de semaines entiers de 1 à 53, séparés par des virgules.', 'error')
+    }
+    if (!semainesListe().length) {
+      return showToast('Indiquez les numéros officiels des semaines à planifier; un nombre seul désigne une seule semaine.', 'error')
     }
     if (!perimetreManuelValide(groupesOptions)) return
     setEnCours('previsualisation')
@@ -594,7 +665,7 @@ export default function GenerationAnnuelle() {
       const perimetre = construirePerimetre()
       const { data } = await api.post('/edts/lmd/generate-annee/', {
         annee_academique_id: Number(anneeId),
-        semaines: semainesListe().length ? semainesListe() : [1],
+        semaines: semainesListe(),
         persister: false,
         remplacer: true,
         inclure_maquette: true,
@@ -602,6 +673,8 @@ export default function GenerationAnnuelle() {
         niveaux: perimetre.niveaux,
         groupes: perimetre.groupes,
         semestres: perimetre.semestres,
+        ...(perimetre.batiments?.length ? { batiments: perimetre.batiments } : {}),
+        ...(perimetre.salles?.length ? { salles: perimetre.salles } : {}),
         inclure_samedi: inclureSamedi,
         eviter_pause_meridienne: eviterPause,
         max_seances_par_groupe_semaine: maxSeances ? Number(maxSeances) : null,
@@ -683,6 +756,14 @@ export default function GenerationAnnuelle() {
     )),
     [groupesRef, formationsSel, filieresSel, formationsFiltrees, niveauxSel],
   )
+  const sallesOptions = useMemo(() => sallesRef.filter((salle) => (
+    !batimentsSel.length || batimentsSel.includes(Number(salle.batiment_id))
+  )), [sallesRef, batimentsSel])
+  useEffect(() => {
+    if (lieuxChargement) return
+    const idsDisponibles = new Set(sallesOptions.map((salle) => Number(salle.id)))
+    setSallesSel((courantes) => courantes.filter((id) => idsDisponibles.has(Number(id))))
+  }, [sallesOptions, lieuxChargement])
 
   return (
     <div className="getinjs gen-page">
@@ -802,6 +883,29 @@ export default function GenerationAnnuelle() {
                     onChangeTout={(cocher) => setSemestresSel(cocher
                       ? Array.from({ length: 10 }, (_, i) => i + 1) : [])} />
                 </div>
+                <div className="col-md-6">
+                  <ChoixMultiples titre="Bâtiments actifs (facultatif)"
+                    options={batimentsRef.map((batiment) => ({ id: batiment.id, label: batiment.nom }))}
+                    selection={batimentsSel} onChange={(id) => basculer(setBatimentsSel, id)}
+                    onChangeTout={(cocher) => setBatimentsSel(cocher
+                      ? batimentsRef.map((batiment) => batiment.id) : [])} />
+                </div>
+                <div className="col-md-6">
+                  <ChoixMultiples titre="Salles et espaces actifs (facultatif)"
+                    options={sallesOptions.map((salle) => ({
+                      id: salle.id,
+                      label: `${salle.nom}${salle.batiment_id ? ` — ${batimentsRef.find((b) => Number(b.id) === Number(salle.batiment_id))?.nom || `Bâtiment ${salle.batiment_id}`}` : ''} · ${salle.type_espace__libelle || salle.type_lieu}${salle.capacite != null ? ` · capacité ${salle.capacite}` : ''}`,
+                    }))}
+                    selection={sallesSel} onChange={(id) => basculer(setSallesSel, id)}
+                    onChangeTout={(cocher) => setSallesSel(cocher
+                      ? sallesOptions.map((salle) => salle.id) : [])} />
+                </div>
+                <div className="col-12 small text-muted">
+                  Aucun choix de bâtiment/local = tous les lieux actifs. Un bâtiment seul autorise tous ses locaux; si vous cochez aussi des locaux, seuls ceux-ci sont retenus. Sélectionner un bâtiment filtre la liste des locaux.
+                </div>
+                {lieuxIndisponibles && <div className="col-12"><div className="alert alert-warning py-2 mb-0" role="status">
+                  Référentiel des bâtiments et locaux indisponible : impossible de les sélectionner pour ce calcul.
+                </div></div>}
                 </>}
               </div>
 
@@ -842,27 +946,36 @@ export default function GenerationAnnuelle() {
                       </label>
                     </div>
                     {modeGeneration === 'manuel' && <>
-                      <label className="form-label gen-label mt-2" htmlFor="getinjs-semaines">Semaines planifiées</label>
+                      <label className="form-label gen-label mt-2" htmlFor="getinjs-semaines">Numéros des semaines à planifier (1–53)</label>
                       <input
                         id="getinjs-semaines"
                         className="form-control form-control-sm"
                         value={semaines}
                         onChange={(e) => setSemaines(e.target.value)}
-                        placeholder="ex. 1,2,3"
+                        placeholder="Ex. 1,2,3,4,5,6,7,8"
+                        aria-describedby="getinjs-semaines-aide"
                         pattern="^\d+(,\s*\d+)*$"
-                        title="Saisissez uniquement des numeros de semaines separees par des virgules (ex. 1,2,3)"
+                        title="Saisissez les numéros exacts des semaines. 8 seul signifie semaine n°8, pas huit semaines."
                       />
+                      <small id="getinjs-semaines-aide" className="form-text text-muted">
+                        Liste obligatoire de semaines réelles. Pour huit semaines, saisissez huit numéros officiels; « 8 » seul sélectionne uniquement la semaine n°8.
+                      </small>
                     </>}
                   </div>
                   {modeGeneration === 'manuel' && <div className="col-md-3">
-                    <label className="form-label gen-label" htmlFor="gen-max">Séances max / groupe / semaine</label>
+                    <label className="form-label gen-label" htmlFor="gen-max">Séances max / groupe / semaine (facultatif)</label>
                     <input
                       id="gen-max"
                       type="number" min="1" max="60"
                       className="form-control"
                       value={maxSeances}
                       onChange={(e) => setMaxSeances(e.target.value)}
+                      placeholder="Aucun quota"
+                      aria-describedby="gen-max-aide"
                     />
+                    <small id="gen-max-aide" className="form-text text-muted">
+                      Vide = aucun plafond; laissez vide pour privilégier la couverture.
+                    </small>
                   </div>}
                 </div>
               </div>
@@ -946,6 +1059,10 @@ export default function GenerationAnnuelle() {
               </span>
               {bilan.motif_echec && <span className="ms-2 text-danger">{libelleMotif(bilan.motif_echec)}</span>}
             </p>
+            {Array.isArray(bilan.semaines_selectionnees) && <p className="small text-muted">
+              Semaines réellement calculées : {bilan.semaines_selectionnees.join(', ')}
+              {' '}({bilan.semaines_selectionnees.length} semaine(s)).
+            </p>}
 
             {bilan.detail?.explication && (
               <div className="alert alert-warning" role="alert">
@@ -957,7 +1074,9 @@ export default function GenerationAnnuelle() {
             {bilan.status_global === 'PARTIELLE' && (
               <div className="alert alert-warning" role="alert">
                 <strong>Pourquoi ce bilan est partiel :</strong>{' '}
-                certains groupes sont incomplets ou n’ont pas été enregistrés.
+                {bilan.persistence_demandee
+                  ? 'certains groupes sont incomplets ou n’ont pas été enregistrés.'
+                  : 'certains groupes n’ont pas toutes leurs séances placées. Cette prévisualisation n’enregistre aucun EDT.'}
                 {motifsPartiels.length > 0 ? (
                   <ul className="mb-0 mt-1">
                     {motifsPartiels.map(([motif, nombre]) => (
@@ -988,16 +1107,16 @@ export default function GenerationAnnuelle() {
             {bilan.totaux && (
               <div className="getinjs-comptes">
                 <Compte libelle="groupes" valeur={bilan.totaux.nb_groupes} />
-                <Compte libelle={bilan.persistence_demandee ? 'groupes planifiés (calculés)' : 'planifiés'}
+                <Compte libelle={bilan.persistence_demandee ? 'groupes avec placements (calculés)' : 'groupes avec placements'}
                   valeur={bilan.totaux.nb_groupes_planifies_calcules ?? bilan.totaux.nb_groupes_planifies} />
-                {bilan.persistence_demandee && <Compte libelle="groupes enregistrés"
+                {bilan.persistence_demandee && <Compte libelle="groupes avec placements enregistrés"
                   valeur={bilan.totaux.nb_groupes_planifies} />}
-                <Compte libelle={bilan.persistence_demandee ? 'groupes non enregistrés' : 'non planifiés'}
+                <Compte libelle={bilan.persistence_demandee ? 'groupes non enregistrés' : 'groupes sans placement'}
                   valeur={bilan.totaux.nb_groupes_non_planifies} />
                 <Compte libelle="complets" valeur={bilan.totaux.nb_groupes_complets} />
-                <Compte libelle={bilan.persistence_demandee ? 'étudiants couverts (calculés)' : 'étudiants couverts'}
+                <Compte libelle={bilan.persistence_demandee ? 'effectif des groupes avec placements (calculés)' : 'effectif des groupes avec placements'}
                   valeur={bilan.totaux.etudiants_couverts_calcules ?? bilan.totaux.etudiants_couverts} />
-                {bilan.persistence_demandee && <Compte libelle="étudiants couverts (enregistrés)"
+                {bilan.persistence_demandee && <Compte libelle="effectif des groupes avec placements enregistrés"
                   valeur={bilan.totaux.etudiants_couverts} />}
                 <Compte libelle={bilan.persistence_demandee ? 'séances placées (calculées)' : 'séances placées'}
                   valeur={bilan.totaux.seances_calculees ?? bilan.totaux.seances_placees} />

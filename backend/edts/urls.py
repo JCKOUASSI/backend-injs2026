@@ -88,6 +88,10 @@ urlpatterns_lmd = [
 
     # ── LOT 2 — campagnes de génération (AJOUT) ─────────────────────────────
     # Routes nouvelles sous `campagnes/` : aucune route existante modifiée.
+    path('simulations/ressources/', g.simulation_ressources_api, name='edt-simulations-ressources'),
+    path('simulations/', g.simulation_creer_api, name='edt-simulations'),
+    path('simulations/<int:pk>/accepter/', g.simulation_accepter_api,
+         name='edt-simulation-accepter'),
     path('campagnes/', g.campagnes_api, name='edt-campagnes'),
     path('campagnes/historique/', g.historique_generations_api,
          name='edt-campagnes-historique'),

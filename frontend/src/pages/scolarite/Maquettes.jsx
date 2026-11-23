@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../services/api'
 import { downloadFile } from '../../utils/downloadFile'
@@ -73,7 +73,10 @@ export default function Maquettes() {
   const [apercuImport, setApercuImport] = useState(null)
   const [importEnCours, setImportEnCours] = useState(false)
   const [maquetteEditee, setMaquetteEditee] = useState(null)
+  const [maquetteVue, setMaquetteVue] = useState(null)
+  const [chargementVue, setChargementVue] = useState(false)
   const [formEdition, setFormEdition] = useState({ libelle: '', commentaire_validation: '' })
+  const selectionGlobaleRef = useRef(null)
   const [form, setForm] = useState({
     annee_academique_id: '', ref_formation_id: '', niveau_id: '', libelle: '',
   })
@@ -149,11 +152,32 @@ export default function Maquettes() {
   }
 
   const editer = (maquette) => {
+    if (!maquette || maquette.statut !== 'BROUILLON') return
     setMaquetteEditee(maquette)
     setFormEdition({
       libelle: maquette.libelle_personnalise || '',
       commentaire_validation: maquette.commentaire_validation || '',
     })
+  }
+
+  const visualiser = async (maquette) => {
+    if (!maquette) return
+    setChargementVue(true)
+    setMaquetteVue({ resume: maquette, details: null })
+    try {
+      const res = await api.get(`/scolarite/maquettes/${maquette.id}/`)
+      setMaquetteVue({ resume: maquette, details: res.data })
+    } catch (err) {
+      setMaquetteVue(null)
+      toast.showToast(err.response?.data?.error || 'Détail de la maquette indisponible.', 'error')
+    } finally {
+      setChargementVue(false)
+    }
+  }
+
+  const ouvrirCreation = () => {
+    document.getElementById('titre-nouvelle-maquette')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    window.setTimeout(() => document.getElementById('maq-annee')?.focus(), 250)
   }
 
   const enregistrerEdition = async (e) => {
@@ -190,21 +214,25 @@ export default function Maquettes() {
 
   const supprimerSelection = async () => {
     if (!selectionIds.length) return
-    if (!window.confirm(`Supprimer les ${selectionIds.length} maquette(s) brouillon sélectionnée(s) sans UE ?`)) return
+    const cibles = maquettes.filter((m) => selectionIds.includes(m.id))
+    if (!window.confirm(
+      `Confirmer la suppression de ${selectionIds.length} maquette(s) sélectionnée(s) ? ` +
+      'Seuls les brouillons sans dépendance seront supprimés ; les blocages métier seront détaillés.',
+    )) return
     setEnCours(true)
     const supprimees = []
     const erreurs = []
-    for (const maquette of maquettes.filter((m) => selectionIds.includes(m.id))) {
+    for (const maquette of cibles) {
       try {
         await api.delete(`/scolarite/maquettes/${maquette.id}/`)
         supprimees.push(maquette.id)
       } catch (err) {
-        erreurs.push(`${maquette.ref_formation} : ${err.response?.data?.error || 'suppression impossible'}`)
+        erreurs.push(`${maquette.ref_formation} (${maquette.niveau}) : ${err.response?.data?.error || 'suppression impossible'}`)
       }
     }
     if (erreurs.length) {
       toast.showToast(
-        `${supprimees.length} maquette(s) supprimée(s). ${erreurs.join(' ')}`,
+        `${supprimees.length} supprimée(s), ${erreurs.length} bloquée(s). ${erreurs.join(' ')}`,
         'error',
       )
     } else if (supprimees.length) {
@@ -219,15 +247,23 @@ export default function Maquettes() {
   }
 
   const exporter = async (format) => {
-    if (!selectionIds.length) return
-    const params = new URLSearchParams({ ids: selectionIds.join(',') })
+    // Une sélection explicite prime sur la vue. Sans sélection, exporter tout
+    // le périmètre actuellement affiché (statut côté API, recherche/formation côté client).
+    const idsExport = selectionIds.length
+      ? selectionIds
+      : maquettesFiltrees.map((maquette) => maquette.id)
+    if (!idsExport.length) {
+      toast.showToast('Aucune maquette à exporter dans la vue courante.', 'error')
+      return
+    }
+    const params = new URLSearchParams({ ids: idsExport.join(',') })
     if (exportDetaille) params.set('detaille', '1')
     try {
       const { blob, fileName } = await api.getBlob(
         `/scolarite/maquettes/export/${format}/?${params.toString()}`,
       )
       downloadFile(blob, fileName || `maquettes.${format === 'word' ? 'docx' : format}`)
-      toast.showToast('Export téléchargé.')
+      toast.showToast(`${idsExport.length} maquette(s) exportée(s).`)
     } catch (err) {
       toast.showToast(err.response?.data?.error || err.message || 'Export impossible.', 'error')
     }
@@ -271,7 +307,13 @@ export default function Maquettes() {
         cheminImport(),
         formulaireImport(fichierImport, 'confirmer', apercuImport.empreinte),
       )
-      toast.showToast(res.data?.detail || 'Import effectué.')
+      const bilan = [
+        res.data?.detail || 'Import effectué.',
+        `${res.data?.ignorees || 0} ignorée(s)`,
+        `${res.data?.erreurs?.length || 0} erreur(s)`,
+        `${res.data?.avertissements?.length || 0} avertissement(s)`,
+      ].join(' · ')
+      toast.showToast(bilan, res.data?.erreurs?.length ? 'error' : 'success')
       setFichierImport(null)
       setApercuImport(null)
       const input = document.getElementById('maq-import-fichier')
@@ -363,8 +405,14 @@ export default function Maquettes() {
   )
   const selectionComplete = maquettesFiltrees.length > 0
     && maquettesFiltrees.every((m) => selectionIds.includes(m.id))
+  const selectionPartielle = maquettesFiltrees.some((m) => selectionIds.includes(m.id)) && !selectionComplete
   const selectionSupprimable = maquettesSelectionnees.length > 0
-    && maquettesSelectionnees.every((m) => m.statut === 'BROUILLON' && m.nb_ue === 0)
+
+  useEffect(() => {
+    if (selectionGlobaleRef.current) {
+      selectionGlobaleRef.current.indeterminate = selectionPartielle
+    }
+  }, [selectionPartielle])
 
   // Matrice de couverture : filière (base de l'intitulé) × niveau L1–M2.
   const couverture = useMemo(() => {
@@ -644,10 +692,7 @@ export default function Maquettes() {
                 id="maq-filtre-formation"
                 className="cand-filter-select"
                 value={filtreFormation}
-                onChange={(e) => {
-                  setSelectionIds([])
-                  setFiltreFormation(e.target.value)
-                }}
+                onChange={(e) => setFiltreFormation(e.target.value)}
               >
                 <option value="">Toutes les formations</option>
                 {formationsPresentes.map(([intitule, nb]) => (
@@ -665,19 +710,13 @@ export default function Maquettes() {
                   className="cand-input"
                   placeholder="Filtrer par intitulé, niveau, parcours…"
                   value={recherche}
-                  onChange={(e) => {
-                    setSelectionIds([])
-                    setRecherche(e.target.value)
-                  }}
+                  onChange={(e) => setRecherche(e.target.value)}
                 />
                 {recherche && (
                   <button
                     type="button"
                     className="maq-effacer"
-                    onClick={() => {
-                      setSelectionIds([])
-                      setRecherche('')
-                    }}
+                    onClick={() => setRecherche('')}
                     aria-label="Effacer la recherche"
                   >
                     <i className="bi bi-x-lg" aria-hidden="true"></i>
@@ -695,43 +734,42 @@ export default function Maquettes() {
             <h2 className="cand-panel-title" id="titre-actions-maquettes">
               <i className="bi bi-check2-square" aria-hidden="true"></i>Actions sur la sélection
             </h2>
-            <span className="cand-count-pill">
-              {selectionIds.length} sélectionnée{selectionIds.length > 1 ? 's' : ''}
+            <span className="cand-count-pill" aria-live="polite">
+              <span>{selectionIds.length} sélectionnée{selectionIds.length > 1 ? 's' : ''}</span>
+              <span className="maq-count-separateur">·</span>
+              <span>{maquettes.length} dans le périmètre</span>
             </span>
           </header>
           <div className="cand-panel-body maq-outils">
-            <div className="maq-outils-actions">
-              {maquettesSelectionnees.length === 1 && (
-                <>
-                  <Link
-                    className="maq-action"
-                    to={`/scolarite/maquettes/${maquettesSelectionnees[0].id}`}
-                  >
-                    <i className="bi bi-eye" aria-hidden="true"></i>Consulter
-                  </Link>
-                  {maquettesSelectionnees[0].statut === 'BROUILLON' && (
-                    <button
-                      type="button"
-                      className="maq-action"
-                      disabled={enCours}
-                      onClick={() => editer(maquettesSelectionnees[0])}
-                    >
-                      <i className="bi bi-pencil" aria-hidden="true"></i>Modifier
-                    </button>
-                  )}
-                </>
-              )}
-              {selectionSupprimable && (
-                <button
-                  type="button"
-                  className="maq-action maq-action--danger"
-                  disabled={enCours}
-                  onClick={supprimerSelection}
-                >
-                  <i className="bi bi-trash" aria-hidden="true"></i>
-                  Supprimer la sélection
-                </button>
-              )}
+            <div className="maq-outils-actions" role="group" aria-label="Actions CRUD des maquettes">
+              <button type="button" className="maq-action maq-action--primaire" aria-label="Créer une nouvelle maquette" disabled={enCours} onClick={ouvrirCreation}>
+                <i className="bi bi-plus-lg" aria-hidden="true"></i>Créer
+              </button>
+              <button
+                type="button"
+                className="maq-action"
+                disabled={maquettesSelectionnees.length !== 1 || chargementVue}
+                onClick={() => visualiser(maquettesSelectionnees[0])}
+              >
+                <i className="bi bi-eye" aria-hidden="true"></i>Visualiser
+              </button>
+              <button
+                type="button"
+                className="maq-action"
+                disabled={maquettesSelectionnees.length !== 1 || maquettesSelectionnees[0]?.statut !== 'BROUILLON' || enCours}
+                onClick={() => editer(maquettesSelectionnees[0])}
+              >
+                <i className="bi bi-pencil" aria-hidden="true"></i>Modifier
+              </button>
+              <button
+                type="button"
+                className="maq-action maq-action--danger"
+                disabled={!selectionSupprimable || enCours}
+                onClick={supprimerSelection}
+              >
+                <i className="bi bi-trash" aria-hidden="true"></i>
+                Supprimer{selectionIds.length > 1 ? ` (${selectionIds.length})` : ''}
+              </button>
             </div>
             <div className="maq-outils-export">
               <label className="maq-detaille">
@@ -752,7 +790,7 @@ export default function Maquettes() {
                   type="button"
                   className="maq-action"
                   key={format}
-                  disabled={!selectionIds.length || enCours}
+                  disabled={(!selectionIds.length && !maquettesFiltrees.length) || enCours}
                   onClick={() => exporter(format)}
                 >
                   <i className={`bi ${icone}`} aria-hidden="true"></i>{label}
@@ -766,13 +804,27 @@ export default function Maquettes() {
               <div className="maq-import-actions">
                 <input
                   id="maq-import-fichier"
+                  className="maq-import-input"
                   type="file"
                   accept=".xlsx,.csv"
+                  aria-label="Choisir un fichier Excel ou CSV de maquettes"
                   onChange={(e) => {
                     setFichierImport(e.target.files?.[0] || null)
                     setApercuImport(null)
                   }}
                 />
+                <button type="button" className="maq-action" onClick={() => {
+                  const input = document.getElementById('maq-import-fichier')
+                  if (input) { input.accept = '.xlsx'; input.click() }
+                }}>
+                  <i className="bi bi-file-earmark-excel" aria-hidden="true"></i>Importer Excel
+                </button>
+                <button type="button" className="maq-action" onClick={() => {
+                  const input = document.getElementById('maq-import-fichier')
+                  if (input) { input.accept = '.csv'; input.click() }
+                }}>
+                  <i className="bi bi-filetype-csv" aria-hidden="true"></i>Importer CSV
+                </button>
                 <button
                   type="button"
                   className="maq-action"
@@ -805,14 +857,22 @@ export default function Maquettes() {
                           </span>
                         ))}
                       </div>
-                      <button
-                        type="button"
-                        className="maq-action maq-action--valider"
-                        disabled={importEnCours || apercuImport.deja_importe}
-                        onClick={confirmerImport}
-                      >
-                        <i className="bi bi-check2-circle" aria-hidden="true"></i>Confirmer l’import
-                      </button>
+                      <div className="maq-import-confirmation">
+                        <button
+                          type="button"
+                          className="maq-action maq-action--valider"
+                          disabled={importEnCours || apercuImport.deja_importe}
+                          onClick={confirmerImport}
+                        >
+                          <i className="bi bi-check2-circle" aria-hidden="true"></i>Confirmer l’import
+                        </button>
+                        <button type="button" className="maq-action" disabled={importEnCours} onClick={() => {
+                          setApercuImport(null)
+                          setFichierImport(null)
+                          const input = document.getElementById('maq-import-fichier')
+                          if (input) input.value = ''
+                        }}>Annuler</button>
+                      </div>
                     </>
                   ) : (
                     <>
@@ -910,8 +970,10 @@ export default function Maquettes() {
                 {peutAgir && (
                   <th scope="col" className="maq-col-selection">
                     <input
+                      ref={selectionGlobaleRef}
                       type="checkbox"
                       aria-label="Sélectionner toutes les maquettes affichées"
+                      aria-checked={selectionPartielle ? 'mixed' : selectionComplete}
                       checked={selectionComplete}
                       onChange={(e) => selectionnerToutes(e.target.checked)}
                       disabled={!maquettesFiltrees.length}
@@ -960,7 +1022,7 @@ export default function Maquettes() {
                 const credits = m.total_credits || 0
                 const conforme = credits === CREDITS_PAR_NIVEAU
                 return (
-                  <tr key={m.id} className={`maq-ligne--${(m.statut || '').toLowerCase()}`}>
+                  <tr key={m.id} className={`maq-ligne--${(m.statut || '').toLowerCase()}${selectionIds.includes(m.id) ? ' is-selected' : ''}`}>
                     {peutAgir && (
                       <td className="maq-col-selection">
                         <input
@@ -1085,6 +1147,57 @@ export default function Maquettes() {
           Faites défiler le tableau horizontalement
         </p>
       </section>
+      {maquetteVue && (
+        <div className="maq-modal-fond" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setMaquetteVue(null) }}>
+          <section className="maq-modal maq-modal--lecture" role="dialog" aria-modal="true" aria-labelledby="titre-visualiser-maquette">
+            <header className="maq-modal-entete">
+              <div>
+                <h2 id="titre-visualiser-maquette">Visualiser la maquette</h2>
+                <p className="maq-modal-sous-titre">Consultation en lecture seule · contenu pédagogique</p>
+              </div>
+              <button type="button" className="maq-modal-fermer" aria-label="Fermer" onClick={() => setMaquetteVue(null)}>
+                <i className="bi bi-x-lg" aria-hidden="true"></i>
+              </button>
+            </header>
+            {chargementVue || !maquetteVue.details ? (
+              <div className="cand-chargement" role="status"><span className="spinner-border" aria-hidden="true"></span>Chargement du détail…</div>
+            ) : (
+              <div className="maq-lecture-contenu">
+                <dl className="maq-lecture-infos">
+                  <div><dt>Formation</dt><dd>{maquetteVue.details.ref_formation}</dd></div>
+                  <div><dt>Niveau</dt><dd>{maquetteVue.details.niveau}</dd></div>
+                  <div><dt>Année académique</dt><dd>{maquetteVue.details.annee_academique}</dd></div>
+                  <div><dt>Version / statut</dt><dd>v{maquetteVue.details.version} · {maquetteVue.details.statut}</dd></div>
+                  <div><dt>Parcours</dt><dd>{maquetteVue.details.parcours || '—'}</dd></div>
+                  <div><dt>UE</dt><dd>{maquetteVue.details.unites_enseignement?.length || 0}</dd></div>
+                </dl>
+                {maquetteVue.details.commentaire_validation && <p><strong>Commentaire :</strong> {maquetteVue.details.commentaire_validation}</p>}
+                <div className="maq-lecture-ues">
+                  {maquetteVue.details.unites_enseignement?.length ? maquetteVue.details.unites_enseignement.map((ue) => (
+                    <article className="maq-lecture-ue" key={ue.id}>
+                      <h3>{ue.semestre?.libelle || 'Semestre'} · {ue.code} — {ue.intitule}</h3>
+                      <p>{ue.credits} ECTS · {ue.caractere}{ue.famille ? ` · ${ue.famille}` : ''}</p>
+                      {ue.ecues?.length ? (
+                        <div className="maq-lecture-table-wrap"><table className="maq-lecture-table">
+                          <thead><tr><th>Code / ECUE</th><th>ECTS</th><th>Coeff.</th><th>CM</th><th>TD</th><th>TP</th><th>Total h</th></tr></thead>
+                          <tbody>{ue.ecues.map((ecue) => (
+                            <tr key={ecue.id}>
+                              <td><strong>{ecue.code}</strong> — {ecue.intitule}{ecue.archive ? ' (archivé)' : ''}</td>
+                              <td>{ecue.credits}</td><td>{ecue.coefficient}</td><td>{ecue.volume_cm}</td><td>{ecue.volume_td}</td><td>{ecue.volume_tp}</td><td>{ecue.volume_total}</td>
+                            </tr>
+                          ))}</tbody>
+                        </table></div>
+                      ) : <p className="text-muted">Aucun ECUE renseigné.</p>}
+                    </article>
+                  )) : <p>Aucune UE n’est renseignée pour cette maquette.</p>}
+                </div>
+              </div>
+            )}
+            <footer className="maq-modal-actions"><button type="button" className="maq-action" onClick={() => setMaquetteVue(null)}>Fermer</button></footer>
+          </section>
+        </div>
+      )}
+
       {maquetteEditee && (
         <div className="maq-modal-fond" role="presentation">
           <section

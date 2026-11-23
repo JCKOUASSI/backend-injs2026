@@ -60,7 +60,7 @@ traçabilité 100 % (identique au PDF de référence du 02/11/2026).
   Licence/Master créés en coquilles, **sans maquette** (UE/ECUE non publiés).
 - Volumes horaires : fiabilité **MODELISE** (proposition du document de
   cadrage, jamais réglementaire) ; bloc « Maître(sse) d'EPS » exclu (hors INJS).
-- Bâtiments/salles : inventaire **MODELISE** de la source.
+- Bâtiments : validation déclarée **OFFICIELLE** le 23/11/2026 (source conservée dans `lieux.json`). Espaces/salles : statut initial **MODELISE** dans le référentiel source.
 - Maquettes importées en statut **BROUILLON** : ni validation ni activation
   automatiques (décision institutionnelle).
 - Écart avec les captures fournies (1304 valeurs / UE-ECUE 531) : +200 UE

@@ -21,6 +21,25 @@ class GestionOffreTests(TestCase):
         self.client = APIClient()
         self.client.force_authenticate(self.admin)
 
+    def test_tableau_de_bord_mesure_la_completude_des_cycles(self):
+        RefFormation.objects.create(
+            intitule='Éducation et Motricité — Licence', code='EM-LIC',
+            type_diplome='LICENCE', domaine='Sciences et Technologies',
+            mention='STAPS', duree_annees=3, nb_semestres=6, nb_credites=180,
+            perimetre='INJS', filiere_code='F01', source='Formations et Modules INJS',
+        )
+        RefFormation.objects.create(intitule='Cycle incomplet', code='INCOMPLET')
+
+        catalogue = self.client.get('/api/referentiels/tableau-de-bord/').data
+        entry = next(
+            e for categorie in catalogue['categories'] for e in categorie['entrees']
+            if e['slug'] == 'formations'
+        )
+
+        self.assertTrue(entry['a_un_code'])
+        self.assertEqual(entry['a_renseigner'], 1)
+        self.assertFalse(entry['provenance_suivie'])
+
     def test_catalogue_gestion_et_cycle_vie_des_trois_plaquettes(self):
         catalogue = self.client.get('/api/referentiels/tableau-de-bord/').data
         for slug in ('formations', 'modules-officiels', 'volumes-modules'):

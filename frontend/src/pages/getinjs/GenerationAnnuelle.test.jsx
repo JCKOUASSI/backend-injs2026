@@ -62,6 +62,7 @@ const BILAN = {
   status_global: 'PARTIELLE',
   annee_academique_id: 2,
   semaines: { debut: 1, fin: 1 },
+  semaines_selectionnees: [1],
   totaux: {
     nb_groupes: 2, nb_groupes_planifies: 2, nb_groupes_complets: 1,
     nb_groupes_non_planifies: 0, etudiants_couverts: 3752,
@@ -134,6 +135,10 @@ function routes({ synthese = SYNTHESE } = {}) {
   apiController.setRoute('/scolarite/ref/niveaux/', [
     { id: 1, code: 'L1', libelle: 'Licence 1' },
   ])
+  apiController.setRoute('/edts/simulations/ressources/', {
+    batiments: [{ id: 21, nom: 'Bâtiment A' }],
+    salles: [{ id: 31, nom: 'Salle A1', batiment_id: 21, type_lieu: 'SALLE', capacite: 40 }],
+  })
   apiController.setRoute('/scolarite/ref/groupes/', [
     { id: 11, nom: 'L1-G1', ref_formation_id: 1, niveau_id: 1, capacite_max: 40 },
   ])
@@ -152,11 +157,11 @@ function routes({ synthese = SYNTHESE } = {}) {
   apiController.setRoute('/edts/campagnes/1/resultat/', RESULTAT_CAMPAGNE)
 }
 
-function rendre() {
+function rendre({ initialEntries = ['/'] } = {}) {
   const user = makeUser('ADMIN')
   apiController.setMe(user)
   return render(
-    <AllProviders authUser={user}>
+    <AllProviders authUser={user} initialEntries={initialEntries}>
       <GenerationAnnuelle />
     </AllProviders>,
   )
@@ -176,6 +181,7 @@ async function choisirPerimetre(user) {
     .getByRole('checkbox', { name: /L1-G1/ }))
   await user.click(within(screen.getByRole('group', { name: /Semestres/ }))
     .getByRole('checkbox', { name: 'Semestre 1 (S1)' }))
+  await user.type(screen.getByLabelText('Numéros des semaines à planifier (1–53)'), '1,2')
 }
 
 describe('GET-INJS — génération des emplois du temps (maquette) et import', () => {
@@ -195,11 +201,31 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     for (const titre of ['Filières', 'Formations / parcours', 'Niveaux', 'Groupes', 'Semestres']) {
       expect(screen.getByRole('group', { name: new RegExp(titre) })).toBeInTheDocument()
     }
-    expect(screen.getByLabelText('Séances max / groupe / semaine')).toHaveValue(30)
+    expect(screen.getByLabelText(/Séances max \/ groupe \/ semaine/)).toHaveValue(null)
     expect(screen.getByLabelText(/Inclure le samedi/)).toBeChecked()
     expect(screen.getByLabelText(/Éviter la pause méridienne/)).toBeChecked()
     expect(screen.getByText('Comment le moteur décide')).toBeInTheDocument()
     expect(screen.getByText('Règles métier appliquées par le moteur')).toBeInTheDocument()
+  })
+
+  it('recharge le périmètre accepté depuis le serveur après navigation/actualisation', async () => {
+    apiController.setRoute('/edts/campagnes/41/', {
+      id: 41, annee_academique_id: 2, semaines: [2, 3],
+      perimetre: { formations: [1], niveaux: [1], groupes: [11], semestres: [1] },
+      parametres: { simulation: true, simulation_acceptee: { par: 'admin' },
+        inclure_samedi: false, eviter_pause_meridienne: true, max_seances_par_groupe_semaine: 12 },
+    })
+    rendre({ initialEntries: ['/edt/generation-annuelle?simulation_id=41'] })
+    await waitFor(() => expect(screen.getByLabelText('Numéros des semaines à planifier (1–53)')).toHaveValue('2,3'))
+    expect(within(screen.getByRole('group', { name: /Formations \/ parcours/ }))
+      .getByRole('checkbox', { name: 'Licence en Journalisme' })).toBeChecked()
+    await screen.findByText('L1-G1 — Licence en Journalisme')
+    expect(within(screen.getByRole('group', { name: /Groupes/ }))
+      .getByRole('checkbox', { name: /L1-G1/ })).toBeChecked()
+    expect(screen.getByLabelText(/Inclure le samedi/)).not.toBeChecked()
+    expect(screen.getByLabelText(/Éviter la pause méridienne/)).toBeChecked()
+    expect(screen.getByRole('button', { name: 'Lancer la génération manuelle' })).toBeDisabled()
+    expect(screen.getByText(/Prévisualisez à nouveau avant toute génération/)).toBeInTheDocument()
   })
 
   it('charge les années et sélectionne l’année courante', async () => {
@@ -300,8 +326,8 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(true)
     rendre()
     await screen.findByLabelText(/Année académique/)
-    await user.clear(screen.getByLabelText('Semaines planifiées'))
-    await user.type(screen.getByLabelText('Semaines planifiées'), '1,2')
+    await user.clear(screen.getByLabelText('Numéros des semaines à planifier (1–53)'))
+    await user.type(screen.getByLabelText('Numéros des semaines à planifier (1–53)'), '1,2')
     await choisirModeAutomatique(user)
     await user.click(screen.getByRole('button', { name: /Lancer la génération automatique/i }))
 
@@ -316,6 +342,7 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
           eviter_pause_meridienne: true,
           max_seances_par_groupe_semaine: null,
           calendrier_previsionnel_confirme: true,
+          autoriser_plan_partiel: true,
           publier_direct: false,
         }),
       })),
@@ -367,11 +394,11 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     rendre()
     await screen.findByLabelText(/Année académique/)
     await user.click(screen.getByLabelText(/Publier directement/))
-    await user.clear(screen.getByLabelText('Semaines planifiées'))
-    await user.type(screen.getByLabelText('Semaines planifiées'), '3,4')
+    await user.clear(screen.getByLabelText('Numéros des semaines à planifier (1–53)'))
+    await user.type(screen.getByLabelText('Numéros des semaines à planifier (1–53)'), '3,4')
     await choisirModeAutomatique(user)
     expect(screen.queryByLabelText(/Publier directement/)).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Semaines planifiées')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Numéros des semaines à planifier (1–53)')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Séances max / groupe / semaine')).not.toBeInTheDocument()
     expect(screen.queryByRole('group', { name: /Formations \/ parcours/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Prévisualiser sans persister/ })).not.toBeInTheDocument()
@@ -385,8 +412,8 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     const causes = await screen.findByText('Pourquoi ce bilan est partiel :')
     expect(causes.closest('[role="alert"]')).toHaveTextContent('Validation bloquante : 1 groupe(s)')
     for (const [libelle, valeur] of [
-      ['groupes planifiés (calculés)', '2'], ['groupes enregistrés', '1'],
-      ['étudiants couverts (calculés)', '3752'], ['étudiants couverts (enregistrés)', '1751'],
+      ['groupes avec placements (calculés)', '2'], ['groupes avec placements enregistrés', '1'],
+      ['effectif des groupes avec placements (calculés)', '3752'], ['effectif des groupes avec placements enregistrés', '1751'],
       ['séances placées (calculées)', '9'], ['séances enregistrées', '6'],
       ['EDT enregistrés', '1'],
     ]) {
@@ -412,8 +439,8 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
       Promise.reject(Object.assign(new Error('Accès refusé'), { response: { status: 401 } })))
     rendre()
     await screen.findByLabelText(/Année académique/)
-    await user.clear(screen.getByLabelText('Semaines planifiées'))
-    await user.type(screen.getByLabelText('Semaines planifiées'), '1,2')
+    await user.clear(screen.getByLabelText('Numéros des semaines à planifier (1–53)'))
+    await user.type(screen.getByLabelText('Numéros des semaines à planifier (1–53)'), '1,2')
     await choisirModeAutomatique(user)
     await user.click(screen.getByRole('button', { name: /Lancer la génération automatique/i }))
     expect(await screen.findByRole('alert')).toHaveTextContent(/Suivi indisponible.*HTTP 401/)
@@ -426,8 +453,8 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(true)
     rendre()
     await choisirPerimetre(user)
-    await user.clear(screen.getByLabelText('Semaines planifiées'))
-    await user.type(screen.getByLabelText('Semaines planifiées'), '1,2')
+    await user.clear(screen.getByLabelText('Numéros des semaines à planifier (1–53)'))
+    await user.type(screen.getByLabelText('Numéros des semaines à planifier (1–53)'), '1,2')
     await choisirModeAutomatique(user)
     await user.click(screen.getByRole('button', { name: /Lancer la génération automatique/i }))
     await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith('/edts/campagnes/',
@@ -476,8 +503,8 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(false)
     rendre()
     await screen.findByLabelText(/Année académique/)
-    await user.clear(screen.getByLabelText('Semaines planifiées'))
-    await user.type(screen.getByLabelText('Semaines planifiées'), '1,2')
+    await user.clear(screen.getByLabelText('Numéros des semaines à planifier (1–53)'))
+    await user.type(screen.getByLabelText('Numéros des semaines à planifier (1–53)'), '1,2')
     await choisirModeAutomatique(user)
     await user.click(screen.getByRole('button', { name: /Lancer la génération automatique/i }))
     expect(apiMock.post).not.toHaveBeenCalledWith('/edts/campagnes/', expect.anything())
@@ -486,6 +513,7 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
 
   it('refuse une génération manuelle sans sélection et sans prévisualisation correspondante', async () => {
     const user = userEvent.setup()
+    const confirmationPartielle = vi.spyOn(window, 'confirm').mockReturnValue(true)
     rendre()
     await screen.findByLabelText(/Année académique/)
     // Sans aperçu : le bouton de génération manuelle est désactivé.
@@ -503,21 +531,108 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     expect(boutonGenApres).not.toBeDisabled()
     await user.click(boutonGenApres)
     await waitFor(() =>
-      expect(apiMock.post).toHaveBeenCalledWith('/edts/campagnes/', expect.anything()),
+      expect(apiMock.post).toHaveBeenCalledWith('/edts/campagnes/', expect.objectContaining({
+        parametres: expect.objectContaining({ autoriser_plan_partiel: true }),
+      })),
     )
+    expect(confirmationPartielle).toHaveBeenCalledWith(expect.stringContaining('enregistrées en brouillon'))
+    confirmationPartielle.mockRestore()
+  })
+
+  it('annule la génération partielle si l’utilisateur refuse explicitement l’enregistrement', async () => {
+    const user = userEvent.setup()
+    const confirmationPartielle = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    rendre()
+    await screen.findByLabelText(/Année académique/)
+    await choisirPerimetre(user)
+    await user.click(screen.getByRole('button', { name: /Prévisualiser sans persister/i }))
+    await screen.findByRole('table', { name: /Bilan par groupe/i })
+    await user.click(screen.getByRole('button', { name: /Lancer la génération manuelle/i }))
+
+    expect(confirmationPartielle).toHaveBeenCalledWith(expect.stringContaining('enregistrées en brouillon'))
+    expect(apiMock.post).not.toHaveBeenCalledWith('/edts/campagnes/', expect.anything())
+    confirmationPartielle.mockRestore()
   })
 
   it('prévisualise puis lance la génération manuelle pour les seules cases cochées', async () => {
     const user = userEvent.setup()
+    const confirmationPartielle = vi.spyOn(window, 'confirm').mockReturnValue(true)
     rendre()
     await choisirPerimetre(user)
     await user.click(screen.getByRole('button', { name: /Prévisualiser sans persister/i }))
     await screen.findByRole('table', { name: /Bilan par groupe/i })
     await user.click(screen.getByRole('button', { name: /Lancer la génération manuelle/i }))
     await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith('/edts/campagnes/',
-      expect.objectContaining({ perimetre: {
-        formations: [1], niveaux: [1], groupes: [11], semestres: [1],
-      } })))
+      expect.objectContaining({
+        perimetre: { formations: [1], niveaux: [1], groupes: [11], semestres: [1] },
+        parametres: expect.objectContaining({ autoriser_plan_partiel: true }),
+      })))
+    confirmationPartielle.mockRestore()
+  })
+
+  it('interprète 8 comme la semaine numéro 8 et impose une liste explicite', async () => {
+    const user = userEvent.setup()
+    rendre()
+    await choisirPerimetre(user)
+    const semainesInput = screen.getByLabelText('Numéros des semaines à planifier (1–53)')
+    await user.clear(semainesInput)
+    await user.type(semainesInput, '8')
+    apiController.replaceRoute('/edts/lmd/generate-annee/', {
+      ...BILAN, semaines_selectionnees: [8], semaines: { debut: 8, fin: 8 },
+    })
+    await user.click(screen.getByRole('button', { name: /Prévisualiser sans persister/i }))
+    await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith(
+      '/edts/lmd/generate-annee/', expect.objectContaining({ semaines: [8] }),
+    ))
+    expect(await screen.findByText(/Semaines réellement calculées : 8 \(1 semaine\(s\)\)/))
+      .toBeInTheDocument()
+    expect(screen.getByText(/« 8 » seul sélectionne uniquement la semaine n°8/)).toBeInTheDocument()
+  })
+
+  it('bloque la prévisualisation manuelle si les semaines ne sont pas renseignées', async () => {
+    const user = userEvent.setup()
+    rendre()
+    await choisirPerimetre(user)
+    await user.clear(screen.getByLabelText('Numéros des semaines à planifier (1–53)'))
+    await user.click(screen.getByRole('button', { name: /Prévisualiser sans persister/i }))
+    expect(await screen.findByText(/Indiquez les numéros officiels des semaines/)).toBeInTheDocument()
+    expect(apiMock.post).not.toHaveBeenCalledWith('/edts/lmd/generate-annee/', expect.anything())
+  })
+
+  it('efface le bilan dès que les semaines changent après une prévisualisation', async () => {
+    const user = userEvent.setup()
+    rendre()
+    await choisirPerimetre(user)
+    await user.click(screen.getByRole('button', { name: /Prévisualiser sans persister/i }))
+    await screen.findByRole('table', { name: /Bilan par groupe/i })
+    const semainesInput = screen.getByLabelText('Numéros des semaines à planifier (1–53)')
+    await user.clear(semainesInput)
+    await user.type(semainesInput, '1,2,3')
+    expect(screen.queryByRole('table', { name: /Bilan par groupe/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Lancer la génération manuelle/i })).toBeDisabled()
+  })
+
+  it('transmet les bâtiments et salles sélectionnés à la prévisualisation et à la génération', async () => {
+    const user = userEvent.setup()
+    const confirmationPartielle = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    rendre()
+    await choisirPerimetre(user)
+    await user.click(within(screen.getByRole('group', { name: /Bâtiments actifs/ }))
+      .getByRole('checkbox', { name: 'Bâtiment A' }))
+    await user.click(within(screen.getByRole('group', { name: /Salles et espaces actifs/ }))
+      .getByRole('checkbox', { name: /Salle A1/ }))
+    await user.click(screen.getByRole('button', { name: /Prévisualiser sans persister/i }))
+    await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith(
+      '/edts/lmd/generate-annee/', expect.objectContaining({ batiments: [21], salles: [31] }),
+    ))
+    await user.click(screen.getByRole('button', { name: /Lancer la génération manuelle/i }))
+    await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith(
+      '/edts/campagnes/', expect.objectContaining({
+        perimetre: expect.objectContaining({ batiments: [21], salles: [31] }),
+        parametres: expect.objectContaining({ autoriser_plan_partiel: true }),
+      }),
+    ))
+    confirmationPartielle.mockRestore()
   })
 
   it('prévisualise sans persister (aucun brouillon écrit)', async () => {
@@ -526,8 +641,8 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
     await screen.findByLabelText(/Année académique/)
 
     await choisirPerimetre(user)
-    await user.clear(screen.getByLabelText('Semaines planifiées'))
-    await user.type(screen.getByLabelText('Semaines planifiées'), '1,2')
+    await user.clear(screen.getByLabelText('Numéros des semaines à planifier (1–53)'))
+    await user.type(screen.getByLabelText('Numéros des semaines à planifier (1–53)'), '1,2')
     await user.click(screen.getByRole('button', { name: /Prévisualiser sans persister/i }))
 
     await waitFor(() =>
@@ -543,7 +658,7 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
         semestres: [1],
         inclure_samedi: true,
         eviter_pause_meridienne: true,
-        max_seances_par_groupe_semaine: 30,
+        max_seances_par_groupe_semaine: null,
       }),
     )
 
@@ -552,7 +667,7 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
       .toHaveTextContent('CAPACITE_SALLE_INSUFFISANTE : 1 groupe(s)')
     const bilanTable = screen.getByRole('table', { name: /Bilan par groupe/i })
     expect(within(bilanTable).getByRole('cell', { name: 'L1-G2' })).toBeInTheDocument()
-    const couverts = screen.getByText('étudiants couverts').closest('.getinjs-compte')
+    const couverts = screen.getByText('effectif des groupes avec placements').closest('.getinjs-compte')
     expect(within(couverts).getByText('3752')).toBeInTheDocument()
     const nonPlacees = screen.getByText('séances non placées').closest('.getinjs-compte')
     expect(within(nonPlacees).getByText('3')).toBeInTheDocument()
@@ -632,7 +747,7 @@ describe('GET-INJS — génération des emplois du temps (maquette) et import', 
       'Aucune combinaison créneau/salle ne satisfait les contraintes',
     )).toBeInTheDocument()
     expect(within(bilanTable).queryByText('PLACEMENT_IMPOSSIBLE')).not.toBeInTheDocument()
-    const nonPlanifies = screen.getByText('non planifiés').closest('.getinjs-compte')
+    const nonPlanifies = screen.getByText('groupes sans placement').closest('.getinjs-compte')
     expect(within(nonPlanifies).getByText('2')).toBeInTheDocument()
   })
 

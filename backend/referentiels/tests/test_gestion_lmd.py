@@ -8,6 +8,8 @@ socle (pas de provenance, pas d'archivage, ``intitule`` au lieu de
 Les UE/ECUE, elles, restent pilotées par le module Maquettes (cycle de
 vie) : leur carte y renvoie via le bouton « Gérer ».
 """
+from datetime import date
+
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -15,7 +17,9 @@ from rest_framework.test import APIClient
 from formations.models import RefFormation
 from referentiels.models import ReferentielJournal
 from referentiels.registre import REGISTRE
-from scolarite.models import Niveau, Parcours, Semestre, TypeFormation
+from scolarite.models import (
+    AnneeAcademique, ECUE, Maquette, Niveau, Parcours, Semestre, TypeFormation, UE,
+)
 
 from .test_refonte import make_user
 
@@ -181,6 +185,44 @@ class TableauDeBordLMDTests(TestCase):
             e for c in res.data['categories'] for e in c['entrees']
             if e['slug'] == slug
         )
+
+    def test_completude_des_cinq_cartes_systeme_lmd(self):
+        type_formation = TypeFormation.objects.create(code='LICENCE', libelle='Licence')
+        cycle = RefFormation.objects.create(
+            intitule='Éducation et Motricité — Licence', code='EM-LIC',
+        )
+        parcours = Parcours.objects.create(
+            code='EM', intitule='Éducation et Motricité',
+            ref_formation=cycle, type_formation=type_formation,
+        )
+        niveau = Niveau.objects.create(
+            code='L1', libelle='Licence 1', cycle='LICENCE', ordre=1,
+            credits_requis=60,
+        )
+        semestre = Semestre.objects.create(niveau=niveau, numero=1, libelle='S1')
+        annee = AnneeAcademique.objects.create(
+            libelle='2026-2027', date_debut=date(2026, 10, 1),
+            date_fin=date(2027, 7, 31),
+        )
+        maquette = Maquette.objects.create(
+            annee_academique=annee, ref_formation=cycle, parcours=parcours,
+            niveau=niveau, libelle='Maquette test',
+        )
+        ue = UE.objects.create(
+            maquette=maquette, semestre=semestre, code='UE1',
+            intitule='Unité test', credits=30,
+        )
+        ecue = ECUE.objects.create(
+            ue=ue, code='ECUE1', intitule='Élément test', credits=30,
+        )
+
+        for slug in ('niveaux', 'semestres', 'parcours', 'types-formation', 'ue-ecue'):
+            with self.subTest(slug=slug):
+                self.assertEqual(self._entree(slug)['a_renseigner'], 0)
+
+        ecue.intitule = ''
+        ecue.save(update_fields=['intitule'])
+        self.assertEqual(self._entree('ue-ecue')['a_renseigner'], 1)
 
     def test_metadonnees_d_adaptation_de_l_ecran_generique(self):
         niveaux = self._entree('niveaux')

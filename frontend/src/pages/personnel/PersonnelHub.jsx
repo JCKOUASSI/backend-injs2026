@@ -1,7 +1,6 @@
 /**
- * Hub Personnel premium (RH administrative et technique) : panorama,
- * agents, affectations, disponibilités, documents RH, fonctions et
- * services. Les enseignants restent au registre Formateurs.
+ * Hub Personnel premium : registre RH administratif et technique et vue
+ * de consultation du registre Formateurs existant (sans dupliquer son CRUD).
  */
 import ModuleHub from '@/components/hub/ModuleHub'
 import '../../styles/personnel.css'
@@ -15,7 +14,7 @@ export default function PersonnelHub({ ongletInitial = 'agents' }) {
       titre="Personnel administratif & technique"
       badge="Personnel"
       icone="bi-person-badge"
-      introduction="Agents, affectations et disponibilités du personnel administratif et technique. Les données fictives de démonstration sont étiquetées [Démo fictive] (matricules PERS-DEMO-…, aucun compte réel) ; les enseignants disposent de leur registre dédié (Formateurs, grades métier)."
+      introduction="Registre RH des agents administratifs et techniques, avec une vue de consultation des enseignants issue du registre Formateurs et de leurs charges LMD. Les données fictives sont identifiées [Démo fictive] ; les deux populations et leurs flux de gestion restent distincts."
       statsEndpoint="/rh/stats/"
       pastilles={(s) => [
         { icone: 'bi-people', texte: `${s.agents_actifs ?? 0} agents actifs sur ${s.agents ?? 0}` },
@@ -49,6 +48,27 @@ export default function PersonnelHub({ ongletInitial = 'agents' }) {
           ],
           videTitre: 'Aucun agent',
           videTexte: 'Les agents du personnel administratif et technique apparaîtront ici.',
+        },
+        {
+          id: 'enseignants', libelle: 'Enseignants', icone: 'bi-mortarboard',
+          endpoint: '/formations/formateurs/list/',
+          note: 'Vue de consultation du registre Formateurs existant. Les créations, modifications et fiches détaillées restent dans le module Enseignants ; les matricules ENS-DEMO-* identifient des données fictives.',
+          rechercheParam: 'search',
+          recherchePlaceholder: 'Nom, matricule, spécialité…',
+          colonnes: [
+            { cle: 'numerobadge', libelle: 'Matricule', gras: true },
+            { cle: 'nom', libelle: 'Enseignant', gras: true, sousCle: 'prenom' },
+            { cle: 'grade', libelle: 'Grade', texte: (l) => l.grade?.libelle || '—' },
+            { cle: 'statut_enseignant', libelle: 'Statut', format: 'badge', tons: { Titulaire: 'green', Vacataire: 'amber' } },
+            { cle: 'specialite', libelle: 'Spécialité', format: 'muted' },
+            { cle: 'email', libelle: 'Coordonnées', texte: (l) => [l.email, l.telephone].filter(Boolean).join(' · ') || '—' },
+            { cle: 'enseignements', libelle: 'Enseignements associés', texte: (l) => {
+              const e = l.enseignements
+              return e ? `${e.nb_ecue || 0} ECUE · ${Number(e.heures || 0).toLocaleString('fr-FR')} h${e.formations?.length ? ` · ${e.formations.join(', ')}` : ''}` : '—'
+            } },
+          ],
+          videTitre: 'Aucun enseignant',
+          videTexte: 'Les formateurs du registre dédié apparaîtront ici.',
         },
         {
           id: 'affectations', libelle: 'Affectations', icone: 'bi-diagram-3',
@@ -132,6 +152,7 @@ export default function PersonnelHub({ ongletInitial = 'agents' }) {
       classePage="hub-personnel"
       routesOnglets={{
         agents: '/personnel/agents',
+        enseignants: '/personnel/enseignants',
         affectations: '/personnel/affectations',
         disponibilites: '/personnel/disponibilites',
         documents: '/personnel/documents',

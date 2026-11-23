@@ -58,6 +58,10 @@ class User(AbstractUser):
     telephone = models.CharField(max_length=20, blank=True, default='')
     organisation = models.CharField(max_length=255, blank=True, default='')
     grade = models.CharField(max_length=20, blank=True, default='', help_text="Grade (A4, A3…)")
+    photo = models.ImageField(
+        upload_to='users/avatars/', blank=True, null=True,
+        help_text="Photo de profil, servie uniquement via l'API authentifiée.",
+    )
     secretariat = models.ForeignKey(
         'formations.Secretariat',
         on_delete=models.SET_NULL,

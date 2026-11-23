@@ -340,6 +340,17 @@ export const ARBORESCENCE = [
         },
       },
       {
+        id: 'get_injs.simulation',
+        libelle: 'Simulation',
+        description: 'Tester un périmètre EDT sans modifier les emplois du temps',
+        icone: 'bi-bezier2',
+        chemin: '/edt/simulation',
+        droit: {
+          curp: ['edt.emploi_du_temps.generer'],
+          legacy: [['web', 'operationnel']],
+        },
+      },
+      {
         // Demande 21 : entrée d'échelle annuelle — import du fichier des
         // inscrits puis EDT de TOUTES les cohortes de l'année en une passe.
         id: 'get_injs.generation_annuelle',

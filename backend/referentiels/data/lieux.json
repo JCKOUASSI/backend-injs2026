@@ -11,8 +11,8 @@
   "batiments": [
     {
       "nom": "Bloc ENSEPS",
-      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
-      "fiabilite": "MODELISE",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS ; validation officielle déclarée le 23/11/2026",
+      "fiabilite": "OFFICIEL",
       "espaces": [
         {
           "nom": "Amphithéâtre ENSEPS A",
@@ -63,8 +63,8 @@
     },
     {
       "nom": "Bloc ENSEP",
-      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
-      "fiabilite": "MODELISE",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS ; validation officielle déclarée le 23/11/2026",
+      "fiabilite": "OFFICIEL",
       "espaces": [
         {
           "nom": "Amphithéâtre ENSEP",
@@ -115,8 +115,8 @@
     },
     {
       "nom": "Bâtiment LMD",
-      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
-      "fiabilite": "MODELISE",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS ; validation officielle déclarée le 23/11/2026",
+      "fiabilite": "OFFICIEL",
       "espaces": [
         {
           "nom": "Amphi 500 places",
@@ -342,8 +342,8 @@
     },
     {
       "nom": "CNMS — Centre National de Médecine du Sport",
-      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
-      "fiabilite": "MODELISE",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS ; validation officielle déclarée le 23/11/2026",
+      "fiabilite": "OFFICIEL",
       "espaces": [
         {
           "nom": "Salle Anatomie",
@@ -404,8 +404,8 @@
     },
     {
       "nom": "CNSHN — Centre National du Sport de Haut Niveau",
-      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
-      "fiabilite": "MODELISE",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS ; validation officielle déclarée le 23/11/2026",
+      "fiabilite": "OFFICIEL",
       "espaces": [
         {
           "nom": "Salle préparation physique",
@@ -448,8 +448,8 @@
     },
     {
       "nom": "Gymnases",
-      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
-      "fiabilite": "MODELISE",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS ; validation officielle déclarée le 23/11/2026",
+      "fiabilite": "OFFICIEL",
       "espaces": [
         {
           "nom": "Gymnase 1",
@@ -467,8 +467,8 @@
     },
     {
       "nom": "Installations sportives extérieures",
-      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
-      "fiabilite": "MODELISE",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS ; validation officielle déclarée le 23/11/2026",
+      "fiabilite": "OFFICIEL",
       "espaces": [
         {
           "nom": "Piste 400 m",
@@ -593,8 +593,8 @@
     },
     {
       "nom": "Laboratoires pédagogiques",
-      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
-      "fiabilite": "MODELISE",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS ; validation officielle déclarée le 23/11/2026",
+      "fiabilite": "OFFICIEL",
       "espaces": [
         {
           "nom": "Laboratoire Informatique 1",
@@ -650,8 +650,8 @@
     },
     {
       "nom": "Espaces numériques",
-      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
-      "fiabilite": "MODELISE",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS ; validation officielle déclarée le 23/11/2026",
+      "fiabilite": "OFFICIEL",
       "espaces": [
         {
           "nom": "Salle informatique A",
@@ -697,8 +697,8 @@
     },
     {
       "nom": "Espaces de recherche",
-      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
-      "fiabilite": "MODELISE",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS ; validation officielle déclarée le 23/11/2026",
+      "fiabilite": "OFFICIEL",
       "espaces": [
         {
           "nom": "Centre de recherche STAPS",
@@ -734,8 +734,8 @@
     },
     {
       "nom": "Bibliothèque",
-      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
-      "fiabilite": "MODELISE",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS ; validation officielle déclarée le 23/11/2026",
+      "fiabilite": "OFFICIEL",
       "espaces": [
         {
           "nom": "Salle lecture générale",
@@ -776,8 +776,8 @@
     },
     {
       "nom": "Salles spécialisées",
-      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
-      "fiabilite": "MODELISE",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS ; validation officielle déclarée le 23/11/2026",
+      "fiabilite": "OFFICIEL",
       "espaces": [
         {
           "nom": "Salle de langues",
@@ -813,8 +813,8 @@
     },
     {
       "nom": "Espaces administratifs",
-      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
-      "fiabilite": "MODELISE",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS ; validation officielle déclarée le 23/11/2026",
+      "fiabilite": "OFFICIEL",
       "espaces": [
         {
           "nom": "Direction des études",
@@ -860,8 +860,8 @@
     },
     {
       "nom": "Espaces polyvalents",
-      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
-      "fiabilite": "MODELISE",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS ; validation officielle déclarée le 23/11/2026",
+      "fiabilite": "OFFICIEL",
       "espaces": [
         {
           "nom": "Salle de conférences",
@@ -897,8 +897,8 @@
     },
     {
       "nom": "Résidences pédagogiques",
-      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
-      "fiabilite": "MODELISE",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS ; validation officielle déclarée le 23/11/2026",
+      "fiabilite": "OFFICIEL",
       "espaces": [
         {
           "nom": "Dortoir Hommes",
@@ -934,8 +934,8 @@
     },
     {
       "nom": "Espaces extérieurs",
-      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS",
-      "fiabilite": "MODELISE",
+      "source_document": "Liste des Bâtiments, salles et espaces de formation de l'INJS ; validation officielle déclarée le 23/11/2026",
+      "fiabilite": "OFFICIEL",
       "espaces": [
         {
           "nom": "Place d'armes",

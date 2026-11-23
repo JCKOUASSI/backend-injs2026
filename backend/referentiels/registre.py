@@ -324,8 +324,14 @@ REGISTRE = {
         route_api='/formations/ref/formations/',
         route_gestion='/referentiels/gestion-donnees/formations/',
         champ_libelle='intitule',
-        champs=['type_diplome', 'domaine', 'mention', 'duree_annees',
+        champs=['code', 'type_diplome', 'domaine', 'mention', 'duree_annees',
                 'nb_semestres', 'nb_credites', 'perimetre', 'filiere_code', 'source'],
+        # RefFormation utilise ``source`` plutôt que le couple standard
+        # ``source_document`` / ``fiabilite``. Évalue la complétude de ses
+        # champs métier sur les lignes, sans les classer « provenance non suivie ».
+        champs_completude=['code', 'type_diplome', 'domaine', 'mention',
+                           'duree_annees', 'nb_semestres', 'nb_credites',
+                           'perimetre', 'filiere_code', 'source'],
         selecteurs=['filiere'],
         icone='bi-mortarboard-fill',
         libelle_bouton='Gérer',
@@ -336,6 +342,7 @@ REGISTRE = {
         description='L1 à D3 — 60 ECTS par niveau annuel (Licence, Master, Doctorat).',
         categorie=Categorie.SYSTEME_LMD, modele='scolarite.Niveau',
         champs=['cycle', 'ordre', 'credits_requis'],
+        champs_completude=['code', 'libelle', 'cycle', 'ordre', 'credits_requis'],
         icone='bi-bar-chart-steps',
         source='Architecture LMD (30 ECTS/semestre)',
         avertissement=(
@@ -350,6 +357,7 @@ REGISTRE = {
         categorie=Categorie.SYSTEME_LMD, modele='scolarite.Semestre',
         champ_code='libelle',
         champs=['numero'],
+        champs_completude=['libelle', 'numero', 'niveau'],
         selecteurs=['niveau'],
         icone='bi-calendar3',
         source='Architecture LMD (30 ECTS/semestre)',
@@ -363,6 +371,7 @@ REGISTRE = {
         description='Spécialisations internes à un cycle (8 filières × Licence/Master).',
         categorie=Categorie.SYSTEME_LMD, modele='scolarite.Parcours',
         champ_libelle='intitule',
+        champs_completude=['code', 'intitule', 'ref_formation', 'type_formation'],
         selecteurs=['ref_formation', 'type_formation'],
         icone='bi-signpost-split',
         source='RÉFÉRENTIEL COMPLET DU SYSTÈME LMD (PDF) — §6',
@@ -374,6 +383,7 @@ REGISTRE = {
             'Référentiel hérité de la scolarité, distinct des natures de cursus.'
         ),
         categorie=Categorie.SYSTEME_LMD, modele='scolarite.TypeFormation',
+        champs_completude=['code', 'libelle'],
         icone='bi-diagram-2',
         source='Scolarité (init_referentiels_lmd)',
     ),
@@ -384,6 +394,13 @@ REGISTRE = {
             'gérés dans le module Maquettes LMD (cycle de vie par maquette).'
         ),
         categorie=Categorie.SYSTEME_LMD, modele='scolarite.UE',
+        champs_completude=['code', 'intitule', 'maquette', 'semestre', 'credits',
+                           'caractere', 'ordre', 'statut'],
+        champs_completude_relations=[{
+            'relation': 'ecues',
+            'champs': ['code', 'intitule', 'ue', 'credits', 'coefficient', 'statut'],
+            'au_moins_une': True,
+        }],
         editable=False, route_ui='/scolarite/maquettes', icone='bi-layers',
         libelle_bouton='Gérer',
         source='Maquettes officielles INJS',

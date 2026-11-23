@@ -707,6 +707,40 @@ def _resume_cohortes(resolues):
     ))
 
 
+def effectif_population_consolidee(annee_academique_id):
+    """Effectif unique de l'année : inscriptions INJS + imports GET-INJS.
+
+    Les inscriptions administratives validées constituent la base; les imports
+    actifs y sont ajoutés en dédupliquant les matricules déjà présents dans la
+    base. Cette règle est partagée par le tableau de bord général et GET-INJS.
+    """
+    from django.db.models import Subquery
+
+    from edts.models import InscriptionImportee
+    from scolarite.models import InscriptionAdministrative
+
+    inscriptions_base = InscriptionAdministrative.objects.filter(
+        annee_academique_id=annee_academique_id,
+        statut=InscriptionAdministrative.Statut.VALIDEE,
+    )
+    effectif_base = inscriptions_base.values('etudiant_id').distinct().count()
+    matricules_base = inscriptions_base.values('etudiant__participant__matricule')
+    effectif_importe_sans_doublon = (
+        InscriptionImportee.objects
+        .filter(
+            annee_academique_id=annee_academique_id,
+            statut=InscriptionImportee.Statut.INSCRIT,
+        )
+        .exclude(matricule__in=Subquery(matricules_base))
+        .values('matricule').distinct().count()
+    )
+    return {
+        'effectif_base': effectif_base,
+        'effectif_importe_sans_doublon': effectif_importe_sans_doublon,
+        'effectif_combine': effectif_base + effectif_importe_sans_doublon,
+    }
+
+
 def effectifs_par_groupe(annee_academique_id=None):
     """Effectif **réel** issu des imports, par groupe (contrainte de capacité)."""
     from django.db.models import Count
