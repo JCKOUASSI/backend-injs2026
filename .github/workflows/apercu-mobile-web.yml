@@ -57,23 +57,40 @@ jobs:
           flutter --version
           dart --version
 
+      - name: Préparation de assets/app.env
+        # `assets/app.env` est déclaré dans pubspec.yaml mais ignoré par Git
+        # (configuration locale) : sans lui, `flutter build web` échoue au
+        # ciblage des assets. Le modèle versionné suffit — l'URL d'API de
+        # l'aperçu est de toute façon forcée par --dart-define.
+        run: |
+          mkdir -p assets
+          if [ ! -f assets/app.env ]; then
+            cp .env.example assets/app.env
+            echo "assets/app.env créé depuis .env.example"
+          fi
+
       - name: Dépendances
         id: deps
         continue-on-error: true
-        run: flutter pub get 2>&1 | tee /tmp/ci.log
+        run: |
+          set -o pipefail
+          flutter pub get 2>&1 | tee /tmp/ci.log
 
       - name: Analyse statique (non bloquante)
         if: steps.deps.outcome == 'success'
         continue-on-error: true
-        run: flutter analyze 2>&1 | tee -a /tmp/ci.log
+        run: |
+          set -o pipefail
+          flutter analyze 2>&1 | tee -a /tmp/ci.log
 
       - name: Build web
         id: build
         if: steps.deps.outcome == 'success'
         continue-on-error: true
-        run: >-
-          flutter build web --release --dart-define=API_BASE_URL=/api
-          2>&1 | tee -a /tmp/ci.log
+        run: |
+          set -o pipefail
+          flutter build web --release --dart-define=API_BASE_URL=/api \
+            2>&1 | tee -a /tmp/ci.log
 
       - name: Publication du résultat dans la branche
         if: always()
@@ -91,8 +108,10 @@ jobs:
           } > "$ROOT/.ci/mobile-web-build.log.tmp"
           mv "$ROOT/.ci/mobile-web-build.log.tmp" "$ROOT/.ci/mobile-web-build.log"
 
-          # Bundle uniquement s'il existe (sinon on ne publie que le journal).
-          if [ -f "$ROOT/qr_badge_mobile/build/web/index.html" ]; then
+          # Bundle uniquement si le build a réellement réussi : un échec au
+          # ciblage des assets laisse un index.html partiel, inutilisable.
+          if [ "${{ steps.build.outcome }}" = "success" ] \
+             && [ -f "$ROOT/qr_badge_mobile/build/web/index.html" ]; then
             rm -rf "$ROOT/.ci/mobile-web"
             mkdir -p "$ROOT/.ci/mobile-web"
             cp -a "$ROOT/qr_badge_mobile/build/web/." "$ROOT/.ci/mobile-web/"
