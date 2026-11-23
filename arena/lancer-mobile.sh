@@ -102,8 +102,8 @@ fi
 
 # ── 3. Build web ─────────────────────────────────────────────────────────────
 if [ "$SANS_BUILD" -eq 0 ]; then
-  log "Build web (API_BASE_URL vide → appels /api sur la même origine)…"
-  "$FLUTTER" build web --release --dart-define=API_BASE_URL= \
+  log "Build web (API_BASE_URL=/api → appels relatifs, donc même origine)…"
+  "$FLUTTER" build web --release --dart-define=API_BASE_URL=/api \
     || die "flutter build web a échoué (voir la sortie ci-dessus)."
 fi
 

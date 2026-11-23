@@ -1,0 +1,72 @@
+name: Aperçu mobile (Flutter web)
+
+# Construction du bundle Web de l'application mobile (`qr_badge_mobile/`).
+#
+# Pourquoi ce workflow : le bac à sable d'aperçu n'a pas de SDK Flutter et ne
+# peut pas en télécharger (storage.googleapis.com et pub.dev sont bloqués par
+# le proxy). GitHub Actions, lui, a accès au SDK et à pub.dev : il construit
+# `build/web`, l'artefact est ensuite récupéré côté aperçu puis servi par
+# `arena/serveur_mobile.py` (statique + relais `/api` → Django 8000), sur le
+# port 3001.
+#
+# `API_BASE_URL=/api` : appel relatif, donc même origine que la page servie —
+# aucun CORS, aucune URL codée en dur, l'hôte d'aperçu (`*.e2b.app`) reste
+# inconnu au moment du build.
+#
+# Déclenchement : push sur la branche d'aperçu, ou manuel (`workflow_dispatch`).
+
+on:
+  push:
+    branches:
+      - arena/c9ce7261-backend-injs2026
+  workflow_dispatch:
+
+concurrency:
+  group: apercu-mobile-web-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-web:
+    name: Build Flutter web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: qr_badge_mobile
+
+    steps:
+      - name: Récupération du dépôt
+        uses: actions/checkout@v4
+
+      - name: Installation du SDK Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Versions
+        run: |
+          flutter --version
+          dart --version
+
+      - name: Dépendances
+        run: flutter pub get
+
+      - name: Analyse statique (non bloquante)
+        continue-on-error: true
+        run: flutter analyze
+
+      - name: Build web
+        run: >-
+          flutter build web --release
+          --dart-define=API_BASE_URL=/api
+
+      - name: Publication de l'artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-web
+          path: qr_badge_mobile/build/web
+          retention-days: 7
+          if-no-files-found: error
