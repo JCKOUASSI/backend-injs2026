@@ -15,9 +15,9 @@ name: Aperçu mobile (Flutter web)
 #                                        `arena/serveur_mobile.py`, port 3001).
 # Ces chemins sont des artefacts de CI : ils ne font pas partie du produit.
 #
-# `API_BASE_URL=/api` : appels relatifs, donc même origine que la page servie —
-# aucun CORS, aucune URL codée en dur, l'hôte d'aperçu (`*.e2b.app`) restant
-# inconnu au moment du build.
+# Aucune URL d'API n'est figée au build : sur le Web, l'application dérive
+# `{origine de la page}/api` à l'exécution (`DevApiDefaults.resolve`). L'hôte
+# d'aperçu (`*.e2b.app`) reste donc inconnu du build, sans CORS ni URL morte.
 
 on:
   push:
@@ -65,8 +65,11 @@ jobs:
         run: |
           mkdir -p assets
           if [ ! -f assets/app.env ]; then
-            cp .env.example assets/app.env
-            echo "assets/app.env créé depuis .env.example"
+            # Le modèle sert de base, mais SANS `API_BASE_URL` : sur le Web
+            # cette valeur désignerait le poste du visiteur. On garde donc la
+            # résolution d'origine (même origine que la page).
+            grep -v '^API_BASE_URL=' .env.example > assets/app.env
+            echo "assets/app.env créé depuis .env.example (sans API_BASE_URL)"
           fi
 
       - name: Dépendances
@@ -89,7 +92,7 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
-          flutter build web --release --dart-define=API_BASE_URL=/api \
+          flutter build web --release \
             2>&1 | tee -a /tmp/ci.log
 
       - name: Publication du résultat dans la branche
