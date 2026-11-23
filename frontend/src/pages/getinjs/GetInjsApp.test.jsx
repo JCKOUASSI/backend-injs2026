@@ -62,7 +62,8 @@ function brancherRoutes() {
   apiController.setRoute('/edts/referentiel-enseignants/', [{ id: 1 }, { id: 2 }])
   apiController.setRoute('/scolarite/ref/salles/', [{ id: 1 }, { id: 2 }, { id: 3 }])
   apiController.setRoute('/edts/lmd/import/inscrits/synthese/', {
-    annee_academique_id: 1, effectif_total: 70, nb_cohortes: 1,
+    annee_academique_id: 1, effectif_total: 70, effectif_base: 5,
+    effectif_importe_sans_doublon: 68, effectif_combine: 73, nb_cohortes: 1,
     cohortes: [{ formation: 'ÉDUCATION ET MOTRICITÉ — LICENCE', niveau: 'L2', effectif: 70 }],
   })
   apiController.setRoute('/edts/lmd/import/inscrits/journal/', {
@@ -97,7 +98,9 @@ describe('GET INJS APP — tableau de bord d’accueil', () => {
 
   it('affiche les indicateurs réels du module', async () => {
     monter()
-    expect(await screen.findByTestId('kpi-etudiants')).toHaveTextContent('70')
+    expect(await screen.findByTestId('kpi-etudiants')).toHaveTextContent('73')
+    expect(screen.getByText('Scolarité validée + imports dédupliqués · année 2026-2027'))
+      .toBeInTheDocument()
     expect(screen.getByTestId('kpi-cohortes')).toHaveTextContent('1')
     expect(screen.getByTestId('kpi-salles')).toHaveTextContent('3')
     expect(screen.getByTestId('kpi-enseignants')).toHaveTextContent('2')
@@ -170,7 +173,9 @@ describe('GET INJS APP — tableau de bord d’accueil', () => {
     apiController.setRoute('/edts/referentiel-enseignants/', [])
     apiController.setRoute('/scolarite/ref/salles/', [])
     apiController.setRoute('/edts/lmd/import/inscrits/synthese/', {
-      annee_academique_id: 1, effectif_total: 0, nb_cohortes: 0, cohortes: [],
+      annee_academique_id: 1, effectif_total: 0, effectif_base: 0,
+      effectif_importe_sans_doublon: 0, effectif_combine: 0,
+      nb_cohortes: 0, cohortes: [],
     })
     apiController.setRoute('/edts/lmd/import/inscrits/journal/', {
       annee_academique_id: 1, nb_lots: 0, lots: [],
@@ -214,7 +219,9 @@ describe('GetInjsApp — séances publiées : recherche et pagination', () => {
     apiController.setRoute('/edts/referentiel-enseignants/', [])
     apiController.setRoute('/scolarite/ref/salles/', [])
     apiController.setRoute('/edts/lmd/import/inscrits/synthese/', {
-      annee_academique_id: 1, effectif_total: 0, nb_cohortes: 0, cohortes: [],
+      annee_academique_id: 1, effectif_total: 0, effectif_base: 0,
+      effectif_importe_sans_doublon: 0, effectif_combine: 0,
+      nb_cohortes: 0, cohortes: [],
     })
     apiController.setRoute('/edts/lmd/import/inscrits/journal/', {
       annee_academique_id: 1, nb_lots: 0, lots: [],

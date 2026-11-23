@@ -283,8 +283,8 @@ export default function GetInjsApp() {
         <div className="giapp-kpi">
           <span className="giapp-kpi-icone" aria-hidden="true"><i className="bi bi-people-fill"></i></span>
           <span className="giapp-kpi-libelle">Étudiants</span>
-          <span className="giapp-kpi-valeur" data-testid="kpi-etudiants">{kpi(synthese?.effectif_total ?? null)}</span>
-          <span className="giapp-kpi-detail">inscrits importés · année {annee?.libelle || '—'}</span>
+          <span className="giapp-kpi-valeur" data-testid="kpi-etudiants">{kpi(synthese?.effectif_combine ?? null)}</span>
+          <span className="giapp-kpi-detail">Scolarité validée + imports dédupliqués · année {annee?.libelle || '—'}</span>
         </div>
         <div className="giapp-kpi">
           <span className="giapp-kpi-icone" aria-hidden="true"><i className="bi bi-diagram-3-fill"></i></span>

@@ -24,7 +24,8 @@ from edts.api_getinjs import (
 )
 from edts.models import CreneauTemplate, EmploiDuTemps, InscriptionImportee
 from edts.tests.test_lot2_moteur import FabriqueLMD
-from scolarite.models import Maquette
+from formations.models import Participant
+from scolarite.models import DossierEtudiant, InscriptionAdministrative, Maquette
 
 ENTETE = 'matricule;nom;prenoms;formation;niveau;semestre;groupe;vague\n'
 
@@ -179,12 +180,40 @@ class ImportApiTests(BaseApiTest):
             {'annee_academique_id': self.annee.pk, 'fichier': self.fichier(self.lignes(7))},
             format='multipart',
         )
+        # Un inscrit Scolarité recoupe l'import (matricule INJS-000) ;
+        # un autre n'existe que dans la base administrative.
+        for matricule in ('INJS-000', 'BASE-001'):
+            participant = Participant.objects.create(
+                matricule=matricule, nom='ÉTUDIANT', prenom='Test',
+            )
+            dossier = DossierEtudiant.objects.create(participant=participant)
+            InscriptionAdministrative.objects.create(
+                etudiant=dossier, annee_academique=self.annee,
+                ref_formation=self.formation, niveau=self.f.niveau,
+                statut=InscriptionAdministrative.Statut.VALIDEE,
+            )
+        # Une inscription non validée ne gonfle pas l'indicateur.
+        participant = Participant.objects.create(
+            matricule='BASE-ATTENTE', nom='EN ATTENTE', prenom='Test',
+        )
+        dossier = DossierEtudiant.objects.create(participant=participant)
+        InscriptionAdministrative.objects.create(
+            etudiant=dossier, annee_academique=self.annee,
+            ref_formation=self.formation, niveau=self.f.niveau,
+            statut=InscriptionAdministrative.Statut.EN_ATTENTE,
+        )
+
         reponse = self.client.get(
             '/api/edts/lmd/import/inscrits/synthese/',
             {'annee': self.annee.pk},
         )
         self.assertEqual(reponse.status_code, 200)
+        # Contrat historique d'import préservé ; l'accueil reçoit l'union
+        # des étudiants validés des deux sources sans double comptage.
         self.assertEqual(reponse.data['effectif_total'], 7)
+        self.assertEqual(reponse.data['effectif_base'], 2)
+        self.assertEqual(reponse.data['effectif_importe_sans_doublon'], 6)
+        self.assertEqual(reponse.data['effectif_combine'], 8)
         self.assertEqual(reponse.data['cohortes'][0]['groupe'], 'L1-G1')
 
     def test_synthese_refusee_sans_authentification(self):
