@@ -1,7 +1,7 @@
 from django.urls import include, path, re_path
 from rest_framework.routers import DefaultRouter
 
-from . import views
+from . import gestion as gestion_views, views
 from .registre import REGISTRE
 
 router = DefaultRouter()
@@ -29,6 +29,26 @@ urlpatterns = [
 ]
 
 for _slug, _entree in REGISTRE.items():
+    # Export, modèle, import et retrait : mêmes permissions et même modèle que
+    # la liste — un seul point d'entrée, aucune route métier dupliquée.
+    if _entree['editable']:
+        urlpatterns.append(path(
+            f'{_slug}/exporter/<str:fmt>/', gestion_views.referentiel_export,
+            {'slug': _slug}, name=f'ref-{_slug}-export',
+        ))
+        urlpatterns.append(path(
+            f'{_slug}/importer/modele/<str:fmt>/', gestion_views.referentiel_modele_import,
+            {'slug': _slug}, name=f'ref-{_slug}-modele-import',
+        ))
+        urlpatterns.append(path(
+            f'{_slug}/importer/', gestion_views.referentiel_import,
+            {'slug': _slug}, name=f'ref-{_slug}-import',
+        ))
+        urlpatterns.append(path(
+            f'{_slug}/supprimer/', gestion_views.referentiel_supprimer,
+            {'slug': _slug}, name=f'ref-{_slug}-supprimer',
+        ))
+
     # Les entrées qui déclarent déjà leur route API sont servies par un ViewSet
     # dédié : on n'ajoute pas une seconde route qui ferait doublon.
     if not _entree['editable'] or _entree.get('route_api'):

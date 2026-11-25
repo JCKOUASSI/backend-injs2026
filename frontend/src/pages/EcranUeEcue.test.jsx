@@ -505,7 +505,11 @@ describe('sélection multiple des UE (demande 03/11)', () => {
       expect(apiController.findCall('delete', '/scolarite/ues/11/')).toBeTruthy()
       expect(apiController.findCall('delete', '/scolarite/ues/12/')).toBeTruthy()
     })
-    expect(await screen.findByText(/Suppression groupée : 2 UE traitées\./)).toBeInTheDocument()
+    // Le lot produit désormais un bilan détaillé, pas un simple message.
+    const bilan = await screen.findByRole('dialog')
+    expect(within(bilan).getByText('Bilan de la suppression')).toBeInTheDocument()
+    expect(within(bilan).getByText('retirée(s)')).toBeInTheDocument()
+    expect(within(bilan).getAllByText(/—/).length).toBeGreaterThan(0)
   })
 })
 

@@ -5,6 +5,11 @@ import { messageErreur } from '../services/scolarite'
 import { useToast } from '../context/ToastContext'
 import { useAuth } from '../context/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
+import {
+  BilanSuppression,
+  BarreOutils,
+  PanneauActions,
+} from '../components/gestion/GestionListe'
 import { ADMIN_LEVEL_ROLES } from '../utils/roles'
 import '../styles/ueEcue.css'
 
@@ -345,6 +350,7 @@ export default function EcranUeEcue() {
   const [formulaire, setFormulaire] = useState(null)
   const [suppression, setSuppression] = useState(null)
   const [suppressionMasse, setSuppressionMasse] = useState(null)
+  const [bilanSuppression, setBilanSuppression] = useState(null)
   const [recherche, setRecherche] = useState('')
   // Sélection multiple (cases à cocher) : ids des UE et des ECUE cochés.
   const [selectionUe, setSelectionUe] = useState([])
@@ -618,9 +624,48 @@ export default function EcranUeEcue() {
    * ignorés, les refus serveur comme échecs — le bilan dit tout.
    */
   const executerMasse = async (type, elements, action) => {
-    const eligibles = action === 'SUPPRIMER'
-      ? elements.filter((el) => el.statut === 'BROUILLON')
-      : elements.filter((el) => (TRANSITIONS[el.statut] || []).includes(action))
+    if (action === 'SUPPRIMER') {
+      // Même contrat que les autres listes : le retrait d'un lot produit un
+      // bilan par élément (retirée / refusée avec motif), jamais un simple
+      // message global qui masquerait les refus.
+      const supprimees = []
+      const bloquees = []
+      for (const element of elements) {
+        const libelle = `${element.code} — ${element.intitule}`
+        try {
+          await supprimer.mutateAsync({ type, element })
+          supprimees.push({ id: element.id, libelle, mode: 'suppression' })
+        } catch (erreur) {
+          bloquees.push({
+            id: element.id,
+            libelle,
+            motif: erreurLisible(erreur, 'Suppression refusée par le serveur.'),
+          })
+        }
+      }
+      setBilanSuppression({
+        supprimees,
+        bloquees,
+        introuvables: [],
+        resume: {
+          demandees: elements.length,
+          supprimees: supprimees.length,
+          bloquees: bloquees.length,
+          introuvables: 0,
+        },
+      })
+      showToast(
+        supprimees.length
+          ? `${supprimees.length} élément(s) supprimé(s)${bloquees.length ? `, ${bloquees.length} refusé(s)` : ''}.`
+          : 'Aucun élément supprimé : voir le bilan.',
+        supprimees.length ? 'success' : 'error',
+      )
+      if (type === 'ue') setSelectionUe([])
+      else setSelectionEcue([])
+      rafraichir()
+      return
+    }
+    const eligibles = elements.filter((el) => (TRANSITIONS[el.statut] || []).includes(action))
     let reussis = 0
     let echecs = 0
     for (const element of eligibles) {
@@ -652,6 +697,66 @@ export default function EcranUeEcue() {
     setSuppressionMasse(null)
     await executerMasse(type, elements, 'SUPPRIMER')
   }
+
+  const uesSelectionnees = useMemo(
+    () => ues.filter((element) => selectionUe.includes(element.id)),
+    [ues, selectionUe],
+  )
+  const ueSelectionneeUnique = uesSelectionnees.length === 1 ? uesSelectionnees[0] : null
+
+  // Panneau d'actions : mêmes briques, mêmes libellés et mêmes règles que les
+  // autres listes. « Créer » reste hors sélection ; « Modifier » exige une UE
+  // en brouillon (le serveur refuserait les autres).
+  const panneauUe = peutGerer && maquetteEditable ? (
+    <PanneauActions
+      nombreSelection={uesSelectionnees.length}
+      singulier="UE"
+      pluriel="UE"
+      ariaLabel="Actions sur les unités d’enseignement"
+      aide="Seule une UE en brouillon se modifie ou se supprime ; le bilan indique
+        les refus pour chaque élément du lot."
+      actions={[
+        {
+          cle: 'creer',
+          libelle: 'Créer',
+          icone: 'bi-plus-lg',
+          onClick: () => setFormulaire({ type: 'ue', element: null }),
+        },
+        {
+          cle: 'visualiser',
+          libelle: 'Visualiser',
+          icone: 'bi-eye',
+          desactive: !ueSelectionneeUnique,
+          titre: ueSelectionneeUnique
+            ? 'Afficher les ECUE de cette UE'
+            : 'Sélectionnez exactement une UE',
+          onClick: () => ueSelectionneeUnique && setUeId(ueSelectionneeUnique.id),
+        },
+        {
+          cle: 'modifier',
+          libelle: 'Modifier',
+          icone: 'bi-pencil-square',
+          desactive: !ueSelectionneeUnique || ueSelectionneeUnique.statut !== 'BROUILLON',
+          titre: ueSelectionneeUnique?.statut === 'BROUILLON'
+            ? 'Modifier l’UE sélectionnée'
+            : 'Sélectionnez une UE en brouillon',
+          onClick: () => ueSelectionneeUnique
+            && setFormulaire({ type: 'ue', element: ueSelectionneeUnique }),
+        },
+        {
+          cle: 'supprimer',
+          libelle: 'Supprimer',
+          icone: 'bi-trash3',
+          desactive: uesSelectionnees.length === 0,
+          titre: uesSelectionnees.length
+            ? 'Supprimer les UE sélectionnées (bilan par élément)'
+            : 'Sélectionnez au moins une UE',
+          onClick: () => uesSelectionnees.length
+            && setSuppressionMasse({ type: 'ue', elements: uesSelectionnees }),
+        },
+      ]}
+    />
+  ) : null
 
   const chargement = maquettesQuery.isLoading
 
@@ -793,6 +898,7 @@ export default function EcranUeEcue() {
 
       <div className="ue-ecue-colonnes">
         {/* ── Niveau 2 : les UE de la maquette ─────────────────────────── */}
+        <div className="uex-liste">
         <div className="ue-ecue-panneau">
           <div className="gen-panel uex-panel">
             <div className="gen-panel-head">
@@ -1008,6 +1114,8 @@ export default function EcranUeEcue() {
             </div>
           </div>
         </div>
+        {panneauUe}
+        </div>
 
         {/* ── Niveau 3 : les ECUE de l'UE sélectionnée ─────────────────── */}
         <div className="ue-ecue-panneau">
@@ -1198,6 +1306,34 @@ export default function EcranUeEcue() {
           </div>
         </div>
       </div>
+
+      {peutGerer && maquetteId && (
+        <BarreOutils
+          exporterUrl={(format) => (
+            `/scolarite/maquettes/${maquetteId}/ues/exporter/${format}/`
+            + (selectionUe.length ? `?ids=${selectionUe.join(',')}` : '')
+          )}
+          importerUrl={`/scolarite/maquettes/${maquetteId}/ues/importer/`}
+          modeleUrl={(format) => `/scolarite/maquettes/${maquetteId}/ues/importer/modele/${format}/`}
+          selection={selectionUe}
+          libelleRessource="UE"
+          importDisponible={maquetteEditable}
+          onImporte={() => {
+            setSelectionUe([])
+            rafraichir()
+          }}
+          noteExport={
+            'Aucune sélection : toutes les UE de la maquette seront exportées, '
+            + 'une ligne par ECUE (une UE sans ECUE reste présente).'
+          }
+        />
+      )}
+
+      <BilanSuppression
+        bilan={bilanSuppression}
+        onFermer={() => setBilanSuppression(null)}
+        titre="Bilan de la suppression"
+      />
 
       {formulaire && (
         <FormulaireElement

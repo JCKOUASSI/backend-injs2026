@@ -991,3 +991,53 @@ a.maq-cellule:focus-visible { outline: 2px solid var(--injs-blue-royal); outline
   .maq-modale { max-width: 100%; }
   .maq-modale--large { max-width: 100%; }
 }
+
+
+/* ── Mutualisation : sélection et panneau partagés par toutes les listes ────
+   Les classes ci-dessous servent aux écrans Référentiels et UE/ECUE, qui
+   réutilisent le panneau d'actions, la barre d'outils et la colonne de
+   sélection du module Maquettes. Une seule règle de mise en évidence, donc
+   une seule couleur de sélection dans toute l'application. */
+.gl-liste {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 250px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.gl-th-selection,
+.gl-td-selection {
+  width: 42px;
+  padding-left: 0.65rem !important;
+  padding-right: 0.25rem !important;
+  text-align: center;
+}
+
+.cand-table tbody tr.is-ligne-selectionnable { cursor: pointer; }
+
+.ref-carte.is-selectionnee {
+  border-color: var(--injs-blue-royal);
+  box-shadow: inset 3px 0 0 var(--injs-blue-royal), 0 4px 14px rgba(26, 104, 172, 0.12);
+}
+
+.cand-table tbody tr.is-selectionnee > td {
+  background: #EEF5FF;
+  box-shadow: inset 3px 0 0 var(--injs-blue-royal);
+}
+
+.ref-suppression-liste {
+  max-height: 10rem;
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  overflow-y: auto;
+  font-size: 0.82rem;
+  color: #334155;
+}
+
+@media (max-width: 992px) {
+  .gl-liste { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 576px) {
+  .gl-th-selection, .gl-td-selection { width: 34px; }
+}
