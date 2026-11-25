@@ -132,8 +132,10 @@ describe('pages/scolarite/Maquettes.jsx (LOT 40) — liste, états et filtre', (
     mount()
     expect(await screen.findByText('Maquettes pédagogiques LMD')).toBeInTheDocument()
 
+    // En-têtes du tableau (le panneau d'actions porte aussi un titre
+    // « Actions » : on cible les colonnes, pas le texte libre).
     for (const h of ['Formation', 'Niveau', 'Parcours', 'Année', 'Version', 'Statut', 'UE', 'Crédits', 'Actions']) {
-      expect(screen.getByText(h)).toBeInTheDocument()
+      expect(screen.getByRole('columnheader', { name: h })).toBeInTheDocument()
     }
 
     // Lien vers le détail.

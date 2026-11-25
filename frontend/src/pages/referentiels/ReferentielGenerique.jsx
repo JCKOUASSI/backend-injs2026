@@ -2,6 +2,14 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import api from '../../services/api'
 import { useToast } from '../../context/ToastContext'
+import {
+  BilanSuppression,
+  BarreOutils,
+  CaseSelection,
+  PanneauActions,
+  basculerSelection,
+  basculerTout,
+} from '../../components/gestion/GestionListe'
 import '../../styles/candidatures.css'
 import '../../styles/referentiels.css'
 
@@ -161,6 +169,9 @@ export default function ReferentielGenerique() {
   const [envoi, setEnvoi] = useState(false)
   const [detail, setDetail] = useState(null)
   const [suppression, setSuppression] = useState(null)
+  const [selection, setSelection] = useState([])
+  const [bilanSuppression, setBilanSuppression] = useState(null)
+  const [suppressionEnCours, setSuppressionEnCours] = useState(false)
   const [lectureSeule, setLectureSeule] = useState(false)
   // Affichage : la liste historique reste le défaut ; la vue « cartes » et
   // la pagination évitent les écrans de centaines de lignes (166 salles).
@@ -257,6 +268,7 @@ export default function ReferentielGenerique() {
   }, [slug, chargerCatalogue])
 
   useEffect(() => {
+    setSelection([])
     charger()
   }, [charger])
 
@@ -307,6 +319,18 @@ export default function ReferentielGenerique() {
   const nbPages = Math.max(1, Math.ceil(lignesFiltrees.length / PAR_PAGE))
   const pageSure = Math.min(page, nbPages)
   const lignesPage = lignesFiltrees.slice((pageSure - 1) * PAR_PAGE, pageSure * PAR_PAGE)
+
+  // Sélection : conservée quand les filtres changent (l'utilisateur peut
+  // préparer un lot sur plusieurs recherches) ; purgée des lignes disparues.
+  const lignesSelectionnees = useMemo(
+    () => lignes.filter((ligne) => selection.includes(ligne.id)),
+    [lignes, selection],
+  )
+  const lignesPageSelectionnees = useMemo(
+    () => lignesPage.filter((ligne) => selection.includes(ligne.id)),
+    [lignesPage, selection],
+  )
+  const ligneUnique = lignesSelectionnees.length === 1 ? lignesSelectionnees[0] : null
 
   useEffect(() => { setPage(1) }, [recherche, filtreActif, filtresSelecteurs, vue, slug])
   useEffect(() => {
@@ -431,31 +455,64 @@ export default function ReferentielGenerique() {
     }
   }
 
-  // Suppression LOGIQUE : le socle interdit la suppression physique
-  // (traçabilité + éléments protégés par les données qui les référencent).
-  // Archivage quand le modèle le supporte, désactivation sinon — dans les
-  // deux cas la valeur disparaît des listes actives et reste récupérable.
+  // Retrait par lot : le socle interdit la suppression physique. Le serveur
+  // archive (ou désactive) chaque valeur et renvoie un bilan par identifiant —
+  // une ligne déjà retirée est signalée, jamais masquée.
+  const demanderSuppression = (cibles) => {
+    const lignesCibles = (cibles || []).filter(Boolean)
+    if (!lignesCibles.length) return
+    setSuppression({
+      ids: lignesCibles.map((ligne) => ligne.id),
+      libelles: lignesCibles.map((ligne) => ligne.libelle),
+    })
+  }
+
   const confirmerSuppression = async () => {
     if (!suppression) return
-    setEnvoi(true)
+    setSuppressionEnCours(true)
     try {
-      if (archivageSupporte) {
-        await api.post(`/referentiels/${slug}/${suppression.id}/archiver/`, {})
-        toast.success?.(
-          `« ${suppression.libelle} » supprimé — consultable via le filtre « Archivés ».`)
-      } else {
-        await api.patch(`/referentiels/${slug}/${suppression.id}/`, { actif: false })
-        toast.success?.(
-          `« ${suppression.libelle} » supprimé — récupérable via le filtre « Inactifs ».`)
-      }
+      const res = await api.post(`/referentiels/${slug}/supprimer/`, { ids: suppression.ids })
+      const bilan = res.data || {}
       setSuppression(null)
+      setBilanSuppression(bilan)
+      setSelection([])
       await charger({ silencieux: true })
-    } catch {
-      toast.error?.('Suppression impossible.')
+      toast.showToast?.(
+        (bilan.resume?.supprimees || 0) > 0
+          ? `${bilan.resume.supprimees} valeur(s) retirée(s) — consultables via le filtre « ${
+            bilan.mode === 'archivage' ? 'Archivés' : 'Inactifs'
+          } ».`
+          : 'Aucune valeur retirée : voir le bilan.',
+        (bilan.resume?.supprimees || 0) > 0 ? 'success' : 'error',
+      )
+    } catch (e) {
+      const bilan = e.response?.data
+      if (bilan?.resume) {
+        // Bilan partiel (409) : on l'affiche plutôt qu'un simple message.
+        setSuppression(null)
+        setBilanSuppression(bilan)
+        await charger({ silencieux: true })
+      }
+      toast.showToast?.(bilan?.error || 'Suppression impossible.', 'error')
     } finally {
-      setEnvoi(false)
+      setSuppressionEnCours(false)
     }
   }
+
+  // ── Exports / import (mêmes routes que le ViewSet, périmètre = sélection) ─
+  const exporterUrl = (format) => {
+    const params = new URLSearchParams()
+    if (selection.length) params.set('ids', selection.join(','))
+    if (filtreActif === 'actifs') params.set('actif', '1')
+    if (filtreActif === 'inactifs') params.set('actif', '0')
+    if (filtreActif === 'archives') params.set('archives', '1')
+    // `ids` reste lisible (?ids=1,2) plutôt qu'encodé : même contrat que les
+    // maquettes, plus simple à relire dans les journaux serveur.
+    const requete = params.toString().replace(/%2C/g, ',')
+    return `/referentiels/${slug}/exporter/${format}/${requete ? `?${requete}` : ''}`
+  }
+  const importerUrl = `/referentiels/${slug}/importer/`
+  const modeleUrl = (format) => `/referentiels/${slug}/importer/modele/${format}/`
 
   const reactiver = async (ligne) => {
     try {
@@ -560,7 +617,7 @@ export default function ReferentielGenerique() {
             <button
               type="button"
               className="ref-action ref-action--supprimer"
-              onClick={() => setSuppression(ligne)}
+              onClick={() => demanderSuppression([ligne])}
               title="Supprimer"
               aria-label={`Supprimer ${ligne.libelle}`}
             >
@@ -598,6 +655,53 @@ export default function ReferentielGenerique() {
       </div>
     )
   }
+
+  // Panneau d'actions : mêmes boutons, même ordre et mêmes règles que la
+  // liste des maquettes. Les actions d'écriture disparaissent en lecture seule.
+  const panneau = lectureSeule ? null : (
+    <PanneauActions
+      nombreSelection={lignesSelectionnees.length}
+      singulier="valeur"
+      pluriel="valeurs"
+      ariaLabel={`Actions sur les valeurs de ${entree.libelle}`}
+      aide="Visualiser et modifier portent sur une seule ligne ; la suppression
+        retire le lot sélectionné, avec un bilan par valeur."
+      actions={[
+        {
+          cle: 'creer',
+          libelle: 'Créer',
+          icone: 'bi-plus-lg',
+          onClick: ouvrirCreation,
+        },
+        {
+          cle: 'visualiser',
+          libelle: 'Visualiser',
+          icone: 'bi-eye',
+          desactive: !ligneUnique,
+          titre: ligneUnique ? 'Consulter la valeur' : 'Sélectionnez exactement une valeur',
+          onClick: () => ligneUnique && setDetail(ligneUnique),
+        },
+        {
+          cle: 'modifier',
+          libelle: 'Modifier',
+          icone: 'bi-pencil-square',
+          desactive: !ligneUnique,
+          titre: ligneUnique ? 'Modifier la valeur' : 'Sélectionnez exactement une valeur',
+          onClick: () => ligneUnique && ouvrirEdition(ligneUnique),
+        },
+        {
+          cle: 'supprimer',
+          libelle: 'Supprimer',
+          icone: 'bi-trash3',
+          desactive: lignesSelectionnees.length === 0,
+          titre: lignesSelectionnees.length
+            ? 'Retirer les valeurs sélectionnées (confirmation demandée)'
+            : 'Sélectionnez au moins une valeur',
+          onClick: () => demanderSuppression(lignesSelectionnees),
+        },
+      ]}
+    />
+  )
 
   return (
     <div className="cand-page ref-page">
@@ -758,10 +862,24 @@ export default function ReferentielGenerique() {
             </p>
           </div>
         ) : vue === 'cartes' ? (
+          <div className="gl-liste">
           <div className="ref-cartes" role="list" aria-label={`Présentation en cartes — ${entree.libelle}`}>
             {lignesPage.map((ligne) => (
-              <article className={`ref-carte${ligne.archive ? ' is-archive' : ''}`} key={ligne.id} role="listitem">
+              <article
+                className={`ref-carte${ligne.archive ? ' is-archive' : ''}${
+                  selection.includes(ligne.id) ? ' is-selectionnee' : ''
+                }`}
+                key={ligne.id}
+                role="listitem"
+              >
                 <header className="ref-carte-entete">
+                  {!lectureSeule && (
+                    <CaseSelection
+                      coche={selection.includes(ligne.id)}
+                      onChange={() => setSelection((actuelle) => basculerSelection(actuelle, ligne.id))}
+                      libelle={`Sélectionner ${ligne.libelle}`}
+                    />
+                  )}
                   {aUnCode && ligne.code
                     ? <span className="ref-carte-code">{ligne.code}</span>
                     : <span></span>}
@@ -800,11 +918,27 @@ export default function ReferentielGenerique() {
               </article>
             ))}
           </div>
+          {panneau}
+          </div>
         ) : (
-          <div className="cand-table-wrap">
+          <div className="gl-liste">
+            <div className="cand-table-wrap">
             <table className={`cand-table ref-table${lectureSeule ? ' ref-table--lecture' : ''}`}>
               <thead>
                 <tr>
+                  {!lectureSeule && (
+                    <th scope="col" className="gl-th-selection">
+                      <CaseSelection
+                        coche={lignesPage.length > 0 && lignesPageSelectionnees.length === lignesPage.length}
+                        indeterinee={lignesPageSelectionnees.length > 0
+                          && lignesPageSelectionnees.length < lignesPage.length}
+                        onChange={() => setSelection((actuelle) => basculerTout(
+                          actuelle, lignesPage.map((ligne) => ligne.id),
+                        ))}
+                        libelle={`Sélectionner les ${lignesPage.length} valeurs de la page`}
+                      />
+                    </th>
+                  )}
                   {colonnes.map((c) => (
                     <th key={c.cle} scope="col" data-colonne={c.cle}>{c.libelle}</th>
                   ))}
@@ -812,8 +946,31 @@ export default function ReferentielGenerique() {
                 </tr>
               </thead>
               <tbody>
-                {lignesPage.map((ligne) => (
-                  <tr key={ligne.id} className={ligne.archive ? 'is-archive' : ''}>
+                {lignesPage.map((ligne) => {
+                  const choisie = selection.includes(ligne.id)
+                  const classes = [
+                    ligne.archive ? 'is-archive' : '',
+                    choisie ? 'is-selectionnee' : '',
+                    !lectureSeule ? 'is-ligne-selectionnable' : '',
+                  ].filter(Boolean).join(' ')
+                  return (
+                  <tr
+                    key={ligne.id}
+                    className={classes}
+                    onClick={(evenement) => {
+                      if (lectureSeule || evenement.target.closest('button, a, input')) return
+                      setSelection((actuelle) => basculerSelection(actuelle, ligne.id))
+                    }}
+                  >
+                    {!lectureSeule && (
+                      <td className="gl-td-selection">
+                        <CaseSelection
+                          coche={choisie}
+                          onChange={() => setSelection((actuelle) => basculerSelection(actuelle, ligne.id))}
+                          libelle={`Sélectionner ${ligne.libelle}`}
+                        />
+                      </td>
+                    )}
                     {colonnes.map((c) => (
                       <td
                         key={c.cle}
@@ -835,9 +992,12 @@ export default function ReferentielGenerique() {
                       {rendreActions(ligne)}
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
+            </div>
+            {panneau}
           </div>
         )}
 
@@ -869,6 +1029,24 @@ export default function ReferentielGenerique() {
           </nav>
         )}
       </section>
+
+      {!lectureSeule && (
+        <BarreOutils
+          exporterUrl={exporterUrl}
+          importerUrl={importerUrl}
+          modeleUrl={modeleUrl}
+          selection={selection}
+          libelleRessource={`valeurs de ${entree.libelle.toLowerCase()}`}
+          onImporte={() => {
+            setSelection([])
+            charger({ silencieux: true })
+          }}
+          noteExport={
+            'Aucune sélection : toutes les valeurs du périmètre filtré seront exportées '
+            + '(filtre d’état et recherche exclus du fichier, qui suit les droits serveur).'
+          }
+        />
+      )}
 
       {modal && (
         <div className="ref-modale-voile" role="presentation" onClick={fermerModal}>
@@ -1071,16 +1249,36 @@ export default function ReferentielGenerique() {
             </header>
             <div className="ref-modale-corps">
               <p>
-                <strong>{suppression.libelle}</strong>{' '}
-                {archivageSupporte ? (
-                  <>sera <strong>archivée</strong> : elle ne sera plus proposée dans les
-                  nouvelles opérations, mais reste consultable via le filtre « Archivés »
-                  et réactivable à tout moment.</>
+                {suppression.libelles.length === 1 ? (
+                  <><strong>{suppression.libelles[0]}</strong>{' '}</>
                 ) : (
-                  <>sera <strong>désactivée</strong> : elle disparaîtra de la liste des
-                  valeurs actives, et reste récupérable via le filtre « Inactifs ».</>
+                  <><strong>{suppression.libelles.length} valeurs</strong>{' '}</>
+                )}
+                {suppression.libelles.length > 1 ? (
+                  archivageSupporte ? (
+                    <>seront <strong>archivées</strong> : elles ne seront plus proposées dans
+                    les nouvelles opérations, mais restent consultables via le filtre
+                    « Archivés » et réactivables à tout moment.</>
+                  ) : (
+                    <>seront <strong>désactivées</strong> : elles disparaîtront de la liste des
+                    valeurs actives, et restent récupérables via le filtre « Inactifs ».</>
+                  )
+                ) : (
+                  archivageSupporte ? (
+                    <>sera <strong>archivée</strong> : elle ne sera plus proposée dans les
+                    nouvelles opérations, mais reste consultable via le filtre « Archivés »
+                    et réactivable à tout moment.</>
+                  ) : (
+                    <>sera <strong>désactivée</strong> : elle disparaîtra de la liste des
+                    valeurs actives, et reste récupérable via le filtre « Inactifs ».</>
+                  )
                 )}
               </p>
+              {suppression.libelles.length > 1 && (
+                <ul className="ref-suppression-liste">
+                  {suppression.libelles.map((libelle) => <li key={libelle}>{libelle}</li>)}
+                </ul>
+              )}
               <p className="ref-suppression-note">
                 La suppression physique est désactivée sur les référentiels : une valeur
                 peut être référencée par des données existantes (par exemple des séances
@@ -1092,14 +1290,25 @@ export default function ReferentielGenerique() {
                 <button type="button" className="cand-btn-fantome" onClick={() => setSuppression(null)}>
                   Annuler
                 </button>
-                <button type="button" className="ref-btn-danger" onClick={confirmerSuppression} disabled={envoi}>
-                  {envoi ? 'Suppression…' : 'Supprimer'}
+                <button
+                  type="button"
+                  className="ref-btn-danger"
+                  onClick={confirmerSuppression}
+                  disabled={suppressionEnCours}
+                >
+                  {suppressionEnCours ? 'Suppression…' : 'Supprimer'}
                 </button>
               </div>
             </footer>
           </div>
         </div>
       )}
+
+      <BilanSuppression
+        bilan={bilanSuppression}
+        onFermer={() => setBilanSuppression(null)}
+        titre="Bilan de la suppression"
+      />
 
       {detail && (
         <div className="ref-modale-voile" role="presentation" onClick={() => setDetail(null)}>

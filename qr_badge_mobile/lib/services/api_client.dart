@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -215,13 +214,28 @@ class ApiClient {
         error is NoProfileException) {
       throw error;
     }
-    if (error is SocketException ||
-        error is http.ClientException ||
-        error is HandshakeException ||
-        error is TlsException) {
+    if (_estErreurReseau(error)) {
       throw const NetworkUnreachableException();
     }
     throw error;
+  }
+
+  /// Détection portable d'une panne réseau.
+  ///
+  /// `dart:io` n'existe pas sur le Web : impossible d'écrire
+  /// `error is SocketException`. On reconnaît donc les erreurs par leur type
+  /// d'exécution (sans import conditionnel) : les mêmes causes — socket
+  /// fermée, TLS refusé, requête avortée — restent classées « injoignable »
+  /// sur mobile comme sur le Web.
+  static bool _estErreurReseau(Object error) {
+    if (error is http.ClientException || error is TimeoutException) {
+      return true;
+    }
+    final type = error.runtimeType.toString();
+    return type.contains('SocketException') ||
+        type.contains('HandshakeException') ||
+        type.contains('TlsException') ||
+        type.contains('ClientException');
   }
 
   Map<String, dynamic> _parse(

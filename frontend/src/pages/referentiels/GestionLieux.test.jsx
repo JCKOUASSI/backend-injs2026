@@ -215,6 +215,14 @@ describe('écran générique — présentations liste / cartes et pagination', (
     monter30()
     await settle()
 
+    apiController.setRoute('/referentiels/salles/supprimer/', {
+      mode: 'désactivation',
+      supprimees: [{ id: 1, libelle: 'Salle de cours 01', mode: 'désactivation' }],
+      bloquees: [],
+      introuvables: [],
+      resume: { demandees: 1, supprimees: 1, bloquees: 0, introuvables: 0 },
+    })
+
     fireEvent.click(screen.getByRole('button', { name: 'Supprimer Salle de cours 01' }))
     await settle()
     const alerte = screen.getByRole('alertdialog')
@@ -224,8 +232,17 @@ describe('écran générique — présentations liste / cartes et pagination', (
 
     fireEvent.click(within(alerte).getByRole('button', { name: 'Supprimer' }))
     await settle()
-    expect(apiMock.patch).toHaveBeenCalledWith('/referentiels/salles/1/', { actif: false })
+    // Le retrait passe désormais par la route de lot : un seul contrat pour la
+    // ligne et pour la sélection multiple, avec un bilan par identifiant.
+    expect(apiMock.post).toHaveBeenCalledWith('/referentiels/salles/supprimer/', { ids: [1] })
     expect(screen.queryByRole('alertdialog')).toBeNull()
+    const bilan = screen.getByRole('dialog')
+    expect(within(bilan).getByText('Bilan de la suppression')).toBeTruthy()
+    expect(within(bilan).getByText(/Salle de cours 01/)).toBeTruthy()
+    expect(within(bilan).getByText('retirée(s)')).toBeTruthy()
+    fireEvent.click(within(bilan).getByRole('button', { name: 'Fermer' }))
+    await settle()
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 
   it('filtre par bâtiment via le sélecteur rapide', async () => {

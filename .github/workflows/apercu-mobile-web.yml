@@ -1,0 +1,140 @@
+name: Aperçu mobile (Flutter web)
+
+# Construction du bundle Web de l'application mobile (`qr_badge_mobile/`).
+#
+# Pourquoi ce workflow : le bac à sable d'aperçu n'a pas de SDK Flutter et ne
+# peut pas en télécharger (storage.googleapis.com et pub.dev sont bloqués par
+# le proxy). GitHub Actions, lui, a accès au SDK et à pub.dev.
+#
+# Pourquoi un commit de retour : dans le bac à sable, ni les journaux de run
+# (`results-receiver.actions.githubusercontent.com`) ni les artefacts
+# (`*.blob.core.windows.net`) ne sont joignables. Le résultat est donc publié
+# via Git, seul canal autorisé :
+#   - `.ci/mobile-web-build.log`      → journal complet du build (diagnostic) ;
+#   - `.ci/mobile-web/`               → bundle `build/web` (servi par
+#                                        `arena/serveur_mobile.py`, port 3001).
+# Ces chemins sont des artefacts de CI : ils ne font pas partie du produit.
+#
+# Aucune URL d'API n'est figée au build : sur le Web, l'application dérive
+# `{origine de la page}/api` à l'exécution (`DevApiDefaults.resolve`). L'hôte
+# d'aperçu (`*.e2b.app`) reste donc inconnu du build, sans CORS ni URL morte.
+
+on:
+  push:
+    branches:
+      - arena/c9ce7261-backend-injs2026
+    # Rebuild uniquement quand l'application mobile change : une modification
+    # du backend ou du site Web ne doit pas relancer un build Flutter.
+    paths:
+      - 'qr_badge_mobile/**'
+      - '.github/workflows/apercu-mobile-web.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: apercu-mobile-web-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-web:
+    name: Build Flutter web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: qr_badge_mobile
+
+    steps:
+      - name: Récupération du dépôt
+        uses: actions/checkout@v4
+
+      - name: Installation du SDK Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Versions
+        run: |
+          flutter --version
+          dart --version
+
+      - name: Préparation de assets/app.env
+        # `assets/app.env` est déclaré dans pubspec.yaml mais ignoré par Git
+        # (configuration locale) : sans lui, `flutter build web` échoue au
+        # ciblage des assets. Le modèle versionné suffit — l'URL d'API de
+        # l'aperçu est de toute façon forcée par --dart-define.
+        run: |
+          mkdir -p assets
+          if [ ! -f assets/app.env ]; then
+            # Le modèle sert de base, mais SANS `API_BASE_URL` : sur le Web
+            # cette valeur désignerait le poste du visiteur. On garde donc la
+            # résolution d'origine (même origine que la page).
+            grep -v '^API_BASE_URL=' .env.example > assets/app.env
+            echo "assets/app.env créé depuis .env.example (sans API_BASE_URL)"
+          fi
+
+      - name: Dépendances
+        id: deps
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          flutter pub get 2>&1 | tee /tmp/ci.log
+
+      - name: Analyse statique (non bloquante)
+        if: steps.deps.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          flutter analyze 2>&1 | tee -a /tmp/ci.log
+
+      - name: Build web
+        id: build
+        if: steps.deps.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          flutter build web --release \
+            2>&1 | tee -a /tmp/ci.log
+
+      - name: Publication du résultat dans la branche
+        if: always()
+        run: |
+          set -euo pipefail
+          ROOT="$GITHUB_WORKSPACE"
+          mkdir -p "$ROOT/.ci"
+          {
+            echo "== résumé du run =="
+            echo "deps     : ${{ steps.deps.outcome }}"
+            echo "build    : ${{ steps.build.outcome }}"
+            echo "commit   : $GITHUB_SHA"
+            echo
+            cat /tmp/ci.log 2>/dev/null || echo "(aucun journal)"
+          } > "$ROOT/.ci/mobile-web-build.log.tmp"
+          mv "$ROOT/.ci/mobile-web-build.log.tmp" "$ROOT/.ci/mobile-web-build.log"
+
+          # Bundle uniquement si le build a réellement réussi : un échec au
+          # ciblage des assets laisse un index.html partiel, inutilisable.
+          if [ "${{ steps.build.outcome }}" = "success" ] \
+             && [ -f "$ROOT/qr_badge_mobile/build/web/index.html" ]; then
+            rm -rf "$ROOT/.ci/mobile-web"
+            mkdir -p "$ROOT/.ci/mobile-web"
+            cp -a "$ROOT/qr_badge_mobile/build/web/." "$ROOT/.ci/mobile-web/"
+            echo "Bundle publié : $(du -sh "$ROOT/.ci/mobile-web" | cut -f1)"
+          else
+            echo "Aucun bundle produit — seul le journal est publié."
+          fi
+
+          cd "$ROOT"
+          git config user.name "ci-apercu-mobile"
+          git config user.email "ci-apercu-mobile@users.noreply.github.com"
+          # `-f` : `.ci/` est ignoré côté produit, mais ici c'est le canal de
+          # transport du résultat vers le bac à sable.
+          git add -f .ci
+          if git diff --cached --quiet; then
+            echo "Rien à publier."
+            exit 0
+          fi
+          git commit -m "ci(mobile): résultat du build web [skip ci]"
+          git push origin "HEAD:$GITHUB_REF_NAME"

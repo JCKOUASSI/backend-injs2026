@@ -86,7 +86,11 @@ class DevApiDefaults {
       return _url(host, _portForResolvedHost());
     }
     if (kIsWeb) {
-      return _url('127.0.0.1', _portFromEnv);
+      // Le Web ignore la notion de « machine hôte » : l'API est servie sur la
+      // même origine que la page (proxy `/api` de `arena/serveur_mobile.py` en
+      // aperçu, reverse proxy en production). URL absolue dérivée de la page
+      // courante : `127.0.0.1` désignerait le poste du visiteur, pas le serveur.
+      return '${Uri.base.origin}/api';
     }
     if (defaultTargetPlatform == TargetPlatform.android) {
       if (await _isEmulatorOrSimulator()) {

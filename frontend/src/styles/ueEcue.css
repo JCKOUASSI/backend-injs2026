@@ -26,6 +26,23 @@
   }
 }
 
+/* Liste des UE + rail d'actions : le panneau reprend exactement le composant
+   partagé des autres listes (Créer / Visualiser / Modifier / Supprimer).
+   Sur les écrans étroits il passe sous la liste plutôt que de comprimer les
+   colonnes Code / Intitulé / Statut. */
+.uex-liste {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 210px;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+@media (max-width: 1500px) {
+  .uex-liste {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .ue-ecue-panneau {
   display: flex;
   flex-direction: column;
