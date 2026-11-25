@@ -3,6 +3,7 @@ from django.urls import path
 from . import (
     api_views,
     cours_lmd_api,
+    maquettes_api,
     edt_export,
     groupes_api,
     journal_api,
@@ -79,6 +80,12 @@ urlpatterns = [
     path('maquettes/<int:pk>/',                   api_views.maquette_detail,         name='scolarite-maquette-detail'),
     path('maquettes/<int:pk>/semestres/<int:semestre_id>/ecues/',
          api_views.maquette_ecues_semestre,                                          name='scolarite-maquette-ecues'),
+    # Administration de la liste : export multi-formats, import, suppression en lot.
+    path('maquettes/exporter/<str:fmt>/',         maquettes_api.maquette_export,     name='scolarite-maquette-export'),
+    path('maquettes/importer/',                   maquettes_api.maquette_import,     name='scolarite-maquette-import'),
+    path('maquettes/importer/modele/<str:fmt>/',  maquettes_api.maquette_modele_import,
+                                                                                     name='scolarite-maquette-modele-import'),
+    path('maquettes/supprimer/',                  maquettes_api.maquette_supprimer,  name='scolarite-maquette-supprimer'),
     # Lot L1 — écriture et workflow des maquettes (R4)
     path('maquettes/creer/',                      api_views.maquette_create,         name='scolarite-maquette-create'),
     path('maquettes/<int:pk>/modifier/',          api_views.maquette_update,         name='scolarite-maquette-update'),

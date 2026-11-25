@@ -23,8 +23,11 @@ on:
   push:
     branches:
       - arena/c9ce7261-backend-injs2026
-    paths-ignore:
-      - '.ci/**'
+    # Rebuild uniquement quand l'application mobile change : une modification
+    # du backend ou du site Web ne doit pas relancer un build Flutter.
+    paths:
+      - 'qr_badge_mobile/**'
+      - '.github/workflows/apercu-mobile-web.yml'
   workflow_dispatch:
 
 concurrency:

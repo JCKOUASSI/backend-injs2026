@@ -65,13 +65,16 @@
             showError("Impossible de charger l'application (fichier JavaScript manquant). Vérifiez votre connexion puis rechargez la page (Ctrl+Maj+R).");
           }
         }, true);
-        // Délai de sécurité : si React n'a pas monté l'application après 20 s.
+        // Délai de sécurité : si React n'a pas monté l'application après 45 s.
+        // En développement, la première visite compile le graphe de modules
+        // (274 fichiers ici) : 20 s suffisaient à afficher ce message à tort
+        // alors que le serveur répondait normalement.
         setTimeout(function () {
           var root = document.getElementById('root');
           if (root && root.querySelector('#app-boot')) {
-            showError("Le chargement est anormalement long. Le serveur est peut-être en cours de démarrage ; réessayez dans quelques secondes (Ctrl+Maj+R).");
+            showError("Le chargement est anormalement long. La première visite compile l'application : patientez un instant, puis rechargez (Ctrl+Maj+R). Si le message revient, vérifiez que le serveur est démarré.");
           }
-        }, 20000);
+        }, 45000);
       })();
     </script>
     <script type="module" src="/src/main.jsx"></script>
