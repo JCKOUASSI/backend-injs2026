@@ -1,7 +1,7 @@
 == résumé du run ==
 deps     : success
 build    : success
-commit   : 5438787b6e131d82b6a0c494638b633e7c30dc74
+commit   : 40819f1dbc2dbfbbeb171390151b47daeb0a5c28
 
 Resolving dependencies...
 Downloading packages...
@@ -109,7 +109,7 @@ Analyzing qr_badge_mobile...
    info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/widgets/scan_frame_overlay.dart:1:1 • deprecated_member_use
    info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/widgets/session_status_banner.dart:1:1 • deprecated_member_use
 
-22 issues found. (ran in 6.0s)
+22 issues found. (ran in 6.9s)
 Compiling lib/main.dart for the Web...                          
 Wasm dry run findings:
 Found incompatibilities with WebAssembly.
@@ -129,5 +129,5 @@ See https://flutter.dev/to/wasm-errors for diagnostic and migration guidance.
 Use --no-wasm-dry-run to disable these warnings.
 Font asset "CupertinoIcons.ttf" was tree-shaken, reducing it from 257628 to 844 bytes (99.7% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
 Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 7588 bytes (99.5% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
-Compiling lib/main.dart for the Web...                             30.2s
+Compiling lib/main.dart for the Web...                             32.9s
 ✓ Built build/web
