@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Auditeurs{% endblock %}
+{% block nav_auditeurs %}active-link{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="fw-bold mb-1" style="font-size:1.7rem;color:#0f172a;">Auditeurs</h1>
+      <p class="text-muted mb-0">Répertoire de tous les auditeurs enregistrés.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'auditeurs:create' %}" class="btn btn-primary rounded-pill px-4">
+        <i class="bi bi-person-plus me-2"></i>Nouvel auditeur
+      </a>
+      <a href="{% url 'auditeurs:import' %}" class="btn btn-success rounded-pill px-4">
+        <i class="bi bi-upload me-2"></i>Importer Excel
+      </a>
+    </div>
+  </div>
+
+  {% if messages %}
+  <div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3">
+      {{ message }}
+      {% if forloop.first and request.session.last_import_report_csv %}
+      <a href="{% url 'auditeurs:import_rapport' %}" class="alert-link ms-2">Télécharger le rapport CSV</a>
+      {% endif %}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Recherche -->
+  <form method="get" class="mb-3 d-flex gap-2" style="max-width:480px;">
+    <input type="text" name="q" value="{{ query }}"
+           class="form-control rounded-pill"
+           placeholder="Rechercher nom, prénom, matricule, concours…"
+           style="border-color:#e2e8f0;">
+    <button type="submit" class="btn btn-primary rounded-pill px-3">
+      <i class="bi bi-search"></i>
+    </button>
+    {% if query %}
+    <a href="{% url 'auditeurs:list' %}" class="btn btn-outline-secondary rounded-pill px-3">
+      <i class="bi bi-x"></i>
+    </a>
+    {% endif %}
+  </form>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="px-4">N° Inscription</th>
+            <th>Nom</th>
+            <th>Prénom(s)</th>
+            <th class="text-center">Genre</th>
+            <th>Catégorie</th>
+            <th>Grade</th>
+            <th>Concours</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in auditeurs %}
+          <tr>
+            <td class="px-4 font-monospace text-muted" style="font-size:.85rem;">{{ a.matricule }}</td>
+            <td class="fw-semibold" style="color:#0f172a;">{{ a.nom }}</td>
+            <td>{{ a.prenom }}</td>
+            <td class="text-center">
+              {% if a.genre %}
+              <span class="badge rounded-pill {% if a.genre == 'M' %}bg-primary{% else %}bg-danger{% endif %}">
+                {{ a.get_genre_display }}
+              </span>
+              {% else %}—{% endif %}
+            </td>
+            <td class="text-muted small">{{ a.categorie|default:"—" }}</td>
+            <td>
+              {% if a.grade %}
+              <span class="badge rounded-pill" style="background:#fff7ed;color:#92400e;">{{ a.grade }}</span>
+              {% else %}—{% endif %}
+            </td>
+            <td class="text-muted small">{{ a.libelle_concours|default:"—" }}</td>
+            <td class="text-end pe-3">
+              <a href="{% url 'auditeurs:detail' a.pk %}" class="btn btn-sm btn-outline-primary rounded-pill px-2">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-5">
+              <i class="bi bi-inbox fs-3 d-block mb-2 opacity-25"></i>
+              {% if query %}Aucun résultat pour « {{ query }} ».{% else %}Aucun auditeur enregistré.{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2">
+      <span class="text-muted small">
+        {{ page_obj.paginator.count }} auditeur(s) — page {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}
+      </span>
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}">Précédent</a>
+          </li>
+          {% endif %}
+          {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}">Suivant</a>
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

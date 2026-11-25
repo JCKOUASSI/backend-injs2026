@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}{% if auditeur %}Modifier {{ auditeur.nom_complet }}{% else %}Nouvel auditeur{% endif %}{% endblock %}
+{% block nav_auditeurs %}active-link{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:800px;">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="fw-bold mb-1" style="font-size:1.6rem;color:#0f172a;">
+        {% if auditeur %}
+          <i class="bi bi-pencil-square me-2 text-primary"></i>Modifier l'auditeur
+        {% else %}
+          <i class="bi bi-person-plus-fill me-2 text-primary"></i>Nouvel auditeur
+        {% endif %}
+      </h1>
+      {% if auditeur %}
+      <p class="text-muted mb-0">{{ auditeur.nom_complet }} — <code>{{ auditeur.matricule }}</code></p>
+      {% else %}
+      <p class="text-muted mb-0">Le matricule sera généré automatiquement.</p>
+      {% endif %}
+    </div>
+    {% if auditeur %}
+    <a href="{% url 'auditeurs:detail' auditeur.pk %}" class="btn btn-outline-secondary rounded-pill px-3">← Détail</a>
+    {% else %}
+    <a href="{% url 'auditeurs:list' %}" class="btn btn-outline-secondary rounded-pill px-3">← Liste</a>
+    {% endif %}
+  </div>
+
+  {% if messages %}
+  <div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3">
+      {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="card shadow-sm rounded-4">
+    <div class="card-body p-4">
+      <form method="post">
+        {% csrf_token %}
+
+        <!-- Identité -->
+        <h6 class="fw-bold text-uppercase text-muted small mb-3" style="letter-spacing:.06em;">
+          <i class="bi bi-person-fill me-1"></i>Identité
+        </h6>
+        <div class="row g-3 mb-4">
+          <div class="col-md-5">
+            <label class="form-label fw-semibold small">Nom <span class="text-danger">*</span></label>
+            {{ form.nom }}
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-semibold small">Prénom(s) <span class="text-danger">*</span></label>
+            {{ form.prenom }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold small">Genre</label>
+            {{ form.genre }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">Date de naissance</label>
+            {{ form.date_naissance }}
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold small">Lieu de naissance</label>
+            {{ form.lieu_naissance }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Téléphone 1</label>
+            {{ form.telephone_1 }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Téléphone 2</label>
+            {{ form.telephone_2 }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Email</label>
+            {{ form.email }}
+          </div>
+        </div>
+
+        <!-- Concours & Classification -->
+        <h6 class="fw-bold text-uppercase text-muted small mb-3" style="letter-spacing:.06em;">
+          <i class="bi bi-award-fill me-1"></i>Concours &amp; Classification
+        </h6>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">Type concours</label>
+            {{ form.type_concours }}
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold small">Libellé concours</label>
+            {{ form.libelle_concours }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">Catégorie</label>
+            {{ form.categorie }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">Grade</label>
+            {{ form.grade }}
+          </div>
+        </div>
+
+        {% if form.errors %}
+        <div class="alert alert-danger mt-3 rounded-3">
+          {% for field in form %}
+            {% for error in field.errors %}
+            <div><strong>{{ field.label }}</strong> : {{ error }}</div>
+            {% endfor %}
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="mt-4 d-flex gap-2">
+          <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold">
+            <i class="bi bi-save me-2"></i>{{ action }}
+          </button>
+          {% if auditeur %}
+          <a href="{% url 'auditeurs:detail' auditeur.pk %}" class="btn btn-outline-secondary rounded-pill px-3">
+            Annuler
+          </a>
+          {% else %}
+          <a href="{% url 'auditeurs:list' %}" class="btn btn-outline-secondary rounded-pill px-3">
+            Annuler
+          </a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,102 @@
+{# Résultat de simulation pour une formation (paramètres propres). #}
+<div class="sim-card mb-3 resultat-formation">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="min-width-0">
+      <strong class="d-block">
+        <i class="bi bi-mortarboard me-2" style="color:#0284c7;"></i>{{ intitule }}
+      </strong>
+      <div class="small text-muted fw-normal mt-1">
+        {{ resultat.nb_groupes_requis }} groupe{{ resultat.nb_groupes_requis|pluralize }} ·
+        {{ resultat.inputs.capacite_groupe }} aud./groupe
+      </div>
+    </div>
+    {% if resultat.statut == "ok" %}
+    <span class="verdict-pill verdict-ok"><i class="bi bi-check-circle-fill"></i>Faisable</span>
+    {% elif resultat.statut == "warning" %}
+    <span class="verdict-pill verdict-warning"><i class="bi bi-exclamation-triangle-fill"></i>Tendue</span>
+    {% else %}
+    <span class="verdict-pill verdict-ko"><i class="bi bi-x-octagon-fill"></i>Infaisable</span>
+    {% endif %}
+  </div>
+  <div class="card-body">
+
+    {% if jours_ouvres_periode is not None %}
+      {% if periode_suffisante %}
+      <div class="alert border-0 rounded-3 mb-3 py-2 small" style="background:#e0f2fe;border-left:4px solid #0284c7 !important;color:#0369a1;">
+        <i class="bi bi-check-circle-fill me-1" style="color:#0284c7;"></i>Période suffisante.
+      </div>
+      {% else %}
+      <div class="alert border-0 rounded-3 mb-3 py-2 small" style="background:#fff7ed;border-left:4px solid #ea580c !important;">
+        <i class="bi bi-exclamation-triangle-fill me-1" style="color:#ea580c;"></i>Période trop courte.
+      </div>
+      {% endif %}
+    {% elif mode_auto %}
+    <div class="alert border-0 rounded-3 mb-3 py-2 small" style="background:#e0f2fe;border-left:4px solid #0284c7 !important;color:#0369a1;">
+      <i class="bi bi-calculator-fill me-1" style="color:#0284c7;"></i>
+      Durée minimum calculée : <strong>{{ resultat.jours_ouvres_recommandes }} j. ouvrés</strong>
+      recommandés (plancher {{ resultat.jours_ouvres_minimum }} + {{ marge_pct|default:20 }}&nbsp;%).
+    </div>
+    {% endif %}
+
+    {% if date_fin_proposee %}
+    <div class="mb-3 small">
+      <span class="text-muted">Date de fin recommandée :</span>
+      <strong style="color:#0284c7;">{{ date_fin_proposee|date:"d/m/Y" }}</strong>
+    </div>
+    {% endif %}
+
+    <div class="row g-2 mb-3">
+      <div class="col-6 col-md-3">
+        <div class="kpi-box py-2">
+          <div class="kpi-value" style="font-size:1.2rem;">{{ resultat.nb_groupes_requis }}</div>
+          <div class="kpi-label">Groupes</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-box py-2">
+          <div class="kpi-value" style="font-size:1.2rem;">{{ resultat.creneaux_demandes_total }}</div>
+          <div class="kpi-label">Séances</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-box py-2">
+          <div class="kpi-value" style="font-size:1.2rem;">{{ resultat.creneaux_offerts_total }}</div>
+          <div class="kpi-label">Capacité</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-box py-2">
+          {% if not mode_auto %}
+          <div class="kpi-value" style="font-size:1.2rem;">{% widthratio resultat.taux_occupation 1 100 %}%</div>
+          <div class="kpi-label">Occupation</div>
+          {% else %}
+          <div class="kpi-value text-muted" style="font-size:1rem;">—</div>
+          <div class="kpi-label">Occupation</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% for d in resultat.diagnostics %}
+    <div class="diag-item diag-{{ d.niveau }}">
+      <div class="diag-icon">
+        {% if d.niveau == "ok" %}<i class="bi bi-check-lg"></i>
+        {% elif d.niveau == "warning" %}<i class="bi bi-exclamation-lg"></i>
+        {% else %}<i class="bi bi-x-lg"></i>{% endif %}
+      </div>
+      <div>
+        <div class="diag-title">{{ d.titre }}</div>
+        <div class="diag-msg">{{ d.message }}</div>
+      </div>
+    </div>
+    {% endfor %}
+
+    {% if resultat.recommandations %}
+    <ul class="reco-list mt-2">
+      {% for reco in resultat.recommandations %}
+      <li><i class="bi bi-arrow-right-circle me-2"></i>{{ reco }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</div>

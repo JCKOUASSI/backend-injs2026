@@ -1,0 +1,1146 @@
+{% extends "base.html" %}
+{% block title %}Paramétrage & référentiels{% endblock %}
+{% block nav_parametrage %}active-link{% endblock %}
+
+{% block extra_css %}
+<style>
+  .modules-table {
+    table-layout: fixed;
+    width: 100%;
+  }
+  .modules-table th,
+  .modules-table td {
+    vertical-align: top;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .modules-col-title { width: 28%; }
+  .modules-col-type { width: 16%; }
+  .modules-col-dispo { width: 24%; }
+  .modules-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+  }
+  .modules-badges .badge {
+    white-space: normal;
+    line-height: 1.2;
+  }
+  .modules-dispo-badge {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    white-space: normal;
+    text-align: left;
+  }
+  .salles-table-wrap {
+    max-height: 340px;
+    overflow: auto;
+    border: 1px solid #edf3ee;
+    border-radius: 12px;
+  }
+  .salles-table-wrap thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #fbfffb;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+
+  <!-- En-tête -->
+  <div class="mb-4">
+    <h1 class="fw-bold" style="font-size:1.9rem;color:#0f172a;">Paramétrage &amp; référentiels</h1>
+    <p class="text-muted mb-0">Configurez tous les éléments réutilisables de l'application.</p>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+  <div class="mb-4">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Barre de statistiques -->
+  <div class="row g-3 mb-5">
+    {% with colors="#3b82f6,#10b981,#f59e0b,#8b5cf6" %}
+    <div class="col-6 col-md-3">
+      <div class="card text-center border-0 shadow-sm h-100" style="border-left:4px solid #3b82f6 !important;">
+        <div class="card-body py-3">
+          <div class="fs-2 fw-bold" style="color:#3b82f6;">{{ ctx.stats.nb_types }}</div>
+          <div class="small text-muted">Types de formation</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center border-0 shadow-sm h-100" style="border-left:4px solid #0284c7 !important;">
+        <div class="card-body py-3">
+          <div class="fs-2 fw-bold" style="color:#0284c7;">{{ ctx.stats.nb_modules }}</div>
+          <div class="small text-muted">Modules</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center border-0 shadow-sm h-100" style="border-left:4px solid #f59e0b !important;">
+        <div class="card-body py-3">
+          <div class="fs-2 fw-bold" style="color:#f59e0b;">{{ ctx.stats.nb_grades }}</div>
+          <div class="small text-muted">Grades</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center border-0 shadow-sm h-100" style="border-left:4px solid #8b5cf6 !important;">
+        <div class="card-body py-3">
+          <div class="fs-2 fw-bold" style="color:#8b5cf6;">{{ ctx.stats.nb_vagues }}</div>
+          <div class="small text-muted">Vagues</div>
+        </div>
+      </div>
+    </div>
+    {% endwith %}
+  </div>
+
+  <!-- ─── Section 1 : Types de formation ─────────────────────────────── -->
+  <div id="types-formation" class="card shadow-sm mb-4" style="scroll-margin-top: 5rem;">
+    <div class="card-header d-flex justify-content-between align-items-center py-3 px-4"
+         style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:white;">
+      <h5 class="mb-0"><i class="bi bi-tag-fill me-2"></i>Types de formation</h5>
+      <button class="btn btn-sm btn-light fw-semibold" data-bs-toggle="modal" data-bs-target="#modalTypeCreate">
+        <i class="bi bi-plus me-1"></i>Ajouter
+      </button>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="px-4">Code</th>
+            <th>Libellé</th>
+            <th class="text-end px-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tf in ctx.types_formation %}
+          <tr>
+            <td class="px-4"><span class="badge fs-6 px-3 py-2" style="background:#eff6ff;color:#1d4ed8;">{{ tf.code }}</span></td>
+            <td>{{ tf.libelle }}</td>
+            <td class="text-end px-4">
+              <button class="btn btn-sm btn-outline-secondary me-1"
+                      data-bs-toggle="modal" data-bs-target="#modalTypeEdit{{ tf.pk }}">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <form method="post" action="{% url 'parametrage:type_delete' tf.pk %}" class="d-inline"
+                    data-confirm="Supprimer le type {{ tf.code }} ?">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="text-center text-muted py-4">Aucun type de formation.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% for tf in ctx.types_formation %}
+  <div class="modal fade" id="modalTypeEdit{{ tf.pk }}" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content rounded-3">
+        <div class="modal-header border-0 pb-0">
+          <h6 class="modal-title fw-bold">Modifier {{ tf.code }}</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form method="post" action="{% url 'parametrage:type_update' tf.pk %}">
+          {% csrf_token %}
+          <div class="modal-body">
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Code</label>
+              <input type="text" name="code" class="form-control form-control-sm" value="{{ tf.code }}" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Libellé</label>
+              <input type="text" name="libelle" class="form-control form-control-sm" value="{{ tf.libelle }}" required>
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+            <button type="submit" class="btn btn-sm btn-primary">Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- Modal création type -->
+  <div class="modal fade" id="modalTypeCreate" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content rounded-3">
+        <div class="modal-header border-0 pb-0">
+          <h6 class="modal-title fw-bold">Nouveau type de formation</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form method="post" action="{% url 'parametrage:type_create' %}">
+          {% csrf_token %}
+          <div class="modal-body">
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Code</label>
+              {{ type_form_form.code }}
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Libellé</label>
+              {{ type_form_form.libelle }}
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+            <button type="submit" class="btn btn-sm btn-primary">Créer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Section 2 : Modules ────────────────────────────────────────── -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header py-3 px-4" style="background:linear-gradient(135deg,#0a2540,#0284c7);color:white;">
+      <h5 class="mb-0"><i class="bi bi-journal-bookmark-fill me-2"></i>Modules</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive mb-4">
+        <table class="table table-hover align-middle mb-0 modules-table">
+          <thead class="table-light">
+            <tr>
+              <th class="px-3 modules-col-title">Titre</th>
+              {% for tf in ctx.types_formation %}
+              <th class="text-center modules-col-type">{{ tf.code }} (h)</th>
+              {% endfor %}
+              <th class="modules-col-dispo">Disponible dans</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for module in ctx.modules %}
+            <tr>
+              <td class="px-3 fw-semibold" style="color:#0f172a;">{{ module.titre }}</td>
+              {% for tf in ctx.types_formation %}
+              <td class="text-center">
+                <div class="modules-badges justify-content-center">
+                  {% for assoc in module.type_associations.all %}
+                    {% if assoc.type_formation_id == tf.pk %}
+                      <span class="badge bg-info bg-opacity-10 text-info fw-semibold">
+                        {% if assoc.grade_cible %}{{ assoc.grade_cible }} : {% else %}Tous grades : {% endif %}{{ assoc.volume_horaire_defaut }}h
+                      </span>
+                      <form method="post" action="{% url 'parametrage:module_dissocier' assoc.pk %}" class="d-inline"
+                            data-confirm="Retirer cette association module/type ?">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-link btn-sm p-0 text-danger" title="Retirer">
+                          <i class="bi bi-x-circle-fill"></i>
+                        </button>
+                      </form>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </td>
+              {% endfor %}
+              <td>
+                <div class="modules-badges">
+                  {% for assoc in module.type_associations.all %}
+                    <span class="badge rounded-pill modules-dispo-badge" style="background:#eff6ff;color:#1d4ed8;">
+                      {{ assoc.type_formation.code }} / {{ assoc.grade_cible|default:"Tous grades" }}
+                    </span>
+                  {% empty %}
+                    <span class="text-muted small">—</span>
+                  {% endfor %}
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="10" class="text-center text-muted py-4">Aucun module.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="row g-3 border-top pt-3">
+        <div class="col-12 col-md-5">
+          <h6 class="fw-semibold mb-2 text-muted" style="font-size:.8rem;text-transform:uppercase;letter-spacing:.5px;">
+            Ajouter un module
+          </h6>
+          <form method="post" action="{% url 'parametrage:module_create' %}" class="d-flex gap-2">
+            {% csrf_token %}
+            {{ module_form.titre }}
+            <button type="submit" class="btn btn-primary text-nowrap px-3">+ Ajouter</button>
+          </form>
+        </div>
+        <div class="col-12 col-md-7">
+          <h6 class="fw-semibold mb-2 text-muted" style="font-size:.8rem;text-transform:uppercase;letter-spacing:.5px;">
+            Associer un module à un type
+          </h6>
+          <form method="post" action="{% url 'parametrage:module_associer' %}" class="d-flex flex-wrap align-items-start gap-2">
+            {% csrf_token %}
+            {{ module_type_form.module }}
+            {{ module_type_form.type_formation }}
+            <div class="border rounded px-2 py-1 bg-white" style="min-width:220px;">
+              <div class="small fw-semibold text-muted mb-1">Grades concernés</div>
+              <div class="d-flex flex-wrap gap-2">
+                {% for choice in module_type_form.grade_cible %}
+                  <div class="form-check form-check-inline m-0">
+                    {{ choice.tag }}
+                    <label class="form-check-label small ms-1" for="{{ choice.id_for_label }}">
+                      {{ choice.choice_label }}
+                    </label>
+                  </div>
+                {% endfor %}
+              </div>
+              <small class="text-muted d-block mt-1" style="font-size:.7rem;">
+                Coche « Tous grades » ou plusieurs grades : une association sera créée pour chacun.
+              </small>
+            </div>
+            <div style="width:100px">{{ module_type_form.volume_horaire_defaut }}</div>
+            <button type="submit" class="btn btn-outline-primary text-nowrap px-3">Associer</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Sections 3 & 4 : Grades + Vagues côte à côte ──────────────── -->
+  <div class="row g-4 mb-4">
+
+    <!-- Section 3 : Grades -->
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header py-3 px-4" style="background:linear-gradient(135deg,#b45309,#f59e0b);color:white;">
+          <h5 class="mb-0"><i class="bi bi-person-badge-fill me-2"></i>Grades</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            {% for grade in ctx.grades %}
+            <div class="d-inline-flex align-items-center gap-2 rounded-pill px-3 py-2"
+                 style="background:#fff7ed;border:1px solid #fed7aa;">
+              <span class="fw-semibold" style="color:#92400e;font-size:.9rem;">{{ grade.libelle }}</span>
+              {% if not grade.actif %}
+              <span class="badge bg-secondary" style="font-size:.65rem;">inactif</span>
+              {% endif %}
+              <form method="post" action="{% url 'parametrage:grade_delete' grade.pk %}" class="d-inline m-0 p-0"
+                    data-confirm="Supprimer le grade {{ grade.libelle }} ?">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-link p-0 lh-1 text-danger"
+                        title="Supprimer" style="font-size:.75rem;">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </form>
+            </div>
+            {% empty %}
+            <p class="text-muted small">Aucun grade configuré.</p>
+            {% endfor %}
+          </div>
+          <form method="post" action="{% url 'parametrage:grade_create' %}" class="d-flex gap-2">
+            {% csrf_token %}
+            <div style="flex:1;">
+              {{ grade_form.libelle }}
+            </div>
+            <button type="submit" class="btn btn-warning text-nowrap fw-semibold px-3">+ Ajouter</button>
+          </form>
+          <small class="text-muted d-block mt-2">💡 Les grades sont triés automatiquement par ordre d'ajout (A, B, C, D...). Exemple : A3, A4, B3, B4, C3</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4 : Vagues -->
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header py-3 px-4" style="background:linear-gradient(135deg,#5b21b6,#8b5cf6);color:white;">
+          <h5 class="mb-0"><i class="bi bi-calendar-range-fill me-2"></i>Vagues</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            {% for vague in ctx.vagues %}
+            <div class="d-inline-flex align-items-center gap-2 rounded-pill px-3 py-2"
+                 style="background:#faf5ff;border:1px solid #d8b4fe;">
+              <span class="fw-semibold" style="color:#6d28d9;font-size:.9rem;">{{ vague.libelle }}</span>
+              {% if not vague.actif %}
+              <span class="badge bg-secondary" style="font-size:.65rem;">inactive</span>
+              {% endif %}
+              <form method="post" action="{% url 'parametrage:vague_delete' vague.pk %}" class="d-inline m-0 p-0"
+                    data-confirm="Supprimer la vague {{ vague.libelle }} ?">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-link p-0 lh-1 text-danger"
+                        title="Supprimer" style="font-size:.75rem;">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </form>
+            </div>
+            {% empty %}
+            <p class="text-muted small">Aucune vague configurée.</p>
+            {% endfor %}
+          </div>
+          <form method="post" action="{% url 'parametrage:vague_create' %}" class="d-flex gap-2">
+            {% csrf_token %}
+            {{ vague_form.libelle }}
+            <button type="submit" class="btn fw-semibold text-nowrap px-3"
+                    style="background:#8b5cf6;color:white;">+ Ajouter</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Section 5 : Lieux (sites / bâtiments / salles) ─────────────── -->
+  <div class="card shadow-sm mb-4" id="lieux-pedagogiques" style="scroll-margin-top: 5rem;">
+    <div class="card-header py-3 px-4"
+         style="background:linear-gradient(135deg,#0ea5e9,#2563eb);color:white;">
+      <h5 class="mb-0"><i class="bi bi-building me-2"></i>Lieux pédagogiques</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-4">
+        <div class="col-md-4">
+          <h6 class="fw-semibold text-muted mb-2">
+            Sites ({{ ctx.stats.nb_sites }} actif{{ ctx.stats.nb_sites|pluralize }}{% if ctx.stats.nb_sites_total != ctx.stats.nb_sites %} / {{ ctx.stats.nb_sites_total }}{% endif %})
+          </h6>
+          <div class="table-responsive salles-table-wrap mb-3">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Nom</th>
+                  <th class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for s in ctx.sites %}
+                <tr class="{% if not s.actif %}table-secondary{% endif %}">
+                  <td class="text-break">
+                    {{ s.nom }}
+                    {% if not s.actif %}<span class="badge bg-secondary ms-1">inactif</span>{% endif %}
+                  </td>
+                  <td class="text-end">
+                    {% if perms.parametrage.change_site %}
+                    <form method="post" action="{% url 'parametrage:site_toggle_actif' s.pk %}" class="d-inline"
+                          {% if s.actif %}data-confirm="Désactiver le site « {{ s.nom }} » ? Tous les bâtiments rattachés doivent d'abord être inactifs."{% else %}data-confirm="Réactiver le site « {{ s.nom }} » ?"{% endif %}>
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-{% if s.actif %}warning{% else %}primary{% endif %}"
+                              title="{% if s.actif %}Désactiver{% else %}Activer{% endif %}">
+                        <i class="bi bi-{% if s.actif %}pause-circle{% else %}play-circle{% endif %}"></i>
+                      </button>
+                    </form>
+                    {% endif %}
+                    {% if perms.parametrage.change_site %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-bs-toggle="modal" data-bs-target="#modalSiteEdit{{ s.pk }}">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    {% endif %}
+                    {% if perms.parametrage.delete_site %}
+                    <form method="post" action="{% url 'parametrage:site_delete' s.pk %}" class="d-inline"
+                          data-confirm="Supprimer le site {{ s.nom }} ?">
+                      {% csrf_token %}
+                      <button class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted small text-center">Aucun site.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <form method="post" action="{% url 'parametrage:site_create' %}" class="d-flex gap-2">
+            {% csrf_token %}{{ site_form.nom }}
+            <button class="btn btn-outline-primary">+ Ajouter</button>
+          </form>
+        </div>
+        <div class="col-md-4">
+          <h6 class="fw-semibold text-muted mb-2">
+            Bâtiments ({{ ctx.stats.nb_batiments }} actif{{ ctx.stats.nb_batiments|pluralize }}{% if ctx.stats.nb_batiments_total != ctx.stats.nb_batiments %} / {{ ctx.stats.nb_batiments_total }}{% endif %})
+          </h6>
+          <div class="table-responsive mb-3">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Site</th>
+                  <th>Bâtiment</th>
+                  <th class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for b in ctx.batiments %}
+                <tr class="{% if not b.actif %}table-secondary{% endif %}">
+                  <td class="text-break">{{ b.site.nom|default:"—" }}</td>
+                  <td class="text-break">
+                    {{ b.nom }}
+                    {% if not b.actif %}<span class="badge bg-secondary ms-1">inactif</span>{% endif %}
+                  </td>
+                  <td class="text-end">
+                    {% if perms.parametrage.change_batiment %}
+                    <form method="post" action="{% url 'parametrage:batiment_toggle_actif' b.pk %}" class="d-inline"
+                          {% if b.actif %}data-confirm="Désactiver le bâtiment « {{ b.nom }} » ? Toutes les salles rattachées doivent d'abord être inactives."{% else %}data-confirm="Réactiver le bâtiment « {{ b.nom }} » ?"{% endif %}>
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-{% if b.actif %}warning{% else %}primary{% endif %}"
+                              title="{% if b.actif %}Désactiver{% else %}Activer{% endif %}">
+                        <i class="bi bi-{% if b.actif %}pause-circle{% else %}play-circle{% endif %}"></i>
+                      </button>
+                    </form>
+                    {% endif %}
+                    {% if perms.parametrage.change_batiment %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-bs-toggle="modal" data-bs-target="#modalBatimentEdit{{ b.pk }}">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    {% endif %}
+                    {% if perms.parametrage.delete_batiment %}
+                    <form method="post" action="{% url 'parametrage:batiment_delete' b.pk %}" class="d-inline"
+                          data-confirm="Supprimer le bâtiment {{ b.nom }} ?">
+                      {% csrf_token %}
+                      <button class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="text-muted small text-center">Aucun bâtiment.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <form method="post" action="{% url 'parametrage:batiment_create' %}" class="d-grid gap-2">
+            {% csrf_token %}
+            {{ batiment_form.site }}
+            {{ batiment_form.nom }}
+            <button class="btn btn-outline-primary">+ Ajouter bâtiment</button>
+          </form>
+        </div>
+        <div class="col-md-4">
+          <h6 class="fw-semibold text-muted mb-2">
+            Salles ({{ ctx.stats.nb_salles }} active{{ ctx.stats.nb_salles|pluralize }}{% if ctx.stats.nb_salles_total != ctx.stats.nb_salles %} / {{ ctx.stats.nb_salles_total }}{% endif %})
+          </h6>
+          <div class="mb-2">
+            <input
+              id="salles-search-input"
+              type="text"
+              class="form-control form-control-sm"
+              placeholder="Rechercher (bâtiment, salle, capacité...)"
+            >
+          </div>
+          <div class="table-responsive salles-table-wrap mb-3">
+            <table id="salles-table" class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Bâtiment</th>
+                  <th>Salle</th>
+                  <th class="text-center">Cap.</th>
+                  <th class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for sl in ctx.salles %}
+                <tr class="{% if not sl.actif %}table-secondary{% endif %}">
+                  <td class="text-break">{{ sl.batiment.nom|default:"—" }}</td>
+                  <td class="text-break">
+                    {{ sl.nom }}
+                    {% if not sl.actif %}<span class="badge bg-secondary ms-1">inactive</span>{% endif %}
+                  </td>
+                  <td class="text-center">{{ sl.capacite_max }}</td>
+                  <td class="text-end">
+                    {% if perms.parametrage.change_salle %}
+                    <form method="post" action="{% url 'parametrage:salle_toggle_actif' sl.pk %}" class="d-inline"
+                          {% if sl.actif %}data-confirm="Désactiver la salle « {{ sl.nom }} » ?"{% else %}data-confirm="Réactiver la salle « {{ sl.nom }} » ?"{% endif %}>
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-{% if sl.actif %}warning{% else %}primary{% endif %}"
+                              title="{% if sl.actif %}Désactiver{% else %}Activer{% endif %}">
+                        <i class="bi bi-{% if sl.actif %}pause-circle{% else %}play-circle{% endif %}"></i>
+                      </button>
+                    </form>
+                    {% endif %}
+                    {% if perms.parametrage.change_salle %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-bs-toggle="modal" data-bs-target="#modalSalleEdit{{ sl.pk }}">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    {% endif %}
+                    {% if perms.parametrage.delete_salle %}
+                    <form method="post" action="{% url 'parametrage:salle_delete' sl.pk %}" class="d-inline"
+                          data-confirm="Supprimer la salle {{ sl.nom }} ?">
+                      {% csrf_token %}
+                      <button class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-muted small text-center">Aucune salle.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <form method="post" action="{% url 'parametrage:salle_create' %}" class="d-grid gap-2">
+            {% csrf_token %}
+            {{ salle_form.batiment }}
+            {{ salle_form.nom }}
+            {{ salle_form.capacite_max }}
+            <button class="btn btn-outline-primary">+ Ajouter salle</button>
+          </form>
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <h6 class="fw-semibold text-muted mb-1">
+        Périodes de disponibilité des sites ({{ ctx.stats.nb_periodes_disponibilite_sites }})
+      </h6>
+      <p class="text-muted small mb-3">
+        Définissez une ou plusieurs plages de dates par site. Un site sans période est considéré
+        <strong>toujours disponible</strong> pour la planification.
+      </p>
+      <div class="table-responsive mb-3">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Site</th>
+              <th>Début</th>
+              <th>Fin</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in ctx.periodes_disponibilite_sites %}
+            <tr>
+              <td class="text-break">{{ p.site.nom }}</td>
+              <td>{{ p.date_debut|date:"d/m/Y" }}</td>
+              <td>{{ p.date_fin|date:"d/m/Y" }}</td>
+              <td class="text-end">
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        data-bs-toggle="modal" data-bs-target="#modalPeriodeSiteEdit{{ p.pk }}">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <form method="post"
+                      action="{% url 'parametrage:periode_disponibilite_site_delete' p.pk %}"
+                      class="d-inline"
+                      data-confirm="Supprimer la période {{ p.date_debut|date:'d/m/Y' }} → {{ p.date_fin|date:'d/m/Y' }} pour {{ p.site.nom }} ?">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-muted small text-center">
+                Aucune période configurée — tous les sites sont disponibles en permanence.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <form method="post" action="{% url 'parametrage:periode_disponibilite_site_create' %}" class="row g-2">
+        {% csrf_token %}
+        <div class="col-md-4">{{ periode_disponibilite_site_form.site }}</div>
+        <div class="col-md-3">{{ periode_disponibilite_site_form.date_debut }}</div>
+        <div class="col-md-3">{{ periode_disponibilite_site_form.date_fin }}</div>
+        <div class="col-md-2">
+          <button class="btn btn-outline-primary w-100">+ Ajouter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── Section 6 : Jours fériés ───────────────────────────────────── -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header py-3 px-4"
+         style="background:linear-gradient(135deg,#dc2626,#ef4444);color:white;">
+      <h5 class="mb-0"><i class="bi bi-calendar-x me-2"></i>Jours fériés exclus du planning</h5>
+    </div>
+    <div class="card-body">
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        {% for jf in ctx.jours_feries %}
+        <span class="badge bg-light text-dark border">
+          {{ jf.date|date:"d/m/Y" }} — {{ jf.libelle }}
+          <form method="post" action="{% url 'parametrage:jour_ferie_delete' jf.pk %}" class="d-inline"
+                data-confirm="Supprimer le jour férié {{ jf.libelle }} ?">
+            {% csrf_token %}
+            <button class="btn btn-link text-danger p-0 ms-1" style="font-size:.7rem;">x</button>
+          </form>
+        </span>
+        {% empty %}
+        <span class="text-muted small">Aucun jour férié configuré.</span>
+        {% endfor %}
+      </div>
+      <form method="post" action="{% url 'parametrage:jour_ferie_create' %}" class="row g-2">
+        {% csrf_token %}
+        <div class="col-md-3">{{ jour_ferie_form.date }}</div>
+        <div class="col-md-6">{{ jour_ferie_form.libelle }}</div>
+        <div class="col-md-3">
+          <button class="btn btn-outline-danger w-100">+ Ajouter jour férié</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── Section 7 : Paramètres par formation ───────────────────────── -->
+  <div id="parametres-formation" class="card shadow-sm mb-4" style="scroll-margin-top: 5rem;">
+    <div class="card-header py-3 px-4"
+         style="background:linear-gradient(135deg,#1a1f36,#374151);color:white;">
+      <h5 class="mb-0"><i class="bi bi-sliders me-2"></i>Paramètres de planification par formation</h5>
+    </div>
+    <div class="card-body px-4">
+      {% if ctx.formations %}
+      <form method="get" action="{% url 'parametrage:index' %}#parametres-formation" class="mb-4">
+        <label class="form-label fw-semibold small" for="formation-select">Formation</label>
+        <select id="formation-select" name="formation" class="form-select" onchange="this.form.submit()">
+          {% for f in ctx.formations %}
+          <option value="{{ f.pk }}"
+            {% if ctx.formation_selectionnee and f.pk == ctx.formation_selectionnee.pk %}selected{% endif %}>
+            {{ f.intitule }} ({{ f.type_formation.code }}) — {{ f.date_debut|date:"d/m/Y" }}
+          </option>
+          {% endfor %}
+        </select>
+      </form>
+      <p class="text-muted small mb-4">
+        Les réglages ci-dessous s'appliquent uniquement à
+        <strong>{{ ctx.formation_selectionnee.intitule }}</strong>.
+        Modifier une autre formation n'affecte pas celle-ci.
+      </p>
+
+      {% if parametre_formation_form %}
+      <form method="post" action="{% url 'parametrage:parametres_formation_update' %}">
+        {% csrf_token %}
+        <input type="hidden" name="formation_id" value="{{ ctx.formation_selectionnee.pk }}">
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="rounded-3 border p-3" style="background:#f8fafc;border-color:#e2e8f0 !important;">
+              <h6 class="fw-bold mb-1" style="color:#0f172a;">
+                <i class="bi bi-shield-check me-2"></i>Contraintes de planification
+              </h6>
+              <p class="text-muted small mb-3">Règles qui limitent la génération des séances pour cette formation.</p>
+              <div class="row g-3">
+                <div class="col-md-4 col-6">
+                  <label class="form-label fw-semibold small">Max auditeurs / groupe</label>
+                  {{ parametre_formation_form.max_auditeurs_groupe_defaut }}
+                </div>
+                <div class="col-md-8 col-6">
+                  <div class="form-check mt-4">
+                    {{ parametre_formation_form.groupes_auto_mixage_grades }}
+                    <label class="form-check-label small" for="{{ parametre_formation_form.groupes_auto_mixage_grades.id_for_label }}">
+                      Mixage des grades dans un groupe (génération auto)
+                    </label>
+                  </div>
+                </div>
+                <div class="col-md-4 col-6">
+                  <label class="form-label fw-semibold small">Durée séance (minutes)</label>
+                  {{ parametre_formation_form.duree_seance_defaut_minutes }}
+                </div>
+                <div class="col-md-4 col-6">
+                  <label class="form-label fw-semibold small">Max séances / jour</label>
+                  {{ parametre_formation_form.max_seances_par_jour_defaut }}
+                </div>
+                <div class="col-md-4 col-6">
+                  <label class="form-label fw-semibold small">Max salles simultanées / module</label>
+                  {{ parametre_formation_form.max_salles_simultanees_module }}
+                </div>
+                <div class="col-md-4 col-6">
+                  <label class="form-label fw-semibold small">Tolérance capacité salle</label>
+                  {{ parametre_formation_form.tolerance_capacite_salle }}
+                </div>
+                <div class="col-12">
+                  <div class="form-check">
+                    {{ parametre_formation_form.verrouiller_salle_groupe_formation }}
+                    <label class="form-check-label small" for="{{ parametre_formation_form.verrouiller_salle_groupe_formation.id_for_label }}">
+                      Verrouiller la salle d'un groupe pour toute la formation (génération auto)
+                    </label>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <div class="form-check">
+                    {{ parametre_formation_form.repartir_reliquat_sur_seances }}
+                    <label class="form-check-label small" for="{{ parametre_formation_form.repartir_reliquat_sur_seances.id_for_label }}">
+                      Répartir le reliquat d'heures sur les séances existantes (génération auto)
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="rounded-3 border p-3" style="background:#f8fafc;border-color:#e2e8f0 !important;">
+              <h6 class="fw-bold mb-1" style="color:#0f172a;">
+                <i class="bi bi-clock-history me-2"></i>Horaires par défaut
+              </h6>
+              <div class="row g-3">
+                <div class="col-md-3 col-6">
+                  <label class="form-label fw-semibold small">Matin — début</label>
+                  {{ parametre_formation_form.matin_heure_debut_defaut }}
+                </div>
+                <div class="col-md-3 col-6">
+                  <label class="form-label fw-semibold small">Matin — fin</label>
+                  {{ parametre_formation_form.matin_heure_fin_defaut }}
+                </div>
+                <div class="col-md-3 col-6">
+                  <label class="form-label fw-semibold small">Après-midi — début</label>
+                  {{ parametre_formation_form.soir_heure_debut_defaut }}
+                </div>
+                <div class="col-md-3 col-6">
+                  <label class="form-label fw-semibold small">Après-midi — fin</label>
+                  {{ parametre_formation_form.soir_heure_fin_defaut }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="rounded-3 border p-3" style="background:#f8fafc;border-color:#e2e8f0 !important;">
+              <h6 class="fw-bold mb-1" style="color:#0f172a;">
+                <i class="bi bi-sliders2 me-2"></i>Scoring des salles
+              </h6>
+              <div class="row g-3">
+                <div class="col-md-4 col-6">
+                  <label class="form-label fw-semibold small">Poids score capacité</label>
+                  {{ parametre_formation_form.poids_score_ecart_capacite }}
+                </div>
+                <div class="col-md-4 col-6">
+                  <label class="form-label fw-semibold small">Poids score rotation module</label>
+                  {{ parametre_formation_form.poids_score_rotation_module }}
+                </div>
+                <div class="col-md-4 col-6">
+                  <label class="form-label fw-semibold small">Poids score équilibrage global</label>
+                  {{ parametre_formation_form.poids_score_equilibrage_global }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-semibold small">Jours de cours par défaut</label>
+            <div class="d-flex flex-wrap gap-3 mt-1">
+              {% for value, label in parametre_formation_form.jours_defaut.field.choices %}
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" name="jours_defaut"
+                       value="{{ value }}" id="jour_formation_{{ value }}"
+                       {% if value in ctx.parametres_formation.jours_defaut %}checked{% endif %}>
+                <label class="form-check-label" for="jour_formation_{{ value }}">{{ label }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="mt-4">
+          <button type="submit" class="btn fw-semibold px-4"
+                  style="background:linear-gradient(135deg,#1a1f36,#374151);color:white;">
+            <i class="bi bi-save me-2"></i>Enregistrer pour cette formation
+          </button>
+        </div>
+      </form>
+      {% endif %}
+      {% else %}
+      <p class="text-muted mb-0">Aucune formation disponible. Créez une formation pour configurer ses paramètres.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ─── Section 8 : Valeurs par défaut ──────── -->
+  <div id="parametres-defaut" class="card shadow-sm mb-5" style="scroll-margin-top: 5rem;">
+    <div class="card-header py-3 px-4"
+         style="background:linear-gradient(135deg,#475569,#64748b);color:white;">
+      <h5 class="mb-0"><i class="bi bi-copy me-2"></i>Valeurs par défaut</h5>
+    </div>
+    <div class="card-body px-4">
+      <p class="text-muted small mb-4">
+        Modèle appliqué automatiquement lors de la création d'une formation.
+        Les formations existantes conservent leurs propres paramètres.
+      </p>
+      <form method="post" action="{% url 'parametrage:parametres_defaut_update' %}">
+        {% csrf_token %}
+        {% if ctx.formation_selectionnee %}
+        <input type="hidden" name="formation_id" value="{{ ctx.formation_selectionnee.pk }}">
+        {% endif %}
+        <div class="row g-4">
+          <div class="col-md-4 col-6">
+            <label class="form-label fw-semibold small">Max auditeurs / groupe</label>
+            {{ parametre_defaut_form.max_auditeurs_groupe_defaut }}
+          </div>
+          <div class="col-md-4 col-6">
+            <label class="form-label fw-semibold small">Durée séance (minutes)</label>
+            {{ parametre_defaut_form.duree_seance_defaut_minutes }}
+          </div>
+          <div class="col-md-4 col-6">
+            <label class="form-label fw-semibold small">Marge simulation (%)</label>
+            {{ parametre_defaut_form.marge_simulation_pct }}
+          </div>
+          <div class="col-12">
+            <div class="form-check">
+              {{ parametre_defaut_form.groupes_auto_mixage_grades }}
+              <label class="form-check-label small" for="{{ parametre_defaut_form.groupes_auto_mixage_grades.id_for_label }}">
+                Mixage des grades (génération auto des groupes)
+              </label>
+            </div>
+          </div>
+        </div>
+        <details class="mt-3">
+          <summary class="fw-semibold small text-muted" style="cursor:pointer;">Autres valeurs par défaut…</summary>
+          <div class="row g-3 mt-2">
+            <div class="col-md-4 col-6">
+              <label class="form-label fw-semibold small">Max séances / jour</label>
+              {{ parametre_defaut_form.max_seances_par_jour_defaut }}
+            </div>
+            <div class="col-md-4 col-6">
+              <label class="form-label fw-semibold small">Max salles simultanées / module</label>
+              {{ parametre_defaut_form.max_salles_simultanees_module }}
+            </div>
+            <div class="col-md-4 col-6">
+              <label class="form-label fw-semibold small">Tolérance capacité salle</label>
+              {{ parametre_defaut_form.tolerance_capacite_salle }}
+            </div>
+            <div class="col-md-3 col-6">
+              <label class="form-label fw-semibold small">Matin — début</label>
+              {{ parametre_defaut_form.matin_heure_debut_defaut }}
+            </div>
+            <div class="col-md-3 col-6">
+              <label class="form-label fw-semibold small">Matin — fin</label>
+              {{ parametre_defaut_form.matin_heure_fin_defaut }}
+            </div>
+            <div class="col-md-3 col-6">
+              <label class="form-label fw-semibold small">Après-midi — début</label>
+              {{ parametre_defaut_form.soir_heure_debut_defaut }}
+            </div>
+            <div class="col-md-3 col-6">
+              <label class="form-label fw-semibold small">Après-midi — fin</label>
+              {{ parametre_defaut_form.soir_heure_fin_defaut }}
+            </div>
+            <div class="col-md-4 col-6">
+              <label class="form-label fw-semibold small">Poids score capacité</label>
+              {{ parametre_defaut_form.poids_score_ecart_capacite }}
+            </div>
+            <div class="col-md-4 col-6">
+              <label class="form-label fw-semibold small">Poids score rotation</label>
+              {{ parametre_defaut_form.poids_score_rotation_module }}
+            </div>
+            <div class="col-md-4 col-6">
+              <label class="form-label fw-semibold small">Poids score équilibrage</label>
+              {{ parametre_defaut_form.poids_score_equilibrage_global }}
+            </div>
+            <div class="col-12">
+              <div class="form-check">
+                {{ parametre_defaut_form.verrouiller_salle_groupe_formation }}
+                <label class="form-check-label small" for="{{ parametre_defaut_form.verrouiller_salle_groupe_formation.id_for_label }}">
+                  Verrouiller la salle d'un groupe pour toute la formation
+                </label>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="form-check">
+                {{ parametre_defaut_form.repartir_reliquat_sur_seances }}
+                <label class="form-check-label small" for="{{ parametre_defaut_form.repartir_reliquat_sur_seances.id_for_label }}">
+                  Répartir le reliquat d'heures sur les séances existantes
+                </label>
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold small">Jours de cours par défaut</label>
+              <div class="d-flex flex-wrap gap-3 mt-1">
+                {% for value, label in parametre_defaut_form.jours_defaut.field.choices %}
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="checkbox" name="jours_defaut"
+                         value="{{ value }}" id="jour_defaut_{{ value }}"
+                         {% if value in ctx.parametres_defaut.jours_defaut %}checked{% endif %}>
+                  <label class="form-check-label" for="jour_defaut_{{ value }}">{{ label }}</label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </details>
+        <div class="mt-4">
+          <button type="submit" class="btn btn-outline-secondary fw-semibold px-4">
+            <i class="bi bi-save me-2"></i>Enregistrer les valeurs par défaut
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block page_modals %}
+{% for s in ctx.sites %}
+<div class="modal fade" id="modalSiteEdit{{ s.pk }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content rounded-3">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold">Modifier le site</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <form method="post" action="{% url 'parametrage:site_update' s.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <label class="form-label small fw-semibold">Nom</label>
+          <input type="text" name="nom" class="form-control" value="{{ s.nom }}" required>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-sm btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% for b in ctx.batiments %}
+<div class="modal fade" id="modalBatimentEdit{{ b.pk }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content rounded-3">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold">Modifier le bâtiment</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <form method="post" action="{% url 'parametrage:batiment_update' b.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Site</label>
+            <select name="site" class="form-select" required>
+              {% for s in ctx.sites %}
+              {% if s.actif or s.pk == b.site_id %}
+              <option value="{{ s.pk }}" {% if b.site_id == s.pk %}selected{% endif %}>{{ s.nom }}</option>
+              {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Nom</label>
+            <input type="text" name="nom" class="form-control" value="{{ b.nom }}" required>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-sm btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% for sl in ctx.salles %}
+<div class="modal fade" id="modalSalleEdit{{ sl.pk }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content rounded-3">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold">Modifier la salle</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <form method="post" action="{% url 'parametrage:salle_update' sl.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Bâtiment</label>
+            <select name="batiment" class="form-select" required>
+              {% for b in ctx.batiments %}
+              {% if b.actif or b.pk == sl.batiment_id %}
+              <option value="{{ b.pk }}" {% if sl.batiment_id == b.pk %}selected{% endif %}>
+                {{ b.site.nom|default:"—" }} / {{ b.nom }}
+              </option>
+              {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Nom</label>
+            <input type="text" name="nom" class="form-control" value="{{ sl.nom }}" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Capacité max</label>
+            <input type="number" name="capacite_max" class="form-control" min="1" value="{{ sl.capacite_max }}" required>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-sm btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% for p in ctx.periodes_disponibilite_sites %}
+<div class="modal fade" id="modalPeriodeSiteEdit{{ p.pk }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-3">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold">Modifier la période — {{ p.site.nom }}</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <form method="post" action="{% url 'parametrage:periode_disponibilite_site_update' p.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Site</label>
+            <select name="site" class="form-select" required>
+              {% for s in ctx.sites %}
+              <option value="{{ s.pk }}" {% if s.pk == p.site_id %}selected{% endif %}>{{ s.nom }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Date de début</label>
+              <input type="date" name="date_debut" class="form-control"
+                     value="{{ p.date_debut|date:'Y-m-d' }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Date de fin</label>
+              <input type="date" name="date_fin" class="form-control"
+                     value="{{ p.date_fin|date:'Y-m-d' }}" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-sm btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const input = document.getElementById("salles-search-input");
+    const table = document.getElementById("salles-table");
+    if (!input || !table) return;
+
+    const rows = Array.from(table.querySelectorAll("tbody tr"));
+    input.addEventListener("input", function () {
+      const query = (input.value || "").trim().toLowerCase();
+      rows.forEach((row) => {
+        const text = (row.textContent || "").toLowerCase();
+        row.style.display = !query || text.includes(query) ? "" : "none";
+      });
+    });
+  })();
+</script>
+{% endblock %}

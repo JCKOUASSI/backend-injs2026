@@ -1,0 +1,54 @@
+{% if preview_module_report %}
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-info-subtle border-0 py-3 px-4">
+    <strong><i class="bi bi-eye me-1"></i>Rapport de prévisualisation</strong>
+    <div class="small text-muted mt-1">
+      {{ preview_total_seances }} séance(s) potentielles, {{ preview_total_heures }}h, {{ preview_conflits_count }} conflit(s).
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th class="px-4">Module</th>
+          <th class="text-end">Heures prévues</th>
+          <th class="text-end">Heures plaçables</th>
+          <th class="text-end">Heures restantes</th>
+          <th class="text-end">Couverture</th>
+          <th class="pe-4">Diagnostic</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in preview_module_report %}
+        <tr>
+          <td class="px-4">{{ row.module_titre }}</td>
+          <td class="text-end">{{ row.heures_prevues }}</td>
+          <td class="text-end">{{ row.heures_placees }}</td>
+          <td class="text-end {% if row.heures_restantes > 0 %}text-danger fw-semibold{% else %}text-success{% endif %}">
+            {{ row.heures_restantes }}
+          </td>
+          <td class="text-end">{{ row.couverture }}%</td>
+          <td class="pe-4">
+            {% if row.reason %}
+            <span class="text-danger small">{{ row.reason }}</span>
+            {% else %}
+            <span class="text-success small">Couverture complète</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-3">
+            Aucun module applicable détecté pour cette prévisualisation.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-warning rounded-3 mb-4">
+  Prévisualisation impossible : vérifiez la configuration du groupe (horaires, jours actifs).
+</div>
+{% endif %}

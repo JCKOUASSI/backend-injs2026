@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Formateurs{% endblock %}
+{% block nav_formateurs %}active-link{% endblock %}
+{% block topbar_title %}Référentiel formateurs{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+
+  {% if messages %}
+  <div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3">
+      {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h1 class="fw-bold mb-1" style="font-size:1.7rem;color:#0f172a;">
+        <i class="bi bi-person-badge me-2 text-primary"></i>Formateurs
+      </h1>
+      <p class="text-muted mb-0">
+        Référentiel global (import Excel).
+        {% if filtre_specialite_rup %}
+        <span class="d-block small text-info mt-1">
+          Liste filtrée : formateurs compatibles avec la spécialité de votre module RUP.
+        </span>
+        {% endif %}
+      </p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+      <a href="{% url 'formations:formateurs_import_page' %}" class="btn btn-success rounded-pill px-4">
+        <i class="bi bi-upload me-2"></i>Importer Excel
+      </a>
+      <a href="{% url 'formations:list' %}" class="btn btn-outline-secondary rounded-pill px-3">
+        ← Formations
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-header py-3 px-4 fw-semibold" style="background:#f8fafc;color:#0f172a;">
+      <i class="bi bi-people me-2 text-primary"></i>Référentiel (import)
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="px-4">Numéro</th>
+              <th>Nom</th>
+              <th>Prénom</th>
+              <th>Email</th>
+              <th>Téléphone</th>
+              <th>Organisation</th>
+              <th>Spécialités</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for f in formateurs %}
+            <tr>
+              <td class="px-4 font-monospace small">{{ f.numero|default:"—" }}</td>
+              <td class="fw-semibold">{{ f.nom|default:"—" }}</td>
+              <td>{{ f.prenom|default:"—" }}</td>
+              <td class="small">{{ f.email|default:"—" }}</td>
+              <td class="small">{{ f.telephone|default:"—" }}</td>
+              <td class="small">{{ f.organisation|default:"—" }}</td>
+              <td class="small">
+                {% for s in f.specialites.all %}
+                <span class="badge bg-light text-dark border me-1 mb-1" title="{{ s.libelle }}">{{ s.code }}</span>
+                {% empty %}
+                <span class="text-muted">—</span>
+                {% endfor %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-muted text-center py-4">
+                Aucun formateur enregistré. Utilisez <strong>Importer Excel</strong>.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+[
+  {"model": "referentiels.typeformation", "pk": 1, "fields": {"code": "FAC", "libelle": "Formation d'Adaptation à la Carrière"}},
+  {"model": "referentiels.typeformation", "pk": 2, "fields": {"code": "FAB", "libelle": "Formation d'Adaptation au Budget"}},
+  {"model": "parametrage.grade", "pk": 1, "fields": {"libelle": "A3", "ordre": 1, "actif": true}},
+  {"model": "parametrage.grade", "pk": 2, "fields": {"libelle": "A4", "ordre": 2, "actif": true}},
+  {"model": "parametrage.grade", "pk": 3, "fields": {"libelle": "B3", "ordre": 3, "actif": true}},
+  {"model": "parametrage.grade", "pk": 4, "fields": {"libelle": "B4", "ordre": 4, "actif": true}},
+  {"model": "parametrage.grade", "pk": 5, "fields": {"libelle": "C3", "ordre": 5, "actif": true}},
+  {"model": "parametrage.vague", "pk": 1, "fields": {"libelle": "Vague 1", "actif": true}},
+  {"model": "parametrage.vague", "pk": 2, "fields": {"libelle": "Vague 2", "actif": true}},
+  {"model": "parametrage.vague", "pk": 3, "fields": {"libelle": "2024-A", "actif": true}},
+  {"model": "parametrage.vague", "pk": 4, "fields": {"libelle": "2025-A", "actif": true}},
+  {"model": "parametrage.parametregeneral", "pk": 1, "fields": {
+    "max_auditeurs_groupe_defaut": 25,
+    "matin_heure_debut_defaut": "08:00:00",
+    "matin_heure_fin_defaut": "12:00:00",
+    "soir_heure_debut_defaut": "13:00:00",
+    "soir_heure_fin_defaut": "17:00:00",
+    "jours_defaut": [0, 1, 2, 3, 4]
+  }}
+]

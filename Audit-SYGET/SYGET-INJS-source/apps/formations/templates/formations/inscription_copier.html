@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}Copier des auditeurs — {{ formation.intitule }}{% endblock %}
+{% block nav_formations %}active-link{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 900px;">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="fw-bold mb-1" style="font-size: 1.5rem; color: #0f172a;">
+        <i class="bi bi-people-fill me-2 text-primary"></i>Inscrire des auditeurs
+      </h1>
+      <p class="text-muted mb-0">
+        Formation cible :
+        <strong>{{ formation.intitule }}</strong>
+        <span class="badge bg-primary ms-1">{{ formation.type_formation.code }}</span>
+        {% if formation.vague %}<span class="badge bg-secondary ms-1">{{ formation.vague }}</span>{% endif %}
+      </p>
+    </div>
+    <a href="{% url 'formations:detail' formation.pk %}" class="btn btn-outline-secondary rounded-pill px-3">
+      ← Retour
+    </a>
+  </div>
+
+  {% if messages %}
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
+    {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <!-- Étape 1 : choisir la formation source -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header py-3 px-4 fw-semibold" style="background: #f8fafc; color: #0f172a;">
+      <i class="bi bi-1-circle me-2 text-primary"></i>Choisir la formation source
+    </div>
+    <div class="card-body">
+      <form method="get" class="d-flex align-items-end gap-3 flex-wrap">
+        <div class="flex-grow-1">
+          <label class="form-label small fw-semibold mb-1">Formation dont les auditeurs seront repris</label>
+          <select name="source_formation" class="form-select">
+            <option value="">— Sélectionner une formation —</option>
+            {% for f in toutes_formations %}
+            <option value="{{ f.pk }}"{% if source_formation and f.pk == source_formation.pk %} selected{% endif %}>
+              {{ f.intitule }} ({{ f.type_formation.code }}){% if f.vague %} — {{ f.vague }}{% endif %}
+              — {{ f.date_debut|date:"Y" }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary px-4">
+          <i class="bi bi-search me-1"></i>Charger les auditeurs
+        </button>
+      </form>
+    </div>
+  </div>
+
+  {% if source_formation %}
+  <!-- Étape 2 : sélectionner les auditeurs -->
+  <div class="card shadow-sm">
+    <div class="card-header py-3 px-4 fw-semibold d-flex justify-content-between align-items-center" style="background: #f8fafc; color: #0f172a;">
+      <span><i class="bi bi-2-circle me-2 text-primary"></i>Sélectionner les auditeurs à inscrire</span>
+      <span class="badge bg-secondary">{{ auditeurs_source|length }} auditeur(s)</span>
+    </div>
+    <div class="card-body">
+
+      {% if not auditeurs_source %}
+      <div class="text-center text-muted py-4">
+        <i class="bi bi-inbox fs-2 opacity-50 d-block mb-2"></i>
+        Aucun auditeur trouvé dans la formation source.
+      </div>
+      {% else %}
+      <div class="alert alert-info py-2 mb-3 d-flex align-items-start gap-2">
+        <i class="bi bi-info-circle-fill mt-1 flex-shrink-0"></i>
+        <span>
+          Les auditeurs sélectionnés seront inscrits à
+          <strong>tous les modules</strong> de <em>{{ formation.intitule }}</em>.
+          S'ils appartiennent à un groupe dans la formation source, un groupe du <strong>même nom</strong>
+          sera créé sur cette formation si nécessaire, puis ils y seront affectés.
+          Les déjà inscrits (grisés) seront ignorés.
+        </span>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="source_formation" value="{{ source_formation.pk }}">
+
+        <!-- Barre d'outils sélection -->
+        <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-tout-selectionner">
+            <i class="bi bi-check2-all me-1"></i>Tout sélectionner
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-tout-deselectionner">
+            <i class="bi bi-x-lg me-1"></i>Tout désélectionner
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btn-non-inscrits">
+            <i class="bi bi-filter me-1"></i>Sélectionner les non inscrits uniquement
+          </button>
+          <span class="ms-auto text-muted small" id="compteur-selection">0 sélectionné(s)</span>
+        </div>
+
+        <div class="border rounded" style="max-height: 450px; overflow: auto;">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th style="width: 40px;"></th>
+                <th>Nom / Prénom</th>
+                <th>Matricule</th>
+                <th>Grade</th>
+                <th>Groupe source</th>
+                <th class="text-center">Déjà inscrit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in auditeurs_source %}
+              <tr class="{% if row.pk in deja_inscrits_ids %}table-secondary{% endif %}">
+                <td>
+                  <input type="checkbox"
+                         class="form-check-input cb-auditeur"
+                         name="auditeur_ids"
+                         value="{{ row.pk }}"
+                         {% if row.pk in deja_inscrits_ids %}disabled{% endif %}>
+                </td>
+                <td>
+                  <div class="fw-semibold small">{{ row.nom }} {{ row.prenom }}</div>
+                </td>
+                <td class="small text-muted">{{ row.matricule }}</td>
+                <td class="small">{{ row.grade|default:"—" }}</td>
+                <td class="small text-muted">{{ row.groupe_source|default:"—" }}</td>
+                <td class="text-center">
+                  {% if row.pk in deja_inscrits_ids %}
+                  <span class="badge bg-success bg-opacity-75"><i class="bi bi-check-lg"></i></span>
+                  {% else %}
+                  <span class="badge bg-light text-muted border">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-end mt-3 gap-2">
+          <a href="{% url 'formations:detail' formation.pk %}" class="btn btn-outline-secondary rounded-pill px-4">
+            Annuler
+          </a>
+          <button type="submit" class="btn btn-primary rounded-pill px-5" id="btn-inscrire" disabled>
+            <i class="bi bi-person-plus-fill me-1"></i>Inscrire la sélection
+          </button>
+        </div>
+      </form>
+      {% endif %}
+
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const checkboxes = Array.from(document.querySelectorAll(".cb-auditeur"));
+    const btnInscrire = document.getElementById("btn-inscrire");
+    const compteur = document.getElementById("compteur-selection");
+
+    function updateCompteur() {
+      const n = checkboxes.filter((cb) => cb.checked && !cb.disabled).length;
+      if (compteur) compteur.textContent = n + " sélectionné(s)";
+      if (btnInscrire) btnInscrire.disabled = n === 0;
+    }
+
+    checkboxes.forEach((cb) => cb.addEventListener("change", updateCompteur));
+
+    const btnTout = document.getElementById("btn-tout-selectionner");
+    const btnDe = document.getElementById("btn-tout-deselectionner");
+    const btnNonInscrits = document.getElementById("btn-non-inscrits");
+
+    if (btnTout) btnTout.addEventListener("click", () => {
+      checkboxes.forEach((cb) => { if (!cb.disabled) cb.checked = true; });
+      updateCompteur();
+    });
+    if (btnDe) btnDe.addEventListener("click", () => {
+      checkboxes.forEach((cb) => { if (!cb.disabled) cb.checked = false; });
+      updateCompteur();
+    });
+    if (btnNonInscrits) btnNonInscrits.addEventListener("click", () => {
+      checkboxes.forEach((cb) => { if (!cb.disabled) cb.checked = true; });
+      updateCompteur();
+    });
+
+    updateCompteur();
+  })();
+</script>
+{% endblock %}

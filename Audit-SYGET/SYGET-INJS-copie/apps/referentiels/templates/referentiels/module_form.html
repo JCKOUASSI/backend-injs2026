@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Formulaire module{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h1>Nouveau module</h1>
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">{{ form.titre.label_tag }}{{ form.titre }}</div>
+    <button class="btn btn-primary">Enregistrer</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}{{ auditeur.nom }} {{ auditeur.prenom }}{% endblock %}
+{% block nav_auditeurs %}active-link{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h1 class="fw-bold mb-1" style="font-size:1.7rem;color:#0f172a;">
+        {{ auditeur.nom }} {{ auditeur.prenom }}
+      </h1>
+      <div class="d-flex align-items-center gap-2 mt-1">
+        <code class="text-muted" style="font-size:.9rem;">{{ auditeur.matricule }}</code>
+        {% if auditeur.grade %}
+        <span class="badge rounded-pill" style="background:#fff7ed;color:#92400e;">{{ auditeur.grade }}</span>
+        {% endif %}
+        {% if auditeur.categorie %}
+        <span class="badge rounded-pill bg-secondary">Cat. {{ auditeur.categorie }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'auditeurs:update' auditeur.pk %}" class="btn btn-outline-primary rounded-pill px-3">
+        <i class="bi bi-pencil me-1"></i>Modifier
+      </a>
+      <form method="post" action="{% url 'auditeurs:delete' auditeur.pk %}"
+            data-confirm="Supprimer définitivement {{ auditeur.nom_complet }} ?">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger rounded-pill px-3">
+          <i class="bi bi-trash me-1"></i>Supprimer
+        </button>
+      </form>
+      <a href="{% url 'auditeurs:list' %}" class="btn btn-outline-secondary rounded-pill px-3">← Retour</a>
+    </div>
+  </div>
+
+  <!-- Fiche identité -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header py-3 px-4" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:white;">
+      <h6 class="mb-0 fw-bold"><i class="bi bi-person-badge-fill me-2"></i>Identité</h6>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3 col-6">
+          <div class="text-muted small fw-semibold mb-1">NOM</div>
+          <div class="fw-semibold">{{ auditeur.nom }}</div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="text-muted small fw-semibold mb-1">PRÉNOM(S)</div>
+          <div>{{ auditeur.prenom }}</div>
+        </div>
+        <div class="col-md-2 col-6">
+          <div class="text-muted small fw-semibold mb-1">GENRE</div>
+          <div>{{ auditeur.get_genre_display|default:"—" }}</div>
+        </div>
+        <div class="col-md-2 col-6">
+          <div class="text-muted small fw-semibold mb-1">DATE DE NAISSANCE</div>
+          <div>{{ auditeur.date_naissance|date:"d/m/Y"|default:"—" }}</div>
+        </div>
+        <div class="col-md-2 col-6">
+          <div class="text-muted small fw-semibold mb-1">LIEU DE NAISSANCE</div>
+          <div>{{ auditeur.lieu_naissance|default:"—" }}</div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="text-muted small fw-semibold mb-1">TÉLÉPHONE 1</div>
+          <div>{{ auditeur.telephone_1|default:"—" }}</div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="text-muted small fw-semibold mb-1">TÉLÉPHONE 2</div>
+          <div>{{ auditeur.telephone_2|default:"—" }}</div>
+        </div>
+        {% if auditeur.email %}
+        <div class="col-md-4 col-6">
+          <div class="text-muted small fw-semibold mb-1">EMAIL</div>
+          <div><a href="mailto:{{ auditeur.email }}">{{ auditeur.email }}</a></div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Fiche concours & classification -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header py-3 px-4" style="background:linear-gradient(135deg,#b45309,#d97706);color:white;">
+      <h6 class="mb-0 fw-bold"><i class="bi bi-award-fill me-2"></i>Concours &amp; Classification</h6>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3 col-6">
+          <div class="text-muted small fw-semibold mb-1">TYPE CONCOURS</div>
+          <div>{{ auditeur.type_concours|default:"—" }}</div>
+        </div>
+        <div class="col-md-5 col-6">
+          <div class="text-muted small fw-semibold mb-1">LIBELLÉ CONCOURS</div>
+          <div>{{ auditeur.libelle_concours|default:"—" }}</div>
+        </div>
+        <div class="col-md-2 col-6">
+          <div class="text-muted small fw-semibold mb-1">CATÉGORIE</div>
+          <div>{{ auditeur.categorie|default:"—" }}</div>
+        </div>
+        <div class="col-md-2 col-6">
+          <div class="text-muted small fw-semibold mb-1">GRADE</div>
+          <div>{{ auditeur.grade|default:"—" }}</div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="text-muted small fw-semibold mb-1">GRADE-GROUPE</div>
+          <div>{{ auditeur.grade_groupe }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Formations inscrites -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header py-3 px-4" style="background:linear-gradient(135deg,#059669,#10b981);color:white;">
+          <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold"><i class="bi bi-mortarboard-fill me-2"></i>Formations</h6>
+            <span class="badge bg-white text-success fw-bold">{{ auditeur.inscriptions.count }}</span>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="px-4">Formation</th>
+                <th>Module</th>
+                <th class="text-center">Type</th>
+                <th class="text-center">Période</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ins in auditeur.inscriptions.all %}
+              <tr>
+                <td class="px-4">
+                  <a href="{% url 'formations:detail' ins.formation.pk %}" class="text-decoration-none fw-semibold" style="color:#0f172a;">
+                    {{ ins.formation.intitule }}
+                  </a>
+                </td>
+                <td class="small">{{ ins.formation_module.module.titre|default:"—" }}</td>
+                <td class="text-center">
+                  <span class="badge" style="background:#eff6ff;color:#1d4ed8;">{{ ins.formation.type_formation.code }}</span>
+                </td>
+                <td class="text-center text-muted small">
+                  {{ ins.formation.date_debut|date:"d/m/Y" }}<br>{{ ins.formation.date_fin|date:"d/m/Y" }}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-5">
+                  <i class="bi bi-inbox fs-3 d-block mb-2 opacity-25"></i>
+                  Non inscrit à un module de formation.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Groupes -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header py-3 px-4" style="background:linear-gradient(135deg,#5b21b6,#8b5cf6);color:white;">
+          <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold"><i class="bi bi-diagram-3-fill me-2"></i>Groupes</h6>
+            <span class="badge bg-white fw-bold" style="color:#7c3aed;">{{ auditeur.groupes.count }}</span>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="px-4">Groupe</th>
+                <th>Formation</th>
+                <th class="text-center">Membres</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ga in auditeur.groupes.all %}
+              <tr>
+                <td class="px-4 fw-semibold" style="color:#0f172a;">{{ ga.groupe.nom }}</td>
+                <td>
+                  <a href="{% url 'formations:detail' ga.groupe.formation.pk %}" class="text-decoration-none small text-muted">
+                    {{ ga.groupe.formation.intitule }}
+                  </a>
+                </td>
+                <td class="text-center">
+                  <span class="badge bg-secondary">
+                    {{ ga.groupe.nb_auditeurs }}/{{ ga.groupe.max_auditeurs }}
+                  </span>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="3" class="text-center text-muted py-5">
+                  <i class="bi bi-inbox fs-3 d-block mb-2 opacity-25"></i>
+                  Non affecté à un groupe.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

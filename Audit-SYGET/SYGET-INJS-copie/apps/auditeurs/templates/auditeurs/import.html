@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Importer des auditeurs{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:600px">
+  <h1 class="fw-bold mb-4">Importer des auditeurs</h1>
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <p class="text-muted mb-3">
+        Choisissez d’abord la <strong>formation</strong> : seuls les <strong>nouveaux</strong> matricules du fichier
+        sont créés puis inscrits aux modules de cette formation (compatibilité des grades).
+        Les matricules déjà présents dans l’application sont ignorés (pas d’inscription automatique pour eux).
+      </p>
+      <p class="text-muted mb-3">
+        Colonnes obligatoires (libellés français acceptés, ex. SYGEP) :
+        <strong>N° d’inscription</strong> (ou matricule), <strong>NOM</strong>, <strong>PRÉNOM(S)</strong>.
+        Une ligne de titre au-dessus des en-têtes est acceptée. Optionnels : genre, catégorie, grade, concours, etc.
+      </p>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="id_formation">{{ form.formation.label }}</label>
+          {{ form.formation }}
+          {% if form.formation.help_text %}
+            <div class="form-text">{{ form.formation.help_text }}</div>
+          {% endif %}
+          {% if form.formation.errors %}
+            <div class="text-danger small">{{ form.formation.errors }}</div>
+          {% endif %}
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">{{ form.fichier.label }}</label>
+          {{ form.fichier }}
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-success">Importer</button>
+          <a href="{% url 'auditeurs:list' %}" class="btn btn-outline-secondary">Annuler</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

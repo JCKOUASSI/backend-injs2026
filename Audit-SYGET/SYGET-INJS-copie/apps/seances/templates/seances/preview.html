@@ -1,0 +1,448 @@
+{% extends "base.html" %}
+{% block title %}Planning — {{ groupe.nom }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h1 class="fw-bold mb-1" style="font-size:1.7rem;color:#0f172a;">
+        <i class="bi bi-calendar-week-fill me-2 text-primary"></i>{{ groupe.nom }}
+      </h1>
+      <p class="text-muted mb-0">
+        {{ groupe.formation.intitule }}
+        <span class="badge ms-1" style="background:#eff6ff;color:#1d4ed8;">{{ groupe.formation.type_formation.code }}</span>
+      </p>
+      {% if perimetre_partiel %}
+      <p class="small text-info mb-0 mt-2">
+        <i class="bi bi-info-circle me-1"></i>Vue limitée à votre module (matière référentiel).
+        <a href="{% url 'formations:rup_unite' groupe.formation_id %}">Gérer les formateurs</a>.
+      </p>
+      {% endif %}
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      {% if perms.seances.change_seance %}
+      <form method="post" class="mb-0 d-inline">
+        {% csrf_token %}
+        <button type="submit" name="mode" value="generate"
+                class="btn btn-primary rounded-pill px-3 fw-semibold"
+                data-confirm="Régénérer le planning ? Les séances existantes seront remplacées.">
+          <i class="bi bi-arrow-clockwise me-2"></i>Générer
+        </button>
+      </form>
+      <button type="button"
+              class="btn btn-outline-primary rounded-pill px-3 fw-semibold"
+              hx-post="{% url 'seances:preview_htmx' groupe.pk %}"
+              hx-target="#preview-htmx-result"
+              hx-swap="innerHTML"
+              hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+        <i class="bi bi-search me-2"></i>Prévisualiser
+      </button>
+      {% endif %}
+      {% if not perimetre_partiel %}
+      <div class="dropdown">
+        <button class="btn btn-success rounded-pill px-3 fw-semibold dropdown-toggle"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false">
+          <i class="bi bi-file-earmark-excel me-2"></i>Type d'export
+        </button>
+        <ul class="dropdown-menu">
+          {% if perms.seances.view_seance %}
+          <li>
+            <a class="dropdown-item" href="{% url 'seances:export' groupe.pk %}?format=cours">
+              <i class="bi bi-mortarboard me-2"></i>Cours (Formations)
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="{% url 'seances:export' groupe.pk %}?format=seances">
+              <i class="bi bi-file-earmark-spreadsheet me-2"></i>Séances uniquement
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="{% url 'seances:export' groupe.pk %}?format=formateurs">
+              <i class="bi bi-person-badge me-2"></i>Formateurs (module)
+            </a>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          {% endif %}
+          <li>
+            <a class="dropdown-item" href="{% url 'seances:export_pdf' groupe.pk %}">
+              <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>Emploi du temps PDF
+            </a>
+          </li>
+          {% if modules_avec_seances %}
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <span class="dropdown-item-text small text-muted fw-semibold px-3 py-1">
+              <i class="bi bi-file-earmark-word me-1"></i>Synthèse UP DOCX — ce groupe
+            </span>
+          </li>
+          {% for mod in modules_avec_seances %}
+          <li>
+            <a class="dropdown-item"
+               href="{% url 'seances:groupe_module_synthese_docx' groupe.pk mod.module_id %}">
+              <i class="bi bi-file-word me-2" style="color:#2b579a;"></i>{{ mod.titre }}
+            </a>
+          </li>
+          {% endfor %}
+          {% endif %}
+        </ul>
+      </div>
+      {% elif modules_avec_seances %}
+      <div class="dropdown">
+        <button class="btn btn-outline-primary rounded-pill px-3 fw-semibold dropdown-toggle"
+                type="button" data-bs-toggle="dropdown">
+          <i class="bi bi-file-word me-1"></i>Export mes UP
+        </button>
+        <ul class="dropdown-menu">
+          {% for mod in modules_avec_seances %}
+          <li>
+            <a class="dropdown-item"
+               href="{% url 'seances:groupe_module_synthese_docx' groupe.pk mod.module_id %}">
+              {{ mod.titre }}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      <a href="{% url 'groupes:list' groupe.formation_id %}" class="btn btn-outline-secondary rounded-pill px-3">
+        ← Groupes
+      </a>
+      <a href="{% url 'formations:detail' groupe.formation_id %}" class="btn btn-outline-secondary rounded-pill px-3">
+        Formation
+      </a>
+    </div>
+  </div>
+
+  {% if messages %}
+  <div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3">
+      {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div id="preview-htmx-result"></div>
+
+  {% if preview_mode %}
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-info-subtle border-0 py-3 px-4">
+      <strong><i class="bi bi-eye me-1"></i>Rapport de prévisualisation</strong>
+      <div class="small text-muted mt-1">
+        {{ preview_total_seances }} séance(s) potentielles, {{ preview_total_heures }}h, {{ preview_conflits_count }} conflit(s).
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="px-4">Module</th>
+            <th class="text-end">Heures prévues</th>
+            <th class="text-end">Heures plaçables</th>
+            <th class="text-end">Heures restantes</th>
+            <th class="text-end">Couverture</th>
+            <th class="pe-4">Diagnostic</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in preview_module_report %}
+          <tr>
+            <td class="px-4">{{ row.module_titre }}</td>
+            <td class="text-end">{{ row.heures_prevues }}</td>
+            <td class="text-end">{{ row.heures_placees }}</td>
+            <td class="text-end {% if row.heures_restantes > 0 %}text-danger fw-semibold{% else %}text-success{% endif %}">
+              {{ row.heures_restantes }}
+            </td>
+            <td class="text-end">{{ row.couverture }}%</td>
+            <td class="pe-4">
+              {% if row.reason %}
+              <span class="text-danger small">{{ row.reason }}</span>
+              {% else %}
+              <span class="text-success small">Couverture complète</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-3">
+              Aucun module applicable détecté pour cette prévisualisation.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if conflits %}
+  <div class="alert alert-warning border-0 shadow-sm rounded-3 mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div>
+        <strong><i class="bi bi-exclamation-triangle-fill me-1"></i>Conflits détectés</strong>
+        <div class="small text-muted">
+          {{ conflits|length }} anomalie(s) détectée(s). Corrigez-les avant l’export final.
+        </div>
+      </div>
+      <span class="badge bg-warning text-dark">{{ conflits|length }}</span>
+    </div>
+    <hr class="my-2">
+    <ul class="mb-0 small">
+      {% for c in conflits %}
+      <li>{{ c.message }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if perms.seances.change_seance %}
+  <div class="card shadow-sm mb-4">
+    <div class="card-header py-3 px-4 bg-white border-bottom d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 fw-bold" style="color:#0f172a;">
+        <i class="bi bi-plus-circle me-2 text-primary"></i>Ajouter une séance manuellement
+      </h6>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'seances:create' groupe.pk %}" class="row g-3">
+        {% csrf_token %}
+        {% if create_form.non_field_errors %}
+        <div class="col-12">
+          <div class="alert alert-danger py-2 small mb-0">
+            {% for err in create_form.non_field_errors %}<div>{{ err }}</div>{% endfor %}
+          </div>
+        </div>
+        {% endif %}
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold mb-1" for="{{ create_form.module.id_for_label }}">{{ create_form.module.label }}</label>
+          {{ create_form.module }}
+          {% for err in create_form.module.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold mb-1" for="{{ create_form.date.id_for_label }}">{{ create_form.date.label }}</label>
+          {{ create_form.date }}
+          {% for err in create_form.date.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold mb-1" for="{{ create_form.heure_debut.id_for_label }}">{{ create_form.heure_debut.label }}</label>
+          {{ create_form.heure_debut }}
+          {% for err in create_form.heure_debut.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold mb-1" for="{{ create_form.heure_fin.id_for_label }}">{{ create_form.heure_fin.label }}</label>
+          {{ create_form.heure_fin }}
+          {% for err in create_form.heure_fin.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold mb-1" for="{{ create_form.formateur_nom.id_for_label }}">Formateur — nom</label>
+          {{ create_form.formateur_nom }}
+          {% for err in create_form.formateur_nom.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold mb-1" for="{{ create_form.formateur_prenom.id_for_label }}">Formateur — prénom</label>
+          {{ create_form.formateur_prenom }}
+          {% for err in create_form.formateur_prenom.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+        </div>
+        {{ create_form.formateur_numero.as_hidden }}
+        {{ create_form.formateur_email.as_hidden }}
+        {{ create_form.formateur_telephone.as_hidden }}
+        {{ create_form.formateur_organisation.as_hidden }}
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold mb-1" for="{{ create_form.site_nom.id_for_label }}">{{ create_form.site_nom.label }}</label>
+          {{ create_form.site_nom }}
+          {% for err in create_form.site_nom.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold mb-1" for="{{ create_form.batiment_nom.id_for_label }}">{{ create_form.batiment_nom.label }}</label>
+          {{ create_form.batiment_nom }}
+          {% for err in create_form.batiment_nom.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold mb-1" for="{{ create_form.salle_nom.id_for_label }}">{{ create_form.salle_nom.label }}</label>
+          {{ create_form.salle_nom }}
+          {% for err in create_form.salle_nom.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+          <button type="submit" class="btn btn-outline-primary w-100 rounded-pill">Ajouter la séance</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Résumé -->
+  {% if seances %}
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center py-3">
+        <div class="fs-2 fw-bold text-primary">{{ seances|length }}</div>
+        <div class="small text-muted">Séances</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center py-3">
+        <div class="fs-2 fw-bold text-success">
+          {{ total_heures }}
+        </div>
+        <div class="small text-muted">Total heures</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Tableau des séances -->
+  <div class="card shadow-sm">
+    <div class="card-header py-3 px-4 bg-white border-bottom">
+      <h6 class="mb-0 fw-bold" style="color:#0f172a;">
+        Planning détaillé
+        {% if seances %}<span class="badge bg-primary ms-2">{{ seances|length }} séances</span>{% endif %}
+      </h6>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="px-4">Date</th>
+            <th>Jour</th>
+            <th>Début</th>
+            <th>Fin</th>
+            <th class="text-center">Durée</th>
+            <th>Module</th>
+            <th>Formateur</th>
+            <th>Site</th>
+            <th>Bâtiment</th>
+            <th>Salle</th>
+            {% if perms.seances.change_seance %}
+            <th class="text-end px-4">Actions</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for s, edit_form in seances_with_forms %}
+          <tr>
+            <td class="px-4 fw-semibold">{{ s.date|date:"d/m/Y" }}</td>
+            <td class="text-muted">{{ s.date|date:"l"|capfirst }}</td>
+            <td class="font-monospace">{{ s.heure_debut|time:"H:i" }}</td>
+            <td class="font-monospace">{{ s.heure_fin|time:"H:i" }}</td>
+            <td class="text-center">
+              <span class="badge bg-secondary rounded-pill">{{ s.duree_heures }}h</span>
+            </td>
+            <td>
+              <span class="badge rounded-pill" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;">
+                {{ s.module.titre }}
+              </span>
+            </td>
+            <td class="small text-muted">{{ s.formateur_libelle|default:"—" }}</td>
+            <td class="small text-muted">{{ s.site_nom|default:"—" }}</td>
+            <td class="small text-muted">{{ s.batiment_nom|default:"—" }}</td>
+            <td><span class="badge bg-light text-dark border">{{ s.salle_nom|default:"—" }}</span></td>
+            {% if perms.seances.change_seance %}
+            <td class="text-end px-4">
+              <button class="btn btn-sm btn-outline-secondary me-1"
+                      data-bs-toggle="modal" data-bs-target="#modalSeanceEdit{{ s.pk }}">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <form method="post" action="{% url 'seances:delete' s.pk %}" class="d-inline"
+                    data-confirm="Supprimer cette séance ?">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="11" class="text-center text-muted py-5">
+              <i class="bi bi-calendar-x fs-3 d-block mb-2 opacity-25"></i>
+              {% if perms.seances.change_seance %}
+              Aucune séance générée. Cliquez sur <strong>Générer</strong> pour créer le planning.
+              {% else %}
+              Aucune séance générée pour le moment.
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if perms.seances.change_seance %}
+  {% for s, edit_form in seances_with_forms %}
+  <div class="modal fade" id="modalSeanceEdit{{ s.pk }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content rounded-3">
+        <div class="modal-header border-0 pb-0">
+          <h6 class="modal-title fw-bold">Modifier séance</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <form method="post" action="{% url 'seances:update' s.pk %}">
+          {% csrf_token %}
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label small fw-semibold mb-1" for="{{ edit_form.module.id_for_label }}">{{ edit_form.module.label }}</label>
+                {{ edit_form.module }}
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold mb-1" for="{{ edit_form.date.id_for_label }}">{{ edit_form.date.label }}</label>
+                {{ edit_form.date }}
+              </div>
+              <div class="col-3">
+                <label class="form-label small fw-semibold mb-1" for="{{ edit_form.heure_debut.id_for_label }}">{{ edit_form.heure_debut.label }}</label>
+                {{ edit_form.heure_debut }}
+              </div>
+              <div class="col-3">
+                <label class="form-label small fw-semibold mb-1" for="{{ edit_form.heure_fin.id_for_label }}">{{ edit_form.heure_fin.label }}</label>
+                {{ edit_form.heure_fin }}
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold mb-1" for="{{ edit_form.formateur_nom.id_for_label }}">Formateur — nom</label>
+                {{ edit_form.formateur_nom }}
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold mb-1" for="{{ edit_form.formateur_prenom.id_for_label }}">Formateur — prénom</label>
+                {{ edit_form.formateur_prenom }}
+              </div>
+              {{ edit_form.formateur_numero.as_hidden }}
+              {{ edit_form.formateur_email.as_hidden }}
+              {{ edit_form.formateur_telephone.as_hidden }}
+              {{ edit_form.formateur_organisation.as_hidden }}
+              <div class="col-6">
+                <label class="form-label small fw-semibold mb-1" for="{{ edit_form.site_nom.id_for_label }}">{{ edit_form.site_nom.label }}</label>
+                {{ edit_form.site_nom }}
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold mb-1" for="{{ edit_form.batiment_nom.id_for_label }}">{{ edit_form.batiment_nom.label }}</label>
+                {{ edit_form.batiment_nom }}
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-semibold mb-1" for="{{ edit_form.salle_nom.id_for_label }}">{{ edit_form.salle_nom.label }}</label>
+                {{ edit_form.salle_nom }}
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">
+              Annuler
+            </button>
+            <button type="submit" class="btn btn-sm btn-primary">Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% load static %}
+<script src="{% static 'js/htmx.min.js' %}"></script>
+{% endblock %}

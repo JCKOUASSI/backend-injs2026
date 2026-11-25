@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SYGET-INJS{% endblock %}</title>
+  {% load static %}
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    html { scrollbar-gutter: stable; }
+    :root {
+      --app-bg: #f4f7fa;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --line: #e2e8f0;
+      --accent: #0a2540;
+      --accent-strong: #071d33;
+      --accent-soft: #e0f2fe;
+      --sky-blue: #0284c7;
+      --shadow-soft: 0 10px 28px rgba(10, 37, 64, 0.08);
+      --shadow-card: 0 6px 20px rgba(10, 37, 64, 0.06);
+      --radius-xl: 22px;
+      --radius-lg: 16px;
+    }
+    body {
+      background-color: var(--app-bg);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      overflow-y: scroll;
+      color: var(--text-main);
+    }
+    .app-shell {
+      min-height: 100vh;
+      display: flex;
+      gap: 14px;
+      padding: 14px;
+    }
+    .app-sidebar {
+      width: 260px;
+      border-radius: var(--radius-xl);
+      background: linear-gradient(180deg, #0a2540 0%, #102d4d 100%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: var(--shadow-soft);
+      padding: 18px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: sticky;
+      top: 14px;
+      height: calc(100vh - 28px);
+      overflow: auto;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #ffffff;
+      padding: 8px 10px;
+      border-radius: 12px;
+    }
+    .brand:hover { background: rgba(2, 132, 199, 0.2); }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      background: var(--sky-blue);
+      color: #ffffff;
+      font-size: 1.1rem;
+    }
+    .brand-label-wrap { display: flex; flex-direction: column; line-height: 1.05; }
+    .brand-label { font-weight: 800; letter-spacing: .3px; font-size: .98rem; color: #ffffff; }
+    .brand-sublabel {
+      font-size: .68rem;
+      color: #94a3b8;
+      font-weight: 600;
+      letter-spacing: .2px;
+      margin-top: 2px;
+    }
+    .sidebar-title {
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      color: #94a3b8;
+      margin: 6px 10px 2px;
+      font-weight: 700;
+    }
+    .side-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #cbd5e1;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight: 600;
+      transition: background .2s, color .2s, transform .2s;
+    }
+    .side-link i {
+      width: 24px;
+      text-align: center;
+      color: #38bdf8;
+    }
+    .side-link:hover {
+      background: rgba(2, 132, 199, 0.2);
+      color: #ffffff;
+      transform: translateX(1px);
+    }
+    .side-link.active-link {
+      background: var(--sky-blue);
+      color: #ffffff !important;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    }
+    .side-link.active-link i { color: #ffffff; }
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+    }
+    .app-main {
+      flex: 1;
+      min-width: 0;
+      border-radius: var(--radius-xl);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .main-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-soft);
+    }
+    .topbar-title {
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: .2px;
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-pill-blue {
+      border: none;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--sky-blue) 100%);
+      color: #fff;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-weight: 700;
+      box-shadow: 0 8px 18px rgba(2, 132, 199, .25);
+    }
+    .btn-pill-blue:hover { filter: brightness(1.06); color: #fff; }
+    .content-wrap {
+      padding: 12px 6px 24px;
+      flex: 1;
+      overflow: auto;
+    }
+    .container-fluid { max-width: 1440px; }
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    .btn-primary:hover { background: var(--sky-blue); border-color: var(--sky-blue); }
+    .btn-outline-primary {
+      color: var(--sky-blue);
+      border-color: #bae6fd;
+      border-radius: 999px;
+    }
+    .btn-outline-primary:hover {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: #7dd3fc;
+    }
+    .text-muted { color: var(--text-muted) !important; }
+    .table thead th {
+      background: var(--surface-soft);
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--line);
+      font-size: .76rem;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+    }
+    .table td { border-color: var(--line); }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      transition: box-shadow .2s ease, transform .2s ease;
+    }
+    .card:hover {
+      box-shadow: 0 12px 26px rgba(10, 37, 64, 0.08);
+      transform: translateY(-2px);
+    }
+    .confirm-modal-head {
+      background: linear-gradient(135deg, #b91c1c, #dc2626);
+      color: #fff;
+      border-bottom: 0;
+    }
+    .confirm-modal-head .btn-close {
+      filter: invert(1);
+    }
+    .confirm-modal-danger-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.18);
+      font-size: 1.1rem;
+    }
+    .confirm-modal-body {
+      font-size: 0.98rem;
+      color: #1f2937;
+    }
+    .confirm-modal-subtext {
+      color: #6b7280;
+      font-size: 0.86rem;
+    }
+    .confirm-btn-danger {
+      border-radius: 999px;
+      font-weight: 700;
+      padding: 0.45rem 1rem;
+    }
+    .confirm-btn-cancel {
+      border-radius: 999px;
+      padding: 0.45rem 1rem;
+    }
+    .badge { font-weight: 600; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #c9ddd0; border-radius: 3px; }
+    body.modal-open { padding-right: 0 !important; }
+    @media (max-width: 992px) {
+      .app-shell {
+        flex-direction: column;
+        padding: 10px;
+      }
+      .app-sidebar {
+        width: auto;
+        height: auto;
+        position: static;
+      }
+      .main-topbar {
+        padding: 12px 14px;
+      }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% if user.is_authenticated %}
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <a class="brand" href="{% url 'home' %}" title="Système de Gestion des Emplois du Temps - INJS Abidjan">
+      <span class="brand-mark"><i class="bi bi-award-fill"></i></span>
+      <span class="brand-label-wrap">
+        <span class="brand-label">SYGET-INJS</span>
+        <span class="brand-sublabel">INJS Abidjan</span>
+      </span>
+    </a>
+
+    <div class="sidebar-title">Navigation</div>
+    <a class="side-link {% block nav_home %}{% endblock %}" href="{% url 'home' %}">
+      <i class="bi bi-house-door"></i>Accueil
+    </a>
+    {% if perms.formations.view_formation %}
+    <a class="side-link {% block nav_formations %}{% endblock %}" href="{% url 'formations:list' %}">
+      <i class="bi bi-journal-bookmark"></i>Formations
+    </a>
+    {% endif %}
+    {% if perms.auditeurs.view_auditeur %}
+    <a class="side-link {% block nav_auditeurs %}{% endblock %}" href="{% url 'auditeurs:list' %}">
+      <i class="bi bi-people"></i>Auditeurs
+    </a>
+    {% endif %}
+    {% if perms.formations.view_formateur %}
+    <a class="side-link {% block nav_formateurs %}{% endblock %}" href="{% url 'formations:formateurs_list' %}">
+      <i class="bi bi-person-badge"></i>Formateurs
+    </a>
+    {% endif %}
+    {% if perms.parametrage.view_parametregeneral %}
+    <a class="side-link {% block nav_parametrage %}{% endblock %}" href="{% url 'parametrage:index' %}">
+      <i class="bi bi-sliders"></i>Paramétrage
+    </a>
+    {% endif %}
+    {% if perms.formations.view_formation %}
+    <a class="side-link {% block nav_simulation %}{% endblock %}" href="{% url 'simulation:index' %}">
+      <i class="bi bi-calculator"></i>Simulation
+    </a>
+    {% endif %}
+    {% if user.is_staff %}
+    <a class="side-link" href="{% url 'admin:index' %}">
+      <i class="bi bi-shield-lock"></i>Administration
+    </a>
+    {% endif %}
+
+    <div class="sidebar-footer">
+      <div class="small text-muted mb-2">
+        <i class="bi bi-person-circle me-1"></i>{{ user.get_username }}
+      </div>
+      <form method="post" action="{% url 'logout' %}" class="m-0">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-secondary w-100 rounded-pill">
+          <i class="bi bi-box-arrow-right me-1"></i>Déconnexion
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <div class="main-topbar">
+      <div class="topbar-title">{% block topbar_title %}Tableau de bord{% endblock %}</div>
+      <div class="topbar-actions"></div>
+    </div>
+    <main class="content-wrap">
+      {% if perimetre_gestionnaire_limite %}
+      <div class="alert alert-info border-0 shadow-sm mb-3 py-2 px-3" role="status">
+        <i class="bi bi-info-circle me-1"></i>{{ perimetre_gestionnaire_message }}
+      </div>
+      {% endif %}
+{% else %}
+<main class="py-4">
+{% endif %}
+{% block content %}{% endblock %}
+{% if user.is_authenticated %}
+    </main>
+  </div>
+</div>
+{% else %}
+</main>
+{% endif %}
+
+{% block page_modals %}{% endblock %}
+
+<div class="modal fade" id="globalConfirmModal" tabindex="-1" aria-labelledby="globalConfirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header confirm-modal-head">
+        <h5 class="modal-title d-flex align-items-center gap-2" id="globalConfirmModalLabel">
+          <span class="confirm-modal-danger-icon"><i class="bi bi-exclamation-triangle-fill"></i></span>
+          <span id="globalConfirmModalTitle">Confirmer l'action</span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body confirm-modal-body" id="globalConfirmModalBody">
+        Voulez-vous continuer ?
+        <div class="confirm-modal-subtext mt-2" id="globalConfirmModalSubtext">
+          Cette action peut impacter vos données.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary confirm-btn-cancel" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-danger confirm-btn-danger" id="globalConfirmModalAccept">Oui, confirmer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/fr.js"></script>
+<script>
+  if (window.flatpickr && flatpickr.l10ns && flatpickr.l10ns.fr) {
+    flatpickr.localize(flatpickr.l10ns.fr);
+  }
+  document.querySelectorAll('input[type="date"]').forEach(el => {
+    if (el.closest(".modal")) return;
+    if (window.flatpickr) flatpickr(el, { dateFormat: "Y-m-d", allowInput: true });
+  });
+
+  const confirmModalEl = document.getElementById("globalConfirmModal");
+  const confirmModalBody = document.getElementById("globalConfirmModalBody");
+  const confirmModalTitle = document.getElementById("globalConfirmModalTitle");
+  const confirmModalSubtext = document.getElementById("globalConfirmModalSubtext");
+  const confirmModalAccept = document.getElementById("globalConfirmModalAccept");
+  const confirmModal = confirmModalEl ? new bootstrap.Modal(confirmModalEl) : null;
+  let pendingConfirmForm = null;
+  let bypassConfirmationForForm = null;
+
+  function confirmVisualType(form, submitter) {
+    const submitterMessage = ((submitter && submitter.dataset && submitter.dataset.confirm) || "").toLowerCase();
+    const formMessage = (form.dataset.confirm || "").toLowerCase();
+    const action = (form.getAttribute("action") || "").toLowerCase();
+    const isDeleteLike = action.includes("delete")
+      || action.includes("dissocier")
+      || submitterMessage.includes("supprimer")
+      || formMessage.includes("supprimer")
+      || submitterMessage.includes("retirer")
+      || formMessage.includes("retirer");
+    if (isDeleteLike) return "danger";
+    return "warning";
+  }
+
+  function applyConfirmVisual(type) {
+    if (!confirmModalTitle || !confirmModalSubtext || !confirmModalAccept) return;
+    if (type === "danger") {
+      confirmModalTitle.textContent = "Confirmer la suppression";
+      confirmModalSubtext.textContent = "Cette action est irreversible.";
+      confirmModalAccept.classList.remove("btn-primary");
+      confirmModalAccept.classList.add("btn-danger");
+      return;
+    }
+    confirmModalTitle.textContent = "Confirmer l'action";
+    confirmModalSubtext.textContent = "Verifiez les informations avant de continuer.";
+    confirmModalAccept.classList.remove("btn-danger");
+    confirmModalAccept.classList.add("btn-primary");
+  }
+
+  function resolveConfirmMessage(form, submitter) {
+    const submitterMessage = ((submitter && submitter.dataset && submitter.dataset.confirm) || "").trim();
+    if (submitterMessage) return submitterMessage;
+
+    const formMessage = (form.dataset.confirm || "").trim();
+    if (formMessage) return formMessage;
+
+    const action = (form.getAttribute("action") || "").toLowerCase();
+    const isAutoGenerate = action.includes("auto_generate");
+    const isDeleteLike = action.includes("delete") || action.includes("dissocier");
+    if (isAutoGenerate) {
+      return "Confirmer la génération automatique ? Les données existantes pourront être remplacées.";
+    }
+    if (isDeleteLike) {
+      return "Confirmer cette suppression ?";
+    }
+    return "";
+  }
+
+  confirmModalAccept?.addEventListener("click", function () {
+    if (!pendingConfirmForm) {
+      if (confirmModal) confirmModal.hide();
+      return;
+    }
+    const form = pendingConfirmForm;
+    pendingConfirmForm = null;
+    bypassConfirmationForForm = form;
+    if (confirmModal) confirmModal.hide();
+    if (typeof form.requestSubmit === "function") {
+      form.requestSubmit();
+      return;
+    }
+    form.submit();
+  });
+
+  confirmModalEl?.addEventListener("hidden.bs.modal", function () {
+    pendingConfirmForm = null;
+  });
+
+  document.addEventListener("submit", function (event) {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement)) return;
+    if (bypassConfirmationForForm === form) {
+      bypassConfirmationForForm = null;
+      return;
+    }
+
+    const submitter = event.submitter || document.activeElement;
+    const message = resolveConfirmMessage(form, submitter);
+    if (!message || !confirmModal || !confirmModalBody) return;
+
+    event.preventDefault();
+    pendingConfirmForm = form;
+    confirmModalBody.textContent = message;
+    applyConfirmVisual(confirmVisualType(form, submitter));
+    confirmModal.show();
+  });
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

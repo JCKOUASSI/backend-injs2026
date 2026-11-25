@@ -1,0 +1,7594 @@
+[
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "admin",
+    "model": "logentry"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "auth",
+    "model": "permission"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "auth",
+    "model": "group"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "auth",
+    "model": "user"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "contenttypes",
+    "model": "contenttype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "sessions",
+    "model": "session"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "parametrage",
+    "model": "grade"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "parametrage",
+    "model": "vague"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "parametrage",
+    "model": "parametregeneral"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "parametrage",
+    "model": "moduletypeformation"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "parametrage",
+    "model": "batiment"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "parametrage",
+    "model": "salle"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "parametrage",
+    "model": "site"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "parametrage",
+    "model": "jourferie"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "parametrage",
+    "model": "periodedisponibilitesite"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "parametrage",
+    "model": "parametreformation"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "referentiels",
+    "model": "typeformation"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "referentiels",
+    "model": "module"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "referentiels",
+    "model": "specialite"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "formations",
+    "model": "formation"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "formations",
+    "model": "formationmodule"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "formations",
+    "model": "inscription"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "formations",
+    "model": "affectationformateurgroupe"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "formations",
+    "model": "formateur"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "formations",
+    "model": "formationperiode"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "formations",
+    "model": "responsableunitepedagogique"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "auditeurs",
+    "model": "auditeur"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "groupes",
+    "model": "groupe"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "groupes",
+    "model": "groupeauditeur"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "groupes",
+    "model": "configgroupe"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "groupes",
+    "model": "jourcours"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "seances",
+    "model": "seance"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "seances",
+    "model": "planningauditlog"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "seances",
+    "model": "planningrun"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "fields": {
+    "app_label": "simulation",
+    "model": "scenariosimulation"
+  }
+},
+{
+  "model": "parametrage.grade",
+  "pk": 1,
+  "fields": {
+    "libelle": "A3",
+    "ordre": 1,
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.grade",
+  "pk": 2,
+  "fields": {
+    "libelle": "A4",
+    "ordre": 2,
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.grade",
+  "pk": 3,
+  "fields": {
+    "libelle": "B3",
+    "ordre": 3,
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.grade",
+  "pk": 4,
+  "fields": {
+    "libelle": "B4",
+    "ordre": 4,
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.grade",
+  "pk": 5,
+  "fields": {
+    "libelle": "C3",
+    "ordre": 5,
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.vague",
+  "pk": 1,
+  "fields": {
+    "libelle": "Vague 1",
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.vague",
+  "pk": 2,
+  "fields": {
+    "libelle": "Vague 2",
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.vague",
+  "pk": 3,
+  "fields": {
+    "libelle": "2024-A",
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.vague",
+  "pk": 4,
+  "fields": {
+    "libelle": "2025-A",
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.vague",
+  "pk": 5,
+  "fields": {
+    "libelle": "2026-A",
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.site",
+  "pk": 1,
+  "fields": {
+    "nom": "Campus INJS Marcory",
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.site",
+  "pk": 2,
+  "fields": {
+    "nom": "Complexe Pédagogique Annexe",
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.batiment",
+  "pk": 1,
+  "fields": {
+    "site": 1,
+    "nom": "Bâtiment Académique A",
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.batiment",
+  "pk": 2,
+  "fields": {
+    "site": 1,
+    "nom": "Bâtiment Pédagogique B",
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.batiment",
+  "pk": 3,
+  "fields": {
+    "site": 2,
+    "nom": "Pavillon Formation Continue",
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.salle",
+  "pk": 1,
+  "fields": {
+    "batiment": 1,
+    "nom": "Salle A101",
+    "capacite_max": 30,
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.salle",
+  "pk": 2,
+  "fields": {
+    "batiment": 1,
+    "nom": "Salle A102",
+    "capacite_max": 30,
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.salle",
+  "pk": 3,
+  "fields": {
+    "batiment": 1,
+    "nom": "Amphithéâtre Laurent Pokou",
+    "capacite_max": 80,
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.salle",
+  "pk": 4,
+  "fields": {
+    "batiment": 2,
+    "nom": "Salle B201",
+    "capacite_max": 25,
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.salle",
+  "pk": 5,
+  "fields": {
+    "batiment": 2,
+    "nom": "Salle B202",
+    "capacite_max": 25,
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.salle",
+  "pk": 6,
+  "fields": {
+    "batiment": 3,
+    "nom": "Salle C01",
+    "capacite_max": 35,
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.parametregeneral",
+  "pk": 1,
+  "fields": {
+    "max_auditeurs_groupe_defaut": 25,
+    "groupes_auto_mixage_grades": false,
+    "matin_heure_debut_defaut": "08:00:00",
+    "matin_heure_fin_defaut": "12:00:00",
+    "soir_heure_debut_defaut": "13:00:00",
+    "soir_heure_fin_defaut": "17:00:00",
+    "jours_defaut": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "duree_seance_defaut_minutes": 240,
+    "max_seances_par_jour_defaut": 2,
+    "max_salles_simultanees_module": 10,
+    "tolerance_capacite_salle": 0,
+    "verrouiller_salle_groupe_formation": false,
+    "repartir_reliquat_sur_seances": false,
+    "poids_score_ecart_capacite": 10,
+    "poids_score_rotation_module": 2,
+    "poids_score_equilibrage_global": 1,
+    "marge_simulation_pct": 5
+  }
+},
+{
+  "model": "parametrage.parametreformation",
+  "pk": 1,
+  "fields": {
+    "max_auditeurs_groupe_defaut": 25,
+    "groupes_auto_mixage_grades": false,
+    "matin_heure_debut_defaut": "08:00:00",
+    "matin_heure_fin_defaut": "12:00:00",
+    "soir_heure_debut_defaut": "13:00:00",
+    "soir_heure_fin_defaut": "17:00:00",
+    "jours_defaut": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "duree_seance_defaut_minutes": 240,
+    "max_seances_par_jour_defaut": 2,
+    "max_salles_simultanees_module": 10,
+    "tolerance_capacite_salle": 0,
+    "verrouiller_salle_groupe_formation": false,
+    "repartir_reliquat_sur_seances": false,
+    "poids_score_ecart_capacite": 10,
+    "poids_score_rotation_module": 2,
+    "poids_score_equilibrage_global": 1,
+    "formation": 1
+  }
+},
+{
+  "model": "parametrage.moduletypeformation",
+  "pk": 1,
+  "fields": {
+    "module": 1,
+    "type_formation": 1,
+    "grade_cible": "",
+    "volume_horaire_defaut": 16
+  }
+},
+{
+  "model": "parametrage.moduletypeformation",
+  "pk": 2,
+  "fields": {
+    "module": 2,
+    "type_formation": 1,
+    "grade_cible": "",
+    "volume_horaire_defaut": 12
+  }
+},
+{
+  "model": "parametrage.moduletypeformation",
+  "pk": 3,
+  "fields": {
+    "module": 3,
+    "type_formation": 1,
+    "grade_cible": "",
+    "volume_horaire_defaut": 12
+  }
+},
+{
+  "model": "parametrage.moduletypeformation",
+  "pk": 4,
+  "fields": {
+    "module": 4,
+    "type_formation": 1,
+    "grade_cible": "",
+    "volume_horaire_defaut": 8
+  }
+},
+{
+  "model": "parametrage.jourferie",
+  "pk": 1,
+  "fields": {
+    "date": "2026-11-15",
+    "libelle": "Journée Nationale de la Paix",
+    "actif": true
+  }
+},
+{
+  "model": "parametrage.jourferie",
+  "pk": 2,
+  "fields": {
+    "date": "2026-12-25",
+    "libelle": "Fête de Noël",
+    "actif": true
+  }
+},
+{
+  "model": "referentiels.specialite",
+  "pk": 1,
+  "fields": {
+    "code": "GENERAL",
+    "libelle": "Général / non classé"
+  }
+},
+{
+  "model": "referentiels.specialite",
+  "pk": 2,
+  "fields": {
+    "code": "PEDAGO",
+    "libelle": "Sciences et Techniques Pédagogiques"
+  }
+},
+{
+  "model": "referentiels.specialite",
+  "pk": 3,
+  "fields": {
+    "code": "MGMT",
+    "libelle": "Management et Administration du Sport"
+  }
+},
+{
+  "model": "referentiels.specialite",
+  "pk": 4,
+  "fields": {
+    "code": "PHYSIO",
+    "libelle": "Physiologie et Entraînement Sportif"
+  }
+},
+{
+  "model": "referentiels.specialite",
+  "pk": 5,
+  "fields": {
+    "code": "DROIT",
+    "libelle": "Législation, Éthique et Civisme"
+  }
+},
+{
+  "model": "referentiels.typeformation",
+  "pk": 1,
+  "fields": {
+    "code": "FAC",
+    "libelle": "Formation d'Adaptation à la Carrière"
+  }
+},
+{
+  "model": "referentiels.typeformation",
+  "pk": 2,
+  "fields": {
+    "code": "FAB",
+    "libelle": "Formation d'Adaptation au Budget"
+  }
+},
+{
+  "model": "referentiels.module",
+  "pk": 1,
+  "fields": {
+    "titre": "Didactique des APS et Pédagogie",
+    "actif": true,
+    "specialite": 2
+  }
+},
+{
+  "model": "referentiels.module",
+  "pk": 2,
+  "fields": {
+    "titre": "Management des Organisations Sportives",
+    "actif": true,
+    "specialite": 3
+  }
+},
+{
+  "model": "referentiels.module",
+  "pk": 3,
+  "fields": {
+    "titre": "Physiologie de l'Effort et Planification",
+    "actif": true,
+    "specialite": 4
+  }
+},
+{
+  "model": "referentiels.module",
+  "pk": 4,
+  "fields": {
+    "titre": "Éthique, Déontologie et Législation Sportive",
+    "actif": true,
+    "specialite": 5
+  }
+},
+{
+  "model": "formations.formationperiode",
+  "pk": 1,
+  "fields": {
+    "formation": 1,
+    "libelle": "Période 1",
+    "date_debut": "2026-11-02",
+    "date_fin": "2026-12-18",
+    "rythme_mensuel": "4",
+    "ordre": 0,
+    "created_at": "2026-11-25T18:39:41.492Z"
+  }
+},
+{
+  "model": "formations.formationmodule",
+  "pk": 1,
+  "fields": {
+    "formation": 1,
+    "periode": 1,
+    "module": 1,
+    "volume_horaire": 16,
+    "grade_cible": "",
+    "creneau_mode": "matin_et_soir",
+    "site_nombre": 1,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nombre": 1,
+    "batiment_nom": "",
+    "salle_nombre": 0,
+    "salle_nom": "",
+    "formateur_nom": "",
+    "formateur_prenom": "",
+    "formateur_numero": "",
+    "formateur_email": "",
+    "formateur_telephone": "",
+    "formateur_organisation": "",
+    "date_debut": "2026-11-02",
+    "date_fin": "2026-12-18"
+  }
+},
+{
+  "model": "formations.formationmodule",
+  "pk": 2,
+  "fields": {
+    "formation": 1,
+    "periode": 1,
+    "module": 2,
+    "volume_horaire": 12,
+    "grade_cible": "",
+    "creneau_mode": "matin_et_soir",
+    "site_nombre": 1,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nombre": 1,
+    "batiment_nom": "",
+    "salle_nombre": 0,
+    "salle_nom": "",
+    "formateur_nom": "",
+    "formateur_prenom": "",
+    "formateur_numero": "",
+    "formateur_email": "",
+    "formateur_telephone": "",
+    "formateur_organisation": "",
+    "date_debut": "2026-11-02",
+    "date_fin": "2026-12-18"
+  }
+},
+{
+  "model": "formations.formationmodule",
+  "pk": 3,
+  "fields": {
+    "formation": 1,
+    "periode": 1,
+    "module": 3,
+    "volume_horaire": 12,
+    "grade_cible": "",
+    "creneau_mode": "matin_et_soir",
+    "site_nombre": 1,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nombre": 1,
+    "batiment_nom": "",
+    "salle_nombre": 0,
+    "salle_nom": "",
+    "formateur_nom": "",
+    "formateur_prenom": "",
+    "formateur_numero": "",
+    "formateur_email": "",
+    "formateur_telephone": "",
+    "formateur_organisation": "",
+    "date_debut": "2026-11-02",
+    "date_fin": "2026-12-18"
+  }
+},
+{
+  "model": "formations.formationmodule",
+  "pk": 4,
+  "fields": {
+    "formation": 1,
+    "periode": 1,
+    "module": 4,
+    "volume_horaire": 8,
+    "grade_cible": "",
+    "creneau_mode": "matin_et_soir",
+    "site_nombre": 1,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nombre": 1,
+    "batiment_nom": "",
+    "salle_nombre": 0,
+    "salle_nom": "",
+    "formateur_nom": "",
+    "formateur_prenom": "",
+    "formateur_numero": "",
+    "formateur_email": "",
+    "formateur_telephone": "",
+    "formateur_organisation": "",
+    "date_debut": "2026-11-02",
+    "date_fin": "2026-12-18"
+  }
+},
+{
+  "model": "formations.formateur",
+  "pk": 1,
+  "fields": {
+    "numero": "+2250708112201",
+    "nom": "KOUASSI",
+    "prenom": "Jean-Claude",
+    "email": "jc.kouassi@injs.ci",
+    "telephone": "+2250708112201",
+    "organisation": "INJS Abidjan",
+    "created_at": "2026-11-25T18:37:39.017Z",
+    "specialites": [
+      2
+    ]
+  }
+},
+{
+  "model": "formations.formateur",
+  "pk": 2,
+  "fields": {
+    "numero": "+2250708112202",
+    "nom": "KONAN",
+    "prenom": "Aya Marie",
+    "email": "am.konan@injs.ci",
+    "telephone": "+2250708112202",
+    "organisation": "INJS Abidjan",
+    "created_at": "2026-11-25T18:37:39.027Z",
+    "specialites": [
+      3
+    ]
+  }
+},
+{
+  "model": "formations.formateur",
+  "pk": 3,
+  "fields": {
+    "numero": "+2250708112203",
+    "nom": "TRAORE",
+    "prenom": "Moussa",
+    "email": "m.traore@injs.ci",
+    "telephone": "+2250708112203",
+    "organisation": "INJS Abidjan",
+    "created_at": "2026-11-25T18:37:39.039Z",
+    "specialites": [
+      4
+    ]
+  }
+},
+{
+  "model": "formations.formateur",
+  "pk": 4,
+  "fields": {
+    "numero": "+2250708112204",
+    "nom": "BAMBA",
+    "prenom": "Fatoumata",
+    "email": "f.bamba@injs.ci",
+    "telephone": "+2250708112204",
+    "organisation": "INJS Abidjan",
+    "created_at": "2026-11-25T18:37:39.044Z",
+    "specialites": [
+      5
+    ]
+  }
+},
+{
+  "model": "formations.formateur",
+  "pk": 5,
+  "fields": {
+    "numero": "+2250708112205",
+    "nom": "YAO",
+    "prenom": "Kouadio Serge",
+    "email": "ks.yao@injs.ci",
+    "telephone": "+2250708112205",
+    "organisation": "INJS Abidjan",
+    "created_at": "2026-11-25T18:37:39.049Z",
+    "specialites": [
+      3,
+      2
+    ]
+  }
+},
+{
+  "model": "formations.formateur",
+  "pk": 6,
+  "fields": {
+    "numero": "+2250708112206",
+    "nom": "DIALLO",
+    "prenom": "Ibrahim",
+    "email": "i.diallo@injs.ci",
+    "telephone": "+2250708112206",
+    "organisation": "INJS Abidjan",
+    "created_at": "2026-11-25T18:37:39.054Z",
+    "specialites": [
+      5,
+      4
+    ]
+  }
+},
+{
+  "model": "formations.affectationformateurgroupe",
+  "pk": 1,
+  "fields": {
+    "groupe": 1,
+    "module": 1,
+    "formateur": 1,
+    "created_at": "2026-11-25T18:40:11.609Z"
+  }
+},
+{
+  "model": "formations.affectationformateurgroupe",
+  "pk": 2,
+  "fields": {
+    "groupe": 2,
+    "module": 1,
+    "formateur": 5,
+    "created_at": "2026-11-25T18:40:11.609Z"
+  }
+},
+{
+  "model": "formations.affectationformateurgroupe",
+  "pk": 3,
+  "fields": {
+    "groupe": 3,
+    "module": 1,
+    "formateur": 1,
+    "created_at": "2026-11-25T18:40:11.609Z"
+  }
+},
+{
+  "model": "formations.affectationformateurgroupe",
+  "pk": 4,
+  "fields": {
+    "groupe": 1,
+    "module": 2,
+    "formateur": 2,
+    "created_at": "2026-11-25T18:40:11.609Z"
+  }
+},
+{
+  "model": "formations.affectationformateurgroupe",
+  "pk": 5,
+  "fields": {
+    "groupe": 2,
+    "module": 2,
+    "formateur": 5,
+    "created_at": "2026-11-25T18:40:11.609Z"
+  }
+},
+{
+  "model": "formations.affectationformateurgroupe",
+  "pk": 6,
+  "fields": {
+    "groupe": 3,
+    "module": 2,
+    "formateur": 2,
+    "created_at": "2026-11-25T18:40:11.609Z"
+  }
+},
+{
+  "model": "formations.affectationformateurgroupe",
+  "pk": 7,
+  "fields": {
+    "groupe": 1,
+    "module": 3,
+    "formateur": 6,
+    "created_at": "2026-11-25T18:40:11.609Z"
+  }
+},
+{
+  "model": "formations.affectationformateurgroupe",
+  "pk": 8,
+  "fields": {
+    "groupe": 2,
+    "module": 3,
+    "formateur": 3,
+    "created_at": "2026-11-25T18:40:11.609Z"
+  }
+},
+{
+  "model": "formations.affectationformateurgroupe",
+  "pk": 9,
+  "fields": {
+    "groupe": 3,
+    "module": 3,
+    "formateur": 6,
+    "created_at": "2026-11-25T18:40:11.609Z"
+  }
+},
+{
+  "model": "formations.affectationformateurgroupe",
+  "pk": 10,
+  "fields": {
+    "groupe": 1,
+    "module": 4,
+    "formateur": 4,
+    "created_at": "2026-11-25T18:40:11.609Z"
+  }
+},
+{
+  "model": "formations.affectationformateurgroupe",
+  "pk": 11,
+  "fields": {
+    "groupe": 2,
+    "module": 4,
+    "formateur": 6,
+    "created_at": "2026-11-25T18:40:11.609Z"
+  }
+},
+{
+  "model": "formations.affectationformateurgroupe",
+  "pk": 12,
+  "fields": {
+    "groupe": 3,
+    "module": 4,
+    "formateur": 4,
+    "created_at": "2026-11-25T18:40:11.609Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 1,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 40,
+    "date_inscription": "2026-11-25T18:40:11.166Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 2,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 40,
+    "date_inscription": "2026-11-25T18:40:11.169Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 3,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 40,
+    "date_inscription": "2026-11-25T18:40:11.172Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 4,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 40,
+    "date_inscription": "2026-11-25T18:40:11.174Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 5,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 7,
+    "date_inscription": "2026-11-25T18:40:11.177Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 6,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 7,
+    "date_inscription": "2026-11-25T18:40:11.179Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 7,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 7,
+    "date_inscription": "2026-11-25T18:40:11.182Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 8,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 7,
+    "date_inscription": "2026-11-25T18:40:11.184Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 9,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 9,
+    "date_inscription": "2026-11-25T18:40:11.186Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 10,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 9,
+    "date_inscription": "2026-11-25T18:40:11.189Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 11,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 9,
+    "date_inscription": "2026-11-25T18:40:11.192Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 12,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 9,
+    "date_inscription": "2026-11-25T18:40:11.195Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 13,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 26,
+    "date_inscription": "2026-11-25T18:40:11.197Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 14,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 26,
+    "date_inscription": "2026-11-25T18:40:11.199Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 15,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 26,
+    "date_inscription": "2026-11-25T18:40:11.202Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 16,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 26,
+    "date_inscription": "2026-11-25T18:40:11.204Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 17,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 11,
+    "date_inscription": "2026-11-25T18:40:11.206Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 18,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 11,
+    "date_inscription": "2026-11-25T18:40:11.209Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 19,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 11,
+    "date_inscription": "2026-11-25T18:40:11.211Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 20,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 11,
+    "date_inscription": "2026-11-25T18:40:11.214Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 21,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 21,
+    "date_inscription": "2026-11-25T18:40:11.218Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 22,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 21,
+    "date_inscription": "2026-11-25T18:40:11.221Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 23,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 21,
+    "date_inscription": "2026-11-25T18:40:11.224Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 24,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 21,
+    "date_inscription": "2026-11-25T18:40:11.226Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 25,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 18,
+    "date_inscription": "2026-11-25T18:40:11.228Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 26,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 18,
+    "date_inscription": "2026-11-25T18:40:11.231Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 27,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 18,
+    "date_inscription": "2026-11-25T18:40:11.233Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 28,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 18,
+    "date_inscription": "2026-11-25T18:40:11.235Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 29,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 24,
+    "date_inscription": "2026-11-25T18:40:11.238Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 30,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 24,
+    "date_inscription": "2026-11-25T18:40:11.240Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 31,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 24,
+    "date_inscription": "2026-11-25T18:40:11.242Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 32,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 24,
+    "date_inscription": "2026-11-25T18:40:11.244Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 33,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 6,
+    "date_inscription": "2026-11-25T18:40:11.246Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 34,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 6,
+    "date_inscription": "2026-11-25T18:40:11.249Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 35,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 6,
+    "date_inscription": "2026-11-25T18:40:11.252Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 36,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 6,
+    "date_inscription": "2026-11-25T18:40:11.254Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 37,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 27,
+    "date_inscription": "2026-11-25T18:40:11.257Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 38,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 27,
+    "date_inscription": "2026-11-25T18:40:11.259Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 39,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 27,
+    "date_inscription": "2026-11-25T18:40:11.262Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 40,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 27,
+    "date_inscription": "2026-11-25T18:40:11.264Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 41,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 12,
+    "date_inscription": "2026-11-25T18:40:11.267Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 42,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 12,
+    "date_inscription": "2026-11-25T18:40:11.269Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 43,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 12,
+    "date_inscription": "2026-11-25T18:40:11.272Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 44,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 12,
+    "date_inscription": "2026-11-25T18:40:11.274Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 45,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 17,
+    "date_inscription": "2026-11-25T18:40:11.276Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 46,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 17,
+    "date_inscription": "2026-11-25T18:40:11.279Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 47,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 17,
+    "date_inscription": "2026-11-25T18:40:11.281Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 48,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 17,
+    "date_inscription": "2026-11-25T18:40:11.283Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 49,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 16,
+    "date_inscription": "2026-11-25T18:40:11.286Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 50,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 16,
+    "date_inscription": "2026-11-25T18:40:11.289Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 51,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 16,
+    "date_inscription": "2026-11-25T18:40:11.291Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 52,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 16,
+    "date_inscription": "2026-11-25T18:40:11.293Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 53,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 13,
+    "date_inscription": "2026-11-25T18:40:11.296Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 54,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 13,
+    "date_inscription": "2026-11-25T18:40:11.298Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 55,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 13,
+    "date_inscription": "2026-11-25T18:40:11.300Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 56,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 13,
+    "date_inscription": "2026-11-25T18:40:11.302Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 57,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 23,
+    "date_inscription": "2026-11-25T18:40:11.305Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 58,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 23,
+    "date_inscription": "2026-11-25T18:40:11.307Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 59,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 23,
+    "date_inscription": "2026-11-25T18:40:11.309Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 60,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 23,
+    "date_inscription": "2026-11-25T18:40:11.311Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 61,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 28,
+    "date_inscription": "2026-11-25T18:40:11.313Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 62,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 28,
+    "date_inscription": "2026-11-25T18:40:11.316Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 63,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 28,
+    "date_inscription": "2026-11-25T18:40:11.320Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 64,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 28,
+    "date_inscription": "2026-11-25T18:40:11.322Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 65,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 1,
+    "date_inscription": "2026-11-25T18:40:11.325Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 66,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 1,
+    "date_inscription": "2026-11-25T18:40:11.327Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 67,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 1,
+    "date_inscription": "2026-11-25T18:40:11.329Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 68,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 1,
+    "date_inscription": "2026-11-25T18:40:11.332Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 69,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 10,
+    "date_inscription": "2026-11-25T18:40:11.335Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 70,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 10,
+    "date_inscription": "2026-11-25T18:40:11.337Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 71,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 10,
+    "date_inscription": "2026-11-25T18:40:11.340Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 72,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 10,
+    "date_inscription": "2026-11-25T18:40:11.342Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 73,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 19,
+    "date_inscription": "2026-11-25T18:40:11.346Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 74,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 19,
+    "date_inscription": "2026-11-25T18:40:11.349Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 75,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 19,
+    "date_inscription": "2026-11-25T18:40:11.352Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 76,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 19,
+    "date_inscription": "2026-11-25T18:40:11.354Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 77,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 3,
+    "date_inscription": "2026-11-25T18:40:11.357Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 78,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 3,
+    "date_inscription": "2026-11-25T18:40:11.359Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 79,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 3,
+    "date_inscription": "2026-11-25T18:40:11.362Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 80,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 3,
+    "date_inscription": "2026-11-25T18:40:11.364Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 81,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 29,
+    "date_inscription": "2026-11-25T18:40:11.366Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 82,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 29,
+    "date_inscription": "2026-11-25T18:40:11.369Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 83,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 29,
+    "date_inscription": "2026-11-25T18:40:11.372Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 84,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 29,
+    "date_inscription": "2026-11-25T18:40:11.375Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 85,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 30,
+    "date_inscription": "2026-11-25T18:40:11.377Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 86,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 30,
+    "date_inscription": "2026-11-25T18:40:11.381Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 87,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 30,
+    "date_inscription": "2026-11-25T18:40:11.383Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 88,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 30,
+    "date_inscription": "2026-11-25T18:40:11.386Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 89,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 25,
+    "date_inscription": "2026-11-25T18:40:11.388Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 90,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 25,
+    "date_inscription": "2026-11-25T18:40:11.390Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 91,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 25,
+    "date_inscription": "2026-11-25T18:40:11.393Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 92,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 25,
+    "date_inscription": "2026-11-25T18:40:11.395Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 93,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 5,
+    "date_inscription": "2026-11-25T18:40:11.399Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 94,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 5,
+    "date_inscription": "2026-11-25T18:40:11.401Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 95,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 5,
+    "date_inscription": "2026-11-25T18:40:11.403Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 96,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 5,
+    "date_inscription": "2026-11-25T18:40:11.406Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 97,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 31,
+    "date_inscription": "2026-11-25T18:40:11.408Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 98,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 31,
+    "date_inscription": "2026-11-25T18:40:11.411Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 99,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 31,
+    "date_inscription": "2026-11-25T18:40:11.413Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 100,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 31,
+    "date_inscription": "2026-11-25T18:40:11.415Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 101,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 32,
+    "date_inscription": "2026-11-25T18:40:11.417Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 102,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 32,
+    "date_inscription": "2026-11-25T18:40:11.419Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 103,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 32,
+    "date_inscription": "2026-11-25T18:40:11.422Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 104,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 32,
+    "date_inscription": "2026-11-25T18:40:11.424Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 105,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 4,
+    "date_inscription": "2026-11-25T18:40:11.426Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 106,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 4,
+    "date_inscription": "2026-11-25T18:40:11.428Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 107,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 4,
+    "date_inscription": "2026-11-25T18:40:11.430Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 108,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 4,
+    "date_inscription": "2026-11-25T18:40:11.432Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 109,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 33,
+    "date_inscription": "2026-11-25T18:40:11.435Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 110,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 33,
+    "date_inscription": "2026-11-25T18:40:11.438Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 111,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 33,
+    "date_inscription": "2026-11-25T18:40:11.440Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 112,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 33,
+    "date_inscription": "2026-11-25T18:40:11.443Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 113,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 8,
+    "date_inscription": "2026-11-25T18:40:11.446Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 114,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 8,
+    "date_inscription": "2026-11-25T18:40:11.448Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 115,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 8,
+    "date_inscription": "2026-11-25T18:40:11.450Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 116,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 8,
+    "date_inscription": "2026-11-25T18:40:11.452Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 117,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 34,
+    "date_inscription": "2026-11-25T18:40:11.454Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 118,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 34,
+    "date_inscription": "2026-11-25T18:40:11.456Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 119,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 34,
+    "date_inscription": "2026-11-25T18:40:11.459Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 120,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 34,
+    "date_inscription": "2026-11-25T18:40:11.462Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 121,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 14,
+    "date_inscription": "2026-11-25T18:40:11.464Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 122,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 14,
+    "date_inscription": "2026-11-25T18:40:11.466Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 123,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 14,
+    "date_inscription": "2026-11-25T18:40:11.468Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 124,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 14,
+    "date_inscription": "2026-11-25T18:40:11.471Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 125,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 20,
+    "date_inscription": "2026-11-25T18:40:11.473Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 126,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 20,
+    "date_inscription": "2026-11-25T18:40:11.476Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 127,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 20,
+    "date_inscription": "2026-11-25T18:40:11.478Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 128,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 20,
+    "date_inscription": "2026-11-25T18:40:11.482Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 129,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 35,
+    "date_inscription": "2026-11-25T18:40:11.484Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 130,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 35,
+    "date_inscription": "2026-11-25T18:40:11.487Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 131,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 35,
+    "date_inscription": "2026-11-25T18:40:11.490Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 132,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 35,
+    "date_inscription": "2026-11-25T18:40:11.494Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 133,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 2,
+    "date_inscription": "2026-11-25T18:40:11.497Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 134,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 2,
+    "date_inscription": "2026-11-25T18:40:11.501Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 135,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 2,
+    "date_inscription": "2026-11-25T18:40:11.504Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 136,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 2,
+    "date_inscription": "2026-11-25T18:40:11.507Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 137,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 36,
+    "date_inscription": "2026-11-25T18:40:11.511Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 138,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 36,
+    "date_inscription": "2026-11-25T18:40:11.514Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 139,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 36,
+    "date_inscription": "2026-11-25T18:40:11.517Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 140,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 36,
+    "date_inscription": "2026-11-25T18:40:11.519Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 141,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 37,
+    "date_inscription": "2026-11-25T18:40:11.521Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 142,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 37,
+    "date_inscription": "2026-11-25T18:40:11.523Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 143,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 37,
+    "date_inscription": "2026-11-25T18:40:11.526Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 144,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 37,
+    "date_inscription": "2026-11-25T18:40:11.530Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 145,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 38,
+    "date_inscription": "2026-11-25T18:40:11.533Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 146,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 38,
+    "date_inscription": "2026-11-25T18:40:11.535Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 147,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 38,
+    "date_inscription": "2026-11-25T18:40:11.536Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 148,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 38,
+    "date_inscription": "2026-11-25T18:40:11.539Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 149,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 22,
+    "date_inscription": "2026-11-25T18:40:11.541Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 150,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 22,
+    "date_inscription": "2026-11-25T18:40:11.543Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 151,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 22,
+    "date_inscription": "2026-11-25T18:40:11.545Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 152,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 22,
+    "date_inscription": "2026-11-25T18:40:11.547Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 153,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 15,
+    "date_inscription": "2026-11-25T18:40:11.549Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 154,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 15,
+    "date_inscription": "2026-11-25T18:40:11.552Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 155,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 15,
+    "date_inscription": "2026-11-25T18:40:11.555Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 156,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 15,
+    "date_inscription": "2026-11-25T18:40:11.557Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 157,
+  "fields": {
+    "formation": 1,
+    "formation_module": 1,
+    "auditeur": 39,
+    "date_inscription": "2026-11-25T18:40:11.559Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 158,
+  "fields": {
+    "formation": 1,
+    "formation_module": 2,
+    "auditeur": 39,
+    "date_inscription": "2026-11-25T18:40:11.562Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 159,
+  "fields": {
+    "formation": 1,
+    "formation_module": 3,
+    "auditeur": 39,
+    "date_inscription": "2026-11-25T18:40:11.564Z"
+  }
+},
+{
+  "model": "formations.inscription",
+  "pk": 160,
+  "fields": {
+    "formation": 1,
+    "formation_module": 4,
+    "auditeur": 39,
+    "date_inscription": "2026-11-25T18:40:11.566Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 1,
+  "fields": {
+    "matricule": "INJS-2026-0001",
+    "nom": "KOFFI",
+    "prenom": "Yao Marc",
+    "genre": "M",
+    "date_naissance": "1993-02-02",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030001",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur01@injs.ci",
+    "created_at": "2026-11-25T18:37:39.060Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 2,
+  "fields": {
+    "matricule": "INJS-2026-0002",
+    "nom": "TOURE",
+    "prenom": "Aminata",
+    "genre": "F",
+    "date_naissance": "1994-03-03",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030002",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur02@injs.ci",
+    "created_at": "2026-11-25T18:37:39.062Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 3,
+  "fields": {
+    "matricule": "INJS-2026-0003",
+    "nom": "KOUAME",
+    "prenom": "N'Guessan Eric",
+    "genre": "M",
+    "date_naissance": "1995-04-04",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030003",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur03@injs.ci",
+    "created_at": "2026-11-25T18:37:39.064Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 4,
+  "fields": {
+    "matricule": "INJS-2026-0004",
+    "nom": "OUATTARA",
+    "prenom": "Mariam",
+    "genre": "F",
+    "date_naissance": "1996-05-05",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030004",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur04@injs.ci",
+    "created_at": "2026-11-25T18:37:39.067Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 5,
+  "fields": {
+    "matricule": "INJS-2026-0005",
+    "nom": "N'DRI",
+    "prenom": "Konan Paul",
+    "genre": "M",
+    "date_naissance": "1997-06-06",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030005",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur05@injs.ci",
+    "created_at": "2026-11-25T18:37:39.069Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 6,
+  "fields": {
+    "matricule": "INJS-2026-0006",
+    "nom": "COULIBALY",
+    "prenom": "Salimata",
+    "genre": "F",
+    "date_naissance": "1998-07-07",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030006",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur06@injs.ci",
+    "created_at": "2026-11-25T18:37:39.071Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 7,
+  "fields": {
+    "matricule": "INJS-2026-0007",
+    "nom": "AKA",
+    "prenom": "Brou Michel",
+    "genre": "M",
+    "date_naissance": "1999-08-08",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030007",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur07@injs.ci",
+    "created_at": "2026-11-25T18:37:39.074Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 8,
+  "fields": {
+    "matricule": "INJS-2026-0008",
+    "nom": "SANOGO",
+    "prenom": "Awa",
+    "genre": "F",
+    "date_naissance": "1992-09-09",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030008",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur08@injs.ci",
+    "created_at": "2026-11-25T18:37:39.078Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 9,
+  "fields": {
+    "matricule": "INJS-2026-0009",
+    "nom": "ASSI",
+    "prenom": "Yapo Franck",
+    "genre": "M",
+    "date_naissance": "1993-10-10",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030009",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur09@injs.ci",
+    "created_at": "2026-11-25T18:37:39.082Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 10,
+  "fields": {
+    "matricule": "INJS-2026-0010",
+    "nom": "KONE",
+    "prenom": "Rokia",
+    "genre": "F",
+    "date_naissance": "1994-11-11",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030010",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur10@injs.ci",
+    "created_at": "2026-11-25T18:37:39.085Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 11,
+  "fields": {
+    "matricule": "INJS-2026-0011",
+    "nom": "BLE",
+    "prenom": "Goué Serge",
+    "genre": "M",
+    "date_naissance": "1995-12-12",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030011",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur11@injs.ci",
+    "created_at": "2026-11-25T18:37:39.088Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 12,
+  "fields": {
+    "matricule": "INJS-2026-0012",
+    "nom": "DIOMANDE",
+    "prenom": "Kadiatou",
+    "genre": "F",
+    "date_naissance": "1996-01-13",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030012",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur12@injs.ci",
+    "created_at": "2026-11-25T18:37:39.091Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 13,
+  "fields": {
+    "matricule": "INJS-2026-0013",
+    "nom": "GNAGNE",
+    "prenom": "Akpa Luc",
+    "genre": "M",
+    "date_naissance": "1997-02-14",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030013",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur13@injs.ci",
+    "created_at": "2026-11-25T18:37:39.094Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 14,
+  "fields": {
+    "matricule": "INJS-2026-0014",
+    "nom": "SORO",
+    "prenom": "Nafissatou",
+    "genre": "F",
+    "date_naissance": "1998-03-15",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030014",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur14@injs.ci",
+    "created_at": "2026-11-25T18:37:39.096Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 15,
+  "fields": {
+    "matricule": "INJS-2026-0015",
+    "nom": "ZADI",
+    "prenom": "Dago Hervé",
+    "genre": "M",
+    "date_naissance": "1999-04-16",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030015",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur15@injs.ci",
+    "created_at": "2026-11-25T18:37:39.099Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 16,
+  "fields": {
+    "matricule": "INJS-2026-0016",
+    "nom": "FOFANA",
+    "prenom": "Bintou",
+    "genre": "F",
+    "date_naissance": "1992-05-17",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030016",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur16@injs.ci",
+    "created_at": "2026-11-25T18:37:39.101Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 17,
+  "fields": {
+    "matricule": "INJS-2026-0017",
+    "nom": "DJE",
+    "prenom": "Bi Tra",
+    "genre": "M",
+    "date_naissance": "1993-06-18",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030017",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur17@injs.ci",
+    "created_at": "2026-11-25T18:37:39.104Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 18,
+  "fields": {
+    "matricule": "INJS-2026-0018",
+    "nom": "CAMARA",
+    "prenom": "Maimouna",
+    "genre": "F",
+    "date_naissance": "1994-07-19",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030018",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur18@injs.ci",
+    "created_at": "2026-11-25T18:37:39.107Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 19,
+  "fields": {
+    "matricule": "INJS-2026-0019",
+    "nom": "KOUADIO",
+    "prenom": "Affoué Estelle",
+    "genre": "F",
+    "date_naissance": "1995-08-20",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030019",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur19@injs.ci",
+    "created_at": "2026-11-25T18:37:39.110Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 20,
+  "fields": {
+    "matricule": "INJS-2026-0020",
+    "nom": "TANO",
+    "prenom": "Kobenan Boris",
+    "genre": "M",
+    "date_naissance": "1996-09-21",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030020",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur20@injs.ci",
+    "created_at": "2026-11-25T18:37:39.112Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 21,
+  "fields": {
+    "matricule": "INJS-2026-0021",
+    "nom": "BROU",
+    "prenom": "Adjoua Clarisse",
+    "genre": "F",
+    "date_naissance": "1997-10-22",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030021",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur21@injs.ci",
+    "created_at": "2026-11-25T18:37:39.115Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 22,
+  "fields": {
+    "matricule": "INJS-2026-0022",
+    "nom": "YEO",
+    "prenom": "Djakaridja",
+    "genre": "M",
+    "date_naissance": "1998-11-23",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030022",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur22@injs.ci",
+    "created_at": "2026-11-25T18:37:39.118Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 23,
+  "fields": {
+    "matricule": "INJS-2026-0023",
+    "nom": "GUEI",
+    "prenom": "Oulai Patrick",
+    "genre": "M",
+    "date_naissance": "1999-12-24",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030023",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur23@injs.ci",
+    "created_at": "2026-11-25T18:37:39.121Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 24,
+  "fields": {
+    "matricule": "INJS-2026-0024",
+    "nom": "CISSE",
+    "prenom": "Massandjé",
+    "genre": "F",
+    "date_naissance": "1992-01-25",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030024",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur24@injs.ci",
+    "created_at": "2026-11-25T18:37:39.123Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 25,
+  "fields": {
+    "matricule": "INJS-2026-0025",
+    "nom": "MEITE",
+    "prenom": "Souleymane",
+    "genre": "M",
+    "date_naissance": "1993-02-26",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030025",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur25@injs.ci",
+    "created_at": "2026-11-25T18:37:39.126Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 26,
+  "fields": {
+    "matricule": "INJS-2026-0026",
+    "nom": "BAHI",
+    "prenom": "Gnahoré",
+    "genre": "M",
+    "date_naissance": "1994-03-27",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030026",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur26@injs.ci",
+    "created_at": "2026-11-25T18:37:39.129Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 27,
+  "fields": {
+    "matricule": "INJS-2026-0027",
+    "nom": "DIGBEU",
+    "prenom": "Zézé",
+    "genre": "M",
+    "date_naissance": "1995-04-01",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030027",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur27@injs.ci",
+    "created_at": "2026-11-25T18:37:39.133Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 28,
+  "fields": {
+    "matricule": "INJS-2026-0028",
+    "nom": "KAKOU",
+    "prenom": "Amoin",
+    "genre": "F",
+    "date_naissance": "1996-05-02",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030028",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A3 2026",
+    "categorie": "A",
+    "grade": "A3",
+    "email": "auditeur28@injs.ci",
+    "created_at": "2026-11-25T18:37:39.135Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 29,
+  "fields": {
+    "matricule": "INJS-2026-0029",
+    "nom": "LATH",
+    "prenom": "Essoh",
+    "genre": "M",
+    "date_naissance": "1997-06-03",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030029",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A4 2026",
+    "categorie": "A",
+    "grade": "A4",
+    "email": "auditeur29@injs.ci",
+    "created_at": "2026-11-25T18:37:39.138Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 30,
+  "fields": {
+    "matricule": "INJS-2026-0030",
+    "nom": "M'BRA",
+    "prenom": "Akissi",
+    "genre": "F",
+    "date_naissance": "1998-07-04",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030030",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A4 2026",
+    "categorie": "A",
+    "grade": "A4",
+    "email": "auditeur30@injs.ci",
+    "created_at": "2026-11-25T18:37:39.140Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 31,
+  "fields": {
+    "matricule": "INJS-2026-0031",
+    "nom": "N'GORAN",
+    "prenom": "Koffi",
+    "genre": "M",
+    "date_naissance": "1999-08-05",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030031",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A4 2026",
+    "categorie": "A",
+    "grade": "A4",
+    "email": "auditeur31@injs.ci",
+    "created_at": "2026-11-25T18:37:39.143Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 32,
+  "fields": {
+    "matricule": "INJS-2026-0032",
+    "nom": "OKOU",
+    "prenom": "Brice",
+    "genre": "M",
+    "date_naissance": "1992-09-06",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030032",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A4 2026",
+    "categorie": "A",
+    "grade": "A4",
+    "email": "auditeur32@injs.ci",
+    "created_at": "2026-11-25T18:37:39.145Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 33,
+  "fields": {
+    "matricule": "INJS-2026-0033",
+    "nom": "PALE",
+    "prenom": "Sié",
+    "genre": "M",
+    "date_naissance": "1993-10-07",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030033",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A4 2026",
+    "categorie": "A",
+    "grade": "A4",
+    "email": "auditeur33@injs.ci",
+    "created_at": "2026-11-25T18:37:39.148Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 34,
+  "fields": {
+    "matricule": "INJS-2026-0034",
+    "nom": "SEKOU",
+    "prenom": "Oumar",
+    "genre": "M",
+    "date_naissance": "1994-11-08",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030034",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A4 2026",
+    "categorie": "A",
+    "grade": "A4",
+    "email": "auditeur34@injs.ci",
+    "created_at": "2026-11-25T18:37:39.150Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 35,
+  "fields": {
+    "matricule": "INJS-2026-0035",
+    "nom": "TIA",
+    "prenom": "Gueu",
+    "genre": "M",
+    "date_naissance": "1995-12-09",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030035",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A4 2026",
+    "categorie": "A",
+    "grade": "A4",
+    "email": "auditeur35@injs.ci",
+    "created_at": "2026-11-25T18:37:39.152Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 36,
+  "fields": {
+    "matricule": "INJS-2026-0036",
+    "nom": "VANIE",
+    "prenom": "Bi",
+    "genre": "M",
+    "date_naissance": "1996-01-10",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030036",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A4 2026",
+    "categorie": "A",
+    "grade": "A4",
+    "email": "auditeur36@injs.ci",
+    "created_at": "2026-11-25T18:37:39.155Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 37,
+  "fields": {
+    "matricule": "INJS-2026-0037",
+    "nom": "WOGNIN",
+    "prenom": "Aka",
+    "genre": "M",
+    "date_naissance": "1997-02-11",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030037",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A4 2026",
+    "categorie": "A",
+    "grade": "A4",
+    "email": "auditeur37@injs.ci",
+    "created_at": "2026-11-25T18:37:39.157Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 38,
+  "fields": {
+    "matricule": "INJS-2026-0038",
+    "nom": "YAPI",
+    "prenom": "Achi",
+    "genre": "M",
+    "date_naissance": "1998-03-12",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030038",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A4 2026",
+    "categorie": "A",
+    "grade": "A4",
+    "email": "auditeur38@injs.ci",
+    "created_at": "2026-11-25T18:37:39.159Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 39,
+  "fields": {
+    "matricule": "INJS-2026-0039",
+    "nom": "ZOUZOUA",
+    "prenom": "Léa",
+    "genre": "F",
+    "date_naissance": "1999-04-13",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030039",
+    "telephone_2": "",
+    "type_concours": "Professionnel",
+    "libelle_concours": "Concours INJS A4 2026",
+    "categorie": "A",
+    "grade": "A4",
+    "email": "auditeur39@injs.ci",
+    "created_at": "2026-11-25T18:37:39.162Z"
+  }
+},
+{
+  "model": "auditeurs.auditeur",
+  "pk": 40,
+  "fields": {
+    "matricule": "INJS-2026-0040",
+    "nom": "ABOLOU",
+    "prenom": "Nadine",
+    "genre": "F",
+    "date_naissance": "1992-05-14",
+    "lieu_naissance": "Abidjan",
+    "telephone_1": "+2250102030040",
+    "telephone_2": "",
+    "type_concours": "Direct",
+    "libelle_concours": "Concours INJS A4 2026",
+    "categorie": "A",
+    "grade": "A4",
+    "email": "auditeur40@injs.ci",
+    "created_at": "2026-11-25T18:37:39.164Z"
+  }
+},
+{
+  "model": "groupes.groupe",
+  "pk": 1,
+  "fields": {
+    "formation": 1,
+    "nom": "A3_GROUPE1",
+    "max_auditeurs": 25,
+    "rythme_mensuel": "",
+    "created_at": "2026-11-25T18:40:11.580Z"
+  }
+},
+{
+  "model": "groupes.groupe",
+  "pk": 2,
+  "fields": {
+    "formation": 1,
+    "nom": "A3_GROUPE2",
+    "max_auditeurs": 25,
+    "rythme_mensuel": "",
+    "created_at": "2026-11-25T18:40:11.583Z"
+  }
+},
+{
+  "model": "groupes.groupe",
+  "pk": 3,
+  "fields": {
+    "formation": 1,
+    "nom": "A4_GROUPE1",
+    "max_auditeurs": 25,
+    "rythme_mensuel": "",
+    "created_at": "2026-11-25T18:40:11.586Z"
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 1,
+  "fields": {
+    "groupe": 1,
+    "auditeur": 26
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 2,
+  "fields": {
+    "groupe": 1,
+    "auditeur": 24
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 3,
+  "fields": {
+    "groupe": 1,
+    "auditeur": 12
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 4,
+  "fields": {
+    "groupe": 1,
+    "auditeur": 28
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 5,
+  "fields": {
+    "groupe": 1,
+    "auditeur": 4
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 6,
+  "fields": {
+    "groupe": 1,
+    "auditeur": 14
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 7,
+  "fields": {
+    "groupe": 1,
+    "auditeur": 2
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 8,
+  "fields": {
+    "groupe": 1,
+    "auditeur": 7
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 9,
+  "fields": {
+    "groupe": 1,
+    "auditeur": 11
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 10,
+  "fields": {
+    "groupe": 1,
+    "auditeur": 27
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 11,
+  "fields": {
+    "groupe": 1,
+    "auditeur": 13
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 12,
+  "fields": {
+    "groupe": 1,
+    "auditeur": 1
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 13,
+  "fields": {
+    "groupe": 1,
+    "auditeur": 3
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 14,
+  "fields": {
+    "groupe": 1,
+    "auditeur": 5
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 15,
+  "fields": {
+    "groupe": 2,
+    "auditeur": 18
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 16,
+  "fields": {
+    "groupe": 2,
+    "auditeur": 6
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 17,
+  "fields": {
+    "groupe": 2,
+    "auditeur": 16
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 18,
+  "fields": {
+    "groupe": 2,
+    "auditeur": 10
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 19,
+  "fields": {
+    "groupe": 2,
+    "auditeur": 8
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 20,
+  "fields": {
+    "groupe": 2,
+    "auditeur": 20
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 21,
+  "fields": {
+    "groupe": 2,
+    "auditeur": 22
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 22,
+  "fields": {
+    "groupe": 2,
+    "auditeur": 9
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 23,
+  "fields": {
+    "groupe": 2,
+    "auditeur": 21
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 24,
+  "fields": {
+    "groupe": 2,
+    "auditeur": 17
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 25,
+  "fields": {
+    "groupe": 2,
+    "auditeur": 23
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 26,
+  "fields": {
+    "groupe": 2,
+    "auditeur": 19
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 27,
+  "fields": {
+    "groupe": 2,
+    "auditeur": 25
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 28,
+  "fields": {
+    "groupe": 2,
+    "auditeur": 15
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 29,
+  "fields": {
+    "groupe": 3,
+    "auditeur": 40
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 30,
+  "fields": {
+    "groupe": 3,
+    "auditeur": 30
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 31,
+  "fields": {
+    "groupe": 3,
+    "auditeur": 32
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 32,
+  "fields": {
+    "groupe": 3,
+    "auditeur": 34
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 33,
+  "fields": {
+    "groupe": 3,
+    "auditeur": 36
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 34,
+  "fields": {
+    "groupe": 3,
+    "auditeur": 38
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 35,
+  "fields": {
+    "groupe": 3,
+    "auditeur": 29
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 36,
+  "fields": {
+    "groupe": 3,
+    "auditeur": 31
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 37,
+  "fields": {
+    "groupe": 3,
+    "auditeur": 33
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 38,
+  "fields": {
+    "groupe": 3,
+    "auditeur": 35
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 39,
+  "fields": {
+    "groupe": 3,
+    "auditeur": 37
+  }
+},
+{
+  "model": "groupes.groupeauditeur",
+  "pk": 40,
+  "fields": {
+    "groupe": 3,
+    "auditeur": 39
+  }
+},
+{
+  "model": "groupes.configgroupe",
+  "pk": 1,
+  "fields": {
+    "groupe": 1,
+    "matin_actif": true,
+    "matin_heure_debut": "08:00:00",
+    "matin_heure_fin": "12:00:00",
+    "soir_actif": true,
+    "soir_heure_debut": "13:00:00",
+    "soir_heure_fin": "17:00:00"
+  }
+},
+{
+  "model": "groupes.configgroupe",
+  "pk": 2,
+  "fields": {
+    "groupe": 2,
+    "matin_actif": true,
+    "matin_heure_debut": "08:00:00",
+    "matin_heure_fin": "12:00:00",
+    "soir_actif": true,
+    "soir_heure_debut": "13:00:00",
+    "soir_heure_fin": "17:00:00"
+  }
+},
+{
+  "model": "groupes.configgroupe",
+  "pk": 3,
+  "fields": {
+    "groupe": 3,
+    "matin_actif": true,
+    "matin_heure_debut": "08:00:00",
+    "matin_heure_fin": "12:00:00",
+    "soir_actif": true,
+    "soir_heure_debut": "13:00:00",
+    "soir_heure_fin": "17:00:00"
+  }
+},
+{
+  "model": "groupes.jourcours",
+  "pk": 1,
+  "fields": {
+    "groupe": 1,
+    "jour": 0
+  }
+},
+{
+  "model": "groupes.jourcours",
+  "pk": 2,
+  "fields": {
+    "groupe": 1,
+    "jour": 1
+  }
+},
+{
+  "model": "groupes.jourcours",
+  "pk": 3,
+  "fields": {
+    "groupe": 1,
+    "jour": 2
+  }
+},
+{
+  "model": "groupes.jourcours",
+  "pk": 4,
+  "fields": {
+    "groupe": 1,
+    "jour": 3
+  }
+},
+{
+  "model": "groupes.jourcours",
+  "pk": 5,
+  "fields": {
+    "groupe": 1,
+    "jour": 4
+  }
+},
+{
+  "model": "groupes.jourcours",
+  "pk": 6,
+  "fields": {
+    "groupe": 2,
+    "jour": 0
+  }
+},
+{
+  "model": "groupes.jourcours",
+  "pk": 7,
+  "fields": {
+    "groupe": 2,
+    "jour": 1
+  }
+},
+{
+  "model": "groupes.jourcours",
+  "pk": 8,
+  "fields": {
+    "groupe": 2,
+    "jour": 2
+  }
+},
+{
+  "model": "groupes.jourcours",
+  "pk": 9,
+  "fields": {
+    "groupe": 2,
+    "jour": 3
+  }
+},
+{
+  "model": "groupes.jourcours",
+  "pk": 10,
+  "fields": {
+    "groupe": 2,
+    "jour": 4
+  }
+},
+{
+  "model": "groupes.jourcours",
+  "pk": 11,
+  "fields": {
+    "groupe": 3,
+    "jour": 0
+  }
+},
+{
+  "model": "groupes.jourcours",
+  "pk": 12,
+  "fields": {
+    "groupe": 3,
+    "jour": 1
+  }
+},
+{
+  "model": "groupes.jourcours",
+  "pk": 13,
+  "fields": {
+    "groupe": 3,
+    "jour": 2
+  }
+},
+{
+  "model": "groupes.jourcours",
+  "pk": 14,
+  "fields": {
+    "groupe": 3,
+    "jour": 3
+  }
+},
+{
+  "model": "groupes.jourcours",
+  "pk": 15,
+  "fields": {
+    "groupe": 3,
+    "jour": 4
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 1,
+  "fields": {
+    "groupe": 1,
+    "module": 1,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B201",
+    "salle": 4,
+    "formateur_nom": "KOUASSI",
+    "formateur_prenom": "Jean-Claude",
+    "formateur_numero": "+2250708112201",
+    "formateur_email": "jc.kouassi@injs.ci",
+    "formateur_telephone": "+2250708112201",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 1,
+    "date": "2026-11-02",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.661Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 2,
+  "fields": {
+    "groupe": 1,
+    "module": 1,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B201",
+    "salle": 4,
+    "formateur_nom": "KOUASSI",
+    "formateur_prenom": "Jean-Claude",
+    "formateur_numero": "+2250708112201",
+    "formateur_email": "jc.kouassi@injs.ci",
+    "formateur_telephone": "+2250708112201",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 1,
+    "date": "2026-11-02",
+    "heure_debut": "13:00:00",
+    "heure_fin": "17:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.661Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 3,
+  "fields": {
+    "groupe": 1,
+    "module": 1,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B201",
+    "salle": 4,
+    "formateur_nom": "KOUASSI",
+    "formateur_prenom": "Jean-Claude",
+    "formateur_numero": "+2250708112201",
+    "formateur_email": "jc.kouassi@injs.ci",
+    "formateur_telephone": "+2250708112201",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 1,
+    "date": "2026-11-03",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.661Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 4,
+  "fields": {
+    "groupe": 1,
+    "module": 1,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B201",
+    "salle": 4,
+    "formateur_nom": "KOUASSI",
+    "formateur_prenom": "Jean-Claude",
+    "formateur_numero": "+2250708112201",
+    "formateur_email": "jc.kouassi@injs.ci",
+    "formateur_telephone": "+2250708112201",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 1,
+    "date": "2026-11-03",
+    "heure_debut": "13:00:00",
+    "heure_fin": "17:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.661Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 5,
+  "fields": {
+    "groupe": 1,
+    "module": 2,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B202",
+    "salle": 5,
+    "formateur_nom": "KONAN",
+    "formateur_prenom": "Aya Marie",
+    "formateur_numero": "+2250708112202",
+    "formateur_email": "am.konan@injs.ci",
+    "formateur_telephone": "+2250708112202",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 2,
+    "date": "2026-11-04",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.661Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 6,
+  "fields": {
+    "groupe": 1,
+    "module": 2,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B202",
+    "salle": 5,
+    "formateur_nom": "KONAN",
+    "formateur_prenom": "Aya Marie",
+    "formateur_numero": "+2250708112202",
+    "formateur_email": "am.konan@injs.ci",
+    "formateur_telephone": "+2250708112202",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 2,
+    "date": "2026-11-04",
+    "heure_debut": "13:00:00",
+    "heure_fin": "17:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.661Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 7,
+  "fields": {
+    "groupe": 1,
+    "module": 2,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B202",
+    "salle": 5,
+    "formateur_nom": "KONAN",
+    "formateur_prenom": "Aya Marie",
+    "formateur_numero": "+2250708112202",
+    "formateur_email": "am.konan@injs.ci",
+    "formateur_telephone": "+2250708112202",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 2,
+    "date": "2026-11-05",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.662Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 8,
+  "fields": {
+    "groupe": 1,
+    "module": 3,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B202",
+    "salle": 5,
+    "formateur_nom": "DIALLO",
+    "formateur_prenom": "Ibrahim",
+    "formateur_numero": "+2250708112206",
+    "formateur_email": "i.diallo@injs.ci",
+    "formateur_telephone": "+2250708112206",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 6,
+    "date": "2026-11-06",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.662Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 9,
+  "fields": {
+    "groupe": 1,
+    "module": 3,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B202",
+    "salle": 5,
+    "formateur_nom": "DIALLO",
+    "formateur_prenom": "Ibrahim",
+    "formateur_numero": "+2250708112206",
+    "formateur_email": "i.diallo@injs.ci",
+    "formateur_telephone": "+2250708112206",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 6,
+    "date": "2026-11-06",
+    "heure_debut": "13:00:00",
+    "heure_fin": "17:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.662Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 10,
+  "fields": {
+    "groupe": 1,
+    "module": 3,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B202",
+    "salle": 5,
+    "formateur_nom": "DIALLO",
+    "formateur_prenom": "Ibrahim",
+    "formateur_numero": "+2250708112206",
+    "formateur_email": "i.diallo@injs.ci",
+    "formateur_telephone": "+2250708112206",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 6,
+    "date": "2026-11-09",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.662Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 11,
+  "fields": {
+    "groupe": 1,
+    "module": 4,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B201",
+    "salle": 4,
+    "formateur_nom": "BAMBA",
+    "formateur_prenom": "Fatoumata",
+    "formateur_numero": "+2250708112204",
+    "formateur_email": "f.bamba@injs.ci",
+    "formateur_telephone": "+2250708112204",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 4,
+    "date": "2026-11-10",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.662Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 12,
+  "fields": {
+    "groupe": 1,
+    "module": 4,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B201",
+    "salle": 4,
+    "formateur_nom": "BAMBA",
+    "formateur_prenom": "Fatoumata",
+    "formateur_numero": "+2250708112204",
+    "formateur_email": "f.bamba@injs.ci",
+    "formateur_telephone": "+2250708112204",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 4,
+    "date": "2026-11-10",
+    "heure_debut": "13:00:00",
+    "heure_fin": "17:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.662Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 13,
+  "fields": {
+    "groupe": 2,
+    "module": 1,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B202",
+    "salle": 5,
+    "formateur_nom": "YAO",
+    "formateur_prenom": "Kouadio Serge",
+    "formateur_numero": "+2250708112205",
+    "formateur_email": "ks.yao@injs.ci",
+    "formateur_telephone": "+2250708112205",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 5,
+    "date": "2026-11-02",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.698Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 14,
+  "fields": {
+    "groupe": 2,
+    "module": 1,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B202",
+    "salle": 5,
+    "formateur_nom": "YAO",
+    "formateur_prenom": "Kouadio Serge",
+    "formateur_numero": "+2250708112205",
+    "formateur_email": "ks.yao@injs.ci",
+    "formateur_telephone": "+2250708112205",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 5,
+    "date": "2026-11-02",
+    "heure_debut": "13:00:00",
+    "heure_fin": "17:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.698Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 15,
+  "fields": {
+    "groupe": 2,
+    "module": 1,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B202",
+    "salle": 5,
+    "formateur_nom": "YAO",
+    "formateur_prenom": "Kouadio Serge",
+    "formateur_numero": "+2250708112205",
+    "formateur_email": "ks.yao@injs.ci",
+    "formateur_telephone": "+2250708112205",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 5,
+    "date": "2026-11-03",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.698Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 16,
+  "fields": {
+    "groupe": 2,
+    "module": 1,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B202",
+    "salle": 5,
+    "formateur_nom": "YAO",
+    "formateur_prenom": "Kouadio Serge",
+    "formateur_numero": "+2250708112205",
+    "formateur_email": "ks.yao@injs.ci",
+    "formateur_telephone": "+2250708112205",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 5,
+    "date": "2026-11-03",
+    "heure_debut": "13:00:00",
+    "heure_fin": "17:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.698Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 17,
+  "fields": {
+    "groupe": 2,
+    "module": 2,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B201",
+    "salle": 4,
+    "formateur_nom": "YAO",
+    "formateur_prenom": "Kouadio Serge",
+    "formateur_numero": "+2250708112205",
+    "formateur_email": "ks.yao@injs.ci",
+    "formateur_telephone": "+2250708112205",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 5,
+    "date": "2026-11-04",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.699Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 18,
+  "fields": {
+    "groupe": 2,
+    "module": 2,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B201",
+    "salle": 4,
+    "formateur_nom": "YAO",
+    "formateur_prenom": "Kouadio Serge",
+    "formateur_numero": "+2250708112205",
+    "formateur_email": "ks.yao@injs.ci",
+    "formateur_telephone": "+2250708112205",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 5,
+    "date": "2026-11-04",
+    "heure_debut": "13:00:00",
+    "heure_fin": "17:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.699Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 19,
+  "fields": {
+    "groupe": 2,
+    "module": 2,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B201",
+    "salle": 4,
+    "formateur_nom": "YAO",
+    "formateur_prenom": "Kouadio Serge",
+    "formateur_numero": "+2250708112205",
+    "formateur_email": "ks.yao@injs.ci",
+    "formateur_telephone": "+2250708112205",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 5,
+    "date": "2026-11-05",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.699Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 20,
+  "fields": {
+    "groupe": 2,
+    "module": 3,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B201",
+    "salle": 4,
+    "formateur_nom": "TRAORE",
+    "formateur_prenom": "Moussa",
+    "formateur_numero": "+2250708112203",
+    "formateur_email": "m.traore@injs.ci",
+    "formateur_telephone": "+2250708112203",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 3,
+    "date": "2026-11-06",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.699Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 21,
+  "fields": {
+    "groupe": 2,
+    "module": 3,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B201",
+    "salle": 4,
+    "formateur_nom": "TRAORE",
+    "formateur_prenom": "Moussa",
+    "formateur_numero": "+2250708112203",
+    "formateur_email": "m.traore@injs.ci",
+    "formateur_telephone": "+2250708112203",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 3,
+    "date": "2026-11-06",
+    "heure_debut": "13:00:00",
+    "heure_fin": "17:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.699Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 22,
+  "fields": {
+    "groupe": 2,
+    "module": 3,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B201",
+    "salle": 4,
+    "formateur_nom": "TRAORE",
+    "formateur_prenom": "Moussa",
+    "formateur_numero": "+2250708112203",
+    "formateur_email": "m.traore@injs.ci",
+    "formateur_telephone": "+2250708112203",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 3,
+    "date": "2026-11-09",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.699Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 23,
+  "fields": {
+    "groupe": 2,
+    "module": 4,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B202",
+    "salle": 5,
+    "formateur_nom": "DIALLO",
+    "formateur_prenom": "Ibrahim",
+    "formateur_numero": "+2250708112206",
+    "formateur_email": "i.diallo@injs.ci",
+    "formateur_telephone": "+2250708112206",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 6,
+    "date": "2026-11-10",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.699Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 24,
+  "fields": {
+    "groupe": 2,
+    "module": 4,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Pédagogique B",
+    "salle_nom": "SALLE B202",
+    "salle": 5,
+    "formateur_nom": "DIALLO",
+    "formateur_prenom": "Ibrahim",
+    "formateur_numero": "+2250708112206",
+    "formateur_email": "i.diallo@injs.ci",
+    "formateur_telephone": "+2250708112206",
+    "formateur_organisation": "INJS Abidjan",
+    "formateur_referentiel": 6,
+    "date": "2026-11-10",
+    "heure_debut": "13:00:00",
+    "heure_fin": "17:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.699Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 25,
+  "fields": {
+    "groupe": 3,
+    "module": 1,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Académique A",
+    "salle_nom": "SALLE A101",
+    "salle": 1,
+    "formateur_nom": "",
+    "formateur_prenom": "",
+    "formateur_numero": "",
+    "formateur_email": "",
+    "formateur_telephone": "",
+    "formateur_organisation": "",
+    "formateur_referentiel": null,
+    "date": "2026-11-02",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.740Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 26,
+  "fields": {
+    "groupe": 3,
+    "module": 1,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Académique A",
+    "salle_nom": "SALLE A101",
+    "salle": 1,
+    "formateur_nom": "",
+    "formateur_prenom": "",
+    "formateur_numero": "",
+    "formateur_email": "",
+    "formateur_telephone": "",
+    "formateur_organisation": "",
+    "formateur_referentiel": null,
+    "date": "2026-11-02",
+    "heure_debut": "13:00:00",
+    "heure_fin": "17:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.740Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 27,
+  "fields": {
+    "groupe": 3,
+    "module": 1,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Académique A",
+    "salle_nom": "SALLE A101",
+    "salle": 1,
+    "formateur_nom": "",
+    "formateur_prenom": "",
+    "formateur_numero": "",
+    "formateur_email": "",
+    "formateur_telephone": "",
+    "formateur_organisation": "",
+    "formateur_referentiel": null,
+    "date": "2026-11-03",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.740Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 28,
+  "fields": {
+    "groupe": 3,
+    "module": 1,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Académique A",
+    "salle_nom": "SALLE A101",
+    "salle": 1,
+    "formateur_nom": "",
+    "formateur_prenom": "",
+    "formateur_numero": "",
+    "formateur_email": "",
+    "formateur_telephone": "",
+    "formateur_organisation": "",
+    "formateur_referentiel": null,
+    "date": "2026-11-03",
+    "heure_debut": "13:00:00",
+    "heure_fin": "17:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.740Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 29,
+  "fields": {
+    "groupe": 3,
+    "module": 2,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Académique A",
+    "salle_nom": "SALLE A102",
+    "salle": 2,
+    "formateur_nom": "",
+    "formateur_prenom": "",
+    "formateur_numero": "",
+    "formateur_email": "",
+    "formateur_telephone": "",
+    "formateur_organisation": "",
+    "formateur_referentiel": null,
+    "date": "2026-11-04",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.740Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 30,
+  "fields": {
+    "groupe": 3,
+    "module": 2,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Académique A",
+    "salle_nom": "SALLE A102",
+    "salle": 2,
+    "formateur_nom": "",
+    "formateur_prenom": "",
+    "formateur_numero": "",
+    "formateur_email": "",
+    "formateur_telephone": "",
+    "formateur_organisation": "",
+    "formateur_referentiel": null,
+    "date": "2026-11-04",
+    "heure_debut": "13:00:00",
+    "heure_fin": "17:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.740Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 31,
+  "fields": {
+    "groupe": 3,
+    "module": 2,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Académique A",
+    "salle_nom": "SALLE A102",
+    "salle": 2,
+    "formateur_nom": "",
+    "formateur_prenom": "",
+    "formateur_numero": "",
+    "formateur_email": "",
+    "formateur_telephone": "",
+    "formateur_organisation": "",
+    "formateur_referentiel": null,
+    "date": "2026-11-05",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.741Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 32,
+  "fields": {
+    "groupe": 3,
+    "module": 3,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Académique A",
+    "salle_nom": "SALLE A102",
+    "salle": 2,
+    "formateur_nom": "",
+    "formateur_prenom": "",
+    "formateur_numero": "",
+    "formateur_email": "",
+    "formateur_telephone": "",
+    "formateur_organisation": "",
+    "formateur_referentiel": null,
+    "date": "2026-11-06",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.741Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 33,
+  "fields": {
+    "groupe": 3,
+    "module": 3,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Académique A",
+    "salle_nom": "SALLE A102",
+    "salle": 2,
+    "formateur_nom": "",
+    "formateur_prenom": "",
+    "formateur_numero": "",
+    "formateur_email": "",
+    "formateur_telephone": "",
+    "formateur_organisation": "",
+    "formateur_referentiel": null,
+    "date": "2026-11-06",
+    "heure_debut": "13:00:00",
+    "heure_fin": "17:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.741Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 34,
+  "fields": {
+    "groupe": 3,
+    "module": 3,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Académique A",
+    "salle_nom": "SALLE A102",
+    "salle": 2,
+    "formateur_nom": "",
+    "formateur_prenom": "",
+    "formateur_numero": "",
+    "formateur_email": "",
+    "formateur_telephone": "",
+    "formateur_organisation": "",
+    "formateur_referentiel": null,
+    "date": "2026-11-09",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.741Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 35,
+  "fields": {
+    "groupe": 3,
+    "module": 4,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Académique A",
+    "salle_nom": "SALLE A101",
+    "salle": 1,
+    "formateur_nom": "",
+    "formateur_prenom": "",
+    "formateur_numero": "",
+    "formateur_email": "",
+    "formateur_telephone": "",
+    "formateur_organisation": "",
+    "formateur_referentiel": null,
+    "date": "2026-11-10",
+    "heure_debut": "08:00:00",
+    "heure_fin": "12:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.741Z"
+  }
+},
+{
+  "model": "seances.seance",
+  "pk": 36,
+  "fields": {
+    "groupe": 3,
+    "module": 4,
+    "site_nom": "Campus INJS Marcory",
+    "batiment_nom": "Bâtiment Académique A",
+    "salle_nom": "SALLE A101",
+    "salle": 1,
+    "formateur_nom": "",
+    "formateur_prenom": "",
+    "formateur_numero": "",
+    "formateur_email": "",
+    "formateur_telephone": "",
+    "formateur_organisation": "",
+    "formateur_referentiel": null,
+    "date": "2026-11-10",
+    "heure_debut": "13:00:00",
+    "heure_fin": "17:00:00",
+    "duree_minutes": 240,
+    "created_at": "2026-11-25T18:40:11.741Z"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add log entry",
+    "content_type": [
+      "admin",
+      "logentry"
+    ],
+    "codename": "add_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change log entry",
+    "content_type": [
+      "admin",
+      "logentry"
+    ],
+    "codename": "change_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete log entry",
+    "content_type": [
+      "admin",
+      "logentry"
+    ],
+    "codename": "delete_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view log entry",
+    "content_type": [
+      "admin",
+      "logentry"
+    ],
+    "codename": "view_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add permission",
+    "content_type": [
+      "auth",
+      "permission"
+    ],
+    "codename": "add_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change permission",
+    "content_type": [
+      "auth",
+      "permission"
+    ],
+    "codename": "change_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete permission",
+    "content_type": [
+      "auth",
+      "permission"
+    ],
+    "codename": "delete_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view permission",
+    "content_type": [
+      "auth",
+      "permission"
+    ],
+    "codename": "view_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add group",
+    "content_type": [
+      "auth",
+      "group"
+    ],
+    "codename": "add_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change group",
+    "content_type": [
+      "auth",
+      "group"
+    ],
+    "codename": "change_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete group",
+    "content_type": [
+      "auth",
+      "group"
+    ],
+    "codename": "delete_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view group",
+    "content_type": [
+      "auth",
+      "group"
+    ],
+    "codename": "view_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add user",
+    "content_type": [
+      "auth",
+      "user"
+    ],
+    "codename": "add_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change user",
+    "content_type": [
+      "auth",
+      "user"
+    ],
+    "codename": "change_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete user",
+    "content_type": [
+      "auth",
+      "user"
+    ],
+    "codename": "delete_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view user",
+    "content_type": [
+      "auth",
+      "user"
+    ],
+    "codename": "view_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add content type",
+    "content_type": [
+      "contenttypes",
+      "contenttype"
+    ],
+    "codename": "add_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change content type",
+    "content_type": [
+      "contenttypes",
+      "contenttype"
+    ],
+    "codename": "change_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete content type",
+    "content_type": [
+      "contenttypes",
+      "contenttype"
+    ],
+    "codename": "delete_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view content type",
+    "content_type": [
+      "contenttypes",
+      "contenttype"
+    ],
+    "codename": "view_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add session",
+    "content_type": [
+      "sessions",
+      "session"
+    ],
+    "codename": "add_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change session",
+    "content_type": [
+      "sessions",
+      "session"
+    ],
+    "codename": "change_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete session",
+    "content_type": [
+      "sessions",
+      "session"
+    ],
+    "codename": "delete_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view session",
+    "content_type": [
+      "sessions",
+      "session"
+    ],
+    "codename": "view_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Grade",
+    "content_type": [
+      "parametrage",
+      "grade"
+    ],
+    "codename": "add_grade"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Grade",
+    "content_type": [
+      "parametrage",
+      "grade"
+    ],
+    "codename": "change_grade"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Grade",
+    "content_type": [
+      "parametrage",
+      "grade"
+    ],
+    "codename": "delete_grade"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Grade",
+    "content_type": [
+      "parametrage",
+      "grade"
+    ],
+    "codename": "view_grade"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Vague",
+    "content_type": [
+      "parametrage",
+      "vague"
+    ],
+    "codename": "add_vague"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Vague",
+    "content_type": [
+      "parametrage",
+      "vague"
+    ],
+    "codename": "change_vague"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Vague",
+    "content_type": [
+      "parametrage",
+      "vague"
+    ],
+    "codename": "delete_vague"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Vague",
+    "content_type": [
+      "parametrage",
+      "vague"
+    ],
+    "codename": "view_vague"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Paramètre général",
+    "content_type": [
+      "parametrage",
+      "parametregeneral"
+    ],
+    "codename": "add_parametregeneral"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Paramètre général",
+    "content_type": [
+      "parametrage",
+      "parametregeneral"
+    ],
+    "codename": "change_parametregeneral"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Paramètre général",
+    "content_type": [
+      "parametrage",
+      "parametregeneral"
+    ],
+    "codename": "delete_parametregeneral"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Paramètre général",
+    "content_type": [
+      "parametrage",
+      "parametregeneral"
+    ],
+    "codename": "view_parametregeneral"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Association module / type",
+    "content_type": [
+      "parametrage",
+      "moduletypeformation"
+    ],
+    "codename": "add_moduletypeformation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Association module / type",
+    "content_type": [
+      "parametrage",
+      "moduletypeformation"
+    ],
+    "codename": "change_moduletypeformation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Association module / type",
+    "content_type": [
+      "parametrage",
+      "moduletypeformation"
+    ],
+    "codename": "delete_moduletypeformation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Association module / type",
+    "content_type": [
+      "parametrage",
+      "moduletypeformation"
+    ],
+    "codename": "view_moduletypeformation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Bâtiment",
+    "content_type": [
+      "parametrage",
+      "batiment"
+    ],
+    "codename": "add_batiment"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Bâtiment",
+    "content_type": [
+      "parametrage",
+      "batiment"
+    ],
+    "codename": "change_batiment"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Bâtiment",
+    "content_type": [
+      "parametrage",
+      "batiment"
+    ],
+    "codename": "delete_batiment"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Bâtiment",
+    "content_type": [
+      "parametrage",
+      "batiment"
+    ],
+    "codename": "view_batiment"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Salle",
+    "content_type": [
+      "parametrage",
+      "salle"
+    ],
+    "codename": "add_salle"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Salle",
+    "content_type": [
+      "parametrage",
+      "salle"
+    ],
+    "codename": "change_salle"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Salle",
+    "content_type": [
+      "parametrage",
+      "salle"
+    ],
+    "codename": "delete_salle"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Salle",
+    "content_type": [
+      "parametrage",
+      "salle"
+    ],
+    "codename": "view_salle"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Site",
+    "content_type": [
+      "parametrage",
+      "site"
+    ],
+    "codename": "add_site"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Site",
+    "content_type": [
+      "parametrage",
+      "site"
+    ],
+    "codename": "change_site"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Site",
+    "content_type": [
+      "parametrage",
+      "site"
+    ],
+    "codename": "delete_site"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Site",
+    "content_type": [
+      "parametrage",
+      "site"
+    ],
+    "codename": "view_site"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Jour férié",
+    "content_type": [
+      "parametrage",
+      "jourferie"
+    ],
+    "codename": "add_jourferie"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Jour férié",
+    "content_type": [
+      "parametrage",
+      "jourferie"
+    ],
+    "codename": "change_jourferie"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Jour férié",
+    "content_type": [
+      "parametrage",
+      "jourferie"
+    ],
+    "codename": "delete_jourferie"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Jour férié",
+    "content_type": [
+      "parametrage",
+      "jourferie"
+    ],
+    "codename": "view_jourferie"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Période de disponibilité d'un site",
+    "content_type": [
+      "parametrage",
+      "periodedisponibilitesite"
+    ],
+    "codename": "add_periodedisponibilitesite"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Période de disponibilité d'un site",
+    "content_type": [
+      "parametrage",
+      "periodedisponibilitesite"
+    ],
+    "codename": "change_periodedisponibilitesite"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Période de disponibilité d'un site",
+    "content_type": [
+      "parametrage",
+      "periodedisponibilitesite"
+    ],
+    "codename": "delete_periodedisponibilitesite"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Période de disponibilité d'un site",
+    "content_type": [
+      "parametrage",
+      "periodedisponibilitesite"
+    ],
+    "codename": "view_periodedisponibilitesite"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Paramètres de formation",
+    "content_type": [
+      "parametrage",
+      "parametreformation"
+    ],
+    "codename": "add_parametreformation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Paramètres de formation",
+    "content_type": [
+      "parametrage",
+      "parametreformation"
+    ],
+    "codename": "change_parametreformation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Paramètres de formation",
+    "content_type": [
+      "parametrage",
+      "parametreformation"
+    ],
+    "codename": "delete_parametreformation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Paramètres de formation",
+    "content_type": [
+      "parametrage",
+      "parametreformation"
+    ],
+    "codename": "view_parametreformation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Type de formation",
+    "content_type": [
+      "referentiels",
+      "typeformation"
+    ],
+    "codename": "add_typeformation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Type de formation",
+    "content_type": [
+      "referentiels",
+      "typeformation"
+    ],
+    "codename": "change_typeformation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Type de formation",
+    "content_type": [
+      "referentiels",
+      "typeformation"
+    ],
+    "codename": "delete_typeformation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Type de formation",
+    "content_type": [
+      "referentiels",
+      "typeformation"
+    ],
+    "codename": "view_typeformation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Module",
+    "content_type": [
+      "referentiels",
+      "module"
+    ],
+    "codename": "add_module"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Module",
+    "content_type": [
+      "referentiels",
+      "module"
+    ],
+    "codename": "change_module"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Module",
+    "content_type": [
+      "referentiels",
+      "module"
+    ],
+    "codename": "delete_module"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Module",
+    "content_type": [
+      "referentiels",
+      "module"
+    ],
+    "codename": "view_module"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Spécialité",
+    "content_type": [
+      "referentiels",
+      "specialite"
+    ],
+    "codename": "add_specialite"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Spécialité",
+    "content_type": [
+      "referentiels",
+      "specialite"
+    ],
+    "codename": "change_specialite"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Spécialité",
+    "content_type": [
+      "referentiels",
+      "specialite"
+    ],
+    "codename": "delete_specialite"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Spécialité",
+    "content_type": [
+      "referentiels",
+      "specialite"
+    ],
+    "codename": "view_specialite"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Formation",
+    "content_type": [
+      "formations",
+      "formation"
+    ],
+    "codename": "add_formation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Formation",
+    "content_type": [
+      "formations",
+      "formation"
+    ],
+    "codename": "change_formation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Formation",
+    "content_type": [
+      "formations",
+      "formation"
+    ],
+    "codename": "delete_formation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Formation",
+    "content_type": [
+      "formations",
+      "formation"
+    ],
+    "codename": "view_formation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Module de formation",
+    "content_type": [
+      "formations",
+      "formationmodule"
+    ],
+    "codename": "add_formationmodule"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Module de formation",
+    "content_type": [
+      "formations",
+      "formationmodule"
+    ],
+    "codename": "change_formationmodule"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Module de formation",
+    "content_type": [
+      "formations",
+      "formationmodule"
+    ],
+    "codename": "delete_formationmodule"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Module de formation",
+    "content_type": [
+      "formations",
+      "formationmodule"
+    ],
+    "codename": "view_formationmodule"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Inscription",
+    "content_type": [
+      "formations",
+      "inscription"
+    ],
+    "codename": "add_inscription"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Inscription",
+    "content_type": [
+      "formations",
+      "inscription"
+    ],
+    "codename": "change_inscription"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Inscription",
+    "content_type": [
+      "formations",
+      "inscription"
+    ],
+    "codename": "delete_inscription"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Inscription",
+    "content_type": [
+      "formations",
+      "inscription"
+    ],
+    "codename": "view_inscription"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Affectation formateur/groupe",
+    "content_type": [
+      "formations",
+      "affectationformateurgroupe"
+    ],
+    "codename": "add_affectationformateurgroupe"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Affectation formateur/groupe",
+    "content_type": [
+      "formations",
+      "affectationformateurgroupe"
+    ],
+    "codename": "change_affectationformateurgroupe"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Affectation formateur/groupe",
+    "content_type": [
+      "formations",
+      "affectationformateurgroupe"
+    ],
+    "codename": "delete_affectationformateurgroupe"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Affectation formateur/groupe",
+    "content_type": [
+      "formations",
+      "affectationformateurgroupe"
+    ],
+    "codename": "view_affectationformateurgroupe"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Formateur",
+    "content_type": [
+      "formations",
+      "formateur"
+    ],
+    "codename": "add_formateur"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Formateur",
+    "content_type": [
+      "formations",
+      "formateur"
+    ],
+    "codename": "change_formateur"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Formateur",
+    "content_type": [
+      "formations",
+      "formateur"
+    ],
+    "codename": "delete_formateur"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Formateur",
+    "content_type": [
+      "formations",
+      "formateur"
+    ],
+    "codename": "view_formateur"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Période de formation",
+    "content_type": [
+      "formations",
+      "formationperiode"
+    ],
+    "codename": "add_formationperiode"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Période de formation",
+    "content_type": [
+      "formations",
+      "formationperiode"
+    ],
+    "codename": "change_formationperiode"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Période de formation",
+    "content_type": [
+      "formations",
+      "formationperiode"
+    ],
+    "codename": "delete_formationperiode"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Période de formation",
+    "content_type": [
+      "formations",
+      "formationperiode"
+    ],
+    "codename": "view_formationperiode"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Responsable d'unité pédagogique",
+    "content_type": [
+      "formations",
+      "responsableunitepedagogique"
+    ],
+    "codename": "add_responsableunitepedagogique"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Responsable d'unité pédagogique",
+    "content_type": [
+      "formations",
+      "responsableunitepedagogique"
+    ],
+    "codename": "change_responsableunitepedagogique"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Responsable d'unité pédagogique",
+    "content_type": [
+      "formations",
+      "responsableunitepedagogique"
+    ],
+    "codename": "delete_responsableunitepedagogique"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Responsable d'unité pédagogique",
+    "content_type": [
+      "formations",
+      "responsableunitepedagogique"
+    ],
+    "codename": "view_responsableunitepedagogique"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Auditeur",
+    "content_type": [
+      "auditeurs",
+      "auditeur"
+    ],
+    "codename": "add_auditeur"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Auditeur",
+    "content_type": [
+      "auditeurs",
+      "auditeur"
+    ],
+    "codename": "change_auditeur"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Auditeur",
+    "content_type": [
+      "auditeurs",
+      "auditeur"
+    ],
+    "codename": "delete_auditeur"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Auditeur",
+    "content_type": [
+      "auditeurs",
+      "auditeur"
+    ],
+    "codename": "view_auditeur"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Groupe",
+    "content_type": [
+      "groupes",
+      "groupe"
+    ],
+    "codename": "add_groupe"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Groupe",
+    "content_type": [
+      "groupes",
+      "groupe"
+    ],
+    "codename": "change_groupe"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Groupe",
+    "content_type": [
+      "groupes",
+      "groupe"
+    ],
+    "codename": "delete_groupe"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Groupe",
+    "content_type": [
+      "groupes",
+      "groupe"
+    ],
+    "codename": "view_groupe"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Membre du groupe",
+    "content_type": [
+      "groupes",
+      "groupeauditeur"
+    ],
+    "codename": "add_groupeauditeur"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Membre du groupe",
+    "content_type": [
+      "groupes",
+      "groupeauditeur"
+    ],
+    "codename": "change_groupeauditeur"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Membre du groupe",
+    "content_type": [
+      "groupes",
+      "groupeauditeur"
+    ],
+    "codename": "delete_groupeauditeur"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Membre du groupe",
+    "content_type": [
+      "groupes",
+      "groupeauditeur"
+    ],
+    "codename": "view_groupeauditeur"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Configuration du groupe",
+    "content_type": [
+      "groupes",
+      "configgroupe"
+    ],
+    "codename": "add_configgroupe"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Configuration du groupe",
+    "content_type": [
+      "groupes",
+      "configgroupe"
+    ],
+    "codename": "change_configgroupe"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Configuration du groupe",
+    "content_type": [
+      "groupes",
+      "configgroupe"
+    ],
+    "codename": "delete_configgroupe"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Configuration du groupe",
+    "content_type": [
+      "groupes",
+      "configgroupe"
+    ],
+    "codename": "view_configgroupe"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Jour de cours",
+    "content_type": [
+      "groupes",
+      "jourcours"
+    ],
+    "codename": "add_jourcours"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Jour de cours",
+    "content_type": [
+      "groupes",
+      "jourcours"
+    ],
+    "codename": "change_jourcours"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Jour de cours",
+    "content_type": [
+      "groupes",
+      "jourcours"
+    ],
+    "codename": "delete_jourcours"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Jour de cours",
+    "content_type": [
+      "groupes",
+      "jourcours"
+    ],
+    "codename": "view_jourcours"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Séance",
+    "content_type": [
+      "seances",
+      "seance"
+    ],
+    "codename": "add_seance"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Séance",
+    "content_type": [
+      "seances",
+      "seance"
+    ],
+    "codename": "change_seance"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Séance",
+    "content_type": [
+      "seances",
+      "seance"
+    ],
+    "codename": "delete_seance"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Séance",
+    "content_type": [
+      "seances",
+      "seance"
+    ],
+    "codename": "view_seance"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Audit planning",
+    "content_type": [
+      "seances",
+      "planningauditlog"
+    ],
+    "codename": "add_planningauditlog"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Audit planning",
+    "content_type": [
+      "seances",
+      "planningauditlog"
+    ],
+    "codename": "change_planningauditlog"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Audit planning",
+    "content_type": [
+      "seances",
+      "planningauditlog"
+    ],
+    "codename": "delete_planningauditlog"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Audit planning",
+    "content_type": [
+      "seances",
+      "planningauditlog"
+    ],
+    "codename": "view_planningauditlog"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Rapport de planning",
+    "content_type": [
+      "seances",
+      "planningrun"
+    ],
+    "codename": "add_planningrun"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Rapport de planning",
+    "content_type": [
+      "seances",
+      "planningrun"
+    ],
+    "codename": "change_planningrun"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Rapport de planning",
+    "content_type": [
+      "seances",
+      "planningrun"
+    ],
+    "codename": "delete_planningrun"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Rapport de planning",
+    "content_type": [
+      "seances",
+      "planningrun"
+    ],
+    "codename": "view_planningrun"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can add Scénario de simulation",
+    "content_type": [
+      "simulation",
+      "scenariosimulation"
+    ],
+    "codename": "add_scenariosimulation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can change Scénario de simulation",
+    "content_type": [
+      "simulation",
+      "scenariosimulation"
+    ],
+    "codename": "change_scenariosimulation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can delete Scénario de simulation",
+    "content_type": [
+      "simulation",
+      "scenariosimulation"
+    ],
+    "codename": "delete_scenariosimulation"
+  }
+},
+{
+  "model": "auth.permission",
+  "fields": {
+    "name": "Can view Scénario de simulation",
+    "content_type": [
+      "simulation",
+      "scenariosimulation"
+    ],
+    "codename": "view_scenariosimulation"
+  }
+},
+{
+  "model": "auth.group",
+  "fields": {
+    "name": "ADMIN_EDT",
+    "permissions": [
+      [
+        "add_auditeur",
+        "auditeurs",
+        "auditeur"
+      ],
+      [
+        "change_auditeur",
+        "auditeurs",
+        "auditeur"
+      ],
+      [
+        "delete_auditeur",
+        "auditeurs",
+        "auditeur"
+      ],
+      [
+        "view_auditeur",
+        "auditeurs",
+        "auditeur"
+      ],
+      [
+        "add_affectationformateurgroupe",
+        "formations",
+        "affectationformateurgroupe"
+      ],
+      [
+        "change_affectationformateurgroupe",
+        "formations",
+        "affectationformateurgroupe"
+      ],
+      [
+        "delete_affectationformateurgroupe",
+        "formations",
+        "affectationformateurgroupe"
+      ],
+      [
+        "view_affectationformateurgroupe",
+        "formations",
+        "affectationformateurgroupe"
+      ],
+      [
+        "add_formateur",
+        "formations",
+        "formateur"
+      ],
+      [
+        "change_formateur",
+        "formations",
+        "formateur"
+      ],
+      [
+        "delete_formateur",
+        "formations",
+        "formateur"
+      ],
+      [
+        "view_formateur",
+        "formations",
+        "formateur"
+      ],
+      [
+        "add_formation",
+        "formations",
+        "formation"
+      ],
+      [
+        "change_formation",
+        "formations",
+        "formation"
+      ],
+      [
+        "delete_formation",
+        "formations",
+        "formation"
+      ],
+      [
+        "view_formation",
+        "formations",
+        "formation"
+      ],
+      [
+        "add_formationmodule",
+        "formations",
+        "formationmodule"
+      ],
+      [
+        "change_formationmodule",
+        "formations",
+        "formationmodule"
+      ],
+      [
+        "delete_formationmodule",
+        "formations",
+        "formationmodule"
+      ],
+      [
+        "view_formationmodule",
+        "formations",
+        "formationmodule"
+      ],
+      [
+        "add_inscription",
+        "formations",
+        "inscription"
+      ],
+      [
+        "change_inscription",
+        "formations",
+        "inscription"
+      ],
+      [
+        "delete_inscription",
+        "formations",
+        "inscription"
+      ],
+      [
+        "view_inscription",
+        "formations",
+        "inscription"
+      ],
+      [
+        "add_configgroupe",
+        "groupes",
+        "configgroupe"
+      ],
+      [
+        "change_configgroupe",
+        "groupes",
+        "configgroupe"
+      ],
+      [
+        "delete_configgroupe",
+        "groupes",
+        "configgroupe"
+      ],
+      [
+        "view_configgroupe",
+        "groupes",
+        "configgroupe"
+      ],
+      [
+        "add_groupe",
+        "groupes",
+        "groupe"
+      ],
+      [
+        "change_groupe",
+        "groupes",
+        "groupe"
+      ],
+      [
+        "delete_groupe",
+        "groupes",
+        "groupe"
+      ],
+      [
+        "view_groupe",
+        "groupes",
+        "groupe"
+      ],
+      [
+        "add_groupeauditeur",
+        "groupes",
+        "groupeauditeur"
+      ],
+      [
+        "change_groupeauditeur",
+        "groupes",
+        "groupeauditeur"
+      ],
+      [
+        "delete_groupeauditeur",
+        "groupes",
+        "groupeauditeur"
+      ],
+      [
+        "view_groupeauditeur",
+        "groupes",
+        "groupeauditeur"
+      ],
+      [
+        "add_jourcours",
+        "groupes",
+        "jourcours"
+      ],
+      [
+        "change_jourcours",
+        "groupes",
+        "jourcours"
+      ],
+      [
+        "delete_jourcours",
+        "groupes",
+        "jourcours"
+      ],
+      [
+        "view_jourcours",
+        "groupes",
+        "jourcours"
+      ],
+      [
+        "add_batiment",
+        "parametrage",
+        "batiment"
+      ],
+      [
+        "change_batiment",
+        "parametrage",
+        "batiment"
+      ],
+      [
+        "delete_batiment",
+        "parametrage",
+        "batiment"
+      ],
+      [
+        "view_batiment",
+        "parametrage",
+        "batiment"
+      ],
+      [
+        "add_grade",
+        "parametrage",
+        "grade"
+      ],
+      [
+        "change_grade",
+        "parametrage",
+        "grade"
+      ],
+      [
+        "delete_grade",
+        "parametrage",
+        "grade"
+      ],
+      [
+        "view_grade",
+        "parametrage",
+        "grade"
+      ],
+      [
+        "add_jourferie",
+        "parametrage",
+        "jourferie"
+      ],
+      [
+        "change_jourferie",
+        "parametrage",
+        "jourferie"
+      ],
+      [
+        "delete_jourferie",
+        "parametrage",
+        "jourferie"
+      ],
+      [
+        "view_jourferie",
+        "parametrage",
+        "jourferie"
+      ],
+      [
+        "add_moduletypeformation",
+        "parametrage",
+        "moduletypeformation"
+      ],
+      [
+        "change_moduletypeformation",
+        "parametrage",
+        "moduletypeformation"
+      ],
+      [
+        "delete_moduletypeformation",
+        "parametrage",
+        "moduletypeformation"
+      ],
+      [
+        "view_moduletypeformation",
+        "parametrage",
+        "moduletypeformation"
+      ],
+      [
+        "add_parametreformation",
+        "parametrage",
+        "parametreformation"
+      ],
+      [
+        "change_parametreformation",
+        "parametrage",
+        "parametreformation"
+      ],
+      [
+        "delete_parametreformation",
+        "parametrage",
+        "parametreformation"
+      ],
+      [
+        "view_parametreformation",
+        "parametrage",
+        "parametreformation"
+      ],
+      [
+        "add_parametregeneral",
+        "parametrage",
+        "parametregeneral"
+      ],
+      [
+        "change_parametregeneral",
+        "parametrage",
+        "parametregeneral"
+      ],
+      [
+        "delete_parametregeneral",
+        "parametrage",
+        "parametregeneral"
+      ],
+      [
+        "view_parametregeneral",
+        "parametrage",
+        "parametregeneral"
+      ],
+      [
+        "add_periodedisponibilitesite",
+        "parametrage",
+        "periodedisponibilitesite"
+      ],
+      [
+        "change_periodedisponibilitesite",
+        "parametrage",
+        "periodedisponibilitesite"
+      ],
+      [
+        "delete_periodedisponibilitesite",
+        "parametrage",
+        "periodedisponibilitesite"
+      ],
+      [
+        "view_periodedisponibilitesite",
+        "parametrage",
+        "periodedisponibilitesite"
+      ],
+      [
+        "add_salle",
+        "parametrage",
+        "salle"
+      ],
+      [
+        "change_salle",
+        "parametrage",
+        "salle"
+      ],
+      [
+        "delete_salle",
+        "parametrage",
+        "salle"
+      ],
+      [
+        "view_salle",
+        "parametrage",
+        "salle"
+      ],
+      [
+        "add_site",
+        "parametrage",
+        "site"
+      ],
+      [
+        "change_site",
+        "parametrage",
+        "site"
+      ],
+      [
+        "delete_site",
+        "parametrage",
+        "site"
+      ],
+      [
+        "view_site",
+        "parametrage",
+        "site"
+      ],
+      [
+        "add_vague",
+        "parametrage",
+        "vague"
+      ],
+      [
+        "change_vague",
+        "parametrage",
+        "vague"
+      ],
+      [
+        "delete_vague",
+        "parametrage",
+        "vague"
+      ],
+      [
+        "view_vague",
+        "parametrage",
+        "vague"
+      ],
+      [
+        "add_module",
+        "referentiels",
+        "module"
+      ],
+      [
+        "change_module",
+        "referentiels",
+        "module"
+      ],
+      [
+        "delete_module",
+        "referentiels",
+        "module"
+      ],
+      [
+        "view_module",
+        "referentiels",
+        "module"
+      ],
+      [
+        "add_specialite",
+        "referentiels",
+        "specialite"
+      ],
+      [
+        "change_specialite",
+        "referentiels",
+        "specialite"
+      ],
+      [
+        "delete_specialite",
+        "referentiels",
+        "specialite"
+      ],
+      [
+        "view_specialite",
+        "referentiels",
+        "specialite"
+      ],
+      [
+        "add_typeformation",
+        "referentiels",
+        "typeformation"
+      ],
+      [
+        "change_typeformation",
+        "referentiels",
+        "typeformation"
+      ],
+      [
+        "delete_typeformation",
+        "referentiels",
+        "typeformation"
+      ],
+      [
+        "view_typeformation",
+        "referentiels",
+        "typeformation"
+      ],
+      [
+        "add_planningauditlog",
+        "seances",
+        "planningauditlog"
+      ],
+      [
+        "change_planningauditlog",
+        "seances",
+        "planningauditlog"
+      ],
+      [
+        "delete_planningauditlog",
+        "seances",
+        "planningauditlog"
+      ],
+      [
+        "view_planningauditlog",
+        "seances",
+        "planningauditlog"
+      ],
+      [
+        "add_planningrun",
+        "seances",
+        "planningrun"
+      ],
+      [
+        "change_planningrun",
+        "seances",
+        "planningrun"
+      ],
+      [
+        "delete_planningrun",
+        "seances",
+        "planningrun"
+      ],
+      [
+        "view_planningrun",
+        "seances",
+        "planningrun"
+      ],
+      [
+        "add_seance",
+        "seances",
+        "seance"
+      ],
+      [
+        "change_seance",
+        "seances",
+        "seance"
+      ],
+      [
+        "delete_seance",
+        "seances",
+        "seance"
+      ],
+      [
+        "view_seance",
+        "seances",
+        "seance"
+      ],
+      [
+        "add_scenariosimulation",
+        "simulation",
+        "scenariosimulation"
+      ],
+      [
+        "change_scenariosimulation",
+        "simulation",
+        "scenariosimulation"
+      ],
+      [
+        "delete_scenariosimulation",
+        "simulation",
+        "scenariosimulation"
+      ],
+      [
+        "view_scenariosimulation",
+        "simulation",
+        "scenariosimulation"
+      ]
+    ]
+  }
+},
+{
+  "model": "auth.group",
+  "fields": {
+    "name": "GESTIONNAIRE_EDT",
+    "permissions": [
+      [
+        "add_auditeur",
+        "auditeurs",
+        "auditeur"
+      ],
+      [
+        "change_auditeur",
+        "auditeurs",
+        "auditeur"
+      ],
+      [
+        "delete_auditeur",
+        "auditeurs",
+        "auditeur"
+      ],
+      [
+        "view_auditeur",
+        "auditeurs",
+        "auditeur"
+      ],
+      [
+        "add_affectationformateurgroupe",
+        "formations",
+        "affectationformateurgroupe"
+      ],
+      [
+        "change_affectationformateurgroupe",
+        "formations",
+        "affectationformateurgroupe"
+      ],
+      [
+        "delete_affectationformateurgroupe",
+        "formations",
+        "affectationformateurgroupe"
+      ],
+      [
+        "view_affectationformateurgroupe",
+        "formations",
+        "affectationformateurgroupe"
+      ],
+      [
+        "add_formateur",
+        "formations",
+        "formateur"
+      ],
+      [
+        "change_formateur",
+        "formations",
+        "formateur"
+      ],
+      [
+        "delete_formateur",
+        "formations",
+        "formateur"
+      ],
+      [
+        "view_formateur",
+        "formations",
+        "formateur"
+      ],
+      [
+        "add_formation",
+        "formations",
+        "formation"
+      ],
+      [
+        "change_formation",
+        "formations",
+        "formation"
+      ],
+      [
+        "delete_formation",
+        "formations",
+        "formation"
+      ],
+      [
+        "view_formation",
+        "formations",
+        "formation"
+      ],
+      [
+        "add_formationmodule",
+        "formations",
+        "formationmodule"
+      ],
+      [
+        "change_formationmodule",
+        "formations",
+        "formationmodule"
+      ],
+      [
+        "delete_formationmodule",
+        "formations",
+        "formationmodule"
+      ],
+      [
+        "view_formationmodule",
+        "formations",
+        "formationmodule"
+      ],
+      [
+        "add_inscription",
+        "formations",
+        "inscription"
+      ],
+      [
+        "change_inscription",
+        "formations",
+        "inscription"
+      ],
+      [
+        "delete_inscription",
+        "formations",
+        "inscription"
+      ],
+      [
+        "view_inscription",
+        "formations",
+        "inscription"
+      ],
+      [
+        "add_configgroupe",
+        "groupes",
+        "configgroupe"
+      ],
+      [
+        "change_configgroupe",
+        "groupes",
+        "configgroupe"
+      ],
+      [
+        "delete_configgroupe",
+        "groupes",
+        "configgroupe"
+      ],
+      [
+        "view_configgroupe",
+        "groupes",
+        "configgroupe"
+      ],
+      [
+        "add_groupe",
+        "groupes",
+        "groupe"
+      ],
+      [
+        "change_groupe",
+        "groupes",
+        "groupe"
+      ],
+      [
+        "delete_groupe",
+        "groupes",
+        "groupe"
+      ],
+      [
+        "view_groupe",
+        "groupes",
+        "groupe"
+      ],
+      [
+        "add_groupeauditeur",
+        "groupes",
+        "groupeauditeur"
+      ],
+      [
+        "change_groupeauditeur",
+        "groupes",
+        "groupeauditeur"
+      ],
+      [
+        "delete_groupeauditeur",
+        "groupes",
+        "groupeauditeur"
+      ],
+      [
+        "view_groupeauditeur",
+        "groupes",
+        "groupeauditeur"
+      ],
+      [
+        "add_jourcours",
+        "groupes",
+        "jourcours"
+      ],
+      [
+        "change_jourcours",
+        "groupes",
+        "jourcours"
+      ],
+      [
+        "delete_jourcours",
+        "groupes",
+        "jourcours"
+      ],
+      [
+        "view_jourcours",
+        "groupes",
+        "jourcours"
+      ],
+      [
+        "view_batiment",
+        "parametrage",
+        "batiment"
+      ],
+      [
+        "view_grade",
+        "parametrage",
+        "grade"
+      ],
+      [
+        "view_jourferie",
+        "parametrage",
+        "jourferie"
+      ],
+      [
+        "view_moduletypeformation",
+        "parametrage",
+        "moduletypeformation"
+      ],
+      [
+        "view_parametreformation",
+        "parametrage",
+        "parametreformation"
+      ],
+      [
+        "view_parametregeneral",
+        "parametrage",
+        "parametregeneral"
+      ],
+      [
+        "view_periodedisponibilitesite",
+        "parametrage",
+        "periodedisponibilitesite"
+      ],
+      [
+        "view_salle",
+        "parametrage",
+        "salle"
+      ],
+      [
+        "view_site",
+        "parametrage",
+        "site"
+      ],
+      [
+        "view_vague",
+        "parametrage",
+        "vague"
+      ],
+      [
+        "add_module",
+        "referentiels",
+        "module"
+      ],
+      [
+        "change_module",
+        "referentiels",
+        "module"
+      ],
+      [
+        "delete_module",
+        "referentiels",
+        "module"
+      ],
+      [
+        "view_module",
+        "referentiels",
+        "module"
+      ],
+      [
+        "add_specialite",
+        "referentiels",
+        "specialite"
+      ],
+      [
+        "change_specialite",
+        "referentiels",
+        "specialite"
+      ],
+      [
+        "delete_specialite",
+        "referentiels",
+        "specialite"
+      ],
+      [
+        "view_specialite",
+        "referentiels",
+        "specialite"
+      ],
+      [
+        "add_typeformation",
+        "referentiels",
+        "typeformation"
+      ],
+      [
+        "change_typeformation",
+        "referentiels",
+        "typeformation"
+      ],
+      [
+        "delete_typeformation",
+        "referentiels",
+        "typeformation"
+      ],
+      [
+        "view_typeformation",
+        "referentiels",
+        "typeformation"
+      ],
+      [
+        "view_planningauditlog",
+        "seances",
+        "planningauditlog"
+      ],
+      [
+        "view_planningrun",
+        "seances",
+        "planningrun"
+      ],
+      [
+        "add_seance",
+        "seances",
+        "seance"
+      ],
+      [
+        "change_seance",
+        "seances",
+        "seance"
+      ],
+      [
+        "delete_seance",
+        "seances",
+        "seance"
+      ],
+      [
+        "view_seance",
+        "seances",
+        "seance"
+      ],
+      [
+        "add_scenariosimulation",
+        "simulation",
+        "scenariosimulation"
+      ],
+      [
+        "change_scenariosimulation",
+        "simulation",
+        "scenariosimulation"
+      ],
+      [
+        "delete_scenariosimulation",
+        "simulation",
+        "scenariosimulation"
+      ],
+      [
+        "view_scenariosimulation",
+        "simulation",
+        "scenariosimulation"
+      ]
+    ]
+  }
+},
+{
+  "model": "auth.group",
+  "fields": {
+    "name": "DIRECTION_EDT",
+    "permissions": [
+      [
+        "view_auditeur",
+        "auditeurs",
+        "auditeur"
+      ],
+      [
+        "view_affectationformateurgroupe",
+        "formations",
+        "affectationformateurgroupe"
+      ],
+      [
+        "view_formateur",
+        "formations",
+        "formateur"
+      ],
+      [
+        "view_formation",
+        "formations",
+        "formation"
+      ],
+      [
+        "view_formationmodule",
+        "formations",
+        "formationmodule"
+      ],
+      [
+        "view_inscription",
+        "formations",
+        "inscription"
+      ],
+      [
+        "view_configgroupe",
+        "groupes",
+        "configgroupe"
+      ],
+      [
+        "view_groupe",
+        "groupes",
+        "groupe"
+      ],
+      [
+        "view_groupeauditeur",
+        "groupes",
+        "groupeauditeur"
+      ],
+      [
+        "view_jourcours",
+        "groupes",
+        "jourcours"
+      ],
+      [
+        "view_batiment",
+        "parametrage",
+        "batiment"
+      ],
+      [
+        "view_grade",
+        "parametrage",
+        "grade"
+      ],
+      [
+        "view_jourferie",
+        "parametrage",
+        "jourferie"
+      ],
+      [
+        "view_moduletypeformation",
+        "parametrage",
+        "moduletypeformation"
+      ],
+      [
+        "view_parametreformation",
+        "parametrage",
+        "parametreformation"
+      ],
+      [
+        "view_parametregeneral",
+        "parametrage",
+        "parametregeneral"
+      ],
+      [
+        "view_periodedisponibilitesite",
+        "parametrage",
+        "periodedisponibilitesite"
+      ],
+      [
+        "view_salle",
+        "parametrage",
+        "salle"
+      ],
+      [
+        "view_site",
+        "parametrage",
+        "site"
+      ],
+      [
+        "view_vague",
+        "parametrage",
+        "vague"
+      ],
+      [
+        "view_module",
+        "referentiels",
+        "module"
+      ],
+      [
+        "view_specialite",
+        "referentiels",
+        "specialite"
+      ],
+      [
+        "view_typeformation",
+        "referentiels",
+        "typeformation"
+      ],
+      [
+        "view_planningauditlog",
+        "seances",
+        "planningauditlog"
+      ],
+      [
+        "view_planningrun",
+        "seances",
+        "planningrun"
+      ],
+      [
+        "view_seance",
+        "seances",
+        "seance"
+      ],
+      [
+        "view_scenariosimulation",
+        "simulation",
+        "scenariosimulation"
+      ]
+    ]
+  }
+},
+{
+  "model": "auth.group",
+  "fields": {
+    "name": "RUP_EDT",
+    "permissions": [
+      [
+        "add_affectationformateurgroupe",
+        "formations",
+        "affectationformateurgroupe"
+      ],
+      [
+        "change_affectationformateurgroupe",
+        "formations",
+        "affectationformateurgroupe"
+      ],
+      [
+        "delete_affectationformateurgroupe",
+        "formations",
+        "affectationformateurgroupe"
+      ],
+      [
+        "view_affectationformateurgroupe",
+        "formations",
+        "affectationformateurgroupe"
+      ],
+      [
+        "add_formateur",
+        "formations",
+        "formateur"
+      ],
+      [
+        "change_formateur",
+        "formations",
+        "formateur"
+      ],
+      [
+        "view_formateur",
+        "formations",
+        "formateur"
+      ],
+      [
+        "view_formation",
+        "formations",
+        "formation"
+      ],
+      [
+        "view_formationmodule",
+        "formations",
+        "formationmodule"
+      ],
+      [
+        "view_groupe",
+        "groupes",
+        "groupe"
+      ],
+      [
+        "view_seance",
+        "seances",
+        "seance"
+      ]
+    ]
+  }
+},
+{
+  "model": "auth.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$GXGWJKM4qEFLC6HLlgckkp$cVBllScDFwnF+tQ4c2z+VIHHam15rRihFM7o2MsFfdI=",
+    "last_login": "2026-11-25T18:41:48.716Z",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "admin@example.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-11-25T17:52:29.338Z",
+    "groups": [
+      [
+        "ADMIN_EDT"
+      ]
+    ],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$nO4LflK5NdNs2ltgrSRV85$SifCje7TJzhGuby704Odt3KqpWD5TAWlOeqGw9+lL70=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "rup_pedago",
+    "first_name": "",
+    "last_name": "",
+    "email": "rup.pedago@injs.ci",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-11-25T18:37:38.536Z",
+    "groups": [
+      [
+        "RUP_EDT"
+      ]
+    ],
+    "user_permissions": []
+  }
+},
+{
+  "model": "formations.formation",
+  "pk": 1,
+  "fields": {
+    "type_formation": 1,
+    "intitule": "Formation Continue des Cadres Sportifs — Session INJS",
+    "vague": "2026-A",
+    "date_debut": "2026-11-02",
+    "date_fin": "2026-12-18",
+    "planning_union_sites_programme": false,
+    "rythme_mensuel": "4",
+    "responsable": [
+      "admin"
+    ],
+    "created_at": "2026-11-25T18:39:41.488Z"
+  }
+},
+{
+  "model": "formations.responsableunitepedagogique",
+  "pk": 1,
+  "fields": {
+    "user": [
+      "rup_pedago"
+    ],
+    "module": 1,
+    "created_at": "2026-11-25T18:37:38.970Z"
+  }
+},
+{
+  "model": "seances.planningauditlog",
+  "pk": 1,
+  "fields": {
+    "actor": [
+      "admin"
+    ],
+    "action": "EXPORT",
+    "groupe": null,
+    "seance": null,
+    "details": {
+      "format_export": "docx_synthese_up",
+      "scope": "formation_module",
+      "formation_id": 1,
+      "module_id": 1
+    },
+    "created_at": "2026-11-25T18:41:49.186Z"
+  }
+},
+{
+  "model": "seances.planningauditlog",
+  "pk": 2,
+  "fields": {
+    "actor": [
+      "admin"
+    ],
+    "action": "EXPORT",
+    "groupe": null,
+    "seance": null,
+    "details": {
+      "format_export": "seances",
+      "scope": "formation_zip",
+      "formation_id": 1
+    },
+    "created_at": "2026-11-25T18:41:49.239Z"
+  }
+},
+{
+  "model": "seances.planningrun",
+  "pk": 1,
+  "fields": {
+    "formation": 1,
+    "actor": [
+      "admin"
+    ],
+    "mode": "best_effort",
+    "statut": "done",
+    "synthese": {
+      "nb_groupes": 3,
+      "nb_groupes_ok": 3,
+      "nb_groupes_partiels": 0,
+      "nb_groupes_erreur": 0,
+      "nb_seances_total": 36
+    },
+    "groupes": [
+      {
+        "groupe_id": 1,
+        "nom": "A3_GROUPE1",
+        "status": "ok",
+        "nb_seances": 12,
+        "echecs_modules": [],
+        "error": null
+      },
+      {
+        "groupe_id": 2,
+        "nom": "A3_GROUPE2",
+        "status": "ok",
+        "nb_seances": 12,
+        "echecs_modules": [],
+        "error": null
+      },
+      {
+        "groupe_id": 3,
+        "nom": "A4_GROUPE1",
+        "status": "ok",
+        "nb_seances": 12,
+        "echecs_modules": [],
+        "error": null
+      }
+    ],
+    "created_at": "2026-11-25T18:40:11.620Z",
+    "finished_at": "2026-11-25T18:40:11.742Z"
+  }
+},
+{
+  "model": "simulation.scenariosimulation",
+  "pk": 1,
+  "fields": {
+    "auteur": [
+      "admin"
+    ],
+    "libelle": "Scénario Rentrée INJS 2026-2027 (Cohorte 40 auditeurs)",
+    "payload": [
+      {
+        "intitule": "Formation Continue des Cadres Sportifs — Session INJS",
+        "effectif": 40,
+        "max_par_groupe": 25,
+        "volume_horaire_total": 48,
+        "duree_seance_minutes": 240,
+        "seances_par_jour": 2,
+        "jours_par_semaine": 5
+      }
+    ],
+    "marge_pct": 20,
+    "created_at": "2026-11-25T18:40:11.753Z",
+    "updated_at": "2026-11-25T18:40:11.753Z"
+  }
+}
+]

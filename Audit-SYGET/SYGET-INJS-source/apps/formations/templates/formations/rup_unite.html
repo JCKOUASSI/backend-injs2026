@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Mon UP — {{ formation.intitule }}{% endblock %}
+{% block nav_formations %}active-link{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+      <h1 class="fw-bold mb-1" style="font-size:1.7rem;color:#0f172a;">
+        <i class="bi bi-mortarboard-fill me-2 text-primary"></i>Mon module
+        {% if module_rup %}<span class="text-primary">{{ module_rup.titre }}</span>{% endif %}
+      </h1>
+      <p class="text-muted mb-0">
+        {{ formation.intitule }}
+        <span class="badge ms-1" style="background:#eff6ff;color:#1d4ed8;">{{ formation.type_formation.code }}</span>
+      </p>
+      {% if perimetre_partiel and module_rup %}
+      <p class="small text-info mb-0 mt-2">
+        <i class="bi bi-info-circle me-1"></i>
+        Seuls les formateurs ayant la spécialité du module
+        {% if module_rup.specialite %}({{ module_rup.specialite.code }}){% endif %}
+        sont proposés à l'affectation.
+      </p>
+      {% elif perimetre_partiel %}
+      <p class="small text-info mb-0 mt-2">
+        <i class="bi bi-info-circle me-1"></i>
+        Vous ne voyez que votre module (matière référentiel), dans tous les groupes de cette formation.
+      </p>
+      {% endif %}
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'groupes:list' formation.pk %}" class="btn btn-outline-primary rounded-pill px-3">
+        <i class="bi bi-people me-1"></i>Groupes
+      </a>
+      <a href="{% url 'formations:detail' formation.pk %}" class="btn btn-outline-secondary rounded-pill px-3">
+        Formation
+      </a>
+      <a href="{% url 'formations:list' %}" class="btn btn-outline-secondary rounded-pill px-3">
+        ← Formations
+      </a>
+    </div>
+  </div>
+
+  {% if messages %}
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3">
+    {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  {% for section in sections %}
+  {% with fm=section.formation_module %}
+  <div class="card shadow-sm mb-4">
+    <div class="card-header py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h2 class="h5 fw-bold mb-0">{{ fm.module.titre }}</h2>
+        <small class="text-muted">
+          {% if fm.grade_cible %}Grade {{ fm.grade_cible }} · {% endif %}
+          {{ fm.date_debut|date:"d/m/Y" }} — {{ fm.date_fin|date:"d/m/Y" }}
+        </small>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{% url 'seances:formation_module_synthese_docx' formation.pk fm.module.pk %}"
+           class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-file-word me-1"></i>Synthèse UP DOCX
+        </a>
+        <a href="{% url 'formations:formateurs_list' %}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-person-badge me-1"></i>Référentiel formateurs
+        </a>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="px-4">Groupe</th>
+              <th>Formateur affecté</th>
+              <th class="pe-4" style="min-width:280px;">Choisir / modifier</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in section.rows %}
+            <tr>
+              <td class="px-4 fw-semibold">{{ row.groupe.nom }}</td>
+              <td>
+                {% if row.affectation %}
+                {{ row.affectation.formateur.nom }} {{ row.affectation.formateur.prenom }}
+                <span class="text-muted small">({{ row.affectation.formateur.numero }})</span>
+                {% else %}
+                <span class="text-muted">— Non affecté —</span>
+                {% endif %}
+              </td>
+              <td class="pe-4">
+                {% if peut_affecter_formateur %}
+                <form method="post"
+                      action="{% url 'formations:rup_affectation' formation.pk row.groupe.pk fm.module.pk %}"
+                      class="d-flex gap-2 align-items-center">
+                  {% csrf_token %}
+                  <select name="formateur_id" class="form-select form-select-sm">
+                    <option value="">— Retirer l'affectation —</option>
+                    {% for f in formateurs %}
+                    <option value="{{ f.pk }}"
+                            {% if row.affectation and row.affectation.formateur_id == f.pk %}selected{% endif %}>
+                      {{ f.nom }} {{ f.prenom }} ({{ f.numero }})
+                    </option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="btn btn-sm btn-primary text-nowrap">Enregistrer</button>
+                </form>
+                {% else %}
+                —
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="3" class="text-center text-muted py-4">Aucun groupe sur cette formation.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if section.seances %}
+    <div class="card-footer bg-light border-top">
+      <h3 class="h6 fw-semibold mb-3">
+        <i class="bi bi-calendar3 me-1"></i>Séances planifiées — {{ fm.module.titre }}
+      </h3>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Groupe</th>
+              <th>Date</th>
+              <th>Horaires</th>
+              <th>Formateur (séance)</th>
+              <th>Salle</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in section.seances %}
+            <tr>
+              <td>{{ s.groupe.nom }}</td>
+              <td>{{ s.date|date:"d/m/Y" }}</td>
+              <td class="font-monospace">{{ s.heure_debut|time:"H:i" }}–{{ s.heure_fin|time:"H:i" }}</td>
+              <td>{{ s.formateur_libelle|default:"—" }}</td>
+              <td>{{ s.salle_nom|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endwith %}
+  {% empty %}
+  <div class="alert alert-warning">Votre module ne figure pas dans le programme de cette formation.</div>
+  {% endfor %}
+</div>
+{% endblock %}

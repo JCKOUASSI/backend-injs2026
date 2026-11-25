@@ -1,0 +1,1028 @@
+{
+  "application": "SYGET-INJS (Système de Gestion des Emplois du Temps — INJS Abidjan)",
+  "menus_navigation_principale": [
+    {
+      "ordre": 1,
+      "section": "Barre latérale principale",
+      "libelle": "Accueil (Tableau de bord)",
+      "icone": "bi-house-door",
+      "url": "/accueil/",
+      "route_django": "home",
+      "permission_requise": "Authentifié (LoginRequired)",
+      "roles_autorises": "Superuser, ADMIN_EDT, GESTIONNAIRE_EDT, DIRECTION_EDT, RUP_EDT"
+    },
+    {
+      "ordre": 2,
+      "section": "Barre latérale principale",
+      "libelle": "Formations",
+      "icone": "bi-journal-bookmark",
+      "url": "/formations/",
+      "route_django": "formations:list",
+      "permission_requise": "formations.view_formation",
+      "roles_autorises": "Superuser, ADMIN_EDT, GESTIONNAIRE_EDT, DIRECTION_EDT, RUP_EDT"
+    },
+    {
+      "ordre": 3,
+      "section": "Barre latérale principale",
+      "libelle": "Auditeurs",
+      "icone": "bi-people",
+      "url": "/auditeurs/",
+      "route_django": "auditeurs:list",
+      "permission_requise": "auditeurs.view_auditeur",
+      "roles_autorises": "Superuser, ADMIN_EDT, GESTIONNAIRE_EDT, DIRECTION_EDT"
+    },
+    {
+      "ordre": 4,
+      "section": "Barre latérale principale",
+      "libelle": "Formateurs",
+      "icone": "bi-person-badge",
+      "url": "/formations/formateurs/",
+      "route_django": "formations:formateurs_list",
+      "permission_requise": "formations.view_formateur",
+      "roles_autorises": "Superuser, ADMIN_EDT, GESTIONNAIRE_EDT, DIRECTION_EDT, RUP_EDT"
+    },
+    {
+      "ordre": 5,
+      "section": "Barre latérale principale",
+      "libelle": "Paramétrage",
+      "icone": "bi-sliders",
+      "url": "/parametrage/",
+      "route_django": "parametrage:index",
+      "permission_requise": "parametrage.view_parametregeneral",
+      "roles_autorises": "Superuser, ADMIN_EDT, GESTIONNAIRE_EDT (lecture), DIRECTION_EDT (lecture)"
+    },
+    {
+      "ordre": 6,
+      "section": "Barre latérale principale",
+      "libelle": "Simulation",
+      "icone": "bi-calculator",
+      "url": "/simulation/",
+      "route_django": "simulation:index",
+      "permission_requise": "formations.view_formation",
+      "roles_autorises": "Superuser, ADMIN_EDT, GESTIONNAIRE_EDT, DIRECTION_EDT, RUP_EDT"
+    },
+    {
+      "ordre": 7,
+      "section": "Barre latérale principale",
+      "libelle": "Administration",
+      "icone": "bi-shield-lock",
+      "url": "/admin/",
+      "route_django": "admin:index",
+      "permission_requise": "user.is_staff",
+      "roles_autorises": "Superuser / Staff"
+    },
+    {
+      "ordre": 8,
+      "section": "Pied de barre latérale",
+      "libelle": "Déconnexion",
+      "icone": "bi-box-arrow-right",
+      "url": "/logout/",
+      "route_django": "logout",
+      "permission_requise": "Authentifié (POST)",
+      "roles_autorises": "Tous"
+    }
+  ],
+  "sous_menus_et_actions_modules": [
+    {
+      "module": "Accueil (Accès rapides)",
+      "libelle": "Nouvelle formation",
+      "url": "/formations/create/",
+      "route_django": "formations:create",
+      "type_action": "Navigation / Formulaire",
+      "permission": "formations.add_formation"
+    },
+    {
+      "module": "Accueil (Accès rapides)",
+      "libelle": "Importer auditeurs",
+      "url": "/auditeurs/import/",
+      "route_django": "auditeurs:import",
+      "type_action": "Import Excel",
+      "permission": "auditeurs.add_auditeur"
+    },
+    {
+      "module": "Accueil (Accès rapides)",
+      "libelle": "Liste auditeurs",
+      "url": "/auditeurs/",
+      "route_django": "auditeurs:list",
+      "type_action": "Liste",
+      "permission": "auditeurs.view_auditeur"
+    },
+    {
+      "module": "Accueil (Accès rapides)",
+      "libelle": "Importer formateurs",
+      "url": "/formations/formateurs/import/",
+      "route_django": "formations:formateurs_import_page",
+      "type_action": "Import Excel",
+      "permission": "formations.add_formateur"
+    },
+    {
+      "module": "Accueil (Accès rapides)",
+      "libelle": "Paramétrage",
+      "url": "/parametrage/",
+      "route_django": "parametrage:index",
+      "type_action": "Configuration",
+      "permission": "parametrage.view_parametregeneral"
+    },
+    {
+      "module": "Accueil (Accès rapides)",
+      "libelle": "Chevauchements salles",
+      "url": "/seances/chevauchements/",
+      "route_django": "seances:chevauchements",
+      "type_action": "Contrôle conflits",
+      "permission": "seances.view_seance"
+    },
+    {
+      "module": "Formations",
+      "libelle": "Détail & Programme pédagogique",
+      "url": "/formations/<id>/",
+      "route_django": "formations:detail",
+      "type_action": "Vue détail (Périodes, Modules, Inscriptions)",
+      "permission": "formations.view_formation"
+    },
+    {
+      "module": "Formations",
+      "libelle": "Unité Pédagogique (Affectation Formateurs RUP)",
+      "url": "/formations/<id>/up/",
+      "route_django": "formations:rup_unite",
+      "type_action": "Affectation formateurs par groupe/module",
+      "permission": "formations.view_formation"
+    },
+    {
+      "module": "Formations",
+      "libelle": "Export Auditeurs de la formation (Excel)",
+      "url": "/formations/<id>/export/auditeurs/",
+      "route_django": "formations:export_auditeurs",
+      "type_action": "Export XLSX",
+      "permission": "formations.view_formation"
+    },
+    {
+      "module": "Groupes & Répartition",
+      "libelle": "Gestion des groupes d'une formation",
+      "url": "/groupes/formation/<formation_id>/",
+      "route_django": "groupes:list",
+      "type_action": "Liste, Config horaires/jours, Génération auto",
+      "permission": "groupes.view_groupe"
+    },
+    {
+      "module": "Groupes & Répartition",
+      "libelle": "Générer automatiquement les groupes par grade",
+      "url": "/groupes/formation/<formation_id>/auto/",
+      "route_django": "groupes:auto_generate",
+      "type_action": "Action POST moteur groupes+séances",
+      "permission": "groupes.add_groupe + delete_groupe"
+    },
+    {
+      "module": "Groupes & Répartition",
+      "libelle": "Régénérer le planning de la formation",
+      "url": "/groupes/formation/<formation_id>/planning/",
+      "route_django": "groupes:regenerer_planning",
+      "type_action": "Action POST moteur planning",
+      "permission": "seances.add_seance"
+    },
+    {
+      "module": "Groupes & Répartition",
+      "libelle": "Gérer les membres d'un groupe",
+      "url": "/groupes/<groupe_id>/membres/",
+      "route_django": "groupes:membre_add",
+      "type_action": "Affectation / retrait auditeurs",
+      "permission": "groupes.change_groupe"
+    },
+    {
+      "module": "Groupes & Répartition",
+      "libelle": "Menu Exporter (Formation) — Cours / Séances / Formateurs / PDF / ZIP / Synthèse UP DOCX",
+      "url": "/seances/formation/<formation_id>/export/...",
+      "route_django": "seances:formation_export*",
+      "type_action": "Menu déroulant multi-exports",
+      "permission": "seances.view_seance"
+    },
+    {
+      "module": "Séances & Emploi du temps",
+      "libelle": "Aperçu & Édition du planning d'un groupe",
+      "url": "/seances/groupe/<groupe_id>/",
+      "route_django": "seances:preview",
+      "type_action": "Grille calendrier, filtres, conflits, ajout/édition séance",
+      "permission": "seances.view_seance"
+    },
+    {
+      "module": "Séances & Emploi du temps",
+      "libelle": "Export Excel — Séances uniquement",
+      "url": "/seances/groupe/<groupe_id>/export/?format=seances",
+      "route_django": "seances:export",
+      "type_action": "Export XLSX onglet Séances",
+      "permission": "seances.view_seance"
+    },
+    {
+      "module": "Séances & Emploi du temps",
+      "libelle": "Export Excel — Cours (Formations)",
+      "url": "/seances/groupe/<groupe_id>/export/?format=cours",
+      "route_django": "seances:export",
+      "type_action": "Export XLSX onglet Formations",
+      "permission": "seances.view_seance"
+    },
+    {
+      "module": "Séances & Emploi du temps",
+      "libelle": "Export Excel — Formateurs (module)",
+      "url": "/seances/groupe/<groupe_id>/export/?format=formateurs",
+      "route_django": "seances:export",
+      "type_action": "Export XLSX onglet Formateurs",
+      "permission": "seances.view_seance"
+    },
+    {
+      "module": "Séances & Emploi du temps",
+      "libelle": "Export PDF Emploi du temps",
+      "url": "/seances/groupe/<groupe_id>/export-pdf/",
+      "route_django": "seances:export_pdf",
+      "type_action": "Export PDF A4 Paysage",
+      "permission": "seances.view_seance"
+    },
+    {
+      "module": "Séances & Emploi du temps",
+      "libelle": "Journal d'audit du planning",
+      "url": "/seances/audit/",
+      "route_django": "seances:audit_list",
+      "type_action": "Historique traçabilité",
+      "permission": "seances.view_planningauditlog"
+    },
+    {
+      "module": "Séances & Emploi du temps",
+      "libelle": "Détection des chevauchements de salles",
+      "url": "/seances/chevauchements/",
+      "route_django": "seances:chevauchements",
+      "type_action": "Contrôle qualité salles",
+      "permission": "seances.view_seance"
+    },
+    {
+      "module": "Paramétrage & Référentiels",
+      "libelle": "Onglet Paramètres généraux & par formation",
+      "url": "/parametrage/#pane-parametres",
+      "route_django": "parametrage:index",
+      "type_action": "Horaires, capacité, scoring salles",
+      "permission": "parametrage.change_parametregeneral"
+    },
+    {
+      "module": "Paramétrage & Référentiels",
+      "libelle": "Onglet Lieux (Sites, Bâtiments, Salles, Disponibilités)",
+      "url": "/parametrage/#pane-lieux",
+      "route_django": "parametrage:index",
+      "type_action": "CRUD hiérarchique des locaux",
+      "permission": "parametrage.view_site"
+    },
+    {
+      "module": "Paramétrage & Référentiels",
+      "libelle": "Onglet Types de formation, Grades, Vagues, Jours fériés",
+      "url": "/parametrage/#pane-referentiels",
+      "route_django": "parametrage:index",
+      "type_action": "CRUD nomenclatures",
+      "permission": "parametrage.view_grade"
+    },
+    {
+      "module": "Paramétrage & Référentiels",
+      "libelle": "Onglet Modules & Volumes horaires par défaut",
+      "url": "/parametrage/#pane-modules",
+      "route_django": "parametrage:index",
+      "type_action": "Catalogue modules + associations Type/Grade",
+      "permission": "referentiels.view_module"
+    },
+    {
+      "module": "Référentiels dédiés",
+      "libelle": "Catalogue des Modules",
+      "url": "/referentiels/modules/",
+      "route_django": "referentiels:module_list",
+      "type_action": "CRUD Modules & Spécialités",
+      "permission": "referentiels.view_module"
+    },
+    {
+      "module": "Référentiels dédiés",
+      "libelle": "Catalogue des Types de formation",
+      "url": "/referentiels/types/",
+      "route_django": "referentiels:type_list",
+      "type_action": "Liste Types de formation",
+      "permission": "referentiels.view_typeformation"
+    }
+  ],
+  "menus_administration_backend": [
+    {
+      "application": "Auditeurs",
+      "app_label": "auditeurs",
+      "modele": "Auditeurs",
+      "nom_classe": "Auditeur",
+      "url_admin": "/admin/auditeurs/auditeur/"
+    },
+    {
+      "application": "Authentification et autorisation",
+      "app_label": "auth",
+      "modele": "Groupes",
+      "nom_classe": "Group",
+      "url_admin": "/admin/auth/group/"
+    },
+    {
+      "application": "Authentification et autorisation",
+      "app_label": "auth",
+      "modele": "Utilisateurs",
+      "nom_classe": "User",
+      "url_admin": "/admin/auth/user/"
+    },
+    {
+      "application": "Formations",
+      "app_label": "formations",
+      "modele": "Affectations formateurs/groupes",
+      "nom_classe": "AffectationFormateurGroupe",
+      "url_admin": "/admin/formations/affectationformateurgroupe/"
+    },
+    {
+      "application": "Formations",
+      "app_label": "formations",
+      "modele": "Formateurs",
+      "nom_classe": "Formateur",
+      "url_admin": "/admin/formations/formateur/"
+    },
+    {
+      "application": "Formations",
+      "app_label": "formations",
+      "modele": "Formations",
+      "nom_classe": "Formation",
+      "url_admin": "/admin/formations/formation/"
+    },
+    {
+      "application": "Formations",
+      "app_label": "formations",
+      "modele": "Inscriptions",
+      "nom_classe": "Inscription",
+      "url_admin": "/admin/formations/inscription/"
+    },
+    {
+      "application": "Formations",
+      "app_label": "formations",
+      "modele": "Modules de formation",
+      "nom_classe": "FormationModule",
+      "url_admin": "/admin/formations/formationmodule/"
+    },
+    {
+      "application": "Formations",
+      "app_label": "formations",
+      "modele": "Périodes de formation",
+      "nom_classe": "FormationPeriode",
+      "url_admin": "/admin/formations/formationperiode/"
+    },
+    {
+      "application": "Formations",
+      "app_label": "formations",
+      "modele": "Responsables d'unités pédagogiques",
+      "nom_classe": "ResponsableUnitePedagogique",
+      "url_admin": "/admin/formations/responsableunitepedagogique/"
+    },
+    {
+      "application": "Groupes",
+      "app_label": "groupes",
+      "modele": "Groupes",
+      "nom_classe": "Groupe",
+      "url_admin": "/admin/groupes/groupe/"
+    },
+    {
+      "application": "Groupes",
+      "app_label": "groupes",
+      "modele": "Membres du groupe",
+      "nom_classe": "GroupeAuditeur",
+      "url_admin": "/admin/groupes/groupeauditeur/"
+    },
+    {
+      "application": "Paramétrage",
+      "app_label": "parametrage",
+      "modele": "Associations modules / types",
+      "nom_classe": "ModuleTypeFormation",
+      "url_admin": "/admin/parametrage/moduletypeformation/"
+    },
+    {
+      "application": "Paramétrage",
+      "app_label": "parametrage",
+      "modele": "Bâtiments",
+      "nom_classe": "Batiment",
+      "url_admin": "/admin/parametrage/batiment/"
+    },
+    {
+      "application": "Paramétrage",
+      "app_label": "parametrage",
+      "modele": "Grades",
+      "nom_classe": "Grade",
+      "url_admin": "/admin/parametrage/grade/"
+    },
+    {
+      "application": "Paramétrage",
+      "app_label": "parametrage",
+      "modele": "Jours fériés",
+      "nom_classe": "JourFerie",
+      "url_admin": "/admin/parametrage/jourferie/"
+    },
+    {
+      "application": "Paramétrage",
+      "app_label": "parametrage",
+      "modele": "Paramètres de formation",
+      "nom_classe": "ParametreFormation",
+      "url_admin": "/admin/parametrage/parametreformation/"
+    },
+    {
+      "application": "Paramétrage",
+      "app_label": "parametrage",
+      "modele": "Paramètres généraux",
+      "nom_classe": "ParametreGeneral",
+      "url_admin": "/admin/parametrage/parametregeneral/"
+    },
+    {
+      "application": "Paramétrage",
+      "app_label": "parametrage",
+      "modele": "Périodes de disponibilité des sites",
+      "nom_classe": "PeriodeDisponibiliteSite",
+      "url_admin": "/admin/parametrage/periodedisponibilitesite/"
+    },
+    {
+      "application": "Paramétrage",
+      "app_label": "parametrage",
+      "modele": "Salles",
+      "nom_classe": "Salle",
+      "url_admin": "/admin/parametrage/salle/"
+    },
+    {
+      "application": "Paramétrage",
+      "app_label": "parametrage",
+      "modele": "Sites",
+      "nom_classe": "Site",
+      "url_admin": "/admin/parametrage/site/"
+    },
+    {
+      "application": "Paramétrage",
+      "app_label": "parametrage",
+      "modele": "Vagues",
+      "nom_classe": "Vague",
+      "url_admin": "/admin/parametrage/vague/"
+    },
+    {
+      "application": "Référentiels",
+      "app_label": "referentiels",
+      "modele": "Modules",
+      "nom_classe": "Module",
+      "url_admin": "/admin/referentiels/module/"
+    },
+    {
+      "application": "Référentiels",
+      "app_label": "referentiels",
+      "modele": "Spécialités",
+      "nom_classe": "Specialite",
+      "url_admin": "/admin/referentiels/specialite/"
+    },
+    {
+      "application": "Référentiels",
+      "app_label": "referentiels",
+      "modele": "Types de formation",
+      "nom_classe": "TypeFormation",
+      "url_admin": "/admin/referentiels/typeformation/"
+    },
+    {
+      "application": "Séances",
+      "app_label": "seances",
+      "modele": "Audit planning",
+      "nom_classe": "PlanningAuditLog",
+      "url_admin": "/admin/seances/planningauditlog/"
+    },
+    {
+      "application": "Séances",
+      "app_label": "seances",
+      "modele": "Rapports de planning",
+      "nom_classe": "PlanningRun",
+      "url_admin": "/admin/seances/planningrun/"
+    },
+    {
+      "application": "Séances",
+      "app_label": "seances",
+      "modele": "Séances",
+      "nom_classe": "Seance",
+      "url_admin": "/admin/seances/seance/"
+    }
+  ],
+  "routes_techniques_django": [
+    {
+      "url_pattern": "/",
+      "route_name": "root",
+      "vue_handler": "root_redirect"
+    },
+    {
+      "url_pattern": "/accueil/",
+      "route_name": "home",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/admin/",
+      "route_name": "admin:index",
+      "vue_handler": "UnfoldAdminSite.index"
+    },
+    {
+      "url_pattern": "/admin/login/",
+      "route_name": "admin:login",
+      "vue_handler": "AdminSite.login"
+    },
+    {
+      "url_pattern": "/admin/logout/",
+      "route_name": "admin:logout",
+      "vue_handler": "AdminSite.logout"
+    },
+    {
+      "url_pattern": "/login/",
+      "route_name": "login",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/logout/",
+      "route_name": "logout",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/",
+      "route_name": "parametrage:index",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/types/create/",
+      "route_name": "parametrage:type_create",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/types/<int:pk>/update/",
+      "route_name": "parametrage:type_update",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/types/<int:pk>/delete/",
+      "route_name": "parametrage:type_delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/grades/create/",
+      "route_name": "parametrage:grade_create",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/grades/<int:pk>/delete/",
+      "route_name": "parametrage:grade_delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/vagues/create/",
+      "route_name": "parametrage:vague_create",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/vagues/<int:pk>/delete/",
+      "route_name": "parametrage:vague_delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/sites/create/",
+      "route_name": "parametrage:site_create",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/sites/<int:pk>/update/",
+      "route_name": "parametrage:site_update",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/sites/<int:pk>/toggle-actif/",
+      "route_name": "parametrage:site_toggle_actif",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/sites/<int:pk>/delete/",
+      "route_name": "parametrage:site_delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/batiments/create/",
+      "route_name": "parametrage:batiment_create",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/batiments/<int:pk>/update/",
+      "route_name": "parametrage:batiment_update",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/batiments/<int:pk>/toggle-actif/",
+      "route_name": "parametrage:batiment_toggle_actif",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/batiments/<int:pk>/delete/",
+      "route_name": "parametrage:batiment_delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/salles/create/",
+      "route_name": "parametrage:salle_create",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/salles/<int:pk>/update/",
+      "route_name": "parametrage:salle_update",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/salles/<int:pk>/toggle-actif/",
+      "route_name": "parametrage:salle_toggle_actif",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/salles/<int:pk>/delete/",
+      "route_name": "parametrage:salle_delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/periodes-disponibilite-sites/create/",
+      "route_name": "parametrage:periode_disponibilite_site_create",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/periodes-disponibilite-sites/<int:pk>/update/",
+      "route_name": "parametrage:periode_disponibilite_site_update",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/periodes-disponibilite-sites/<int:pk>/delete/",
+      "route_name": "parametrage:periode_disponibilite_site_delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/parametres-formation/update/",
+      "route_name": "parametrage:parametres_formation_update",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/parametres-defaut/update/",
+      "route_name": "parametrage:parametres_defaut_update",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/parametres/update/",
+      "route_name": "parametrage:parametres_update",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/jours-feries/create/",
+      "route_name": "parametrage:jour_ferie_create",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/jours-feries/<int:pk>/delete/",
+      "route_name": "parametrage:jour_ferie_delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/modules/create/",
+      "route_name": "parametrage:module_create",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/modules/associer/",
+      "route_name": "parametrage:module_associer",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/parametrage/modules/associations/<int:association_id>/delete/",
+      "route_name": "parametrage:module_dissocier",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/referentiels/modules/",
+      "route_name": "referentiels:module_list",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/referentiels/modules/create/",
+      "route_name": "referentiels:module_create",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/referentiels/modules/<int:pk>/update/",
+      "route_name": "referentiels:module_update",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/referentiels/modules/<int:pk>/delete/",
+      "route_name": "referentiels:module_delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/referentiels/types/",
+      "route_name": "referentiels:type_list",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/",
+      "route_name": "formations:list",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/formateurs/import/",
+      "route_name": "formations:formateurs_import_page",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/formateurs/",
+      "route_name": "formations:formateurs_list",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/create/",
+      "route_name": "formations:create",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/<int:pk>/",
+      "route_name": "formations:detail",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/<int:pk>/up/",
+      "route_name": "formations:rup_unite",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/<int:formation_pk>/up/groupe/<int:groupe_pk>/module/<int:module_pk>/affectation/",
+      "route_name": "formations:rup_affectation",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/<int:pk>/export/auditeurs/",
+      "route_name": "formations:export_auditeurs",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/<int:pk>/edit/",
+      "route_name": "formations:edit",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/<int:pk>/delete/",
+      "route_name": "formations:delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/<int:pk>/periodes/add/",
+      "route_name": "formations:periode_add",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/<int:pk>/periodes/<int:periode_pk>/edit/",
+      "route_name": "formations:periode_edit",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/<int:pk>/periodes/<int:periode_pk>/delete/",
+      "route_name": "formations:periode_delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/<int:pk>/modules/add/",
+      "route_name": "formations:module_add",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/<int:pk>/modules/<int:module_pk>/edit/",
+      "route_name": "formations:module_edit",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/<int:pk>/modules/<int:module_pk>/delete/",
+      "route_name": "formations:module_delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/<int:pk>/inscriptions/add/",
+      "route_name": "formations:inscription_add",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/<int:pk>/inscriptions/copier/",
+      "route_name": "formations:inscription_copier",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/formations/<int:pk>/inscriptions/<int:auditeur_pk>/delete/",
+      "route_name": "formations:inscription_delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/auditeurs/",
+      "route_name": "auditeurs:list",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/auditeurs/create/",
+      "route_name": "auditeurs:create",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/auditeurs/import/",
+      "route_name": "auditeurs:import",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/auditeurs/import/rapport/",
+      "route_name": "auditeurs:import_rapport",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/auditeurs/<int:pk>/",
+      "route_name": "auditeurs:detail",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/auditeurs/<int:pk>/update/",
+      "route_name": "auditeurs:update",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/auditeurs/<int:pk>/delete/",
+      "route_name": "auditeurs:delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/groupes/formation/<int:formation_pk>/",
+      "route_name": "groupes:list",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/groupes/formation/<int:formation_pk>/creer/",
+      "route_name": "groupes:create",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/groupes/formation/<int:formation_pk>/auto/",
+      "route_name": "groupes:auto_generate",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/groupes/formation/<int:formation_pk>/normaliser-noms/",
+      "route_name": "groupes:normaliser_noms",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/groupes/formation/<int:formation_pk>/planning/",
+      "route_name": "groupes:regenerer_planning",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/groupes/formation/<int:formation_pk>/assurer-homologues/",
+      "route_name": "groupes:assurer_homologues",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/groupes/formation/<int:formation_pk>/reporter-depuis-source/",
+      "route_name": "groupes:reporter_depuis_source",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/groupes/<int:groupe_pk>/export/auditeurs/",
+      "route_name": "groupes:export_auditeurs",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/groupes/<int:groupe_pk>/config/",
+      "route_name": "groupes:config",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/groupes/<int:groupe_pk>/delete/",
+      "route_name": "groupes:groupe_delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/groupes/<int:groupe_pk>/membres/",
+      "route_name": "groupes:membre_add",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/groupes/<int:groupe_pk>/membres/<int:auditeur_pk>/delete/",
+      "route_name": "groupes:membre_delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/seances/audit/",
+      "route_name": "seances:audit_list",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/seances/chevauchements/",
+      "route_name": "seances:chevauchements",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/seances/formation/<int:formation_pk>/export/",
+      "route_name": "seances:formation_export",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/seances/formation/<int:formation_pk>/export-pdf/",
+      "route_name": "seances:formation_export_pdf",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/seances/formation/<int:formation_pk>/export-pdf-zip/",
+      "route_name": "seances:formation_export_pdf_zip",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/seances/formation/<int:formation_pk>/export-zip/",
+      "route_name": "seances:formation_export_zip",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/seances/formation/<int:formation_pk>/module/<int:module_pk>/synthese-docx/",
+      "route_name": "seances:formation_module_synthese_docx",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/seances/groupe/<int:groupe_pk>/",
+      "route_name": "seances:preview",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/seances/groupe/<int:groupe_pk>/preview-htmx/",
+      "route_name": "seances:preview_htmx",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/seances/groupe/<int:groupe_pk>/export/",
+      "route_name": "seances:export",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/seances/groupe/<int:groupe_pk>/export-pdf/",
+      "route_name": "seances:export_pdf",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/seances/groupe/<int:groupe_pk>/module/<int:module_pk>/synthese-docx/",
+      "route_name": "seances:groupe_module_synthese_docx",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/seances/groupe/<int:groupe_pk>/create/",
+      "route_name": "seances:create",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/seances/<int:pk>/update/",
+      "route_name": "seances:update",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/seances/<int:pk>/delete/",
+      "route_name": "seances:delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/simulation/",
+      "route_name": "simulation:index",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/simulation/formation/<int:formation_id>/chiffres/",
+      "route_name": "simulation:formation_chiffres",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/simulation/formations/search/",
+      "route_name": "simulation:formations_search",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/simulation/scenarios/save/",
+      "route_name": "simulation:scenario_save",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/simulation/scenarios/<int:pk>/delete/",
+      "route_name": "simulation:scenario_delete",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/api/formations/",
+      "route_name": "api_formations_list",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/api/formations/<int:pk>/seances/",
+      "route_name": "api_formation_seances",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/api/seances/<int:pk>/",
+      "route_name": "api_seance_detail",
+      "vue_handler": "View.as_view.<locals>.view"
+    },
+    {
+      "url_pattern": "/api/openapi.yaml",
+      "route_name": "api_openapi_schema",
+      "vue_handler": "View.as_view.<locals>.view"
+    }
+  ]
+}

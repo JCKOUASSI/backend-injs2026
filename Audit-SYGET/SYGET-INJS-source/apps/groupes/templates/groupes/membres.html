@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% block title %}Membres — {{ groupe.nom }}{% endblock %}
+{% block nav_formations %}active-link{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+  <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+      <h1 class="fw-bold mb-1" style="font-size:1.7rem;color:#0f172a;">
+        <i class="bi bi-people-fill me-2 text-primary"></i>Gestion des membres
+      </h1>
+      <p class="text-muted mb-0">
+        <strong>{{ groupe.nom }}</strong> — {{ groupe.formation.intitule }}
+        <span class="badge ms-1 bg-primary">{{ groupe.formation.type_formation.code }}</span>
+      </p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      {% if perms.groupes.view_groupe %}
+      <a href="{% url 'groupes:export_auditeurs' groupe.pk %}"
+         class="btn btn-success rounded-pill px-3">
+        <i class="bi bi-file-earmark-excel me-1"></i>Exporter auditeurs (Excel)
+      </a>
+      {% endif %}
+      <a href="{% url 'groupes:list' groupe.formation_id %}{% if source_formation_id %}?source_formation={{ source_formation_id }}{% endif %}"
+         class="btn btn-outline-secondary rounded-pill px-3">
+        ← Retour aux groupes
+      </a>
+    </div>
+  </div>
+
+  {% if messages %}
+  <div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3">
+      {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if source_formation %}
+  <div class="alert alert-info py-2 mb-3 small d-flex flex-wrap align-items-center gap-2">
+    <span>
+      Filtre formation source : <strong>{{ source_formation.intitule }}</strong>.
+      {% if filtrer_homologue %}
+      Seuls les auditeurs du groupe homologue « {{ groupe.nom }} » sont affichés.
+      {% else %}
+      Tous les auditeurs éligibles de la source sont affichés.
+      {% endif %}
+    </span>
+    {% if filtrer_homologue %}
+    <a class="btn btn-sm btn-outline-primary"
+       href="{% url 'groupes:membre_add' groupe.pk %}?source_formation={{ source_formation_id }}">
+      Élargir à toute la source
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+
+    <div class="col-lg-5">
+      <div class="card shadow-sm h-100">
+        <div class="card-header py-3 px-4" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:white;">
+          <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold"><i class="bi bi-diagram-3 me-2"></i>Dans ce groupe</h6>
+            <span class="badge bg-white text-primary fw-bold">
+              {{ groupe.membres.count }} / {{ groupe.max_auditeurs }}
+            </span>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div style="max-height:520px;overflow-y:auto;">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light sticky-top">
+                <tr>
+                  <th class="px-4">Auditeur</th>
+                  <th>Grade</th>
+                  {% if can_remove %}<th></th>{% endif %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for membre in groupe.membres.all %}
+                <tr>
+                  <td class="px-4">
+                    <div class="fw-semibold">{{ membre.auditeur.nom }} {{ membre.auditeur.prenom }}</div>
+                    <div class="text-muted font-monospace" style="font-size:.75rem;">{{ membre.auditeur.matricule }}</div>
+                  </td>
+                  <td class="small">{{ membre.auditeur.grade|default:"—" }}</td>
+                  {% if can_remove %}
+                  <td class="text-end pe-3">
+                    <form method="post" action="{% url 'groupes:membre_delete' groupe.pk membre.auditeur.pk %}"
+                          data-confirm="Retirer {{ membre.auditeur.nom }} {{ membre.auditeur.prenom }} du groupe ?">
+                      {% csrf_token %}
+                      {% if source_formation_id %}<input type="hidden" name="source_formation" value="{{ source_formation_id }}">{% endif %}
+                      <input type="hidden" name="redirect_to" value="membres">
+                      <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer du groupe">
+                        <i class="bi bi-person-dash"></i>
+                      </button>
+                    </form>
+                  </td>
+                  {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="{% if can_remove %}3{% else %}2{% endif %}" class="text-center text-muted py-5">
+                    Aucun membre pour l'instant.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="card shadow-sm h-100">
+        <div class="card-header py-3 px-4 bg-white border-bottom">
+          <h6 class="mb-0 fw-bold">
+            <i class="bi bi-person-plus-fill me-2 text-primary"></i>Auditeurs à affecter
+          </h6>
+          <p class="text-muted small mt-1 mb-0">
+            Inscrits à la formation non présents dans ce groupe.
+            Un auditeur déjà dans un autre groupe sera <strong>déplacé</strong> ici.
+          </p>
+        </div>
+        <div class="card-body">
+          <form method="get" class="row g-2 mb-3 align-items-end">
+            {% if source_formation_id %}
+            <input type="hidden" name="source_formation" value="{{ source_formation_id }}">
+            {% if filtrer_homologue %}<input type="hidden" name="homologue" value="1">{% endif %}
+            {% endif %}
+            <div class="col">
+              <label class="form-label small fw-semibold mb-1">Rechercher</label>
+              <input type="search" name="q" class="form-control form-control-sm" value="{{ q }}"
+                     placeholder="Nom, prénom ou matricule…">
+            </div>
+            <div class="col-auto">
+              <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search me-1"></i>Filtrer</button>
+              {% if q %}
+              <a href="{% url 'groupes:membre_add' groupe.pk %}{% if source_formation_id %}?source_formation={{ source_formation_id }}{% if filtrer_homologue %}&homologue=1{% endif %}{% endif %}"
+                 class="btn btn-sm btn-outline-secondary">Effacer</a>
+              {% endif %}
+            </div>
+          </form>
+
+          {% if not can_add %}
+          <div class="alert alert-warning small mb-3">
+            Vous n'avez pas le droit d'affecter des auditeurs (lecture seule).
+          </div>
+          {% endif %}
+
+          <div class="border rounded" style="max-height:400px;overflow-y:auto;">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light sticky-top">
+                <tr>
+                  {% if can_add %}<th class="px-3" style="width:40px;"></th>{% endif %}
+                  <th>Auditeur</th>
+                  <th>Grade</th>
+                  <th>Groupe actuel</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ins in inscrits_disponibles %}
+                <tr>
+                  {% if can_add %}
+                  <td class="px-3">
+                    <input type="checkbox" class="form-check-input auditeur-cb"
+                           name="auditeur_ids" value="{{ ins.auditeur.pk }}" form="formAffecterMembres">
+                  </td>
+                  {% endif %}
+                  <td>
+                    <div class="fw-semibold">{{ ins.auditeur.nom }} {{ ins.auditeur.prenom }}</div>
+                    <div class="text-muted font-monospace" style="font-size:.75rem;">{{ ins.auditeur.matricule }}</div>
+                  </td>
+                  <td class="small">{{ ins.auditeur.grade|default:"—" }}</td>
+                  <td class="small">
+                    {% if ins.groupe_actuel %}
+                    <span class="badge bg-light text-dark border">{{ ins.groupe_actuel }}</span>
+                    {% else %}
+                    <span class="text-muted">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="{% if can_add %}4{% else %}3{% endif %}" class="text-center text-muted py-5">
+                    {% if q %}
+                    Aucun auditeur ne correspond à la recherche.
+                    {% elif nb_inscrits_formation == 0 and not source_formation %}
+                    Aucun auditeur inscrit à cette formation.
+                    <div class="mt-2">
+                      <a href="{% url 'formations:inscription_copier' groupe.formation_id %}" class="btn btn-sm btn-primary">
+                        Inscrire des auditeurs
+                      </a>
+                    </div>
+                    {% elif filtrer_homologue and source_formation %}
+                    Aucun auditeur du groupe homologue « {{ groupe.nom }} » dans la formation source,
+                    ou ils sont déjà tous ici.
+                    <div class="mt-2">
+                      <a href="{% url 'groupes:membre_add' groupe.pk %}?source_formation={{ source_formation_id }}"
+                         class="btn btn-sm btn-outline-primary">Voir toute la source</a>
+                    </div>
+                    {% else %}
+                    Tous les auditeurs éligibles sont déjà dans ce groupe.
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          {% if can_add and inscrits_disponibles %}
+          <form method="post" action="{% url 'groupes:membre_add' groupe.pk %}" id="formAffecterMembres" class="mt-3">
+            {% csrf_token %}
+            <input type="hidden" name="from_page" value="membres">
+            {% if source_formation_id %}
+            <input type="hidden" name="source_formation" value="{{ source_formation_id }}">
+            {% endif %}
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <span class="text-muted small" id="selectedCount">0 sélectionné(s)</span>
+              <button type="submit" class="btn btn-primary" id="btnAjouter" disabled>
+                <i class="bi bi-person-plus me-1"></i>Affecter la sélection au groupe
+              </button>
+            </div>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const cbs = document.querySelectorAll('.auditeur-cb');
+    const selectAll = document.getElementById('selectAll');
+    const btn = document.getElementById('btnAjouter');
+    const cnt = document.getElementById('selectedCount');
+    if (!cbs.length) return;
+
+    function update() {
+      const n = document.querySelectorAll('.auditeur-cb:checked').length;
+      if (btn) btn.disabled = n === 0;
+      if (cnt) cnt.textContent = n + ' sélectionné(s)';
+    }
+
+    cbs.forEach(function (cb) { cb.addEventListener('change', update); });
+    if (selectAll) {
+      selectAll.addEventListener('change', function () {
+        cbs.forEach(function (cb) { cb.checked = selectAll.checked; });
+        update();
+      });
+    }
+    update();
+  })();
+</script>
+{% endblock %}

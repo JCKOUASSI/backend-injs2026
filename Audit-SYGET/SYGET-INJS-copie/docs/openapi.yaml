@@ -1,0 +1,241 @@
+openapi: 3.0.3
+info:
+  title: SYGET-CPFAE API
+  description: |
+    API JSON session-based pour l'emploi du temps CPFAE.
+    Authentification par cookie de session Django (connexion via `/login/`).
+  version: 1.0.0
+servers:
+  - url: /
+    description: Serveur applicatif courant
+tags:
+  - name: formations
+  - name: seances
+paths:
+  /api/formations/:
+    get:
+      tags: [formations]
+      summary: Liste des formations visibles
+      description: |
+        Retourne les formations accessibles à l'utilisateur connecté
+        (périmètre gestionnaire : formations dont il est responsable).
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: Liste OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  formations:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/FormationSummary"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /api/formations/{id}/seances/:
+    get:
+      tags: [formations, seances]
+      summary: Séances d'une formation
+      parameters:
+        - $ref: "#/components/parameters/FormationId"
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: Séances du groupe
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  formation_id:
+                    type: integer
+                  seances:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Seance"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/seances/{id}/:
+    get:
+      tags: [seances]
+      summary: Détail d'une séance
+      parameters:
+        - $ref: "#/components/parameters/SeanceId"
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: Séance trouvée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Seance"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [seances]
+      summary: Mise à jour partielle d'une séance
+      description: |
+        Champs modifiables : date, horaires, lieux texte, identité formateur texte.
+        Validation métier : horaires cohérents, jour férié, salle référencée,
+        capacité, disponibilité site, collision salle (sur champs modifiés).
+      parameters:
+        - $ref: "#/components/parameters/SeanceId"
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SeancePatch"
+      responses:
+        "200":
+          description: Séance mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Seance"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+      description: Cookie de session Django après connexion
+  parameters:
+    FormationId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    SeanceId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+  schemas:
+    FormationSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        intitule:
+          type: string
+        vague:
+          type: string
+        date_debut:
+          type: string
+          format: date
+        date_fin:
+          type: string
+          format: date
+        responsable_id:
+          type: integer
+          nullable: true
+    Seance:
+      type: object
+      properties:
+        id:
+          type: integer
+        groupe_id:
+          type: integer
+        groupe_nom:
+          type: string
+        module_id:
+          type: integer
+        module_titre:
+          type: string
+        date:
+          type: string
+          format: date
+        heure_debut:
+          type: string
+          example: "08:00"
+        heure_fin:
+          type: string
+          example: "12:00"
+        duree_minutes:
+          type: integer
+        site_nom:
+          type: string
+        batiment_nom:
+          type: string
+        salle_nom:
+          type: string
+        salle_id:
+          type: integer
+          nullable: true
+        formateur_libelle:
+          type: string
+        formateur_referentiel_id:
+          type: integer
+          nullable: true
+    SeancePatch:
+      type: object
+      additionalProperties: false
+      properties:
+        date:
+          type: string
+          format: date
+        heure_debut:
+          type: string
+          example: "08:00"
+        heure_fin:
+          type: string
+          example: "12:00"
+        site_nom:
+          type: string
+        batiment_nom:
+          type: string
+        salle_nom:
+          type: string
+        formateur_nom:
+          type: string
+        formateur_prenom:
+          type: string
+        formateur_numero:
+          type: string
+        formateur_email:
+          type: string
+          format: email
+    ErrorDetail:
+      type: object
+      properties:
+        detail:
+          type: string
+  responses:
+    Forbidden:
+      description: Permission refusée
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorDetail"
+    NotFound:
+      description: Ressource introuvable ou hors périmètre
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorDetail"
+    BadRequest:
+      description: Données invalides
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorDetail"

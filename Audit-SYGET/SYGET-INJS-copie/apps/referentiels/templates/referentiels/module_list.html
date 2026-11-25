@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Modules — Référentiels{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-4">Modules</h1>
+  {% if messages %}
+  <div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
+      {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <form method="post" action="{% url 'referentiels:module_create' %}" class="mb-4 d-flex gap-2">
+    {% csrf_token %}
+    {{ form.titre }}
+    <button type="submit" class="btn btn-primary">+ Ajouter</button>
+  </form>
+  <table class="table table-striped">
+    <thead><tr><th>Titre</th><th>Actif</th><th class="text-end">Actions</th></tr></thead>
+    <tbody>
+      {% for m in modules %}
+      <tr>
+        <td>
+          <form method="post" action="{% url 'referentiels:module_update' m.pk %}" class="d-flex gap-2">
+            {% csrf_token %}
+            <input type="text" name="titre" class="form-control form-control-sm" value="{{ m.titre }}" required>
+            <button type="submit" class="btn btn-sm btn-outline-primary">Enregistrer</button>
+          </form>
+        </td>
+        <td>{% if m.actif %}<span class="badge bg-success">Oui</span>{% else %}<span class="badge bg-secondary">Non</span>{% endif %}</td>
+        <td class="text-end">
+          <form method="post" action="{% url 'referentiels:module_delete' m.pk %}" class="d-inline"
+                data-confirm="Supprimer le module {{ m.titre }} ?">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger">
+              Supprimer
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" class="text-center text-muted">Aucun module.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
