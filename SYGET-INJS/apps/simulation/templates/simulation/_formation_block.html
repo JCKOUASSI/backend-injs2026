@@ -1,0 +1,53 @@
+{# Un bloc de paramètres pour une formation (formset). #}
+<div class="sim-card mb-3 formation-block" data-form-index="{{ form_index }}">
+  <div class="card-header d-flex justify-content-between align-items-center gap-2">
+    <div class="min-width-0">
+      <strong class="formation-block-title mb-0 d-block">
+        <i class="bi bi-mortarboard me-2 text-success"></i>
+        <span class="formation-block-label">
+          {% if form.intitule.value %}{{ form.intitule.value }}{% else %}Formation {{ form_index_display }}{% endif %}
+        </span>
+      </strong>
+      <div class="formation-block-meta small text-muted fw-normal mt-1{% if not form.nb_groupes.value or not form.capacite_groupe.value %} d-none{% endif %}">
+        {% if form.nb_groupes.value and form.capacite_groupe.value %}
+        {{ form.nb_groupes.value }} groupe{{ form.nb_groupes.value|pluralize }} · {{ form.capacite_groupe.value }} aud./groupe
+        {% endif %}
+      </div>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-secondary btn-remove-formation flex-shrink-0"
+            title="Retirer cette formation">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+  <div class="card-body">
+    {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger py-2 small">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <div class="row g-3">
+      {% for field in form.visible_fields %}
+      <div class="{% if field.name == 'jours_semaine' %}col-12{% else %}col-md-6{% endif %}">
+        <label class="form-label small fw-semibold"{% if field.id_for_label %} for="{{ field.id_for_label }}"{% endif %}>{{ field.label }}</label>
+        {% if field.name == "jours_semaine" %}
+        <ul class="jours-semaine-list">
+          {% for sub_widget in field %}
+          <li>{{ sub_widget }}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        {{ field }}
+        {% endif %}
+        {% if field.name == "date_fin" %}
+        <div class="jours-ouvres-preview form-text mt-1"></div>
+        {% endif %}
+        {% if field.help_text %}
+        <div class="form-text small">{{ field.help_text }}</div>
+        {% endif %}
+        {% if field.errors %}
+        <div class="text-danger small mt-1">{{ field.errors|join:", " }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

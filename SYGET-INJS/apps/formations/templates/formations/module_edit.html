@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Modifier module — {{ formation.intitule }}{% endblock %}
+{% block nav_formations %}active-link{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 980px;">
+  <h1 class="fw-bold mb-1">Modifier un module du programme</h1>
+  <p class="text-muted mb-4">{{ formation.intitule }} — {{ formation_module.module.titre }}</p>
+
+  {% if messages %}
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
+    {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  {% if form.non_field_errors %}
+  <div class="alert alert-danger">
+    {% for err in form.non_field_errors %}<div>{{ err }}</div>{% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Grades concernés</label>
+            <div class="border rounded p-2" style="max-height:180px;overflow:auto;">
+              {% for choice in form.grade_cible %}
+              <div class="form-check mb-1">
+                {{ choice.tag }}
+                <label class="form-check-label small" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Module</label>
+            {{ form.module }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Période</label>
+            {{ form.periode }}
+            <div class="form-text">Les dates et le rythme mensuel sont ceux de la période choisie.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Créneaux autorisés</label>
+            {{ form.creneau_mode }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Sites</label>
+            {% if form.sites.errors %}<div class="text-danger small">{{ form.sites.errors }}</div>{% endif %}
+            <div id="sites-checkboxes" class="border rounded p-2" style="max-height:180px;overflow:auto;">
+              {% for site in form.fields.sites.queryset %}
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="sites" value="{{ site.pk }}" id="id_sites_{{ site.pk }}"
+                  {% with spk=site.pk|stringformat:"d" %}{% if spk in form.selected_site_id_strs %}checked{% endif %}{% endwith %}>
+                <label class="form-check-label small" for="id_sites_{{ site.pk }}">{{ site.nom }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Bâtiments</label>
+            {% if form.batiments.errors %}<div class="text-danger small">{{ form.batiments.errors }}</div>{% endif %}
+            <div id="batiments-checkboxes" class="border rounded p-2" style="max-height:180px;overflow:auto;">
+              {% for bat in form.fields.batiments.queryset %}
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="batiments" value="{{ bat.pk }}" id="id_batiments_{{ bat.pk }}"
+                  {% with bpk=bat.pk|stringformat:"d" %}{% if bpk in form.selected_batiment_id_strs %}checked{% endif %}{% endwith %}>
+                <label class="form-check-label small" for="id_batiments_{{ bat.pk }}">{{ bat.nom }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Salles</label>
+            {% if form.salles.errors %}<div class="text-danger small">{{ form.salles.errors }}</div>{% endif %}
+            <div id="salles-checkboxes" class="border rounded p-2" style="max-height:180px;overflow:auto;">
+              {% for salle in form.fields.salles.queryset %}
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="salles" value="{{ salle.pk }}" id="id_salles_{{ salle.pk }}"
+                  {% with spk=salle.pk|stringformat:"d" %}{% if spk in form.selected_salle_id_strs %}checked{% endif %}{% endwith %}>
+                <label class="form-check-label small" for="id_salles_{{ salle.pk }}">{{ salle.nom }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="mt-2">
+          <small class="text-muted">
+            Au moins un site requis. Bâtiments et salles optionnels : sans sélection, le planning
+            utilisera tous les bâtiments et salles actifs du ou des sites choisis.
+          </small>
+        </div>
+        <div class="mt-4 d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+          <a href="{% url 'formations:detail' formation.pk %}" class="btn btn-outline-secondary">Annuler</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ batiments_data|json_script:"batiments-data" }}
+{{ salles_data|json_script:"salles-data" }}
+<script>
+  (function () {
+    const sitesWrap = document.getElementById("sites-checkboxes");
+    const batimentsWrap = document.getElementById("batiments-checkboxes");
+    const sallesWrap = document.getElementById("salles-checkboxes");
+    if (!sitesWrap || !batimentsWrap || !sallesWrap) return;
+    const batimentsData = JSON.parse(document.getElementById("batiments-data").textContent);
+    const sallesData = JSON.parse(document.getElementById("salles-data").textContent);
+
+    function selectedCheckboxIds(name) {
+      return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map((el) => Number(el.value));
+    }
+
+    function renderBatiments() {
+      const siteIds = selectedCheckboxIds("sites");
+      const keepBat = new Set(selectedCheckboxIds("batiments"));
+      const filtered = siteIds.length
+        ? batimentsData.filter((b) => siteIds.includes(Number(b.site_id)))
+        : [];
+      batimentsWrap.innerHTML = "";
+      filtered.forEach((b) => {
+        const id = "id_batiments_" + b.id;
+        const row = document.createElement("div");
+        row.className = "form-check mb-1";
+        const inp = document.createElement("input");
+        inp.type = "checkbox";
+        inp.className = "form-check-input";
+        inp.name = "batiments";
+        inp.value = String(b.id);
+        inp.id = id;
+        if (keepBat.has(b.id)) inp.checked = true;
+        const lab = document.createElement("label");
+        lab.className = "form-check-label small";
+        lab.setAttribute("for", id);
+        lab.textContent = b.nom;
+        row.appendChild(inp);
+        row.appendChild(lab);
+        batimentsWrap.appendChild(row);
+      });
+      renderSalles();
+    }
+
+    function renderSalles() {
+      const siteIds = selectedCheckboxIds("sites");
+      const batIds = selectedCheckboxIds("batiments");
+      const keepSalles = new Set(selectedCheckboxIds("salles"));
+      let filtered = [];
+      if (batIds.length) {
+        filtered = sallesData.filter((s) => batIds.includes(Number(s.batiment_id)));
+      } else if (siteIds.length) {
+        const batOnSites = new Set(
+          batimentsData.filter((b) => siteIds.includes(Number(b.site_id))).map((b) => Number(b.id))
+        );
+        filtered = sallesData.filter((s) => batOnSites.has(Number(s.batiment_id)));
+      }
+      sallesWrap.innerHTML = "";
+      filtered.forEach((s) => {
+        const id = "id_salles_" + s.id;
+        const row = document.createElement("div");
+        row.className = "form-check mb-1";
+        const inp = document.createElement("input");
+        inp.type = "checkbox";
+        inp.className = "form-check-input";
+        inp.name = "salles";
+        inp.value = String(s.id);
+        inp.id = id;
+        if (keepSalles.has(s.id)) inp.checked = true;
+        const lab = document.createElement("label");
+        lab.className = "form-check-label small";
+        lab.setAttribute("for", id);
+        lab.textContent = s.nom;
+        row.appendChild(inp);
+        row.appendChild(lab);
+        sallesWrap.appendChild(row);
+      });
+    }
+
+    sitesWrap.addEventListener("change", renderBatiments);
+    batimentsWrap.addEventListener("change", renderSalles);
+    renderBatiments();
+  })();
+</script>
+{% endblock %}

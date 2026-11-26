@@ -1,0 +1,600 @@
+{% extends "base.html" %}
+{% block title %}Simulation de dimensionnement{% endblock %}
+{% block nav_simulation %}active-link{% endblock %}
+{% block topbar_title %}Simulation{% endblock %}
+
+{% block extra_css %}
+<style>
+  .sim-card {
+    border-radius: 16px;
+    background: #ffffff;
+    border: 1px solid #edf3ee;
+    box-shadow: 0 6px 20px rgba(30, 60, 40, 0.05);
+  }
+  .sim-card .card-header {
+    background: #fbfffb;
+    border-bottom: 1px solid #eff5f0;
+    border-radius: 16px 16px 0 0;
+    padding: 14px 18px;
+  }
+  .sim-card .card-body { padding: 18px; }
+  .kpi-box {
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+  }
+  .kpi-value {
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: #0f172a;
+  }
+  .kpi-label {
+    color: #64748b;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .verdict-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .verdict-ok      { background: #e0f2fe; color: #0369a1; }
+  .verdict-warning { background: #fef9c3; color: #854d0e; }
+  .verdict-ko      { background: #fee2e2; color: #991b1b; }
+  .diag-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 8px;
+  }
+  .diag-item .diag-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .diag-ok      .diag-icon { background: #e0f2fe; color: #0284c7; }
+  .diag-warning .diag-icon { background: #fef9c3; color: #854d0e; }
+  .diag-ko      .diag-icon { background: #fee2e2; color: #991b1b; }
+  .diag-title { font-weight: 700; color: #0f172a; }
+  .diag-msg   { color: #475569; font-size: 0.88rem; }
+  .reco-list  { list-style: none; padding-left: 0; margin: 0; }
+  .reco-list li {
+    padding: 10px 12px;
+    background: #eff6ff;
+    border: 1px solid #c7dbfa;
+    color: #1e3a8a;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+  }
+  .jours-semaine-list { list-style: none; padding-left: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .jours-semaine-list li label { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px;
+    border: 1px solid #cbd5e1; border-radius: 999px; background: #f8fafc; cursor: pointer; font-size: 0.85rem; }
+  .jours-semaine-list li input[type="checkbox"] { margin: 0; }
+  .formation-block { border-left: 4px solid #0284c7; }
+  .formation-block .card-header { background: #f8fafc; }
+  .add-formation-toolbar {
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: #f8fafc;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+
+  <div class="mb-4">
+    <h1 class="fw-bold mb-1" style="font-size:1.8rem;color:#0f172a;">
+      <i class="bi bi-calculator text-success me-2"></i>Simulation de dimensionnement
+    </h1>
+    <p class="text-muted mb-0">
+      Simulez une ou plusieurs formations en parallèle — chaque formation conserve
+      <strong>ses propres paramètres</strong>. Ajoutez des formations sans perdre vos réglages.
+    </p>
+  </div>
+
+  {% if messages %}
+  <div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3">
+      {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if scenarios %}
+  <div class="sim-card mb-4">
+    <div class="card-body py-3">
+      <div class="mb-2">
+        <i class="bi bi-bookmark-star text-success me-1"></i>
+        <strong>Scénarios enregistrés</strong>
+      </div>
+      <ul class="list-group list-group-flush mb-0">
+        {% for scenario in scenarios %}
+        <li class="list-group-item d-flex flex-wrap align-items-center justify-content-between gap-2 px-0">
+          <div>
+            <a href="{% url 'simulation:index' %}?scenario={{ scenario.pk }}" class="fw-semibold text-decoration-none">
+              {{ scenario.libelle }}
+            </a>
+            <span class="text-muted small ms-2">{{ scenario.updated_at|date:"d/m/Y H:i" }}</span>
+          </div>
+          {% if perms.simulation.delete_scenariosimulation %}
+          <form method="post" action="{% url 'simulation:scenario_delete' scenario.pk %}" class="m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger" data-confirm="Supprimer ce scénario ?">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+
+  {{ defaults_parametrage|json_script:"sim-defaults" }}
+
+  {% if formset.non_form_errors %}
+  <div class="alert alert-danger rounded-3">{{ formset.non_form_errors }}</div>
+  {% endif %}
+
+  <div class="row g-4">
+
+    <div class="col-lg-5">
+      <form method="post" novalidate id="simulation-form">
+        {% csrf_token %}
+        {{ formset.management_form }}
+
+        <div class="add-formation-toolbar mb-3">
+          <div class="small fw-semibold text-muted mb-2">
+            <i class="bi bi-plus-circle me-1"></i>Ajouter une formation (sans recharger la page)
+          </div>
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-add-manual">
+              <i class="bi bi-pencil me-1"></i>Saisie manuelle
+            </button>
+            <div class="d-flex flex-wrap align-items-center gap-1" style="min-width:280px;">
+              <select class="form-select form-select-sm" id="add-formation-select" style="min-width:280px;max-width:100%;">
+                <option value="">— Choisir une formation —</option>
+              </select>
+              <button type="button" class="btn btn-outline-primary btn-sm" id="btn-add-from-ref">
+                <i class="bi bi-download me-1"></i>Ajouter
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="formation-blocks-empty" class="alert alert-light border text-muted small mb-3{% if formset.forms %} d-none{% endif %}">
+          <i class="bi bi-info-circle me-1"></i>
+          Aucune formation dans la simulation. Choisissez une formation dans la liste puis <strong>Ajouter</strong>,
+          ou cliquez sur <strong>Saisie manuelle</strong>.
+        </div>
+
+        <div id="formation-blocks-container">
+          {% for form in formset %}
+          {% include "simulation/_formation_block.html" with form_index=forloop.counter0 form_index_display=forloop.counter %}
+          {% endfor %}
+        </div>
+
+        <!-- Modèle pour ajout dynamique (formset.empty_form) -->
+        <div id="formation-block-template" class="d-none" aria-hidden="true">
+          {% with form=formset.empty_form form_index="__prefix__" form_index_display="" %}
+          {% include "simulation/_formation_block.html" %}
+          {% endwith %}
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          {% if perms.simulation.add_scenariosimulation %}
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <input type="text" name="scenario_libelle" form="simulation-form" class="form-control form-control-sm" style="max-width:220px;" placeholder="Libellé du scénario" maxlength="200">
+            <button type="submit" form="simulation-form" name="action" value="save_scenario" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-bookmark-plus me-1"></i>Enregistrer
+            </button>
+          </div>
+          {% endif %}
+          <button type="submit" form="simulation-form" class="btn btn-primary px-4">
+            <i class="bi bi-play-fill me-1"></i>Lancer la simulation
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Résultats -->
+    <div class="col-lg-7">
+      {% if not resultats %}
+      <div class="sim-card h-100 d-flex align-items-center justify-content-center text-center text-muted p-5"
+           style="min-height:300px;">
+        <div>
+          <i class="bi bi-bar-chart-line fs-1 d-block mb-2 opacity-50"></i>
+          <div class="fw-semibold">Aucune simulation lancée</div>
+          <div class="small mt-1">
+            Remplissez les paramètres puis cliquez sur <em>Lancer la simulation</em>.
+          </div>
+        </div>
+      </div>
+      {% else %}
+
+      {% if synthese and synthese.nb_formations > 1 %}
+      <div class="sim-card mb-3">
+        <div class="card-header">
+          <strong><i class="bi bi-layers me-2 text-success"></i>Synthèse — {{ synthese.nb_formations }} formations simultanées</strong>
+        </div>
+        <div class="card-body">
+          <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+            {% if synthese.statut == "ok" %}
+            <span class="verdict-pill verdict-ok"><i class="bi bi-check-circle-fill"></i>Ensemble faisable</span>
+            {% elif synthese.statut == "warning" %}
+            <span class="verdict-pill verdict-warning"><i class="bi bi-exclamation-triangle-fill"></i>Ensemble tendu</span>
+            {% else %}
+            <span class="verdict-pill verdict-ko"><i class="bi bi-x-octagon-fill"></i>Ensemble infaisable</span>
+            {% endif %}
+            <span class="badge bg-success-subtle text-success-emphasis">{{ synthese.nb_ok }} OK</span>
+            {% if synthese.nb_warning %}<span class="badge bg-warning-subtle text-warning-emphasis">{{ synthese.nb_warning }} tendue(s)</span>{% endif %}
+            {% if synthese.nb_ko %}<span class="badge bg-danger-subtle text-danger-emphasis">{{ synthese.nb_ko }} KO</span>{% endif %}
+          </div>
+          <div class="row g-2">
+            <div class="col-md-4">
+              <div class="kpi-box py-2">
+                <div class="kpi-value" style="font-size:1.3rem;">{{ synthese.creneaux_demandes_total }}</div>
+                <div class="kpi-label">Séances cumulées</div>
+              </div>
+            </div>
+            {% if synthese.nb_salles_partagees %}
+            <div class="col-md-4">
+              <div class="kpi-box py-2">
+                <div class="kpi-value" style="font-size:1.3rem;">{{ synthese.nb_salles_partagees }}</div>
+                <div class="kpi-label">Salles partagées (pool)</div>
+              </div>
+            </div>
+            {% endif %}
+            {% if synthese.taux_occupation_salles_partagees %}
+            <div class="col-md-4">
+              <div class="kpi-box py-2">
+                <div class="kpi-value" style="font-size:1.3rem;">{% widthratio synthese.taux_occupation_salles_partagees 1 100 %}%</div>
+                <div class="kpi-label">Occupation pool partagé</div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          {% if synthese.message_salles_partagees %}
+          <div class="alert alert-warning mt-3 mb-0 small rounded-3">
+            <i class="bi bi-building me-1"></i>{{ synthese.message_salles_partagees }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% for ligne in resultats %}
+      {% include "simulation/_resultat_formation.html" with intitule=ligne.intitule resultat=ligne.resultat mode_auto=ligne.mode_auto jours_ouvres_periode=ligne.jours_ouvres_periode periode_suffisante=ligne.periode_suffisante date_fin_proposee=ligne.date_fin_proposee marge_pct=marge_pct %}
+      {% endfor %}
+
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const margePct = parseInt("{{ marge_pct|default:20 }}", 10);
+  const maxForms = parseInt("{{ formset_max_num }}", 10) || 20;
+  const defaults = JSON.parse(document.getElementById("sim-defaults").textContent);
+  const chiffresUrlTpl = "{% url 'simulation:formation_chiffres' formation_id=99999999 %}".replace("99999999", "{id}");
+  const formationsSearchUrl = "{% url formations_search_url_name %}";
+
+  const container = document.getElementById("formation-blocks-container");
+  const templateWrap = document.getElementById("formation-block-template");
+  const totalInput = document.querySelector('[name="form-TOTAL_FORMS"]');
+  const initialInput = document.querySelector('[name="form-INITIAL_FORMS"]');
+
+  function getTotalForms() {
+    return parseInt(totalInput.value, 10) || 0;
+  }
+
+  function setTotalForms(n) {
+    totalInput.value = String(n);
+  }
+
+  function intVal(el, def) {
+    const v = el ? parseInt(el.value, 10) : NaN;
+    return isNaN(v) || v < 1 ? def : v;
+  }
+
+  function getJoursActifs(block) {
+    const coches = [...block.querySelectorAll('input[type="checkbox"][name$="-jours_semaine"]:checked')]
+      .map(cb => parseInt(cb.value, 10));
+    return coches.length ? coches : [0, 1, 2, 3, 4];
+  }
+
+  function compterJoursOuvres(debut, fin, joursActifs) {
+    const set = new Set(joursActifs);
+    let n = 0;
+    const cur = new Date(debut); cur.setHours(0, 0, 0, 0);
+    const end = new Date(fin); end.setHours(0, 0, 0, 0);
+    while (cur <= end) {
+      if (set.has((cur.getDay() + 6) % 7)) n++;
+      cur.setDate(cur.getDate() + 1);
+    }
+    return n;
+  }
+
+  function joursMinimumRequis(block) {
+    const g = (name, def) => intVal(block.querySelector(`[name$="-${name}"]`), def);
+    const nbGroupes = g("nb_groupes", 1);
+    const auditeursParGroupe = g("capacite_groupe", 1);
+    const nbModules = g("nb_modules", 1);
+    const heuresModule = g("heures_par_module", 1);
+    const nbSalles = g("nb_salles", 1);
+    const creneauxJour = g("creneaux_par_jour", 2);
+    const dureeCreneau = g("duree_creneau_heures", 4);
+    const maxSallesSim = Math.min(g("max_salles_simultanees_module", nbSalles), nbSalles);
+    const creneauxModule = Math.ceil(heuresModule / dureeCreneau);
+    const creneauxTotal = nbGroupes * nbModules * creneauxModule;
+    const creneauxModTotal = nbGroupes * creneauxModule;
+    const capJourGlobal = Math.max(1, creneauxJour * nbSalles);
+    const capJourModule = Math.max(1, creneauxJour * maxSallesSim);
+    return Math.max(
+      Math.ceil(creneauxTotal / capJourGlobal),
+      Math.ceil(creneauxModTotal / capJourModule)
+    );
+  }
+
+  function reindexBlock(block, idx) {
+    const prefix = String(idx);
+    block.dataset.formIndex = prefix;
+
+    block.querySelectorAll("[name]").forEach(el => {
+      if (el.name.includes("__prefix__")) {
+        el.name = el.name.replace(/__prefix__/g, prefix);
+      } else {
+        el.name = el.name.replace(/^form-\d+-/, `form-${prefix}-`);
+      }
+    });
+
+    block.querySelectorAll("[id]").forEach(el => {
+      if (el.id.includes("__prefix__")) {
+        el.id = el.id.replace(/__prefix__/g, prefix);
+      } else if (el.id.startsWith("id_form-")) {
+        el.id = el.id.replace(/^id_form-\d+-/, `id_form-${prefix}-`);
+      }
+    });
+
+    block.querySelectorAll("label[for]").forEach(el => {
+      if (el.htmlFor.includes("__prefix__")) {
+        el.htmlFor = el.htmlFor.replace(/__prefix__/g, prefix);
+      } else if (el.htmlFor.startsWith("id_form-")) {
+        el.htmlFor = el.htmlFor.replace(/^id_form-\d+-/, `id_form-${prefix}-`);
+      }
+    });
+
+    const labelEl = block.querySelector(".formation-block-label");
+    if (labelEl) {
+      const intituleInput = block.querySelector('[name$="-intitule"]');
+      labelEl.textContent = (intituleInput && intituleInput.value) || `Formation ${idx + 1}`;
+    }
+  }
+
+  function reindexAllBlocks() {
+    container.querySelectorAll(".formation-block").forEach((block, idx) => reindexBlock(block, idx));
+    setTotalForms(container.querySelectorAll(".formation-block").length);
+    updateRemoveButtons();
+  }
+
+  function setField(block, name, value) {
+    const fields = block.querySelectorAll(`[name$="-${name}"]`);
+    if (!fields.length) return;
+    fields.forEach(el => {
+      if (el.type === "checkbox") return;
+      if (el.tagName === "SELECT") {
+        el.value = String(value);
+      } else {
+        el.value = value != null ? value : "";
+      }
+    });
+  }
+
+  function setJoursSemaine(block, jours) {
+    const set = new Set((jours || []).map(String));
+    block.querySelectorAll('[name$="-jours_semaine"]').forEach(cb => {
+      cb.checked = set.has(cb.value);
+    });
+  }
+
+  function fillBlock(block, data) {
+    const fields = [
+      "formation_id", "intitule", "nb_groupes", "capacite_groupe", "nb_modules",
+      "heures_par_module", "nb_salles", "capacite_salle_moyenne", "tolerance_capacite_pct",
+      "creneaux_par_jour", "duree_creneau_heures", "max_salles_simultanees_module",
+      "date_debut", "date_fin",
+    ];
+    fields.forEach(name => {
+      if (data[name] !== undefined) setField(block, name, data[name]);
+    });
+    setJoursSemaine(block, data.jours_semaine || defaults.jours_semaine);
+
+    const labelEl = block.querySelector(".formation-block-label");
+    const intituleInput = block.querySelector('[name$="-intitule"]');
+    if (labelEl && intituleInput) {
+      labelEl.textContent = intituleInput.value || labelEl.textContent;
+    }
+  }
+
+  function initFormationBlockPreview(block) {
+    const inDebut = block.querySelector('[name$="-date_debut"]');
+    const inFin = block.querySelector('[name$="-date_fin"]');
+    const preview = block.querySelector(".jours-ouvres-preview");
+    if (!inDebut || !inFin || !preview) return;
+
+    function update() {
+      const d = inDebut.value ? new Date(inDebut.value) : null;
+      const f = inFin.value ? new Date(inFin.value) : null;
+      const actifs = getJoursActifs(block);
+      const minimum = joursMinimumRequis(block);
+      const recommande = Math.ceil(minimum * (1 + margePct / 100));
+
+      if (d && f && f >= d) {
+        const periode = compterJoursOuvres(d, f, actifs);
+        const ok = periode >= recommande;
+        preview.innerHTML = ok
+          ? `<span class="text-success"><i class="bi bi-check-circle me-1"></i>${periode} j. ouvrés — suffisant (min. ${recommande})</span>`
+          : `<span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>${periode} j. ouvrés — il manque ${recommande - periode} j. (min. ${recommande})</span>`;
+      } else {
+        preview.innerHTML = `<span class="text-muted">Min. recommandé : <strong>${recommande}</strong> j. ouvrés</span>`;
+      }
+    }
+
+    block.querySelectorAll("input, select").forEach(el => {
+      el.addEventListener("input", update);
+      el.addEventListener("change", update);
+    });
+    update();
+  }
+
+  const emptyHint = document.getElementById("formation-blocks-empty");
+
+  function updateEmptyHint() {
+    const n = container.querySelectorAll(".formation-block").length;
+    if (emptyHint) emptyHint.classList.toggle("d-none", n > 0);
+  }
+
+  function updateRemoveButtons() {
+    /* Chaque bloc peut être retiré, y compris le dernier. */
+  }
+
+  function addBlock(data) {
+    if (getTotalForms() >= maxForms) {
+      alert(`Maximum ${maxForms} formations simultanées.`);
+      return null;
+    }
+    const proto = templateWrap.querySelector(".formation-block");
+    if (!proto) return null;
+
+    const block = proto.cloneNode(true);
+    const idx = getTotalForms();
+    reindexBlock(block, idx);
+    container.appendChild(block);
+    setTotalForms(idx + 1);
+
+    fillBlock(block, data);
+    initFormationBlockPreview(block);
+
+    block.querySelector(".btn-remove-formation")?.addEventListener("click", () => removeBlock(block));
+    updateEmptyHint();
+    block.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    return block;
+  }
+
+  function removeBlock(block) {
+    block.remove();
+    reindexAllBlocks();
+    updateEmptyHint();
+  }
+
+  // Blocs existants au chargement
+  container.querySelectorAll(".formation-block").forEach(block => {
+    initFormationBlockPreview(block);
+    block.querySelector(".btn-remove-formation")?.addEventListener("click", () => removeBlock(block));
+  });
+  updateEmptyHint();
+
+  document.getElementById("simulation-form")?.addEventListener("submit", (e) => {
+    if (getTotalForms() < 1) {
+      e.preventDefault();
+      alert("Ajoutez au moins une formation (liste + Ajouter, ou Saisie manuelle).");
+    }
+  });
+
+  document.getElementById("btn-add-manual")?.addEventListener("click", () => {
+    addBlock({
+      ...defaults,
+      formation_id: "",
+      intitule: "Saisie manuelle",
+    });
+  });
+
+  const addFormationSelect = document.getElementById("add-formation-select");
+  let selectOptionsLoaded = false;
+
+  async function fillFormationSelect(url) {
+    if (!addFormationSelect) return;
+    const selected = addFormationSelect.value;
+    try {
+      const resp = await fetch(url, { headers: { "Accept": "application/json" } });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const items = data.formations || [];
+      addFormationSelect.innerHTML = '<option value="">— Choisir une formation —</option>';
+      items.forEach(f => {
+        const opt = document.createElement("option");
+        opt.value = String(f.id);
+        opt.textContent = f.label;
+        addFormationSelect.appendChild(opt);
+      });
+      if (selected) addFormationSelect.value = selected;
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  addFormationSelect?.addEventListener("focus", () => {
+    if (!selectOptionsLoaded) {
+      selectOptionsLoaded = true;
+      fillFormationSelect(`${formationsSearchUrl}?recent=1`);
+    }
+  });
+
+  document.getElementById("btn-add-from-ref")?.addEventListener("click", async () => {
+    const formationId = addFormationSelect?.value;
+    if (!formationId) {
+      addFormationSelect?.focus();
+      return;
+    }
+
+    const already = [...container.querySelectorAll('[name$="-formation_id"]')]
+      .some(el => el.value && el.value === formationId);
+    if (already) {
+      alert("Cette formation est déjà dans la simulation.");
+      return;
+    }
+
+    const btn = document.getElementById("btn-add-from-ref");
+    btn.disabled = true;
+    try {
+      const resp = await fetch(chiffresUrlTpl.replace("{id}", formationId), {
+        headers: { "Accept": "application/json" },
+      });
+      if (!resp.ok) {
+        alert("Impossible de charger cette formation.");
+        return;
+      }
+      const data = await resp.json();
+      addBlock(data);
+      if (addFormationSelect) addFormationSelect.value = "";
+    } catch (e) {
+      alert("Erreur réseau lors du chargement de la formation.");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+{% endblock %}

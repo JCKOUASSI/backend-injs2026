@@ -1,0 +1,803 @@
+{% extends "base.html" %}
+{% block title %}{{ formation.intitule }}{% endblock %}
+{% block nav_formations %}active-link{% endblock %}
+
+{% block extra_css %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+
+  {% if messages %}
+  <div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3">
+      {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h1 class="fw-bold mb-1" style="font-size:1.7rem;color:#0f172a;">{{ formation.intitule }}</h1>
+      <div class="d-flex gap-2 mt-1 flex-wrap">
+        <span class="badge px-3 py-2" style="background:#eff6ff;color:#1d4ed8;font-size:.85rem;">{{ formation.type_formation.code }}</span>
+        {% if formation.vague %}<span class="badge bg-secondary px-3 py-2">{{ formation.vague }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+      {% if modules_up_rup %}
+      <a href="{% url 'formations:rup_unite' formation.pk %}" class="btn btn-primary rounded-pill px-3">
+        <i class="bi bi-mortarboard me-1"></i>Mon module (RUP)
+      </a>
+      {% endif %}
+      {% if perms.formations.change_formation %}
+      <a href="{% url 'formations:edit' formation.pk %}" class="btn btn-primary rounded-pill px-3">Modifier</a>
+      {% endif %}
+      {% if perms.formations.delete_formation %}
+      <form method="post" action="{% url 'formations:delete' formation.pk %}" class="d-inline"
+            data-confirm="Supprimer cette formation ? Cette action est irréversible.">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger rounded-pill px-3">
+          Supprimer
+        </button>
+      </form>
+      {% endif %}
+      <a href="{% url 'formations:list' %}" class="btn btn-outline-secondary rounded-pill px-3">← Retour</a>
+    </div>
+  </div>
+
+  {% if perimetre_partiel %}
+  <div class="alert alert-info rounded-3 mb-4">
+    <i class="bi bi-info-circle me-1"></i>
+    Vue restreinte : seul votre module (matière référentiel) est affiché dans cette formation.
+    <a href="{% url 'formations:rup_unite' formation.pk %}" class="alert-link ms-1">Gérer les formateurs par groupe</a>.
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+
+    <!-- Infos générales (pleine largeur, au-dessus du programme) -->
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header py-3 px-4 fw-semibold" style="background:#f8fafc;color:#0f172a;">
+          <i class="bi bi-info-circle me-2 text-primary"></i>Informations
+        </div>
+        <div class="card-body">
+          <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-5 g-3 mb-0">
+            <div class="col">
+              <div class="text-muted small fw-semibold">Début</div>
+              <div class="fw-semibold">{{ formation.date_debut|date:"d/m/Y" }}</div>
+            </div>
+            <div class="col">
+              <div class="text-muted small fw-semibold">Fin</div>
+              <div class="fw-semibold">{{ formation.date_fin|date:"d/m/Y" }}</div>
+            </div>
+            <div class="col">
+              <div class="text-muted small fw-semibold">Inscrits</div>
+              <div>
+                <span class="badge rounded-pill bg-success">{{ formation.nb_inscrits }}</span>
+              </div>
+            </div>
+            <div class="col">
+              <div class="text-muted small fw-semibold">Groupes</div>
+              <div class="fw-semibold">{{ formation.nb_groupes }}</div>
+            </div>
+            <div class="col">
+              <div class="text-muted small fw-semibold">Rythme par défaut</div>
+              <div class="fw-semibold">{{ formation.get_rythme_mensuel_display }}</div>
+            </div>
+          </div>
+        </div>
+        <!-- Accès rapide groupes avec séances -->
+        {% if formation.groupes.all %}
+        <div class="card-footer bg-transparent border-top pt-2">
+          <button
+            class="btn btn-sm btn-outline-success w-100 d-flex align-items-center justify-content-between"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#groupes-seances-{{ formation.pk }}"
+            aria-expanded="false"
+            aria-controls="groupes-seances-{{ formation.pk }}"
+          >
+            <span><i class="bi bi-calendar3 me-1"></i>Séances par groupe</span>
+            <span class="badge bg-success">{{ formation.nb_groupes }}</span>
+          </button>
+          <div id="groupes-seances-{{ formation.pk }}" class="collapse mt-2">
+            <div class="d-grid gap-1 pe-1" style="max-height:220px;overflow:auto;">
+              {% for g in formation.groupes.all %}
+              <a href="{% url 'seances:preview' g.pk %}" class="btn btn-sm btn-outline-success text-truncate">
+                <i class="bi bi-calendar3 me-1"></i>{{ g.nom }}
+              </a>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        <!-- Exports Synthèse UP DOCX (tous groupes, par module) -->
+        {% if formation.modules.all %}
+        <div class="card-footer bg-transparent border-top pt-2">
+          <button
+            class="btn btn-sm w-100 d-flex align-items-center justify-content-between"
+            style="background:#eef3fb;color:#2b579a;border:1px solid #c7d7f0;"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#synthese-docx-{{ formation.pk }}"
+            aria-expanded="false"
+            aria-controls="synthese-docx-{{ formation.pk }}"
+          >
+            <span><i class="bi bi-file-earmark-word me-1"></i>Synthèse UP DOCX — tous groupes</span>
+            <span class="badge" style="background:#2b579a;">{{ formation.modules.count }}</span>
+          </button>
+          <div id="synthese-docx-{{ formation.pk }}" class="collapse mt-2">
+            <div class="d-grid gap-1 pe-1" style="max-height:220px;overflow:auto;">
+              {% for fm in formation.modules.all %}
+              <a href="{% url 'seances:formation_module_synthese_docx' formation.pk fm.module.pk %}"
+                 class="btn btn-sm text-truncate text-start"
+                 style="background:#f5f8ff;color:#2b579a;border:1px solid #d0dff8;">
+                <i class="bi bi-file-word me-1" style="color:#2b579a;"></i>
+                {{ fm.module.titre }}
+                {% if fm.grade_cible %}
+                <span class="badge ms-1" style="background:#dce7fb;color:#1d4ed8;font-size:.7rem;">{{ fm.grade_cible }}</span>
+                {% endif %}
+              </a>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Périodes pédagogiques -->
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header py-3 px-4 fw-semibold" style="background:#f8fafc;color:#0f172a;">
+          <i class="bi bi-calendar-range me-2 text-primary"></i>Périodes pédagogiques
+        </div>
+        <div class="card-body">
+          <div class="table-responsive mb-3">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Libellé</th>
+                  <th class="text-center">Début</th>
+                  <th class="text-center">Fin</th>
+                  <th>Rythme mensuel</th>
+                  <th class="text-center">Modules</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in periodes %}
+                <tr>
+                  <td class="fw-semibold">{{ p.libelle }}</td>
+                  <td class="text-center small">{{ p.date_debut|date:"d/m/Y" }}</td>
+                  <td class="text-center small">{{ p.date_fin|date:"d/m/Y" }}</td>
+                  <td><span class="badge bg-secondary-subtle text-secondary">{{ p.get_rythme_mensuel_display }}</span></td>
+                  <td class="text-center">{{ p.modules.count }}</td>
+                  <td class="text-end text-nowrap">
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-bs-toggle="collapse" data-bs-target="#periode-edit-{{ p.pk }}">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    {% if p.modules.count == 0 and periodes|length > 1 %}
+                    <form method="post" action="{% url 'formations:periode_delete' formation.pk p.pk %}" class="d-inline"
+                          data-confirm="Supprimer cette période ?">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </form>
+                    {% endif %}
+                  </td>
+                </tr>
+                <tr class="collapse" id="periode-edit-{{ p.pk }}">
+                  <td colspan="6" class="bg-light">
+                    <form method="post" action="{% url 'formations:periode_edit' formation.pk p.pk %}" class="row g-2 align-items-end py-2">
+                      {% csrf_token %}
+                      <div class="col-md-3">
+                        <label class="form-label small mb-0">Libellé</label>
+                        <input type="text" name="libelle" class="form-control form-control-sm" value="{{ p.libelle }}" required>
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label small mb-0">Début</label>
+                        <input type="date" name="date_debut" class="form-control form-control-sm" value="{{ p.date_debut|date:'Y-m-d' }}" required>
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label small mb-0">Fin</label>
+                        <input type="date" name="date_fin" class="form-control form-control-sm" value="{{ p.date_fin|date:'Y-m-d' }}" required>
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label small mb-0">Rythme mensuel</label>
+                        <div class="d-flex flex-wrap gap-2">
+                          {% for value, label in periode_form.fields.rythme_mensuel.choices %}
+                          <div class="form-check form-check-inline mb-0">
+                            <input class="form-check-input" type="checkbox" name="rythme_mensuel" value="{{ value }}" id="rythme_{{ p.pk }}_{{ value }}"
+                              {% if p.rythme_mensuel == value %}checked{% endif %}>
+                            <label class="form-check-label small" for="rythme_{{ p.pk }}_{{ value }}">{{ label }}</label>
+                          </div>
+                          {% endfor %}
+                        </div>
+                      </div>
+                      <div class="col-md-1">
+                        <button type="submit" class="btn btn-sm btn-primary w-100">OK</button>
+                      </div>
+                    </form>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-muted text-center">Aucune période.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <form method="post" action="{% url 'formations:periode_add' formation.pk %}" class="border-top pt-3">
+            {% csrf_token %}
+            <div class="row g-2 align-items-end">
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold mb-1">Nouvelle période — libellé</label>
+                {{ periode_form.libelle }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small fw-semibold mb-1">Début</label>
+                {{ periode_form.date_debut }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small fw-semibold mb-1">Fin</label>
+                {{ periode_form.date_fin }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-semibold mb-1">Rythme mensuel</label>
+                <div class="d-flex flex-wrap gap-2 border rounded p-2">
+                  {% for choice in periode_form.rythme_mensuel %}
+                  <div class="form-check form-check-inline mb-0">
+                    {{ choice.tag }}
+                    <label class="form-check-label small" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="col-md-1">
+                <button type="submit" class="btn btn-outline-primary w-100 rounded-pill">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modules (pleine largeur sous les informations) -->
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header py-3 px-4 fw-semibold" style="background:#f8fafc;color:#0f172a;">
+          <i class="bi bi-journal-bookmark me-2 text-primary"></i>Programme pédagogique
+        </div>
+        <div class="card-body">
+          <table class="table table-sm align-middle mb-3">
+            <thead class="table-light">
+              <tr>
+                <th>Module</th>
+                <th>Période</th>
+                <th>Grade</th>
+                <th>Lieu</th>
+                <th class="text-center">Créneaux</th>
+                <th class="text-center">Début</th>
+                <th class="text-center">Fin</th>
+                <th class="text-end">Volume (h)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for fm in formation.modules.all %}
+              <tr>
+                <td class="fw-semibold" style="color:#0f172a;">{{ fm.module.titre }}</td>
+                <td class="small">
+                  <span class="badge bg-light text-dark border">{{ fm.periode.libelle }}</span>
+                  <div class="text-muted">{{ fm.periode.get_rythme_mensuel_display }}</div>
+                </td>
+                <td>
+                  <span class="badge bg-primary-subtle text-primary">
+                    {{ fm.grade_cible|default:"Tous les grades" }}
+                  </span>
+                </td>
+                <td class="small">
+                  <div><strong>Sites ({{ fm.site_nombre }}):</strong> {{ fm.site_nom|default:"—" }}</div>
+                  {% if fm.batiment_nombre %}
+                  <div><strong>Bâtiments ({{ fm.batiment_nombre }}):</strong> {{ fm.batiment_nom|default:"—" }}</div>
+                  {% endif %}
+                  {% if fm.salle_nom %}
+                  <div><strong>Salles{% if fm.salle_nombre %} ({{ fm.salle_nombre }}){% endif %}:</strong> {{ fm.salle_nom }}</div>
+                  {% elif fm.site_nom %}
+                  <div><strong>Salles :</strong> automatique (salles actives du ou des sites)</div>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">
+                    {{ fm.get_creneau_mode_display }}
+                  </span>
+                </td>
+                <td class="text-center text-muted small">
+                  {% if fm.date_debut %}{{ fm.date_debut|date:"d/m/Y" }}{% else %}—{% endif %}
+                </td>
+                <td class="text-center text-muted small">
+                  {% if fm.date_fin %}{{ fm.date_fin|date:"d/m/Y" }}{% else %}—{% endif %}
+                </td>
+                <td class="text-end">
+                  {% if fm.volume_horaire is not None %}
+                  <span class="badge bg-info bg-opacity-10 text-info">{{ fm.volume_horaire }}h</span>
+                  {% else %}
+                  <span class="badge bg-secondary bg-opacity-10 text-secondary"
+                        title="Volume selon le paramétrage (type × module × grade du groupe) au planning.">Selon grade</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <a href="{% url 'seances:formation_module_synthese_docx' formation.pk fm.module.pk %}"
+                     class="btn btn-sm btn-outline-primary rounded-pill px-2 me-1"
+                     title="Télécharger la Synthèse UP DOCX pour ce module (tous groupes)">
+                    <i class="bi bi-file-word" style="color:#2b579a;"></i>
+                  </a>
+                  <a href="{% url 'formations:module_edit' formation.pk fm.pk %}"
+                     class="btn btn-sm btn-outline-secondary rounded-pill px-2 me-1">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <form method="post" action="{% url 'formations:module_delete' formation.pk fm.pk %}"
+                        class="d-inline" data-confirm="Retirer ce module ?">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="9" class="text-muted text-center py-3">
+                  <i class="bi bi-inbox me-2 opacity-50"></i>Aucun module ajouté.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <form method="post" action="{% url 'formations:module_add' formation.pk %}" class="border-top pt-3">
+            {% csrf_token %}
+            {% if module_form.non_field_errors %}
+            <div class="alert alert-danger py-2 px-3 small">
+              {% for error in module_form.non_field_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            </div>
+            {% endif %}
+            {% if module_form.errors %}
+            <div class="alert alert-warning py-2 px-3 small">
+              {% for field in module_form %}
+                {% for error in field.errors %}
+                  <div><strong>{{ field.label }} :</strong> {{ error }}</div>
+                {% endfor %}
+              {% endfor %}
+            </div>
+            {% endif %}
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-md-3">
+                <label class="form-label small fw-semibold mb-1">Grades</label>
+                <div id="grade-checkboxes" class="border rounded p-2" style="max-height:150px;overflow:auto;">
+                  {% for choice in module_form.grade_cible %}
+                  <div class="form-check mb-1">
+                    {{ choice.tag }}
+                    <label class="form-check-label small" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label small fw-semibold mb-1">Modules</label>
+                {% if module_form.modules.errors %}
+                <div class="text-danger small">{{ module_form.modules.errors }}</div>
+                {% endif %}
+                <div id="module-checkboxes" class="border rounded p-2" style="max-height:150px;overflow:auto;">
+                  <div class="text-muted small" id="module-checkboxes-placeholder">Sélectionnez d'abord un grade.</div>
+                </div>
+              </div>
+              <div class="col-12 col-md-2">
+                <label class="form-label small fw-semibold mb-1">Période</label>
+                {{ module_form.periode }}
+              </div>
+              <div class="col-12 col-md-2">
+                <label class="form-label small fw-semibold mb-1">Créneaux</label>
+                {{ module_form.creneau_mode }}
+              </div>
+              <div class="col-12">
+                <small id="periode-hint" class="text-muted"></small>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label small fw-semibold mb-1">Sites</label>
+                {% if module_form.sites.errors %}
+                <div class="text-danger small">{{ module_form.sites.errors }}</div>
+                {% endif %}
+                <div id="sites-checkboxes" class="border rounded p-2" style="max-height:180px;overflow:auto;">
+                  {% for site in module_form.fields.sites.queryset %}
+                  <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" name="sites" value="{{ site.pk }}" id="id_sites_{{ site.pk }}"
+                      {% with spk=site.pk|stringformat:"d" %}{% if spk in module_form.selected_site_id_strs %}checked{% endif %}{% endwith %}>
+                    <label class="form-check-label small" for="id_sites_{{ site.pk }}">{{ site.nom }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label small fw-semibold mb-1">Bâtiments</label>
+                {% if module_form.batiments.errors %}
+                <div class="text-danger small">{{ module_form.batiments.errors }}</div>
+                {% endif %}
+                <div id="batiments-checkboxes" class="border rounded p-2" style="max-height:180px;overflow:auto;">
+                  {% for bat in module_form.fields.batiments.queryset %}
+                  <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" name="batiments" value="{{ bat.pk }}" id="id_batiments_{{ bat.pk }}"
+                      {% with bpk=bat.pk|stringformat:"d" %}{% if bpk in module_form.selected_batiment_id_strs %}checked{% endif %}{% endwith %}>
+                    <label class="form-check-label small" for="id_batiments_{{ bat.pk }}">{{ bat.nom }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label small fw-semibold mb-1">Salles</label>
+                {% if module_form.salles.errors %}
+                <div class="text-danger small">{{ module_form.salles.errors }}</div>
+                {% endif %}
+                <div id="salles-checkboxes" class="border rounded p-2" style="max-height:180px;overflow:auto;">
+                  {% for salle in module_form.fields.salles.queryset %}
+                  <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" name="salles" value="{{ salle.pk }}" id="id_salles_{{ salle.pk }}"
+                      {% with spk=salle.pk|stringformat:"d" %}{% if spk in module_form.selected_salle_id_strs %}checked{% endif %}{% endwith %}>
+                    <label class="form-check-label small" for="id_salles_{{ salle.pk }}">{{ salle.nom }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="col-12">
+                <small class="text-muted">
+                  Cochez au moins un site. Les bâtiments et salles sont optionnels : sans sélection,
+                  le planning utilisera tous les bâtiments et salles actifs du ou des sites choisis.
+                </small>
+                <div class="small mt-1" id="volume-hint"></div>
+              </div>
+              <div class="col-12 col-md-2">
+                <button type="submit" class="btn btn-success w-100 rounded-pill">
+                  <i class="bi bi-plus me-1"></i>Ajouter
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Liens rapides -->
+  <div class="mt-4 d-flex gap-2 flex-wrap">
+    <a href="{% url 'groupes:list' formation.pk %}" class="btn btn-outline-primary rounded-pill px-4 fw-semibold">
+      <i class="bi bi-diagram-3 me-2"></i>Gérer les groupes
+      <span class="badge bg-primary ms-1">{{ formation.nb_groupes }}</span>
+    </a>
+    <a href="{% url 'formations:inscription_copier' formation.pk %}" class="btn btn-outline-success rounded-pill px-4 fw-semibold">
+      <i class="bi bi-people-fill me-2"></i>Inscrire des auditeurs d'une autre formation
+      {% if formation.nb_inscrits %}<span class="badge bg-success ms-1">{{ formation.nb_inscrits }}</span>{% endif %}
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ batiments_data|json_script:"batiments-data" }}
+{{ salles_data|json_script:"salles-data" }}
+{{ periodes_data|json_script:"periodes-data" }}
+{{ module_volumes_data|json_script:"module-volumes-data" }}
+{{ modules_catalog_data|json_script:"modules-catalog-data" }}
+{{ module_form.selected_module_id_strs|json_script:"selected-module-ids" }}
+<script>
+  (function () {
+    const sitesWrap = document.getElementById("sites-checkboxes");
+    const batimentsWrap = document.getElementById("batiments-checkboxes");
+    const sallesWrap = document.getElementById("salles-checkboxes");
+    const modulesWrap = document.getElementById("module-checkboxes");
+    const periodeSelect = document.getElementById("id_periode");
+    const periodeHint = document.getElementById("periode-hint");
+    const gradeCheckboxes = Array.from(document.querySelectorAll('input[name="grade_cible"]'));
+    const volumeHint = document.getElementById("volume-hint");
+    const ALL_GRADE_VALUE = "__ALL__";
+
+    if (!sitesWrap || !batimentsWrap || !sallesWrap || !modulesWrap) return;
+    const periodesData = JSON.parse(document.getElementById("periodes-data").textContent);
+    const moduleVolumesData = JSON.parse(document.getElementById("module-volumes-data").textContent);
+    const modulesCatalogData = JSON.parse(document.getElementById("modules-catalog-data").textContent);
+    const preselectedModuleIds = new Set(
+      JSON.parse(document.getElementById("selected-module-ids").textContent).map((v) => Number(v))
+    );
+    const batimentsData = JSON.parse(document.getElementById("batiments-data").textContent);
+    const sallesData = JSON.parse(document.getElementById("salles-data").textContent);
+
+    function selectedCheckboxIds(name) {
+      return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map((el) => Number(el.value));
+    }
+
+    function renderBatiments() {
+      const siteIds = selectedCheckboxIds("sites");
+      const keepBat = new Set(selectedCheckboxIds("batiments"));
+      const filtered = siteIds.length
+        ? batimentsData.filter((b) => siteIds.includes(Number(b.site_id)))
+        : [];
+      batimentsWrap.innerHTML = "";
+      filtered.forEach((b) => {
+        const id = "id_batiments_" + b.id;
+        const row = document.createElement("div");
+        row.className = "form-check mb-1";
+        const inp = document.createElement("input");
+        inp.type = "checkbox";
+        inp.className = "form-check-input";
+        inp.name = "batiments";
+        inp.value = String(b.id);
+        inp.id = id;
+        if (keepBat.has(b.id)) inp.checked = true;
+        const lab = document.createElement("label");
+        lab.className = "form-check-label small";
+        lab.setAttribute("for", id);
+        lab.textContent = b.nom;
+        row.appendChild(inp);
+        row.appendChild(lab);
+        batimentsWrap.appendChild(row);
+      });
+      renderSalles();
+    }
+
+    function renderSalles() {
+      const siteIds = selectedCheckboxIds("sites");
+      const batIds = selectedCheckboxIds("batiments");
+      const keepSalles = new Set(selectedCheckboxIds("salles"));
+      let filtered = [];
+      if (batIds.length) {
+        filtered = sallesData.filter((s) => batIds.includes(Number(s.batiment_id)));
+      } else if (siteIds.length) {
+        const batOnSites = new Set(
+          batimentsData.filter((b) => siteIds.includes(Number(b.site_id))).map((b) => Number(b.id))
+        );
+        filtered = sallesData.filter((s) => batOnSites.has(Number(s.batiment_id)));
+      }
+      sallesWrap.innerHTML = "";
+      filtered.forEach((s) => {
+        const id = "id_salles_" + s.id;
+        const row = document.createElement("div");
+        row.className = "form-check mb-1";
+        const inp = document.createElement("input");
+        inp.type = "checkbox";
+        inp.className = "form-check-input";
+        inp.name = "salles";
+        inp.value = String(s.id);
+        inp.id = id;
+        if (keepSalles.has(s.id)) inp.checked = true;
+        const lab = document.createElement("label");
+        lab.className = "form-check-label small";
+        lab.setAttribute("for", id);
+        lab.textContent = s.nom;
+        row.appendChild(inp);
+        row.appendChild(lab);
+        sallesWrap.appendChild(row);
+      });
+    }
+
+    function selectedGradeValues() {
+      if (!gradeCheckboxes.length) return [];
+      return gradeCheckboxes
+        .filter((cb) => cb.checked)
+        .map((cb) => (cb.value || "").trim().toUpperCase())
+        .filter(Boolean);
+    }
+
+    function moduleHasVolumeForGrade(moduleId, grade) {
+      const exact = moduleVolumesData.find(
+        (item) => Number(item.module_id) === moduleId && ((item.grade_cible || "").trim().toUpperCase() === grade)
+      );
+      if (exact) return true;
+      const parentRule = moduleVolumesData
+        .filter((item) => Number(item.module_id) === moduleId && ((item.grade_cible || "").trim()))
+        .filter((item) => {
+          const rule = (item.grade_cible || "").trim().toUpperCase();
+          return grade === rule || grade.startsWith(rule);
+        })
+        .sort((a, b) => ((b.grade_cible || "").trim().length - ((a.grade_cible || "").trim().length)));
+      if (parentRule.length > 0) return true;
+      return moduleVolumesData.some(
+        (item) => Number(item.module_id) === moduleId && !((item.grade_cible || "").trim())
+      );
+    }
+
+    function moduleHasVolumeForGrades(moduleId, grades, hasAll) {
+      if (hasAll) {
+        return moduleVolumesData.some((item) => Number(item.module_id) === moduleId);
+      }
+      return grades.every((grade) => moduleHasVolumeForGrade(moduleId, grade));
+    }
+
+    function selectedModuleIds() {
+      return Array.from(document.querySelectorAll('input[name="modules"]:checked')).map((el) => Number(el.value));
+    }
+
+    function renderModules() {
+      const selectedGrades = selectedGradeValues();
+      const hasAll = selectedGrades.includes(ALL_GRADE_VALUE);
+      const grades = hasAll ? [] : selectedGrades.filter((g) => g !== ALL_GRADE_VALUE);
+      const keepModules = new Set(selectedModuleIds());
+      preselectedModuleIds.forEach((id) => keepModules.add(id));
+
+      modulesWrap.innerHTML = "";
+      if (!hasAll && grades.length === 0) {
+        modulesWrap.innerHTML = '<div class="text-muted small">Sélectionnez au moins un grade.</div>';
+        updateVolumeHint();
+        return;
+      }
+
+      const eligible = modulesCatalogData.filter((m) => moduleHasVolumeForGrades(Number(m.id), grades, hasAll));
+      if (!eligible.length) {
+        modulesWrap.innerHTML = '<div class="text-muted small">Aucun module paramétré pour cette sélection.</div>';
+        updateVolumeHint();
+        return;
+      }
+
+      eligible.forEach((m) => {
+        const id = "id_modules_" + m.id;
+        const row = document.createElement("div");
+        row.className = "form-check mb-1";
+        const inp = document.createElement("input");
+        inp.type = "checkbox";
+        inp.className = "form-check-input";
+        inp.name = "modules";
+        inp.value = String(m.id);
+        inp.id = id;
+        if (keepModules.has(Number(m.id))) inp.checked = true;
+        const lab = document.createElement("label");
+        lab.className = "form-check-label small";
+        lab.setAttribute("for", id);
+        lab.textContent = m.titre;
+        row.appendChild(inp);
+        row.appendChild(lab);
+        modulesWrap.appendChild(row);
+      });
+      preselectedModuleIds.clear();
+      updateVolumeHint();
+    }
+
+    function syncGradeSelection() {
+      if (!gradeCheckboxes.length) return;
+      const selected = selectedGradeValues();
+      const hasAll = selected.includes(ALL_GRADE_VALUE);
+      gradeCheckboxes.forEach((cb) => {
+        const val = (cb.value || "").trim().toUpperCase();
+        if (!val) return;
+        if (hasAll && val !== ALL_GRADE_VALUE) {
+          cb.checked = false;
+          cb.disabled = true;
+          return;
+        }
+        cb.disabled = false;
+      });
+    }
+
+    function overlaps(startA, endA, startB, endB) {
+      return startA <= endB && startB <= endA;
+    }
+
+    function updateVolumeHint() {
+      if (!volumeHint) return;
+      const moduleIds = selectedModuleIds();
+      const selectedGrades = selectedGradeValues();
+      const hasAll = selectedGrades.includes("__ALL__");
+      const grades = hasAll ? [] : selectedGrades;
+      if (!moduleIds.length || (!hasAll && grades.length === 0)) {
+        volumeHint.textContent = "Le volume horaire sera déterminé selon le paramétrage du module et des grades.";
+        volumeHint.className = "small mt-1 text-muted";
+        return;
+      }
+
+      if (moduleIds.length > 1) {
+        volumeHint.textContent = `${moduleIds.length} modules sélectionnés : volumes selon le paramétrage pour chaque module.`;
+        volumeHint.className = "small mt-1 text-primary fw-semibold";
+        return;
+      }
+
+      const moduleId = moduleIds[0];
+      const generic = moduleVolumesData.find(
+        (item) => Number(item.module_id) === moduleId && !((item.grade_cible || "").trim())
+      );
+
+      if (hasAll) {
+        if (generic) {
+          volumeHint.textContent = `Volume estimé : ${generic.volume_horaire_defaut}h (règle générique tous grades).`;
+          volumeHint.className = "small mt-1 text-primary fw-semibold";
+          return;
+        }
+        const specificVolumes = moduleVolumesData
+          .filter((item) => Number(item.module_id) === moduleId && ((item.grade_cible || "").trim()))
+          .map((item) => Number(item.volume_horaire_defaut));
+        const uniqSpecific = Array.from(new Set(specificVolumes));
+        if (uniqSpecific.length === 1) {
+          volumeHint.textContent = `Volume estimé : ${uniqSpecific[0]}h (règles grades harmonisées).`;
+          volumeHint.className = "small mt-1 text-primary fw-semibold";
+          return;
+        }
+        volumeHint.textContent =
+          "Volumes différents par grade : laissez le volume vide sur la ligne — au planning, chaque groupe utilisera le volume du paramétrage pour son grade.";
+        volumeHint.className = "small mt-1 text-primary fw-semibold";
+        return;
+      }
+
+      const resolved = [];
+      for (const grade of grades) {
+        const exact = moduleVolumesData.find(
+          (item) => Number(item.module_id) === moduleId && ((item.grade_cible || "").trim().toUpperCase() === grade)
+        );
+        if (exact) {
+          resolved.push(Number(exact.volume_horaire_defaut));
+          continue;
+        }
+        const parentRule = moduleVolumesData
+          .filter((item) => Number(item.module_id) === moduleId && ((item.grade_cible || "").trim()))
+          .filter((item) => {
+            const rule = (item.grade_cible || "").trim().toUpperCase();
+            return grade === rule || grade.startsWith(rule);
+          })
+          .sort((a, b) => ((b.grade_cible || "").trim().length - ((a.grade_cible || "").trim().length)));
+        if (parentRule.length > 0) {
+          resolved.push(Number(parentRule[0].volume_horaire_defaut));
+          continue;
+        }
+        if (generic) {
+          resolved.push(Number(generic.volume_horaire_defaut));
+          continue;
+        }
+        volumeHint.textContent =
+          `Aucune règle de volume trouvée pour le grade ${grade}.`;
+        volumeHint.className = "small mt-1 text-danger fw-semibold";
+        return;
+      }
+      const uniq = Array.from(new Set(resolved));
+      if (uniq.length === 1) {
+        volumeHint.textContent = `Volume estimé : ${uniq[0]}h pour ${grades.length} grade(s).`;
+        volumeHint.className = "small mt-1 text-success fw-semibold";
+        return;
+      }
+      volumeHint.textContent = "Volumes différents selon les grades sélectionnés.";
+      volumeHint.className = "small mt-1 text-warning fw-semibold";
+    }
+
+    function updatePeriodeHint() {
+      if (!periodeSelect || !periodeHint) return;
+      const id = Number(periodeSelect.value);
+      const p = periodesData.find((item) => Number(item.id) === id);
+      if (!p) {
+        periodeHint.textContent = "";
+        return;
+      }
+      periodeHint.textContent =
+        `Calendrier : ${p.date_debut} → ${p.date_fin} — Rythme : ${p.rythme}.`;
+    }
+
+    if (periodeSelect) {
+      periodeSelect.addEventListener("change", updatePeriodeHint);
+      updatePeriodeHint();
+    }
+
+    sitesWrap.addEventListener("change", renderBatiments);
+    batimentsWrap.addEventListener("change", renderSalles);
+    modulesWrap.addEventListener("change", updateVolumeHint);
+    if (gradeCheckboxes.length) {
+      gradeCheckboxes.forEach((cb) => {
+        cb.addEventListener("change", syncGradeSelection);
+        cb.addEventListener("change", renderModules);
+      });
+      syncGradeSelection();
+    }
+    renderBatiments();
+    renderModules();
+
+  })();
+</script>
+{% endblock %}

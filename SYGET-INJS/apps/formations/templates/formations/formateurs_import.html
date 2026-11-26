@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Importer des formateurs{% endblock %}
+{% block nav_formateurs %}active-link{% endblock %}
+{% block topbar_title %}Importer des formateurs{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:600px">
+  <h1 class="fw-bold mb-4">Importer des formateurs</h1>
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <p class="text-muted mb-3">
+        Le fichier alimente le <strong>référentiel global</strong> des formateurs, sans lien avec une formation.
+        Les affectations aux groupes se font ensuite (page « Mon module » ou génération automatique).
+        Colonnes obligatoires : <strong>numero</strong>, <strong>nom</strong>, <strong>prenom</strong>.
+        Optionnel : email, telephone, organisation, <strong>specialites</strong> ou <strong>module_titre</strong>
+        (pour déduire la spécialité depuis le référentiel ; sans spécialité, GENERAL est appliquée).
+        Une ou plusieurs lignes de titre peuvent précéder la ligne d'en-têtes (détection automatique).
+      </p>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2 small mb-3">
+          {% for err in form.non_field_errors %}<div>{{ err }}</div>{% endfor %}
+        </div>
+        {% endif %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="{{ form.fichier.id_for_label }}">{{ form.fichier.label }}</label>
+          {{ form.fichier }}
+          {% for err in form.fichier.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-success">Importer</button>
+          <a href="{% url 'formations:formateurs_list' %}" class="btn btn-outline-secondary">Annuler</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

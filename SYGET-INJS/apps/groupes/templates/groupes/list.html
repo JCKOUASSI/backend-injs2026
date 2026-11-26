@@ -1,0 +1,650 @@
+{% extends "base.html" %}
+{% block title %}Groupes — {{ formation.intitule }}{% endblock %}
+{% block nav_formations %}active-link{% endblock %}
+{% block extra_css %}
+<style>
+  /* Corps scrollable, pied de modale toujours visible */
+  .modal-groupe-form .modal-body {
+    max-height: min(65vh, 28rem);
+    overflow-y: auto;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="fw-bold mb-1">Groupes</h1>
+      <p class="text-muted mb-0">{{ formation.intitule }} — <span class="badge bg-primary">{{ formation.type_formation.code }}</span></p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+      {% if perimetre_partiel and modules_up_rup %}
+      <a href="{% url 'formations:rup_unite' formation.pk %}" class="btn btn-primary">
+        <i class="bi bi-mortarboard me-1"></i>Affecter formateurs (mes UP)
+      </a>
+      {% endif %}
+      {% if not perimetre_partiel %}
+      {% if perms.groupes.add_groupe %}
+      <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalCreerGroupe">
+        <i class="bi bi-plus-circle me-1"></i>Créer un groupe
+      </button>
+      {% endif %}
+      {% if formation.nb_groupes and perms.seances.change_seance %}
+      <form method="post" action="{% url 'groupes:regenerer_planning' formation.pk %}"
+            data-confirm="Régénérer l'emploi du temps de tous les groupes ? Les séances existantes seront remplacées ; les auditeurs restent dans leurs groupes actuels.">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-primary">
+          <i class="bi bi-calendar-check me-1"></i>Regénérer le planning
+        </button>
+      </form>
+      {% endif %}
+      {% if perms.groupes.add_groupe and perms.groupes.delete_groupe %}
+      <form method="post" action="{% url 'groupes:auto_generate' formation.pk %}"
+            class="d-flex align-items-center gap-2 flex-wrap"
+            data-confirm="Régénérer automatiquement les groupes ? Les groupes actuels seront remplacés et les auditeurs seront réaffectés.">
+        {% csrf_token %}
+        <div class="form-check mb-0">
+          <input type="checkbox" class="form-check-input" name="mixage_grades" id="mixageGradesAuto"
+                 {% if groupes_auto_mixage_grades %}checked{% endif %}>
+          <label class="form-check-label small text-nowrap" for="mixageGradesAuto" title="Mélanger les grades au sein d'une même catégorie (A, B, C…)">
+            Mixage des grades (par catégorie)
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-magic me-1"></i>Régénérer auto
+        </button>
+      </form>
+      {% endif %}
+      {% if perms.groupes.change_groupe and formation.nb_groupes %}
+      <form method="post" action="{% url 'groupes:normaliser_noms' formation.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-dark" title="Renommer les groupes existants (ex. Groupe 1 A3 → A3_GROUPE1)">
+          <i class="bi bi-tag me-1"></i>Normaliser les noms
+        </button>
+      </form>
+      {% endif %}
+      <div class="dropdown">
+        <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-download me-1"></i>Exporter tous les groupes
+        </button>
+        <ul class="dropdown-menu">
+          {% if formation.nb_groupes %}
+          <li>
+            <span class="dropdown-item-text small text-muted fw-semibold px-3 py-1">
+              <i class="bi bi-file-earmark-pdf me-1 text-danger"></i>Emploi du temps PDF
+            </span>
+          </li>
+          <li>
+            <a class="dropdown-item" href="{% url 'seances:formation_export_pdf_zip' formation.pk %}">
+              <i class="bi bi-file-earmark-zip me-2"></i>Un PDF par groupe (ZIP)
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="{% url 'seances:formation_export_pdf' formation.pk %}">
+              <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>PDF unique (tous groupes)
+            </a>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <span class="dropdown-item-text small text-muted fw-semibold px-3 py-1">
+              <i class="bi bi-file-earmark-excel me-1"></i>Excel
+            </span>
+          </li>
+          <li>
+            <a class="dropdown-item" href="{% url 'seances:formation_export_zip' formation.pk %}?format=cours">
+              <i class="bi bi-file-earmark-zip me-2"></i>Un fichier par groupe — Cours (ZIP)
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="{% url 'seances:formation_export_zip' formation.pk %}?format=seances">
+              <i class="bi bi-file-earmark-zip me-2"></i>Un fichier par groupe — Séances (ZIP)
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="{% url 'seances:formation_export_zip' formation.pk %}?format=formateurs">
+              <i class="bi bi-file-earmark-zip me-2"></i>Un fichier par groupe — Formateurs (ZIP)
+            </a>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a class="dropdown-item" href="{% url 'seances:formation_export' formation.pk %}?format=cours">
+              <i class="bi bi-mortarboard me-2"></i>Fichier unique — Cours (Formations)
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="{% url 'seances:formation_export' formation.pk %}?format=seances">
+              <i class="bi bi-file-earmark-spreadsheet me-2"></i>Fichier unique — Séances uniquement
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="{% url 'seances:formation_export' formation.pk %}?format=formateurs">
+              <i class="bi bi-person-badge me-2"></i>Fichier unique — Formateurs (module)
+            </a>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a class="dropdown-item" href="{% url 'formations:export_auditeurs' formation.pk %}">
+              <i class="bi bi-people me-2"></i>Auditeurs (Excel)
+            </a>
+          </li>
+          {% endif %}
+          {% if modules_formation %}
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <span class="dropdown-item-text small text-muted fw-semibold px-3 py-1">
+              <i class="bi bi-file-earmark-word me-1"></i>Synthèse UP DOCX — par matière (tous groupes)
+            </span>
+          </li>
+          {% for fm in modules_formation %}
+          <li>
+            <a class="dropdown-item"
+               href="{% url 'seances:formation_module_synthese_docx' formation.pk fm.module.pk %}">
+              <i class="bi bi-file-word me-2" style="color:#2b579a;"></i>{{ fm.module.titre }}
+              {% if fm.grade_cible %}
+              <span class="badge ms-1" style="background:#dce7fb;color:#1d4ed8;font-size:.7rem;">{{ fm.grade_cible }}</span>
+              {% endif %}
+            </a>
+          </li>
+          {% endfor %}
+          {% endif %}
+        </ul>
+      </div>
+      {% elif perimetre_partiel and modules_up_rup %}
+      <div class="dropdown">
+        <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+          <i class="bi bi-file-word me-1"></i>Exports mes UP
+        </button>
+        <ul class="dropdown-menu">
+          {% for fm in modules_up_rup %}
+          <li>
+            <a class="dropdown-item"
+               href="{% url 'seances:formation_module_synthese_docx' formation.pk fm.module.pk %}">
+              <i class="bi bi-file-word me-2" style="color:#2b579a;"></i>{{ fm.module.titre }}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      <a href="{% url 'formations:detail' formation.pk %}" class="btn btn-outline-secondary">← Formation</a>
+    </div>
+  </div>
+
+  {% if messages %}
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
+    {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  {% if perimetre_partiel %}
+  <div class="alert alert-info py-2 mb-3">
+    <i class="bi bi-mortarboard me-1"></i>
+    Vue responsable de module : vous consultez les groupes mais ne gérez que votre matière référentiel.
+    <a href="{% url 'formations:rup_unite' formation.pk %}" class="alert-link">Affecter les formateurs</a>.
+  </div>
+  {% endif %}
+
+  <!-- Filtre des auditeurs disponibles par formation précédente -->
+  <div class="card mb-3 border-0 bg-light">
+    <div class="card-body py-2 px-3">
+      <form method="get" class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="small fw-semibold text-muted text-nowrap">
+          <i class="bi bi-funnel me-1"></i>Auditeurs disponibles dans les modales :
+        </span>
+        <select name="source_formation" class="form-select form-select-sm" style="max-width: 420px;">
+          <option value="">— Inscrits de cette formation —</option>
+          {% for f in toutes_formations %}
+          <option value="{{ f.pk }}"{% if f.pk == source_formation_id %} selected{% endif %}>
+            {{ f.intitule }} ({{ f.type_formation.code }}){% if f.vague %} — {{ f.vague }}{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-sm btn-primary">
+          <i class="bi bi-check-lg me-1"></i>Appliquer
+        </button>
+        {% if source_formation_id %}
+        <a href="?" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-x-lg me-1"></i>Réinitialiser
+        </a>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+  {% if source_formation %}
+  <div class="alert alert-info py-2 mb-3">
+    <div class="d-flex align-items-start gap-2">
+      <i class="bi bi-people-fill fs-5 flex-shrink-0"></i>
+      <span>
+        Chaque modale n'affiche que les auditeurs du <strong>même groupe</strong> (même nom)
+        dans <strong>{{ source_formation.intitule }}</strong>{% if source_formation.vague %} — {{ source_formation.vague }}{% endif %},
+        non encore affectés ici.
+        {% if perms.groupes.add_groupe %}
+        Créez les groupes homologues manquants via le bouton ci-dessous (action explicite, sans effet au simple rechargement).
+        {% else %}
+        Demandez la création des groupes homologues à un gestionnaire disposant du droit d'ajout de groupes.
+        {% endif %}
+      </span>
+    </div>
+    {% if perms.groupes.add_groupe and homologues_manquants %}
+    <form method="post" action="{% url 'groupes:assurer_homologues' formation.pk %}" class="mt-2">
+      {% csrf_token %}
+      <input type="hidden" name="source_formation" value="{{ source_formation_id }}">
+      <button type="submit" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-plus-circle me-1"></i>Créer {{ homologues_manquants|length }} groupe(s) homologue(s) manquant(s)
+      </button>
+    </form>
+    {% endif %}
+    {% if perms.groupes.add_groupeauditeur %}
+    <form method="post" action="{% url 'groupes:reporter_depuis_source' formation.pk %}" class="mt-2"
+          data-confirm="Créer les groupes manquants (mêmes noms que la source) et affecter tous les auditeurs de la formation source ? Les auditeurs déjà dans un groupe ici seront ignorés.">
+      {% csrf_token %}
+      <input type="hidden" name="source_formation" value="{{ source_formation_id }}">
+      <button type="submit" class="btn btn-sm btn-primary">
+        <i class="bi bi-arrow-left-right me-1"></i>Reporter tous les groupes depuis la source
+      </button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <p class="text-muted small mb-3 text-center">
+    {{ page_obj.paginator.count }} groupe(s) — affichage par pages de {{ page_obj.paginator.per_page }}.
+  </p>
+  {% endif %}
+
+  <div class="row g-4">
+    {% for item in groupes_cards %}
+    {% with groupe=item.groupe aff=item.affectation_formateur %}
+    <div class="col-md-4">
+      <div id="groupe-{{ groupe.pk }}" class="card shadow-sm h-100" style="scroll-margin-top: 5rem;">
+        <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+          {{ groupe.nom }}
+          <span class="badge bg-secondary">{{ groupe.nb_auditeurs }}/{{ groupe.max_auditeurs }}</span>
+        </div>
+        <div class="card-body">
+          {% if groupe.config %}
+          <small class="text-muted d-block">
+            {% if groupe.config.matin_actif %}
+            Matin : {{ groupe.config.matin_heure_debut|time:"H:i" }}–{{ groupe.config.matin_heure_fin|time:"H:i" }}<br>
+            {% endif %}
+            {% if groupe.config.soir_actif %}
+            Après-midi : {{ groupe.config.soir_heure_debut|time:"H:i" }}–{{ groupe.config.soir_heure_fin|time:"H:i" }}
+            {% endif %}
+            {% if not groupe.config.matin_actif and not groupe.config.soir_actif %}
+            Aucune session horaire active.
+            {% endif %}
+          </small>
+          {% else %}
+          <small class="text-muted d-block">Configuration par défaut (paramètres généraux).</small>
+          {% endif %}
+          <div class="mt-2">
+            {% for jc in groupe.jours_cours.all %}
+            <span class="badge bg-light text-dark border">{{ jc.get_jour_display }}</span>
+            {% empty %}
+            <span class="text-muted small">Jours : paramètres généraux</span>
+            {% endfor %}
+          </div>
+          {% if groupe.rythme_mensuel %}
+          <div class="mt-2">
+            <span class="badge bg-info text-dark">{{ groupe.get_rythme_mensuel_display }}</span>
+          </div>
+          {% endif %}
+          {% if perimetre_partiel and module_rup and peut_affecter_formateur %}
+          <div class="mt-3 pt-2 border-top">
+            <label class="form-label small fw-semibold mb-1">
+              Formateur — {{ module_rup.titre }}
+            </label>
+            <form method="post"
+                  action="{% url 'formations:rup_affectation' formation.pk groupe.pk module_rup.pk %}"
+                  class="d-flex gap-2 align-items-center flex-wrap">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="groupes">
+              <select name="formateur_id" class="form-select form-select-sm flex-grow-1">
+                <option value="">— Non affecté —</option>
+                {% for f in formateurs_rup %}
+                <option value="{{ f.pk }}"
+                        {% if aff and aff.formateur_id == f.pk %}selected{% endif %}>
+                  {{ f.nom }} {{ f.prenom }} ({{ f.numero }})
+                </option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn btn-sm btn-primary text-nowrap">Enregistrer</button>
+            </form>
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-footer bg-transparent d-flex gap-1 flex-wrap">
+          {% if not perimetre_partiel %}
+          <a href="{% url 'groupes:membre_add' groupe.pk %}{% if source_formation_id %}?source_formation={{ source_formation_id }}{% endif %}"
+             class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-people"></i> Gérer les membres
+          </a>
+          {% if perms.groupes.add_groupeauditeur or perms.groupes.delete_groupeauditeur %}
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalMembres{{ groupe.pk }}">
+            <i class="bi bi-lightning"></i> Affectation rapide
+          </button>
+          {% endif %}
+          <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalConfig{{ groupe.pk }}">
+            <i class="bi bi-gear"></i> Config
+          </button>
+          {% endif %}
+          <a href="{% url 'seances:preview' groupe.pk %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-calendar3"></i> Séances
+          </a>
+          {% if not perimetre_partiel and perms.seances.view_seance %}
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
+                    data-bs-toggle="dropdown" aria-expanded="false"
+                    title="Exporter l'emploi du temps de ce groupe">
+              <i class="bi bi-download"></i> EDT
+            </button>
+            <ul class="dropdown-menu">
+              <li>
+                <a class="dropdown-item" href="{% url 'seances:export_pdf' groupe.pk %}">
+                  <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>Emploi du temps PDF
+                </a>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <a class="dropdown-item" href="{% url 'seances:export' groupe.pk %}?format=cours">
+                  <i class="bi bi-mortarboard me-2"></i>Excel — Cours
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{% url 'seances:export' groupe.pk %}?format=seances">
+                  <i class="bi bi-file-earmark-spreadsheet me-2"></i>Excel — Séances
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{% url 'seances:export' groupe.pk %}?format=formateurs">
+                  <i class="bi bi-person-badge me-2"></i>Excel — Formateurs
+                </a>
+              </li>
+            </ul>
+          </div>
+          {% endif %}
+          {% if perms.groupes.view_groupe %}
+          <a href="{% url 'groupes:export_auditeurs' groupe.pk %}" class="btn btn-sm btn-outline-success"
+             title="Exporter les auditeurs de ce groupe (Excel)">
+            <i class="bi bi-file-earmark-excel"></i> Auditeurs
+          </a>
+          {% endif %}
+          {% if perms.groupes.delete_groupe %}
+          <form method="post" action="{% url 'groupes:groupe_delete' groupe_pk=groupe.pk %}" class="d-inline ms-auto"
+                data-confirm="Supprimer le groupe « {{ groupe.nom }} » ? Les auditeurs seront retirés et les séances associées supprimées.">
+            {% csrf_token %}
+            {% if source_formation_id %}<input type="hidden" name="source_formation" value="{{ source_formation_id }}">{% endif %}
+            <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer le groupe">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal configuration -->
+    <div class="modal fade" id="modalConfig{{ groupe.pk }}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-groupe-form">
+        <div class="modal-content">
+          <form method="post" action="{% url 'groupes:config' groupe.pk %}">
+            {% csrf_token %}
+            <div class="modal-header">
+              <h5 class="modal-title fw-bold">Configuration — {{ groupe.nom }}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+              <p class="text-muted small mb-3">{{ formation.intitule }}</p>
+              <div class="fw-semibold mb-2">Horaires</div>
+              <div class="row g-2 mb-3">
+                <div class="col-12">
+                  <div class="form-check">
+                    {{ item.horaires_form.matin_actif }}
+                    <label class="form-check-label">Session matin</label>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small">Début matin</label>
+                  {{ item.horaires_form.matin_heure_debut }}
+                </div>
+                <div class="col-6">
+                  <label class="form-label small">Fin matin</label>
+                  {{ item.horaires_form.matin_heure_fin }}
+                </div>
+                <div class="col-12">
+                  <div class="form-check">
+                    {{ item.horaires_form.soir_actif }}
+                    <label class="form-check-label">Session après-midi</label>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small">Début après-midi</label>
+                  {{ item.horaires_form.soir_heure_debut }}
+                </div>
+                <div class="col-6">
+                  <label class="form-label small">Fin après-midi</label>
+                  {{ item.horaires_form.soir_heure_fin }}
+                </div>
+              </div>
+              <div class="fw-semibold mb-2">Jours de cours</div>
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                {% for choice in item.jours_form.jours %}
+                  <div class="form-check form-check-inline m-0">
+                    {{ choice.tag }}
+                    <label class="form-check-label small ms-1" for="{{ choice.id_for_label }}">
+                      {{ choice.choice_label }}
+                    </label>
+                  </div>
+                {% endfor %}
+              </div>
+              <div class="fw-semibold mb-2">Cadence mensuelle du groupe</div>
+              <div class="d-flex flex-wrap gap-2 mb-1">
+                {% for choice in item.rythme_form.rythme_mensuel %}
+                  <div class="form-check form-check-inline m-0">
+                    {{ choice.tag }}
+                    <label class="form-check-label small ms-1" for="{{ choice.id_for_label }}">
+                      {{ choice.choice_label }}
+                    </label>
+                  </div>
+                {% endfor %}
+              </div>
+              <small class="text-muted d-block" style="font-size:.7rem;">
+                {% if groupe.rythme_mensuel %}
+                  Override actif : la cadence de la formation est ignorée pour ce groupe.
+                {% else %}
+                  Aucune case cochée ⇒ hérite de la formation
+                  (<strong>{{ formation.get_rythme_mensuel_display }}</strong>).
+                {% endif %}
+              </small>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+              <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal membres -->
+    <div class="modal fade" id="modalMembres{{ groupe.pk }}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-groupe-form">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Affectation rapide — {{ groupe.nom }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+          </div>
+          <div class="modal-body">
+            <p class="small text-muted mb-3">
+              <a href="{% url 'groupes:membre_add' groupe.pk %}{% if source_formation_id %}?source_formation={{ source_formation_id }}{% endif %}">
+                Ouvrir la gestion complète des membres
+              </a>
+              (recherche, liste complète).
+            </p>
+            <div class="row g-3">
+              <div class="col-md-5">
+                <h6 class="small fw-semibold text-muted text-uppercase">Dans le groupe</h6>
+                <div class="border rounded" style="max-height:280px;overflow:auto;">
+                  <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light"><tr><th>Auditeur</th><th>Grade</th><th></th></tr></thead>
+                    <tbody>
+                      {% for membre in groupe.membres.all %}
+                      <tr>
+                        <td>
+                          <div class="fw-semibold small">{{ membre.auditeur.nom }} {{ membre.auditeur.prenom }}</div>
+                          <div class="text-muted" style="font-size:.7rem;">{{ membre.auditeur.matricule }}</div>
+                        </td>
+                        <td class="small">{{ membre.auditeur.grade|default:"—" }}</td>
+                        <td class="text-end">
+                          {% if perms.groupes.delete_groupeauditeur %}
+                          <form method="post" action="{% url 'groupes:membre_delete' groupe.pk membre.auditeur.pk %}"
+                                class="d-inline" data-confirm="Retirer cet auditeur du groupe ?">
+                            {% csrf_token %}
+                            {% if source_formation_id %}
+                            <input type="hidden" name="source_formation" value="{{ source_formation_id }}">
+                            {% endif %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer">
+                              <i class="bi bi-person-dash"></i>
+                            </button>
+                          </form>
+                          {% else %}—{% endif %}
+                        </td>
+                      </tr>
+                      {% empty %}
+                      <tr><td colspan="3" class="text-center text-muted py-3 small">Aucun membre.</td></tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="col-md-7">
+                <h6 class="small fw-semibold text-muted text-uppercase">Inscrits disponibles</h6>
+                {% if item.inscrits_disponibles_total > item.inscrits_disponibles|length %}
+                <p class="small text-warning mb-2">
+                  Liste limitée aux {{ item.inscrits_disponibles|length }} premiers sur {{ item.inscrits_disponibles_total }}.
+                  <a href="{% url 'groupes:membre_add' groupe.pk %}{% if source_formation_id %}?source_formation={{ source_formation_id }}{% endif %}">Gestion complète</a>.
+                </p>
+                {% endif %}
+                {% if perms.groupes.add_groupeauditeur %}
+                <form method="post" action="{% url 'groupes:membre_add' groupe.pk %}" id="formMembresRapide{{ groupe.pk }}">
+                  {% csrf_token %}
+                  {% if source_formation_id %}
+                  <input type="hidden" name="source_formation" value="{{ source_formation_id }}">
+                  {% endif %}
+                  <div class="border rounded" style="max-height:280px;overflow:auto;">
+                    <table class="table table-sm table-hover mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th style="width:36px;"></th>
+                          <th>Auditeur</th>
+                          <th>Grade</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for ins in item.inscrits_disponibles %}
+                        <tr>
+                          <td>
+                            <input type="checkbox" class="form-check-input" name="auditeur_ids" value="{{ ins.auditeur.pk }}">
+                          </td>
+                          <td>
+                            <div class="fw-semibold small">{{ ins.auditeur.nom }} {{ ins.auditeur.prenom }}</div>
+                            <div class="text-muted" style="font-size:.7rem;">{{ ins.auditeur.matricule }}</div>
+                          </td>
+                          <td class="small">{{ ins.auditeur.grade|default:"—" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center text-muted py-3 small">Aucun auditeur disponible.</td></tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </form>
+                {% else %}
+                <p class="small text-muted">Affectation réservée aux utilisateurs autorisés.</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fermer</button>
+            {% if perms.groupes.add_groupeauditeur and item.inscrits_disponibles %}
+            <button type="submit" class="btn btn-primary" form="formMembresRapide{{ groupe.pk }}">
+              Affecter la sélection
+            </button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endwith %}
+    {% empty %}
+    <div class="col-12">
+      <div class="text-center text-muted py-5">Aucun groupe pour cette formation.</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="mt-3 d-flex justify-content-center" aria-label="Pagination des groupes">
+    <ul class="pagination pagination-sm mb-0 flex-wrap justify-content-center">
+      {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if source_formation_id %}&source_formation={{ source_formation_id }}{% endif %}">Précédent</a>
+      </li>
+      {% endif %}
+      <li class="page-item disabled">
+        <span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      </li>
+      {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if source_formation_id %}&source_formation={{ source_formation_id }}{% endif %}">Suivant</a>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+
+  {% if perms.groupes.add_groupe %}
+  <div class="modal fade" id="modalCreerGroupe" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="post" action="{% url 'groupes:create' formation.pk %}">
+          {% csrf_token %}
+          {% if source_formation_id %}
+          <input type="hidden" name="source_formation" value="{{ source_formation_id }}">
+          {% endif %}
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Créer un groupe</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted small">Créez un groupe vide, puis affectez-y des auditeurs via <strong>Gérer les membres</strong>.</p>
+            <div class="mb-3">
+              <label class="form-label fw-semibold small" for="id_nom">Nom du groupe</label>
+              {{ groupe_create_form.nom }}
+            </div>
+            <div class="mb-0">
+              <label class="form-label fw-semibold small" for="id_max_auditeurs">Capacité max.</label>
+              {{ groupe_create_form.max_auditeurs }}
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+            <button type="submit" class="btn btn-primary">Créer le groupe</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="alert alert-info mt-4 mb-0">
+    Créez un groupe manuellement, utilisez <strong>Régénérer auto</strong> (par grade ou avec mixage),
+    ou reportez les groupes depuis une formation source. Affectez ensuite les auditeurs via
+    <strong>Gérer les membres</strong>.
+  </div>
+</div>
+{% endblock %}

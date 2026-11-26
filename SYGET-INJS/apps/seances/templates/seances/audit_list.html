@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Audit planning{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="fw-bold mb-1" style="font-size:1.7rem;color:#0f172a;">
+        <i class="bi bi-clock-history me-2 text-dark"></i>Audit planning
+      </h1>
+      <p class="text-muted mb-0">Historique des actions de génération, export et modifications.</p>
+    </div>
+    <a href="{% url 'home' %}" class="btn btn-outline-secondary rounded-pill px-3">
+      Retour accueil
+    </a>
+  </div>
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Action</label>
+          <select name="action" class="form-select">
+            <option value="">Toutes</option>
+            {% for value, label in actions %}
+            <option value="{{ value }}" {% if filters.action == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Utilisateur</label>
+          <input type="text" name="username" class="form-control" value="{{ filters.username }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Groupe</label>
+          <input type="text" name="groupe" class="form-control" value="{{ filters.groupe }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Date début</label>
+          <input type="date" name="date_from" class="form-control" value="{{ filters.date_from }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Date fin</label>
+          <input type="date" name="date_to" class="form-control" value="{{ filters.date_to }}">
+        </div>
+        <div class="col-md-2 d-grid">
+          <button class="btn btn-primary">Filtrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="px-4">Date/Heure</th>
+            <th>Action</th>
+            <th>Utilisateur</th>
+            <th>Groupe</th>
+            <th>Séance</th>
+            <th>Détails</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td class="px-4 font-monospace">{{ log.created_at|date:"d/m/Y H:i:s" }}</td>
+            <td><span class="badge bg-dark">{{ log.get_action_display }}</span></td>
+            <td>{{ log.actor.username|default:"SYSTEM" }}</td>
+            <td>{{ log.groupe.nom|default:"—" }}</td>
+            <td>
+              {% if log.seance %}
+              #{{ log.seance.pk }} — {{ log.seance.module.titre }}
+              {% else %}
+              —
+              {% endif %}
+            </td>
+            <td><code class="small">{{ log.details }}</code></td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-5">Aucune entrée d'audit.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

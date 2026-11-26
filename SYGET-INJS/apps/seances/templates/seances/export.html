@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Export séances{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h1>Export en cours…</h1>
+  <p>Si le téléchargement ne démarre pas, <a href="{% url 'seances:export' groupe_pk %}">cliquez ici</a>.</p>
+</div>
+{% endblock %}

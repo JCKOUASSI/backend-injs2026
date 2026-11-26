@@ -1,0 +1,12 @@
+*.pyc
+__pycache__/
+.env
+*.db
+*.sqlite3
+staticfiles/
+media/
+livrables_syget/
+.DS_Store
+*.pot
+*.mo
+
